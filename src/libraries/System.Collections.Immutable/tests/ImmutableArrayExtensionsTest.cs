@@ -46,7 +46,7 @@ namespace System.Collections.Immutable.Tests
         {
             Func<int, IEnumerable<int>> collectionSelector = i => Enumerable.Range(i, 10);
             Func<int, int, int> resultSelector = (i, e) => e * 2;
-            foreach (var arr in new[] { s_empty, s_oneElement, s_manyElements })
+            foreach (ImmutableArray<int> arr in new[] { s_empty, s_oneElement, s_manyElements })
             {
                 Assert.Equal(
                     Enumerable.SelectMany(arr, collectionSelector, resultSelector),
@@ -436,13 +436,13 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("elementSelector", () => ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n, (Func<int, string>)null));
             AssertExtensions.Throws<ArgumentNullException>("elementSelector", () => ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n, (Func<int, string>)null, EqualityComparer<int>.Default));
 
-            var stringToString = ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n.ToString(), n => (n * 2).ToString());
+            Dictionary<string, string> stringToString = ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n.ToString(), n => (n * 2).ToString());
             Assert.Equal(stringToString.Count, s_manyElements.Length);
             Assert.Equal("2", stringToString["1"]);
             Assert.Equal("4", stringToString["2"]);
             Assert.Equal("6", stringToString["3"]);
 
-            var stringToInt = ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n.ToString());
+            Dictionary<string, int> stringToInt = ImmutableArrayExtensions.ToDictionary(s_manyElements, n => n.ToString());
             Assert.Equal(stringToString.Count, s_manyElements.Length);
             Assert.Equal(1, stringToInt["1"]);
             Assert.Equal(2, stringToInt["2"]);

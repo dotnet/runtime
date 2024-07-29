@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
@@ -42,7 +42,7 @@ namespace System.Diagnostics
         public abstract IReadOnlyCollection<string> Fields { get; }
 
         /// <summary>
-        /// Injects the trace values stroed in the <see cref="Activity"/> object into a carrier. For example, into the headers of an HTTP request.
+        /// Injects the trace values stored in the <see cref="Activity"/> object into a carrier. For example, into the headers of an HTTP request.
         /// </summary>
         /// <param name="activity">The Activity object has the distributed context to inject to the carrier.</param>
         /// <param name="carrier">Carrier is the medium in which the distributed context will be stored.</param>

@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 uint32_t getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -38,7 +41,15 @@ void getMethodSig(
 
 bool getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info) override;
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context) override;
+
+bool haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd) override;
+
+CORINFO_CLASS_HANDLE getTypeDefinition(
+          CORINFO_CLASS_HANDLE type) override;
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
@@ -75,9 +86,6 @@ void getEHinfo(
 CORINFO_CLASS_HANDLE getMethodClass(
           CORINFO_METHOD_HANDLE method) override;
 
-CORINFO_MODULE_HANDLE getMethodModule(
-          CORINFO_METHOD_HANDLE method) override;
-
 void getMethodVTableOffset(
           CORINFO_METHOD_HANDLE method,
           unsigned* offsetOfIndirection,
@@ -99,6 +107,7 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 bool isIntrinsicType(
@@ -117,17 +126,7 @@ bool satisfiesMethodConstraints(
           CORINFO_CLASS_HANDLE parent,
           CORINFO_METHOD_HANDLE method) override;
 
-bool isCompatibleDelegate(
-          CORINFO_CLASS_HANDLE objCls,
-          CORINFO_CLASS_HANDLE methodParentCls,
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_CLASS_HANDLE delegateCls,
-          bool* pfIsOpenDelegate) override;
-
 void methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method) override;
-
-CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
           CORINFO_METHOD_HANDLE method) override;
 
 void getGSCookie(
@@ -141,9 +140,6 @@ PatchpointInfo* getOSRInfo(
           unsigned* ilOffset) override;
 
 void resolveToken(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
-
-bool tryResolveToken(
           CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
 
 void findSig(
@@ -160,14 +156,6 @@ void findCallSiteSig(
 
 CORINFO_CLASS_HANDLE getTokenTypeAsHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken) override;
-
-bool isValidToken(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK) override;
-
-bool isValidStringRef(
-          CORINFO_MODULE_HANDLE module,
-          unsigned metaTOK) override;
 
 int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
@@ -202,10 +190,6 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source) override;
-
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -224,10 +208,21 @@ void* LongLifetimeMalloc(
 void LongLifetimeFree(
           void* obj) override;
 
-size_t getClassModuleIdForStatics(
+bool getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection) override;
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset) override;
+
+size_t getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
+
+size_t getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr) override;
+
+bool getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr) override;
 
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
@@ -253,14 +248,18 @@ CORINFO_FIELD_HANDLE getFieldInClass(
           CORINFO_CLASS_HANDLE clsHnd,
           int32_t num) override;
 
+GetTypeLayoutResult getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes) override;
+
 bool checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,
           bool fOptional) override;
 
 CorInfoHelpFunc getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects) override;
 
 CorInfoHelpFunc getNewArrHelper(
@@ -274,6 +273,9 @@ CorInfoHelpFunc getSharedCCtorHelper(
           CORINFO_CLASS_HANDLE clsHnd) override;
 
 CORINFO_CLASS_HANDLE getTypeForBox(
+          CORINFO_CLASS_HANDLE cls) override;
+
+CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoHelpFunc getBoxHelper(
@@ -300,12 +302,14 @@ bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup) override;
 
 void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup) override;
 
 CorInfoInitClassResult initClass(
@@ -329,10 +333,6 @@ bool canCast(
           CORINFO_CLASS_HANDLE child,
           CORINFO_CLASS_HANDLE parent) override;
 
-bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2) override;
-
 TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass) override;
@@ -341,13 +341,18 @@ TypeCompareState compareTypesForEquality(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
-CORINFO_CLASS_HANDLE mergeClasses(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2) override;
-
 bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
+
+bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
+TypeCompareState isGenericType(
+          CORINFO_CLASS_HANDLE cls) override;
+
+TypeCompareState isNullableType(
+          CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
@@ -359,9 +364,6 @@ CORINFO_CLASS_HANDLE getParentType(
 CorInfoType getChildType(
           CORINFO_CLASS_HANDLE clsHnd,
           CORINFO_CLASS_HANDLE* clsRet) override;
-
-bool satisfiesClassConstraints(
-          CORINFO_CLASS_HANDLE cls) override;
 
 bool isSDArray(
           CORINFO_CLASS_HANDLE cls) override;
@@ -404,6 +406,16 @@ void getFieldInfo(
           CORINFO_ACCESS_FLAGS flags,
           CORINFO_FIELD_INFO* pResult) override;
 
+uint32_t getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype) override;
+
+void getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
+
+void getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
@@ -438,6 +450,11 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length) override;
+
 void* allocateArray(
           size_t cBytes) override;
 
@@ -463,22 +480,6 @@ CORINFO_CLASS_HANDLE getArgClass(
 
 CorInfoHFAElemType getHFAType(
           CORINFO_CLASS_HANDLE hClass) override;
-
-JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength) override;
-
-int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result) override;
-
-void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper) override;
 
 bool runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
@@ -511,23 +512,19 @@ const char* getMethodNameFromMetadata(
 unsigned getMethodHash(
           CORINFO_METHOD_HANDLE ftn) override;
 
-size_t findNameOfToken(
-          CORINFO_MODULE_HANDLE moduleHandle,
-          mdToken token,
-          char* szFQName,
-          size_t FQNameCapacity) override;
-
 bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
 
-uint32_t getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd) override;
+void getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering) override;
+
+void getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering) override;
 
 uint32_t getThreadTLSIndex(
-          void** ppIndirection) override;
-
-const void* getInlinedCallFrameVptr(
           void** ppIndirection) override;
 
 int32_t* getAddrOfCaptureThreadGlobal(
@@ -573,6 +570,7 @@ CORINFO_FIELD_HANDLE embedFieldHandle(
 void embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 void getLocationOfThisType(
@@ -606,23 +604,18 @@ void getCallInfo(
           CORINFO_CALLINFO_FLAGS flags,
           CORINFO_CALL_INFO* pResult) override;
 
-bool canAccessFamily(
-          CORINFO_METHOD_HANDLE hCaller,
-          CORINFO_CLASS_HANDLE hInstanceType) override;
-
-bool isRIDClassDomainID(
-          CORINFO_CLASS_HANDLE cls) override;
-
-unsigned getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection) override;
-
-bool getReadonlyStaticFieldValue(
+bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects) override;
+
+bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
@@ -646,10 +639,6 @@ InfoAccessType emptyStringLiteral(
 uint32_t getFieldThreadLocalStoreID(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
-
-void addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo) override;
 
 CORINFO_METHOD_HANDLE GetDelegateCtor(
           CORINFO_METHOD_HANDLE methHnd,
@@ -722,7 +711,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource) override;
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
@@ -740,7 +730,6 @@ void recordRelocation(
           void* locationRW,
           void* target,
           uint16_t fRelocType,
-          uint16_t slotNum,
           int32_t addlDelta) override;
 
 uint16_t getRelocTypeHint(

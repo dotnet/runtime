@@ -43,6 +43,32 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string CommandLineArgument = "--additional-deps";
         }
 
+        public static class AdditionalProbingPath
+        {
+            public const string CommandLineArgument = "--additionalprobingpath";
+            public const string RuntimeConfigPropertyName = "additionalProbingPaths";
+        }
+
+        public static class Breadcrumbs
+        {
+            public const string EnvironmentVariable = "CORE_BREADCRUMBS";
+        }
+
+        public static class BundleExtractBase
+        {
+            public const string EnvironmentVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        }
+
+        public static class CoreServicing
+        {
+            public const string EnvironmentVariable = "CORE_SERVICING";
+        }
+
+        public static class DepsFile
+        {
+            public const string CommandLineArgument = "--depsfile";
+        }
+
         public static class RollForwardToPreRelease
         {
             public const string EnvironmentVariable = "DOTNET_ROLL_FORWARD_TO_PRERELEASE";
@@ -87,13 +113,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class ErrorCode
         {
+            public const int Success = 0;
             public const int InvalidArgFailure = unchecked((int)0x80008081);
             public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
+            public const int EntryPointFailure = unchecked((int)0x80008084);
             public const int ResolverInitFailure = unchecked((int)0x8000808b);
             public const int ResolverResolveFailure = unchecked((int)0x8000808c);
             public const int LibHostInvalidArgs = unchecked((int)0x80008092);
+            public const int InvalidConfigFile = unchecked((int)0x80008093);
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
+            public const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int FrameworkCompatFailure = unchecked((int)0x8000809c);
             public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 
             public const int COMPlusException = unchecked((int)0xe0434352);

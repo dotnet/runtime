@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Globalization;
 using System.Text;
 
 namespace System.Runtime.InteropServices
@@ -13,7 +14,7 @@ namespace System.Runtime.InteropServices
     /// recognize the HResult.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class COMException : ExternalException
     {
         public COMException()
@@ -23,23 +24,25 @@ namespace System.Runtime.InteropServices
         }
 
         public COMException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_COMException, inner)
         {
             HResult = HResults.E_FAIL;
         }
 
         public COMException(string? message, int errorCode)
-            : base(message)
+            : base(message ?? SR.Arg_COMException)
         {
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

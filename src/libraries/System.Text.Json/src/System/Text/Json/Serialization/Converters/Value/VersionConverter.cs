@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class VersionConverter : JsonPrimitiveConverter<Version>
+    internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
-#if NETCOREAPP
+#if NET
         private const int MinimumVersionLength = 3; // 0.0
 
         private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
@@ -15,8 +17,13 @@ namespace System.Text.Json.Serialization.Converters
         private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
 #endif
 
-        public override Version Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType is JsonTokenType.Null)
+            {
+                return null;
+            }
+
             if (reader.TokenType != JsonTokenType.String)
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
@@ -29,10 +36,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
-#if NETCOREAPP
+#if NET
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
-                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
             Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
@@ -71,10 +78,20 @@ namespace System.Text.Json.Serialization.Converters
             return null;
         }
 
-        public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
-#if NETCOREAPP
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+#if NET
+#if NET8_0_OR_GREATER
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
+#else
             Span<char> span = stackalloc char[MaximumVersionLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
@@ -90,8 +107,17 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-#if NETCOREAPP
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
+#if NET
+#if NET8_0_OR_GREATER
+            Span<byte> span = stackalloc byte[MaximumVersionLength];
+#else
             Span<char> span = stackalloc char[MaximumVersionLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WritePropertyName(span.Slice(0, charsWritten));
@@ -99,5 +125,13 @@ namespace System.Text.Json.Serialization.Converters
             writer.WritePropertyName(value.ToString());
 #endif
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new()
+            {
+                Type = JsonSchemaType.String,
+                Comment = "Represents a version string.",
+                Pattern = @"^\d+(\.\d+){1,3}$",
+            };
     }
 }

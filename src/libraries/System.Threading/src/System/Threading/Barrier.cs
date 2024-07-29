@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -65,6 +66,8 @@ namespace System.Threading
         /// </summary>
         /// <param name="info">The object that holds the serialized object data.</param>
         /// <param name="context">The contextual information about the source or destination.</param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected BarrierPostPhaseException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -88,7 +91,7 @@ namespace System.Threading
     /// completed.
     /// </para>
     /// </remarks>
-    [DebuggerDisplay("Participant Count={ParticipantCount},Participants Remaining={ParticipantsRemaining}")]
+    [DebuggerDisplay("ParticipantCount = {ParticipantCount}, ParticipantsRemaining = {ParticipantsRemaining}")]
     public class Barrier : IDisposable
     {
         //This variable holds the basic barrier variables:
@@ -215,11 +218,8 @@ namespace System.Threading
         /// </remarks>
         public Barrier(int participantCount, Action<Barrier>? postPhaseAction)
         {
-            // the count must be non negative value
-            if (participantCount < 0 || participantCount > MAX_PARTICIPANTS)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount, SR.Barrier_ctor_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
             _currentTotalCount = (int)participantCount;
             _postPhaseAction = postPhaseAction;
 
@@ -284,7 +284,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public long AddParticipant()
         {
             try
@@ -313,21 +315,15 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public long AddParticipants(int participantCount)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_AddParticipants_NonPositive_ArgumentOutOfRange);
-            }
-            else if (participantCount > MAX_PARTICIPANTS) //overflow
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount),
-                        SR.Barrier_AddParticipants_Overflow_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(participantCount, MAX_PARTICIPANTS);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -422,11 +418,7 @@ namespace System.Threading
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (participantCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
-                    SR.Barrier_RemoveParticipants_NonPositive_ArgumentOutOfRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);
 
             // in case of this is called from the PHA
             if (_actionCallerID != 0 && Environment.CurrentManagedThreadId == _actionCallerID)
@@ -483,7 +475,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void SignalAndWait()
         {
             SignalAndWait(CancellationToken.None);
@@ -504,7 +498,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void SignalAndWait(CancellationToken cancellationToken)
         {
 #if DEBUG
@@ -534,7 +530,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(TimeSpan timeout)
         {
             return SignalAndWait(timeout, CancellationToken.None);
@@ -562,7 +560,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -590,7 +590,9 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout)
         {
             return SignalAndWait(millisecondsTimeout, CancellationToken.None);
@@ -617,7 +619,9 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -857,7 +861,9 @@ namespace System.Threading
         /// <param name="token">cancellation token passed to SignalAndWait</param>
         /// <param name="observedPhase">The current phase number for this thread</param>
         /// <returns>True if the event is set or the phase number changed, false if the timeout expired</returns>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         private bool DiscontinuousWait(ManualResetEventSlim currentPhaseEvent, int totalTimeout, CancellationToken token, long observedPhase)
         {
             int maxWait = 100; // 100 ms

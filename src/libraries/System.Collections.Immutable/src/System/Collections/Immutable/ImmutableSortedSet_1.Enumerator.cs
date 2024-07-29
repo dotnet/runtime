@@ -148,7 +148,7 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 if (stack.Count > 0)
                 {
                     Node n = stack.Pop().Value;
@@ -172,7 +172,7 @@ namespace System.Collections.Immutable
 
                 _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
                 _current = null;
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 stack.ClearFastWhenEmpty();
                 this.PushNext(_root);
             }
@@ -213,7 +213,7 @@ namespace System.Collections.Immutable
             private void PushNext(Node node)
             {
                 Requires.NotNull(node, nameof(node));
-                var stack = _stack!.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack = _stack!.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<Node>(node));

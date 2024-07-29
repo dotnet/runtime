@@ -263,7 +263,9 @@ namespace System.IO.Pipelines.Tests
 
             stream.WaitForReadTask.TrySetResult(null);
 
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
+            Assert.IsType<OperationCanceledException>(oce.InnerException);
             reader.Complete();
         }
 
@@ -612,7 +614,7 @@ namespace System.IO.Pipelines.Tests
             stream = new();
             reader = PipeReader.Create(stream);
             await reader.CompleteAsync();
-#if NETCOREAPP
+#if NET
             Assert.False(stream.DisposeCalled);
             Assert.True(stream.DisposeAsyncCalled);
 #else
@@ -659,7 +661,7 @@ namespace System.IO.Pipelines.Tests
             {
                 throw new OperationCanceledException();
             }
-#if NETCOREAPP
+#if NET
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
@@ -694,7 +696,7 @@ namespace System.IO.Pipelines.Tests
                 return bytes;
             }
 
-#if NETCOREAPP
+#if NET
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
             {
                 if (_throwOnNextCallToRead)
@@ -721,7 +723,7 @@ namespace System.IO.Pipelines.Tests
                 DisposeCalled = true;
             }
 
-#if NETCOREAPP
+#if NET
             public override ValueTask DisposeAsync()
             {
                 DisposeAsyncCalled = true;

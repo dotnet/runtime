@@ -1,9 +1,11 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double a0 = 1.0;
         double a1 = 2.0;

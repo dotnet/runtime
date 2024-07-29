@@ -5,18 +5,24 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Apple;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private SafeKeychainHandle? _tempKeychain;
-
         public static ICertificatePal FromBlob(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
+            X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static AppleCertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
@@ -37,36 +43,19 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                try
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                    return (AppleCertificatePal)X509CertificateLoader.LoadPkcs12Pal(
+                        rawData,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(readingFromFile, password));
                 }
-
-                bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
-
-                bool persist =
-                    (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
-
-                SafeKeychainHandle keychain = persist
-                    ? Interop.AppleCrypto.SecKeychainCopyDefault()
-                    : Interop.AppleCrypto.CreateTemporaryKeychain();
-
-                using (keychain)
+                catch (Pkcs12LoadLimitExceededException e)
                 {
-                    AppleCertificatePal ret = ImportPkcs12(rawData, password, exportable, keychain);
-                    if (!persist)
-                    {
-                        // If we used temporary keychain we need to prevent deletion.
-                        // on 10.15+ if keychain is unlinked, certain certificate operations may fail.
-                        bool success = false;
-                        keychain.DangerousAddRef(ref success);
-                        if (success)
-                        {
-                            ret._tempKeychain = keychain;
-                        }
-                    }
-
-                    return ret;
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
                 }
             }
 
@@ -90,11 +79,6 @@ namespace System.Security.Cryptography.X509Certificates
             identityHandle.Dispose();
             certHandle.Dispose();
             throw new CryptographicException();
-        }
-
-        public void DisposeTempKeychain()
-        {
-            Interlocked.Exchange(ref _tempKeychain, null)?.Dispose();
         }
 
         internal unsafe byte[] ExportPkcs8(ReadOnlySpan<char> password)

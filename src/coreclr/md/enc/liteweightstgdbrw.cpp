@@ -568,7 +568,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     IfFailGo(GetPoolSaveSize(BLOB_POOL_STREAM, MDPoolBlobs, &cbSize));
     cbTotal += cbSize;
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
-    IfFailGo(GetPoolSaveSize(PDB_STREAM, NULL, &cbSize));
+    IfFailGo(GetPoolSaveSize(PDB_STREAM, 0, &cbSize));
     cbTotal += cbSize;
 #endif
 
@@ -618,7 +618,7 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szHeap) == 0)
+    if (u16_strcmp(PDB_STREAM, szHeap) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
@@ -649,10 +649,6 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 
         // Ask the storage system to add stream fixed overhead.
         IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
-
-        // Log the size info.
-        LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-            szHeap, cbStream, cbSize));
 
         // Give the size of the pool to the caller's total.
         *pcbSaveSize = cbSize;
@@ -692,10 +688,6 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     // Ask the storage system to add stream fixed overhead.
     IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbSize, &cbSize));
-
-    // Log the size info.
-    LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-        szName, cbStream, cbSize));
 
     // Give the size of the pool to the caller's total.
     *pcbSaveSize = cbHotSize + cbSize;
@@ -824,7 +816,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(SavePool(GUID_POOL_STREAM, pStorage, MDPoolGuids));
     IfFailGo(SavePool(BLOB_POOL_STREAM, pStorage, MDPoolBlobs));
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
-    IfFailGo(SavePool(PDB_STREAM, pStorage, NULL));
+    IfFailGo(SavePool(PDB_STREAM, pStorage, 0));
 #endif
 
     // Write the header to disk.
@@ -863,7 +855,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szName) == 0)
+    if (u16_strcmp(PDB_STREAM, szName) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
@@ -1175,7 +1167,7 @@ CLiteWeightStgdbRW::SetFileName(
 
     // Size of the file name incl. null terminator
     size_t cchFileName;
-    cchFileName = wcslen(wszFileName) + 1;
+    cchFileName = u16_strlen(wszFileName) + 1;
 
     // Allocate and copy the file name
     m_wszFileName = new (nothrow) WCHAR[cchFileName];

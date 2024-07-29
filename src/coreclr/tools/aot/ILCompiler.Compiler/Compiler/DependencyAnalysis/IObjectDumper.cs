@@ -7,6 +7,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public interface IObjectDumper
     {
-        void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData);
+        void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData);
     }
 }

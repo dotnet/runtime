@@ -707,7 +707,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part1 [ 9]             = 0xC2;
     resolveInit.part1 [10]             = 0x48;
     resolveInit.part1 [11]             = 0x35;
-// Review truncation from unsigned __int64 to UINT32 of a constant value.
+// Review truncation from uint64_t to UINT32 of a constant value.
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable:4305 4309)
@@ -869,63 +869,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 
     _ASSERT(p == (BYTE*)stub()->entryPoint() + VTableCallHolder::GetHolderSize(slot));
     _ASSERT(stub()->size() == VTableCallHolder::GetHolderSize(slot));
-}
-
-VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
-{
-#ifdef DACCESS_COMPILE
-    return SK_BREAKPOINT;  // Dac always uses the slower lookup
-#else
-    StubKind stubKind = SK_UNKNOWN;
-
-    EX_TRY
-    {
-        // If stubStartAddress is completely bogus, then this might AV,
-        // so we protect it with SEH. An AV here is OK.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        WORD firstWord = *((WORD*) stubStartAddress);
-
-        if (firstWord == 0xB848)
-        {
-            stubKind = SK_DISPATCH;
-        }
-        else if (firstWord == 0x4890)
-        {
-            stubKind = SK_LOOKUP;
-        }
-        else if (firstWord == 0x4952)
-        {
-            stubKind = SK_RESOLVE;
-        }
-        else if (firstWord == 0x48F8)
-        {
-            stubKind = SK_LOOKUP;
-        }
-        else if (firstWord == 0x8B48)
-        {
-            stubKind = SK_VTABLECALL;
-        }
-        else
-        {
-            BYTE firstByte  = ((BYTE*) stubStartAddress)[0];
-            BYTE secondByte = ((BYTE*) stubStartAddress)[1];
-
-            if ((firstByte  == INSTR_INT3) || (secondByte == INSTR_INT3))
-            {
-                stubKind = SK_BREAKPOINT;
-            }
-        }
-    }
-    EX_CATCH
-    {
-        stubKind = SK_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return stubKind;
-
-#endif // DACCESS_COMPILE
 }
 
 #endif //DECLARE_DATA

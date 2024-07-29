@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -57,7 +57,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
         {
+#if NET8_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[FormatLength];
+#else
             Span<char> buffer = stackalloc char[FormatLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WriteStringValue(buffer);
@@ -65,10 +69,16 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+#if NET8_0_OR_GREATER
+            Span<byte> buffer = stackalloc byte[FormatLength];
+#else
             Span<char> buffer = stackalloc char[FormatLength];
+#endif
             bool formattedSuccessfully = value.TryFormat(buffer, out int charsWritten, "O", CultureInfo.InvariantCulture);
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WritePropertyName(buffer);
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String, Format = "date" };
     }
 }

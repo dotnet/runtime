@@ -56,6 +56,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include <mono/jit/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
+#include "llvm-runtime.h"
 
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"
@@ -90,6 +91,12 @@ typedef struct SeqPointInfo SeqPointInfo;
 #else
 #define COMPILE_LLVM(cfg) (0)
 #define LLVM_ENABLED FALSE
+#endif
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+#define ARCH_SIMD_ENABLED TRUE
+#else
+#define ARCH_SIMD_ENABLED FALSE
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
@@ -127,9 +134,13 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_INT_32_64(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I4 && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 #define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
+// Used by MonoImage:aot_module to indicate aot_module was not found
+#define AOT_MODULE_NOT_FOUND GINT_TO_POINTER (-1)
 
 typedef struct
 {
@@ -294,36 +305,11 @@ enum {
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature_internal (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || ((ins)->opcode == OP_XPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE))
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
-
-#ifdef TARGET_ARM64
-/*
- * SIMD is only supported on arm64 when using the LLVM backend. When not using
- * the LLVM backend, treat SIMD datatypes as regular value types.
- */
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && COMPILE_LLVM (cfg) && m_class_is_simd_type (klass))
-#else
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-#endif
-
-#else
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE))
-/*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
-
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
-
-#endif
+#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XPHI))
+#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE))
+#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XZERO))
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
@@ -352,6 +338,7 @@ extern int mono_break_at_bb_bb_num;
 extern gboolean mono_do_x86_stack_align;
 extern int mini_verbose;
 extern int valgrind_register;
+extern int mono_llvmonly_do_unwind_flag;
 
 #define INS_INFO(opcode) (&mini_ins_info [((opcode) - OP_START - 1) * 4])
 
@@ -373,6 +360,7 @@ enum {
 	MONO_INST_MAX = 6
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoInstSpec { // instruction specification
 	struct {
 		char dest;
@@ -394,6 +382,7 @@ typedef union MonoInstSpec { // instruction specification
 	};
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
+MONO_RESTORE_WARNING
 
 extern const char mini_ins_info[];
 extern const gint8 mini_ins_sreg_counts [];
@@ -687,6 +676,8 @@ typedef struct {
 	/* Parameter index in the LLVM signature */
 	int pindex;
 	MonoType *type;
+	/* Only if storage == LLVMArgWasmVtypeAsScalar */
+	MonoType *etype;
 	/* Only if storage == LLVMArgAsFpArgs. Dummy fp args to insert before this arg */
 	int ndummy_fpargs;
 } LLVMArgInfo;
@@ -764,6 +755,7 @@ struct MonoInst {
 		gpointer data;
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
+		gboolean need_sext; /* for OP_BOUNDS_CHECK */
 		gboolean record_cast_details; /* For CEE_CASTCLASS */
 		MonoInst *spill_var; /* for OP_MOVE_I4_TO_F/F_TO_I4 and OP_FCONV_TO_R8_X */
 		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
@@ -1007,6 +999,21 @@ enum {
 	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3
 };
 
+/*
+ * Types of constrained calls from gsharedvt code
+ */
+enum {
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an uninitialized rgctx slot */
+	/* Calling a vtype method with a vtype receiver */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE = 1,
+	/* Calling a ref method with a ref receiver */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF = 2,
+	/* Calling a non-vtype method with a vtype receiver, has to box */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_BOX = 3,
+	/* Everything else */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_OTHER = 4
+};
+
 typedef enum {
 	MONO_RGCTX_INFO_STATIC_DATA                  = 0,
 	MONO_RGCTX_INFO_KLASS                        = 1,
@@ -1069,7 +1076,9 @@ typedef enum {
 	/* The llvmonly interp entry for a method */
 	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36,
 	/* Same as VIRT_METHOD_CODE, but resolve MonoMethod* instead of code */
-	MONO_RGCTX_INFO_VIRT_METHOD                   = 37
+	MONO_RGCTX_INFO_VIRT_METHOD                   = 37,
+	/* Resolves to a MonoGsharedvtConstrainedCallInfo */
+	MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO = 38,
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1134,6 +1143,14 @@ typedef struct {
 	gpointer entries [MONO_ZERO_LEN_ARRAY];
 } MonoGSharedVtMethodRuntimeInfo;
 
+/* Precomputed information about constrained calls from gsharedvt methods */
+typedef struct {
+	int call_type;
+	MonoClass *klass;
+	MonoMethod *method;
+	gpointer code;
+} MonoGsharedvtConstrainedCallInfo;
+
 typedef struct
 {
 	MonoClass *klass;
@@ -1146,6 +1163,7 @@ typedef struct
 	gpointer impl_this;
 	gpointer impl_nothis;
 	gboolean need_rgctx_tramp;
+	gboolean is_virtual;
 } MonoDelegateTrampInfo;
 
 /*
@@ -1224,9 +1242,10 @@ typedef struct {
 	guint            emulate_long_shift_opts : 1;
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_trampoline : 1;
-	gboolean         have_op_tailcall_membase : 1;
-	gboolean         have_op_tailcall_reg : 1;
-	gboolean         have_volatile_non_param_register : 1;
+	guint         have_op_tailcall_membase : 1;
+	guint         have_op_tailcall_reg : 1;
+	guint         have_volatile_non_param_register : 1;
+	guint            have_init_mrgctx : 1;
 	guint            gshared_supported : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
@@ -1234,8 +1253,6 @@ typedef struct {
 	guint            no_unaligned_access : 1;
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
-	guint            optimized_div : 1;
-	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1396,6 +1413,7 @@ typedef struct {
 	/* Points to the call to mini_init_method_rgctx () */
 	MonoInst *init_method_rgctx_ins;
 	MonoInst *init_method_rgctx_ins_arg;
+	MonoInst *init_method_rgctx_ins_load;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -1493,7 +1511,8 @@ typedef struct {
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
-	guint8           uses_simd_intrinsics;
+	guint            init_method_rgctx_elim : 1;
+	guint8           uses_simd_intrinsics : 1;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
@@ -1610,6 +1629,7 @@ typedef struct {
 
 	GSList *signatures;
 	GSList *interp_in_signatures;
+	GSList *pinvoke_calli_signatures;
 
 	/* GC Maps */
 
@@ -1653,9 +1673,6 @@ typedef struct {
 
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	gboolean prof_coverage;
-
-	/* For deduplication */
-	gboolean skip;
 } MonoCompile;
 
 #define MONO_CFG_PROFILE(cfg, flag) \
@@ -1676,11 +1693,6 @@ typedef enum {
 	MONO_CFG_NEEDS_DECOMPOSE = 1 << 8,
 	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
-
-typedef enum {
-	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
-} MonoSimdIntrinsicsFlags;
 
 typedef struct {
 	gint32 methods_compiled;
@@ -1980,6 +1992,13 @@ typedef enum {
 	CMP_UNORD
 } CompRelation;
 
+enum {
+	XBINOP_FORCEINT_AND,
+	XBINOP_FORCEINT_OR,
+	XBINOP_FORCEINT_ORNOT,
+	XBINOP_FORCEINT_XOR,
+};
+
 typedef enum {
 	CMP_TYPE_L,
 	CMP_TYPE_I,
@@ -2157,7 +2176,7 @@ void      mono_link_bblock                  (MonoCompile *cfg, MonoBasicBlock *f
 void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to);
 gboolean  mono_bblocks_linked               (MonoBasicBlock *bb1, MonoBasicBlock *bb2);
 void      mono_remove_bblock                (MonoCompile *cfg, MonoBasicBlock *bb);
-void      mono_nullify_basic_block          (MonoBasicBlock *bb);
+void      mono_nullify_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn);
 void      mono_optimize_branches            (MonoCompile *cfg);
 
@@ -2167,7 +2186,17 @@ GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
 void      mono_print_ins                    (MonoInst *ins);
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
-const char* mono_inst_name (int op);
+#ifndef DISABLE_LOGGING
+#define M_PRI_INST "%s"
+const char * mono_inst_name(int opcode);
+#else
+#define M_PRI_INST "%d"
+static inline int
+mono_inst_name(int opcode)
+{
+        return opcode;
+}
+#endif
 int       mono_op_to_op_imm                 (int opcode);
 int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
@@ -2249,8 +2278,7 @@ gpointer          mono_create_jump_trampoline (MonoMethod *method,
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoClass *klass);
-MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method);
-gpointer          mono_create_delegate_virtual_trampoline (MonoClass *klass, MonoMethod *method);
+MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual);
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset);
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr);
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
@@ -2298,7 +2326,7 @@ void              mini_emit_memset (MonoCompile *cfg, int destreg, int offset, i
 void              mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
 void              mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 void              mini_emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype);
-int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index);
+int               mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index, gboolean *need_sext);
 MonoInst*         mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index, gboolean bcheck, gboolean bounded);
 MonoInst*         mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgctxInfoType rgctx_type);
 MonoInst*         mini_emit_get_rgctx_method (MonoCompile *cfg, int context_used,
@@ -2337,6 +2365,7 @@ MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
+CompRelation      mono_opcode_to_cond_unchecked (int opcode);
 CompRelation      mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);
@@ -2510,6 +2539,7 @@ gpointer mono_arch_get_ftnptr_arg_trampoline    (MonoMemoryManager *mem_manager,
 gpointer mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr);
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
+void     mono_arch_patch_jump_trampoline        (guint8 *jump_tramp, guint8 *addr);
 int      mono_arch_get_this_arg_reg             (guint8 *code);
 gpointer mono_arch_get_this_arg_from_call       (host_mgreg_t *regs, guint8 *code);
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target);
@@ -2526,15 +2556,23 @@ gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
 gpointer mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+/* Return an arch specific structure with precomputed information for pinvoke calls with signature SIG */
+gpointer mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 // Moves data (arguments and return vt address) from the InterpFrame to the CallContext so a pinvoke call can be made.
-void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_set_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // Moves the return value from the InterpFrame to the ccontext, or to the retp (if native code passed the retvt address)
-void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp);
+void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info, gpointer retp);
 // When entering interp from native, this moves the arguments from the ccontext to the InterpFrame. If we have a return
 // vt address, we return it. This ret vt address needs to be passed to mono_arch_set_native_call_context_ret.
-gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
-void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+// After the pinvoke call is done, this return an error context value from the ccontext.
+gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, int *arg_index);
+#endif
+/* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
+void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
 
 /*New interruption machinery */
@@ -2594,15 +2632,14 @@ gpointer mono_get_restore_context               (void);
 gpointer mono_get_throw_corlib_exception        (void);
 gpointer mono_get_throw_exception_addr          (void);
 gpointer mono_get_rethrow_preserve_exception_addr          (void);
-ICALL_EXPORT
-MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
-
-ICALL_EXPORT
-MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info,
-						 MonoReflectionMethod **method,
-						 gint32 *iloffset, gint32 *native_offset,
-						 MonoString **file, gint32 *line, gint32 *column);
+MonoArray* mono_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
+MonoBoolean mono_get_frame_info            (gint32 skip, MonoMethod **out_method,
+											MonoDebugSourceLocation **out_location,
+											gint32 *iloffset, gint32 *native_offset);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
+void mono_llvm_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *out_thrown);
+void mono_llvm_start_native_unwind (void);
+void mono_llvm_stop_native_unwind (void);
 
 void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
@@ -2696,6 +2733,9 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type);
 gboolean
 mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars);
 
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method);
+
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx);
 
@@ -2764,6 +2804,8 @@ typedef enum {
 	SHARE_MODE_GSHAREDVT = 0x1,
 } GetSharedMethodFlags;
 
+MonoClass* mini_handle_call_res_devirt (MonoMethod *cmethod);
+
 MonoType* mini_get_underlying_type (MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
@@ -2782,12 +2824,20 @@ void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
 void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
+#if defined(HOST_WASM)
+#define MONO_TIME_TRACK(a, phase) \
+	{ \
+		(phase) ; \
+		a = 0; \
+	}
+#else
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
 		gint64 start = mono_time_track_start (); \
 		(phase) ; \
 		mono_time_track_end (&(a), start); \
 	}
+#endif // HOST_WASM
 
 gint64 mono_time_track_start (void);
 void mono_time_track_end (gint64 *time, gint64 start);
@@ -2891,6 +2941,7 @@ typedef enum {
 	MONO_CPU_ARM64_NEON   = 1 << 4,
 	MONO_CPU_ARM64_RDM    = 1 << 5,
 	MONO_CPU_ARM64_DP     = 1 << 6,
+	MONO_CPU_ARM64_SVE    = 1 << 7,
 #endif
 } MonoCPUFeatures;
 
@@ -2916,17 +2967,23 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+enum {
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
+};
+
+int mini_primitive_type_size (MonoTypeEnum type);
+MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
-#endif
+gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoCompile *cfg, MonoMethod *cmethod);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
@@ -2945,6 +3002,26 @@ mini_safepoints_enabled (void)
 #endif
 }
 
+static inline gboolean
+mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
+{
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (!(((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass)))
+		return FALSE;
+	if (COMPILE_LLVM (cfg))
+		return TRUE;
+	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
+#ifdef TARGET_ARM64
+	if (size == 8 || size == 12 || size == 16)
+		return TRUE;
+#else
+	if (size == 16)
+		return TRUE;
+#endif
+#endif
+	return FALSE;
+}
+
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id);
 
@@ -2958,5 +3035,11 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
+
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error);
+
+MonoMethod *
+mini_replace_generated_method (MonoMethod *method, MonoError *error);
 
 #endif /* __MONO_MINI_H__ */

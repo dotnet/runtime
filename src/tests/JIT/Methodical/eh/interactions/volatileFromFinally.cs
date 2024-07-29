@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* 
+/*
 
 Expected behavior:
 64 bit = False
@@ -41,6 +41,7 @@ public class Test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //Console.WriteLine("64 bit = {0}", Environment.Is64BitProcess);

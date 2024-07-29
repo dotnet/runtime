@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30524.135
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33209.295
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker", "src\linker\Mono.Linker.csproj", "{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}"
 EndProject
@@ -33,16 +33,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tlens", "src\tlens\tlens.cs
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.CodeFixProvider", "src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj", "{6D20F334-B7E4-4585-854B-8A0E2B29B4AA}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{92F5E753-2179-46DC-BDCE-736858C18DC7}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{FF598E93-8E9E-4091-9F50-61A7572663AE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.RoslynAnalyzer.Tests.Generator", "test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj", "{3DDE7064-4B68-4979-8843-FDF4CE5A5140}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		src\ILLink.Shared\ILLink.Shared.projitems*{92f5e753-2179-46dc-bdce-736858c18dc7}*SharedItemsImports = 13
-		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
-		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
@@ -226,5 +221,11 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems*{400a1561-b6b6-482d-9e4c-3ddaede5bd07}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{ff598e93-8e9e-4091-9f50-61a7572663ae}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

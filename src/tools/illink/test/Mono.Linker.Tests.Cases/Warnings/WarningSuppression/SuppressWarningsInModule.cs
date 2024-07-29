@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [module: UnconditionalSuppressMessage ("Test", "IL2072:Suppress unrecognized reflection pattern warnings in this module")]
 [module: UnconditionalSuppressMessage ("Test", "IL2026:Test that specifying an invalid scope will result in a global suppression being ignored.",
@@ -10,12 +9,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-#if !NETCOREAPP
-	[Reference ("System.Core.dll")]
+#if !NET
+	[Mono.Linker.Tests.Cases.Expectations.Metadata.Reference ("System.Core.dll")]
 #endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
-	[LogContains ("warning IL2108: Invalid scope 'invalidScope' used in 'UnconditionalSuppressMessageAttribute'")]
+	[LogContains ("warning IL2108:.*Invalid scope 'invalidScope' used in 'UnconditionalSuppressMessageAttribute'", regexMatch: true)]
 	public class SuppressWarningsInModule
 	{
 		[ExpectedWarning ("IL2026", "TriggerUnrecognizedPattern()")]

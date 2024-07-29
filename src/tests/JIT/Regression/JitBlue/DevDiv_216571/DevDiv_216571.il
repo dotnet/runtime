@@ -5,12 +5,17 @@
 // in different types require special handling.
 
 .assembly extern legacy library mscorlib { }
+.assembly extern xunit.core {}
 .assembly DevDiv_216571
 {
 }
 
-.method assembly static int32  main() cil managed
+.class public auto ansi Test_DevDiv_216571 extends [mscorlib] System.Object {
+.method public static int32  main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  3
   .locals (float32 V_2,
@@ -37,3 +42,4 @@
   IL_0032:  ret
 
 } // end of global method main
+}

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
@@ -8,12 +9,15 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : IFormatter
     {
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        private static readonly ConcurrentDictionary<Type, TypeInformation> s_typeNameCache = new ConcurrentDictionary<Type, TypeInformation>();
+
+        internal object[]? _crossAppDomainArray;
+
         [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public object Deserialize(Stream serializationStream)
         {
-            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
+            // don't refactor the 'throw' into a helper method; trimming tools will have difficulty trimming
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
@@ -58,11 +62,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public void Serialize(Stream serializationStream, object graph)
         {
-            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
+            // don't refactor the 'throw' into a helper method; trimming tools will have difficulty trimming
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
@@ -90,5 +93,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 BinaryFormatterEventSource.Log.SerializationStop();
             }
         }
+
+        internal static TypeInformation GetTypeInformation(Type type) =>
+            s_typeNameCache.GetOrAdd(type, t =>
+            {
+                string assemblyName = FormatterServices.GetClrAssemblyName(t, out bool hasTypeForwardedFrom);
+                return new TypeInformation(FormatterServices.GetClrTypeFullName(t), assemblyName, hasTypeForwardedFrom);
+            });
     }
 }

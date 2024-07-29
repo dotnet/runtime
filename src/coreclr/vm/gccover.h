@@ -112,6 +112,12 @@ typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::sav
 #define INTERRUPT_INSTR_CALL            0xffffff0e
 #define INTERRUPT_INSTR_PROTECT_RET     0xffffff0d
 
+#elif defined(TARGET_RISCV64)
+// The following encodings are undefined.
+#define INTERRUPT_INSTR                 0x20000000  // unimp, fld
+#define INTERRUPT_INSTR_CALL            0x20010000  // unimp, jal
+#define INTERRUPT_INSTR_PROTECT_RET     0x20020000  // unimp, fld
+
 #endif // _TARGET_*
 
 // The body of this method is in this header file to allow
@@ -173,6 +179,16 @@ inline bool IsGcCoverageInterruptInstructionVal(UINT32 instrVal)
         default:
             return false;
         }
+    }
+#elif defined(TARGET_RISCV64)
+    switch (instrVal)
+    {
+    case INTERRUPT_INSTR:
+    case INTERRUPT_INSTR_CALL:
+    case INTERRUPT_INSTR_PROTECT_RET:
+        return true;
+    default:
+        return false;
     }
 
 #else // x64 and x86

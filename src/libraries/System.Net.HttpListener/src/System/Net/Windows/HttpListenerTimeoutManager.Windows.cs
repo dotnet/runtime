@@ -8,7 +8,7 @@ namespace System.Net
 {
     //
     // See the native HTTP_TIMEOUT_LIMIT_INFO structure documentation for additional information.
-    // https://docs.microsoft.com/en-us/windows/desktop/api/http/ns-http-_http_timeout_limit_info
+    // https://learn.microsoft.com/windows/desktop/api/http/ns-http-_http_timeout_limit_info
     //
     public class HttpListenerTimeoutManager
     {
@@ -50,10 +50,8 @@ namespace System.Net
             //
             timeoutValue = Convert.ToInt64(value.TotalSeconds);
 
-            if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(timeoutValue, nameof(value));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutValue, ushort.MaxValue, nameof(value));
 
             //
             // Use local state to get values for other timeouts. Call into the native layer and if that
@@ -183,10 +181,8 @@ namespace System.Net
                 //
                 // MinSendRate value is ULONG in native layer.
                 //
-                if (value < 0 || value > uint.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, uint.MaxValue);
 
                 _listener.SetServerTimeout(_timeouts, (uint)value);
                 _minSendBytesPerSecond = (uint)value;

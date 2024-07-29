@@ -9,7 +9,7 @@
 
 
 .assembly extern mscorlib {}
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions {}
 .assembly extern System.Diagnostics.Debug {}
 
@@ -18,7 +18,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test
        extends [System.Runtime]System.Object
 {
 

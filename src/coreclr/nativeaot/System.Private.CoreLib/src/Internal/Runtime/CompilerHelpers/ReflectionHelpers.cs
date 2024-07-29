@@ -4,7 +4,7 @@
 using System;
 using System.Reflection;
 
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -17,20 +17,20 @@ namespace Internal.Runtime.CompilerHelpers
         // a default assembly name.
         public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
         {
-            return ExtensibleGetType(typeName, callingAssemblyName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
+            return TypeNameResolver.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
         }
 
         // This entry is used to implement Type.GetType()'s ability to detect the calling assembly and use it as
         // a default assembly name.
         public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly?> assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
         {
-            return RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, callingAssemblyName);
+            return TypeNameResolver.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssemblyName: callingAssemblyName);
         }
 
         // This supports Assembly.GetExecutingAssembly() intrinsic expansion in the compiler
         public static Assembly GetExecutingAssembly(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeAugments.Callbacks.GetAssemblyForHandle(typeHandle);
+            return ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(typeHandle);
         }
 
         // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler

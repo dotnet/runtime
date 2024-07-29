@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Handle async cancellation requests by declining on the target
                 Common.WireCancellationToComplete(
-                    dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), _defaultTarget);
+                    dataflowBlockOptions.CancellationToken, Completion, static (state, _) => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), _defaultTarget);
             }
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -190,7 +190,7 @@ namespace System.Threading.Tasks.Dataflow
             else
             {
                 // Otherwise, join with the asynchronous operation when it completes.
-                task.ContinueWith((completed, state) =>
+                task.ContinueWith(static (completed, state) =>
                 {
                     ((ActionBlock<TInput>)state!).AsyncCompleteProcessMessageWithTask(completed);
                 }, this, CancellationToken.None, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>The data to display in the debugger display attribute.</summary>
         private object DebuggerDisplayContent =>
-            $"{(Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions))}, InputCount={InputCountForDebugger}";
+            $"{(Common.GetNameForDebugger(this, _defaultTarget != null ? _defaultTarget.DataflowBlockOptions : _spscTarget!.DataflowBlockOptions))}, InputCount = {InputCountForDebugger}";
 
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }

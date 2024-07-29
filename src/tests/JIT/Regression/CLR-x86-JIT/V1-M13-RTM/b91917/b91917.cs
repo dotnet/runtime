@@ -3,9 +3,11 @@
 //
 
 using System;
-class CC
+using Xunit;
+public class CC
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

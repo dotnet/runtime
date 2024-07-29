@@ -537,6 +537,7 @@ ipc_socket_accept (
 #endif
 	} while (ipc_retry_syscall (client_socket));
 
+#ifndef HOST_WIN32
 #if !HAVE_ACCEPT4 || !defined(SOCK_CLOEXEC)
 #if defined(FD_CLOEXEC)
 		if (client_socket != -1)
@@ -544,6 +545,7 @@ ipc_socket_accept (
 			// ignore any failures; this is best effort
 			fcntl (client_socket, F_SETFD, FD_CLOEXEC);
 		}
+#endif
 #endif
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
@@ -632,7 +634,7 @@ ipc_socket_recv (
 	while (continue_recv && bytes_to_read - total_bytes_read > 0) {
 		current_bytes_read = recv (
 			s,
-			buffer_cursor,
+			(char *)buffer_cursor,
 			bytes_to_read - total_bytes_read,
 			0);
 		if (ipc_retry_syscall (current_bytes_read))
@@ -666,7 +668,7 @@ ipc_socket_send (
 	while (continue_send && bytes_to_write - total_bytes_written > 0) {
 		current_bytes_written = send (
 			s,
-			buffer_cursor,
+			(const char *)buffer_cursor,
 			bytes_to_write - total_bytes_written,
 			0);
 		if (ipc_retry_syscall (current_bytes_written))
@@ -842,12 +844,15 @@ ipc_alloc_tcp_address (
 	ds_ipc_addrinfo_t *info = NULL;
 	ep_char8_t *address = NULL;
 	int32_t port = 0;
+	int result_getaddrinfo = -1;
+	const ep_char8_t *host_address = NULL;
+	const ep_char8_t *host_port = NULL;
 
 	address = ep_rt_utf8_string_dup (ipc_name);
 	ep_raise_error_if_nok (address != NULL);
 
-	const ep_char8_t *host_address = address;
-	const ep_char8_t *host_port = strrchr (address, ':');
+	host_address = address;
+	host_port = strrchr (address, ':');
 
 	if (host_port && host_port != host_address) {
 		size_t host_address_len = host_port - address;
@@ -861,7 +866,6 @@ ipc_alloc_tcp_address (
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = (mode == DS_IPC_CONNECTION_MODE_LISTEN) ? AI_PASSIVE : 0;
 
-	int result_getaddrinfo = -1;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	if (mode == DS_IPC_CONNECTION_MODE_LISTEN && *host_address == '*') {
 #ifdef DS_IPC_PAL_AF_INET6
@@ -1058,6 +1062,11 @@ ds_ipc_free (DiagnosticsIpc *ipc)
 	ds_ipc_close (ipc, false, NULL);
 	ipc_free_address (ipc);
 	ep_rt_object_free (ipc);
+}
+
+void
+ds_ipc_reset (DiagnosticsIpc *ipc)
+{
 }
 
 int32_t

@@ -13,6 +13,9 @@ namespace System.Collections.Tests
         protected override bool DuplicateValuesAllowed => true;
         protected override bool IsReadOnly => true;
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
 
         protected override ICollection<string> GenericICollectionFactory()
         {
@@ -62,10 +65,12 @@ namespace System.Collections.Tests
         protected override bool NullAllowed => true;
         protected override bool DuplicateValuesAllowed => true;
         protected override bool IsReadOnly => true;
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
         protected override bool SupportsSerialization => false;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 

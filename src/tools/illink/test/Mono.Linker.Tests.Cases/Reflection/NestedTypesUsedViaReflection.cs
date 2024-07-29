@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -52,7 +51,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestByUnknownBindingFlags (BindingFlags bindingFlags)
 		{
-			// Since the binding flags are not known linker should mark all nested types on the type
+			// Since the binding flags are not known trimming tools should mark all nested types on the type
 			_ = typeof (UnknownBindingFlags).GetNestedTypes (bindingFlags);
 		}
 

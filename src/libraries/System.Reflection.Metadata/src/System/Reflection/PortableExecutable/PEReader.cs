@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ImmutableArrayExtensions = System.Linq.ImmutableArrayExtensions;
 
@@ -199,8 +200,12 @@ namespace System.Reflection.PortableExecutable
                     else
                     {
                         // The peImage is left null, but the lazyMetadataBlock is initialized up front.
-                        _lazyPEHeaders = new PEHeaders(peStream);
-                        _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                        _lazyPEHeaders = new PEHeaders(peStream, actualSize, IsLoadedImage);
+
+                        if (_lazyPEHeaders.MetadataStartOffset != -1)
+                        {
+                            _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                        }
                     }
                     // We read all we need, the stream is going to be closed.
                 }
@@ -382,6 +387,12 @@ namespace System.Reflection.PortableExecutable
             if (_lazyPESectionBlocks == null)
             {
                 Interlocked.CompareExchange(ref _lazyPESectionBlocks, new AbstractMemoryBlock[PEHeaders.SectionHeaders.Length], null);
+            }
+
+            AbstractMemoryBlock? existingBlock = Volatile.Read(ref _lazyPESectionBlocks[index]);
+            if (existingBlock != null)
+            {
+                return existingBlock;
             }
 
             AbstractMemoryBlock newBlock;
@@ -659,7 +670,7 @@ namespace System.Reflection.PortableExecutable
 
             return new PdbChecksumDebugDirectoryData(
                 algorithmName,
-                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref checksum));
+                ImmutableCollectionsMarshal.AsImmutableArray(checksum));
         }
 
         /// <summary>

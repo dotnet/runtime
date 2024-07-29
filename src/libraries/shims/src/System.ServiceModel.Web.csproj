@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
-  </PropertyGroup>
-</Project>

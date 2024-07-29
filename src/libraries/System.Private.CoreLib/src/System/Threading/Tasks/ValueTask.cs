@@ -233,14 +233,22 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource source)
                 {
                     // This could only happen if the IValueTaskSource passed the wrong state
                     // or if this callback were invoked multiple times such that the state
                     // was previously nulled out.
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    ThrowUnexpectedStateForKnownCallback(state);
                     return;
+
+                    static void ThrowUnexpectedStateForKnownCallback(object? state) =>
+                        throw new ArgumentOutOfRangeException(
+                            nameof(state),
+                            state is ValueTaskSourceAsTask vsts ?
+                                $"{nameof(ValueTaskSourceAsTask)}.{nameof(_source)} : {vsts._source}" :
+                                $"{nameof(state)} : {state}",
+                            SR.Argument_UnexpectedStateForKnownCallback);
                 }
 
                 vtst._source = null;
@@ -632,14 +640,22 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource<TResult> source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource<TResult> source)
                 {
                     // This could only happen if the IValueTaskSource<TResult> passed the wrong state
                     // or if this callback were invoked multiple times such that the state
                     // was previously nulled out.
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    ThrowUnexpectedStateForKnownCallback(state);
                     return;
+
+                    static void ThrowUnexpectedStateForKnownCallback(object? state) =>
+                        throw new ArgumentOutOfRangeException(
+                            nameof(state),
+                            state is ValueTaskSourceAsTask vsts ?
+                                $"{nameof(ValueTaskSourceAsTask)}.{nameof(_source)} : {vsts._source}" :
+                                $"{nameof(state)} : {state}",
+                            SR.Argument_UnexpectedStateForKnownCallback);
                 }
 
                 vtst._source = null;

@@ -1,6 +1,6 @@
 <!--
 ***********************************************************************************************
-CLRTest.Execute.targets
+CLRTest.CrossGen.targets
 
 WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
           created a backup copy.  Incorrect changes to this file will make it
@@ -103,6 +103,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -o:$__OutputFile>>$__ResponseFile
         echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+        echo -r:$CORE_ROOT/xunit.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
         echo --method-layout:random>>$__ResponseFile
@@ -110,15 +111,17 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             echo --synthesize-random-mibc>>$__ResponseFile
             echo --embed-pgo-data>>$__ResponseFile
         fi
+        if [ ! -z ${HotColdSplitting+x} ]%3B then
+            echo --hot-cold-splitting>>$__ResponseFile
+        fi
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
-        echo -O>>$__ResponseFile
+        echo --targetos:$(TargetOS)>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
 
-        # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+        # Suppress some DOTNET variables for the duration of Crossgen2 execution
         export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
@@ -129,7 +132,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __r2rDumpExitCode=$?
 
         export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
         date +%H:%M:%S
       }
 
@@ -163,9 +165,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
     ReleaseLock
   fi
-
-  export DOTNET_ZapRequire=$(ZapRequire)
-  export DOTNET_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -187,8 +186,12 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CrossGen2TestExtraArguments)
+    set CrossGen2TestCheckPdb=$(CrossGen2TestCheckPdb)
+    set __CreatePdb=$(__CreatePdb)
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
+    if defined CrossGen2TestCheckPdb ( set __CreatePdb=1)
+
     set CrossGen2Status=0
     set R2RDumpStatus=0
     set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
@@ -212,6 +215,7 @@ if defined RunCrossGen2 (
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
         set __OutputFile=!scriptPath!\composite-r2r.dll
+        set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         set __InputFile=!scriptPath!IL-CG2\*.dll
         call :CompileOneFileCrossgen2
@@ -220,6 +224,7 @@ if defined RunCrossGen2 (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!IL-CG2\*.dll) do (
             set __OutputFile=!scriptPath!%%~nI.dll
+            set __PdbFile=!scriptPath!%%~nI.ni.pdb
             set __InputFile=%%I
             call :CompileOneFileCrossgen2
             IF NOT !CrossGen2Status!==0 (
@@ -236,13 +241,14 @@ if defined RunCrossGen2 (
     set __ResponseFile=!__OutputFile!.rsp
     del /Q !__ResponseFile! 2>nul
 
-    set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
     if defined __TestDotNetCmd (
-        set __Command=!__Command! "!__TestDotNetCmd!"
+        set __DotNet="!__TestDotNetCmd!"
     ) else (
-        set __Command=!__Command! "dotnet"
+        set __DotNet="dotnet"
     )
+    set __Command=!_DebuggerFullPath!
+    set __Command=!__Command! !__DotNet!
     set __R2RDumpCommand=!__Command! "!CORE_ROOT!\r2rdump\r2rdump.dll"
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
@@ -251,19 +257,23 @@ if defined RunCrossGen2 (
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
         echo --embed-pgo-data>>!__ResponseFile!
     )
+    if defined HotColdSplitting (
+        echo --hot-cold-splitting>>!__ResponseFile!
+    )
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\xunit.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
-    echo -O>>!__ResponseFile!
 
-    if not "$(__CreatePdb)" == "" (
+    if defined __CreatePdb (
         echo --pdb>>!__ResponseFile!
     )
 
@@ -276,16 +286,10 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
-    set "COMPlus_GCName="
-    set "COMPlus_GCStress="
-    set "COMPlus_HeapVerify="
-    set "COMPlus_ReadyToRun="
 
     REM work around problems in 6.0 OSR
     set "DOTNET_TC_OnStackReplacement="
     set "DOTNET_TC_PartialCompilation="
-    set "COMPlus_TC_OnStackReplacement="
-    set "COMPlus_TC_PartialCompilation="
 
     echo "!__Command!"
     call !__Command!
@@ -303,6 +307,21 @@ if defined RunCrossGen2 (
     endlocal & set "R2RDumpStatus=%R2RDumpStatus%" &set "CrossGen2Status=%CrossGen2Status%"
 
     echo %time%
+
+    if !CrossGen2Status!==0 (
+        if defined CrossGen2TestCheckPdb (
+            set __CheckPdbCommand=!__DotNet!
+            set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"
+            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
+            echo "!__CheckPdbCommand!"
+            call !__CheckPdbCommand!
+            if not !ERRORLEVEL!==0 (
+                echo PDB check failed for file !__PdbFile! >2
+                set CrossGen2Status=42
+            )
+        )
+    )
+
     Exit /b 0
 
 :DoneCrossgen2Operations
@@ -317,9 +336,6 @@ if defined RunCrossGen2 (
         ECHO R2RDump failed with exitcode - !R2RDumpStatus!
         Exit /b 1
     )
-
-  set DOTNET_ZapRequire=$(ZapRequire)
-  set DOTNET_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>

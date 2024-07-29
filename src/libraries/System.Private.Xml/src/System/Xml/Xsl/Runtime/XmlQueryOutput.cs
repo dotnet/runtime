@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(prefix != null && localName != null && localName.Length != 0 && ns != null, "Invalid argument");
+            Debug.Assert(prefix != null && !string.IsNullOrEmpty(localName) && ns != null, "Invalid argument");
             Debug.Assert(ValidateNames.ValidateName(prefix, localName, ns, XPathNodeType.Element, ValidateNames.Flags.All), "Name validation failed");
 
             // Xml state transitions
@@ -1396,7 +1396,7 @@ namespace System.Xml.Xsl.Runtime
         private string RemapPrefix(string prefix, string ns, bool isElemPrefix)
         {
             string? genPrefix;
-            Debug.Assert(prefix != null && ns != null && ns.Length != 0);
+            Debug.Assert(prefix != null && !string.IsNullOrEmpty(ns));
 
             _conflictPrefixes ??= new Dictionary<string, string>(16);
 

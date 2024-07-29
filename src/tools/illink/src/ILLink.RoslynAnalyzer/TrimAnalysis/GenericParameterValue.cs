@@ -13,11 +13,20 @@ namespace ILLink.Shared.TrimAnalysis
 	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
 	/// Its actual type is unknown, but it can have annotations.
 	/// </summary>
-	partial record GenericParameterValue
+	internal partial record GenericParameterValue
 	{
-		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol) => GenericParameter = new (typeParameterSymbol);
+		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		{
+			GenericParameter = new (typeParameterSymbol);
+			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+		}
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes => GenericParameter.TypeParameterSymbol.GetDynamicallyAccessedMemberTypes ();
+		public GenericParameterValue (ITypeParameterSymbol typeParameterSymbol)
+			: this (typeParameterSymbol, typeParameterSymbol.GetDynamicallyAccessedMemberTypes ())
+		{
+		}
+
+		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { GenericParameter.TypeParameterSymbol.Name, GenericParameter.TypeParameterSymbol.ContainingSymbol.GetDisplayName () };

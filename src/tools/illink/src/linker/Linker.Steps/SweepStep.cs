@@ -58,7 +58,7 @@ namespace Mono.Linker.Steps
 			foreach (var assembly in assemblies)
 				RemoveUnmarkedAssembly (assembly);
 
-			// Look for references (included to previously unresolved assemblies) marked for deletion
+			// Look for references (including to previously unresolved assemblies) marked for deletion
 			foreach (var assembly in assemblies)
 				UpdateAssemblyReferencesToRemovedAssemblies (assembly);
 
@@ -69,7 +69,7 @@ namespace Mono.Linker.Steps
 				case AssemblyAction.CopyUsed:
 				case AssemblyAction.Link:
 				case AssemblyAction.Save:
-					bool changed = AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					bool changed = SweepAssemblyReferences (assembly);
 					if (changed && action == AssemblyAction.CopyUsed)
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
@@ -143,8 +143,8 @@ namespace Mono.Linker.Steps
 						// rewrite the copy to save to update the scopes not to point
 						// forwarding assembly (facade).
 						//
-						//		foo.dll -> facade.dll    -> lib.dll
-						//		copy    |  copy (delete) |  link
+						//      foo.dll -> facade.dll    -> lib.dll
+						//      copy    |  copy (delete) |  link
 						//
 						Annotations.SetAction (assembly, AssemblyAction.Save);
 						continue;
@@ -174,7 +174,7 @@ namespace Mono.Linker.Steps
 				AssemblyAction assemblyAction = AssemblyAction.Copy;
 				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					SweepAssemblyReferences (assembly);
 					assemblyAction = AssemblyAction.Save;
 				}
 
@@ -194,7 +194,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.Save:
 				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
-					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+					SweepAssemblyReferences (assembly);
 				}
 				break;
 			}
@@ -242,7 +242,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (SweepTypeForwarders (assembly) || updateScopes)
-				AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
+				SweepAssemblyReferences (assembly);
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)
@@ -452,18 +452,23 @@ namespace Mono.Linker.Steps
 				// We can't rely on the context resolution cache anymore, since it may remember methods which are already removed
 				// So call the direct Resolve here and avoid the cache.
 				// We want to remove a method from the list of Overrides if:
-				//	Resolve() is null
-				//		This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
-				//		Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
-				//	OR
-				//	ov.DeclaringType is null
-				//		ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
-				//	OR
-				//	ov is in a `link` scope and is unmarked
-				//		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
-				//		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+				//  Resolve() is null
+				//    This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
+				//    Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
+				// OR
+				//  ov.DeclaringType is null
+				//    ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
+				// OR
+				//  ov is in a `link` scope and is unmarked
+				//    ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
+				//    Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+				// OR
+				//  ov is an interface method and the interface is not implemented by the type
 #pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
-				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
+				if (method.Overrides[i].Resolve () is not MethodDefinition ov
+					|| ov.DeclaringType is null
+					|| (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov))
+					|| (ov.DeclaringType.IsInterface && !MarkStep.IsInterfaceImplementationMarkedRecursively (method.DeclaringType, ov.DeclaringType, Context)))
 					method.Overrides.RemoveAt (i);
 				else
 					i++;
@@ -568,32 +573,32 @@ namespace Mono.Linker.Steps
 		{
 		}
 
+		bool SweepAssemblyReferences (AssemblyDefinition assembly)
+		{
+			//
+			// We used to run over list returned by GetTypeReferences but
+			// that returns typeref(s) of original assembly and we don't track
+			// which types are needed for which assembly which left us
+			// with dangling assembly references
+			//
+			assembly.MainModule.AssemblyReferences.Clear ();
+
+			var arc = new AssemblyReferencesCorrector (assembly, walkSymbols: Context.LinkSymbols);
+			arc.Process ();
+
+			return arc.ChangedAnyScopes;
+		}
+
 		sealed class AssemblyReferencesCorrector : TypeReferenceWalker
 		{
 			readonly DefaultMetadataImporter importer;
 
-			bool changedAnyScopes;
+			public bool ChangedAnyScopes { get; private set; }
 
-			AssemblyReferencesCorrector (AssemblyDefinition assembly) : base (assembly)
+			public AssemblyReferencesCorrector (AssemblyDefinition assembly, bool walkSymbols) : base (assembly, walkSymbols)
 			{
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
-				changedAnyScopes = false;
-			}
-
-			public static bool SweepAssemblyReferences (AssemblyDefinition assembly)
-			{
-				//
-				// We used to run over list returned by GetTypeReferences but
-				// that returns typeref(s) of original assembly and we don't track
-				// which types are needed for which assembly which left us
-				// with dangling assembly references
-				//
-				assembly.MainModule.AssemblyReferences.Clear ();
-
-				var arc = new AssemblyReferencesCorrector (assembly);
-				arc.Process ();
-
-				return arc.changedAnyScopes;
+				ChangedAnyScopes = false;
 			}
 
 			protected override void ProcessTypeReference (TypeReference type)
@@ -626,7 +631,7 @@ namespace Mono.Linker.Steps
 					return;
 
 				type.Scope = tr.Scope;
-				changedAnyScopes = true;
+				ChangedAnyScopes = true;
 			}
 
 			protected override void ProcessExportedType (ExportedType exportedType)
@@ -636,7 +641,7 @@ namespace Mono.Linker.Steps
 #pragma warning restore RS0030
 				if (td == null) {
 					// Forwarded type cannot be resolved but it was marked
-					// linker is running in --skip-unresolved true mode
+					// ILLink is running in --skip-unresolved true mode
 					var anr = (AssemblyNameReference) exportedType.Scope;
 					exportedType.Scope = importer.ImportReference (anr);
 					return;
@@ -647,7 +652,7 @@ namespace Mono.Linker.Steps
 					return;
 
 				exportedType.Scope = tr.Scope;
-				changedAnyScopes = true;
+				ChangedAnyScopes = true;
 			}
 		}
 	}

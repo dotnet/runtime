@@ -20,7 +20,6 @@
 #include "assemblyspec.hpp"
 #include "eeconfig.h"
 #include "strongnameinternal.h"
-#include "strongnameholders.h"
 #include "eventtrace.h"
 #include "assemblynative.hpp"
 
@@ -149,14 +148,12 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent,
-                                  BOOL fAllowAllocation)
+                                  Assembly *pStaticParent)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        if (fAllowAllocation) {GC_TRIGGERS;} else {GC_NOTRIGGER;};
-        if (fAllowAllocation) {INJECT_FAULT(COMPlusThrowOM());} else {FORBID_FAULT;};
+        GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
         PRECONDITION(pImport->IsValidToken(kAssemblyToken));
@@ -194,7 +191,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -298,57 +295,6 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-
-// Check if the supplied assembly's public key matches up with the one in the Spec, if any
-// Throws an appropriate exception in case of a mismatch
-void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Check that the public keys are the same as in the AR.
-    if (!IsStrongNamed())
-        return;
-
-    const void *pbPublicKey;
-    DWORD cbPublicKey;
-    pbPublicKey = pAssembly->GetPublicKey(&cbPublicKey);
-    if (cbPublicKey == 0)
-        ThrowHR(FUSION_E_PRIVATE_ASM_DISALLOWED);
-
-    if (IsAfPublicKey(m_dwFlags))
-    {
-        if ((m_cbPublicKeyOrToken != cbPublicKey) ||
-            memcmp(m_pbPublicKeyOrToken, pbPublicKey, m_cbPublicKeyOrToken))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-    else
-    {
-        // Ref has a token
-        StrongNameBufferHolder<BYTE> pbStrongNameToken;
-        DWORD cbStrongNameToken;
-
-        IfFailThrow(StrongNameTokenFromPublicKey((BYTE*)pbPublicKey,
-            cbPublicKey,
-            &pbStrongNameToken,
-            &cbStrongNameToken));
-
-        if ((m_cbPublicKeyOrToken != cbStrongNameToken) ||
-            memcmp(m_pbPublicKeyOrToken, pbStrongNameToken, cbStrongNameToken))
-        {
-            ThrowHR(FUSION_E_REF_DEF_MISMATCH);
-        }
-    }
-}
-
 Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel, BOOL fThrowOnFileNotFound)
 {
     CONTRACTL
@@ -379,12 +325,12 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     CONTRACTL_END;
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
-    DomainAssembly *pParentDomainAssembly = GetParentAssembly();
+    Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentDomainAssembly != NULL)
+    if(pParentAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
+        PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -507,7 +453,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 
     pILImage = PEImage::OpenImage(pFilePath,
         MDInternalImport_Default,
-        Bundle::ProbeAppBundle(pFilePath));
+        Bundle::ProbeAppBundle(SString{ SString::Literal, pFilePath }));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
@@ -578,15 +524,13 @@ HRESULT AssemblySpec::EmitToken(
         // If we've been asked to emit a public key token in the reference but we've
         // been given a public key then we need to generate the token now.
         if (m_cbPublicKeyOrToken && IsAfPublicKey(m_dwFlags)) {
-            StrongNameBufferHolder<BYTE> pbPublicKeyToken;
-            DWORD cbPublicKeyToken;
+            StrongNameToken strongNameToken;
             IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
                 m_cbPublicKeyOrToken,
-                &pbPublicKeyToken,
-                &cbPublicKeyToken));
+                &strongNameToken));
 
-            hr = pEmit->DefineAssemblyRef(pbPublicKeyToken,
-                                          cbPublicKeyToken,
+            hr = pEmit->DefineAssemblyRef(&strongNameToken,
+                                          StrongNameToken::SIZEOF_TOKEN,
                                           ssName.GetUnicode(),
                                           &AMD,
                                           NULL,
@@ -1177,7 +1121,7 @@ BOOL AssemblySpecBindingCache::CompareSpecs(UPTR u1, UPTR u2)
     return a1->CompareEx(a2);
 }
 
-DomainAssembly * AssemblySpec::GetParentAssembly()
+Assembly * AssemblySpec::GetParentAssembly()
 {
     LIMITED_METHOD_CONTRACT;
     return m_pParentAssembly;

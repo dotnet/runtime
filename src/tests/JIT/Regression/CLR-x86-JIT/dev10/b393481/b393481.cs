@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 namespace TestAnonymousTypes
 {
@@ -13,9 +14,10 @@ namespace TestAnonymousTypes
         public int Zip;
     }
 
-    internal class Program
+    public class Program
     {
-        private static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Customer c = new Customer { Name = "Sree", Address = "something somethwere", Zip = 98007 };
 
@@ -103,8 +105,6 @@ namespace TestAnonymousTypes
                 Address26 = c.Address,
                 Zip26 = c.Zip
             };
-
-            return 100;
         }
     }
 }

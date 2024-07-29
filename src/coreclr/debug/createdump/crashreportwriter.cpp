@@ -175,17 +175,17 @@ CrashReportWriter::WriteCrashReport()
     }
     CloseArray();               // threads
     CloseObject();              // payload
-#ifdef __APPLE__
     OpenObject("parameters");
     if (exceptionType != nullptr)
     {
         WriteValue("ExceptionType", exceptionType);
     }
+#ifdef __APPLE__
     WriteSysctl("kern.osproductversion", "OSVersion");
     WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
-    CloseObject();              // parameters
 #endif // __APPLE__
+    CloseObject();              // parameters
 }
 
 #ifdef __APPLE__
@@ -223,6 +223,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     WriteValue64("stack_pointer", frame.StackPointer());
     WriteValue64("native_address", frame.InstructionPointer());
     WriteValue64("native_offset", frame.NativeOffset());
+    WriteValue64("native_image_offset", (frame.InstructionPointer() - frame.ModuleAddress()));
     if (frame.IsManaged())
     {
         WriteValue32("token", frame.Token());
@@ -234,7 +235,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
         ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
         if (SUCCEEDED(pMethod->GetName(0, MAX_LONGPATH, nullptr, wszUnicodeName)))
         {
-            std::string methodName = FormatString("%S", wszUnicodeName.GetPtr());
+            std::string methodName = ConvertString(wszUnicodeName.GetPtr());
             WriteValue("method_name", methodName.c_str());
         }
     }
@@ -358,7 +359,7 @@ CrashReportWriter::WriteValue(const char* key, const char* value)
     WriteSeparator(text);
     text.append("\"");
     text.append(key);
-    text.append("\" : \"");
+    text.append("\": \"");
     text.append(value);
     text.append("\"");
     m_comma = true;

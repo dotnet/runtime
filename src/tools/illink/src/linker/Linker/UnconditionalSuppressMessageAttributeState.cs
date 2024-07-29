@@ -19,7 +19,7 @@ namespace Mono.Linker
 		public class Suppression
 		{
 			public SuppressMessageInfo SuppressMessageInfo { get; }
-			public bool Used { get; set; } = false;
+			public bool Used { get; set; }
 			public CustomAttribute OriginAttribute { get; }
 			public ICustomAttributeProvider Provider { get; }
 
@@ -257,7 +257,7 @@ namespace Mono.Linker
 
 		IEnumerable<Suppression> DecodeSuppressions (ICustomAttributeProvider provider)
 		{
-			Debug.Assert (provider is not ModuleDefinition or AssemblyDefinition);
+			Debug.Assert (provider is not (ModuleDefinition or AssemblyDefinition));
 
 			if (!_context.CustomAttributes.HasAny (provider))
 				yield break;
@@ -294,7 +294,7 @@ namespace Mono.Linker
 				if (!TryDecodeSuppressMessageAttributeData (instance, out info))
 					continue;
 
-				var scope = info.Scope?.ToLower ();
+				var scope = info.Scope?.ToLowerInvariant ();
 				if (info.Target == null && (scope == "module" || scope == null)) {
 					yield return new Suppression (info, originAttribute: instance, provider);
 					continue;

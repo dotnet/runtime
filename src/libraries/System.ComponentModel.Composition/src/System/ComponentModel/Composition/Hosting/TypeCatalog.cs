@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         private volatile List<ComposablePartDefinition>? _parts;
         private volatile bool _isDisposed;
         private readonly ICompositionElement _definitionOrigin;
-        private readonly Lazy<IDictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
+        private readonly Lazy<Dictionary<string, List<ComposablePartDefinition>>> _contractPartIndex;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="TypeCatalog"/> class
@@ -78,7 +78,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeTypeCatalog(types);
 
             _definitionOrigin = this;
-            _contractPartIndex = new Lazy<IDictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
+            _contractPartIndex = new Lazy<Dictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeTypeCatalog(types);
 
             _definitionOrigin = definitionOrigin;
-            _contractPartIndex = new Lazy<IDictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
+            _contractPartIndex = new Lazy<Dictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeTypeCatalog(types, reflectionContext);
 
             _definitionOrigin = this;
-            _contractPartIndex = new Lazy<IDictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
+            _contractPartIndex = new Lazy<Dictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace System.ComponentModel.Composition.Hosting
             InitializeTypeCatalog(types, reflectionContext);
 
             _definitionOrigin = definitionOrigin;
-            _contractPartIndex = new Lazy<IDictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
+            _contractPartIndex = new Lazy<Dictionary<string, List<ComposablePartDefinition>>>(CreateIndex, true);
         }
 
         private void InitializeTypeCatalog(IEnumerable<Type> types, ReflectionContext reflectionContext)
@@ -313,7 +313,7 @@ namespace System.ComponentModel.Composition.Hosting
             return contractCandidateParts;
         }
 
-        private IDictionary<string, List<ComposablePartDefinition>> CreateIndex()
+        private Dictionary<string, List<ComposablePartDefinition>> CreateIndex()
         {
             Dictionary<string, List<ComposablePartDefinition>> index = new Dictionary<string, List<ComposablePartDefinition>>(StringComparers.ContractName);
 

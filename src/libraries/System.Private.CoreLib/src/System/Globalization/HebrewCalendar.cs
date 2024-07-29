@@ -118,8 +118,8 @@ namespace System.Globalization
         private const int MinHebrewYear = HebrewYearOf1AD + FirstGregorianTableYear;   // == 5343
         private const int MaxHebrewYear = HebrewYearOf1AD + LastGregorianTableYear;    // == 5999
 
-        private static ReadOnlySpan<byte> HebrewTable => new byte[] // rely on C# compiler optimization to reference static data
-        {
+        private static ReadOnlySpan<byte> HebrewTable =>
+        [
             7, 3, 17, 3,         // 1583-1584  (Hebrew year: 5343 - 5344)
             0, 4, 11, 2, 21, 6, 1, 3, 13, 2,             // 1585-1589
             25, 4, 5, 3, 16, 2, 27, 6, 9, 1,             // 1590-1594
@@ -253,14 +253,14 @@ namespace System.Globalization
             15, 3, 25, 6, 6, 2, 19, 4, 33, 3,    // 2230
             10, 2, 22, 4, 3, 3, 14, 2, 24, 6,    // 2235
             6, 1    // 2240 (Hebrew year: 6000)
-        };
+        ];
 
         private const int MaxMonthPlusOne = 14;
 
         // The lunar calendar has 6 different variations of month lengths
         // within a year.
-        private static ReadOnlySpan<byte> LunarMonthLen => new byte[] // rely on C# compiler optimization to reference static data
-        {
+        private static ReadOnlySpan<byte> LunarMonthLen =>
+        [
             0, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 0,
             0, 30, 29, 29, 29, 30, 29, 30, 29, 30, 29, 30, 29, 0,     // 3 common year variations
             0, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 0,
@@ -268,7 +268,7 @@ namespace System.Globalization
             0, 30, 29, 29, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29,    // 3 leap year variations
             0, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29,
             0, 30, 30, 30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29
-        };
+        ];
 
         private static readonly DateTime s_calendarMinValue = new DateTime(1583, 1, 1);
 
@@ -389,10 +389,8 @@ namespace System.Globalization
             // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
-            if (index < 0 || index > TableSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index, nameof(gregorianYear));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, TableSize, nameof(gregorianYear));
 
             index *= 2;
             lunarDate.day = HebrewTable[index];
@@ -434,7 +432,7 @@ namespace System.Globalization
         /// Returns a given date part of this DateTime. This method is used
         /// to compute the year, day-of-year, month, or day part.
         /// </summary>
-        internal virtual int GetDatePart(long ticks, int part)
+        private static int GetDatePart(long ticks, int part)
         {
             // The Gregorian year, month, day value for ticks.
             int hebrewYearType;                // lunar year type
@@ -568,7 +566,7 @@ namespace System.Globalization
                     d = days;
                 }
 
-                return new DateTime(ToDateTime(y, i, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay));
+                return new DateTime(ToDateTime(y, i, d, 0, 0, 0, 0).Ticks + (time.Ticks % TimeSpan.TicksPerDay));
             }
             // We expect ArgumentException and ArgumentOutOfRangeException (which is subclass of ArgumentException)
             // If exception is thrown in the calls above, we are out of the supported range of this calendar.
@@ -585,7 +583,7 @@ namespace System.Globalization
             int d = GetDatePart(time.Ticks, DatePartDay);
 
             y += years;
-            CheckHebrewYearValue(y, Calendar.CurrentEra, nameof(years));
+            CheckHebrewYearValue(y, CurrentEra, nameof(years));
 
             int months = GetMonthsInYear(y, CurrentEra);
             if (m > months)
@@ -599,8 +597,8 @@ namespace System.Globalization
                 d = days;
             }
 
-            long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TimeSpan.TicksPerDay);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -649,7 +647,7 @@ namespace System.Globalization
                 beginOfYearDate = ToDateTime(year, 1, 1, 0, 0, 0, 0, CurrentEra);
             }
 
-            return (int)((time.Ticks - beginOfYearDate.Ticks) / TicksPerDay) + 1;
+            return (int)((time.Ticks - beginOfYearDate.Ticks) / TimeSpan.TicksPerDay) + 1;
         }
 
         public override int GetDaysInMonth(int year, int month, int era)
@@ -688,7 +686,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => HebrewEra;
 
-        public override int[] Eras => new int[] { HebrewEra };
+        public override int[] Eras => [HebrewEra];
 
         public override int GetMonth(DateTime time)
         {
@@ -713,7 +711,7 @@ namespace System.Globalization
                 CheckHebrewDayValue(year, month, day, era);
                 return true;
             }
-            else if (IsLeapYear(year, Calendar.CurrentEra))
+            else if (IsLeapYear(year, CurrentEra))
             {
                 // There is an additional day in the 6th month in the leap year (the extra day is the 30th day in the 6th month),
                 // so we should return true for 6/30 if that's in a leap year.
@@ -827,7 +825,7 @@ namespace System.Globalization
             int days = GetDayDifference(lunarYearType, hebrewMonth, hebrewDay, hebrewDateOfJan1.month, hebrewDateOfJan1.day);
 
             DateTime gregorianNewYear = new DateTime(gregorianYear, 1, 1);
-            return new DateTime(gregorianNewYear.Ticks + days * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(gregorianNewYear.Ticks + days * TimeSpan.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)

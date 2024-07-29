@@ -3,15 +3,17 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 namespace DefaultNamespace
 {
-    internal class RootMem
+    public class RootMem
     {
         internal long[] l;
         internal static GCHandle[] root;
         internal static int n;
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int iSize = 1000;
             root = new GCHandle[iSize];
@@ -28,8 +30,6 @@ namespace DefaultNamespace
             {
                 root[n].Free();
             }
-
-            return 100;
         }
 
         public RootMem(int i)

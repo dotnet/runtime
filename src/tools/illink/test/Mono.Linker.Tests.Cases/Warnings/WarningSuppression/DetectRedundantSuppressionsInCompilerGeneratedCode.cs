@@ -4,11 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
-
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
@@ -37,7 +34,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 		{
 			public static void Test ()
 			{
-				[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2071")]
 				void LocalMethod ()
 				{
@@ -55,7 +52,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				Enumerable ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			static IEnumerable<int> Enumerable ()
 			{
@@ -66,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		public class RedundantSuppressionInAsyncBody
 		{
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static async void Test ()
 			{
@@ -74,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				await MethodAsync ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2070", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2070", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2070")]
 			static async Task<int> MethodAsync ()
 			{

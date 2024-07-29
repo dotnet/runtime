@@ -13,6 +13,8 @@
 
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace SciMark2
 {
@@ -25,11 +27,18 @@ namespace SciMark2
 
     public class CommandLine
     {
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            return Test(Array.Empty<string>());
+        }
+
         /// <summary>
         ///  Benchmark 5 kernels with individual Mflops.
         ///  "results[0]" has the average Mflop rate.
         /// </summary>
-        public static int Main(System.String[] args)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int Test(System.String[] args)
         {
 #if DEBUG
             double min_time = Constants.RESOLUTION_TINY;

@@ -3,55 +3,34 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
     public partial class JSObject
     {
         internal nint JSHandle;
+        internal JSProxyContext ProxyContext;
 
-        internal GCHandle? InFlight;
-        internal int InFlightCounter;
-        private bool _isDisposed;
-
-        internal JSObject(IntPtr jsHandle)
+        public SynchronizationContext SynchronizationContext
         {
+            get
+            {
+#if FEATURE_WASM_MANAGED_THREADS
+                return ProxyContext.SynchronizationContext;
+#else
+                throw new PlatformNotSupportedException();
+#endif
+            }
+        }
+
+        internal bool _isDisposed;
+
+        internal JSObject(IntPtr jsHandle, JSProxyContext ctx)
+        {
+            ProxyContext = ctx;
             JSHandle = jsHandle;
-            InFlight = null;
-            InFlightCounter = 0;
-        }
-
-        internal void AddInFlight()
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-            lock (this)
-            {
-                InFlightCounter++;
-                if (InFlightCounter == 1)
-                {
-                    Debug.Assert(InFlight == null, "InFlight == null");
-                    InFlight = GCHandle.Alloc(this, GCHandleType.Normal);
-                }
-            }
-        }
-
-        // Note that we could not use SafeHandle.DangerousAddRef() and DangerousRelease()
-        // because we could get to zero InFlightCounter multiple times across lifetime of the JSObject
-        // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
-        internal void ReleaseInFlight()
-        {
-            lock (this)
-            {
-                Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
-
-                InFlightCounter--;
-                if (InFlightCounter == 0)
-                {
-                    Debug.Assert(InFlight.HasValue, "InFlight.HasValue");
-                    InFlight.Value.Free();
-                    InFlight = null;
-                }
-            }
         }
 
         /// <inheritdoc />
@@ -63,19 +42,28 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        private void DisposeThis()
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        internal void AssertNotDisposed()
+        {
+            lock (ProxyContext)
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+            }
+        }
+
+        internal void DisposeImpl(bool skipJsCleanup = false)
         {
             if (!_isDisposed)
             {
-                JSHostImplementation.ReleaseCSOwnedObject(JSHandle);
-                _isDisposed = true;
-                JSHandle = IntPtr.Zero;
+                JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
             }
         }
 
         ~JSObject()
         {
-            DisposeThis();
+            DisposeImpl();
         }
 
         /// <summary>
@@ -83,8 +71,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            DisposeThis();
-            GC.SuppressFinalize(this);
+            DisposeImpl();
         }
     }
 }

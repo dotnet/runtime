@@ -11,6 +11,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Burgers
 {
@@ -162,7 +163,8 @@ public class Burgers
         return un;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!Vector.IsHardwareAccelerated)
         {

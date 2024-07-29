@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <DebugType />
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

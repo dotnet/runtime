@@ -150,7 +150,8 @@ public:
     //Unregister an object for finalization
     void    SetFinalizationRun (Object* obj);
 
-    //returns the generation number of an object (not valid during relocation)
+    // returns the generation number of an object (not valid during relocation) or
+    // INT32_MAX if the object belongs to a non-GC heap.
     unsigned WhichGeneration (Object* object);
     // returns TRUE is the object is ephemeral
     bool IsEphemeral (Object* object);
@@ -159,7 +160,6 @@ public:
     void    ValidateObjectMember (Object *obj);
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
-    PER_HEAP    size_t  ApproxFreeBytes();
 
     unsigned GetCondemnedGeneration();
 
@@ -201,13 +201,15 @@ public:
 
     int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC);
     int EndNoGCRegion();
+    enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
+    FinalizerWorkItem* GetExtraWorkForFinalization();
+    uint64_t GetGenerationBudget(int generation);
+    size_t GetLOHThreshold();
 
     unsigned GetGcCount();
 
     Object* GetNextFinalizable() { return GetNextFinalizableObject(); };
     size_t GetNumberOfFinalizable() { return GetNumberFinalizableObjects(); }
-
-    PER_HEAP_ISOLATED HRESULT GetGcCounters(int gen, gc_counters* counters);
 
     size_t GetValidSegmentSize(bool large_seg = false);
 
@@ -314,6 +316,8 @@ protected:
     virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
 
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved);
+
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 public:
     Object * NextObj (Object * object);
 
@@ -324,6 +328,8 @@ public:
     virtual void Shutdown();
 
     static void ReportGenerationBounds();
+
+    virtual int RefreshMemoryLimit();
 };
 
 #endif  // GCIMPL_H_

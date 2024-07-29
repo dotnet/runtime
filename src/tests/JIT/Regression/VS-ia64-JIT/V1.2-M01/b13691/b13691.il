@@ -36,7 +36,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Test_init_byte
+.class public auto ansi beforefieldinit Test_init_byte
        extends [mscorlib]System.Object
 {
   .field private int8 m_ret
@@ -451,7 +451,7 @@
     IL_000c:  ret
   } // end of method Test::test22
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -6,13 +6,15 @@ using System.Threading;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 /// <summary>
 /// Verifies passing an invalid handle (not overlapped) to BindHandle works as expected
 /// </summary>
-class BindHandleInvalid3
+public class BindHandleInvalid3
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (new BindHandleInvalid3().RunTest());
     }

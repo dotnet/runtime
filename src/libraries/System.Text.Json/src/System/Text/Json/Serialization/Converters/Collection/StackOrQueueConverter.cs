@@ -11,6 +11,8 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
+        internal override bool CanPopulate => true;
+
         protected sealed override void Add(in object? value, ref ReadStack state)
         {
             var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
@@ -20,12 +22,17 @@ namespace System.Text.Json.Serialization.Converters
 
         protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             Func<object>? constructorDelegate = typeInfo.CreateObject;
 
             if (constructorDelegate == null)
             {
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             state.Current.ReturnValue = constructorDelegate();
@@ -39,6 +46,7 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
+                state.Current.CollectionEnumerator = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     return true;
@@ -52,16 +60,14 @@ namespace System.Text.Json.Serialization.Converters
             JsonConverter<object?> converter = GetElementConverter(ref state);
             do
             {
-                if (ShouldFlush(writer, ref state))
+                if (ShouldFlush(ref state, writer))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
                 object? element = enumerator.Current;
                 if (!converter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 

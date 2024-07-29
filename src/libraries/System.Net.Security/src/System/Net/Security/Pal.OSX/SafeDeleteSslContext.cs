@@ -19,7 +19,7 @@ namespace System.Net
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
-        private SafeSslHandle _sslContext;
+        private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -95,7 +95,7 @@ namespace System.Net
                 throw;
             }
 
-            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
+            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer && !TargetHostNameHelper.IsValidAddress(sslAuthenticationOptions.TargetHost))
             {
                 Interop.AppleCrypto.SslSetTargetName(_sslContext, sslAuthenticationOptions.TargetHost);
             }
@@ -121,7 +121,7 @@ namespace System.Net
                     SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
                     X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-                    Debug.Assert(certList != null, "certList != null");
+                    Debug.Assert(certList != null);
                     Span<IntPtr> handles = certList.Count <= 256
                         ? stackalloc IntPtr[256]
                         : new IntPtr[certList.Count];
@@ -169,7 +169,9 @@ namespace System.Net
                     SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null)
+                // SslBreakOnCertRequested does not seem to do anything when we already provide the cert here.
+                // So we set it only for server in order to reliably detect whether the peer asked for it on client.
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.IsServer)
                 {
                     SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
@@ -305,19 +307,20 @@ namespace System.Net
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        internal byte[]? ReadPendingWrites()
+        internal void ReadPendingWrites(ref ProtocolToken token)
         {
             lock (_sslContext)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
-                    return null;
+                    token.Size = 0;
+                    token.Payload = null;
+
+                    return;
                 }
 
-                byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+                token.SetPayload(_outputBuffer.ActiveSpan);
                 _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-                return buffer;
             }
         }
 
@@ -365,11 +368,11 @@ namespace System.Net
 
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
-            Debug.Assert(sslContext != null, "sslContext != null");
+            Debug.Assert(sslContext != null);
 
-            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
+            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
 
-            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
+            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
                 X509Certificate2 intermediateCert = context.IntermediateCertificates[i];
 
@@ -381,13 +384,13 @@ namespace System.Net
                     // The current value of intermediateCert is still in elements, which will
                     // get Disposed at the end of this method.  The new value will be
                     // in the intermediate certs array, which also gets serially Disposed.
-                    intermediateCert = new X509Certificate2(intermediateCert.RawDataMemory.Span);
+                    intermediateCert = X509CertificateLoader.LoadCertificate(intermediateCert.RawDataMemory.Span);
                 }
 
                 ptrs[i + 1] = intermediateCert.Handle;
             }
 
-            ptrs[0] = context!.Certificate!.Handle;
+            ptrs[0] = context!.TargetCertificate.Handle;
 
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
         }

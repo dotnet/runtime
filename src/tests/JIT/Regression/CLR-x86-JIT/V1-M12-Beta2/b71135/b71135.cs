@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         public byte[] Method1()
         {
@@ -26,10 +27,10 @@ namespace Test
             }
             return m_abFwd6;
         }
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             new App().Method1();
-            return 100;
         }
         public static bool m_bFwd1;
         public static byte[] m_abFwd6;

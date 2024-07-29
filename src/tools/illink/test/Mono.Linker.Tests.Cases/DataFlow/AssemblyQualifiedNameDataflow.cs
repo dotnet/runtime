@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -60,11 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
-		// NativeAOT doesn't implement this yet: https://github.com/dotnet/runtime/issues/72833
-		[ExpectedWarning ("IL2105",
-			"Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " +
-			"Type name strings used for dynamically accessing a type should be assembly qualified.",
-			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2122", "Type 'System.Invalid.TypeName' is not assembly qualified. " + "Type name strings used for dynamically accessing a type should be assembly qualified.", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 		static void TestUnqualifiedTypeNameWarns ()
 		{
 			RequirePublicConstructors ("System.Invalid.TypeName");

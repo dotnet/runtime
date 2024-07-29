@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This test checks whether or not the JIT properly spills side effects in the importer when dumping multi-reg values
 // to temps. If the JIT does not do so correctly, the calls to GetString() and GetDecimal() will be reordered and the
 // test will fail with exit code 0; if it does do so correctly, the calls will not be reordered and the test will
 // pass.
 
-class Test_GitHub_10940
+public class Test_GitHub_10940
 {
     abstract class ValueSourceBase
     {
@@ -50,7 +51,8 @@ class Test_GitHub_10940
         return vs.GetReturnValue();
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return M(new ValueSource());
     }

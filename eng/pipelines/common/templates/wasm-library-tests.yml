@@ -1,15 +1,14 @@
 parameters:
   alwaysRun: false
-  buildAndRunWasi: false
   extraBuildArgs: ''
-  extraHelixArgs: ''
+  extraHelixArguments: ''
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  scenarios: ['normal']
+  scenarios: ['WasmTestOnV8']
   shouldContinueOnError: false
-  shouldRunSmokeOnly: false 
+  shouldRunSmokeOnly: false
 
 jobs:
 
@@ -28,30 +27,52 @@ jobs:
       # map dependencies variables to local variables
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      # - wasm darc deps changed
+      # - any libs that can have wasm specific changes
+      # - any other wasm specific changes that are not wbt, or dbg
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
+         ]
+      # run smoke tests only if:
+      # - explicitly requested
+      # - libraries or illink changed and no wasm specific changes
+      - name: shouldRunSmokeOnlyVar
+        value: $[
+          or(
+            eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
             and(
-              ne(variables['onlyWBTOrDbgTestHaveChanges'], true),
+              eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
+              ne(variables['wasmDarcDependenciesChanged'], true),
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
-                and(
-                  eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-                  eq(dependencies.evaluate_paths.outputs['SetPathVars_non_runtimetests.containsChange'], true)))))
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+              ),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
+            )
+          )
           ]
-      - name: onlyWBTOrDbgTestHaveChanges
-        value:
-          and(
-            eq(dependencies.evaluate_paths.outputs.SetPathVars_wasm_wbt_or_dbg.containsChange, true),
-            ne(dependencies.evaluate_paths.outputs.SetPathVars_any_other_than_wasm_wbt_dbg.containsChange, true))
       - name: _wasmRunSmokeTestsOnlyArg
-        value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
+        value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
       - name: chromeInstallArg
-        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnChrome') }}:
           value: /p:InstallChromeForTests=true
+        ${{ else }}:
+          value: ''
+      - name: firefoxInstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnFirefox') }}:
+          value: /p:InstallFirefoxForTests=true
+        ${{ else }}:
+          value: ''
+      - name: v8InstallArg
+        ${{ if containsValue(parameters.scenarios, 'WasmTestOnV8') }}:
+          value: /p:InstallV8ForTests=true
         ${{ else }}:
           value: ''
 
@@ -59,7 +80,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnableAssertMessages=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -71,17 +92,10 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
-      extraStepsParameters:
-        additionalSteps:
-          - ${{ if eq(parameters.buildAndRunWasi, true) }}:
-            - script: >-
-                make -C src/mono/wasi provision-deps all &&
-                make -C src/mono/wasi/sample/console run
-              name: build_wasi
-              displayName: Build WASI, and run a sample
-
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
-        scenarios: ${{ parameters.scenarios }}
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
+            scenarios: ${{ parameters.scenarios }}

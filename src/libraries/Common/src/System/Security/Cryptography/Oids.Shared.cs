@@ -8,38 +8,38 @@ namespace System.Security.Cryptography
 {
     internal static partial class Oids
     {
-        private static volatile Oid? s_rsaOid;
-        private static volatile Oid? s_ecPublicKeyOid;
-        private static volatile Oid? s_tripleDesCbcOid;
-        private static volatile Oid? s_aes256CbcOid;
-        private static volatile Oid? s_secp256R1Oid;
-        private static volatile Oid? s_secp384R1Oid;
-        private static volatile Oid? s_secp521R1Oid;
-        private static volatile Oid? s_sha256Oid;
-        private static volatile Oid? s_pkcs7DataOid;
-        private static volatile Oid? s_contentTypeOid;
-        private static volatile Oid? s_documentDescriptionOid;
-        private static volatile Oid? s_documentNameOid;
-        private static volatile Oid? s_localKeyIdOid;
-        private static volatile Oid? s_messageDigestOid;
-        private static volatile Oid? s_signingTimeOid;
-        private static volatile Oid? s_pkcs9ExtensionRequestOid;
-        private static volatile Oid? s_basicConstraints2Oid;
-        private static volatile Oid? s_enhancedKeyUsageOid;
-        private static volatile Oid? s_keyUsageOid;
-        private static volatile Oid? s_subjectAltNameOid;
-        private static volatile Oid? s_subjectKeyIdentifierOid;
-        private static volatile Oid? s_authorityKeyIdentifierOid;
-        private static volatile Oid? s_authorityInformationAccessOid;
-        private static volatile Oid? s_crlNumberOid;
-        private static volatile Oid? s_crlDistributionPointOid;
-        private static volatile Oid? s_commonNameOid;
-        private static volatile Oid? s_countryOrRegionOid;
-        private static volatile Oid? s_localityNameOid;
-        private static volatile Oid? s_stateOrProvinceNameOid;
-        private static volatile Oid? s_organizationOid;
-        private static volatile Oid? s_organizationalUnitOid;
-        private static volatile Oid? s_emailAddressOid;
+        private static Oid? s_rsaOid;
+        private static Oid? s_ecPublicKeyOid;
+        private static Oid? s_tripleDesCbcOid;
+        private static Oid? s_aes256CbcOid;
+        private static Oid? s_secp256R1Oid;
+        private static Oid? s_secp384R1Oid;
+        private static Oid? s_secp521R1Oid;
+        private static Oid? s_sha256Oid;
+        private static Oid? s_pkcs7DataOid;
+        private static Oid? s_contentTypeOid;
+        private static Oid? s_documentDescriptionOid;
+        private static Oid? s_documentNameOid;
+        private static Oid? s_localKeyIdOid;
+        private static Oid? s_messageDigestOid;
+        private static Oid? s_signingTimeOid;
+        private static Oid? s_pkcs9ExtensionRequestOid;
+        private static Oid? s_basicConstraints2Oid;
+        private static Oid? s_enhancedKeyUsageOid;
+        private static Oid? s_keyUsageOid;
+        private static Oid? s_subjectAltNameOid;
+        private static Oid? s_subjectKeyIdentifierOid;
+        private static Oid? s_authorityKeyIdentifierOid;
+        private static Oid? s_authorityInformationAccessOid;
+        private static Oid? s_crlNumberOid;
+        private static Oid? s_crlDistributionPointOid;
+        private static Oid? s_commonNameOid;
+        private static Oid? s_countryOrRegionOid;
+        private static Oid? s_localityNameOid;
+        private static Oid? s_stateOrProvinceNameOid;
+        private static Oid? s_organizationOid;
+        private static Oid? s_organizationalUnitOid;
+        private static Oid? s_emailAddressOid;
 
         internal static Oid RsaOid => s_rsaOid ??= InitializeOid(Rsa);
         internal static Oid EcPublicKeyOid => s_ecPublicKeyOid ??= InitializeOid(EcPublicKey);
@@ -72,10 +72,10 @@ namespace System.Security.Cryptography
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
         internal static Oid CountryOrRegionNameOid => s_countryOrRegionOid ??= InitializeOid(CountryOrRegionName);
         internal static Oid LocalityNameOid => s_localityNameOid ??= InitializeOid(LocalityName);
-        internal static Oid StateOrProvinceNameOid = s_stateOrProvinceNameOid ??= InitializeOid(StateOrProvinceName);
-        internal static Oid OrganizationOid = s_organizationOid ??= InitializeOid(Organization);
-        internal static Oid OrganizationalUnitOid = s_organizationalUnitOid ??= InitializeOid(OrganizationalUnit);
-        internal static Oid EmailAddressOid = s_emailAddressOid ??= InitializeOid(EmailAddress);
+        internal static Oid StateOrProvinceNameOid => s_stateOrProvinceNameOid ??= InitializeOid(StateOrProvinceName);
+        internal static Oid OrganizationOid => s_organizationOid ??= InitializeOid(Organization);
+        internal static Oid OrganizationalUnitOid => s_organizationalUnitOid ??= InitializeOid(OrganizationalUnit);
+        internal static Oid EmailAddressOid => s_emailAddressOid ??= InitializeOid(EmailAddress);
 
         private static Oid InitializeOid(string oidValue)
         {

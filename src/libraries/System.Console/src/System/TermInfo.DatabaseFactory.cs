@@ -15,13 +15,25 @@ internal static partial class TermInfo
         /// The default locations in which to search for terminfo databases.
         /// This is the ordering of well-known locations used by ncurses.
         /// </summary>
-        internal static readonly string[] s_terminfoLocations = {
+        internal static readonly string[] SystemTermInfoLocations = {
             "/etc/terminfo",
             "/lib/terminfo",
             "/usr/share/terminfo",
             "/usr/share/misc/terminfo",
             "/usr/local/share/terminfo"
         };
+
+        internal static string? HomeTermInfoLocation
+        {
+            get
+            {
+                string? home = PersistedFiles.GetHomeDirectory();
+                return home is null ? null : home + "/.terminfo";
+            }
+        }
+
+        internal static string? EnvVarTermInfoLocation
+            => Environment.GetEnvironmentVariable("TERMINFO");
 
         /// <summary>Read the database for the current terminal as specified by the "TERM" environment variable.</summary>
         /// <returns>The database, or null if it could not be found.</returns>
@@ -40,21 +52,21 @@ internal static partial class TermInfo
             Database? db;
 
             // First try a location specified in the TERMINFO environment variable.
-            string? terminfo = Environment.GetEnvironmentVariable("TERMINFO");
-            if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) != null)
+            string? terminfo = EnvVarTermInfoLocation;
+            if ((db = ReadDatabase(term, terminfo)) != null)
             {
                 return db;
             }
 
             // Then try in the user's home directory.
-            string? home = PersistedFiles.GetHomeDirectory();
-            if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
+            terminfo = HomeTermInfoLocation;
+            if ((db = ReadDatabase(term, terminfo)) != null)
             {
                 return db;
             }
 
             // Then try a set of well-known locations.
-            foreach (string terminfoLocation in s_terminfoLocations)
+            foreach (string terminfoLocation in SystemTermInfoLocations)
             {
                 if ((db = ReadDatabase(term, terminfoLocation)) != null)
                 {
@@ -107,9 +119,8 @@ internal static partial class TermInfo
             {
                 // Read in all of the terminfo data
                 long termInfoLength = RandomAccess.GetLength(fd);
-                const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                 const int HeaderLength = 12;
-                if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
+                if (termInfoLength <= HeaderLength)
                 {
                     throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                 }

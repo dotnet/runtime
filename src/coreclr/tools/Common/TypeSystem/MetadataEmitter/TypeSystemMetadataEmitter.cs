@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem
 {
@@ -28,7 +29,7 @@ namespace Internal.TypeSystem
         private BlobHandle _noArgsVoidReturnStaticMethodSigHandle;
         protected TypeSystemContext _typeSystemContext;
 
-        public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
+        public TypeSystemMetadataEmitter(AssemblyNameInfo assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
         {
             _typeSystemContext = context;
             _metadataBuilder = new MetadataBuilder();
@@ -85,16 +86,20 @@ namespace Internal.TypeSystem
         }
 
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
-        private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
+        protected static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
         public MetadataBuilder Builder => _metadataBuilder;
 
-        public void SerializeToStream(Stream peStream)
+        protected virtual ManagedPEBuilder CreateManagedPEBuilder(BlobBuilder ilBuilder)
         {
             var peHeaderBuilder = new PEHeaderBuilder();
-            var peBuilder = new ManagedPEBuilder(peHeaderBuilder, new MetadataRootBuilder(_metadataBuilder), _ilBuilder,
+            return new ManagedPEBuilder(peHeaderBuilder, new MetadataRootBuilder(_metadataBuilder), ilBuilder,
                 deterministicIdProvider: content => s_contentId);
+        }
 
+        public void SerializeToStream(Stream peStream)
+        {
+            var peBuilder = CreateManagedPEBuilder(_ilBuilder);
             var peBlob = new BlobBuilder();
             var contentId = peBuilder.Serialize(peBlob);
             new BlobWriter(_mvidFixup).WriteGuid(contentId.Guid);
@@ -114,26 +119,27 @@ namespace Internal.TypeSystem
             return metadataBlobBuilder.ToArray();
         }
 
-        public AssemblyReferenceHandle GetAssemblyRef(AssemblyName name)
+        public AssemblyReferenceHandle GetAssemblyRef(AssemblyNameInfo name)
         {
+            // References use a public key token instead of full public key.
+            if ((name.Flags & AssemblyNameFlags.PublicKey) != 0)
+            {
+                // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                AssemblyName an = new();
+                an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(name.PublicKeyOrToken));
+                name = new AssemblyNameInfo(name.Name, name.Version, name.CultureName, name.Flags & ~AssemblyNameFlags.PublicKey, ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken()));
+            }
+
             if (!_assemblyRefNameHandles.TryGetValue(name.FullName, out var handle))
             {
                 StringHandle assemblyName = _metadataBuilder.GetOrAddString(name.Name);
                 StringHandle cultureName = (name.CultureName != null) ? _metadataBuilder.GetOrAddString(name.CultureName) : default(StringHandle);
-                BlobHandle publicTokenBlob = name.GetPublicKeyToken() != null ? _metadataBuilder.GetOrAddBlob(name.GetPublicKeyToken()) : default(BlobHandle);
-                AssemblyFlags flags = default(AssemblyFlags);
-                if (name.Flags.HasFlag(AssemblyNameFlags.Retargetable))
-                {
-                    flags |= AssemblyFlags.Retargetable;
-                }
-                if (name.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    flags |= AssemblyFlags.WindowsRuntime;
-                }
 
-                Version version = name.Version;
-                if (version == null)
-                    version = new Version(0, 0);
+                BlobHandle publicTokenBlob = name.PublicKeyOrToken.IsDefault ? default : _metadataBuilder.GetOrAddBlob(name.PublicKeyOrToken);
+
+                AssemblyFlags flags = (AssemblyFlags)name.Flags & (AssemblyFlags.Retargetable | AssemblyFlags.ContentTypeMask);
+
+                Version version = name.Version ?? new Version(0, 0);
 
                 handle = _metadataBuilder.AddAssemblyReference(assemblyName, version, cultureName, publicTokenBlob, flags, default(BlobHandle));
 
@@ -148,7 +154,7 @@ namespace Internal.TypeSystem
             {
                 return handle;
             }
-            AssemblyName name = assemblyDesc.GetName();
+            AssemblyNameInfo name = assemblyDesc.GetName();
             var referenceHandle = GetAssemblyRef(name);
             _assemblyRefs.Add(assemblyDesc, referenceHandle);
             return referenceHandle;
@@ -200,11 +206,6 @@ namespace Internal.TypeSystem
             if (_typeRefs.TryGetValue(type, out var handle))
             {
                 return handle;
-            }
-
-            if (type.IsFunctionPointer)
-            {
-                throw new ArgumentException("type");
             }
 
             EntityHandle typeHandle;
@@ -265,11 +266,10 @@ namespace Internal.TypeSystem
 
         private BlobHandle GetFieldSignatureBlobHandle(FieldDesc field)
         {
-            var embeddedSigData = field.GetEmbeddedSignatureData();
             EmbeddedSignatureDataEmitter signatureDataEmitter;
-            if (embeddedSigData != null && embeddedSigData.Length != 0)
+            if (field.HasEmbeddedSignatureData)
             {
-                signatureDataEmitter = new EmbeddedSignatureDataEmitter(embeddedSigData, this);
+                signatureDataEmitter = new EmbeddedSignatureDataEmitter(field.GetEmbeddedSignatureData(), this);
             }
             else
             {
@@ -491,7 +491,7 @@ namespace Internal.TypeSystem
             private Stack<int> _indexStack = new Stack<int>();
             private TypeSystemMetadataEmitter _metadataEmitter;
 
-            public static EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
+            public static readonly EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
 
             public EmbeddedSignatureDataEmitter(EmbeddedSignatureData[] embeddedData, TypeSystemMetadataEmitter metadataEmitter)
             {
@@ -507,6 +507,27 @@ namespace Internal.TypeSystem
                     int was = _indexStack.Pop();
                     _indexStack.Push(was + 1);
                     _indexStack.Push(0);
+                }
+            }
+
+            public void UpdateSignatureCallingConventionAtCurrentIndexStack(ref SignatureCallingConvention callConv)
+            {
+                if (!Complete)
+                {
+                    if (_embeddedDataIndex < _embeddedData.Length)
+                    {
+                        if (_embeddedData[_embeddedDataIndex].kind == EmbeddedSignatureDataKind.UnmanagedCallConv)
+                        {
+                            string indexData = string.Join(".", _indexStack);
+
+                            var unmanagedCallConvPossibility = _embeddedData[_embeddedDataIndex].index.Split('|');
+                            if (unmanagedCallConvPossibility[0] == indexData)
+                            {
+                                callConv = (SignatureCallingConvention)int.Parse(unmanagedCallConvPossibility[1]);
+                                _embeddedDataIndex++;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -637,9 +658,9 @@ namespace Internal.TypeSystem
         private void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig, EmbeddedSignatureDataEmitter signatureDataEmitter)
         {
             signatureDataEmitter.Push();
-            BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);
             int genericParameterCount = sig.GenericParameterCount;
             bool isInstanceMethod = !sig.IsStatic;
+            bool isExplicitThis = sig.IsExplicitThis;
             SignatureCallingConvention sigCallingConvention = SignatureCallingConvention.Default;
             switch (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
             {
@@ -661,7 +682,18 @@ namespace Internal.TypeSystem
                     break;
             }
 
-            signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);
+            if (sigCallingConvention != SignatureCallingConvention.Default)
+                signatureDataEmitter.UpdateSignatureCallingConventionAtCurrentIndexStack(ref sigCallingConvention);
+
+            SignatureAttributes attributes =
+                (genericParameterCount != 0 ? SignatureAttributes.Generic : 0) |
+                (isInstanceMethod ? SignatureAttributes.Instance : 0) |
+                (isExplicitThis ? SignatureAttributes.ExplicitThis : 0);
+
+            signatureBuilder.WriteByte(new SignatureHeader(SignatureKind.Method, sigCallingConvention, attributes).RawValue);
+            if (genericParameterCount != 0)
+                signatureBuilder.WriteCompressedInteger(genericParameterCount);
+
             signatureBuilder.WriteCompressedInteger(sig.Length);
             EncodeType(signatureBuilder, sig.ReturnType, signatureDataEmitter);
             for (int i = 0; i < sig.Length; i++)

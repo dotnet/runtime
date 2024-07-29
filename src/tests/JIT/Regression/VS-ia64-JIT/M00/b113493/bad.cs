@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace DefaultNamespace
 {
 
@@ -24,7 +25,8 @@ namespace DefaultNamespace
     {
         static int ExitCode = 0;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Thread mv_Thread;
             ExternalException ee = new ExternalException();
@@ -52,7 +54,7 @@ namespace DefaultNamespace
             return ExitCode;
         }
 
-        public virtual void runtest()
+        internal virtual void runtest()
         {
             int counter = 0;
             for (int j = 0; j < 10; j++)
@@ -109,7 +111,7 @@ namespace DefaultNamespace
             }
         }
 
-        public virtual void recurse(int counter, int i)
+        internal virtual void recurse(int counter, int i)
         {
             char[] abc = new char[100];
 

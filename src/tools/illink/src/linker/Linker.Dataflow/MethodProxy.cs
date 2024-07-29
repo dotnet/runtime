@@ -8,7 +8,7 @@ using Mono.Linker;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	readonly partial struct MethodProxy : IEquatable<MethodProxy>
+	internal readonly partial struct MethodProxy : IEquatable<MethodProxy>
 	{
 		public MethodProxy (MethodDefinition method) => Method = method;
 
@@ -58,6 +58,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
 			return builder.ToImmutableArray ();
 		}
+
+		internal partial bool IsConstructor () => Method.IsConstructor;
 
 		internal partial bool IsStatic () => Method.IsStatic;
 

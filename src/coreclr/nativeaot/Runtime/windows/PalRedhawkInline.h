@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(HOST_ARM64)
+#include <arm64intr.h>
+#endif
+
 // Implementation of Redhawk PAL inline functions
 
 EXTERN_C long __cdecl _InterlockedIncrement(long volatile *);
@@ -51,6 +55,26 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
 {
     return _InterlockedCompareExchange64(pDst, iValue, iComparand);
 }
+
+#ifdef HOST_X86
+FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
+{
+    int64_t iOldValue;
+    do {
+        iOldValue = *pDst;
+    } while (PalInterlockedCompareExchange64(pDst,
+                                          iValue,
+                                          iOldValue) != iOldValue);
+    return iOldValue;
+}
+#else // HOST_X86
+EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
+#pragma intrinsic(_InterlockedExchange64)
+FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
+{
+    return _InterlockedExchange64(pDst, iValue);
+}
+#endif // HOST_X86
 
 #if defined(HOST_AMD64) || defined(HOST_ARM64)
 EXTERN_C uint8_t _InterlockedCompareExchange128(int64_t volatile *, int64_t, int64_t, int64_t *);
@@ -121,21 +145,6 @@ EXTERN_C void __faststorefence();
 #pragma intrinsic(__faststorefence)
 #define PalMemoryBarrier() __faststorefence()
 
-
-#elif defined(HOST_ARM)
-
-EXTERN_C void __yield(void);
-#pragma intrinsic(__yield)
-EXTERN_C void __dmb(unsigned int _Type);
-#pragma intrinsic(__dmb)
-FORCEINLINE void PalYieldProcessor()
-{
-    __dmb(0xA /* _ARM_BARRIER_ISHST */);
-    __yield();
-}
-
-#define PalMemoryBarrier() __dmb(0xF /* _ARM_BARRIER_SY */)
-
 #elif defined(HOST_ARM64)
 
 EXTERN_C void __yield(void);
@@ -144,14 +153,19 @@ EXTERN_C void __dmb(unsigned int _Type);
 #pragma intrinsic(__dmb)
 FORCEINLINE void PalYieldProcessor()
 {
-    __dmb(0xA /* _ARM64_BARRIER_ISHST */);
+    __dmb(_ARM64_BARRIER_ISHST);
     __yield();
 }
 
-#define PalMemoryBarrier() __dmb(0xF /* _ARM64_BARRIER_SY */)
+#define PalMemoryBarrier() __dmb(_ARM64_BARRIER_ISH)
 
 #else
 #error Unsupported architecture
 #endif
 
 #define PalDebugBreak() __debugbreak()
+
+FORCEINLINE int32_t PalOsPageSize()
+{
+    return 0x1000;
+}

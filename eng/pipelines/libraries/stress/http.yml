@@ -11,8 +11,7 @@ schedules:
   branches:
     include:
     - main
-    - release/6.0
-    - release/7.0
+    - release/8.0
 
 variables:
   - template: ../variables.yml
@@ -32,11 +31,11 @@ extends:
       jobs:
       - job: linux
         displayName: Docker Linux
-        timeoutInMinutes: 180
+        timeoutInMinutes: 240
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-ubuntu-1804-open
 
         steps:
@@ -101,8 +100,14 @@ extends:
         timeoutInMinutes: 150
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+
+          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
+          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
+          # This is worked around by handpicking the V2 executable.
+          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
+          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
 
         steps:
@@ -112,6 +117,9 @@ extends:
           lfs: false
 
         - powershell: |
+            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
+            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
+
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildRuntime
@@ -132,13 +140,25 @@ extends:
 
         - powershell: |
             cd '$(httpStressProject)'
+            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
+            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
+            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
+            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 3.0
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+        - powershell: |
+            cd '$(httpStressProject)'
             $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
             $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
             $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
-            docker-compose up --abort-on-container-exit --no-color
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 2.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
@@ -150,7 +170,7 @@ extends:
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
             $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
-            docker-compose up --abort-on-container-exit --no-color
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 1.1
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 

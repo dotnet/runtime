@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -29,7 +26,7 @@ namespace Microsoft.Interop
 
                 if (info.RefKind == RefKind.Out)
                 {
-                    initializations.Add(MarshallerHelpers.SkipInitOrDefaultInit(info, context));
+                    initializations.Add(MarshallerHelpers.DefaultInit(info, context));
                 }
 
                 // Declare variables for parameters
@@ -37,13 +34,13 @@ namespace Microsoft.Interop
             }
 
             // Stub return is not the same as invoke return
-            if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
+            if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            if (!marshallers.IsManagedVoidReturn)
+            if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for invoke return value
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
@@ -62,16 +59,16 @@ namespace Microsoft.Interop
                 // Declare variable for return value
                 if (marshaller.TypeInfo.IsManagedReturnPosition || marshaller.TypeInfo.IsNativeReturnPosition)
                 {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
                         managed,
-                        false));
+                        initializeToDefault));
                 }
 
                 // Declare variable with native type for parameter or return value
                 if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
                 {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                         native,
                         initializeToDefault));
@@ -87,21 +84,20 @@ namespace Microsoft.Interop
             foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
-                if (info.IsNativeReturnPosition)
+                if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
                     continue;
 
                 // Declare variables for parameters
                 AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            // Stub return is not the same as invoke return
-            if (!marshallers.IsManagedVoidReturn && !marshallers.ManagedNativeSameReturn)
+            if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
             }
 
-            if (!marshallers.IsManagedVoidReturn)
+            if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
             {
                 // Declare variables for invoke return value
                 AppendVariableDeclarations(variables, marshallers.NativeReturnMarshaller, context, initializeToDefault: initializeDeclarations);
@@ -123,32 +119,17 @@ namespace Microsoft.Interop
                     bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context);
 
                     // Always initialize the return value.
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                    statementsToUpdate.Add(Declare(
                         marshaller.TypeInfo.ManagedType.Syntax,
                         managed,
                         initializeToDefault || !nativeReturnUsesNativeIdentifier));
 
                     if (nativeReturnUsesNativeIdentifier)
                     {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                        statementsToUpdate.Add(Declare(
                             marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
                             native,
                             initializeToDefault: true));
-                    }
-                }
-                else if (marshaller.TypeInfo.IsManagedReturnPosition)
-                {
-                    statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.TypeInfo.ManagedType.Syntax,
-                        managed,
-                        initializeToDefault));
-
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
-                    {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
-                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
-                            native,
-                            initializeToDefault));
                     }
                 }
                 else
@@ -165,7 +146,7 @@ namespace Microsoft.Interop
                         TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
                         if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
                         {
-                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            statementsToUpdate.Add(Declare(
                                 localType,
                                 native,
                                 false));
@@ -176,7 +157,7 @@ namespace Microsoft.Interop
                             // we'll just declare the native identifier as a ref to its type.
                             // The rest of the code we generate will work as expected, and we don't need
                             // to manually propogate back the updated values after the call.
-                            statementsToUpdate.Add(MarshallerHelpers.Declare(
+                            statementsToUpdate.Add(Declare(
                                 RefType(localType),
                                 native,
                                 marshaller.Generator.GenerateNativeByRefInitialization(marshaller.TypeInfo, context)));
@@ -185,7 +166,7 @@ namespace Microsoft.Interop
 
                     if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier)
                     {
-                        statementsToUpdate.Add(MarshallerHelpers.Declare(
+                        statementsToUpdate.Add(Declare(
                             marshaller.TypeInfo.ManagedType.Syntax,
                             managed,
                             initializeToDefault));

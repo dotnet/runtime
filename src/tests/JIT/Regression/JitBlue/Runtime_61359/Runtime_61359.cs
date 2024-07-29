@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_61359
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return HalfToInt16Bits((Half)(-1)) == -17408 ? 100 : -1;
     }

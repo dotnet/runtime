@@ -19,7 +19,6 @@ namespace System.Formats.Tar
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
-        internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         internal const UnixFileMode ValidUnixFileModes =
             UnixFileMode.UserRead |
@@ -131,8 +130,8 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer) =>
-            buffer.IndexOfAnyExcept((byte)0) < 0;
+        internal static bool IsAllNullBytes(ReadOnlySpan<byte> buffer) =>
+            !buffer.ContainsAnyExcept((byte)0);
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
         internal static DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(long secondsSinceUnixEpoch) =>
@@ -213,6 +212,29 @@ namespace System.Formats.Tar
             }
 
             return entryType;
+        }
+
+        /// <summary>Parses a numeric field.</summary>
+        internal static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>
+        {
+            // The tar standard specifies that numeric fields are stored using an octal representation.
+            // This limits the range of values that can be stored in the fields.
+            // To increase the supported range, a GNU extension defines that when the leading byte is
+            // '0xff'/'0x80' the remaining bytes are a negative/positive big formatted endian value.
+            // Like the 'tar' tool we are permissive when encountering this representation in non GNU formats.
+            byte leadingByte = buffer[0];
+            if (leadingByte == 0xff)
+            {
+                return T.ReadBigEndian(buffer, isUnsigned: false);
+            }
+            else if (leadingByte == 0x80)
+            {
+                return T.ReadBigEndian(buffer.Slice(1), isUnsigned: true);
+            }
+            else
+            {
+                return ParseOctal<T>(buffer);
+            }
         }
 
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
@@ -307,7 +329,7 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression("entryType")] string? paramName = null)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression(nameof(entryType))] string? paramName = null)
         {
             switch (archiveFormat)
             {
@@ -385,6 +407,78 @@ namespace System.Formats.Tar
             }
 
             throw new ArgumentException(SR.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
+        }
+
+        public static void SetPendingModificationTimes(Stack<(string, DateTimeOffset)> directoryModificationTimes)
+        {
+            // note: these are ordered child to parent.
+            while (directoryModificationTimes.TryPop(out (string Path, DateTimeOffset Modified) item))
+            {
+                AttemptDirectorySetLastWriteTime(item.Path, item.Modified);
+            }
+        }
+
+        public static void UpdatePendingModificationTimes(Stack<(string, DateTimeOffset)> directoryModificationTimes, string fullPath, DateTimeOffset modified)
+        {
+            // We can't set the modification time when we create the directory because extracting entries into it
+            // will cause that time to change. Instead, we track the times to set them later.
+
+            // We take into account that regular tar files are ordered:
+            // when we see a new directory which is not a child of the previous directory
+            // we can set the parent directory timestamps, and stop tracking them.
+            // This avoids having to track all directory entries until we've finished extracting the entire archive.
+            while (directoryModificationTimes.TryPeek(out (string Path, DateTimeOffset Modified) previous) &&
+                   !IsChildPath(previous.Path, fullPath))
+            {
+                directoryModificationTimes.TryPop(out previous);
+                AttemptDirectorySetLastWriteTime(previous.Path, previous.Modified);
+            }
+
+            directoryModificationTimes.Push((fullPath, modified));
+        }
+
+        private static bool IsChildPath(string parentFullPath, string childFullPath)
+        {
+            // Both paths may end with an additional separator.
+
+            // Verify that either the parent path ends with a separator
+            // or the child path has a separator where the parent path ends.
+            if (IsDirectorySeparatorChar(parentFullPath[^1]))
+            {
+                // The child needs to be at least a char longer than the parent for the name.
+                if (childFullPath.Length <= parentFullPath.Length)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // The child needs to be at least 2 chars longer than the parent:
+                // one for the separator, and one for the name.
+                if ((childFullPath.Length < parentFullPath.Length + 2) ||
+                    !IsDirectorySeparatorChar(childFullPath[parentFullPath.Length]))
+                {
+                    return false;
+                }
+            }
+
+            return childFullPath.StartsWith(parentFullPath, PathInternal.StringComparison);
+
+            // We don't need to check for AltDirectorySeparatorChar, full paths are normalized to DirectorySeparatorChar.
+            static bool IsDirectorySeparatorChar(char c)
+                => c == Path.DirectorySeparatorChar;
+        }
+
+        private static void AttemptDirectorySetLastWriteTime(string fullPath, DateTimeOffset lastWriteTime)
+        {
+            try
+            {
+                Directory.SetLastWriteTime(fullPath, lastWriteTime.UtcDateTime);
+            }
+            catch
+            {
+                // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
+            }
         }
     }
 }

@@ -6,8 +6,8 @@ DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 CONFIG ?=Debug
 # How was dotnet/runtime built? should be the same as build.sh -c option
 BUILT_RUNTIME_CONFIG ?= Release
-MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
-TARGET_OS?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${os} | tr "[:upper:]" "[:lower:]")
+MONO_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
+TARGET_OS?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${os})
 
 MONO_ENV_OPTIONS = --interp
 
@@ -15,7 +15,7 @@ publish:
 	$(DOTNET) publish -c $(CONFIG) -r $(TARGET_OS)-$(MONO_ARCH) -p:BuiltRuntimeConfiguration=$(BUILT_RUNTIME_CONFIG)
 
 run: publish
-	COMPlus_DebugWriteToStdErr=1 \
+	DOTNET_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS="$(MONO_ENV_OPTIONS)" \
 	DOTNET_MODIFIABLE_ASSEMBLIES=debug \
 	$(TOP)artifacts/bin/ConsoleDelta/$(MONO_ARCH)/$(CONFIG)/$(TARGET_OS)-$(MONO_ARCH)/publish/ConsoleDelta

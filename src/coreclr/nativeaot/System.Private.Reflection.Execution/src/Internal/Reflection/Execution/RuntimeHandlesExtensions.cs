@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution
@@ -10,8 +11,6 @@ namespace Internal.Reflection.Execution
     internal static class RuntimeHandlesExtensions
     {
         public static bool IsNull(this RuntimeTypeHandle rtth)
-        {
-            return RuntimeAugments.GetRuntimeTypeHandleRawValue(rtth) == IntPtr.Zero;
-        }
+            => RuntimeTypeHandle.ToIntPtr(rtth) == 0;
     }
 }

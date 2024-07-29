@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 public class X<K> 
 {
@@ -21,9 +22,10 @@ public class X<K>
     public K k;
 }
 
-class B
+public class B
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         X<Vector3> a = null;
         bool result = false;

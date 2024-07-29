@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
 using Internal.IL.Stubs;
@@ -28,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__pinvoke_");
+            sb.Append("__pinvoke_"u8);
             _pInvokeMethodData.AppendMangledName(nameMangler, sb);
         }
         public int Offset => 0;
@@ -76,25 +77,33 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_pInvokeMethodData.ModuleData));
 
-            int flags = 0;
+            uint flags = 0;
 
-            int charsetFlags = (int)_pInvokeMethodData.CharSetMangling;
+            uint charsetFlags = (uint)_pInvokeMethodData.CharSetMangling;
             Debug.Assert((charsetFlags & MethodFixupCellFlagsConstants.CharSetMask) == charsetFlags);
             charsetFlags &= MethodFixupCellFlagsConstants.CharSetMask;
             flags |= charsetFlags;
 
-            int? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
+            uint? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
             if (objcFunction.HasValue)
             {
                 flags |= MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask;
 
-                int objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+                uint objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
                 Debug.Assert((objcFunctionFlags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) == objcFunctionFlags);
                 objcFunctionFlags &= MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask;
                 flags |= objcFunctionFlags;
             }
+            else if (factory.Target.IsWindows && factory.Target.Architecture == TargetArchitecture.X86)
+            {
+                if (_pInvokeMethodData.SignatureBytes >= 0)
+                {
+                    flags |= MethodFixupCellFlagsConstants.IsStdcall;
+                    flags |= ((uint)_pInvokeMethodData.SignatureBytes << 16);
+                }
+            }
 
-            builder.EmitInt(flags);
+            builder.EmitUInt(flags);
 
             return builder.ToObjectData();
         }
@@ -112,14 +121,25 @@ namespace ILCompiler.DependencyAnalysis
         public readonly PInvokeModuleData ModuleData;
         public readonly string EntryPointName;
         public readonly CharSet CharSetMangling;
+        public readonly int SignatureBytes;
 
         public PInvokeMethodData(PInvokeLazyFixupField pInvokeLazyFixupField)
         {
             PInvokeMetadata metadata = pInvokeLazyFixupField.PInvokeMetadata;
             ModuleDesc declaringModule = ((MetadataType)pInvokeLazyFixupField.TargetMethod.OwningType).Module;
+            TargetDetails target = declaringModule.Context.Target;
+            EcmaMethod method = pInvokeLazyFixupField.TargetMethod as EcmaMethod;
 
-            DllImportSearchPath? dllImportSearchPath = default;
-            if (declaringModule.Assembly is EcmaAssembly asm)
+            CustomAttributeValue<TypeDesc>? decodedAttr = null;
+
+            // Look for DefaultDllImportSearchPath on the method
+            if (method is not null)
+            {
+                decodedAttr = method.GetDecodedCustomAttribute("System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
+            }
+
+            // If the attribute it wasn't found on the method, look for it on the assembly
+            if (!decodedAttr.HasValue && declaringModule.Assembly is EcmaAssembly asm)
             {
                 // We look for [assembly:DefaultDllImportSearchPaths(...)]
                 var attrHandle = asm.MetadataReader.GetCustomAttributeHandle(asm.AssemblyDefinition.GetCustomAttributes(),
@@ -127,20 +147,24 @@ namespace ILCompiler.DependencyAnalysis
                 if (!attrHandle.IsNil)
                 {
                     var attr = asm.MetadataReader.GetCustomAttribute(attrHandle);
-                    var decoded = attr.DecodeValue(new CustomAttributeTypeProvider(asm));
-                    if (decoded.FixedArguments.Length == 1 &&
-                        decoded.FixedArguments[0].Value is int searchPath)
-                    {
-                        dllImportSearchPath = (DllImportSearchPath)searchPath;
-                    }
+                    decodedAttr = attr.DecodeValue(new CustomAttributeTypeProvider(asm));
                 }
             }
+
+            DllImportSearchPath? dllImportSearchPath = default;
+            if (decodedAttr.HasValue
+                && decodedAttr.Value.FixedArguments.Length == 1
+                && decodedAttr.Value.FixedArguments[0].Value is int searchPath)
+            {
+                dllImportSearchPath = (DllImportSearchPath)searchPath;
+            }
+
             ModuleData = new PInvokeModuleData(metadata.Module, dllImportSearchPath, declaringModule);
 
             EntryPointName = metadata.Name;
 
             CharSet charSetMangling = default;
-            if (declaringModule.Context.Target.IsWindows && !metadata.Flags.ExactSpelling)
+            if (target.IsWindows && !metadata.Flags.ExactSpelling)
             {
                 // Mirror CharSet normalization from Marshaller.CreateMarshaller
                 bool isAnsi = metadata.Flags.CharSet switch
@@ -154,13 +178,26 @@ namespace ILCompiler.DependencyAnalysis
                 charSetMangling = isAnsi ? CharSet.Ansi : CharSet.Unicode;
             }
             CharSetMangling = charSetMangling;
+
+            int signatureBytes = -1;
+            if (target.IsWindows && target.Architecture == TargetArchitecture.X86 && method is not null &&
+                (method.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask) == UnmanagedCallingConventions.Stdcall)
+            {
+                signatureBytes = 0;
+                foreach (var p in pInvokeLazyFixupField.NativeSignature)
+                {
+                    signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, target.PointerSize);
+                }
+            }
+            SignatureBytes = signatureBytes;
         }
 
         public bool Equals(PInvokeMethodData other)
         {
             return ModuleData.Equals(other.ModuleData) &&
                 EntryPointName == other.EntryPointName &&
-                CharSetMangling == other.CharSetMangling;
+                CharSetMangling == other.CharSetMangling &&
+                SignatureBytes == other.SignatureBytes;
         }
 
         public override bool Equals(object obj)
@@ -183,18 +220,26 @@ namespace ILCompiler.DependencyAnalysis
             if (moduleCompare != 0)
                 return moduleCompare;
 
-            return CharSetMangling.CompareTo(other.CharSetMangling);
+            var charsetCompare = CharSetMangling.CompareTo(other.CharSetMangling);
+            if (charsetCompare != 0)
+                return charsetCompare;
+
+            return SignatureBytes.CompareTo(other.SignatureBytes);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             ModuleData.AppendMangledName(nameMangler, sb);
-            sb.Append("__");
+            sb.Append("__"u8);
             sb.Append(EntryPointName);
             if (CharSetMangling != default)
             {
-                sb.Append("__");
+                sb.Append("__"u8);
                 sb.Append(CharSetMangling.ToString());
+            }
+            if (SignatureBytes >= 0)
+            {
+                sb.Append($"@{SignatureBytes}");
             }
         }
     }

@@ -46,7 +46,7 @@
 #include <mono/metadata/jit-info.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-dl.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-tls.h>
@@ -403,31 +403,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 	return field;
 }
 
-static gboolean
-mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
-{
-	int i;
-
-	if (sig1->hasthis != sig2->hasthis ||
-	    sig1->sentinelpos != sig2->sentinelpos)
-		return FALSE;
-
-	for (i = 0; i < sig1->sentinelpos; i++) {
-		MonoType *p1 = sig1->params[i];
-		MonoType *p2 = sig2->params[i];
-
-		/*if (p1->attrs != p2->attrs)
-			return FALSE;
-		*/
-		if (!mono_metadata_type_equal (p1, p2))
-			return FALSE;
-	}
-
-	if (!mono_metadata_type_equal (sig1->ret, sig2->ret))
-		return FALSE;
-	return TRUE;
-}
-
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
 		      MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
@@ -441,7 +416,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	/* FIXME: !mono_class_is_ginst (from_class) condition causes test failures. */
-	if (m_class_get_type_token (klass) && !image_is_dynamic (klass_image) && !m_class_get_methods (klass) && !m_class_get_rank (klass) && klass == from_class && !mono_class_is_ginst (from_class)) {
+	if (m_class_get_type_token (klass) && !image_is_dynamic (klass_image) && !m_class_get_methods (klass) && !m_class_get_rank (klass) && klass == from_class && !mono_class_is_ginst (from_class) && (sig->call_convention != MONO_CALL_VARARG)) {
 		int first_idx = mono_class_get_first_method_idx (klass);
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -466,7 +441,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				other_sig = mono_method_signature_checked (method, error);
 				if (!is_ok (error)) //bail out if we hit a loader error
 					return NULL;
-				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
+				if (other_sig && mono_metadata_signature_equal (sig, other_sig))
 					return method;
 			}
 		}
@@ -486,9 +461,16 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		return NULL;
 	}
 	int mcount = mono_class_get_method_count (klass);
-	MonoMethod **klass_methods = m_class_get_methods (klass);
-	for (i = 0; i < mcount; ++i) {
-		MonoMethod *m = klass_methods [i];
+	i = -1;
+	gpointer iter = NULL;
+	MonoMethod *m = NULL;
+	gboolean matched = FALSE;
+	/* FIXME: metadata-update iterating using
+	 * mono_class_get_methods will break if `m` is NULL.  Need to
+	 * reconcile with the `if (!m)` "we must cope" comment below.
+	 */
+	while ((m = mono_class_get_methods (klass, &iter))) {
+		++i;
 		MonoMethodSignature *msig;
 
 		/* We must cope with failing to load some of the types. */
@@ -507,16 +489,33 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			continue;
 
 		if (sig->call_convention == MONO_CALL_VARARG) {
-			if (mono_metadata_signature_vararg_match (sig, msig))
+			if (mono_metadata_signature_equal_vararg (sig, msig)) {
+				matched = TRUE;
 				break;
+			}
 		} else {
-			if (mono_metadata_signature_equal (sig, msig))
+			if (mono_metadata_signature_equal (sig, msig)) {
+				matched = TRUE;
 				break;
+			}
 		}
 	}
 
-	if (i < mcount)
-		return mono_class_get_method_by_index (from_class, i);
+	if (matched) {
+		if (i < mcount)
+			return mono_class_get_method_by_index (from_class, i);
+		else if (m != NULL) {
+			// FIXME: metadata-update: hack
+			// it's from a metadata-update, probably
+			m = mono_class_inflate_generic_method_full_checked (
+				m, from_class, mono_class_get_context (from_class), error);
+			mono_error_assert_ok (error);
+			g_assert (m != NULL);
+			g_assert (m->klass == from_class);
+			g_assert (m->is_inflated);
+			return m;
+		}
+	}
 	return NULL;
 }
 
@@ -635,6 +634,7 @@ inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, M
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->pinvoke = sig->pinvoke;
+	res->ext_callconv = sig->ext_callconv;
 	res->generic_param_count = sig->generic_param_count;
 	res->sentinelpos = sig->sentinelpos;
 	res->has_type_parameters = is_open;
@@ -823,7 +823,6 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	int i;
 
 	mono_class_setup_methods (klass);
-	g_assert (!mono_class_has_failure (klass)); /*FIXME this should not fail, right?*/
 	int mcount = mono_class_get_method_count (klass);
 	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {
@@ -1183,12 +1182,12 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
 		if (!image->method_cache)
-			image->method_cache = g_hash_table_new (NULL, NULL);
-		result = (MonoMethod *)g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
+			image->method_cache = dn_simdhash_u32_ptr_new (0, NULL);
+		dn_simdhash_u32_ptr_try_get_value (image->method_cache, mono_metadata_token_index (token), (void **)&result);
 	} else if (!image_is_dynamic (image)) {
 		if (!image->methodref_cache)
-			image->methodref_cache = g_hash_table_new (NULL, NULL);
-		result = (MonoMethod *)g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
+			image->methodref_cache = dn_simdhash_u32_ptr_new (0, NULL);
+		dn_simdhash_u32_ptr_try_get_value (image->methodref_cache, token, (void **)&result);
 	}
 	mono_image_unlock (image);
 
@@ -1205,9 +1204,9 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 		MonoMethod *result2 = NULL;
 
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			result2 = (MonoMethod *)g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)));
+			dn_simdhash_u32_ptr_try_get_value (image->method_cache, mono_metadata_token_index (token), (void **)&result2);
 		else if (!image_is_dynamic (image))
-			result2 = (MonoMethod *)g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
+			dn_simdhash_u32_ptr_try_get_value (image->methodref_cache, token, (void **)&result2);
 
 		if (result2) {
 			mono_image_unlock (image);
@@ -1215,9 +1214,9 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 		}
 
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-			g_hash_table_insert (image->method_cache, GINT_TO_POINTER (mono_metadata_token_index (token)), result);
+			dn_simdhash_u32_ptr_try_add (image->method_cache, mono_metadata_token_index (token), result);
 		else if (!image_is_dynamic (image))
-			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
+			dn_simdhash_u32_ptr_try_add (image->methodref_cache, token, result);
 	}
 
 	mono_image_unlock (image);
@@ -1304,6 +1303,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		g_assert (itf_slot >= 0);
 		gboolean variant = FALSE;
 		int itf_base = mono_class_interface_offset_with_variance (constrained_class, base_class, &variant);
+		g_assert (itf_base >= 0);
 		vtable_slot = itf_slot + itf_base;
 	}
 	g_assert (vtable_slot >= 0);
@@ -1412,6 +1412,17 @@ mono_free_method  (MonoMethod *method)
 void
 mono_method_get_param_names (MonoMethod *method, const char **names)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_method_get_param_names_internal (method, names);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+/**
+ * mono_method_get_param_names_internal:
+ */
+void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names)
+{
 	int i, lastp;
 	MonoClass *klass;
 	MonoTableInfo *paramt;
@@ -1504,7 +1515,7 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint param_index = mono_metadata_get_method_params (klass_image, idx, NULL);
-		
+
 		if (index == -1)
 			/* Return value */
 			return mono_metadata_make_token (MONO_TABLE_PARAM, 0);
@@ -2041,8 +2052,8 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 
-        if (G_UNLIKELY (img->has_updates))
-                loc = mono_metadata_update_get_updated_method_rva (img, idx);
+	if (G_UNLIKELY (img->has_updates))
+		loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
 	if (!loc) {
 		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
@@ -2063,6 +2074,44 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	if (!container)
 		container = mono_class_try_get_generic_container (method->klass);
 	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
+}
+
+gboolean
+mono_method_metadata_has_header (MonoMethod *method)
+{
+	int idx;
+	guint32 rva;
+	MonoImage* img;
+	gpointer loc = NULL;
+
+	img = m_class_get_image (method->klass);
+
+	if (mono_method_has_no_body (method)) {
+		return FALSE;
+	}
+
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		return mono_method_metadata_has_header (imethod->declaring);
+	}
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
+		return mw->header != NULL;
+	}
+
+	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
+	idx = mono_metadata_token_index (method->token);
+
+	if (G_UNLIKELY (img->has_updates))
+		loc = mono_metadata_update_get_updated_method_rva (img, idx);
+
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+		loc = mono_image_rva_map (img, rva);
+	}
+
+	return loc != NULL;
 }
 
 MonoMethodHeader*

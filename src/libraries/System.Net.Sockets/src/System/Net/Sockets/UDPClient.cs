@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -312,10 +312,8 @@ namespace System.Net.Sockets
 
             ArgumentNullException.ThrowIfNull(datagram);
 
-            if (bytes > datagram.Length || bytes < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytes));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes, datagram.Length);
 
             if (_active && endPoint != null)
             {
@@ -381,14 +379,7 @@ namespace System.Net.Sockets
 
             // Because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-
-            return _buffer;
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
         // Joins a multicast address group.
@@ -440,10 +431,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client, otherwise throw WinSock
@@ -512,10 +500,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client.
@@ -631,11 +616,7 @@ namespace System.Net.Sockets
             async Task<UdpReceiveResult> WaitAndWrap(Task<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -661,11 +642,7 @@ namespace System.Net.Sockets
             async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -853,14 +830,7 @@ namespace System.Net.Sockets
 
             // because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-            return _buffer;
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
 

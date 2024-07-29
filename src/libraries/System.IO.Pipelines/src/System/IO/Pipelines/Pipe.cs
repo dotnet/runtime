@@ -132,7 +132,7 @@ namespace System.IO.Pipelines
 
             if (sizeHint < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sizeHint);
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
@@ -149,7 +149,7 @@ namespace System.IO.Pipelines
 
             if (sizeHint < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sizeHint);
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
@@ -362,6 +362,11 @@ namespace System.IO.Pipelines
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
+            }
+
             CompletionData completionData;
             ValueTask<FlushResult> result;
             lock (SyncObj)
@@ -495,6 +500,7 @@ namespace System.IO.Pipelines
                     _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
 
                     Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
+                    Debug.Assert(ResumeWriterThreshold >= 1, "ResumeWriterThreshold is less than 1");
 
                     if (oldLength >= ResumeWriterThreshold &&
                         _unconsumedBytes < ResumeWriterThreshold)
@@ -1056,6 +1062,11 @@ namespace System.IO.Pipelines
             if (_readerCompletion.IsCompletedOrThrow())
             {
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
             }
 
             CompletionData completionData;

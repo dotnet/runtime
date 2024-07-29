@@ -2,15 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[ExpectedNoWarnings]
+	[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Applying DAM PublicMethods on an array will mark Array.CreateInstance which has RDC on it")]
+	[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
 	public class ComplexTypeHandling
 	{
 		public static void Main ()
@@ -91,7 +90,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			_ = new RequirePublicMethodsGeneric<T[]> ();
 		}
 
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve array element types just due to the usage of the array type
 		sealed class ArrayGetTypeFromMethodParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -110,7 +109,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayGetTypeFromMethodParamHelper (null);
 		}
 
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve array element types just due to the usage of the array type
 		sealed class ArrayGetTypeFromFieldElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -139,11 +138,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayTypeGetTypeElement[]"));
 		}
 
-		// Technically there's no reason to mark this type since it's only used as an array element type and CreateInstance
-		// doesn't work on arrays, but the currently implementation will preserve it anyway due to how it processes
+		// Trimmer: Technically there's no reason to mark this type since it's only used as an array element type and CreateInstance
+		// doesn't work on arrays, but the current implementation will preserve it anyway due to how it processes
 		// string -> Type resolution. This will only impact code which would have failed at runtime, so very unlikely to
 		// actually occur in real apps (and even if it does happen, it just increases size, doesn't break behavior).
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve array element types just due to the usage of the array type
 		class ArrayCreateInstanceByNameElement
 		{
 			public ArrayCreateInstanceByNameElement ()
@@ -152,12 +151,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2032", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/82447")]
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");
 		}
 
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve array element types just due to the usage of the array type
 		class ArrayInAttributeParamElement
 		{
 			// This method should not be marked, instead Array.* should be marked
@@ -167,10 +167,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresPublicMethodAttribute))]
 		[RequiresPublicMethod (typeof (ArrayInAttributeParamElement[]))]
-		static void TestArrayInAttributeParameter ()
+		static void TestArrayInAttributeParameterImpl ()
 		{
 		}
 
+		[Kept]
+		static void TestArrayInAttributeParameter()
+		{
+			// Have to access the method through reflection, otherwise NativeAOT will remove all attributes on it
+			// since they're not accessible.
+			typeof (ComplexTypeHandling).GetMethod (nameof (TestArrayInAttributeParameterImpl), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke (null, new object[] { });
+		}
 
 		[Kept]
 		private static void RequirePublicMethods (

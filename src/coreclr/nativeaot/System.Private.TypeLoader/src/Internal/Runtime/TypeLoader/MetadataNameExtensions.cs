@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
+using System.Reflection;
+using System.Text;
 
 using global::Internal.Metadata.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -83,7 +84,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeSpec = typeSpecHandle.GetTypeSpecification(reader);
 
-            if (typeSpec.Signature.IsNull(reader))
+            if (typeSpec.Signature.IsNil)
                 return null;
 
             return typeSpec.Signature.GetFullName(reader);
@@ -93,7 +94,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeInstSig = typeInstSigHandle.GetTypeInstantiationSignature(reader);
 
-            if (typeInstSig.GenericType.IsNull(reader))
+            if (typeInstSig.GenericType.IsNil)
                 return null;
 
             var name = typeInstSig.GenericType.GetFullName(reader);
@@ -117,11 +118,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
-            Debug.Assert(!typeDef.Name.IsNull(reader));
+            Debug.Assert(!typeDef.Name.IsNil);
 
             name = typeDef.Name.GetConstantStringValue(reader).Value;
-            enclosing = typeDef.EnclosingType.IsNull(reader) ? null : typeDef.EnclosingType.GetFullName(reader);
-            nspace = typeDef.NamespaceDefinition.IsNull(reader) ? null : typeDef.NamespaceDefinition.GetFullName(reader);
+            enclosing = typeDef.EnclosingType.IsNil ? null : typeDef.EnclosingType.GetFullName(reader);
+            nspace = typeDef.NamespaceDefinition.IsNil ? null : typeDef.NamespaceDefinition.GetFullName(reader);
         }
 
         public static string GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
@@ -143,16 +144,16 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
-            Handle currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
-            Debug.Assert(!currentHandle.IsNull(reader));
+            Handle currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+            Debug.Assert(!currentHandle.IsNil);
 
-            while (!currentHandle.IsNull(reader))
+            while (!currentHandle.IsNil)
             {
                 switch (currentHandle.HandleType)
                 {
                     case HandleType.TypeDefinition:
                         typeDef = currentHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
-                        currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+                        currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
                         break;
 
                     case HandleType.NamespaceDefinition:
@@ -173,11 +174,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var nspace = namespaceHandle.GetNamespaceDefinition(reader);
 
-            if (nspace.Name.IsNull(reader))
+            if (nspace.Name.IsNil)
                 return null;
 
             var name = nspace.Name.GetConstantStringValue(reader).Value;
-            var containingNamespace = nspace.ParentScopeOrNamespace.IsNull(reader) ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
+            var containingNamespace = nspace.ParentScopeOrNamespace.IsNil ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
 
             if (containingNamespace != null)
                 return containingNamespace + "." + name;
@@ -189,7 +190,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeRef = typeRefHandle.GetTypeReference(reader);
 
-            Debug.Assert(!typeRef.TypeName.IsNull(reader));
+            Debug.Assert(!typeRef.TypeName.IsNil);
 
             name = typeRef.TypeName.GetConstantStringValue(reader).Value;
             enclosing = typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
@@ -216,9 +217,9 @@ namespace Internal.Runtime.TypeLoader
             var typeRef = typeRefHandle.GetTypeReference(reader);
 
             Handle currentHandle = typeRef.ParentNamespaceOrType;
-            Debug.Assert(!currentHandle.IsNull(reader));
+            Debug.Assert(!currentHandle.IsNil);
 
-            while (!currentHandle.IsNull(reader))
+            while (!currentHandle.IsNil)
             {
                 switch (currentHandle.HandleType)
                 {
@@ -242,11 +243,11 @@ namespace Internal.Runtime.TypeLoader
         {
             var nspace = namespaceHandle.GetNamespaceReference(reader);
 
-            if (nspace.Name.IsNull(reader))
+            if (nspace.Name.IsNil)
                 return null;
 
             var name = nspace.Name.GetConstantStringValue(reader).Value;
-            var containingNamespace = nspace.ParentScopeOrNamespace.IsNull(reader) ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
+            var containingNamespace = nspace.ParentScopeOrNamespace.IsNil ? null : nspace.ParentScopeOrNamespace.GetFullName(reader);
 
             if (containingNamespace != null)
                 return containingNamespace + "." + name;
@@ -254,62 +255,16 @@ namespace Internal.Runtime.TypeLoader
             return name;
         }
 
-        public static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
         {
             var scopeDef = scopeDefHandle.GetScopeDefinition(reader);
-
-            Debug.Assert(!scopeDef.Name.IsNull(reader));
-
-            var assemblyName = new AssemblyName
-            {
-                Name = scopeDef.Name.GetConstantStringValue(reader).Value,
-                CultureName = scopeDef.Culture.IsNull(reader) ? null : scopeDef.Culture.GetConstantStringValue(reader).Value,
-                Version = new Version(scopeDef.MajorVersion, scopeDef.MinorVersion, scopeDef.BuildNumber, scopeDef.RevisionNumber)
-            };
-
-            if (scopeDef.PublicKey.Count > 0)
-            {
-                var pkt = new byte[scopeDef.PublicKey.Count];
-                int index = 0;
-                foreach (var b in scopeDef.PublicKey)
-                    pkt[index++] = b;
-                assemblyName.SetPublicKeyToken(pkt);
-            }
-            else
-            {
-                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
-            }
-
-            return assemblyName.FullName;
+            return scopeDef.Name.GetConstantStringValue(reader).Value;
         }
 
-        public static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
         {
             var scopeRef = scopeRefHandle.GetScopeReference(reader);
-
-            Debug.Assert(!scopeRef.Name.IsNull(reader));
-
-            var assemblyName = new AssemblyName
-            {
-                Name = scopeRef.Name.GetConstantStringValue(reader).Value,
-                CultureName = scopeRef.Culture.IsNull(reader) ? null : scopeRef.Culture.GetConstantStringValue(reader).Value,
-                Version = new Version(scopeRef.MajorVersion, scopeRef.MinorVersion, scopeRef.BuildNumber, scopeRef.RevisionNumber)
-            };
-
-            if (scopeRef.PublicKeyOrToken.Count > 0)
-            {
-                var pkt = new byte[scopeRef.PublicKeyOrToken.Count];
-                int index = 0;
-                foreach (var b in scopeRef.PublicKeyOrToken)
-                    pkt[index++] = b;
-                assemblyName.SetPublicKeyToken(pkt);
-            }
-            else
-            {
-                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
-            }
-
-            return assemblyName.FullName;
+            return scopeRef.Name.GetConstantStringValue(reader).Value;
         }
     }
 }

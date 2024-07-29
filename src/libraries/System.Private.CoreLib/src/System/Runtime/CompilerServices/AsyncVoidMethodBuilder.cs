@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (<see langword="Nothing" /> in Visual Basic).</exception>
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
@@ -41,8 +41,8 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
             _builder.SetStateMachine(stateMachine);
 
@@ -80,20 +80,34 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Completed);
             }
 
+            // Grab the context. Calling SetResult will complete the builder which can cause the state
+            // to be cleared out of the builder, so we can't touch anything on this builder after calling Set*.
+            // This clearing is done as part of the AsyncStateMachineBox.MoveNext method after it calls
+            // MoveNext on the state machine: it's possible to have a chain of events like this:
+            // Thread 1: Calls AsyncStateMachineBox.MoveNext, which calls StateMachine.MoveNext.
+            // Thread 1: StateMachine.MoveNext hooks up a continuation and returns
+            //     Thread 2: That continuation runs and calls AsyncStateMachineBox.MoveNext, which calls SetResult on the builder (below)
+            //               which will result in the state machine task being marked completed.
+            // Thread 1: The original AsyncStateMachineBox.MoveNext call continues and sees that the task is now completed
+            // Thread 1: Clears the builder
+            //     Thread 2: Continues in this call to AsyncVoidMethodBuilder. If it touches anything on this instance, it will be cleared.
+            SynchronizationContext? context = _synchronizationContext;
+
             // Mark the builder as completed.  As this is a void-returning method, this mostly
             // doesn't matter, but it can affect things like debug events related to finalization.
+            // Marking the task completed will also then enable the MoveNext code to clear state.
             _builder.SetResult();
 
-            if (_synchronizationContext != null)
+            if (context != null)
             {
-                NotifySynchronizationContextOfCompletion();
+                NotifySynchronizationContextOfCompletion(context);
             }
         }
 
         /// <summary>Faults the method builder with an exception.</summary>
         /// <param name="exception">The exception that is the cause of this fault.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.InvalidOperationException">The builder is not initialized.</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
+        /// <exception cref="InvalidOperationException">The builder is not initialized.</exception>
         public void SetException(Exception exception)
         {
             if (exception == null)
@@ -106,17 +120,18 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationEnd(this.Task.Id, AsyncCausalityStatus.Error);
             }
 
-            if (_synchronizationContext != null)
+            SynchronizationContext? context = _synchronizationContext;
+            if (context != null)
             {
                 // If we captured a synchronization context, Post the throwing of the exception to it
                 // and decrement its outstanding operation count.
                 try
                 {
-                    System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: _synchronizationContext);
+                    Task.ThrowAsync(exception, targetContext: context);
                 }
                 finally
                 {
-                    NotifySynchronizationContextOfCompletion();
+                    NotifySynchronizationContextOfCompletion(context);
                 }
             }
             else
@@ -124,7 +139,7 @@ namespace System.Runtime.CompilerServices
                 // Otherwise, queue the exception to be thrown on the ThreadPool.  This will
                 // result in a crash unless legacy exception behavior is enabled by a config
                 // file or a CLR host.
-                System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: null);
+                Task.ThrowAsync(exception, targetContext: null);
             }
 
             // The exception was propagated already; we don't need or want to fault the builder, just mark it as completed.
@@ -132,12 +147,12 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Notifies the current synchronization context that the operation completed.</summary>
-        private void NotifySynchronizationContextOfCompletion()
+        private static void NotifySynchronizationContextOfCompletion(SynchronizationContext context)
         {
-            Debug.Assert(_synchronizationContext != null, "Must only be used with a non-null context.");
+            Debug.Assert(context != null, "Must only be used with a non-null context.");
             try
             {
-                _synchronizationContext.OperationCompleted();
+                context.OperationCompleted();
             }
             catch (Exception exc)
             {

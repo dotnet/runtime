@@ -21,6 +21,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public bool Equals (LocalKey other) => SymbolEqualityComparer.Default.Equals (Local, other.Local) &&
 			(CaptureId?.Equals (other.CaptureId) ?? other.CaptureId == null);
 
+		public override bool Equals (object obj)
+			=> obj is LocalKey inst && Equals (inst);
+
+		public override int GetHashCode ()
+			=> CaptureId is null ? SymbolEqualityComparer.Default.GetHashCode (Local) : CaptureId.GetHashCode ();
+
 		public override string ToString ()
 		{
 			if (Local != null)
@@ -37,28 +43,34 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// Stores any operations which are captured by reference in a FlowCaptureOperation.
 		// Only stores captures which are assigned through. Captures of the values of operations
 		// are tracked as part of the dictionary of values, keyed by LocalKey.
-		public DefaultValueDictionary<CaptureId, CapturedReferenceValue> CapturedReferences;
+		public DefaultValueDictionary<CaptureId, ValueSet<CapturedReferenceValue>> CapturedReferences;
 
 		public LocalState (TValue defaultValue)
 			: this (new DefaultValueDictionary<LocalKey, TValue> (defaultValue),
-				new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+				new DefaultValueDictionary<CaptureId, ValueSet<CapturedReferenceValue>> (default (ValueSet<CapturedReferenceValue>)))
 		{
 		}
 
-		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary, DefaultValueDictionary<CaptureId, CapturedReferenceValue> capturedReferences)
+		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary, DefaultValueDictionary<CaptureId, ValueSet<CapturedReferenceValue>> capturedReferences)
 		{
 			Dictionary = dictionary;
 			CapturedReferences = capturedReferences;
 		}
 
 		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary)
-			: this (dictionary, new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+			: this (dictionary, new DefaultValueDictionary<CaptureId, ValueSet<CapturedReferenceValue>> (default (ValueSet<CapturedReferenceValue>)))
 		{
 		}
 
 		public bool Equals (LocalState<TValue> other) => Dictionary.Equals (other.Dictionary);
 
+		public override bool Equals (object obj)
+			=> obj is LocalState<TValue> inst && Equals (inst);
+
 		public TValue Get (LocalKey key) => Dictionary.Get (key);
+
+		public override int GetHashCode ()
+			=> throw new NotImplementedException ();
 
 		public void Set (LocalKey key, TValue value) => Dictionary.Set (key, value);
 
@@ -71,12 +83,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TValueLattice : ILattice<TValue>
 	{
 		public readonly DictionaryLattice<LocalKey, TValue, TValueLattice> Lattice;
-		public readonly DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> CapturedReferenceLattice;
+		public readonly DictionaryLattice<CaptureId, ValueSet<CapturedReferenceValue>, ValueSetLattice<CapturedReferenceValue>> CapturedReferenceLattice;
 
 		public LocalStateLattice (TValueLattice valueLattice)
 		{
 			Lattice = new DictionaryLattice<LocalKey, TValue, TValueLattice> (valueLattice);
-			CapturedReferenceLattice = new DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> (new CapturedReferenceLattice ());
+			CapturedReferenceLattice = new DictionaryLattice<CaptureId, ValueSet<CapturedReferenceValue>, ValueSetLattice<CapturedReferenceValue>> (default (ValueSetLattice<CapturedReferenceValue>));
 			Top = new (Lattice.Top);
 		}
 

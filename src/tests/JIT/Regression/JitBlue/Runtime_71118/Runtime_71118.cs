@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_71118
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem(new ClassWithVtor4 { Vtor4FieldTwo = new Vector4(1, 2, 3, 4) }) ? 101 : 100;
     }

@@ -230,30 +230,12 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EXPORT_POINTER_TO_ADDRESS Name
-
-// NOTE: The label is intentionally left as 2 - otherwise on OSX 0b or 1b will be incorrectly interpreted as binary integers
-
-2:
-
-        .data
-        .align      8
-C_FUNC(\Name):
-        .quad       2b
-        .global     C_FUNC(\Name)
-        .text
-
-.endm
-
 //
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
-
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
 
 //
 // Rename fields of nested structs
@@ -288,17 +270,24 @@ C_FUNC(\Name):
         movq    _\Var@TLVP(%rip), %rdi
         callq   *(%rdi)
 #else
-        leaq    \Var@TLSLD(%rip), %rdi
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
         callq   __tls_get_addr@PLT
-        addq    $\Var@DTPOFF, %rax
 #endif
        .intel_syntax noprefix
 .endm
 
 
 .macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        call        C_FUNC(RhpGetThread)
+#else
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+#endif
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

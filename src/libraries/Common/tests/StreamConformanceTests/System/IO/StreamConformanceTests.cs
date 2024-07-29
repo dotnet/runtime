@@ -109,10 +109,6 @@ namespace System.IO.Tests
             from mode in Enum.GetValues<SeekMode>()
             select new object[] { mode };
 
-        public static IEnumerable<object[]> AllSeekModesAndValue(object value) =>
-            from mode in Enum.GetValues<SeekMode>()
-            select new object[] { mode, value };
-
         public static async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (mode == ReadWriteMode.SyncByte)
@@ -495,15 +491,6 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task AssertCanceledAsync(CancellationToken cancellationToken, Func<Task> testCode)
-        {
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(testCode);
-            if (cancellationToken.CanBeCanceled)
-            {
-                Assert.Equal(cancellationToken, oce.CancellationToken);
-            }
-        }
-
         protected async Task ValidatePrecanceledOperations_ThrowsCancellationException(Stream stream)
         {
             var cts = new CancellationTokenSource();
@@ -511,14 +498,14 @@ namespace System.IO.Tests
 
             if (stream.CanRead)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
             }
 
             if (stream.CanWrite)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.WriteAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.WriteAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
             }
 
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));
@@ -540,7 +527,7 @@ namespace System.IO.Tests
             Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
 
             cts.CancelAfter(cancellationDelay);
-            await AssertCanceledAsync(cts.Token, () => t);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
         protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
@@ -555,7 +542,7 @@ namespace System.IO.Tests
             Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
 
             cts.CancelAfter(cancellationDelay);
-            await AssertCanceledAsync(cts.Token, () => t);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -612,15 +599,6 @@ namespace System.IO.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => new Task[0];
         }
 
-        protected readonly struct JumpToThreadPoolAwaiter : ICriticalNotifyCompletion
-        {
-            public JumpToThreadPoolAwaiter GetAwaiter() => this;
-            public bool IsCompleted => false;
-            public void OnCompleted(Action continuation) => ThreadPool.QueueUserWorkItem(_ => continuation());
-            public void UnsafeOnCompleted(Action continuation) => ThreadPool.UnsafeQueueUserWorkItem(_ => continuation(), null);
-            public void GetResult() { }
-        }
-
         protected sealed unsafe class NativeMemoryManager : MemoryManager<byte>
         {
             private readonly int _length;
@@ -630,7 +608,7 @@ namespace System.IO.Tests
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
+            ~NativeMemoryManager() => Assert.Fail($"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1764,7 +1742,8 @@ namespace System.IO.Tests
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public virtual async Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) =>
@@ -1810,7 +1789,7 @@ namespace System.IO.Tests
                     int n = 0;
                     while (n < readerBytes.Length)
                     {
-                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
                         Assert.InRange(r, 1, readerBytes.Length - n);
                         n += r;
                     }
@@ -2055,9 +2034,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2139,9 +2116,7 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
-            await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
-
-            using StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync().ConfigureAwait(ConfigureAwaitOptions.ForceYielding /* escape xunit sync ctx */);
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
             {
                 Assert.Null(SynchronizationContext.Current);
@@ -2464,7 +2439,8 @@ namespace System.IO.Tests
             from useAsync in new bool[] { true, false }
             select new object[] { byteCount, useAsync };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -2584,18 +2560,18 @@ namespace System.IO.Tests
 
                 cts = new CancellationTokenSource();
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => readable.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, readable.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
 
                 cts = new CancellationTokenSource();
                 Task<int> t = readable.ReadAsync(new byte[1], 0, 1, cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => t);
+                await AssertExtensions.CanceledAsync(cts.Token, t);
 
                 cts = new CancellationTokenSource();
                 ValueTask<int> vt = readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, async () => await vt);
+                await AssertExtensions.CanceledAsync(cts.Token, vt.AsTask());
 
                 byte[] buffer = new byte[1];
                 vt = readable.ReadAsync(new Memory<byte>(buffer));
@@ -2760,6 +2736,8 @@ namespace System.IO.Tests
         /// a zero byte read and no data is currently available to return to the user.
         /// </summary>
         protected virtual bool ZeroByteReadPerformsZeroByteReadOnUnderlyingStream => false;
+
+        protected virtual bool ExtraZeroByteReadsAllowed => false;
 
         [Theory]
         [InlineData(false)]
@@ -2960,7 +2938,7 @@ namespace System.IO.Tests
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);
 
-            var tracker = new ZeroByteReadTrackingStream(innerReadable);
+            var tracker = new ZeroByteReadTrackingStream(innerReadable, ExtraZeroByteReadsAllowed);
             using StreamPair streams = await CreateWrappedConnectedStreamsAsync((innerWriteable, tracker));
 
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
@@ -3015,9 +2993,11 @@ namespace System.IO.Tests
         private sealed class ZeroByteReadTrackingStream : DelegatingStream
         {
             private TaskCompletionSource? _signal;
+            private bool _extraZeroByteReadsAllowed;
 
-            public ZeroByteReadTrackingStream(Stream innerStream) : base(innerStream)
+            public ZeroByteReadTrackingStream(Stream innerStream, bool extraZeroByteReadsAllowed = false) : base(innerStream)
             {
+                _extraZeroByteReadsAllowed = extraZeroByteReadsAllowed;
             }
 
             public Task WaitForZeroByteReadAsync()
@@ -3036,13 +3016,13 @@ namespace System.IO.Tests
                 if (bufferLength == 0)
                 {
                     var signal = _signal;
-                    if (signal is null)
+                    if (signal is null && !_extraZeroByteReadsAllowed)
                     {
                         throw new Exception("Unexpected zero byte read");
                     }
 
                     _signal = null;
-                    signal.SetResult();
+                    signal?.SetResult();
                 }
             }
 

@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         static Array m_a;
         static bool[] m_ab;
@@ -28,7 +29,8 @@ namespace Test
             }
             return 0;
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

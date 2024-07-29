@@ -95,7 +95,7 @@ namespace System.Text.Json
             return TryCreateDateTimeOffsetInterpretingDataAsLocalTime(parseData, out value);
         }
 
-#if NETCOREAPP
+#if NET
         public static bool TryParseAsIso(ReadOnlySpan<byte> source, out DateOnly value)
         {
             if (TryParseDateTimeOffset(source, out DateTimeParseData parseData) &&
@@ -538,7 +538,7 @@ namespace System.Text.Json
 
             Debug.Assert(parseData.Fraction >= 0 && parseData.Fraction <= JsonConstants.MaxDateTimeFraction); // All of our callers to date parse the fraction from fixed 7-digit fields so this value is trusted.
 
-            int[] days = DateTime.IsLeapYear(parseData.Year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = DateTime.IsLeapYear(parseData.Year) ? DaysToMonth366 : DaysToMonth365;
             int yearMinusOne = parseData.Year - 1;
             int totalDays = (yearMinusOne * 365) + (yearMinusOne / 4) - (yearMinusOne / 100) + (yearMinusOne / 400) + days[parseData.Month - 1] + parseData.Day - 1;
             long ticks = totalDays * TimeSpan.TicksPerDay;
@@ -549,7 +549,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private static readonly int[] s_daysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly int[] s_daysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+        private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+        private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
     }
 }

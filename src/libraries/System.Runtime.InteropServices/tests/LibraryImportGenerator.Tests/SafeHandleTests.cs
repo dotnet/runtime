@@ -12,7 +12,7 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         public partial class NativeExportsSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            private NativeExportsSafeHandle() : base(ownsHandle: true)
+            public NativeExportsSafeHandle() : base(ownsHandle: true)
             { }
 
             protected override bool ReleaseHandle()

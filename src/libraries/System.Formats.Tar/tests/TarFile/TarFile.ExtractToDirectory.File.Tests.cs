@@ -71,6 +71,49 @@ namespace System.Formats.Tar.Tests
             Assert.InRange(File.GetLastWriteTime(outFile).Ticks, dt.AddSeconds(-3).Ticks, dt.AddSeconds(3).Ticks); // include some slop for filesystem granularity
         }
 
+        [Fact]
+        public void SetsLastModifiedTimeOnExtractedDirectories()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            DirectoryInfo fromDir = Directory.CreateDirectory(Path.Combine(root.Path, "fromdir"));
+            // Create a hierarcy of directories.
+            var directories = new DirectoryInfo[]
+            {
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir")),                      // 'fromdir/dir'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child")),             // 'fromdir/dir/child'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir", "child", "subchild")), // 'fromdir/dir/child/subchild'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2")),                     // 'fromdir/dir2'
+                Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir2", "child2")),           // 'fromdir/dir2/child2'
+            };
+            var dt = new DateTime[directories.Length];
+            for (int i = directories.Length - 1; i >= 0; i--) // Reverse order to preserve parent timestamps.
+            {
+                // Add a file.
+                File.Create(Path.Combine(directories[i].FullName, "file")).Dispose();
+
+                // Set the directory timestamp.
+                dt[i] = new DateTime(2000 + i, 1 + i, 2 + i, 3 + i, 4 + i, 5 + i, DateTimeKind.Local);
+                directories[i].LastWriteTime = dt[i];
+            }
+
+            string tarFile = Path.Join(root.Path, "file.tar");
+            TarFile.CreateFromDirectory(sourceDirectoryName: fromDir.FullName, destinationFileName: tarFile, includeBaseDirectory: false);
+
+            string toDir = Path.Join(root.Path, "todir");
+            Directory.CreateDirectory(toDir);
+            TarFile.ExtractToDirectory(sourceFileName: tarFile, destinationDirectoryName: toDir, overwriteFiles: false);
+
+            string[] extractedDirectories = Directory.GetDirectories(toDir, "*", new EnumerationOptions() { RecurseSubdirectories = true });
+            Array.Sort(extractedDirectories);
+            Assert.Equal(directories.Length, extractedDirectories.Length);
+            for (int i = 0; i < extractedDirectories.Length; i++)
+            {
+                Assert.Equal(Path.GetFileName(directories[i].FullName), Path.GetFileName(extractedDirectories[i]));
+                Assert.InRange(Directory.GetLastWriteTime(extractedDirectories[i]).Ticks, dt[i].AddSeconds(-3).Ticks, dt[i].AddSeconds(3).Ticks); // include some slop for filesystem granularity
+            }
+        }
+
         [Theory]
         [InlineData(TestTarFormat.v7)]
         [InlineData(TestTarFormat.ustar)]
@@ -295,6 +338,35 @@ namespace System.Formats.Tar.Tests
 
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             AssertFileModeEquals(filePath, TestPermission1);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void LinkBeforeTarget()
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string archivePath = Path.Join(source.Path, "archive.tar");
+            using FileStream archiveStream = File.Create(archivePath);
+            using (TarWriter writer = new TarWriter(archiveStream))
+            {
+                PaxTarEntry link = new PaxTarEntry(TarEntryType.SymbolicLink, "link");
+                link.LinkName = "dir/file";
+                writer.WriteEntry(link);
+
+                PaxTarEntry file = new PaxTarEntry(TarEntryType.RegularFile, "dir/file");
+                writer.WriteEntry(file);
+            }
+
+            string filePath = Path.Join(destination.Path, "dir", "file");
+            string linkPath = Path.Join(destination.Path, "link");
+
+            File.WriteAllText(linkPath, "");
+
+            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true);
+
+            Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
+            Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
         }
     }
 }

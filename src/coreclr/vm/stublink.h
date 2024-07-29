@@ -160,10 +160,10 @@ class StubLinker
         // Append code bytes.
         //---------------------------------------------------------------
         VOID EmitBytes(const BYTE *pBytes, UINT numBytes);
-        VOID Emit8 (unsigned __int8  u8);
-        VOID Emit16(unsigned __int16 u16);
-        VOID Emit32(unsigned __int32 u32);
-        VOID Emit64(unsigned __int64 u64);
+        VOID Emit8 (uint8_t  u8);
+        VOID Emit16(uint16_t u16);
+        VOID Emit32(uint32_t u32);
+        VOID Emit64(uint64_t u64);
         VOID EmitPtr(const VOID *pval);
 
         //---------------------------------------------------------------
@@ -227,6 +227,10 @@ class StubLinker
         void DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs);
 #elif defined(TARGET_ARM64)
         void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackFrame);
+        UINT GetSavedRegArgsOffset();
+        UINT GetStackFrameSize();
+#elif defined(TARGET_RISCV64)
+        void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cbStackFrame);
         UINT GetSavedRegArgsOffset();
         UINT GetStackFrameSize();
 #endif
@@ -303,6 +307,14 @@ protected:
         UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
         UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
 #endif // TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+protected:
+        BOOL            m_fProlog;              // True if DescribeProlog has been called
+        UINT            m_cIntRegArgs;          // Count of int register arguments (x10 - x17)
+        UINT            m_cFpRegArgs;           // Count of FP register arguments (f10 - f17)
+        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
+#endif // TARGET_RISCV64
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
@@ -439,7 +451,8 @@ enum NewStubFlags
     NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
     NEWSTUB_FL_MULTICAST            = 0x00000002,
     NEWSTUB_FL_EXTERNAL             = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP           = 0x00000008
+    NEWSTUB_FL_LOADERHEAP           = 0x00000008,
+    NEWSTUB_FL_THUNK                = 0x00000010
 };
 
 
@@ -464,11 +477,12 @@ class Stub
         LOADER_HEAP_BIT         = 0x20000000,
         INSTANTIATING_STUB_BIT  = 0x10000000,
         UNWIND_INFO_BIT         = 0x08000000,
+        THUNK_BIT               = 0x04000000,
 
-        CODEBYTES_MASK          = UNWIND_INFO_BIT - 1,
+        CODEBYTES_MASK          = THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-    static_assert_no_msg(CODEBYTES_MASK < UNWIND_INFO_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < THUNK_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -511,6 +525,15 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
             return (m_numCodeBytesAndFlags & INSTANTIATING_STUB_BIT) != 0;
+        }
+
+        //-------------------------------------------------------------------
+        // Used by the debugger to help step through stubs
+        //-------------------------------------------------------------------
+        BOOL IsManagedThunk()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_numCodeBytesAndFlags & THUNK_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
@@ -891,7 +914,7 @@ class Stub
 //
 //
 //   VOID RRT.EmitInstruction(UINT     refsize,
-//                            __int64  fixedUpReference,
+//                            int64_t  fixedUpReference,
 //                            BYTE    *pOutBuffer,
 //                            UINT     variationCode,
 //                            BYTE    *pDataBuffer)
@@ -907,10 +930,10 @@ class Stub
 //
 //          if (refsize==k8) {
 //              pOutBuffer[0] = 0xeb;
-//              pOutBuffer[1] = (__int8)fixedUpReference;
+//              pOutBuffer[1] = (int8_t)fixedUpReference;
 //          } else if (refsize == k32) {
 //              pOutBuffer[0] = 0xe9;
-//              *((__int32*)(1+pOutBuffer)) = (__int32)fixedUpReference;
+//              *((int32_t*)(1+pOutBuffer)) = (int32_t)fixedUpReference;
 //          } else {
 //              CRASH("Bad input.");
 //          }
@@ -929,7 +952,7 @@ class Stub
 //     method that does exactly this so X86 need not override this at all.
 //
 //
-// The extra "variationCode" argument is an __int32 that StubLinker receives
+// The extra "variationCode" argument is an int32_t that StubLinker receives
 // from EmitLabelRef() and passes uninterpreted to each RRT method.
 // This allows one RRT to handle a family of related instructions,
 // for example, the family of conditional jumps on the X86.
@@ -1004,7 +1027,7 @@ class InstructionFormat
         }
 
         virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode) = 0;
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pCodeBufferRX, BYTE *pCodeBufferRW, UINT variationCode, BYTE *pDataBuffer) = 0;
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pCodeBufferRX, BYTE *pCodeBufferRW, UINT variationCode, BYTE *pDataBuffer) = 0;
         virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
         {
             WRAPPER_NO_CONTRACT;
@@ -1087,72 +1110,6 @@ class InstructionFormat
         }
 };
 
-
-
-
-
-//-------------------------------------------------------------------------
-// This stub cache associates stubs with an integer key.  For some clients,
-// this might represent the size of the argument stack in some cpu-specific
-// units (for the x86, the size is expressed in DWORDS.)  For other clients,
-// this might take into account the style of stub (e.g. whether it returns
-// an object reference or not).
-//-------------------------------------------------------------------------
-class ArgBasedStubCache
-{
-    public:
-       ArgBasedStubCache(UINT fixedSize = NUMFIXEDSLOTS);
-       ~ArgBasedStubCache();
-
-       //-----------------------------------------------------------------
-       // Retrieves the stub associated with the given key.
-       //-----------------------------------------------------------------
-       Stub *GetStub(UINT_PTR key);
-
-       //-----------------------------------------------------------------
-       // Tries to associate the stub with the given key.
-       // It may fail because another thread might swoop in and
-       // do the association before you do. Thus, you must use the
-       // return value stub rather than the pStub.
-       //-----------------------------------------------------------------
-       Stub* AttemptToSetStub(UINT_PTR key, Stub *pStub);
-
-
-       // Suggestions for number of slots
-       enum {
- #ifdef _DEBUG
-             NUMFIXEDSLOTS = 3,
- #else
-             NUMFIXEDSLOTS = 16,
- #endif
-       };
-
-#ifdef _DEBUG
-       VOID Dump();  //Diagnostic dump
-#endif
-
-    private:
-
-       // How many low-numbered keys have direct access?
-       UINT      m_numFixedSlots;
-
-       // For 'm_numFixedSlots' low-numbered keys, we store them in an array.
-       Stub    **m_aStub;
-
-
-       struct SlotEntry
-       {
-           Stub             *m_pStub;
-           UINT_PTR         m_key;
-           SlotEntry        *m_pNext;
-       };
-
-       // High-numbered keys are stored in a sparse linked list.
-       SlotEntry            *m_pSlotEntries;
-
-
-       Crst                  m_crst;
-};
 
 
 #define CPUSTUBLINKER StubLinkerCPU

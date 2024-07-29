@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -39,11 +40,11 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
+            return GetMethodImpl(name, DefaultLookup, null, CallingConventions.Any, null, null);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
+        public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, DefaultLookup, null, CallingConventions.Any, types, null);
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
@@ -61,28 +62,28 @@ namespace System.Reflection
         protected virtual MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo[] GetMethods() => GetMethods(Module.DefaultLookup);
+        public MethodInfo[] GetMethods() => GetMethods(DefaultLookup);
         [RequiresUnreferencedCode("Methods might be removed")]
         public virtual MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public FieldInfo? GetField(string name) => GetField(name, Module.DefaultLookup);
+        public FieldInfo? GetField(string name) => GetField(name, DefaultLookup);
         [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo? GetField(string name, BindingFlags bindingAttr) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public FieldInfo[] GetFields() => GetFields(Module.DefaultLookup);
+        public FieldInfo[] GetFields() => GetFields(DefaultLookup);
         [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo[] GetFields(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public virtual Type[] GetTypes() { throw NotImplemented.ByDesign; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className) => GetType(className, throwOnError: false, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className, bool ignoreCase) => GetType(className, throwOnError: false, ignoreCase: ignoreCase);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -137,6 +138,8 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public virtual Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override bool Equals(object? o) => base.Equals(o);
@@ -176,7 +179,7 @@ namespace System.Reflection
         private static bool FilterTypeNameImpl(Type cls, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string str))
+            if (filterCriteria is not string str)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }

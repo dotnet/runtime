@@ -147,7 +147,7 @@ namespace System.IO.MemoryMappedFiles
 #pragma warning restore IDE0060
 
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
-        private static Exception CreateNamedMapsNotSupportedException()
+        private static PlatformNotSupportedException CreateNamedMapsNotSupportedException()
         {
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }

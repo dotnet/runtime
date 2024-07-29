@@ -57,10 +57,16 @@ public:
 class JitPrimeInfo
 {
 public:
-    constexpr JitPrimeInfo() : prime(0), magic(0), shift(0)
+    constexpr JitPrimeInfo()
+        : prime(0)
+        , magic(0)
+        , shift(0)
     {
     }
-    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s) : prime(p), magic(m), shift(s)
+    constexpr JitPrimeInfo(unsigned p, unsigned m, unsigned s)
+        : prime(p)
+        , magic(m)
+        , shift(s)
     {
     }
     unsigned prime;
@@ -70,9 +76,9 @@ public:
     // Compute `numerator` / `prime` using magic division
     unsigned magicNumberDivide(unsigned numerator) const
     {
-        unsigned __int64 num     = numerator;
-        unsigned __int64 mag     = magic;
-        unsigned __int64 product = (num * mag) >> (32 + shift);
+        uint64_t num     = numerator;
+        uint64_t mag     = magic;
+        uint64_t product = (num * mag) >> (32 + shift);
         return (unsigned)product;
     }
 
@@ -94,7 +100,21 @@ public:
 extern const JitPrimeInfo jitPrimeInfo[27];
 
 // Hash table class definition
-
+//
+// Several iterators are defined that work with range-based `for`:
+//   KeyIteration: yields just the hash table keys
+//   ValueIteration: yields just the hash table values
+//   KeyValueIteration: yields just the hash table <key,value> pairs
+//
+// For example:
+//
+//    for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
+//
+//    for (ValueNumToAssertsMap::Node* const iter : ValueNumToAssertsMap::KeyValueIteration(optValueNumToAsserts))
+//    {
+//        // use iter->GetKey(), iter->GetValue()
+//    }
+//
 template <typename Key,
           typename KeyFuncs,
           typename Value,
@@ -103,7 +123,47 @@ template <typename Key,
 class JitHashTable
 {
 public:
-    class KeyIterator;
+    // The node type.
+    // The only reason this class is public is to support the NodeIterator and KeyValueIteration. Only GetKey()
+    // and GetValue() need to be public methods.
+    class Node
+    {
+        friend class JitHashTable;
+
+        Node* m_next; // Assume that the alignment requirement of Key and Value are no greater than Node*,
+                      // so put m_next first to avoid unnecessary padding.
+        Key   m_key;
+        Value m_val;
+
+        template <class... Args>
+        Node(Node* next, Key k, Args&&... args)
+            : m_next(next)
+            , m_key(k)
+            , m_val(std::forward<Args>(args)...)
+        {
+        }
+
+        void* operator new(size_t sz, Allocator alloc)
+        {
+            return alloc.template allocate<unsigned char>(sz);
+        }
+
+        void operator delete(void* p, Allocator alloc)
+        {
+            alloc.deallocate(p);
+        }
+
+    public:
+        Key GetKey() const
+        {
+            return m_key;
+        }
+
+        Value GetValue() const
+        {
+            return m_val;
+        }
+    };
 
     //------------------------------------------------------------------------
     // JitHashTable: Construct an empty JitHashTable object.
@@ -115,7 +175,12 @@ public:
     //    JitHashTable always starts out empty, with no allocation overhead.
     //    Call Reallocate to prime with an initial size if desired.
     //
-    JitHashTable(Allocator alloc) : m_alloc(alloc), m_table(nullptr), m_tableSizeInfo(), m_tableCount(0), m_tableMax(0)
+    JitHashTable(Allocator alloc)
+        : m_alloc(alloc)
+        , m_table(nullptr)
+        , m_tableSizeInfo()
+        , m_tableCount(0)
+        , m_tableMax(0)
     {
 #ifndef __GNUC__ // these crash GCC
         static_assert_no_msg(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);
@@ -168,7 +233,7 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // Lookup: Get a pointer to the value associated to the specified key.
+    // LookupPointer: Get a pointer to the value associated to the specified key.
     // if any.
     //
     // Arguments:
@@ -197,6 +262,48 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // LookupPointerOrAdd: Get a pointer to the value associated to the specified key.
+    // If not present, add it with the specified default value and return a pointer to it.
+    //
+    // Arguments:
+    //    k - the key
+    //    defaultValue - Default value to add to the table if the key was not present
+    //
+    // Return Value:
+    //    A pointer to the value associated with the specified key.
+    //
+    Value* LookupPointerOrAdd(Key k, Value defaultValue)
+    {
+        CheckGrowth();
+
+        assert(m_tableSizeInfo.prime != 0);
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* n = m_table[index];
+        while (n != nullptr)
+        {
+            if (KeyFuncs::Equals(k, n->m_key))
+            {
+                return &n->m_val;
+            }
+
+            n = n->m_next;
+        }
+
+        n              = new (m_alloc) Node(m_table[index], k, defaultValue);
+        m_table[index] = n;
+        m_tableCount++;
+        return &n->m_val;
+    }
+
+    enum SetKind
+    {
+        None,
+        Overwrite
+    };
+
+    //------------------------------------------------------------------------
     // Set: Associate the specified value with the specified key.
     //
     // Arguments:
@@ -214,12 +321,6 @@ public:
     //    If the key already exists and kind is Normal
     //    this method will assert
     //
-    enum SetKind
-    {
-        None,
-        Overwrite
-    };
-
     bool Set(Key k, Value v, SetKind kind = None)
     {
         CheckGrowth();
@@ -344,22 +445,211 @@ public:
         m_tableSizeInfo = JitPrimeInfo();
         m_tableCount    = 0;
         m_tableMax      = 0;
-
-        return;
     }
 
-    // Get an iterator to the first key in the table.
-    KeyIterator Begin() const
+    //
+    // Iteration support
+    //
+
+    class NodeIterator
     {
-        KeyIterator i(this, true);
-        return i;
-    }
+    protected:
+        Node**   m_table;
+        Node*    m_node;
+        unsigned m_tableSize;
+        unsigned m_index;
 
-    // Get an iterator following the last key in the table.
-    KeyIterator End() const
+        //------------------------------------------------------------------------
+        // NodeIterator: Construct an iterator for the specified JitHashTable.
+        //
+        // Arguments:
+        //    hash  - the hashtable
+        //    begin - `true` to construct an "begin" iterator,
+        //            `false` to construct an "end" iterator
+        //
+        NodeIterator(const JitHashTable* hash, bool begin)
+            : m_table(hash->m_table)
+            , m_node(nullptr)
+            , m_tableSize(hash->m_tableSizeInfo.prime)
+            , m_index(begin ? 0 : m_tableSize)
+        {
+            if (begin && (hash->m_tableCount > 0))
+            {
+                assert(m_table != nullptr);
+                while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
+                {
+                    m_index++;
+                }
+
+                if (m_index < m_tableSize)
+                {
+                    m_node = m_table[m_index];
+                    assert(m_node != nullptr);
+                }
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // Next: Advance the iterator to the next node.
+        //
+        // Notes:
+        //    Advancing the end iterator has no effect.
+        //
+        void Next()
+        {
+            if (m_node != nullptr)
+            {
+                m_node = m_node->m_next;
+                if (m_node != nullptr)
+                {
+                    return;
+                }
+
+                // Otherwise...
+                m_index++;
+            }
+            while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
+            {
+                m_index++;
+            }
+
+            if (m_index < m_tableSize)
+            {
+                m_node = m_table[m_index];
+                assert(m_node != nullptr);
+            }
+            else
+            {
+                m_node = nullptr;
+            }
+        }
+
+    public:
+        // Advance the iterator to the next node
+        NodeIterator& operator++()
+        {
+            Next();
+            return *this;
+        }
+
+        bool operator!=(const NodeIterator& i) const
+        {
+            return i.m_node != m_node;
+        }
+    };
+
+    // KeyIterator: an iterator which yields only the hash table keys.
+    class KeyIterator : public NodeIterator
     {
-        return KeyIterator(this, false);
-    }
+    public:
+        KeyIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
+        {
+        }
+
+        Key operator*() const
+        {
+            return this->m_node->GetKey();
+        }
+    };
+
+    // ValueIterator: an iterator which yields only the hash table values.
+    class ValueIterator : public NodeIterator
+    {
+    public:
+        ValueIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
+        {
+        }
+
+        Value operator*() const
+        {
+            return this->m_node->GetValue();
+        }
+    };
+
+    // KeyValueIterator: an iterator which yields the hash table <key,value> pairs. It exposes a bit of the
+    // hash table implementation by returning a `Node*` that contains the <key,value> data.
+    class KeyValueIterator : public NodeIterator
+    {
+    public:
+        KeyValueIterator(const JitHashTable* hash, bool begin)
+            : NodeIterator(hash, begin)
+        {
+        }
+
+        // We could return a new <key,value> struct, but why bother copying data?
+        Node* operator*() const
+        {
+            return this->m_node;
+        }
+    };
+
+    // KeyIteration: an adaptor to use for range-based `for` iteration over the hash table keys.
+    class KeyIteration
+    {
+        const JitHashTable* const m_hash;
+
+    public:
+        KeyIteration(const JitHashTable* hash)
+            : m_hash(hash)
+        {
+        }
+
+        KeyIterator begin() const
+        {
+            return KeyIterator(m_hash, true);
+        }
+
+        KeyIterator end() const
+        {
+            return KeyIterator(m_hash, false);
+        }
+    };
+
+    // ValueIteration: an adaptor to use for range-based `for` iteration over the hash table values.
+    class ValueIteration
+    {
+        const JitHashTable* const m_hash;
+
+    public:
+        ValueIteration(const JitHashTable* hash)
+            : m_hash(hash)
+        {
+        }
+
+        ValueIterator begin() const
+        {
+            return ValueIterator(m_hash, true);
+        }
+
+        ValueIterator end() const
+        {
+            return ValueIterator(m_hash, false);
+        }
+    };
+
+    // KeyValueIteration: an adaptor to use for range-based `for` iteration over the hash table <key,value> pairs.
+    class KeyValueIteration
+    {
+        const JitHashTable* const m_hash;
+
+    public:
+        KeyValueIteration(const JitHashTable* hash)
+            : m_hash(hash)
+        {
+        }
+
+        KeyValueIterator begin() const
+        {
+            return KeyValueIterator(m_hash, true);
+        }
+
+        KeyValueIterator end() const
+        {
+            return KeyValueIterator(m_hash, false);
+        }
+    };
 
     // Get the number of keys currently stored in the table.
     unsigned GetCount() const
@@ -374,8 +664,6 @@ public:
     }
 
 private:
-    struct Node;
-
     //------------------------------------------------------------------------
     // GetIndexForKey: Get the bucket index for the specified key.
     //
@@ -525,165 +813,6 @@ public:
             (unsigned)(newTableSize * Behavior::s_density_factor_numerator / Behavior::s_density_factor_denominator);
     }
 
-    // For iteration, we use a pattern similar to the STL "forward
-    // iterator" pattern.  It basically consists of wrapping an
-    // "iteration variable" in an object, and providing pointer-like
-    // operators on the iterator. Example usage:
-    //
-    // for (JitHashTable::KeyIterator iter = foo->Begin(), end = foo->End(); !iter.Equal(end); iter++)
-    // {
-    //      // use foo, iter.
-    // }
-    // iter.Get() will yield (a reference to) the
-    // current key.  It will assert the equivalent of "iter != end."
-    class KeyIterator
-    {
-    private:
-        friend class JitHashTable;
-
-        Node**   m_table;
-        Node*    m_node;
-        unsigned m_tableSize;
-        unsigned m_index;
-
-    public:
-        //------------------------------------------------------------------------
-        // KeyIterator: Construct an iterator for the specified JitHashTable.
-        //
-        // Arguments:
-        //    hash  - the hashtable
-        //    begin - `true` to construct an "begin" iterator,
-        //            `false` to construct an "end" iterator
-        //
-        KeyIterator(const JitHashTable* hash, bool begin)
-            : m_table(hash->m_table)
-            , m_node(nullptr)
-            , m_tableSize(hash->m_tableSizeInfo.prime)
-            , m_index(begin ? 0 : m_tableSize)
-        {
-            if (begin && (hash->m_tableCount > 0))
-            {
-                assert(m_table != nullptr);
-                while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
-                {
-                    m_index++;
-                }
-
-                if (m_index >= m_tableSize)
-                {
-                    return;
-                }
-                else
-                {
-                    m_node = m_table[m_index];
-                }
-                assert(m_node != nullptr);
-            }
-        }
-
-        //------------------------------------------------------------------------
-        // Get: Get a reference to this iterator's key.
-        //
-        // Return Value:
-        //    A reference to this iterator's key.
-        //
-        // Assumptions:
-        //    This must not be the "end" iterator.
-        //
-        const Key& Get() const
-        {
-            assert(m_node != nullptr);
-
-            return m_node->m_key;
-        }
-
-        //------------------------------------------------------------------------
-        // GetValue: Get a reference to this iterator's value.
-        //
-        // Return Value:
-        //    A reference to this iterator's value.
-        //
-        // Assumptions:
-        //    This must not be the "end" iterator.
-        //
-        Value& GetValue() const
-        {
-            assert(m_node != nullptr);
-
-            return m_node->m_val;
-        }
-
-        //------------------------------------------------------------------------
-        // SetValue: Assign a new value to this iterator's key
-        //
-        // Arguments:
-        //    value - the value to assign
-        //
-        // Assumptions:
-        //    This must not be the "end" iterator.
-        //
-        void SetValue(const Value& value) const
-        {
-            assert(m_node != nullptr);
-
-            m_node->m_val = value;
-        }
-
-        //------------------------------------------------------------------------
-        // Next: Advance the iterator to the next node.
-        //
-        // Notes:
-        //    Advancing the end iterator has no effect.
-        //
-        void Next()
-        {
-            if (m_node != nullptr)
-            {
-                m_node = m_node->m_next;
-                if (m_node != nullptr)
-                {
-                    return;
-                }
-
-                // Otherwise...
-                m_index++;
-            }
-            while ((m_index < m_tableSize) && (m_table[m_index] == nullptr))
-            {
-                m_index++;
-            }
-
-            if (m_index >= m_tableSize)
-            {
-                m_node = nullptr;
-                return;
-            }
-            else
-            {
-                m_node = m_table[m_index];
-            }
-            assert(m_node != nullptr);
-        }
-
-        // Return `true` if the specified iterator has the same position as this iterator
-        bool Equal(const KeyIterator& i) const
-        {
-            return i.m_node == m_node;
-        }
-
-        // Advance the iterator to the next node
-        void operator++()
-        {
-            Next();
-        }
-
-        // Advance the iterator to the next node
-        void operator++(int)
-        {
-            Next();
-        }
-    };
-
     //------------------------------------------------------------------------
     // operator[]: Get a reference to the value associated with the specified key.
     //
@@ -726,30 +855,6 @@ private:
         // overflow
         Behavior::NoMemory();
     }
-
-    // The node type.
-    struct Node
-    {
-        Node* m_next; // Assume that the alignment requirement of Key and Value are no greater than Node*,
-                      // so put m_next first to avoid unnecessary padding.
-        Key   m_key;
-        Value m_val;
-
-        template <class... Args>
-        Node(Node* next, Key k, Args&&... args) : m_next(next), m_key(k), m_val(std::forward<Args>(args)...)
-        {
-        }
-
-        void* operator new(size_t sz, Allocator alloc)
-        {
-            return alloc.template allocate<unsigned char>(sz);
-        }
-
-        void operator delete(void* p, Allocator alloc)
-        {
-            alloc.deallocate(p);
-        }
-    };
 
     // Instance members
     Allocator    m_alloc;         // Allocator to use in this table.

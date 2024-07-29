@@ -146,7 +146,7 @@ class TypeSpecContainer
 {
 private:
     // Contain a BinStr
-    unsigned __int8 *ptr_;
+    uint8_t *ptr_;
     unsigned len_;
     // Hash the BinStr, just for speed of lookup
     unsigned hash_;
@@ -166,7 +166,7 @@ public:
     // Constructor for a 'permanent' object
     // Don't bother re-hashing, since we will always have already constructed the lookup object
     TypeSpecContainer(const TypeSpecContainer &t, mdToken tk) :
-        ptr_(new unsigned __int8[t.len_]),
+        ptr_(new uint8_t[t.len_]),
         len_(t.len_),
         hash_(t.hash_),
         token_(tk)
@@ -250,7 +250,7 @@ mdToken Assembler::GetAsmRef(_In_ __nullterminated const char* szName)
         {
             // emit the AssemblyRef
             // if it's not self, try to get attributes with Autodetect
-            unsigned L = (unsigned)strlen(szName)+1;
+            size_t L = strlen(szName)+1;
             char *sz = new char[L];
             if(sz)
             {
@@ -379,7 +379,7 @@ mdToken Assembler::MakeTypeRef(mdToken tkResScope, LPCUTF8 pszFullClassName)
         if(*pc)
         {
             // convert name to widechar
-            WszMultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
             if(FAILED(m_pEmitter->DefineTypeRefByName(tkResScope, wzUniBuf, &tkRet))) tkRet = mdTokenNil;
         }
     }
@@ -421,7 +421,7 @@ void Assembler::StartClass(_In_ __nullterminated char* name, DWORD attr, TyParLi
 {
     Class *pEnclosingClass = m_pCurClass;
     char *szFQN;
-    ULONG LL;
+    size_t LL;
 
     m_TyParList = typars;
 
@@ -431,24 +431,24 @@ void Assembler::StartClass(_In_ __nullterminated char* name, DWORD attr, TyParLi
     }
     if(pEnclosingClass)
     {
-        LL = pEnclosingClass->m_dwFQN+(ULONG)strlen(name)+2;
-        if((szFQN = new char[LL]))
+        LL = pEnclosingClass->m_dwFQN+strlen(name)+2;
+        if((szFQN = new char[LL]) != nullptr)
             sprintf_s(szFQN,LL,"%s%c%s",pEnclosingClass->m_szFQN,NESTING_SEP,name);
         else
             report->error("\nOut of memory!\n");
     }
     else
     {
-        unsigned L = (unsigned)strlen(m_szFullNS);
-        unsigned LLL = (unsigned)strlen(name);
+        size_t L = strlen(m_szFullNS);
+        size_t LLL = strlen(name);
         LL = L + LLL + (L ? 2 : 1);
-        if((szFQN = new char[LL]))
+        if((szFQN = new char[LL]) != nullptr)
         {
             if(L) sprintf_s(szFQN,LL,"%s.%s",m_szFullNS,name);
             else memcpy(szFQN,name,LL);
             if(LL > MAX_CLASSNAME_LENGTH)
             {
-                report->error("Full class name too long (%d characters, %d allowed).\n",LL-1,MAX_CLASSNAME_LENGTH-1);
+                report->error("Full class name too long (%zd characters, %d allowed).\n",LL-1,MAX_CLASSNAME_LENGTH-1);
             }
         }
         else
@@ -523,7 +523,7 @@ void Assembler::AddClass()
         m_pCurClass->m_Attr = attr;
         m_pCurClass->m_crExtends = (m_pCurClass->m_cl == m_tkSysObject)? mdTypeRefNil : crExtends;
 
-        if ((m_pCurClass->m_dwNumInterfaces = m_nImplList) != NULL)
+        if ((m_pCurClass->m_dwNumInterfaces = m_nImplList) != 0)
         {
             if(bIsEnum) report->error("Enum implementing interface(s)\n");
             if((m_pCurClass->m_crImplements = new mdTypeRef[m_nImplList+1]) != NULL)
@@ -625,7 +625,7 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
     {
         char c = name[MAX_CLASSNAME_LENGTH-1];
         name[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Method '%s...' -- name too long (%d characters).\n",name,namelen);
+        report->error("Method '%s...' -- name too long (%zd characters).\n",name,namelen);
         name[MAX_CLASSNAME_LENGTH-1] = c;
     }
     if (!(flags & mdStatic))
@@ -811,11 +811,12 @@ void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr
     if (m_pCurMethod)
         report->error("Field cannot be declared within a method\n");
 
-    if(strlen(name) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(name);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = name[MAX_CLASSNAME_LENGTH-1];
         name[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Field '%s...' -- name too long (%d characters).\n",name,strlen(name));
+        report->error("Field '%s...' -- name too long (%zd characters).\n",name,namelen);
         name[MAX_CLASSNAME_LENGTH-1] = c;
     }
 
@@ -924,11 +925,11 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     cSig = pFD->m_pbsSig->length();
     mySig = (COR_SIGNATURE*)(pFD->m_pbsSig->ptr());
 
-    WszMultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
+    MultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
-        WCHAR* p = wcsstr(wzFieldName,W("$PST04"));
-        if(p) *p = 0;
+        WCHAR* p = (WCHAR*)u16_strstr(wzFieldName,W("$PST04"));
+        if(p) *p = W('\0');
     }
 
     if(pFD->m_pbsValue && pFD->m_pbsValue->length())
@@ -1283,7 +1284,7 @@ void Assembler::EmitDD(_In_ __nullterminated char *str)
     _ASSERTE(SUCCEEDED(hr));
 
     DWORD* ptr;
-    DWORD sizeofptr = (DWORD)((m_dwCeeFileFlags & ICEE_CREATE_FILE_PE32) ? sizeof(DWORD) : sizeof(__int64));
+    DWORD sizeofptr = (DWORD)((m_dwCeeFileFlags & ICEE_CREATE_FILE_PE32) ? sizeof(DWORD) : sizeof(int64_t));
     hr = m_pCeeFileGen->GetSectionBlock(m_pCurSection, sizeofptr, 1, (void**) &ptr);
     if (FAILED(hr))
     {
@@ -1317,7 +1318,7 @@ void Assembler::EmitDD(_In_ __nullterminated char *str)
     else
     {
         m_dwComImageFlags &= ~COMIMAGE_FLAGS_ILONLY;
-        *((__int64*)ptr) = (__int64)dwAddr;
+        *((int64_t*)ptr) = (int64_t)dwAddr;
     }
 }
 
@@ -1382,7 +1383,7 @@ void Assembler::EmitDataString(BinStr* str)
 
         if(UnicodeString)
         {
-            WszMultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
+            MultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
             EmitData(UnicodeString,DataLen*sizeof(WCHAR));
             if(DataLen >= dwUniBuf) delete [] UnicodeString;
         }
@@ -1419,6 +1420,15 @@ void Assembler::EmitOpcode(Instr* instr)
                 pLPC->PC = m_CurPC;
 
                 pLPC->pOwnerDocument = instr->pOwnerDocument;
+                if(m_pCurMethod->m_FirstDocument == NULL)
+                {
+                    m_pCurMethod->m_FirstDocument = instr->pOwnerDocument;
+                }
+                else if (instr->pOwnerDocument != NULL && m_pCurMethod->m_FirstDocument != instr->pOwnerDocument)
+                {
+                    m_pCurMethod->m_HasMultipleDocuments = TRUE;
+                }
+                
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&
@@ -1653,10 +1663,10 @@ void Assembler::EmitInstrI(Instr* instr, int val)
 }
 
 /**************************************************************************/
-void Assembler::EmitInstrI8(Instr* instr, __int64* val)
+void Assembler::EmitInstrI8(Instr* instr, int64_t* val)
 {
     EmitOpcode(instr);
-    EmitBytes((BYTE *)val, sizeof(__int64));
+    EmitBytes((BYTE *)val, sizeof(int64_t));
     delete val;
 }
 
@@ -1782,7 +1792,7 @@ mdToken Assembler::MakeMemberRef(mdToken cr, _In_ __nullterminated char* pszMemb
     }
     else
     {
-        WszMultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
 
         if(cr == mdTokenNil) cr = mdTypeRefNil;
         if(TypeFromToken(cr) == mdtAssemblyRef)
@@ -1879,11 +1889,12 @@ void Assembler::EndEvent(void)
 
 void Assembler::ResetEvent(__inout_z __inout char* szName, mdToken typeSpec, DWORD dwAttr)
 {
-    if(strlen(szName) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(szName);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = szName[MAX_CLASSNAME_LENGTH-1];
         szName[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Event '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
+        report->error("Event '%s...' -- name too long (%zd characters).\n",szName,namelen);
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
     if((m_pCurEvent = new (nothrow) EventDescriptor()))
@@ -1935,11 +1946,12 @@ void Assembler::ResetProp(__inout_z __inout char * szName, BinStr* bsType, DWORD
     DWORD           cSig = bsType->length();
     COR_SIGNATURE*  mySig = (COR_SIGNATURE *)(bsType->ptr());
 
-    if(strlen(szName) >= MAX_CLASSNAME_LENGTH)
+    size_t namelen = strlen(szName);
+    if(namelen >= MAX_CLASSNAME_LENGTH)
     {
         char c = szName[MAX_CLASSNAME_LENGTH-1];
         szName[MAX_CLASSNAME_LENGTH-1] = 0;
-        report->error("Property '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
+        report->error("Property '%s...' -- name too long (%zd characters).\n",szName,namelen);
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
     m_pCurProp = new (nothrow) PropDescriptor();
@@ -2002,7 +2014,7 @@ void Assembler::SetPropMethod(int MethodCode, mdToken tk)
 void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL ConvertToUnicode, BOOL Swap /*=FALSE*/)
 {
     DWORD   DataLen = literal->length(),L;
-    unsigned __int8 *pb = literal->ptr();
+    uint8_t *pb = literal->ptr();
     HRESULT hr = S_OK;
     mdToken tk;
     WCHAR   *UnicodeString;
@@ -2017,7 +2029,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         literal->appendInt8(0);
         pb = literal->ptr();
         // convert string to Unicode
-        L = UnicodeString ? WszMultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
+        L = UnicodeString ? MultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
         if(L == 0)
         {
             const char* sz=NULL;
@@ -2059,8 +2071,8 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     );
     if (FAILED(hr))
     {
-        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%S'\n",
-               hr, UnicodeString);
+        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%s'\n",
+               hr, pb);
     }
     else
     {
@@ -2279,10 +2291,10 @@ void Assembler::EmitSecurityInfo(mdToken            token,
                 uLength = CorSigCompressToken(tkTypeRef, pSig->getBuff(5));
                 pSig->remove(5 - uLength);
 
-                uLength = (unsigned)strlen(COR_CTOR_METHOD_NAME) + 1;
-                if((szMemberName = new char[uLength]))
+                size_t ctorNameLength = strlen(COR_CTOR_METHOD_NAME) + 1;
+                if((szMemberName = new char[ctorNameLength]) != nullptr)
                 {
-                    memcpy(szMemberName, COR_CTOR_METHOD_NAME, uLength);
+                    memcpy(szMemberName, COR_CTOR_METHOD_NAME, ctorNameLength);
                     pAttrs[i].tkCtor = MakeMemberRef(pPerm->m_TypeSpec, szMemberName, pSig);
                     pAttrs[i].pCustomAttribute = (const void *)pPerm->m_Blob;
                     pAttrs[i].cbCustomAttribute = pPerm->m_BlobLength;
@@ -2380,7 +2392,6 @@ void Assembler::SetSourceFileName(_In_ __nullterminated char* szName)
             if(strcmp(m_szSourceFileName,szName))
             {
                 strcpy_s(m_szSourceFileName,MAX_FILENAME_LENGTH*3+1,szName);
-                WszMultiByteToWideChar(g_uCodePage,0,szName,-1,m_wzSourceFileName,MAX_FILENAME_LENGTH);
             }
             if(m_fGeneratePDB)
             {
@@ -2416,7 +2427,7 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
         if (*szName)
         {
             strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
-            WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+            MultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
         }
     }
 }
@@ -2429,7 +2440,7 @@ HRESULT Assembler::SavePdbFile()
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
     if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, NULL))) goto exit;
+    if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:
     return hr;

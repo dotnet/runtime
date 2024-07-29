@@ -70,31 +70,18 @@ bool fx_ver_t::operator >=(const fx_ver_t& b) const
 
 pal::string_t fx_ver_t::as_str() const
 {
-    pal::stringstream_t stream;
-    stream << m_major << _X(".") << m_minor << _X(".") << m_patch;
+    pal::string_t version = pal::to_string(m_major);
+    version += _X('.');
+    version += pal::to_string(m_minor);
+    version += _X('.');
+    version += pal::to_string(m_patch);
     if (!m_pre.empty())
-    {
-        stream << m_pre;
-    }
+        version += m_pre;
+
     if (!m_build.empty())
-    {
-        stream << m_build;
-    }
-    return stream.str();
-}
+        version += m_build;
 
-pal::string_t fx_ver_t::prerelease_glob() const
-{
-    pal::stringstream_t stream;
-    stream << m_major << _X(".") << m_minor << _X(".") << m_patch << _X("-*");
-    return stream.str();
-}
-
-pal::string_t fx_ver_t::patch_glob() const
-{
-    pal::stringstream_t stream;
-    stream << m_major << _X(".") << m_minor << _X(".*");
-    return stream.str();
+    return version;
 }
 
 static pal::string_t getId(const pal::string_t &ids, size_t idStart)

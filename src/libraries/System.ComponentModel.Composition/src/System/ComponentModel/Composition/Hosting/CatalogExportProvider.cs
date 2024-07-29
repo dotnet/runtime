@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition.ReflectionModel;
+using System.Composition.Diagnostics;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -308,7 +308,7 @@ namespace System.ComponentModel.Composition.Hosting
             return exports!;
         }
 
-        private IEnumerable<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
+        private List<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
             EnsureRunning();
@@ -841,7 +841,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 // Notify anyone sourcing exports that the resurrected exports have appeared
-                if (resurrectedExports.Any())
+                if (resurrectedExports.Count != 0)
                 {
                     OnExportsChanging(
                         new ExportsChangeEventArgs(resurrectedExports, Array.Empty<ExportDefinition>(), localAtomicComposition));
@@ -1025,7 +1025,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 Part = part;
             }
-            public ComposablePart Part { get; private set; }
+            public ComposablePart Part { get; }
 
             public bool ImportsSatisfied
             {

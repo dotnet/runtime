@@ -127,9 +127,7 @@ VOID ParseNativeType(Module*                     pModule,
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__CURRENCY));
             break;
         case MarshalInfo::MARSHAL_TYPE_DECIMAL:
-            // The decimal type can't be blittable since the managed and native alignment requirements differ.
-            // Native needs 8-byte alignment since one field is a 64-bit integer, but managed only needs 4-byte alignment since all fields are ints.
-            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__DECIMAL));
             break;
         case MarshalInfo::MARSHAL_TYPE_GUID:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__GUID));
@@ -163,7 +161,7 @@ VOID ParseNativeType(Module*                     pModule,
             break;
 #ifdef FEATURE_COMINTEROP
         case MarshalInfo::MARSHAL_TYPE_OBJECT:
-            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__NATIVEVARIANT));
+            *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__COMVARIANT));
             break;
 #endif
         case MarshalInfo::MARSHAL_TYPE_SAFEHANDLE:
@@ -191,6 +189,9 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
+        case MarshalInfo::MARSHAL_TYPE_POINTER:
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            break;
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
             *pNFD = NativeFieldDescriptor(pFD);
@@ -201,11 +202,13 @@ VOID ParseNativeType(Module*                     pModule,
 bool IsFieldBlittable(
     Module* pModule,
     mdFieldDef fd,
-    SigPointer fieldSig,
-    const SigTypeContext* pTypeContext,
+    CorElementType corElemType,
+    TypeHandle valueTypeHandle,
     ParseNativeTypeFlags flags
 )
 {
+    STANDARD_VM_CONTRACT;
+
     PCCOR_SIGNATURE marshalInfoSig;
     ULONG marshalInfoSigLength;
 
@@ -218,75 +221,63 @@ bool IsFieldBlittable(
 
     bool isBlittable = false;
 
-    EX_TRY
+    switch (corElemType)
     {
-        TypeHandle valueTypeHandle;
-        CorElementType corElemType = fieldSig.PeekElemTypeNormalized(pModule, pTypeContext, &valueTypeHandle);
-
-        switch (corElemType)
+    case ELEMENT_TYPE_CHAR:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT && flags != ParseNativeTypeFlags::IsAnsi) || (nativeType == NATIVE_TYPE_I2) || (nativeType == NATIVE_TYPE_U2);
+        break;
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_U1:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I1) || (nativeType == NATIVE_TYPE_U1);
+        break;
+    case ELEMENT_TYPE_I2:
+    case ELEMENT_TYPE_U2:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I2) || (nativeType == NATIVE_TYPE_U2);
+        break;
+    case ELEMENT_TYPE_I4:
+    case ELEMENT_TYPE_U4:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I4) || (nativeType == NATIVE_TYPE_U4) || (nativeType == NATIVE_TYPE_ERROR);
+        break;
+    case ELEMENT_TYPE_I8:
+    case ELEMENT_TYPE_U8:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I8) || (nativeType == NATIVE_TYPE_U8);
+        break;
+    case ELEMENT_TYPE_R4:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R4);
+        break;
+    case ELEMENT_TYPE_R8:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R8);
+        break;
+    case ELEMENT_TYPE_I:
+    case ELEMENT_TYPE_U:
+        isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_INT) || (nativeType == NATIVE_TYPE_UINT);
+        break;
+    case ELEMENT_TYPE_PTR:
+        isBlittable = nativeType == NATIVE_TYPE_DEFAULT;
+        break;
+    case ELEMENT_TYPE_FNPTR:
+        isBlittable = nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC;
+        break;
+    case ELEMENT_TYPE_VALUETYPE:
+        if (nativeType != NATIVE_TYPE_DEFAULT && nativeType != NATIVE_TYPE_STRUCT)
         {
-        case ELEMENT_TYPE_CHAR:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT && flags != ParseNativeTypeFlags::IsAnsi) || (nativeType == NATIVE_TYPE_I2) || (nativeType == NATIVE_TYPE_U2);
-            break;
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I1) || (nativeType == NATIVE_TYPE_U1);
-            break;
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I2) || (nativeType == NATIVE_TYPE_U2);
-            break;
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I4) || (nativeType == NATIVE_TYPE_U4) || (nativeType == NATIVE_TYPE_ERROR);
-            break;
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_I8) || (nativeType == NATIVE_TYPE_U8);
-            break;
-        case ELEMENT_TYPE_R4:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R4);
-            break;
-        case ELEMENT_TYPE_R8:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_R8);
-            break;
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-            isBlittable = (nativeType == NATIVE_TYPE_DEFAULT) || (nativeType == NATIVE_TYPE_INT) || (nativeType == NATIVE_TYPE_UINT);
-            break;
-        case ELEMENT_TYPE_PTR:
-            isBlittable = nativeType == NATIVE_TYPE_DEFAULT;
-            break;
-        case ELEMENT_TYPE_FNPTR:
-            isBlittable = nativeType == NATIVE_TYPE_DEFAULT || nativeType == NATIVE_TYPE_FUNC;
-            break;
-        case ELEMENT_TYPE_VALUETYPE:
-            if (nativeType != NATIVE_TYPE_DEFAULT && nativeType != NATIVE_TYPE_STRUCT)
-            {
-                isBlittable = false;
-            }
-            else if (valueTypeHandle.GetMethodTable() == CoreLibBinder::GetClass(CLASS__DECIMAL))
-            {
-                // The alignment requirements of the managed System.Decimal type do not match the native DECIMAL type.
-                // As a result, a field of type System.Decimal can't be blittable.
-                isBlittable = false;
-            }
-            else
-            {
-                isBlittable = valueTypeHandle.GetMethodTable()->IsBlittable();
-            }
-            break;
-        default:
             isBlittable = false;
-            break;
         }
+        else if (valueTypeHandle.GetMethodTable() == CoreLibBinder::GetClass(CLASS__DECIMAL))
+        {
+            // The alignment requirements of the managed System.Decimal type do not match the native DECIMAL type.
+            // As a result, a field of type System.Decimal can't be blittable.
+            isBlittable = false;
+        }
+        else
+        {
+            isBlittable = valueTypeHandle.GetMethodTable()->IsBlittable();
+        }
+        break;
+    default:
+        isBlittable = false;
+        break;
     }
-    EX_CATCH
-    {
-        // We were unable to determine the native type, likely because there is a mutually recursive type reference
-        // in this field's type. A mutually recursive object would never be blittable, so we don't need to do anything.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
     return isBlittable;
 }
 
@@ -419,21 +410,6 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
     {
         return nativeSizeAndAlignment.m_alignmentRequirement;
     }
-}
-
-PTR_MethodTable NativeFieldDescriptor::GetNestedNativeMethodTable() const
-{
-    CONTRACT(PTR_MethodTable)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(IsNestedType());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    RETURN nestedTypeAndCount.m_pNestedType;
 }
 
 PTR_FieldDesc NativeFieldDescriptor::GetFieldDesc() const

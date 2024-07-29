@@ -516,7 +516,7 @@ void DumpUnwindInfo(Compiler*         comp,
     // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
     // to provide padding, and round down to get a multiple of 4 bytes in size.
     DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
-    DWORD dw;
+    DWORD            dw;
 
     dw = *pdw++;
 
@@ -891,6 +891,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
+    assert(!compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -918,11 +920,15 @@ void Compiler::unwindBegProlog()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    assert(compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(!compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -937,6 +943,8 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 // The instructions between the last captured "current state" and the current instruction
@@ -1104,7 +1112,6 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
                   &upcMem[upcCodeSlot], prologBytes);
 
         // Note that the three UWC_END padding bytes still exist at the end of the array.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
         // Zero out the epilog codes memory, to ensure we've copied the right bytes. Don't zero the padding bytes.
@@ -1141,9 +1148,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize); // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() ==
-           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+             epiSize);                                            // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
+                                                                  // it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1764,8 +1771,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <=
-                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
+                                                    // we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {
@@ -2043,7 +2050,7 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 // so the fragment size will fit in the unwind data "Function Length" field.
 // The LOONGARCH Exception Data specification "Function Fragments" section describes this.
 // We split the function so that it is no larger than 512K bytes, or the value of
-// the COMPlus_JitSplitFunctionSize value, if defined (and smaller). We must determine
+// the DOTNET_JitSplitFunctionSize value, if defined (and smaller). We must determine
 // how to split the function/funclet before we issue the instructions, so we can
 // reserve the unwind space with the VM. The instructions issued may shrink (but not
 // expand!) during issuing (although this is extremely rare in any case, and may not
@@ -2063,7 +2070,7 @@ void UnwindInfo::Split()
     maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
 
 #ifdef DEBUG
-    // Consider COMPlus_JitSplitFunctionSize
+    // Consider DOTNET_JitSplitFunctionSize
     unsigned splitFunctionSize = (unsigned)JitConfig.JitSplitFunctionSize();
 
     if (splitFunctionSize != 0)
@@ -2131,7 +2138,6 @@ void UnwindInfo::Split()
     // the actual offsets of the splits since we haven't issued the instructions yet, so store
     // an emitter location instead of an offset, and "finalize" the offset in the unwindEmit() phase,
     // like we do for the function length and epilog offsets.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (uwiComp->verbose)
@@ -2147,7 +2153,7 @@ void UnwindInfo::Split()
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?
-    // It might be fewer if the COMPlus_JitSplitFunctionSize was used, but it better not
+    // It might be fewer if the DOTNET_JitSplitFunctionSize was used, but it better not
     // be fewer if we're splitting into 512K blocks!
 
     unsigned fragCount = 0;
@@ -2164,7 +2170,7 @@ void UnwindInfo::Split()
 
         // If this fires, then we split into fewer fragments than we asked for, and we are using
         // the default, unwind-data-defined 512K maximum fragment size. We won't be able to fit
-        // this fragment into the unwind data! If you set COMPlus_JitSplitFunctionSize to something
+        // this fragment into the unwind data! If you set DOTNET_JitSplitFunctionSize to something
         // small, we might not be able to split into as many fragments as asked for, because we
         // can't split prologs or epilogs.
         assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);

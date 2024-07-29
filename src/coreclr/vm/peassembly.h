@@ -136,8 +136,8 @@ public:
 
 #ifdef LOGGING
     // This is useful for log messages
-    LPCWSTR GetDebugName();
-#endif
+    LPCUTF8 GetDebugName();
+#endif // LOGGING
 
     // ------------------------------------------------------------
     // Checks
@@ -151,7 +151,7 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsSystem() const;
-    BOOL IsDynamic() const;
+    BOOL IsReflectionEmit() const;
 
     // ------------------------------------------------------------
     // Metadata access
@@ -204,10 +204,9 @@ public:
     void *GetVTable(RVA rva);
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                     PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly,
-                     AppDomain* pAppDomain);
+                     Assembly* pAssembly);
 
 #ifndef DACCESS_COMPILE
     PTR_CVOID GetMetadata(COUNT_T *pSize);
@@ -260,7 +259,7 @@ public:
 
     BOOL IsLoaded()
     {
-        return IsDynamic() || HasLoadedPEImage();
+        return IsReflectionEmit() || HasLoadedPEImage();
     }
 
     BOOL IsPtrInPEImage(PTR_CVOID data);
@@ -320,8 +319,6 @@ public:
     }
 
 #endif //!DACCESS_COMPILE
-
-    ULONG HashIdentity();
 
     PTR_AssemblyBinder GetFallbackBinder()
     {
@@ -391,10 +388,10 @@ private:
  // Instance fields
  // ------------------------------------------------------------
 
-#ifdef _DEBUG
-    LPCWSTR                 m_pDebugName;
+#ifdef LOGGING
+    LPCUTF8                 m_pDebugName;
     SString                 m_debugName;
-#endif
+#endif // LOGGING
 
     // IL image, NULL if dynamic
     PTR_PEImage              m_PEImage;
@@ -436,7 +433,6 @@ private:
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder m_pFallbackBinder;
-
 };  // class PEAssembly
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

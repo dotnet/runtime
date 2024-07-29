@@ -124,6 +124,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task IVTUnusedKeptWhenKeepingUsedAttributesOnly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task IVTUsed ()
 		{
 			return RunTest (allowMissingWarnings: true);

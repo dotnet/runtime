@@ -7,10 +7,14 @@ namespace System.Security.Cryptography.Asn1
     {
         public AttributeAsn(AsnEncodedData attribute)
         {
+#if NET
+            ArgumentNullException.ThrowIfNull(attribute);
+#else
             if (attribute is null)
             {
                 throw new ArgumentNullException(nameof(attribute));
             }
+#endif
 
             AttrType = attribute.Oid!.Value!;
             AttrValues = new[] { new ReadOnlyMemory<byte>(attribute.RawData) };

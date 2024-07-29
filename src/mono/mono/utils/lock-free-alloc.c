@@ -73,7 +73,7 @@
 #else
 #include <mono/utils/mono-mmap.h>
 #endif
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-queue.h>
 
@@ -125,7 +125,7 @@ static unsigned long
 prot_flags_for_activate (int activate)
 {
 	unsigned long prot_flags = activate? MONO_MMAP_READ|MONO_MMAP_WRITE: MONO_MMAP_NONE;
-	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON;
+	return prot_flags | MONO_MMAP_PRIVATE | MONO_MMAP_ANON | MONO_MMAP_NOZERO;
 }
 
 static gpointer

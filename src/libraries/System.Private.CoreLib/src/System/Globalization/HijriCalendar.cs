@@ -48,7 +48,7 @@ namespace System.Globalization
         private const int MinAdvancedHijri = -2;
         private const int MaxAdvancedHijri = 2;
 
-        private static readonly int[] s_hijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
+        private static ReadOnlySpan<int> HijriMonthDays => [0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355];
 
         private int _hijriAdvance = int.MinValue;
 
@@ -80,7 +80,7 @@ namespace System.Globalization
 
         private long GetAbsoluteDateHijri(int y, int m, int d)
         {
-            return (long)(DaysUpToHijriYear(y) + s_hijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
+            return (long)(DaysUpToHijriYear(y) + HijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
         }
 
         private long DaysUpToHijriYear(int HijriYear)
@@ -192,13 +192,13 @@ namespace System.Globalization
         /// In order to get the exact Hijri year, we compare the exact absolute date for HijriYear and (HijriYear + 1).
         /// From here, we can get the correct Hijri year.
         /// </summary>
-        internal virtual int GetDatePart(long ticks, int part)
+        private int GetDatePart(long ticks, int part)
         {
             CheckTicksRange(ticks);
 
             // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
             // 1/1/0001 is absolute date 1.
-            long numDays = ticks / GregorianCalendar.TicksPerDay + 1;
+            long numDays = ticks / TimeSpan.TicksPerDay + 1;
 
             // See how much we need to backup or advance
             numDays += HijriAdjustment;
@@ -241,7 +241,7 @@ namespace System.Globalization
                 return (int)numDays;
             }
 
-            while ((hijriMonth <= 12) && (numDays > s_hijriMonthDays[hijriMonth - 1]))
+            while ((hijriMonth <= 12) && (numDays > HijriMonthDays[hijriMonth - 1]))
             {
                 hijriMonth++;
             }
@@ -253,7 +253,7 @@ namespace System.Globalization
             }
 
             // Calculate the Hijri Day.
-            int hijriDay = (int)(numDays - s_hijriMonthDays[hijriMonth - 1]);
+            int hijriDay = (int)(numDays - HijriMonthDays[hijriMonth - 1]);
 
             if (part == DatePartDay)
             {
@@ -296,8 +296,8 @@ namespace System.Globalization
                 d = days;
             }
 
-            long ticks = GetAbsoluteDateHijri(y, m, d) * TicksPerDay + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            long ticks = GetAbsoluteDateHijri(y, m, d) * TimeSpan.TicksPerDay + (time.Ticks % TimeSpan.TicksPerDay);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -344,7 +344,7 @@ namespace System.Globalization
             return HijriEra;
         }
 
-        public override int[] Eras => new int[] { HijriEra };
+        public override int[] Eras => [HijriEra];
 
         public override int GetMonth(DateTime time)
         {
@@ -413,7 +413,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
 
-            return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(lDate * TimeSpan.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         private const int DefaultTwoDigitYearMax = 1451;

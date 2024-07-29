@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         float[] m_afField1;
 
@@ -15,7 +16,8 @@ namespace Test
 
         static bool Static1(float[] param1) { return false; }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -12,6 +14,7 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -44,6 +47,8 @@ namespace System.Security.Claims
             };
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ClaimsPrincipal(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -563,6 +568,30 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        private string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int identitiesCount = 0;
+            foreach (ClaimsIdentity items in Identities)
+            {
+                identitiesCount++;
+            }
+
+            // Return debug string optimized for the case of one identity.
+            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
+            {
+                return claimsIdentity.DebuggerToString();
+            }
+
+            int claimsCount = 0;
+            foreach (Claim item in Claims)
+            {
+                claimsCount++;
+            }
+
+            return $"Identities = {identitiesCount}, Claims = {claimsCount}";
         }
     }
 }

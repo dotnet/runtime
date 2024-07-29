@@ -1061,7 +1061,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 return null;
             }
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.String(avt);
             }
@@ -1071,7 +1071,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
+            if (!avt.AsSpan().ContainsAny('{', '}'))
             {
                 return _f.TextCtor(_f.String(avt));
             }
@@ -1516,7 +1516,7 @@ namespace System.Xml.Xsl.Xslt
 
         // REVIEW: Can we handle both sort's and with-param's in the document order?
         // CompileSorts() creates helper variables in varHelper
-        private QilNode? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
+        private QilList? CompileSorts(IList<XslNode> content, ref LoopFocus parentLoop)
         {
             QilList keyList = _f.BaseFactory.SortKeyList();
 
@@ -2563,7 +2563,7 @@ namespace System.Xml.Xsl.Xslt
         // Returns true if formalArgs maps 1:1 with actual args.
         // Formally this is n*n algorithm. We can optimize it by calculationg "signature"
         // of the function as sum of all hashes of its args names.
-        private static bool FillupInvokeArgs(IList<QilNode> formalArgs, IList<XslNode> actualArgs, QilList invokeArgs)
+        private static bool FillupInvokeArgs(QilList formalArgs, IList<XslNode> actualArgs, QilList invokeArgs)
         {
             if (actualArgs.Count != formalArgs.Count)
             {

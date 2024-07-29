@@ -17,6 +17,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -98,9 +99,16 @@ namespace BenchmarksGame
             maxFlips[taskId] = maxflips;
         }
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             int sum = Bench(n, true);
 
             int expected = 16;

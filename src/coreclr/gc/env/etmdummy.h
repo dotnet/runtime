@@ -100,7 +100,7 @@
 #define FireEtwContentionStart_V1(ContentionFlags, ClrInstanceID) 0
 #define FireEtwContentionStart_V2(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID) 0
 #define FireEtwContentionStop(ContentionFlags, ClrInstanceID) 0
-#define FireEtwLockCreated(LockID, AssociatedObjectID, ClrInstanceID) 0
+#define FireEtwContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID) 0
 #define FireEtwCLRStackWalk(ClrInstanceID, Reserved1, Reserved2, FrameCount, Stack) 0
 #define FireEtwAppDomainMemAllocated(AppDomainID, Allocated, ClrInstanceID) 0
 #define FireEtwAppDomainMemSurvived(AppDomainID, Survived, ProcessSurvived, ClrInstanceID) 0
@@ -417,3 +417,5 @@
 #define FireEtwAppDomainAssemblyResolveHandlerInvoked(ClrInstanceId, assemblyName, handlerName, resultAssemblyName, resultAssemblyPath) 0
 #define FireEtwAssemblyLoadFromResolveHandlerInvoked(ClrInstanceId, assemblyName, isTrackedAssembly, requestingAssemblyPath, requestedAssemblyPath) 0
 #define FireEtwEventSource(eventID, eventName, eventSourceName, payload) 0
+#define FireEtwWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID) 0
+#define FireEtwWaitHandleWaitStop(ClrInstanceID) 0

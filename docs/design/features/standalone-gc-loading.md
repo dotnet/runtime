@@ -5,6 +5,10 @@ Author: Sean Gillespie (@swgillespie) - 2017
 This document aims to provide a specification for how a standalone GC is
 to be loaded and what is to happen in the case of version mismatches.
 
+**[Update June 2024] Warning** - The behavior described in this spec for how the CLR interprets environment variables
+is out-of-date. See the [public documentation](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/garbage-collector#standalone-gc)
+if you want up-to-date instructions on how to configure standalone GC.
+
 ## Definitions
 
 Before diving in to the specification, it's useful to precisely define
@@ -89,11 +93,11 @@ can specify a specific environment variable to indicate that they are interested
 loading a standalone GC.
 
 There is one environment variable that governs the behavior of the standalone GC loader:
-`COMPlus_GCName`. It should be set to be a path to a dynamic shared library containing
+`DOTNET_GCName`. It should be set to be a path to a dynamic shared library containing
 the GC that the EE intends to load. Its presence informs the EE that, first, a standalone GC
 is to be loaded and, second, precisely where the EE should load it from.
 
-The EE will call `LoadLibrary` using the path given by `COMPlus_GCName`.
+The EE will call `LoadLibrary` using the path given by `DOTNET_GCName`.
 If this succeeds, the EE will move to the next step in the loading process.
 
 ### Verifying the version of a candidate GC
@@ -110,7 +114,7 @@ struct VersionInfo {
   const char* Name;
 };
 
-extern "C" void GC_VersionInfo(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(
   /* Out */ VersionInfo*
 );
 ```
@@ -142,7 +146,7 @@ Once the EE has verified that the version of the candidate GC is valid, it then 
 GC. It does so by loading (via `GetProcAddress`) and executing a function with this signature:
 
 ```c++
-extern "C" HRESULT GC_Initialize(
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
   /* In  */ IGCToCLR*,
   /* Out */ IGCHeap**.
   /* Out */ IGCHandleManager**,

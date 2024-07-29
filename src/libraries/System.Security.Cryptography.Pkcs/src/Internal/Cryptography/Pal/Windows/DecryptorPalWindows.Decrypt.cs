@@ -119,7 +119,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private static Exception? TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
+        private static CryptographicException? TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
         {
             using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
             {
@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private unsafe Exception? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
+        private unsafe CryptographicException? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
         {
             KeyTransRecipientInfoPalWindows pal = (KeyTransRecipientInfoPalWindows)(recipientInfo.Pal);
 
@@ -257,7 +257,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private Exception? TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
+        private CryptographicException? TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
         {
             if (!Interop.Crypt32.CryptMsgControl(_hCryptMsg, 0, MsgControlType.CMSG_CTRL_KEY_AGREE_DECRYPT, ref decryptPara))
             {

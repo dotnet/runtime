@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct MyValueClass
 {
@@ -12,9 +13,10 @@ struct MyValueClass
     public string S4;
 };
 
-class T
+public class T
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyValueClass mvc = foo();
 
@@ -29,7 +31,7 @@ class T
         return 100;
     }
 
-    public static MyValueClass foo()
+    private static MyValueClass foo()
     {
         MyValueClass mvcRetVal = new MyValueClass();
 

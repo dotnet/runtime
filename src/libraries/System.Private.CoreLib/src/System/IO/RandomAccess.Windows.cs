@@ -57,7 +57,7 @@ namespace System.IO
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 return errorCode switch
                 {
-                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
+                    // https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
                     // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                     // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                     Interop.Errors.ERROR_HANDLE_EOF => numBytesRead,
@@ -206,17 +206,15 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    switch (errorCode)
+                    throw errorCode switch
                     {
-                        case Interop.Errors.ERROR_INVALID_PARAMETER:
-                            // ERROR_INVALID_PARAMETER may be returned for writes
-                            // where the position is too large or for synchronous writes
-                            // to a handle opened asynchronously.
-                            throw new IOException(SR.IO_FileTooLong);
+                        // ERROR_INVALID_PARAMETER may be returned for writes
+                        // where the position is too large or for synchronous writes
+                        // to a handle opened asynchronously.
+                        Interop.Errors.ERROR_INVALID_PARAMETER => new IOException(SR.IO_FileTooLong),
 
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                    }
+                        _ => Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path),
+                    };
                 }
             }
             finally
@@ -250,7 +248,23 @@ namespace System.IO
                 return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
-            return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
+            return AsyncOverSyncWithIoCancellation.InvokeAsync(static state =>
+            {
+                try
+                {
+                    int result = ReadAtOffset(state.handle, state.buffer.Span, state.fileOffset);
+                    if (result != state.buffer.Length)
+                    {
+                        state.strategy?.OnIncompleteOperation(state.buffer.Length, result);
+                    }
+                    return result;
+                }
+                catch (Exception) when (state.strategy is not null)
+                {
+                    state.strategy.OnIncompleteOperation(state.buffer.Length, 0);
+                    throw;
+                }
+            }, (handle, buffer, fileOffset, strategy), cancellationToken);
         }
 
         private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
@@ -263,7 +277,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async ReadFile operation.
                 if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -332,7 +346,18 @@ namespace System.IO
                 return ValueTask.FromException(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
             }
 
-            return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
+            return AsyncOverSyncWithIoCancellation.InvokeAsync(static state =>
+            {
+                try
+                {
+                    WriteAtOffset(state.handle, state.buffer.Span, state.fileOffset);
+                }
+                catch (Exception) when (state.strategy is not null)
+                {
+                    state.strategy.OnIncompleteOperation(state.buffer.Length, 0);
+                    throw;
+                }
+            }, (handle, buffer, fileOffset, strategy), cancellationToken);
         }
 
         private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
@@ -345,7 +370,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -420,7 +445,7 @@ namespace System.IO
             }
         }
 
-        // From https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
+        // From https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-readfilescatter:
         // "The file handle must be created with [...] the FILE_FLAG_OVERLAPPED and FILE_FLAG_NO_BUFFERING flags."
         private static bool CanUseScatterGatherWindowsAPIs(SafeFileHandle handle)
             => handle.IsAsync && ((handle.GetFileOptions() & SafeFileHandle.NoBuffering) != 0);
@@ -527,7 +552,7 @@ namespace System.IO
         {
             if (!handle.IsAsync)
             {
-                return ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+                return AsyncOverSyncWithIoCancellation.InvokeAsync(static state => ReadScatterAtOffset(state.handle, state.buffers, state.fileOffset), (handle, buffers, fileOffset), cancellationToken);
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
@@ -624,7 +649,7 @@ namespace System.IO
         {
             if (!handle.IsAsync)
             {
-                return ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
+                return AsyncOverSyncWithIoCancellation.InvokeAsync(static state => WriteGatherAtOffset(state.handle, state.buffers, state.fileOffset), (handle, buffers, fileOffset), cancellationToken);
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
@@ -711,7 +736,7 @@ namespace System.IO
                 result->OffsetHigh = (int)(fileOffset >> 32);
             }
 
-            // From https://docs.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
+            // From https://learn.microsoft.com/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
             // "If the hEvent member of the OVERLAPPED structure is NULL, the system uses the state of the hFile handle to signal when the operation has been completed.
             // Use of file, named pipe, or communications-device handles for this purpose is discouraged.
             // It is safer to use an event object because of the confusion that can occur when multiple simultaneous overlapped operations
@@ -761,7 +786,7 @@ namespace System.IO
             }
         }
 
-        // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
+        // From https://learn.microsoft.com/windows/win32/fileio/file-buffering:
         // "File access sizes, including the optional file offset in the OVERLAPPED structure,
         // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
         // So if buffer and physical sector size is 4096 and the file size is 4097:

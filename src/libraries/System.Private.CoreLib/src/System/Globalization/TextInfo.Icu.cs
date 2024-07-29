@@ -16,14 +16,15 @@ namespace System.Globalization
             return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }
 
-        private bool IsInvariant { get { return _cultureName.Length == 0; } }
-
         internal unsafe void IcuChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+#if TARGET_BROWSER
+            Debug.Assert(!GlobalizationMode.Hybrid);
+#endif
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            if (IsInvariant)
+            if (HasEmptyCultureName)
             {
                 Interop.Globalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
             }

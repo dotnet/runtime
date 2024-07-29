@@ -6,12 +6,34 @@
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeOutConfig>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</_BuildNativeOutConfig>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(_BuildNativeOutConfig) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+
+    <_RuntimeVariant />
+    <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
+    <_UsePThreads />
+    <_UsePThreads Condition="'$(WasmEnableThreads)' == 'true'"> usepthreads</_UsePThreads>
+
+    <_IcuDir Condition="'$(TargetsAppleMobile)' != 'true' and '$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
+
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_UsePThreads)</_BuildNativeArgs>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);WASI_SDK_PATH=$(WASI_SDK_PATH)</_BuildNativeEnvironmentVariables>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
+    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Target Name="BuildNativeUnix"
@@ -28,7 +50,7 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
@@ -38,8 +60,17 @@
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_IcuArtifacts Condition="'$(_IcuDir)' != '' and '$(TargetsAppleMobile)' != 'true'"
+                     Include="$(_IcuDir)/lib/libicuuc.a;
+                              $(_IcuDir)/lib/libicui18n.a;
+                              $(_IcuDir)/lib/libicudata.a;
+                              $(_IcuDir)/lib/*.dat" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_IcuArtifacts)" DestinationFolder="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_BuildNativeOutConfig)'))" SkipUnchangedFiles="true" />
     <Message Text="$(MSBuildThisFileDirectory)build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
   </Target>
 
   <Target Name="BuildNativeWindows"
@@ -51,6 +82,19 @@
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
-    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" />
+  </Target>
+
+  <UsingTask TaskName="AndroidLibBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <Target Name="BuildNativeAndroid"
+          BeforeTargets="BuildNativeUnix"
+          Condition="'$(TargetOS)' == 'android'">
+    <AndroidLibBuilderTask
+      JavaSourceDirectory="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android"
+      DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
+      JarFileName="libSystem.Security.Cryptography.Native.Android.jar"
+      OutputDir="$(ArtifactsBinDir)native/$(_BuildNativeOutConfig)">
+    </AndroidLibBuilderTask>
   </Target>
 </Project>

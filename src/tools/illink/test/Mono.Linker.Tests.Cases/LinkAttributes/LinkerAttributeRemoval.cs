@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[SetupCompileBefore ("attribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeToRemove.cs" })]
 	[SetupCompileBefore ("copyattribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeFromCopyAssembly.cs" })]
 	[SetupLinkerAction ("copy", "copyattribute")]
-#if !NETCOREAPP
+#if !NET
 	[Reference ("System.dll")]
 	[SetupCompileBefore ("copyassembly.dll", new[] { "Dependencies/LinkerAttributeRemovalCopyAssembly.cs" }, references: new[] { "System.dll", "attribute.dll" })]
 #else
@@ -126,7 +126,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 			"LinkerAttributeRemovalEmbeddedAndLazyLoad")]
 		static void TestEmbeddedAttributeLazyLoadRemoved ()
 		{
-			// This needs the DynamicDependency above otherwise linker will not load the assembly at all
+			// This needs the DynamicDependency above otherwise ILLink will not load the assembly at all
 			Activator.CreateInstance (Type.GetType ("Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TypeWithEmbeddedAttributeToBeRemoved, LinkerAttributeRemovalEmbeddedAndLazyLoad"));
 		}
 

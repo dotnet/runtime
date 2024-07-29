@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Linq.Expressions
 {
     /// <summary>
@@ -8,6 +10,12 @@ namespace System.Linq.Expressions
     /// </summary>
     internal static class Strings
     {
+        /// <summary>
+        /// A string like "Operation is not supported when dynamic code generation is not available."
+        /// </summary>
+        internal static string LiftingInExpressionRequiresDynamicCode(Type type)
+                => SR.Format(SR.LiftingInExpressionRequiresDynamicCode, type.FullName);
+
         /// <summary>
         /// A string like "reducible nodes must override Expression.Reduce()"
         /// </summary>
@@ -642,11 +650,6 @@ namespace System.Linq.Expressions
         /// A string like "Argument type cannot be System.Void."
         /// </summary>
         internal static string ArgumentCannotBeOfTypeVoid => SR.ArgumentCannotBeOfTypeVoid;
-
-        /// <summary>
-        /// A string like "{0} must be greater than or equal to {1}"
-        /// </summary>
-        internal static string OutOfRange(object? p0, object? p1) => SR.Format(SR.OutOfRange, p0, p1);
 
         /// <summary>
         /// A string like "Cannot redefine label '{0}' in an inner block."

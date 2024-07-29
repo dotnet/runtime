@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -11,6 +10,31 @@ namespace System
 {
     public static partial class Environment
     {
+        /// <summary>
+        /// Represents the CPU usage statistics of a process.
+        /// </summary>
+        /// <remarks>
+        /// The CPU usage statistics include information about the time spent by the process in the application code (user mode) and the operating system code (kernel mode),
+        /// as well as the total time spent by the process in both user mode and kernel mode.
+        /// </remarks>
+        public readonly struct ProcessCpuUsage
+        {
+            /// <summary>
+            /// Gets the amount of time the associated process has spent running code inside the application portion of the process (not the operating system code).
+            /// </summary>
+            public TimeSpan UserTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent running code inside the operating system code.
+            /// </summary>
+            public TimeSpan PrivilegedTime { get; internal init; }
+
+            /// <summary>
+            /// Gets the amount of time the process has spent utilizing the CPU including the process time spent in the application code and the process time spent in the operating system code.
+            /// </summary>
+            public TimeSpan TotalTime => UserTime + PrivilegedTime;
+        }
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>
@@ -68,7 +92,7 @@ namespace System
 
         public static void SetEnvironmentVariable(string variable, string? value)
         {
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
         }
 
@@ -80,11 +104,24 @@ namespace System
                 return;
             }
 
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
         }
+
+#if !MONO
+        internal static string[]? s_commandLineArgs;
+
+        public static string[] GetCommandLineArgs()
+        {
+            // s_commandLineArgs is expected to be initialize with application command line arguments
+            // during startup. GetCommandLineArgsNative fallback is used for hosted libraries.
+            return s_commandLineArgs != null ?
+                (string[])s_commandLineArgs.Clone() :
+                GetCommandLineArgsNative();
+        }
+#endif
 
         public static string CommandLine => PasteArguments.Paste(GetCommandLineArgs(), pasteFirstArgumentUsingArgV0Rules: true);
 
@@ -188,28 +225,10 @@ namespace System
             }
         }
 
-        public static Version Version
-        {
-            get
-            {
-                string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-                ReadOnlySpan<char> versionSpan = versionString.AsSpan();
-
-                // Strip optional suffixes
-                int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
-                if (separatorIndex >= 0)
-                    versionSpan = versionSpan.Slice(0, separatorIndex);
-
-                // Return zeros rather then failing if the version string fails to parse
-                return Version.TryParse(versionSpan, out Version? version) ? version : new Version();
-            }
-        }
-
         public static string StackTrace
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
-            get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            get => new StackTrace(true).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private static volatile int s_systemPageSize;
@@ -240,7 +259,7 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
 
-        private static void ValidateVariableAndValue(string variable, ref string? value)
+        private static void ValidateVariable(string variable)
         {
             ArgumentException.ThrowIfNullOrEmpty(variable);
 
@@ -249,12 +268,6 @@ namespace System
 
             if (variable.Contains('='))
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
-
-            if (string.IsNullOrEmpty(value) || value[0] == '\0')
-            {
-                // Explicitly null out value if it's empty
-                value = null;
-            }
         }
     }
 }

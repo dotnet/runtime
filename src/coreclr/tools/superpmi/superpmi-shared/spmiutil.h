@@ -54,7 +54,8 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_AMD64,
     SPMI_TARGET_ARCHITECTURE_ARM64,
     SPMI_TARGET_ARCHITECTURE_ARM,
-    SPMI_TARGET_ARCHITECTURE_LOONGARCH64
+    SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
+    SPMI_TARGET_ARCHITECTURE_RISCV64
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -67,7 +68,7 @@ inline bool IsSpmiTarget32Bit()
 
 inline bool IsSpmiTarget64Bit()
 {
-    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64);
 }
 
 inline size_t SpmiTargetPointerSize()
@@ -84,8 +85,13 @@ void PutThumb2BlRel24(UINT16* p, INT32 imm24);
 
 bool GetArm64MovConstant(UINT32* p, unsigned* pReg, unsigned* pCon);
 bool GetArm64MovkConstant(UINT32* p, unsigned* pReg, unsigned* pCon, unsigned* pShift);
-
 void PutArm64MovkConstant(UINT32* p, unsigned con);
+
+bool GetArm32MovwConstant(UINT32* p, unsigned* pReg, unsigned* pCon);
+bool GetArm32MovtConstant(UINT32* p, unsigned* pReg, unsigned* pCon);
+bool Is32BitThumb2Instruction(UINT16* p);
+UINT32 ExtractArm32MovImm(UINT32 instr);
+void PutArm32MovtConstant(UINT32* p, unsigned con);
 
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])
@@ -95,5 +101,7 @@ inline constexpr unsigned ArrLen(T (&)[size])
 
 std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd);
 std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
+
+std::string ConvertToUtf8(const WCHAR* str);
 
 #endif // !_SPMIUtil

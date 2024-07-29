@@ -62,10 +62,10 @@ class MemberLoader
 public:
     static void DECLSPEC_NORETURN ThrowMissingMethodException(MethodTable* pMT,
                                             LPCSTR szMember,
-                                            ModuleBase *pModule,
-                                            PCCOR_SIGNATURE pSig,
-                                            DWORD cSig,
-                                            const SigTypeContext *pTypeContext);
+                                            ModuleBase *pModule = NULL,
+                                            PCCOR_SIGNATURE pSig = NULL,
+                                            DWORD cSig = 0,
+                                            const SigTypeContext *pTypeContext = NULL);
 
     static void DECLSPEC_NORETURN ThrowMissingFieldException( MethodTable *pMT,
                                             LPCSTR szMember);

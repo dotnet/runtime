@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036</NoWarn>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);DEBUG</DefineConstants> <!-- always define debug, even in release builds -->
@@ -22,6 +22,7 @@
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"  Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />

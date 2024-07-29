@@ -52,7 +52,7 @@ namespace Mono.Linker.Tests.TestCases
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				Assert.Ignore ("These tests are not valid when trimming .NET Framework");
 
-#if NETCOREAPP
+#if NET
 			Assert.Ignore ("These tests are not valid when trimming .NET Core");
 #endif
 			Run (testCase);
@@ -142,6 +142,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InlineArrayTests))]
+		public void InlineArrayTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InteropTests))]
 		public void InteropTests (TestCase testCase)
 		{
@@ -208,6 +214,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SingleFileTests))]
+		public void SingleFileTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.StaticsTests))]
 		public void StaticsTests (TestCase testCase)
 		{
@@ -228,6 +240,12 @@ namespace Mono.Linker.Tests.TestCases
 
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TestFrameworkTests))]
 		public void TestFrameworkTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.TopLevelStatementsTests))]
+		public void TopLevelStatementsTests (TestCase testCase)
 		{
 			Run (testCase);
 		}

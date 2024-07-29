@@ -3,8 +3,9 @@
 //
 
 using System;
+using Xunit;
 
-struct test
+public struct test
 {
     public String str;
     public int int1;
@@ -26,13 +27,12 @@ struct test
         int6 = i;
         int7 = i;
     }
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         test t = new test();
 
         if (t.str != null)
             Console.WriteLine("Got String");
-
-        return 100;
     }
 }

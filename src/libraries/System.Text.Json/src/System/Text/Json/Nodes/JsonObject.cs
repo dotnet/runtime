@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Nodes
 {
@@ -21,6 +20,8 @@ namespace System.Text.Json.Nodes
     {
         private JsonElement? _jsonElement;
 
+        internal override JsonElement? UnderlyingElement => _jsonElement;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonObject"/> class that is empty.
         /// </summary>
@@ -34,10 +35,16 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
+            int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+            OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(options, capacity);
+
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
-                Add(node.Key, node.Value);
+                dictionary.Add(node.Key, node.Value);
+                node.Value?.AssignParent(this);
             }
+
+            _dictionary = dictionary;
         }
 
         /// <summary>
@@ -51,23 +58,56 @@ namespace System.Text.Json.Nodes
         /// <returns>A <see cref="JsonObject"/>.</returns>
         public static JsonObject? Create(JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind == JsonValueKind.Null)
+            return element.ValueKind switch
             {
-                return null;
-            }
-
-            if (element.ValueKind == JsonValueKind.Object)
-            {
-                return new JsonObject(element, options);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Object)));
+                JsonValueKind.Null => null,
+                JsonValueKind.Object => new JsonObject(element, options),
+                _ => throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Object)))
+            };
         }
 
         internal JsonObject(JsonElement element, JsonNodeOptions? options = null) : this(options)
         {
             Debug.Assert(element.ValueKind == JsonValueKind.Object);
             _jsonElement = element;
+        }
+
+        /// <summary>
+        /// Gets or creates the underlying dictionary containing the properties of the object.
+        /// </summary>
+        private OrderedDictionary<string, JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+
+        private protected override JsonNode? GetItem(int index) => GetAt(index).Value;
+        private protected override void SetItem(int index, JsonNode? value) => SetAt(index, value);
+
+        internal override JsonNode DeepCloneCore()
+        {
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null)
+            {
+                return jsonElement.HasValue
+                    ? new JsonObject(jsonElement.Value.Clone(), Options)
+                    : new JsonObject(Options);
+            }
+
+            var jObject = new JsonObject(Options)
+            {
+                _dictionary = CreateDictionary(Options, Count)
+            };
+
+            foreach (KeyValuePair<string, JsonNode?> item in dictionary)
+            {
+                jObject.Add(item.Key, item.Value?.DeepCloneCore());
+            }
+
+            return jObject;
+        }
+
+        internal string GetPropertyName(JsonNode? node)
+        {
+            KeyValuePair<string, JsonNode?>? item = FindValue(node);
+            return item.HasValue ? item.Value.Key : string.Empty;
         }
 
         /// <summary>
@@ -78,8 +118,15 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) =>
-            ((IDictionary<string, JsonNode?>)this).TryGetValue(propertyName, out jsonNode);
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode);
+        }
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
@@ -89,29 +136,79 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            if (_jsonElement.HasValue)
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null && jsonElement.HasValue)
             {
                 // Write the element without converting to nodes.
-                _jsonElement.Value.WriteTo(writer);
+                jsonElement.Value.WriteTo(writer);
             }
             else
             {
-                options ??= s_defaultOptions;
-
                 writer.WriteStartObject();
 
-                foreach (KeyValuePair<string, JsonNode?> item in this)
+                foreach (KeyValuePair<string, JsonNode?> entry in Dictionary)
                 {
-                    writer.WritePropertyName(item.Key);
-                    JsonNodeConverter.Instance.Write(writer, item.Value, options);
+                    writer.WritePropertyName(entry.Key);
+
+                    if (entry.Value is null)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        entry.Value.WriteTo(writer, options);
+                    }
                 }
 
                 writer.WriteEndObject();
             }
         }
 
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
+
+        internal override bool DeepEqualsCore(JsonNode node)
+        {
+            switch (node)
+            {
+                case JsonArray:
+                    return false;
+                case JsonValue value:
+                    // JsonValue instances have special comparison semantics, dispatch to their implementation.
+                    return value.DeepEqualsCore(this);
+                case JsonObject jsonObject:
+                    OrderedDictionary<string, JsonNode?> currentDict = Dictionary;
+                    OrderedDictionary<string, JsonNode?> otherDict = jsonObject.Dictionary;
+
+                    if (currentDict.Count != otherDict.Count)
+                    {
+                        return false;
+                    }
+
+                    foreach (KeyValuePair<string, JsonNode?> item in currentDict)
+                    {
+                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
+
+                        if (!DeepEquals(item.Value, jsonNode))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                default:
+                    Debug.Fail("Impossible case");
+                    return false;
+            }
+        }
+
         internal JsonNode? GetItem(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
                 return value;
@@ -121,38 +218,53 @@ namespace System.Text.Json.Nodes
             return null;
         }
 
-        internal override void GetPath(List<string> path, JsonNode? child)
+        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
+            Parent?.GetPath(ref path, this);
+
             if (child != null)
             {
-                InitializeIfRequired();
-                Debug.Assert(_dictionary != null);
-                string propertyName = _dictionary.FindValue(child)!.Value.Key;
-                if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                string propertyName = FindValue(child)!.Value.Key;
+                if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
-                    path.Add($"['{propertyName}']");
+                    path.Append("['");
+                    path.Append(propertyName);
+                    path.Append("']");
                 }
                 else
                 {
-                    path.Add($".{propertyName}");
+                    path.Append('.');
+                    path.Append(propertyName);
                 }
             }
-
-            Parent?.GetPath(path, this);
         }
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            InitializeIfRequired();
-            Debug.Assert(_dictionary != null);
-            JsonNode? existing = _dictionary.SetValue(propertyName, value, () => value?.AssignParent(this));
-            DetachParent(existing);
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            OrderedDictionary<string, JsonNode?> dict = Dictionary;
+
+            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
+            {
+                if (ReferenceEquals(value, replacedValue))
+                {
+                    return;
+                }
+
+                DetachParent(replacedValue);
+            }
+
+            dict[propertyName] = value;
+            value?.AssignParent(this);
         }
 
         private void DetachParent(JsonNode? item)
         {
-            InitializeIfRequired();
-            Debug.Assert(_dictionary != null);
+            Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
 
             if (item != null)
             {
@@ -160,11 +272,24 @@ namespace System.Text.Json.Nodes
             }
         }
 
+        private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)
+        {
+            foreach (KeyValuePair<string, JsonNode?> item in Dictionary)
+            {
+                if (ReferenceEquals(item.Value, value))
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
         private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private JsonObject _node;
+            private readonly JsonObject _node;
 
             public DebugView(JsonObject node)
             {

@@ -5,10 +5,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.NetworkInformation;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.NetworkInformation;
 
 namespace System.Net.Http
 {
@@ -25,7 +25,7 @@ namespace System.Net.Http
     // (8) HttpConnection.SendAsyncCore: Write request to connection and read response
     //                                   Also, handle cookie processing
     //
-    // Redirect and deompression handling are done above HttpConnectionPoolManager,
+    // Redirect and decompression handling are done above HttpConnectionPoolManager,
     // in RedirectHandler and DecompressionHandler respectively.
 
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
@@ -91,16 +91,8 @@ namespace System.Net.Http
                     _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
-                bool restoreFlow = false;
-                try
+                using (ExecutionContext.SuppressFlow()) // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 {
-                    // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                    if (!ExecutionContext.IsFlowSuppressed())
-                    {
-                        ExecutionContext.SuppressFlow();
-                        restoreFlow = true;
-                    }
-
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
                     // can introduce a cycle that keeps the HttpConnectionPoolManager rooted by the Timer
                     // implementation until the handler is Disposed (or indefinitely if it's not).
@@ -129,14 +121,6 @@ namespace System.Net.Http
                                 thisRef.HeartBeat();
                             }
                         }, thisRef, heartBeatInterval, heartBeatInterval);
-                    }
-                }
-                finally
-                {
-                    // Restore the current ExecutionContext
-                    if (restoreFlow)
-                    {
-                        ExecutionContext.RestoreFlow();
                     }
                 }
             }
@@ -190,16 +174,29 @@ namespace System.Net.Http
                 return;
             }
 
-            if (!ExecutionContext.IsFlowSuppressed())
+            // RFC: https://tools.ietf.org/html/rfc7838#section-2.2
+            //    When alternative services are used to send a client to the most
+            //    optimal server, a change in network configuration can result in
+            //    cached values becoming suboptimal.  Therefore, clients SHOULD remove
+            //    from cache all alternative services that lack the "persist" flag with
+            //    the value "1" when they detect such a change, when information about
+            //    network state is available.
+            try
             {
                 using (ExecutionContext.SuppressFlow())
                 {
                     NetworkChange.NetworkAddressChanged += networkChangedDelegate;
                 }
             }
-            else
+            catch (NetworkInformationException e)
             {
-                NetworkChange.NetworkAddressChanged += networkChangedDelegate;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception when subscribing to NetworkChange.NetworkAddressChanged: {e}");
+
+                // We can't monitor network changes, so technically "information
+                // about network state is not available" and we can just keep
+                // all Alt-Svc entries until their expiration time.
+                //
+                // keep the _networkChangeCleanup field assigned so we don't try again needlessly
             }
         }
 
@@ -466,17 +463,9 @@ namespace System.Net.Http
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>
         private void SetCleaningTimer(TimeSpan timeout)
         {
-            try
+            if (_cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
             {
-                _cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan);
                 _timerIsRunning = timeout != Timeout.InfiniteTimeSpan;
-            }
-            catch (ObjectDisposedException)
-            {
-                // In a rare race condition where the timer callback was queued
-                // or executed and then the pool manager was disposed, the timer
-                // would be disposed and then calling Change on it could result
-                // in an ObjectDisposedException.  We simply eat that.
             }
         }
 
@@ -494,7 +483,7 @@ namespace System.Net.Http
             {
                 if (entry.Value.CleanCacheAndDisposeIfUnused())
                 {
-                    _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                    _pools.TryRemove(entry.Key, out _);
                 }
             }
 

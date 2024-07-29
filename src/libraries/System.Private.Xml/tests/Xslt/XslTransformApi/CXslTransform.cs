@@ -39,7 +39,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load(XmlReader = null)", Pri = 1)]
@@ -61,7 +61,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null)", Pri = 1)]
@@ -83,7 +83,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null)", Pri = 1)]
@@ -105,7 +105,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load(IXPathNavigable = null, XmlResolver = null, Evidence = null)", Pri = 1)]
@@ -127,7 +127,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);*/
+            Assert.Fail();*/
         }
 
         //[Variation("Load(XmlReader = null, XmlResolver = null, Evidence = null)", Pri = 1)]
@@ -149,7 +149,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);*/
+            Assert.Fail();*/
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null)", Pri = 1)]
@@ -171,7 +171,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlResolver = null)", Pri = 1)]
@@ -193,7 +193,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null)", Pri = 1)]
@@ -215,7 +215,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, TextWriter = null, XmlResolver = null)", Pri = 1)]
@@ -237,7 +237,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null)", Pri = 1)]
@@ -259,7 +259,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, Stream = null, XmlResolver = null)", Pri = 1)]
@@ -281,7 +281,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null)", Pri = 1)]
@@ -303,7 +303,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Transform(IXPathNavigable = null, XsltArgumentList = null, XmlWriter = null, XmlResolver = null)", Pri = 1)]
@@ -325,7 +325,7 @@ namespace System.Xml.XslTransformApiTests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Did not throw ArgumentNullException");
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -391,16 +391,16 @@ namespace System.Xml.XslTransformApiTests
                         return;
                     }
                     else
-                        Assert.True(false);
+                        Assert.Fail();
                 }
             }
             catch (Exception e)
             {
                 _output.WriteLine("Should not throw error loading stylesheet with include/import when resolver property is set to NULL!");
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Set XmlResolver property to null, load style sheet with document function, should not resolve during transform")]
@@ -436,9 +436,9 @@ namespace System.Xml.XslTransformApiTests
             else
             {
                 _output.WriteLine("Problem loading stylesheet with document function and resolver set to NULL!");
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform")]
@@ -533,7 +533,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for null parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load with valid, then invalid, then valid again")]
@@ -574,9 +574,9 @@ namespace System.Xml.XslTransformApiTests
             else
             {
                 _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load an invalid, then a valid and transform")]
@@ -616,7 +616,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for non-existent file name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call several overloaded functions")]
@@ -651,7 +651,7 @@ namespace System.Xml.XslTransformApiTests
                 LoadXSL("showParamLongName.xsl", InputType.Navigator, readerType);
 
             if ((LoadXSL("showParam.xsl", inputType, readerType) == 0) || (Transform("fruits.xml", transformType, docType) == 0))
-                Assert.True(false);
+                Assert.Fail();
 
             VerifyResult(expected);
 
@@ -668,7 +668,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call same overloaded Load() many times then transform")]
@@ -700,7 +700,7 @@ namespace System.Xml.XslTransformApiTests
                 if (LoadXSL("showParam.xsl", inputType, readerType) != 1)
                 {
                     _output.WriteLine("Failed to load stylesheet showParam.xsl on the {0} attempt", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             if ((LoadXSL("showParam.xsl", inputType, readerType) == 1) && (Transform("fruits.xml", transformType, docType) == 1))
@@ -708,7 +708,7 @@ namespace System.Xml.XslTransformApiTests
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call load with non-existing stylesheet")]
@@ -727,7 +727,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Verify that style sheet is closed properly after Load - Shared Read Access")]
@@ -765,7 +765,7 @@ namespace System.Xml.XslTransformApiTests
                         return;
                     }
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -805,7 +805,7 @@ namespace System.Xml.XslTransformApiTests
                     }
                 }
                 _output.WriteLine("Appeared to not close file properly after loading.");
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -836,14 +836,14 @@ namespace System.Xml.XslTransformApiTests
                 if (LoadXSL("books_entity_ref.xsl", InputType.Reader, readerType) != 1)
                 {
                     _output.WriteLine("Failed to load stylesheet books_entity_ref.xsl");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 if ((LoadXSL("books_entity_ref.xsl", inputType, readerType) == 1) && (Transform("books_entity_ref.xml", transformType, docType) == 1))
                 {
                     VerifyResult(expected);
                     return;
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -871,12 +871,12 @@ namespace System.Xml.XslTransformApiTests
                 {
                     _output.WriteLine("Did not close stylesheet properly after load");
                     _output.WriteLine(ex.Message);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 return;
             }
             _output.WriteLine("Did not throw compile exception for stylesheet");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -949,7 +949,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw an exception for null argument!");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Load with null source value and valid resolver")]
@@ -969,7 +969,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw an exception for null argument!");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Load with null XmlResolver, style sheet does not have include/import, should not error")]
@@ -1004,12 +1004,12 @@ namespace System.Xml.XslTransformApiTests
                     return;
                 }
                 else
-                    Assert.True(false);
+                    Assert.Fail();
             }
             else
             {
                 _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -1031,7 +1031,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not thrown for null resolver");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Load with null custom resolver and style sheet has no import/include, should not error")]
@@ -1148,9 +1148,9 @@ namespace System.Xml.XslTransformApiTests
                 else
                 {
                     _output.WriteLine("Failed to load!");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -1183,7 +1183,7 @@ namespace System.Xml.XslTransformApiTests
                 if (LoadXSL_Resolver("showParam.xsl", null, inputType, readerType) != 1)
                 {
                     _output.WriteLine("Failed to load stylesheet showParam.xsl on the {0} attempt", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             if ((LoadXSL_Resolver("showParam.xsl", null, inputType, readerType) == 1) && (Transform("fruits.xml", transformType, docType) == 1))
@@ -1191,7 +1191,7 @@ namespace System.Xml.XslTransformApiTests
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Load with null Resolver, file does not exist")]
@@ -1210,7 +1210,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load non existing stylesheet with null resolver and try to transform")]
@@ -1253,9 +1253,9 @@ namespace System.Xml.XslTransformApiTests
             else
             {
                 _output.WriteLine("Errors loading initial file");
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1294,7 +1294,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load XSL that needs cred. with null resolver, should fail")]
@@ -1312,7 +1312,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Should not have been able to retrieve and resolve style sheet with null resolver");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Load with null source value")]
@@ -1330,7 +1330,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw an exception for null argument!");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1361,7 +1361,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load file with empty string")]
@@ -1379,7 +1379,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for an empty string filename");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load with \".\"")]
@@ -1396,7 +1396,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load with \"..\"")]
@@ -1413,7 +1413,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Load with \"\\\\\"")]
@@ -1432,7 +1432,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for non-existent file parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1482,7 +1482,7 @@ namespace System.Xml.XslTransformApiTests
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Create Navigator and navigate away from root")]
@@ -1514,7 +1514,7 @@ namespace System.Xml.XslTransformApiTests
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Basic check for usage of credentials on resolver, load XSL that needs cred. with correct resolver")]
@@ -1540,7 +1540,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1592,13 +1592,13 @@ namespace System.Xml.XslTransformApiTests
                 xrTemp.Dispose();
             }
             if (fTEST_FAIL)
-                Assert.True(false);
+                Assert.Fail();
             if (Transform("fruits.xml", transformType, docType) == 1)
             {
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Calling with a closed reader, should throw exception")]
@@ -1624,7 +1624,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("No exception thrown for a loading a closed reader!");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Verify Reader isn""t closed after Load")]
@@ -1657,7 +1657,7 @@ namespace System.Xml.XslTransformApiTests
             if (fTEST_FAIL)
             {
                 _output.WriteLine("Appear to have accidently closed the Reader");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -1692,7 +1692,7 @@ namespace System.Xml.XslTransformApiTests
             if (fTEST_FAIL)
             {
                 _output.WriteLine("Reader does not appear to be at the end of file.");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -1724,7 +1724,7 @@ namespace System.Xml.XslTransformApiTests
                 xrTemp.Dispose();
             }
             if (fTEST_FAIL)
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -1747,7 +1747,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Failed to throw System.ArgumentNullException for NULL reader input");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Basic check for usage of credentials on resolver, load XSL that needs cred. with correct resolver")]
@@ -1771,7 +1771,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1829,7 +1829,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Load and Transform multiple times")]
@@ -1859,7 +1859,7 @@ namespace System.Xml.XslTransformApiTests
             for (int i = 0; i < 5; i++)
             {
                 if ((LoadXSL("showParam.xsl", inputType, readerType) != 1) || (Transform("fruits.xml", transformType, docType) != 1))
-                    Assert.True(false);
+                    Assert.Fail();
                 VerifyResult(expected);
             }
             return;
@@ -1896,13 +1896,13 @@ namespace System.Xml.XslTransformApiTests
                     if (Transform("fruits.xml", transformType, docType) != 1)
                     {
                         _output.WriteLine("Test failed to transform after {0} iterations", i);
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     VerifyResult(expected);
                 }
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Transform without loading")]
@@ -1926,7 +1926,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not given for a transform that didn't have a Load method instantiated");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Closing XSL and XML files used in transform, Read access")]
@@ -1958,7 +1958,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Encountered errors performing transform and could not verify if files were closed");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Bug358103 - ArgumentOutOfRangeException in forwards-compatible mode for <foo bar='{+1}'/>")]
@@ -1989,7 +1989,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("XsltException (Xslt_InvalidXPath) was expected");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -2056,15 +2056,15 @@ namespace System.Xml.XslTransformApiTests
                             return;
                         }
                         else
-                            Assert.True(false);
+                            Assert.Fail();
                     }
                 }
                 catch (Exception e)
                 {
                     _output.WriteLine(e.ToString());
-                    Assert.True(false);
+                    Assert.Fail();
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -2100,9 +2100,9 @@ namespace System.Xml.XslTransformApiTests
             else
             {
                 _output.WriteLine("Problem loading stylesheet!");
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform")]
@@ -2192,7 +2192,7 @@ namespace System.Xml.XslTransformApiTests
                 VerifyResult(expected);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Input is null")]
@@ -2212,7 +2212,7 @@ namespace System.Xml.XslTransformApiTests
                 { return; }
             }
             _output.WriteLine("Exception not generated for null input filename");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output file is null")]
@@ -2236,7 +2236,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for null output filename");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Input is nonexisting file")]
@@ -2258,7 +2258,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for invalid input file");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output file is invalid")]
@@ -2283,7 +2283,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for invalid output destination");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Input is empty string")]
@@ -2305,7 +2305,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for empty string input file");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output file is empty string")]
@@ -2329,7 +2329,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for empty output file name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Transform many times")]
@@ -2385,7 +2385,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
             }
             _output.WriteLine("Exception attempting a transform without loading an XSL file");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output to unreachable destination")]
@@ -2408,7 +2408,7 @@ namespace System.Xml.XslTransformApiTests
                 }
             }
             _output.WriteLine("Exception not generated for invalid output destination");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Input filename is \'.\', \'..\', and \'\\\\\'")]
@@ -2453,7 +2453,7 @@ namespace System.Xml.XslTransformApiTests
                 return;
 
             _output.WriteLine("Exception not generated for invalid input sources");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output filename is \'.\' and \'..\')]
@@ -2490,7 +2490,7 @@ namespace System.Xml.XslTransformApiTests
             if (iCount.Equals(2))
                 return;
             _output.WriteLine("Exception not generated for invalid output destinations");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Output filename is \'\\\\\'")]
@@ -2510,7 +2510,7 @@ namespace System.Xml.XslTransformApiTests
             }
 
             _output.WriteLine("Exception not generated for invalid output destination");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Closing files after transform")]
@@ -2541,7 +2541,7 @@ namespace System.Xml.XslTransformApiTests
 
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -2593,9 +2593,9 @@ namespace System.Xml.XslTransformApiTests
                 catch (Exception e)
                 {
                     _output.WriteLine(e.ToString());
-                    Assert.True(false);
+                    Assert.Fail();
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -2620,9 +2620,9 @@ namespace System.Xml.XslTransformApiTests
             else
             {
                 _output.WriteLine("Problem loading stylesheet!");
-                Assert.True(false);
+                Assert.Fail();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform")]
@@ -2672,7 +2672,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Local parameter gets overwritten with global variable value", Pri = 1)]
@@ -2695,7 +2695,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Subclassed XPathNodeIterator returned from an extension object or XsltFunction is not accepted by XPath", Pri = 1)]
@@ -2732,7 +2732,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
     }
 

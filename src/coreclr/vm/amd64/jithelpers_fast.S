@@ -5,263 +5,20 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-// Mark start of the code region that we patch at runtime
-LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-        ret
-LEAF_END JIT_PatchedCodeStart, _TEXT
-
-
-// There is an even more optimized version of these helpers possible which takes
-// advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
-// that check (this is more significant in the JIT_WriteBarrier case).
-//
-// Additionally we can look into providing helpers which will take the src/dest from
-// specific registers (like x86) which _could_ (??) make for easier register allocation
-// for the JIT64, however it might lead to having to have some nasty code that treats
-// these guys really special like... :(.
-//
-// Version that does the move, checks whether or not it's in the GC and whether or not
-// it needs to have it's card updated
-//
-// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-
-        // When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        // but if it isn't then it will just return.
-        //
-        // See if this is in GCHeap
-        PREPARE_EXTERNAL_VAR g_lowest_address, rax
-        cmp     rdi, [rax]
-        // jb      NotInHeap
-        .byte 0x72, 0x12
-        PREPARE_EXTERNAL_VAR g_highest_address, rax
-        cmp     rdi, [rax]
-
-        // jnb     NotInHeap
-        .byte 0x73, 0x06
-        jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-
-    NotInHeap:
-        // See comment above about possible AV
-        mov     [rdi], rsi
-        ret
-LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
-
-
-// This is used by the mechanism to hold either the JIT_WriteBarrier_PreGrow
-// or JIT_WriteBarrier_PostGrow code (depending on the state of the GC). It _WILL_
-// change at runtime as the GC changes. Initially it should simply be a copy of the
-// larger of the two functions (JIT_WriteBarrier_PostGrow) to ensure we have created
-// enough space to copy that code in.
-.balign 16
-LEAF_ENTRY JIT_WriteBarrier, _TEXT
-#ifdef _DEBUG
-        // In debug builds, this just contains jump to the debug version of the write barrier by default
-        jmp C_FUNC(JIT_WriteBarrier_Debug)
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        // JIT_WriteBarrier_WriteWatch_PostGrow64
-
-        // Regarding patchable constants:
-        // - 64-bit constants have to be loaded into a register
-        // - The constants have to be aligned to 8 bytes so that they can be patched easily
-        // - The constant loads have been located to minimize NOP padding required to align the constants
-        // - Using different registers for successive constant loads helps pipeline better. Should we decide to use a special
-        //   non-volatile calling convention, this should be changed to use just one register.
-
-        // Do the move into the GC .  It is correct to take an AV here, the EH code
-        // figures out that this came from a WriteBarrier and correctly maps it back
-        // to the managed method which called the WriteBarrier (see setup in
-        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
-
-        // Update the write watch table if necessary
-        mov     rax, rdi
-        movabs  r10, 0xF0F0F0F0F0F0F0F0
-        shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        NOP_2_BYTE // padding for alignment of constant
-        movabs  r11, 0xF0F0F0F0F0F0F0F0
-        add     rax, r10
-        cmp     byte ptr [rax], 0x0
-        .byte 0x75, 0x06
-        // jne     CheckCardTable
-        mov     byte ptr [rax], 0xFF
-
-        NOP_3_BYTE // padding for alignment of constant
-
-        // Check the lower and upper ephemeral region bounds
-    CheckCardTable:
-        cmp     rsi, r11
-        .byte 0x72,0x3D
-        // jb      Exit
-
-        NOP_3_BYTE // padding for alignment of constant
-
-        movabs  r10, 0xF0F0F0F0F0F0F0F0
-
-        cmp     rsi, r10
-        .byte 0x73,0x2B
-        // jae     Exit
-
-        nop // padding for alignment of constant
-
-        movabs  rax, 0xF0F0F0F0F0F0F0F0
-
-        // Touch the card table entry, if not already dirty.
-        shr     rdi, 0x0B
-        cmp     byte ptr [rdi + rax], 0xFF
-        .byte 0x75, 0x02
-        // jne     UpdateCardTable
-        REPRET
-
-    UpdateCardTable:
-        mov     byte ptr [rdi + rax], 0xFF
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        NOP_2_BYTE // padding for alignment of constant
-        shr     rdi, 0x0A
-
-        movabs  rax, 0xF0F0F0F0F0F0F0F0
-        cmp     byte ptr [rdi + rax], 0xFF
-
-        .byte 0x75, 0x02
-        // jne     UpdateCardBundle_WriteWatch_PostGrow64
-        REPRET
-
-    UpdateCardBundle_WriteWatch_PostGrow64:
-        mov     byte ptr [rdi + rax], 0xFF
-#endif
-
-        ret
-
-    .balign 16
-    Exit:
-        REPRET
-
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-        NOP_3_BYTE
-
-#else
-        // JIT_WriteBarrier_PostGrow64
-
-        // Do the move into the GC .  It is correct to take an AV here, the EH code
-        // figures out that this came from a WriteBarrier and correctly maps it back
-        // to the managed method which called the WriteBarrier (see setup in
-        // InitializeExceptionHandling, vm\exceptionhandling.cpp).
-        mov     [rdi], rsi
-
-        NOP_3_BYTE // padding for alignment of constant
-
-        // Can't compare a 64 bit immediate, so we have to move them into a
-        // register.  Values of these immediates will be patched at runtime.
-        // By using two registers we can pipeline better.  Should we decide to use
-        // a special non-volatile calling convention, this should be changed to
-        // just one.
-
-        movabs  rax, 0xF0F0F0F0F0F0F0F0
-
-        // Check the lower and upper ephemeral region bounds
-        cmp     rsi, rax
-        // jb      Exit
-        .byte 0x72, 0x36
-
-        nop // padding for alignment of constant
-
-        movabs  r8, 0xF0F0F0F0F0F0F0F0
-
-        cmp     rsi, r8
-        // jae     Exit
-        .byte 0x73, 0x26
-
-        nop // padding for alignment of constant
-
-        movabs  rax, 0xF0F0F0F0F0F0F0F0
-
-        // Touch the card table entry, if not already dirty.
-        shr     rdi, 0Bh
-        cmp     byte ptr [rdi + rax], 0FFh
-        .byte 0x75, 0x02
-        // jne     UpdateCardTable
-        REPRET
-
-    UpdateCardTable:
-        mov     byte ptr [rdi + rax], 0FFh
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        NOP_6_BYTE // padding for alignment of constant
-
-        movabs  rax, 0xF0F0F0F0F0F0F0F0
-
-        // Touch the card bundle, if not already dirty.
-        // rdi is already shifted by 0xB, so shift by 0xA more
-        shr     rdi, 0x0A
-        cmp     byte ptr [rdi + rax], 0FFh
-
-        .byte 0x75, 0x02
-        // jne     UpdateCardBundle
-        REPRET
-
-    UpdateCardBundle:
-        mov     byte ptr [rdi + rax], 0FFh
-#endif
-
-        ret
-
-    .balign 16
-    Exit:
-        REPRET
-#endif
-
-    // make sure this is bigger than any of the others
-    .balign 16
-        nop
-LEAF_END_MARKED JIT_WriteBarrier, _TEXT
-
-// Mark start of the code region that we patch at runtime
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-        ret
-LEAF_END JIT_PatchedCodeLast, _TEXT
-
 // JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 //
 // Entry:
 //   RDI - address of ref-field (assigned to)
 //   RSI - address of the data  (source)
-//
-//   Note: RyuJIT assumes that all volatile registers can be trashed by
-//   the CORINFO_HELP_ASSIGN_BYREF helper (i.e. JIT_ByRefWriteBarrier)
-//   except RDI and RSI. This helper uses and defines RDI and RSI, so
-//   they remain as live GC refs or byrefs, and are not killed.
-//
-//
 //   RCX is trashed
 //   RAX is trashed
-//   R10 is trashed
-//   R11 is trashed on Debug build
+//
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
+//
 // Exit:
 //   RDI, RSI are incremented by SIZEOF(LPVOID)
+//
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rcx, [rsi]
 
@@ -275,32 +32,32 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         // but if it isn't then it will just return.
         //
         // See if this is in GCHeap
-        PREPARE_EXTERNAL_VAR g_lowest_address, rax
-        cmp     rdi, [rax]
-        jb      NotInHeap_ByRefWriteBarrier
-        PREPARE_EXTERNAL_VAR g_highest_address, rax
-        cmp     rdi, [rax]
-        jnb     NotInHeap_ByRefWriteBarrier
+        cmp     rdi, [C_VAR(g_lowest_address)]
+        jb      LOCAL_LABEL(NotInHeap_ByRefWriteBarrier)
+        cmp     rdi, [C_VAR(g_highest_address)]
+        jnb     LOCAL_LABEL(NotInHeap_ByRefWriteBarrier)
 
 #ifdef WRITE_BARRIER_CHECK
+        // we can only trash rcx in this function so in _DEBUG we need to save
+        // some scratch registers.
+        push    r10
+        push    r11
+        push    rax
+
         // **ALSO update the shadow GC heap if that is enabled**
         // Do not perform the work if g_GCShadow is 0
-        PREPARE_EXTERNAL_VAR g_GCShadow, rax
-        cmp     qword ptr [rax], 0
-        je      NoShadow_ByRefWriteBarrier
+        cmp     qword ptr [C_VAR(g_GCShadow)], 0
+        je      LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
         // If we end up outside of the heap don't corrupt random memory
         mov     r10, rdi
-        PREPARE_EXTERNAL_VAR g_lowest_address, rax
-        sub     r10, [rax]
-        jb      NoShadow_ByRefWriteBarrier
+        sub     r10, [C_VAR(g_lowest_address)]
+        jb      LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
         // Check that our adjusted destination is somewhere in the shadow gc
-        PREPARE_EXTERNAL_VAR g_GCShadow, rax
-        add     r10, [rax]
-        PREPARE_EXTERNAL_VAR g_GCShadowEnd, rax
-        cmp     r10, [rax]
-        ja      NoShadow_ByRefWriteBarrier
+        add     r10, [C_VAR(g_GCShadow)]
+        cmp     r10, [C_VAR(g_GCShadowEnd)]
+        jnb     LOCAL_LABEL(NoShadow_ByRefWriteBarrier)
 
         // Write ref into real GC
         mov     [rdi], rcx
@@ -315,78 +72,72 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     r11, [rdi]
         mov     rax, [r10]
         cmp     rax, r11
-        je      DoneShadow_ByRefWriteBarrier
+        je      LOCAL_LABEL(DoneShadow_ByRefWriteBarrier)
         movabs  r11, INVALIDGCVALUE
         mov     [r10], r11
 
-        jmp     DoneShadow_ByRefWriteBarrier
+        jmp     LOCAL_LABEL(DoneShadow_ByRefWriteBarrier)
 
     // If we don't have a shadow GC we won't have done the write yet
-    NoShadow_ByRefWriteBarrier:
+    LOCAL_LABEL(NoShadow_ByRefWriteBarrier):
         mov     [rdi], rcx
 
     // If we had a shadow GC then we already wrote to the real GC at the same time
     // as the shadow GC so we want to jump over the real write immediately above.
     // Additionally we know for sure that we are inside the heap and therefore don't
     // need to replicate the above checks.
-    DoneShadow_ByRefWriteBarrier:
+    LOCAL_LABEL(DoneShadow_ByRefWriteBarrier):
+        pop     rax
+        pop     r11
+        pop     r10
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
-        PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, rax
-        cmp     byte ptr [rax], 0x0
-        je      CheckCardTable_ByRefWriteBarrier
+        cmp     byte ptr [C_VAR(g_sw_ww_enabled_for_gc_heap)], 0x0
+        je      LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     rax, rdi
         shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        PREPARE_EXTERNAL_VAR g_sw_ww_table, r10
-        add     rax, qword ptr [r10]
+        add     rax, qword ptr [C_VAR(g_sw_ww_table)]
         cmp     byte ptr [rax], 0x0
-        jne     CheckCardTable_ByRefWriteBarrier
+        jne     LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     byte ptr [rax], 0xFF
 #endif
 
-    CheckCardTable_ByRefWriteBarrier:
         // See if we can just quick out
-        PREPARE_EXTERNAL_VAR g_ephemeral_low, rax
-        cmp     rcx, [rax]
-        jb      Exit_ByRefWriteBarrier
-        PREPARE_EXTERNAL_VAR g_ephemeral_high, rax
-        cmp     rcx, [rax]
-        jnb     Exit_ByRefWriteBarrier
+    LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier):
+        cmp     rcx, [C_VAR(g_ephemeral_low)]
+        jb      LOCAL_LABEL(Exit_ByRefWriteBarrier)
+        cmp     rcx, [C_VAR(g_ephemeral_high)]
+        jnb     LOCAL_LABEL(Exit_ByRefWriteBarrier)
 
         mov     rax, rcx
 
-        PREPARE_EXTERNAL_VAR g_region_shr, rcx
-        mov     cl, [rcx]
+        mov     cl, [C_VAR(g_region_shr)]
         test    cl, cl
-        je      SkipCheck_ByRefWriteBarrier
+        je      LOCAL_LABEL(SkipCheck_ByRefWriteBarrier)
 
         // check if the source is in gen 2 - then it's not an ephemeral pointer
         shr     rax, cl
-        PREPARE_EXTERNAL_VAR g_region_to_generation_table, r10
-        mov     r10, [r10]
-        cmp     byte ptr [rax + r10], 0x82
-        je      Exit_ByRefWriteBarrier
+        add     rax, [C_VAR(g_region_to_generation_table)]
+        cmp     byte ptr [rax], 0x82
+        je      LOCAL_LABEL(Exit_ByRefWriteBarrier)
 
         // check if the destination happens to be in gen 0
         mov     rax, rdi
         shr     rax, cl
-        cmp     byte ptr [rax + r10], 0
-        je      Exit_ByRefWriteBarrier
-    SkipCheck_ByRefWriteBarrier:
-
-        PREPARE_EXTERNAL_VAR g_card_table, r10
-        mov     r10, [r10]
-
-        PREPARE_EXTERNAL_VAR g_region_use_bitwise_write_barrier, rax
+        add     rax, [C_VAR(g_region_to_generation_table)]
         cmp     byte ptr [rax], 0
-        je      CheckCardTableByte_ByRefWriteBarrier
+        je      LOCAL_LABEL(Exit_ByRefWriteBarrier)
+    LOCAL_LABEL(SkipCheck_ByRefWriteBarrier):
+
+        cmp     byte ptr [C_VAR(g_region_use_bitwise_write_barrier)], 0
+        je      LOCAL_LABEL(CheckCardTableByte_ByRefWriteBarrier)
 
         // compute card table bit
-        mov     ecx, edi
+        mov     rcx, rdi
         mov     al, 1
-        shr     ecx, 8
+        shr     rcx, 8
         and     cl, 7
         shl     al, cl
 
@@ -398,52 +149,55 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         // Check if we need to update the card table
         // Calc pCardByte
         shr     rcx, 0xB
+        add     rcx, [C_VAR(g_card_table)]
+
         // Check if this card table bit is already set
-        test    byte ptr [rcx + r10], al
-        je      SetCardTableBit_ByRefWriteBarrier
+        test    byte ptr [rcx], al
+        je      LOCAL_LABEL(SetCardTableBit_ByRefWriteBarrier)
         REPRET
 
-    SetCardTableBit_ByRefWriteBarrier:
-        lock or byte ptr [rcx + r10], al
+    LOCAL_LABEL(SetCardTableBit_ByRefWriteBarrier):
+        lock or byte ptr [rcx], al
+        jmp     LOCAL_LABEL(CheckCardBundle_ByRefWriteBarrier)
+LOCAL_LABEL(CheckCardTableByte_ByRefWriteBarrier):
 
-        jmp     CheckCardBundle_ByRefWriteBarrier
-
-    CheckCardTableByte_ByRefWriteBarrier:
         // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
         add     rdi, 0x8
 
+        // Check if we need to update the card table
+        // Calc pCardByte
         shr     rcx, 0xB
-        cmp     byte ptr [rcx + r10], 0xFF
-        jne     SetCardTableByte_ByRefWriteBarrier
-        REPRET
-    SetCardTableByte_ByRefWriteBarrier:
-        mov     byte ptr [rcx + r10], 0xFF
+        add     rcx, [C_VAR(g_card_table)]
 
-    CheckCardBundle_ByRefWriteBarrier:
+        // Check if this card is dirty
+        cmp     byte ptr [rcx], 0xFF
+        jne     LOCAL_LABEL(UpdateCardTable_ByRefWriteBarrier)
+        REPRET
+
+    LOCAL_LABEL(UpdateCardTable_ByRefWriteBarrier):
+        mov     byte ptr [rcx], 0xFF
+
+    LOCAL_LABEL(CheckCardBundle_ByRefWriteBarrier):
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
-        shr     rcx, 0x0A
-
-        PREPARE_EXTERNAL_VAR g_card_bundle_table, rax
-        add     rcx, [rax]
-
-        // Check if this bundle byte is dirty
+        // check if we need to update the card bundle table
+        // restore destination address from rdi - rdi has been incremented by 8 already
+        lea     rcx, [rdi-8]
+        shr     rcx, 0x15
+        add     rcx, [C_VAR(g_card_bundle_table)]
         cmp     byte ptr [rcx], 0xFF
-
-        jne     UpdateCardBundle_ByRefWriteBarrier
+        jne     LOCAL_LABEL(UpdateCardBundleTable_ByRefWriteBarrier)
         REPRET
 
-    UpdateCardBundle_ByRefWriteBarrier:
+    LOCAL_LABEL(UpdateCardBundleTable_ByRefWriteBarrier):
         mov     byte ptr [rcx], 0xFF
 #endif
-
         ret
 
     .balign 16
-    NotInHeap_ByRefWriteBarrier:
+    LOCAL_LABEL(NotInHeap_ByRefWriteBarrier):
 // If WRITE_BARRIER_CHECK then we won't have already done the mov and should do it here
 // If !WRITE_BARRIER_CHECK we want _NotInHeap and _Leave to be the same and have both
 // 16 byte aligned.
@@ -451,7 +205,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         // rcx is [rsi]
         mov     [rdi], rcx
 #endif
-    Exit_ByRefWriteBarrier:
+    LOCAL_LABEL(Exit_ByRefWriteBarrier):
         // Increment the pointers before leaving
         add     rdi, 0x8
         add     rsi, 0x8
@@ -520,12 +274,12 @@ LOCAL_LABEL(ProbeLoop):
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
 
-LEAF_ENTRY JIT_ValidateIndirectCall, _TEST
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
         ret
-LEAF_END JIT_ValidateIndirectCall, _TEST
+LEAF_END JIT_ValidateIndirectCall, _TEXT
 
-LEAF_ENTRY JIT_DispatchIndirectCall, _TEST
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
         movabs r10, 0xCDCDCDCDCDCDCDCD // The real helper clobbers these registers, so clobber them too in the fake helper
         movabs r11, 0xCDCDCDCDCDCDCDCD
         rex64 jmp rax
-LEAF_END JIT_DispatchIndirectCall, _TEST
+LEAF_END JIT_DispatchIndirectCall, _TEXT

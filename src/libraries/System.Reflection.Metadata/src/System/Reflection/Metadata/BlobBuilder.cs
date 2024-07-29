@@ -47,9 +47,10 @@ namespace System.Reflection.Metadata
         private uint _length;
 
         private const uint IsFrozenMask = 0x80000000;
-        private bool IsHead => (_length & IsFrozenMask) == 0;
+        internal bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
+        private Span<byte> Span => _buffer.AsSpan(0, Length);
 
         public BlobBuilder(int capacity = DefaultChunkSize)
         {
@@ -96,8 +97,7 @@ namespace System.Reflection.Metadata
             {
                 if (chunk != this)
                 {
-                    chunk.ClearChunk();
-                    chunk.FreeChunk();
+                    chunk.ClearAndFreeChunk();
                 }
             }
 
@@ -234,7 +234,7 @@ namespace System.Reflection.Metadata
                 var right = rightEnumerator.Current;
 
                 int minLength = Math.Min(left.Length - leftStart, right.Length - rightStart);
-                if (!ByteSequenceComparer.Equals(left._buffer, leftStart, right._buffer, rightStart, minLength))
+                if (!left._buffer.AsSpan(leftStart, minLength).SequenceEqual(right._buffer.AsSpan(rightStart, minLength)))
                 {
                     return false;
                 }
@@ -315,7 +315,20 @@ namespace System.Reflection.Metadata
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
             byte[]? array = ToArray(start, byteCount);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
+            return ImmutableCollectionsMarshal.AsImmutableArray(array);
+        }
+
+        internal bool TryGetSpan(out ReadOnlySpan<byte> buffer)
+        {
+            if (_nextOrPrevious == this)
+            {
+                // If the blob builder has one chunk, we can just return it and avoid copies.
+                buffer = Span;
+                return true;
+            }
+
+            buffer = default;
+            return false;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
@@ -344,7 +357,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 
@@ -359,7 +372,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 
@@ -382,6 +395,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (prefix.Count == 0)
             {
+                prefix.ClearAndFreeChunk();
                 return;
             }
 
@@ -442,6 +456,7 @@ namespace System.Reflection.Metadata
             // avoid chaining empty chunks:
             if (suffix.Count == 0)
             {
+                suffix.ClearAndFreeChunk();
                 return;
             }
 
@@ -774,7 +789,7 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
-        private void WriteBytes(ReadOnlySpan<byte> buffer)
+        internal void WriteBytes(ReadOnlySpan<byte> buffer)
         {
             if (!IsHead)
             {
@@ -937,7 +952,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -957,7 +972,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -1000,7 +1015,7 @@ namespace System.Reflection.Metadata
         /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes).
         /// </summary>
         /// <remarks>
-        /// The string is UTF8 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-8 encoded and prefixed by the its size in bytes.
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -1019,9 +1034,9 @@ namespace System.Reflection.Metadata
         /// Writes string in User String (#US) heap format (see ECMA-335-II 24.2.4 #US and #Blob heaps):
         /// </summary>
         /// <remarks>
-        /// The string is UTF16 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-16 encoded and prefixed by the its size in bytes.
         ///
-        /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
+        /// This final byte holds the value 1 if and only if any UTF-16 character within the string has any bit set in its top byte,
         /// or its low byte is any of the following: 0x01-0x08, 0x0E-0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
@@ -1039,7 +1054,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF8 encoded string at the current position.
+        /// Writes UTF-8 encoded string at the current position.
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <param name="allowUnpairedSurrogates">
@@ -1162,6 +1177,12 @@ namespace System.Reflection.Metadata
             return (length <= MaxDisplaySize) ?
                 BitConverter.ToString(bytes, 0, length) :
                 BitConverter.ToString(bytes, 0, MaxDisplaySize / 2) + "-...-" + BitConverter.ToString(bytes, length - MaxDisplaySize / 2, MaxDisplaySize / 2);
+        }
+
+        private void ClearAndFreeChunk()
+        {
+            ClearChunk();
+            FreeChunk();
         }
     }
 }

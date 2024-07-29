@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly 'b147924' {}
 .assembly extern mscorlib
@@ -28,6 +29,9 @@
 
   .method static public int32 BIGDAT()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
             newobj    instance   void BIGDAT/WS_TYPE::.ctor ()
             stsfld      class BIGDAT/WS_TYPE BIGDAT::WS_DATA

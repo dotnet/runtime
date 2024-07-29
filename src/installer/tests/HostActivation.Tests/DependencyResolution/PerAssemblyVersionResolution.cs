@@ -8,7 +8,6 @@ using Xunit;
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public abstract class PerAssemblyVersionResolutionBase :
-        ComponentDependencyResolutionBase,
         IClassFixture<PerAssemblyVersionResolutionBase.SharedTestState>
     {
         protected readonly SharedTestState SharedState;
@@ -115,7 +114,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+                .And.HaveResolvedAssembly(expectedTestAssemblyPath)
+                .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
         }
     }
 
@@ -154,7 +154,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .Execute()
                     .Should().Pass()
                     .And.HaveUsedAdditionalDeps(additionalDependency.DepsJson)
-                    .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+                    .And.HaveResolvedAssembly(expectedTestAssemblyPath)
+                    .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
             }
         }
     }

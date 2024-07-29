@@ -3,6 +3,7 @@
 //
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test for https://github.com/dotnet/runtime/issues/13816
 public class Test_CastThenBinop
@@ -50,7 +51,8 @@ public class Test_CastThenBinop
         return (ushort)(_xorLeft ^ (long)_xorRight);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

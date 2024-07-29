@@ -4,13 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class _74373
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Problem(10);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -22,8 +23,8 @@ public class _74373
         return y;
     }
 
-    public static unsafe void Use(long* arg) { }
+    internal static unsafe void Use(long* arg) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void JitUse<T>(T arg) { }
+    internal static void JitUse<T>(T arg) { }
 }

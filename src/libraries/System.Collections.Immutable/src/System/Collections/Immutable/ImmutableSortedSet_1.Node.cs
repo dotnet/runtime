@@ -340,7 +340,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(array, nameof(array));
                 Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
                 Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
-                foreach (var item in this)
+                foreach (T item in this)
                 {
                     array[arrayIndex++] = item;
                 }
@@ -355,7 +355,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
                 Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
-                foreach (var item in this)
+                foreach (T item in this)
                 {
                     array.SetValue(item, arrayIndex++);
                 }
@@ -383,7 +383,7 @@ namespace System.Collections.Immutable
                     int compareResult = comparer.Compare(key, _key);
                     if (compareResult > 0)
                     {
-                        var newRight = _right!.Add(key, comparer, out mutated);
+                        ImmutableSortedSet<T>.Node newRight = _right!.Add(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(right: newRight);
@@ -391,7 +391,7 @@ namespace System.Collections.Immutable
                     }
                     else if (compareResult < 0)
                     {
-                        var newLeft = _left!.Add(key, comparer, out mutated);
+                        ImmutableSortedSet<T>.Node newLeft = _left!.Add(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(left: newLeft);
@@ -452,19 +452,19 @@ namespace System.Collections.Immutable
                         {
                             // We have two children. Remove the next-highest node and replace
                             // this node with it.
-                            var successor = _right;
+                            ImmutableSortedSet<T>.Node successor = _right;
                             while (!successor._left!.IsEmpty)
                             {
                                 successor = successor._left;
                             }
 
-                            var newRight = _right.Remove(successor._key, comparer, out _);
+                            ImmutableSortedSet<T>.Node newRight = _right.Remove(successor._key, comparer, out _);
                             result = successor.Mutate(left: _left, right: newRight);
                         }
                     }
                     else if (compare < 0)
                     {
-                        var newLeft = _left.Remove(key, comparer, out mutated);
+                        ImmutableSortedSet<T>.Node newLeft = _left.Remove(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(left: newLeft);
@@ -472,7 +472,7 @@ namespace System.Collections.Immutable
                     }
                     else
                     {
-                        var newRight = _right.Remove(key, comparer, out mutated);
+                        ImmutableSortedSet<T>.Node newRight = _right.Remove(key, comparer, out mutated);
                         if (mutated)
                         {
                             result = this.Mutate(right: newRight);
@@ -620,7 +620,7 @@ namespace System.Collections.Immutable
                     return tree;
                 }
 
-                var right = tree._right;
+                ImmutableSortedSet<T>.Node right = tree._right;
                 return right.Mutate(left: tree.Mutate(right: right._left!));
             }
 
@@ -639,7 +639,7 @@ namespace System.Collections.Immutable
                     return tree;
                 }
 
-                var left = tree._left;
+                ImmutableSortedSet<T>.Node left = tree._left;
                 return left.Mutate(right: tree.Mutate(left: left._right!));
             }
 

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public class otherClass
 {
 
@@ -19,7 +20,8 @@ public class otherClass
 
 public class MyApp
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = 2, j = 3, w;
 

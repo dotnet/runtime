@@ -115,7 +115,7 @@ namespace System.Data.OleDb
                                 PersistSecurityInfo = ConvertToBoolean(value);
                                 break;
                             default:
-                                Debug.Assert(false, "unexpected keyword");
+                                Debug.Fail("unexpected keyword");
                                 throw ADP.KeywordNotSupported(keyword);
                         }
                     }
@@ -310,7 +310,7 @@ namespace System.Data.OleDb
                 case Keywords.Provider:
                     return Provider;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -354,7 +354,7 @@ namespace System.Data.OleDb
                     RestartProvider();
                     break;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -629,7 +629,7 @@ namespace System.Data.OleDb
                         if (svalue.IndexOf(',') != -1)
                         {
                             int convertedValue = 0;
-                            string[] values = svalue.Split(new char[] { ',' });
+                            string[] values = svalue.Split(OleDbConnectionInternal.s_comma);
                             foreach (string v in values)
                             {
                                 convertedValue |= (int)Enum.Parse<OleDbServiceValues>(v, true);

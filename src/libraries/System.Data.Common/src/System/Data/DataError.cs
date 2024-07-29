@@ -39,7 +39,7 @@ namespace System.Data
         {
             Debug.Assert(column != null, "Invalid (null) argument");
             Debug.Assert(column.Table != null, "Invalid (loose) column");
-            if (error == null || error.Length == 0)
+            if (string.IsNullOrEmpty(error))
             {
                 // remove error from the collection
                 Clear(column);

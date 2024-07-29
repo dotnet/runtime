@@ -65,7 +65,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return exports;
             }
 
-            private Export CreateScopeExport(CompositionScopeDefinition childCatalog, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)
+            private ScopeFactoryExport CreateScopeExport(CompositionScopeDefinition childCatalog, ComposablePartDefinition partDefinition, ExportDefinition exportDefinition)
             {
                 return new ScopeFactoryExport(this, childCatalog, partDefinition, exportDefinition);
             }

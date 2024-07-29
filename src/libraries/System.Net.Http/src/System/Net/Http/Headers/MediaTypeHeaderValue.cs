@@ -4,8 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
-using static System.HexConverter;
 
 namespace System.Net.Http.Headers
 {
@@ -68,7 +68,7 @@ namespace System.Net.Http.Headers
             get { return _mediaType; }
             set
             {
-                CheckMediaTypeFormat(value, nameof(value));
+                CheckMediaTypeFormat(value);
                 _mediaType = value;
             }
         }
@@ -100,7 +100,7 @@ namespace System.Net.Http.Headers
         /// <param name="charSet">The value to use for the character set.</param>
         public MediaTypeHeaderValue(string mediaType, string? charSet)
         {
-            CheckMediaTypeFormat(mediaType, nameof(mediaType));
+            CheckMediaTypeFormat(mediaType);
             _mediaType = mediaType;
 
             if (!string.IsNullOrEmpty(charSet))
@@ -149,7 +149,7 @@ namespace System.Net.Http.Headers
         /// <returns>A <see cref="MediaTypeHeaderValue"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="input"/> is a <see langword="null"/> reference.</exception>
         /// <exception cref="FormatException"><parmref name="input"/> is not valid media type header value information.</exception>
-        public static MediaTypeHeaderValue Parse(string? input)
+        public static MediaTypeHeaderValue Parse(string input)
         {
             int index = 0;
             return (MediaTypeHeaderValue)MediaTypeHeaderParser.SingleValueParser.ParseValue(input, null, ref index);
@@ -272,12 +272,9 @@ namespace System.Net.Http.Headers
             return mediaTypeLength;
         }
 
-        private static void CheckMediaTypeFormat(string mediaType, string parameterName)
+        private static void CheckMediaTypeFormat(string mediaType, [CallerArgumentExpression(nameof(mediaType))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(mediaType))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mediaType, parameterName);
 
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             // Also no LWS between type and subtype are allowed.

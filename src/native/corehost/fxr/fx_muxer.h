@@ -32,11 +32,12 @@ public:
         hostfxr_handle *host_context_handle);
     static int run_app(host_context_t *context);
     static int get_runtime_delegate(
-        host_context_t *context,
+        const host_context_t *context,
         coreclr_delegate_type delegate_type,
         void** delegate);
     static const host_context_t* get_active_host_context();
     static int close_host_context(host_context_t *context);
+    static int load_runtime(host_context_t *context);
 private:
     static int handle_exec_host_command(
         const pal::string_t& host_command,

@@ -7,7 +7,6 @@ using System.Text;
 
 namespace System.Diagnostics.Tracing
 {
-#if FEATURE_PERFTRACING
     internal static class EventPipePayloadDecoder
     {
         /// <summary>
@@ -31,14 +30,7 @@ namespace System.Diagnostics.Tracing
                 Type? enumType = parameterType.IsEnum ? Enum.GetUnderlyingType(parameterType) : null;
                 if (parameterType == typeof(IntPtr))
                 {
-                    if (IntPtr.Size == 8)
-                    {
-                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt64LittleEndian(payload);
-                    }
-                    else
-                    {
-                        decodedFields[i] = (nint)BinaryPrimitives.ReadInt32LittleEndian(payload);
-                    }
+                    decodedFields[i] = BinaryPrimitives.ReadIntPtrLittleEndian(payload);
                     payload = payload.Slice(IntPtr.Size);
                 }
                 else if (parameterType == typeof(int) || enumType == typeof(int))
@@ -83,12 +75,12 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (parameterType == typeof(float))
                 {
-                    decodedFields[i] = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(payload));
+                    decodedFields[i] = BinaryPrimitives.ReadSingleLittleEndian(payload);
                     payload = payload.Slice(sizeof(float));
                 }
                 else if (parameterType == typeof(double))
                 {
-                    decodedFields[i] = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(payload));
+                    decodedFields[i] = BinaryPrimitives.ReadDoubleLittleEndian(payload);
                     payload = payload.Slice(sizeof(double));
                 }
                 else if (parameterType == typeof(bool))
@@ -145,5 +137,4 @@ namespace System.Diagnostics.Tracing
             return decodedFields;
         }
     }
-#endif // FEATURE_PERFTRACING
 }

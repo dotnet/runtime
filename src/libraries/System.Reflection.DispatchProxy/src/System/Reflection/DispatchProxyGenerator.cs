@@ -126,8 +126,9 @@ namespace System.Reflection
                 else
                 {
                     string? alcName = alc.Name;
-                    name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{alcName}";
+                    name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{new AssemblyName { Name = alcName }}";
                 }
+
                 AssemblyBuilderAccess builderAccess =
                     alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
                 _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
@@ -220,7 +221,7 @@ namespace System.Reflection
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
                 int nextId = Interlocked.Increment(ref _typeId);
-                TypeBuilder tb = _mb.DefineType(name + "_" + nextId, TypeAttributes.Public, proxyBaseType);
+                TypeBuilder tb = _mb.DefineType($"{name}_{nextId}", TypeAttributes.Public, proxyBaseType);
                 return new ProxyBuilder(this, tb, proxyBaseType);
             }
 
@@ -424,7 +425,11 @@ namespace System.Reflection
                     paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
                 }
 
-                MethodBuilder mdb = _tb.DefineMethod(mi.Name, MethodAttributes.Public | MethodAttributes.Virtual, CallingConventions.Standard,
+                MethodAttributes attributes = MethodAttributes.Public;
+
+                attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
+
+                MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
                     mi.ReturnType, null, null,
                     paramTypes, paramReqMods, null);
 
@@ -443,6 +448,18 @@ namespace System.Reflection
                     }
                 }
                 ILGenerator il = mdb.GetILGenerator();
+
+                if (mi.IsStatic)
+                {
+                    ConstructorInfo exCtor = typeof(NotSupportedException).GetConstructor([typeof(string)])!;
+
+                    il.Emit(OpCodes.Ldstr, SR.DispatchProxy_Method_Invocation_Cannot_Be_Static);
+                    il.Emit(OpCodes.Newobj, exCtor);
+                    il.Emit(OpCodes.Throw);
+
+                    _tb.DefineMethodOverride(mdb, mi);
+                    return mdb;
+                }
 
                 ParametersArray args = new ParametersArray(il, paramTypes);
 

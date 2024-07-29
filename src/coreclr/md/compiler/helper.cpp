@@ -219,8 +219,6 @@ STDMETHODIMP RegMeta::DefineEventHelper(    // Return hresult.
     mdEvent     *pmdEvent)              // [OUT] output event token
 {
     HRESULT     hr = S_OK;
-    LOG((LOGMD, "MD RegMeta::DefineEventHelper(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, szEvent, dwEventFlags, tkEventType, pmdEvent));
 
     LOCKWRITE();
 
@@ -250,9 +248,6 @@ STDMETHODIMP RegMeta::AddDeclarativeSecurityHelper(
     RID             iDeclSec;
     short           sAction = static_cast<short>(dwAction);
     mdPermission    tkPerm  = mdTokenNil;
-
-    LOG((LOGMD, "MD RegMeta::AddDeclarativeSecurityHelper(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tk, dwAction, pValue, cbValue, pmdPermission));
 
     LOCKWRITE();
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());

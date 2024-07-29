@@ -33,7 +33,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// This type expects the first item to be ID==0 and for all subsequent items
     /// to increase IDs sequentially.
     /// </remarks>
-    [DebuggerDisplay("Count={CountForDebugging}")]
+    [DebuggerDisplay("Count = {CountForDebugging}")]
     [DebuggerTypeProxy(typeof(ReorderingBuffer<>.DebugView))]
     internal sealed class ReorderingBuffer<TOutput> : IReorderingBuffer
     {

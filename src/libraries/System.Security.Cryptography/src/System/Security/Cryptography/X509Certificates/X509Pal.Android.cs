@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
-                if (rawData == null || rawData.Length == 0)
+                if (rawData.IsEmpty)
                     throw new CryptographicException();
 
                 X509ContentType contentType = Interop.AndroidCrypto.X509GetContentType(rawData);
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return contentType;
                 }
 
-                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                if (X509CertificateLoader.IsPkcs12(rawData))
                 {
                     return X509ContentType.Pkcs12;
                 }
@@ -160,13 +160,13 @@ namespace System.Security.Cryptography.X509Certificates
                 int written = writer.Encode(rented);
 
                 DSA dsa = DSA.Create();
-                IDisposable? toDispose = dsa;
+                DSA? toDispose = dsa;
 
                 try
                 {
-                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
-                   toDispose = null;
-                   return dsa;
+                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    toDispose = null;
+                    return dsa;
                 }
                 finally
                 {

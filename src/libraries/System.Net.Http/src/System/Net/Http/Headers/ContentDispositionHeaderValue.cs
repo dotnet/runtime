@@ -34,7 +34,7 @@ namespace System.Net.Http.Headers
             get { return _dispositionType; }
             set
             {
-                CheckDispositionTypeFormat(value, nameof(value));
+                HeaderUtilities.CheckValidToken(value);
                 _dispositionType = value;
             }
         }
@@ -104,18 +104,18 @@ namespace System.Net.Http.Headers
                         _parameters!.Remove(sizeParameter);
                     }
                 }
-                else if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-                else if (sizeParameter != null)
-                {
-                    sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
-                }
                 else
                 {
-                    string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
-                    Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    ArgumentOutOfRangeException.ThrowIfNegative(value.GetValueOrDefault());
+                    if (sizeParameter != null)
+                    {
+                        sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
+                        Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    }
                 }
             }
         }
@@ -124,7 +124,7 @@ namespace System.Net.Http.Headers
 
         #region Constructors
 
-        internal ContentDispositionHeaderValue()
+        private ContentDispositionHeaderValue()
         {
             // Used by the parser to create a new instance of this type.
         }
@@ -139,7 +139,8 @@ namespace System.Net.Http.Headers
 
         public ContentDispositionHeaderValue(string dispositionType)
         {
-            CheckDispositionTypeFormat(dispositionType, nameof(dispositionType));
+            HeaderUtilities.CheckValidToken(dispositionType);
+
             _dispositionType = dispositionType;
         }
 
@@ -184,7 +185,7 @@ namespace System.Net.Http.Headers
 
         #region Parsing
 
-        public static ContentDispositionHeaderValue Parse(string? input)
+        public static ContentDispositionHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,
@@ -268,22 +269,6 @@ namespace System.Net.Http.Headers
 
             dispositionType = input.Substring(startIndex, typeLength);
             return typeLength;
-        }
-
-        private static void CheckDispositionTypeFormat(string dispositionType, string parameterName)
-        {
-            if (string.IsNullOrEmpty(dispositionType))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
-
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out string? tempDispositionType);
-            if ((dispositionTypeLength == 0) || (tempDispositionType!.Length != dispositionType.Length))
-            {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_headers_invalid_value, dispositionType));
-            }
         }
 
         #endregion Parsing

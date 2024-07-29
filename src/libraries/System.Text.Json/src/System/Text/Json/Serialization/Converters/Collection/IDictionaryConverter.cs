@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Converters
         : JsonDictionaryConverter<TDictionary, string, object?>
         where TDictionary : IDictionary
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
@@ -33,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
             if (returnValue.IsReadOnly)
             {
                 state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
         }
 
@@ -43,6 +45,7 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
+                state.Current.CollectionEnumerator = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     return true;
@@ -58,9 +61,8 @@ namespace System.Text.Json.Serialization.Converters
 
             do
             {
-                if (ShouldFlush(writer, ref state))
+                if (ShouldFlush(ref state, writer))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
@@ -85,7 +87,6 @@ namespace System.Text.Json.Serialization.Converters
                 object? element = enumerator.Value;
                 if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
@@ -98,9 +99,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as Dictionary<TKey,TValue> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<string, object?>)))
+            if (jsonTypeInfo.CreateObject is null && Type.IsAssignableFrom(typeof(Dictionary<string, object?>)))
             {
-                Debug.Assert(TypeToConvert.IsInterface);
+                Debug.Assert(Type.IsInterface);
                 jsonTypeInfo.CreateObject = () => new Dictionary<string, object?>();
             }
         }

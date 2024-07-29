@@ -9,7 +9,7 @@
 }
 .assembly 'b46897' {}
 .assembly extern xunit.core {}
-.class ILGEN_0x6322da7 {
+.class public ILGEN_0x6322da7 {
 
 .field static	unsigned int16 field_0x2
 .method static int32 Method_0xc5c40454(int16 Arg_0x0, int8 Arg_0x1, int16 Arg_0x2, unsigned int16 Arg_0x3, float64 Arg_0x4, float32 Arg_0x5, int32 Arg_0x6, float64 Arg_0x7) {
@@ -78,7 +78,7 @@ End_Orphan_9:
  cgt
 ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

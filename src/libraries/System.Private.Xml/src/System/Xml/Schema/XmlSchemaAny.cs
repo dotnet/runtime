@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Xml.Serialization;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
@@ -38,7 +38,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_ns == null || _ns.Length == 0)
+                if (string.IsNullOrEmpty(_ns))
                 {
                     return "##any";
                 }

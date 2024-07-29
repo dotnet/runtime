@@ -57,8 +57,8 @@
                              message="$(string.RuntimePublisher.GCSampledObjectAllocationHighKeywordMessage)" symbol="CLR_GCHEAPALLOCHIGH_KEYWORD"/>
                     <keyword name="GCHeapSurvivalAndMovementKeyword" mask="0x400000"
                              message="$(string.RuntimePublisher.GCHeapSurvivalAndMovementKeywordMessage)" symbol="CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD"/>
-                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
-                             message="$(string.RuntimePublisher.GCHeapCollectKeyword)" symbol="CLR_GCHEAPCOLLECT_KEYWORD"/>
+                    <keyword name="ManagedHeapCollectKeyword" mask="0x800000"
+                             message="$(string.RuntimePublisher.ManagedHeapCollectKeyword)" symbol="CLR_MANAGEDHEAPCOLLECT_KEYWORD"/>
                     <keyword name="GCHeapAndTypeNamesKeyword" mask="0x1000000"
                              message="$(string.RuntimePublisher.GCHeapAndTypeNamesKeyword)" symbol="CLR_GCHEAPANDTYPENAMES_KEYWORD"/>
                     <keyword name="GCSampledObjectAllocationLowKeyword" mask="0x2000000"
@@ -89,6 +89,8 @@
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
                     <keyword name="ProfilerKeyword" mask="0x20000000000"
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
+                    <keyword name="WaitHandleKeyword" mask="0x40000000000"
+                             message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAITHANDLE_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -207,10 +209,11 @@
                       </opcodes>
                     </task>
 
-                  <task name="Contention" symbol="CLR_CONTENTION_TASK"
+                    <task name="Contention" symbol="CLR_CONTENTION_TASK"
                           value="8" eventGUID="{561410f5-a138-4ab3-945e-516483cddfbc}"
                           message="$(string.RuntimePublisher.ContentionTaskMessage)">
                         <opcodes>
+                            <opcode name="LockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedOpcodeMessage)" symbol="CLR_CONTENTION_LOCK_CREATED_OPCODE" value="11"/>
                         </opcodes>
                     </task>
 
@@ -452,7 +455,13 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 39-->
+                    <task name="WaitHandleWait" symbol="CLR_WAITHANDLEWAIT_TASK"
+                          value="39" eventGUID="{E90049D8-8AB8-4799-B072-EEF41265BCA4}"
+                          message="$(string.RuntimePublisher.WaitHandleWaitTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 40-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -502,6 +511,10 @@
                     <valueMap name="ContentionFlagsMap">
                         <map value="0x0" message="$(string.RuntimePublisher.Contention.ManagedMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.Contention.NativeMapMessage)"/>
+                    </valueMap>
+                    <valueMap name="WaitHandleWaitSourceMap">
+                        <map value="0x0" message="$(string.RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage)"/>
                     </valueMap>
                     <valueMap name="TailCallTypeMap">
                         <map value="0x0" message="$(string.RuntimePublisher.TailCallType.OptimizedMapMessage)"/>
@@ -1771,6 +1784,30 @@
                                 <ClrInstanceID> %2 </ClrInstanceID>
                                 <DurationNs> %3 </DurationNs>
                             </Contention>
+                        </UserData>
+                    </template>
+
+                    <template tid="WaitHandleWaitStart">
+                        <data name="WaitSource" inType="win:UInt8" map="WaitHandleWaitSourceMap" />
+                        <data name="AssociatedObjectID" inType="win:Pointer" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <WaitHandleWaitStart xmlns="myNs">
+                                <WaitSource> %1 </WaitSource>
+                                <AssociatedObjectID> %2 </AssociatedObjectID>
+                                <ClrInstanceID> %3 </ClrInstanceID>
+                            </WaitHandleWaitStart>
+                        </UserData>
+                    </template>
+
+                    <template tid="WaitHandleWaitStop">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <WaitHandleWaitStop xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                            </WaitHandleWaitStop>
                         </UserData>
                     </template>
 
@@ -3114,16 +3151,16 @@
                       </UserData>
                     </template>
 
-                    <template tid="LockCreated">
+                    <template tid="ContentionLockCreated">
                         <data name="LockID" inType="win:Pointer" />
                         <data name="AssociatedObjectID" inType="win:Pointer" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
-                            <LockCreated xmlns="myNs">
+                            <ContentionLockCreated xmlns="myNs">
                                 <LockID> %1 </LockID>
                                 <AssociatedObjectID> %2 </AssociatedObjectID>
                                 <ClrInstanceID> %3 </ClrInstanceID>
-                            </LockCreated>
+                            </ContentionLockCreated>
                         </UserData>
                     </template>
 
@@ -3413,8 +3450,8 @@
                            task="GarbageCollection"
                            symbol="GCBulkRootStaticVar" message="$(string.RuntimePublisher.GCBulkRootStaticVarEventMessage)"/>
 
-                    <event value="39" version="0" level="win:LogAlways" template="GCDynamicEvent"
-                           keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword GCHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
+                    <event value="39" version="0" level="win:Informational" template="GCDynamicEvent"
+                           keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword ManagedHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
                            opcode="GCDynamicEvent"
                            task="GarbageCollection"
                            symbol="GCDynamicEvent"/>
@@ -3690,11 +3727,10 @@
                            task="Contention"
                            symbol="ContentionStop_V1" message="$(string.RuntimePublisher.ContentionStop_V1EventMessage)"/>
 
-                    <event value="90" version="0" level="win:Informational"  template="LockCreated"
-                           keywords ="ContentionKeyword"  opcode="win:Info"
+                    <event value="90" version="0" level="win:Informational"  template="ContentionLockCreated"
+                           keywords ="ContentionKeyword"  opcode="LockCreated"
                            task="Contention"
-                           symbol="LockCreated" message="$(string.RuntimePublisher.LockCreatedEventMessage)"/>
-
+                           symbol="ContentionLockCreated" message="$(string.RuntimePublisher.ContentionLockCreatedEventMessage)"/>
 
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
@@ -4209,6 +4245,17 @@
                     <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
                            keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
                            message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
+
+                    <!-- Wait Handle events -->
+                    <event value="301" version="0" level="win:Verbose" template="WaitHandleWaitStart"
+                           keywords="WaitHandleKeyword" opcode="win:Start"
+                           task="WaitHandleWait"
+                           symbol="WaitHandleWaitStart" message="$(string.RuntimePublisher.WaitHandleWaitStartEventMessage)"/>
+
+                    <event value="302" version="0" level="win:Verbose" template="WaitHandleWaitStop"
+                           keywords="WaitHandleKeyword" opcode="win:Stop"
+                           task="WaitHandleWait"
+                           symbol="WaitHandleWaitStop" message="$(string.RuntimePublisher.WaitHandleWaitStopEventMessage)"/>
 
                 </events>
             </provider>
@@ -8481,7 +8528,7 @@
                 <string id="RuntimePublisher.ContentionStart_V2EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;%nLockID=%3;%nAssociatedObjectID=%4;%nLockOwnerThreadID=%5"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
-                <string id="RuntimePublisher.LockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.ContentionLockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
@@ -8567,6 +8614,8 @@
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
+                <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
+                <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -8741,6 +8790,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
+                <string id="RuntimePublisher.WaitHandleWaitTaskMessage" value="WaitHandleWait" />
 
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
@@ -8933,6 +8983,8 @@
                 <string id="RuntimePublisher.ResolutionAttempted.IncompatibleVersion" value="IncompatibleVersion" />
                 <string id="RuntimePublisher.ResolutionAttempted.Failure" value="Failure" />
                 <string id="RuntimePublisher.ResolutionAttempted.Exception" value="Exception" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.UnknownMapMessage" value="Unknown" />
+                <string id="RuntimePublisher.WaitHandleWaitSource.MonitorWaitMapMessage" value="MonitorWait" />
 
                 <string id="RundownPublisher.AppDomain.ExecutableMapMessage" value="Executable" />
                 <string id="RundownPublisher.AppDomain.SharedMapMessage" value="Shared" />
@@ -9073,7 +9125,7 @@
                 <string id="RuntimePublisher.GCSampledObjectAllocationHighKeywordMessage" value="GCSampledObjectAllocationHigh" />
                 <string id="RuntimePublisher.GCSampledObjectAllocationLowKeywordMessage" value="GCSampledObjectAllocationLow" />
                 <string id="RuntimePublisher.GCHeapSurvivalAndMovementKeywordMessage" value="GCHeapSurvivalAndMovement" />
-                <string id="RuntimePublisher.GCHeapCollectKeyword" value="GCHeapCollect" />
+                <string id="RuntimePublisher.ManagedHeapCollectKeyword" value="ManagedHeapCollect" />
                 <string id="RuntimePublisher.GCHeapAndTypeNamesKeyword" value="GCHeapAndTypeNames" />
                 <string id="RuntimePublisher.GCHandleKeywordMessage" value="GCHandle" />
                 <string id="RuntimePublisher.ThreadTransferKeywordMessage" value="ThreadTransfer" />
@@ -9102,6 +9154,7 @@
                 <string id="RundownPublisher.PerfTrackRundownKeywordMessage" value="PerfTrack" />
                 <string id="RundownPublisher.StackKeywordMessage" value="Stack" />
                 <string id="RundownPublisher.CompilationKeywordMessage" value="Compilation" />
+                <string id="RuntimePublisher.WaitHandleKeywordMessage" value="WaitHandle" />
 
                 <string id="PrivatePublisher.GCPrivateKeywordMessage" value="GC" />
                 <string id="PrivatePublisher.StartupKeywordMessage" value="Startup" />
@@ -9189,6 +9242,7 @@
                 <string id="RuntimePublisher.CLRStackWalkOpcodeMessage" value="Walk" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedOpcodeMessage" value="MemAllocated" />
                 <string id="RuntimePublisher.AppDomainMemSurvivedOpcodeMessage" value="MemSurvived" />
+                <string id="RuntimePublisher.ContentionLockCreatedOpcodeMessage" value="LockCreated" />
                 <string id="RuntimePublisher.ThreadCreatedOpcodeMessage" value="ThreadCreated" />
                 <string id="RuntimePublisher.ThreadTerminatedOpcodeMessage" value="ThreadTerminated" />
                 <string id="RuntimePublisher.ThreadDomainEnterOpcodeMessage" value="DomainEnter" />
@@ -9200,7 +9254,7 @@
                 <string id="RuntimePublisher.StatsOpcodeMessage" value="Stats" />
                 <string id="RuntimePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
                 <string id="RuntimePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="RuntimePublisher.TriggeredOpcodeMessage" value="Triggered" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeOpcodeMessage" value="PinObjectAtGCTime" />
                 <string id="RuntimePublisher.IncreaseMemoryPressureOpcodeMessage" value="IncreaseMemoryPressure" />
@@ -9293,7 +9347,7 @@
                 <string id="PrivatePublisher.BGCAllocWaitEndOpcodeMessage" value="BGCAllocWaitStop" />
                 <string id="PrivatePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="PrivatePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="PrivatePublisher.PinPlugAtGCTimeOpcodeMessage" value="PinPlugAtGCTime" />
                 <string id="PrivatePublisher.CCWRefCountChangeOpcodeMessage" value="CCWRefCountChange" />
                 <string id="PrivatePublisher.EEStartupStartOpcodeMessage" value="EEStartupStart" />

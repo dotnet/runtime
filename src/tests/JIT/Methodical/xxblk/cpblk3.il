@@ -12,7 +12,7 @@
 }
 .namespace Test_cpblk3
 {
-.assembly 'cpblk3' {}
+.assembly ASSEMBLY_NAME {}
 .class public explicit ansi sealed $MultiByte$size$34
        extends [mscorlib]System.ValueType
 {

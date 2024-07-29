@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Runtime.Serialization;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
+using System.Threading;
+
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
 
 namespace WbemClient_v1 { }
 namespace WbemUtilities_v1 { }
@@ -15,7 +20,7 @@ namespace WbemUtilities_v1 { }
 namespace System.Management
 {
     #region FreeThreadedInterfaces
-    internal sealed class IWbemClassObjectFreeThreaded : IDisposable, ISerializable
+    internal sealed class IWbemClassObjectFreeThreaded : IDisposable
     {
         //
         // This is to force load wminet_utils.dll as a COM component. Since wminet_utils.dll
@@ -42,16 +47,6 @@ namespace System.Management
             if (null == wbemClassObject)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
-        }
-
-        public IWbemClassObjectFreeThreaded(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public void Dispose()
@@ -371,7 +366,7 @@ namespace System.Management
     internal sealed class IWbemQualifierSetFreeThreaded : IDisposable
     {
         private static readonly string name = typeof(IWbemQualifierSetFreeThreaded).FullName;
-        public static Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
+        public static readonly Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
 
         private IntPtr pWbemQualifierSet = IntPtr.Zero;
         public IWbemQualifierSetFreeThreaded(IntPtr pWbemQualifierSet)
@@ -1305,8 +1300,8 @@ namespace System.Management
         }
 
         // Interfaces that we need to use
-        private static Guid IID_IObjectContext = new Guid("51372AE0-CAE7-11CF-BE81-00AA00A2FA25");
-        private static Guid IID_IComThreadingInfo = new Guid("000001ce-0000-0000-C000-000000000046");
+        private static readonly Guid IID_IObjectContext = new Guid("51372AE0-CAE7-11CF-BE81-00AA00A2FA25");
+        private static readonly Guid IID_IComThreadingInfo = new Guid("000001ce-0000-0000-C000-000000000046");
 
         // A variable that is initialized once to tell us if we are on
         // a Win2k platform or above.
@@ -1349,7 +1344,9 @@ namespace System.Management
                     return false;
 
                 // If we CAN get to the IObjectContext interface, we have a 'context'
-                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+                if (0 == Marshal.QueryInterface(pComThreadingInfo, ref Unsafe.AsRef(in IID_IObjectContext), out pObjectContext))
+#pragma warning restore CS9191
                     return false;
             }
             finally

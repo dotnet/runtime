@@ -15,7 +15,7 @@ namespace ILLink.Tasks
 	{
 		/// <summary>
 		///   Paths to the assembly files that should be considered as
-		///   input to the linker.
+		///   input to the ILLink.
 		///   Optional metadata:
 		///       TrimMode ("copy", "link", etc...): sets the illink action to take for this assembly.
 		///   There is an optional metadata for each optimization that can be set to "True" or "False" to
@@ -27,7 +27,7 @@ namespace ILLink.Tasks
 		///       IPConstProp
 		///       Sealer
 		///   Optional metadata "TrimmerSingleWarn" may also be set to "True"/"False" to control
-		///   whether the linker produces granular warnings for this assembly.
+		///   whether ILLink produces granular warnings for this assembly.
 		///   Maps to '-reference', and possibly '--action', '--enable-opt', '--disable-opt', '--verbose'
 		/// </summary>
 		[Required]
@@ -43,11 +43,8 @@ namespace ILLink.Tasks
 		/// <summary>
 		///   The names of the assemblies to root. This should contain
 		///   assembly names without an extension, not file names or
-		///   paths. Exactly which parts of the assemblies get rooted
-		///   is subject to change. Currently these get passed to
-		///   illink with "-a", which roots the entry point for
-		///   executables, and everything for libraries. To control
-		///   the behaviour explicitly, set RootMode metadata.
+		///   paths. The default is to root everything in these assemblies.
+		//    For more fine-grained control, set RootMode metadata.
 		/// </summary>
 		[Required]
 		public ITaskItem[] RootAssemblyNames { get; set; }
@@ -98,7 +95,7 @@ namespace ILLink.Tasks
 		public string WarningsNotAsErrors { get; set; }
 
 		/// <summary>
-		///   A list of XML root descriptor files specifying linker
+		///   A list of XML root descriptor files specifying ILLink
 		///   roots at a granular level. See the dotnet/linker
 		///   documentation for details about the format.
 		///   Maps to '-x'.
@@ -165,7 +162,7 @@ namespace ILLink.Tasks
 		};
 
 		/// <summary>
-		///   Custom data key-value pairs to pass to the linker.
+		///   Custom data key-value pairs to pass to ILLink.
 		///   The name of the item is the key, and the required "Value"
 		///   metadata is the value. Maps to '--custom-data key=value'.
 		/// </summary>
@@ -177,7 +174,7 @@ namespace ILLink.Tasks
 		public string ExtraArgs { get; set; }
 
 		/// <summary>
-		///   Make illink dump dependencies file for linker analyzer tool.
+		///   Make illink dump dependencies file for ILLink analyzer tool.
 		///   Maps to '--dump-dependencies'.
 		/// </summary>
 		public bool DumpDependencies { get; set; }
@@ -198,6 +195,13 @@ namespace ILLink.Tasks
 		bool? _removeSymbols;
 
 		/// <summary>
+		///   Preserve original path to debug symbols from each assembly's debug header.
+		///   Maps to '--preserve-symbol-paths' if true.
+		///   Default if not specified is to write out the full path to the pdb in the debug header.
+		/// </summary>
+		public bool PreserveSymbolPaths { get; set; }
+
+		/// <summary>
 		///   Sets the default action for trimmable assemblies.
 		///   Maps to '--trim-mode'
 		/// </summary>
@@ -210,12 +214,12 @@ namespace ILLink.Tasks
 		public string DefaultAction { get; set; }
 
 		/// <summary>
-		///   A list of custom steps to insert into the linker pipeline.
+		///   A list of custom steps to insert into the ILLink pipeline.
 		///   Each ItemSpec should be the path to the assembly containing the custom step.
 		///   Each Item requires "Type" metadata with the name of the custom step type.
 		///   Optional metadata:
-		///   BeforeStep: The name of a linker step. The custom step will be inserted before it.
-		///   AfterStep: The name of a linker step. The custom step will be inserted after it.
+		///   BeforeStep: The name of a ILLink step. The custom step will be inserted before it.
+		///   AfterStep: The name of a ILLink step. The custom step will be inserted after it.
 		///   The default (if neither BeforeStep or AfterStep is specified) is to insert the
 		///   custom step at the end of the pipeline.
 		///   It is an error to specify both BeforeStep and AfterStep.
@@ -234,11 +238,11 @@ namespace ILLink.Tasks
 
 		private string DotNetPath {
 			get {
-				if (!String.IsNullOrEmpty (_dotnetPath))
+				if (!string.IsNullOrEmpty (_dotnetPath))
 					return _dotnetPath;
 
 				_dotnetPath = Environment.GetEnvironmentVariable (DotNetHostPathEnvironmentName);
-				if (String.IsNullOrEmpty (_dotnetPath))
+				if (string.IsNullOrEmpty (_dotnetPath))
 					throw new InvalidOperationException ($"{DotNetHostPathEnvironmentName} is not set");
 
 				return _dotnetPath;
@@ -258,14 +262,14 @@ namespace ILLink.Tasks
 
 		public string ILLinkPath {
 			get {
-				if (!String.IsNullOrEmpty (_illinkPath))
+				if (!string.IsNullOrEmpty (_illinkPath))
 					return _illinkPath;
 
 #pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
 				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 #pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
-				// The linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
-				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net7.0", "illink.dll");
+				// IL Linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
+				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net9.0", "illink.dll");
 				return _illinkPath;
 			}
 			set => _illinkPath = value;
@@ -369,10 +373,10 @@ namespace ILLink.Tasks
 				// Add per-assembly optimization arguments
 				foreach (var optimization in _optimizationNames) {
 					string optimizationValue = assembly.GetMetadata (optimization);
-					if (String.IsNullOrEmpty (optimizationValue))
+					if (string.IsNullOrEmpty (optimizationValue))
 						continue;
 
-					if (!Boolean.TryParse (optimizationValue, out bool enabled))
+					if (!bool.TryParse (optimizationValue, out bool enabled))
 						throw new ArgumentException ($"optimization metadata {optimization} must be True or False");
 
 					SetOpt (args, optimization, assemblyName, enabled);
@@ -380,8 +384,8 @@ namespace ILLink.Tasks
 
 				// Add per-assembly verbosity arguments
 				string singleWarn = assembly.GetMetadata ("TrimmerSingleWarn");
-				if (!String.IsNullOrEmpty (singleWarn)) {
-					if (!Boolean.TryParse (singleWarn, out bool value))
+				if (!string.IsNullOrEmpty (singleWarn)) {
+					if (!bool.TryParse (singleWarn, out bool value))
 						throw new ArgumentException ($"TrimmerSingleWarn metadata must be True or False");
 
 					if (value)
@@ -453,7 +457,7 @@ namespace ILLink.Tasks
 				foreach (var customData in CustomData) {
 					var key = customData.ItemSpec;
 					var value = customData.GetMetadata ("Value");
-					if (String.IsNullOrEmpty (value))
+					if (string.IsNullOrEmpty (value))
 						throw new ArgumentException ("custom data requires \"Value\" metadata");
 					args.Append ("--custom-data ").Append (' ').Append (key).Append ('=').AppendLine (Quote (value));
 				}
@@ -463,7 +467,7 @@ namespace ILLink.Tasks
 				foreach (var featureSetting in FeatureSettings) {
 					var feature = featureSetting.ItemSpec;
 					var featureValue = featureSetting.GetMetadata ("Value");
-					if (String.IsNullOrEmpty (featureValue))
+					if (string.IsNullOrEmpty (featureValue))
 						throw new ArgumentException ("feature settings require \"Value\" metadata");
 					args.Append ("--feature ").Append (feature).Append (' ').AppendLine (featureValue);
 				}
@@ -477,6 +481,9 @@ namespace ILLink.Tasks
 			if (_removeSymbols == false)
 				args.AppendLine ("-b");
 
+			if (PreserveSymbolPaths)
+				args.AppendLine ("--preserve-symbol-paths");
+
 			if (CustomSteps != null) {
 				foreach (var customStep in CustomSteps) {
 					args.Append ("--custom-step ");
@@ -489,11 +496,11 @@ namespace ILLink.Tasks
 					// handle optional before/aftersteps
 					var beforeStep = customStep.GetMetadata ("BeforeStep");
 					var afterStep = customStep.GetMetadata ("AfterStep");
-					if (!String.IsNullOrEmpty (beforeStep) && !String.IsNullOrEmpty (afterStep))
+					if (!string.IsNullOrEmpty (beforeStep) && !string.IsNullOrEmpty (afterStep))
 						throw new ArgumentException ("custom step may not have both \"BeforeStep\" and \"AfterStep\" metadata");
-					if (!String.IsNullOrEmpty (beforeStep))
+					if (!string.IsNullOrEmpty (beforeStep))
 						customStepString = $"-{beforeStep}:{customStepString}";
-					if (!String.IsNullOrEmpty (afterStep))
+					if (!string.IsNullOrEmpty (afterStep))
 						customStepString = $"+{afterStep}:{customStepString}";
 
 					args.AppendLine (Quote (customStepString));

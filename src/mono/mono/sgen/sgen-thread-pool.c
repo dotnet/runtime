@@ -25,9 +25,6 @@ static int threads_num;
 static MonoNativeThreadId threads [SGEN_THREADPOOL_MAX_NUM_THREADS];
 static int threads_context [SGEN_THREADPOOL_MAX_NUM_THREADS];
 
-static volatile gboolean threadpool_shutdown;
-static volatile int threads_finished;
-
 static int contexts_num;
 static SgenThreadPoolContext pool_contexts [SGEN_THREADPOOL_MAX_NUM_CONTEXTS];
 
@@ -129,7 +126,7 @@ has_priority_work (int worker_index, int current_context)
 static void
 get_work (int worker_index, int *work_context, int *do_idle, SgenThreadPoolJob **job)
 {
-	while (!threadpool_shutdown) {
+	while (TRUE) {
 		int i;
 
 		for (i = 0; i < contexts_num; i++) {
@@ -198,10 +195,8 @@ thread_func (void *data)
 		get_work (worker_index, &current_context, &do_idle, &job);
 		threads_context [worker_index] = current_context;
 
-		if (!threadpool_shutdown) {
-			context = &pool_contexts [current_context];
-			thread_data = (context->thread_datas) ? context->thread_datas [worker_index] : NULL;
-		}
+		context = &pool_contexts [current_context];
+		thread_data = (context->thread_datas) ? context->thread_datas [worker_index] : NULL;
 
 		mono_os_mutex_unlock (&lock);
 
@@ -230,12 +225,7 @@ thread_func (void *data)
 			if (!do_idle)
 				mono_os_cond_signal (&done_cond);
 		} else {
-			SGEN_ASSERT (0, threadpool_shutdown, "Why did we unlock if no jobs and not shutting down?");
-			mono_os_mutex_lock (&lock);
-			threads_finished++;
-			mono_os_cond_signal (&done_cond);
-			mono_os_mutex_unlock (&lock);
-			return 0;
+			g_assert_not_reached ();
 		}
 	}
 
@@ -288,33 +278,8 @@ sgen_thread_pool_start (void)
 	mono_os_cond_init (&work_cond);
 	mono_os_cond_init (&done_cond);
 
-	threads_finished = 0;
-	threadpool_shutdown = FALSE;
-
 	for (i = 0; i < threads_num; i++) {
 		mono_native_thread_create (&threads [i], (gpointer)thread_func, (void*)(gsize)i);
-	}
-}
-
-void
-sgen_thread_pool_shutdown (void)
-{
-	if (!threads_num)
-		return;
-
-	mono_os_mutex_lock (&lock);
-	threadpool_shutdown = TRUE;
-	mono_os_cond_broadcast (&work_cond);
-	while (threads_finished < threads_num)
-		mono_os_cond_wait (&done_cond, &lock);
-	mono_os_mutex_unlock (&lock);
-
-	mono_os_mutex_destroy (&lock);
-	mono_os_cond_destroy (&work_cond);
-	mono_os_cond_destroy (&done_cond);
-
-	for (int i = 0; i < threads_num; i++) {
-		mono_threads_add_joinable_thread ((gpointer)(gsize)threads [i]);
 	}
 }
 
@@ -458,11 +423,6 @@ sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc i
 
 void
 sgen_thread_pool_start (void)
-{
-}
-
-void
-sgen_thread_pool_shutdown (void)
 {
 }
 

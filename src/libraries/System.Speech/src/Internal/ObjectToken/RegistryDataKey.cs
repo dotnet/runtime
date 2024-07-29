@@ -64,7 +64,7 @@ namespace System.Speech.Internal.ObjectTokens
             }
 
             // If the last character is a '\', get rid of it
-            registryPath = registryPath.Trim(new char[] { '\\' });
+            registryPath = registryPath.Trim('\\');
 
             string rootPath = GetFirstKeyAndParseRemainder(ref registryPath);
 

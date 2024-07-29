@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
@@ -27,19 +28,22 @@ namespace System.Runtime.CompilerServices
             UnmatchedValue = unmatchedValue;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private SwitchExpressionException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             UnmatchedValue = info.GetValue(nameof(UnmatchedValue), typeof(object));
         }
 
-        public SwitchExpressionException(string? message) : base(message) { }
+        public SwitchExpressionException(string? message) : base(message ?? SR.Arg_SwitchExpressionException) { }
 
         public SwitchExpressionException(string? message, Exception? innerException)
-            : base(message, innerException) { }
+            : base(message ?? SR.Arg_SwitchExpressionException, innerException) { }
 
         public object? UnmatchedValue { get; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

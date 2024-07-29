@@ -15,9 +15,15 @@ namespace System.IO.IsolatedStorage
             string randomUserRoot = Helper.GetRandomDirectory(userRoot, IsolatedStorageScope.User);
             roots.Add(randomUserRoot);
 
-            // Application scope doesn't go under a random dir
-            roots.Add(userRoot);
             return roots;
+        }
+
+        /// <summary>
+        /// The actual root of the store (housekeeping files are kept here in NetFX)
+        /// </summary>
+        public static string GetIdentityRootDirectory(this IsolatedStorageFile isf)
+        {
+            return isf.GetUserRootDirectory();
         }
     }
 }

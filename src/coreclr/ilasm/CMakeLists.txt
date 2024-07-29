@@ -54,7 +54,7 @@ if(CLR_CMAKE_HOST_UNIX)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -63,7 +63,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CL
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
 add_executable_clr(ilasm
   ${ILASM_SOURCES}
@@ -97,18 +97,21 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         bcrypt.lib
         RuntimeObject.lib
+        coreclrminipal
     )
 else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
         palrt
+        coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
     mscorrc
@@ -118,6 +121,7 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 else()
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     ole32
     oleaut32

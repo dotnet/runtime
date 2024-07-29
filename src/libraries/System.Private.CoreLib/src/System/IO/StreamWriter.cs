@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -27,7 +28,7 @@ namespace System.IO
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
-        public static new readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
+        public static new readonly StreamWriter Null = new NullStreamWriter();
 
         private readonly Stream _stream;
         private readonly Encoding _encoding;
@@ -159,7 +160,16 @@ namespace System.IO
         {
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private StreamWriter()
+        {
+            Debug.Assert(GetType() == typeof(NullStreamWriter));
+            _stream = Stream.Null;
+            _encoding = UTF8NoBOM;
+            _encoder = null!;
+            _charBuffer = Array.Empty<char>();
+        }
+
+        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(encoding);
@@ -172,7 +182,7 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(encoding);
@@ -521,7 +531,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
+                WriteFormatHelper(format, two, appendNewLine: false);
             }
             else
             {
@@ -534,7 +544,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
+                WriteFormatHelper(format, three, appendNewLine: false);
             }
             else
             {
@@ -550,6 +560,23 @@ namespace System.IO
                 {
                     ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
+                WriteFormatHelper(format, arg, appendNewLine: false);
+            }
+            else
+            {
+                base.Write(format, arg);
+            }
+        }
+
+        /// <summary>
+        /// Writes a formatted string to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
                 WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
@@ -575,7 +602,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
+                WriteFormatHelper(format, two, appendNewLine: true);
             }
             else
             {
@@ -588,7 +615,7 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
+                WriteFormatHelper(format, three, appendNewLine: true);
             }
             else
             {
@@ -601,6 +628,23 @@ namespace System.IO
             if (GetType() == typeof(StreamWriter))
             {
                 ArgumentNullException.ThrowIfNull(arg);
+                WriteFormatHelper(format, arg, appendNewLine: true);
+            }
+            else
+            {
+                base.WriteLine(format, arg);
+            }
+        }
+
+        /// <summary>
+        /// Writes out a formatted string and a new line to the stream, using the same semantics as <see cref="string.Format(string, ReadOnlySpan{object?})"/>.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">An object span that contains zero or more objects to format and write.</param>
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            if (GetType() == typeof(StreamWriter))
+            {
                 WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else
@@ -888,26 +932,34 @@ namespace System.IO
 
         public override Task FlushAsync()
         {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
-            // we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(StreamWriter))
             {
                 return base.FlushAsync();
             }
 
-            // flushEncoder should be true at the end of the file and if
-            // the user explicitly calls Flush (though not if AutoFlush is true).
-            // This is required to flush any dangling characters from our UTF-7
-            // and UTF-8 encoders.
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, CancellationToken.None));
+        }
 
-            Task task = FlushAsyncInternal(flushStream: true, flushEncoder: true);
-            _asyncWriteTask = task;
+        /// <summary>Clears all buffers for this stream asynchronously and causes any buffered data to be written to the underlying device.</summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous flush operation.</returns>
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (GetType() != typeof(StreamWriter))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
 
-            return task;
+                return FlushAsync();
+            }
+
+            ThrowIfDisposed();
+            CheckAsyncTaskInProgress();
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, cancellationToken));
         }
 
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder, CancellationToken cancellationToken = default)
@@ -964,6 +1016,73 @@ namespace System.IO
             }
 
             void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_WriterClosed);
+        }
+
+        private sealed class NullStreamWriter : StreamWriter
+        {
+            public override bool AutoFlush { get => false; set { } }
+            [AllowNull]
+            public override string NewLine { get => base.NewLine; set { } }
+            public override IFormatProvider FormatProvider => CultureInfo.InvariantCulture;
+
+            // To avoid all unnecessary overhead in the base, and to ensure StreamWriter's uninitialized state is never touched,
+            // override all methods as pure nops.
+            public override void Close() { }
+            protected override void Dispose(bool disposing) { }
+            public override ValueTask DisposeAsync() => default;
+            public override void Flush() { }
+            public override Task FlushAsync() => Task.CompletedTask;
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public override void Write(char value) { }
+            public override void Write(char[]? buffer) { }
+            public override void Write(char[] buffer, int index, int count) { }
+            public override void Write(ReadOnlySpan<char> buffer) { }
+            public override void Write(bool value) { }
+            public override void Write(int value) { }
+            public override void Write(uint value) { }
+            public override void Write(long value) { }
+            public override void Write(ulong value) { }
+            public override void Write(float value) { }
+            public override void Write(double value) { }
+            public override void Write(decimal value) { }
+            public override void Write(string? value) { }
+            public override void Write(object? value) { }
+            public override void Write(StringBuilder? value) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteAsync(char value) => Task.CompletedTask;
+            public override Task WriteAsync(string? value) => Task.CompletedTask;
+            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override void WriteLine() { }
+            public override void WriteLine(char value) { }
+            public override void WriteLine(char[]? buffer) { }
+            public override void WriteLine(char[] buffer, int index, int count) { }
+            public override void WriteLine(ReadOnlySpan<char> buffer) { }
+            public override void WriteLine(bool value) { }
+            public override void WriteLine(int value) { }
+            public override void WriteLine(uint value) { }
+            public override void WriteLine(long value) { }
+            public override void WriteLine(ulong value) { }
+            public override void WriteLine(float value) { }
+            public override void WriteLine(double value) { }
+            public override void WriteLine(decimal value) { }
+            public override void WriteLine(string? value) { }
+            public override void WriteLine(StringBuilder? value) { }
+            public override void WriteLine(object? value) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteLineAsync(char value) => Task.CompletedTask;
+            public override Task WriteLineAsync(string? value) => Task.CompletedTask;
+            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync() => Task.CompletedTask;
         }
     }
 }

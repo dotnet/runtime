@@ -169,13 +169,7 @@ namespace System.Security.Cryptography.X509Certificates
         public IEnumerable<string> EnumerateUris(Oid accessMethodOid)
         {
             ArgumentNullException.ThrowIfNull(accessMethodOid);
-
-            if (string.IsNullOrEmpty(accessMethodOid.Value))
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Arg_EmptyOrNullString_Named, "accessMethodOid.Value"),
-                    nameof(accessMethodOid));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(accessMethodOid.Value);
 
             return EnumerateUris(accessMethodOid.Value);
         }

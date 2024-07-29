@@ -77,7 +77,7 @@ internal static partial class Interop
         /// <param name="pid">The PID of the process</param>
         public static unsafe string GetProcPath(int pid)
         {
-            Span<int> sysctlName = stackalloc int[] { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
+            ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid];
             byte* pBuffer = null;
             int bytesLength = 0;
 
@@ -110,10 +110,7 @@ internal static partial class Interop
             kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             try
             {
-                if (count < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(pid));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(pid));
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
 

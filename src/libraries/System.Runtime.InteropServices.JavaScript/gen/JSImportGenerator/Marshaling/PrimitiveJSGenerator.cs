@@ -21,6 +21,7 @@ namespace Microsoft.Interop.JavaScript
         {
         }
 
+        // TODO order parameters in such way that affinity capturing parameters are emitted first
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
             string argName = context.GetAdditionalIdentifier(info, "js_arg");
@@ -68,14 +69,14 @@ namespace Microsoft.Interop.JavaScript
             return argument;
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(ToManagedMethodRefOrOut(source)))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))

@@ -151,7 +151,7 @@ void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCAllocationTick_V1(allocationAmount, allocationKind, GetClrInstanceId());
+    _ASSERTE(!"Superseded by FireGCAllocationTick_V4");
 }
 
 void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount, 

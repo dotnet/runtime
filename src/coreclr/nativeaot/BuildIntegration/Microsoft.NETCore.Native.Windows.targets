@@ -16,24 +16,37 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
+    <ObjectSuffix>.obj</ObjectSuffix>
     <LibrarySuffix>.lib</LibrarySuffix>
+    <ObjectSuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.obj</ObjectSuffix>
     <LibrarySuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.lib</LibrarySuffix>
     <FullRuntimeName>Runtime.WorkstationGC</FullRuntimeName>
-    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
-    <BootstrapperName Condition="'$(NativeLib)' != ''">bootstrapperdll</BootstrapperName>
+    <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
+    <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
+    <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
+    <StandaloneGCSupportName>standalonegc-disabled</StandaloneGCSupportName>
+    <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">standalonegc-enabled</StandaloneGCSupportName>
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
     <LinkerSubsystem Condition="'$(OutputType)' == 'WinExe' and '$(LinkerSubsystem)' == ''">WINDOWS</LinkerSubsystem>
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>
+    <EventPipeName>eventpipe-disabled</EventPipeName>
+    <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">eventpipe-enabled</EventPipeName>
+    <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">1572864</IlcDefaultStackSize>
   </PropertyGroup>
 
   <!-- Ensure that runtime-specific paths have already been set -->
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <ItemGroup>
-      <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
+      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -79,11 +92,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
-      <LinkerArg Condition="'$(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
-      <LinkerArg Condition="'$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe'" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB" />
-      <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/INCLUDE:NativeAOT_StaticInitialization" />
+      <LinkerArg Condition="'$(NativeLib)' == '' and '$(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
+      <LinkerArg Condition="'$(NativeLib)' == ''" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
+      <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" />
+      <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
+      <LinkerArg Include="/IGNORE:4104" />
+      <!-- Opt into CETCOMPAT by default. -->
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" />
+      <!-- Allow user to opt out. -->
+      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
+      <!-- Enable EHCONT if CET is not disabled and CFG is enabled. -->
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont"/>
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
@@ -97,7 +118,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
 
-    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(TargetArchitecture)"
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(_targetArchitecture)"
       IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound" />
@@ -113,6 +134,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CppLibCreator>$(_CppToolsDirectory)lib.exe</CppLibCreator>
     </PropertyGroup>
 
-    <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2022 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload. For ARM64 development also install C++ ARM64 build tools." />
+    <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio. For ARM64 development also install C++ ARM64 build tools." />
   </Target>
 </Project>

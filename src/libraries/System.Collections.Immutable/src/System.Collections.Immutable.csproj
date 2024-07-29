@@ -1,20 +1,23 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>This package provides collections that are thread safe and guaranteed to never change their contents, also known as immutable collections. Like strings, any methods that perform modifications will not change the existing instance but instead return a new instance. For efficiency reasons, the implementation uses a sharing mechanism to ensure that newly created instances share as much data as possible with the previous instance while ensuring that operations have a predictable time complexity.
 
 The System.Collections.Immutable library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
-
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="System\Collections\Frozen\Constants.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\EmptyFrozenDictionary.cs" />
@@ -23,31 +26,47 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\FrozenHashTable.cs" />
     <Compile Include="System\Collections\Frozen\FrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\FrozenSetInternalBase.cs" />
-    <Compile Include="System\Collections\Frozen\ImmutableArrayFactory.cs" />
-    <Compile Include="System\Collections\Frozen\Int32FrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\Int32FrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\ItemsFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\KeysAndValuesFrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\LengthBucketsFrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\LengthBucketsFrozenSet.cs" />
-    <Compile Include="System\Collections\Frozen\OrdinalStringFrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\OrdinalStringFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenSet.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\ComparerPicker.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\FullCaseInsensitiveAsciiStringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\FullCaseInsensitiveStringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\FullStringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\LeftJustifiedCaseInsensitiveAsciiSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\LeftJustifiedCaseInsensitiveSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\LeftJustifiedSingleCharComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\LeftJustifiedSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\RightJustifiedCaseInsensitiveAsciiSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\RightJustifiedCaseInsensitiveSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\RightJustifiedSingleCharComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\RightJustifiedSubstringComparer.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\StringComparerBase.cs" />
-    <Compile Include="System\Collections\Frozen\StringComparers\SubstringComparerBase.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\String\Hashing.cs" />
+    <Compile Include="System\Collections\Frozen\String\KeyAnalyzer.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBuckets.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_FullCaseInsensitive.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_Full.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_LeftJustifiedSingleChar.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_RightJustifiedSingleChar.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_RightJustifiedSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary_LeftJustifiedSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_FullCaseInsensitiveAscii.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_FullCaseInsensitive.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_Full.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_LeftJustifiedSingleChar.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSubstring.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSingleChar.cs" />
 
     <Compile Include="System\Collections\Generic\IHashKeyCollection.cs" />
     <Compile Include="System\Collections\Generic\ISortKeyCollection.cs" />
@@ -124,9 +143,28 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Immutable\SortedInt32KeyNode.cs" />
     <Compile Include="System\Collections\Immutable\SortedInt32KeyNode.Enumerator.cs" />
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
+    <Compile Include="System\Runtime.InteropServices\ImmutableCollectionsMarshal.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs" Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
-    <None Include="Interfaces.cd" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\DefaultFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.AlternateLookup.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" Link="System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -140,9 +178,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
+
 </Project>

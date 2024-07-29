@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Numerics.Vectors { auto }
 .assembly extern System.Runtime.CompilerServices.Unsafe { auto }
 .assembly extern mscorlib { auto }
@@ -26,7 +26,7 @@
 // Image base: 0x01590000
 
 
-.class private abstract auto ansi sealed beforefieldinit C
+.class public abstract auto ansi sealed beforefieldinit C
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32
@@ -59,7 +59,7 @@
     IL_0011:  ret
   } // end of method C::IndexerGrab
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

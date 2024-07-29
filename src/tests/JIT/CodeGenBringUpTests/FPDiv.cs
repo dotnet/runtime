@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPDiv
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPDiv
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPDiv(float x, float y) { return x/y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPDiv(81f, 3f);
         Console.WriteLine(y);

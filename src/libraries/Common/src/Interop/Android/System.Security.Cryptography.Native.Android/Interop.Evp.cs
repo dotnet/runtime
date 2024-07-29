@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -37,38 +38,79 @@ internal static partial class Interop
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static partial int GetMaxMdSize();
 
-        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_Pbkdf2")]
-        private static unsafe partial int Pbkdf2(
-            byte* pPassword,
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_Pbkdf2", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int Pbkdf2(
+            string algorithmName,
+            ReadOnlySpan<byte> pPassword,
             int passwordLength,
-            byte* pSalt,
+            ReadOnlySpan<byte> pSalt,
             int saltLength,
             int iterations,
-            IntPtr digestEvp,
-            byte* pDestination,
+            Span<byte> pDestination,
             int destinationLength);
 
-        internal static unsafe int Pbkdf2(
+        internal static void Pbkdf2(
+            string algorithmName,
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,
-            IntPtr digestEvp,
             Span<byte> destination)
         {
-            fixed (byte* pPassword = password)
-            fixed (byte* pSalt = salt)
-            fixed (byte* pDestination = destination)
+            const int Success = 1;
+            const int UnsupportedAlgorithm = -1;
+            const int Failed = 0;
+
+            int result = Pbkdf2(
+                algorithmName,
+                password,
+                password.Length,
+                salt,
+                salt.Length,
+                iterations,
+                destination,
+                destination.Length);
+
+            switch (result)
             {
-                return Pbkdf2(
-                    pPassword,
-                    password.Length,
-                    pSalt,
-                    salt.Length,
-                    iterations,
-                    digestEvp,
-                    pDestination,
-                    destination.Length);
+                case Success:
+                    return;
+                case UnsupportedAlgorithm:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, algorithmName));
+                case Failed:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected result {result}");
+                    throw new CryptographicException();
             }
+        }
+
+        internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
+        internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCopyEx")]
+        internal static partial SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx);
+
+        internal static int EvpDigestSqueeze(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
         }
 
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();

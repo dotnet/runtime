@@ -272,7 +272,7 @@ namespace System.Net.Mail
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
 #pragma warning disable SYSLIB0014
-                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri($"mailto:{_host}:{_port}"));
 #pragma warning restore SYSLIB0014
             }
         }
@@ -739,7 +739,7 @@ namespace System.Net.Mail
             CancellationTokenRegistration ctr = default;
 
             // Indicates whether the CTR has been set - captured in handler
-            int state = 0;
+            bool ctrSet = false;
 
             // Register a handler that will transfer completion results to the TCS Task
             SendCompletedEventHandler? handler = null;
@@ -750,7 +750,7 @@ namespace System.Net.Mail
                     try
                     {
                         ((SmtpClient)sender).SendCompleted -= handler;
-                        if (Interlocked.Exchange(ref state, 1) != 0)
+                        if (Interlocked.Exchange(ref ctrSet, true))
                         {
                             // A CTR has been set, we have to wait until it completes before completing the task
                             ctr.Dispose();
@@ -783,7 +783,7 @@ namespace System.Net.Mail
                 ((SmtpClient)s!).SendAsyncCancel();
             }, this);
 
-            if (Interlocked.Exchange(ref state, 1) != 0)
+            if (Interlocked.Exchange(ref ctrSet, true))
             {
                 // SendCompleted was already invoked, ensure the CTR completes before returning the task
                 ctr.Dispose();
@@ -811,7 +811,7 @@ namespace System.Net.Mail
 
         private void CheckHostAndPort()
         {
-            if (_host == null || _host.Length == 0)
+            if (string.IsNullOrEmpty(_host))
             {
                 throw new InvalidOperationException(SR.UnspecifiedHost);
             }

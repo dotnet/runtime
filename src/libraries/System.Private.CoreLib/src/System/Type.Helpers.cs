@@ -10,6 +10,7 @@ namespace System
     // This file collects the longer methods of Type to make the main Type class more readable.
     public abstract partial class Type : MemberInfo, IReflect
     {
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual bool IsSerializable
         {
             get
@@ -472,8 +473,10 @@ namespace System
                             return false;
                         if (((criteria & FieldAttributes.Literal) != 0) && (attr & FieldAttributes.Literal) == 0)
                             return false;
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                         if (((criteria & FieldAttributes.NotSerialized) != 0) && (attr & FieldAttributes.NotSerialized) == 0)
                             return false;
+#pragma warning restore SYSLIB0050
                         if (((criteria & FieldAttributes.PinvokeImpl) != 0) && (attr & FieldAttributes.PinvokeImpl) == 0)
                             return false;
                         return true;
@@ -490,7 +493,7 @@ namespace System
         private static bool FilterNameImpl(MemberInfo m, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string filterCriteriaString))
+            if (filterCriteria is not string filterCriteriaString)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }
@@ -505,7 +508,7 @@ namespace System
             }
 
             // Check to see if this is a prefix or exact match requirement
-            if (str.Length > 0 && str[str.Length - 1] == '*')
+            if (str.EndsWith('*'))
             {
                 str = str.Slice(0, str.Length - 1);
                 return name.StartsWith(str, comparison);

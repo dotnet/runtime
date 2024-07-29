@@ -10,6 +10,8 @@
 #define INTF_FOR_TASK
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace V8.Richards
 {
@@ -98,13 +100,16 @@ namespace V8.Richards
 
         public const int DATA_SIZE = 4;
 
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = 1;
-            if (args.Length > 0)
-            {
-                n = Int32.Parse(args[0]);
-            }
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int Test(int? arg)
+        {
+            int n = arg ?? 1;
             bool result = Measure(n);
             return (result ? 100 : -1);
         }

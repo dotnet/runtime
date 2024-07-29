@@ -15,8 +15,8 @@ struct _LifoSemaphoreWaitEntry {
 
 struct _LifoSemaphore {
 	MonoCoopMutex mutex;
-	LifoSemaphoreWaitEntry *head;
 	uint32_t pending_signals;
+	LifoSemaphoreWaitEntry *head;
 };
 
 LifoSemaphore *

@@ -31,6 +31,11 @@ namespace System
             }
         }
 
+        /// <summary>GetEnvironmentVariableCore that avoids using the ArrayPool.</summary>
+        internal static string? GetEnvironmentVariableCore_NoArrayPool(string variable) =>
+            // This implementation of GetEnvironmentVariableCore doesn't use the pool, so this just delegates to it.
+            GetEnvironmentVariableCore(variable);
+
         private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
         {
             Debug.Assert(variable != null);
@@ -40,7 +45,7 @@ namespace System
             value = value == null ? null : TrimStringOnFirstZero(value);
             lock (s_environment!)
             {
-                if (string.IsNullOrEmpty(value))
+                if (value == null)
                 {
                     s_environment.Remove(variable);
                 }

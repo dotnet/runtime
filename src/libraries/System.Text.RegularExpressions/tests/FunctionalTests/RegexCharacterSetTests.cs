@@ -359,7 +359,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // https://docs.microsoft.com/en-us/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-unicode-general-categories
+                // https://learn.microsoft.com/dotnet/standard/base-types/character-classes-in-regular-expressions#supported-unicode-general-categories
 
                 yield return new object[] { engine, "L", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter } };
                 yield return new object[] { engine, "Lu", new[] { UnicodeCategory.UppercaseLetter } };
@@ -416,7 +416,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task LetterOrDigitsInclusionsExpected(RegexEngine engine) =>
             await ValidateUnicodeCategoryInclusionExclusion(engine, @"[\p{L}\d]", @"[^\p{L}\d]",
-                new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter, UnicodeCategory.DecimalDigitNumber });
+                [UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.OtherLetter, UnicodeCategory.DecimalDigitNumber]);
 
         private async Task ValidateUnicodeCategoryInclusionExclusion(RegexEngine engine, string inclusionPattern, string exclusionPattern, UnicodeCategory[] unicodeCategory)
         {
@@ -508,7 +508,9 @@ namespace System.Text.RegularExpressions.Tests
 
             public new bool IsBoundary(int index, int startpos, int endpos) => base.IsBoundary(index, startpos, endpos);
 
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
             public static new bool CharInSet(char ch, string set, string category) => RegexRunner.CharInSet(ch, set, category);
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
             protected override bool FindFirstChar() => throw new NotImplementedException();
             protected override void Go() => throw new NotImplementedException();

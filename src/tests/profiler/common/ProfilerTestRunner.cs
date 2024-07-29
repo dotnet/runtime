@@ -52,7 +52,7 @@ namespace Profiler.Tests
                 if (loadAsNotification)
                 {
                     StringBuilder builder = new StringBuilder();
-                    for(int i = 0; i < notificationCopies; ++i)
+                    for (int i = 0; i < notificationCopies; ++i)
                     {
                         builder.Append(profilerPath);
                         builder.Append("=");
@@ -94,12 +94,10 @@ namespace Profiler.Tests
 
             envVars.Add("Profiler_Test_Name", testName);
 
-            if(!File.Exists(profilerPath))
+            if (!File.Exists(profilerPath))
             {
                 FailFastWithMessage("Profiler library not found at expected path: " + profilerPath);
             }
-
-            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier();
 
             Process process = new Process();
             process.StartInfo.FileName = program;
@@ -117,15 +115,10 @@ namespace Profiler.Tests
                 process.StartInfo.EnvironmentVariables[key] = envVars[key];
             }
 
-            process.OutputDataReceived += (sender, args) =>
-            {
-                Console.WriteLine(args.Data);
-                verifier.WriteLine(args.Data);
-            };
             process.Start();
+            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier(process.StandardOutput);
 
-            process.BeginOutputReadLine();
-
+            verifier.VerifyOutput();
             process.WaitForExit();
 
             // There are two conditions for profiler tests to pass, the output of the profiled program
@@ -135,9 +128,9 @@ namespace Profiler.Tests
 
             if (!verifier.HasPassingOutput)
             {
-                FailFastWithMessage("Profiler tests are expected to contain the text \'" + verifier.SuccessPhrase + "\' in the console output " +
-                    "of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
-                    "text was not found in the output above.");
+                FailFastWithMessage($"Profiler tests are expected to contain the text '{verifier.SuccessPhrase}' in the console output " +
+                    $"of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
+                    $"text was not found in the output above. Profilee returned exit code {process.ExitCode}.");
             }
 
             if (process.ExitCode != 100)
@@ -195,22 +188,29 @@ namespace Profiler.Tests
         /// </summary>
         class ProfileeOutputVerifier
         {
-            public string SuccessPhrase = "PROFILER TEST PASSES";
-            public bool HasPassingOutput { get; private set; }
+            private volatile bool _hasPassingOutput;
 
-            public void WriteLine(string message)
+            public string SuccessPhrase = "PROFILER TEST PASSES";
+            private StreamReader standardOutput;
+
+            public ProfileeOutputVerifier(StreamReader standardOutput)
             {
-                if (message != null && message.Contains(SuccessPhrase))
-                {
-                    HasPassingOutput = true;
-                }
+                this.standardOutput = standardOutput;
             }
 
-            public void WriteLine(string format, params object[] args)
+            public bool HasPassingOutput => _hasPassingOutput;
+
+            internal void VerifyOutput()
             {
-                if (string.Format(format,args).Contains(SuccessPhrase))
+                string line;
+                while ((line = standardOutput.ReadLine()) != null)
                 {
-                    HasPassingOutput = true;
+                    if (line.Contains(SuccessPhrase))
+                    {
+                        _hasPassingOutput = true;
+                    }
+
+                    Console.WriteLine($"Profilee STDOUT: {line}");
                 }
             }
         }

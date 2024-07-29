@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class TypeReferenceExtensions
+	internal static class TypeReferenceExtensions
 	{
 		public static string GetDisplayName (this TypeReference type)
 		{
@@ -66,6 +66,7 @@ namespace Mono.Linker
 					break;
 				}
 
+				type = type.GetElementType ();
 				if (type.DeclaringType is not TypeReference declaringType)
 					break;
 
@@ -148,6 +149,13 @@ namespace Mono.Linker
 
 			Debug.Assert (false);
 			return null;
+		}
+
+		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+			return typeToInflate;
 		}
 
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
@@ -361,7 +369,7 @@ namespace Mono.Linker
 		public static bool IsTypeOf<T> (this TypeReference tr)
 		{
 			var type = typeof (T);
-			return tr.Name == type.Name && tr.Namespace == tr.Namespace;
+			return tr.Name == type.Name && tr.Namespace == type.Namespace;
 		}
 
 		public static bool IsTypeOf (this TypeReference tr, WellKnownType type)

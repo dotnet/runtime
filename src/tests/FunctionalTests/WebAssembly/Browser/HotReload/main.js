@@ -1,4 +1,4 @@
-import { dotnet } from './dotnet.js'
+import { dotnet } from './_framework/dotnet.js'
 
 function wasm_exit(exit_code) {
     var tests_done_elem = document.createElement("label");

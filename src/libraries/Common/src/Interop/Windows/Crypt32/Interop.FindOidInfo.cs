@@ -93,7 +93,7 @@ internal static partial class Interop
                 {
                     // Finally, for compatibility with previous runtimes, if we have a group specified retry the
                     // query with no group
-                    CRYPT_OID_INFO*  allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
+                    CRYPT_OID_INFO* allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
                     if (allGroupOidInfo != null)
                     {
                         return *allGroupOidInfo;

@@ -8,13 +8,7 @@
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
   </PropertyGroup>
 
-  <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
-       Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
   <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
-      <_Parameter1>.NETFrameworkAssembly</_Parameter1>
-      <_Parameter2></_Parameter2>
-    </AssemblyAttribute>
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
       <_Parameter1>Serviceable</_Parameter1>
       <_Parameter2>True</_Parameter2>
@@ -62,8 +56,11 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-browser'))">
     <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-wasi'))">
+    <CrossPlatformAndHasNoWasiTarget>true</CrossPlatformAndHasNoWasiTarget>
   </PropertyGroup>
 
   <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
@@ -75,17 +72,20 @@
   </ItemGroup>
 
   <!-- Enables browser warnings for cross platform or Browser targeted builds -->
-  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'Browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'wasi' or '$(CrossPlatformAndHasNoWasiTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="wasi"/>
   </ItemGroup>
 
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
   <ItemGroup Condition="'$(IsTestProject)' != 'true'">
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'illumos'" Include="illumos" />
-    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'Solaris'" Include="Solaris" />
-    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'tvOS'" Include="tvOS" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'solaris'" Include="Solaris" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'haiku'" Include="Haiku" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
-                                  '$(TargetPlatformIdentifier)' != 'Browser' and
+                                  '$(TargetPlatformIdentifier)' != 'browser' and
                                   '$(TargetPlatformIdentifier)' != 'wasi' and
                                   '$(TargetPlatformIdentifier)' != 'windows'" Include="Unix" />
   </ItemGroup>
@@ -180,7 +180,11 @@
 
   <Target Name="GenerateNativeSourcelinkFile"
           Condition="'$(EnableSourceLink)' == 'true'"
-          DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+          DependsOnTargets="_CreateIntermediateOutputPath;_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+
+  <Target Name="_CreateIntermediateOutputPath">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+  </Target>
 
   <Target Name="_CopyGeneratedSourcelinkFile"
           DependsOnTargets="GenerateSourceLinkFile"

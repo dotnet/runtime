@@ -34,6 +34,14 @@ HRESULT Assembler::InitMetaData()
     if (FAILED(hr))
         goto exit;
 
+    if(m_wzMetadataVersion)
+    {
+        VARIANT optionValue;
+        V_VT(&optionValue) = VT_BSTR;
+        V_BSTR(&optionValue) = m_wzMetadataVersion; // IMetaDataDispenserEx does not require proper BSTR
+        hr = m_pDisp->SetOption(MetaDataRuntimeVersion, &optionValue);
+    }
+
     hr = m_pDisp->DefineScope(CLSID_CorMetaDataRuntime, 0, IID_IMetaDataEmit3,
                         (IUnknown **)&m_pEmitter);
     if (FAILED(hr))
@@ -131,7 +139,7 @@ HRESULT Assembler::CreateTLSDirectory() {
     }
     else
     {
-        DWORD sizeofptr = (DWORD)sizeof(__int64);
+        DWORD sizeofptr = (DWORD)sizeof(int64_t);
         DWORD sizeofdir = (DWORD)sizeof(IMAGE_TLS_DIRECTORY64);
         DWORD offsetofStartAddressOfRawData  = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, StartAddressOfRawData);
         DWORD offsetofEndAddressOfRawData    = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, EndAddressOfRawData);
@@ -141,7 +149,7 @@ HRESULT Assembler::CreateTLSDirectory() {
             // Get memory for the TLS directory block,as well as a spot for callback chain
         IMAGE_TLS_DIRECTORY64* tlsDir;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
-        __int64* callBackChain = (__int64*) &tlsDir[1];
+        int64_t* callBackChain = (int64_t*) &tlsDir[1];
         *callBackChain = 0;
 
             // Find out where the tls directory will end up
@@ -328,10 +336,10 @@ HRESULT Assembler::CreateExportDirectory()
     unsigned                i, L, ordBase = 0xFFFFFFFF, Ldllname;
     // get the DLL name from output file name
     char*                   pszDllName;
-    Ldllname = (unsigned)wcslen(m_wzOutputFileName)*3+3;
+    Ldllname = (unsigned)u16_strlen(m_wzOutputFileName)*3+3;
     NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
-    memset(szOutputFileName,0,wcslen(m_wzOutputFileName)*3+3);
-    WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
+    memset(szOutputFileName,0,u16_strlen(m_wzOutputFileName)*3+3);
+    WideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef TARGET_WINDOWS
     if(pszDllName == NULL) pszDllName = strrchr(szOutputFileName,':');
@@ -530,7 +538,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
     else
     {
         report->error("Unmanaged exports are not implemented for unknown platform");
-        return NULL;
+        return 0;
     }
     // Addr must be aligned, not the stub!
     if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
@@ -762,12 +770,12 @@ HRESULT Assembler::ResolveLocalMemberRefs()
                         }
                         if(tkMemberDef && ((*pMRD_pSig & IMAGE_CEE_CS_CALLCONV_MASK)==IMAGE_CEE_CS_CALLCONV_VARARG))
                         {
-                            WszMultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
 
                             if(IsMdPrivateScope(pListMD->m_Attr))
                             {
-                                WCHAR* p = wcsstr(wzUniBuf,W("$PST06"));
-                                if(p) *p = 0;
+                                WCHAR* p = (WCHAR*)u16_strstr(wzUniBuf,W("$PST06"));
+                                if(p) *p = W('\0');
                             }
 
                             m_pEmitter->DefineMemberRef(tkMemberDef, wzUniBuf,
@@ -805,7 +813,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
 
                         if(RidFromToken(tkRef))
                         {
-                            WszMultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
 
                             m_pEmitter->DefineMemberRef(tkRef, wzUniBuf, pMRD_pSig,
                                 pMRD_dwCSig, &tkMemberDef);
@@ -1095,14 +1103,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     wzScopeName=&wzUniBuf[0];
     if(m_szScopeName[0]) // default: scope name = output file name
     {
-        WszMultiByteToWideChar(g_uCodePage,0,m_szScopeName,-1,wzScopeName,MAX_SCOPE_LENGTH);
+        MultiByteToWideChar(g_uCodePage,0,m_szScopeName,-1,wzScopeName,MAX_SCOPE_LENGTH);
     }
     else
     {
         WCHAR* pwc;
-        if ((pwc = wcsrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
+        if ((pwc = (WCHAR*)u16_strrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
 #ifdef TARGET_WINDOWS
-        else if ((pwc = wcsrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
+        else if ((pwc = (WCHAR*)u16_strrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
 #endif
         else pwc = m_wzOutputFileName;
 
@@ -1212,7 +1220,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     {
 #define ELEMENT_TYPE_TYPEDEF (ELEMENT_TYPE_MAX+1)
         TypeDefDescr* pTDD;
-        unsigned __int8* pb;
+        uint8_t* pb;
         unsigned namesize;
         while((pTDD = m_TypeDefDList.POP()))
         {
@@ -1267,13 +1275,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if(m_wzResourceFile)
     {
+        MAKE_UTF8PTR_FROMWIDE(szResourceFileUtf8, m_wzResourceFile);
 #ifdef TARGET_UNIX
-        report->msg("Warning: The Win32 resource file '%S' is ignored and not emitted on xPlatform.\n", m_wzResourceFile);
+        report->msg("Warning: The Win32 resource file '%s' is ignored and not emitted on xPlatform.\n", szResourceFileUtf8);
 #else
         if (FAILED(hr=m_pCeeFileGen->SetResourceFileName(m_pCeeFile, m_wzResourceFile)))
         {
-            report->msg("Warning: failed to set Win32 resource file name '%S', hr=0x%8.8X\n         The Win32 resource is not emitted.\n",
-                        m_wzResourceFile, hr);
+            report->msg("Warning: failed to set Win32 resource file name '%s', hr=0x%8.8X\n         The Win32 resource is not emitted.\n",
+                        szResourceFileUtf8, hr);
         }
 #endif
     }
@@ -1552,7 +1561,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         {
             m_pManifest->m_fMResNew[i] = FALSE;
             memset(sz,0,2048);
-            WszWideCharToMultiByte(CP_ACP,0,m_pManifest->m_wzMResName[i],-1,sz,2047,NULL,NULL);
+            WideCharToMultiByte(CP_ACP,0,m_pManifest->m_wzMResName[i],-1,sz,2047,NULL,NULL);
             L = m_pManifest->m_dwMResSize[i];
             sizeread = 0;
             memcpy(ptr,&L,sizeof(DWORD));
@@ -1565,12 +1574,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             }
             else
             {
-                report->msg("Error: failed to open mgd resource file '%ls'\n",m_pManifest->m_wzMResName[i]);
+                report->msg("Error: failed to open mgd resource file '%s'\n",sz);
                 mrfail = TRUE;
             }
             if(sizeread < L)
             {
-                report->msg("Error: failed to read expected %d bytes from mgd resource file '%ls'\n",L,m_pManifest->m_wzMResName[i]);
+                report->msg("Error: failed to read expected %d bytes from mgd resource file '%s'\n",L,sz);
                 mrfail = TRUE;
                 L -= sizeread;
                 memset(ptr,0,L);

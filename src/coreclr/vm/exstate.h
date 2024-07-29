@@ -12,6 +12,7 @@ class DebuggerExState;
 class EHClauseInfo;
 
 #include "exceptionhandling.h"
+#include "cdacoffsets.h"
 
 #if !defined(FEATURE_EH_FUNCLETS)
 // ExInfo contains definitions for 32bit
@@ -23,6 +24,11 @@ class EHClauseInfo;
 #endif
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
+
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif // !FEATURE_EH_FUNCLETS
 
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
@@ -45,15 +51,16 @@ class ThreadExceptionState
     // ExceptionTracker or the ExInfo as appropriate for the platform
     friend class ProfToEEInterfaceImpl;
 
+    template<typename T> friend struct ::cdac_offsets;
+
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
+    friend struct ExInfo;
 #else
     friend class ExInfo;
 #endif // FEATURE_EH_FUNCLETS
 
 public:
-
-    void FreeAllStackTraces();
 
 #ifdef _DEBUG
     typedef enum
@@ -75,7 +82,6 @@ public:
     PTR_EXCEPTION_RECORD GetExceptionRecord();
     PTR_CONTEXT          GetContextRecord();
     BOOL                IsExceptionInProgress();
-    void                GetLeafFrameInfo(StackTraceElement* pStackTrace);
 
     ExceptionFlags*     GetFlags();
 
@@ -135,22 +141,27 @@ public:
         ResetThreadExceptionFlag(TEF_ForeignExceptionRaise);
     }
 
-#if defined(_DEBUG)
-    void AssertStackTraceInfo(StackTraceInfo *pSTI);
-#endif // _debug
-
 private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker    m_pCurrentTracker;
+    PTR_ExceptionTrackerBase m_pCurrentTracker;
     ExceptionTracker        m_OOMTracker;
 public:
-    PTR_ExceptionTracker    GetCurrentExceptionTracker()
+    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
+
+#ifndef DACCESS_COMPILE
+    void SetCurrentExceptionTracker(ExceptionTrackerBase* pTracker)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pCurrentTracker = pTracker;
+    }
+#endif // DACCESS_COMPILE
+
 #else
     ExInfo                  m_currentExInfo;
 public:

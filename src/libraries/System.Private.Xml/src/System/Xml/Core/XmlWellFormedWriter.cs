@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Xml;
-using System.Diagnostics;
-using System.Collections;
-using System.Globalization;
-using System.Collections.Generic;
 
 namespace System.Xml
 {
@@ -360,10 +360,7 @@ namespace System.Xml
         {
             try
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
 
                 if (_conformanceLevel == ConformanceLevel.Fragment)
@@ -428,10 +425,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 AdvanceState(Token.StartElement);
@@ -607,7 +601,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
+                if (string.IsNullOrEmpty(localName))
                 {
                     if (prefix == "xmlns")
                     {
@@ -660,7 +654,7 @@ namespace System.Xml
                     else if (namespaceName.Length > 0)
                     {
                         prefix = LookupPrefix(namespaceName);
-                        if (prefix == null || prefix.Length == 0)
+                        if (string.IsNullOrEmpty(prefix))
                         {
                             prefix = GeneratePrefix();
                         }
@@ -892,10 +886,7 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 // check text
@@ -940,10 +931,7 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 AdvanceState(Token.Text);
@@ -1291,15 +1279,12 @@ namespace System.Xml
         {
             try
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 AdvanceState(Token.Text);
                 string? prefix = string.Empty;
-                if (ns != null && ns.Length != 0)
+                if (!string.IsNullOrEmpty(ns))
                 {
                     prefix = LookupPrefix(ns);
                     if (prefix == null)
@@ -2072,7 +2057,7 @@ namespace System.Xml
             }
         }
 
-        private static Exception InvalidCharsException(string name, int badCharIndex)
+        private static ArgumentException InvalidCharsException(string name, int badCharIndex)
         {
             string[] badCharArgs = XmlException.BuildCharExceptionArgs(name, badCharIndex);
             string[] args = new string[3];

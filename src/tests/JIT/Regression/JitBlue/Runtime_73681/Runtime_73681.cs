@@ -3,13 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine(CallFoo(new C()));
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

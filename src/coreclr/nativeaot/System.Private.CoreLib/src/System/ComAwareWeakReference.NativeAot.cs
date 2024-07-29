@@ -2,32 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
-
-#pragma warning disable IDE0060
 
 namespace System
 {
     internal sealed partial class ComAwareWeakReference
     {
-        internal static object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
+        // We don't want to consult ComWrappers if no RCW objects have been created.
+        // In addition we don't want a direct reference to ComWrappers to allow for better
+        // trimming.  So we instead make use of delegates that ComWrappers registers when
+        // it is used.
+        private static unsafe delegate*<IntPtr, long, object?> s_comWeakRefToObjectCallback;
+        private static unsafe delegate*<object, bool> s_possiblyComObjectCallback;
+        private static unsafe delegate*<object, out long, IntPtr> s_objectToComWeakRefCallback;
+
+        internal static unsafe void InitializeCallbacks(
+            delegate*<IntPtr, long, object?> comWeakRefToObject,
+            delegate*<object, bool> possiblyComObject,
+            delegate*<object, out long, IntPtr> objectToComWeakRef)
         {
-            // NativeAOT support for COM WeakReference is NYI
-            throw new NotImplementedException();
+            s_comWeakRefToObjectCallback = comWeakRefToObject;
+            s_objectToComWeakRefCallback = objectToComWeakRef;
+            s_possiblyComObjectCallback = possiblyComObject;
         }
 
-        internal static bool PossiblyComObject(object target)
+        internal static unsafe object? ComWeakRefToObject(IntPtr pComWeakRef, long wrapperId)
         {
-            // NativeAOT support for COM WeakReference is NYI
-            return false;
+            return s_comWeakRefToObjectCallback != null ? s_comWeakRefToObjectCallback(pComWeakRef, wrapperId) : null;
         }
 
-        internal static IntPtr ObjectToComWeakRef(object target, out long wrapperId)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool PossiblyComObject(object target)
         {
-            // NativeAOT support for COM WeakReference is NYI
+            return s_possiblyComObjectCallback != null ? s_possiblyComObjectCallback(target) : false;
+        }
+
+        internal static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
+        {
             wrapperId = 0;
-            return 0;
+            return s_objectToComWeakRefCallback != null ? s_objectToComWeakRefCallback(target, out wrapperId) : IntPtr.Zero;
         }
     }
 }

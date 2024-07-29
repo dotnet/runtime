@@ -123,19 +123,11 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
+	int res;
 	MEMORY_BASIC_INFORMATION mbi;
-	SIZE_T query_result = VirtualQuery (addr, &mbi, sizeof (mbi));
-	BOOL res;
-
-	g_assert (query_result);
-
-	res = VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE);
-
-	g_assert (res);
-
+	res = (VirtualQuery (addr, &mbi, sizeof (mbi)) != 0 && VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE) != 0) ? 0 : -1;
 	mono_account_mem (type, -(ssize_t)length);
-
-	return 0;
+	return res;
 }
 
 #if HAVE_API_SUPPORT_WIN32_FILE_MAPPING || HAVE_API_SUPPORT_WIN32_FILE_MAPPING_FROM_APP
@@ -212,7 +204,7 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 	// been one DWORD in 32bit Windows, expanded to SIZE_T in 64bit Windows.
 	// It is 64bits even on 32bit Windows to allow large files.
 	//
-	// See https://docs.microsoft.com/en-us/windows/desktop/Memory/creating-a-file-mapping-object.
+	// See https://learn.microsoft.com/windows/desktop/Memory/creating-a-file-mapping-object.
 	const guint64 mapping_length = offset + length;
 
 #if HAVE_API_SUPPORT_WIN32_FILE_MAPPING

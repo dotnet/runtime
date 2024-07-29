@@ -6,6 +6,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="lcs_ulong_d.il" />
     <Compile Include="lcs_ulong.il" />
   </ItemGroup>
 </Project>

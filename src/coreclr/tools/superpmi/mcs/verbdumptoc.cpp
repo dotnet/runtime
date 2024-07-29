@@ -16,7 +16,7 @@ int verbDumpToc::DoWork(const char* nameOfInput)
     for (size_t i = 0; i < tf.GetTocCount(); i++)
     {
         const TOCElement* te = tf.GetElementPtr(i);
-        printf("%4u: %016llX ", te->Number, te->Offset);
+        printf("%4u: %016" PRIX64 " ", te->Number, te->Offset);
 
         for (size_t j = 0; j < sizeof(te->Hash); j++)
         {

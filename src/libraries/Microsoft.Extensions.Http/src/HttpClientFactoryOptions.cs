@@ -100,5 +100,8 @@ namespace Microsoft.Extensions.Http
         /// </para>
         /// </remarks>
         public bool SuppressHandlerScope { get; set; }
+
+        internal bool SuppressDefaultLogging { get; set; }
+        internal List<Action<HttpMessageHandlerBuilder>> LoggingBuilderActions { get; } = new List<Action<HttpMessageHandlerBuilder>>();
     }
 }

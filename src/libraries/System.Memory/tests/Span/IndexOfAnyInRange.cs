@@ -175,6 +175,8 @@ namespace System.SpanTests
         {
             int result = MemoryExtensions.IndexOfAnyInRange(span, lowInclusive, highInclusive);
             Assert.Equal(result, MemoryExtensions.IndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyInRange(span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
             return result;
         }
 
@@ -182,6 +184,8 @@ namespace System.SpanTests
         {
             int result = MemoryExtensions.LastIndexOfAnyInRange(span, lowInclusive, highInclusive);
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyInRange(span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
             return result;
         }
 
@@ -189,6 +193,8 @@ namespace System.SpanTests
         {
             int result = MemoryExtensions.IndexOfAnyExceptInRange(span, lowInclusive, highInclusive);
             Assert.Equal(result, MemoryExtensions.IndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExceptInRange(span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
             return result;
         }
 
@@ -196,6 +202,8 @@ namespace System.SpanTests
         {
             int result = MemoryExtensions.LastIndexOfAnyExceptInRange(span, lowInclusive, highInclusive);
             Assert.Equal(result, MemoryExtensions.LastIndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExceptInRange(span, lowInclusive, highInclusive));
+            Assert.Equal(result >= 0, MemoryExtensions.ContainsAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive));
             return result;
         }
     }

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // ===================================================================================================
@@ -22,6 +22,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "opcode.h"
+#include "jitstd/algorithm.h"
+
+#include <dn-u16.h> // for u16_strtod
 
 /*****************************************************************************/
 
@@ -79,7 +82,13 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) tf,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) tf,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE varTypeRegister[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -105,7 +114,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) nm,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -246,15 +255,23 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
+    static const char* regNamesZMM[] = {
+#define REGDEF(name, rnum, mask, sname) "z" sname,
+#include "register.h"
+    };
 #endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_SIMD
-    if (type == TYP_SIMD32)
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+    if (type == TYP_SIMD64)
+    {
+        return regNamesZMM[reg];
+    }
+    else if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_SIMD
+#endif // FEATURE_SIMD && TARGET_XARCH
 
     return regNamesFloat[reg];
 #endif
@@ -262,30 +279,41 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 
 /*****************************************************************************
  *
- *  Displays a register set.
- *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ *  Displays a range of registers
+ *   -- This is a helper used by dspRegMask
  */
-
-void dspRegMask(regMaskTP regMask, size_t minSiz)
+const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-    const char* sep = "";
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
+           ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
+#else
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
-    printf("[");
+    if (strlen(sep) > 0)
+    {
+        // We've already printed something.
+        sep = " ";
+    }
 
     bool      inRegRange = false;
     regNumber regPrev    = REG_NA;
     regNumber regHead    = REG_NA; // When we start a range, remember the first register of the range, so we don't use
                                    // range notation if the range contains just a single register.
-    for (regNumber regNum = REG_INT_FIRST; regNum <= REG_INT_LAST; regNum = REG_NEXT(regNum))
+
+    for (regNumber regNum = regFirst; regNum <= regLast; regNum = REG_NEXT(regNum))
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
             //    no register has ever been displayed).
-            // 2. This is the last register of an acceptable range (either the last integer register,
+            // 2. This is the last register of an acceptable range (either the last register of a type,
             //    or the last of a range that is displayed with range notation).
             if (!inRegRange)
             {
@@ -294,141 +322,123 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
 
-                // By default, we're not starting a potential register range.
-                sep = " ";
-
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
-                CLANG_FORMAT_COMMENT_ANCHOR;
+
+                if (genIsValidIntReg(regNum))
+                {
+                    // By default, we're not starting a potential register range.
+                    sep = " ";
 
 #if defined(TARGET_AMD64)
-                // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
-                if (regNum >= REG_R8)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
+                    if (regNum >= REG_R8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #elif defined(TARGET_ARM64)
-                // R17 and R28 can't be the start of a range, since the range would include TEB or FP
-                if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    // R17 and R28 can't be the start of a range, since the range would include TEB or FP
+                    if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #elif defined(TARGET_ARM)
-                if (regNum < REG_R12)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if (regNum < REG_R12)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #elif defined(TARGET_X86)
-// No register ranges
-
+                    // No register ranges
 #elif defined(TARGET_LOONGARCH64)
-                if (REG_A0 <= regNum && regNum <= REG_T8)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if (REG_A0 <= regNum && regNum <= REG_T8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_RISCV64)
+                    if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
+                        (REG_T2 <= regNum && REG_T6 >= regNum))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
+                }
+                else
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
             }
-
 #if defined(TARGET_ARM64)
-            // We've already printed a register. Is this the end of a range?
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
-                     || (regNum == REG_R28))                         // last register before FP
+            else if ((regNum == regLast) || (regNum == REG_R17) // last register before TEB
+                     || (regNum == REG_R28))                    // last register before FP
 #elif defined(TARGET_LOONGARCH64)
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_A7) || (regNum == REG_T8))
-#else  // TARGET_LOONGARCH64
-            // We've already printed a register. Is this the end of a range?
-            else if (regNum == REG_INT_LAST)
-#endif // TARGET_LOONGARCH64
+            else if ((regNum == regLast) || (regNum == REG_A7) || (regNum == REG_T8))
+#else
+            else if (regNum == regLast)
+#endif
             {
+                // We've already printed a register and hit the end of a range
+
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
+
+                regHead    = REG_NA;
                 inRegRange = false; // No longer in the middle of a register range
-                regHead    = REG_NA;
                 sep        = " ";
             }
         }
-        else // ((regMask & regBit) == 0)
+        else if (inRegRange)
         {
-            if (inRegRange)
+            assert(regHead != REG_NA);
+
+            if (regPrev != regHead)
             {
-                assert(regHead != REG_NA);
-                if (regPrev != regHead)
-                {
-                    // Close out the previous range, if it included more than one register.
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= strlen(sep) + strlen(nam);
-                }
-                sep        = " ";
-                inRegRange = false;
-                regHead    = REG_NA;
-            }
-        }
-
-        if (regBit > regMask)
-        {
-            break;
-        }
-
-        regPrev = regNum;
-    }
-
-    if (strlen(sep) > 0)
-    {
-        // We've already printed something.
-        sep = " ";
-    }
-    inRegRange = false;
-    regPrev    = REG_NA;
-    regHead    = REG_NA;
-    for (regNumber regNum = REG_FP_FIRST; regNum <= REG_FP_LAST; regNum = REG_NEXT(regNum))
-    {
-        regMaskTP regBit = genRegMask(regNum);
-
-        if (regMask & regBit)
-        {
-            if (!inRegRange || (regNum == REG_FP_LAST))
-            {
-                const char* nam = getRegName(regNum);
+                // Close out the previous range, if it included more than one register.
+                const char* nam = getRegName(regPrev);
                 printf("%s%s", sep, nam);
-                minSiz -= strlen(sep) + strlen(nam);
-                sep     = "-";
-                regHead = regNum;
+                minSiz -= (strlen(sep) + strlen(nam));
             }
-            inRegRange = true;
-        }
-        else
-        {
-            if (inRegRange)
-            {
-                if (regPrev != regHead)
-                {
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= (strlen(sep) + strlen(nam));
-                }
-                sep = " ";
-            }
-            inRegRange = false;
-        }
 
-        if (regBit > regMask)
-        {
-            break;
+            regHead    = REG_NA;
+            inRegRange = false;
+            sep        = " ";
         }
 
         regPrev = regNum;
     }
+
+    return sep;
+}
+
+/*****************************************************************************
+ *
+ *  Displays a register set.
+ *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ */
+void dspRegMask(regMaskTP regMask, size_t minSiz)
+{
+    const char* sep = "";
+
+    printf("[");
+
+    sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+    sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     printf("]");
 
@@ -489,7 +499,7 @@ unsigned dumpSingleInstr(const BYTE* const codeAddr, IL_OFFSET offs, const char*
     }
 
     OPCODE opcode = (OPCODE)getU1LittleEndian(opcodePtr);
-    opcodePtr += sizeof(__int8);
+    opcodePtr += sizeof(int8_t);
 
 DECODE_OPCODE:
 
@@ -510,12 +520,12 @@ DECODE_OPCODE:
     {
         case CEE_PREFIX1:
             opcode = OPCODE(getU1LittleEndian(opcodePtr) + 256);
-            opcodePtr += sizeof(__int8);
+            opcodePtr += sizeof(int8_t);
             goto DECODE_OPCODE;
 
         default:
         {
-            __int64 iOp;
+            int64_t iOp;
             double  dOp;
             int     jOp;
             DWORD   jOp2;
@@ -547,7 +557,7 @@ DECODE_OPCODE:
                     goto INT_OP;
                 case InlineI8:
                     iOp = getU4LittleEndian(opcodePtr);
-                    iOp |= (__int64)getU4LittleEndian(opcodePtr + 4) << 32;
+                    iOp |= (int64_t)getU4LittleEndian(opcodePtr + 4) << 32;
                     goto INT_OP;
 
                 INT_OP:
@@ -556,7 +566,7 @@ DECODE_OPCODE:
                     break;
 
                 case ShortInlineR:
-                    dOp = getR4LittleEndian(opcodePtr);
+                    dOp = FloatingPointUtils::convertToDouble(getR4LittleEndian(opcodePtr));
                     goto FLT_OP;
                 case InlineR:
                     dOp = getR8LittleEndian(opcodePtr);
@@ -646,7 +656,17 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(weight_t refCntWtd)
+//------------------------------------------------------------------------
+// refCntWtd2str: Return a string representation of a weighted ref count
+//
+// Arguments:
+//    refCntWtd - weight to format
+//    padForDecimalPlaces - (default: false) If true, pad any integral or non-numeric
+//                          output on the right with three spaces, representing space
+//                          for ".00". This makes "1" line up with "2.34" at the "2" column.
+//                          This is used for formatting the BasicBlock list.
+//
+const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -655,11 +675,17 @@ const char* refCntWtd2str(weight_t refCntWtd)
 
     char* temp = nump;
 
+    const char* strDecimalPaddingString = "";
+    if (padForDecimalPlaces)
+    {
+        strDecimalPaddingString = "   ";
+    }
+
     nump = (nump == num1) ? num2 : num1;
 
     if (refCntWtd >= BB_MAX_WEIGHT)
     {
-        sprintf_s(temp, bufSize, "MAX   ");
+        sprintf_s(temp, bufSize, "MAX%s", strDecimalPaddingString);
     }
     else
     {
@@ -678,7 +704,7 @@ const char* refCntWtd2str(weight_t refCntWtd)
         {
             if (intPart == scaledWeight)
             {
-                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+                sprintf_s(temp, bufSize, "%lld%s", (long long)intPart, strDecimalPaddingString);
             }
             else
             {
@@ -691,7 +717,7 @@ const char* refCntWtd2str(weight_t refCntWtd)
 
 #endif // DEBUG
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
 
 //------------------------------------------------------------------------
 // Contains: check if the range includes a particular hash
@@ -885,15 +911,196 @@ void ConfigMethodRange::Dump()
     }
 }
 
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigIntArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are separated decimal with no whitespace.
+//    Separators are any digit not '-' or '0-9'
+//
+void ConfigIntArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                p++;
+            }
+
+            numValues++;
+        }
+        else
+        {
+            p++;
+        }
+    }
+
+    m_length = numValues;
+    m_values = (int*)g_jitHost->allocateMemory(numValues * sizeof(int));
+
+    numValues         = 0;
+    p                 = str;
+    int  currentValue = 0;
+    bool isNegative   = false;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                isNegative = true;
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                currentValue = currentValue * 10 + (*p++) - L'0';
+            }
+
+            if (isNegative)
+            {
+                currentValue = -currentValue;
+            }
+
+            m_values[numValues++] = currentValue;
+            currentValue          = 0;
+        }
+        else
+        {
+            p++;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigIntArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config int array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config int array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%i", i == 0 ? "" : ", ", m_values[i]);
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigDoubleArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are comma, tab or space separated.
+//    Consecutive separators are ignored
+//
+void ConfigDoubleArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+        WCHAR* pNext = nullptr;
+        u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            numValues++;
+        }
+        p = pNext;
+    }
+
+    m_length  = numValues;
+    m_values  = (double*)g_jitHost->allocateMemory(numValues * sizeof(double));
+    p         = str;
+    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+
+        WCHAR* pNext = nullptr;
+        double val   = u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            m_values[numValues++] = val;
+        }
+        p = pNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigDoubleArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config double array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config double array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%f ", i == 0 ? "" : ",", m_values[i]);
+    }
+}
+
+#endif // defined(DEBUG)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+
+void Counter::dump(FILE* output)
+{
+    fprintf(output, "%lld\n", (long long)Value);
+}
 
 /*****************************************************************************
  *  Histogram class.
  */
 
-Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
+Histogram::Histogram(const unsigned* const sizeTable)
+    : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -941,9 +1148,9 @@ void Histogram::dump(FILE* output)
             fprintf(output, "%7u", m_sizeTable[i]);
         }
 
-        c += m_counts[i];
+        c += static_cast<unsigned>(m_counts[i]);
 
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", m_counts[i], (int)(100.0 * c / t));
+        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
     }
 }
 
@@ -958,7 +1165,93 @@ void Histogram::record(unsigned size)
         }
     }
 
-    m_counts[i]++;
+    InterlockedAdd(&m_counts[i], 1);
+}
+
+void NodeCounts::dump(FILE* output)
+{
+    struct Entry
+    {
+        genTreeOps oper;
+        unsigned   count;
+    };
+
+    Entry sorted[GT_COUNT];
+    for (int i = 0; i < GT_COUNT; i++)
+    {
+        sorted[i].oper  = static_cast<genTreeOps>(i);
+        sorted[i].count = static_cast<unsigned>(m_counts[i]);
+    }
+
+    jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
+        if (lhs.count > rhs.count)
+        {
+            return true;
+        }
+
+        if (lhs.count < rhs.count)
+        {
+            return false;
+        }
+
+        return static_cast<unsigned>(lhs.oper) < static_cast<unsigned>(rhs.oper);
+    });
+
+    for (const Entry& entry : sorted)
+    {
+        if (entry.count == 0)
+        {
+            break;
+        }
+
+        fprintf(output, "%-20s : %7u\n", GenTree::OpName(entry.oper), entry.count);
+    }
+}
+
+void NodeCounts::record(genTreeOps oper)
+{
+    assert(oper < GT_COUNT);
+    InterlockedAdd(&m_counts[oper], 1);
+}
+
+struct DumpOnShutdownEntry
+{
+    const char*     Name;
+    class Dumpable* Dumpable;
+};
+
+static DumpOnShutdownEntry s_dumpOnShutdown[16];
+
+DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+{
+    for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if ((entry.Name == nullptr) && (entry.Dumpable == nullptr))
+        {
+            entry.Name     = name;
+            entry.Dumpable = dumpable;
+            return;
+        }
+    }
+
+    assert(!"No space left in table");
+}
+
+void DumpOnShutdown::DumpAll()
+{
+    for (const DumpOnShutdownEntry& entry : s_dumpOnShutdown)
+    {
+        if (entry.Name != nullptr)
+        {
+            jitprintf("%s\n", entry.Name);
+        }
+
+        if (entry.Dumpable != nullptr)
+        {
+            entry.Dumpable->dump(jitstdout());
+            jitprintf("\n");
+        }
+    }
 }
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
@@ -1014,6 +1307,19 @@ void FixedBitVect::bitVectSet(UINT bitNum)
     bitNum -= index * bitChunkSize();
 
     bitVect[index] |= bitNumToBit(bitNum);
+}
+
+// bitVectClear() - Clears the given bit
+void FixedBitVect::bitVectClear(UINT bitNum)
+{
+    UINT index;
+
+    assert(bitNum <= bitVectSize);
+
+    index = bitNum / bitChunkSize();
+    bitNum -= index * bitChunkSize();
+
+    bitVect[index] &= ~bitNumToBit(bitNum);
 }
 
 // bitVectTest() - Tests the given bit
@@ -1181,28 +1487,19 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
 
 #ifdef DEBUG
 
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size)
+void hexDump(FILE* dmpf, BYTE* addr, size_t size)
 {
-    if (!size)
+    if (size == 0)
     {
         return;
     }
 
-    assert(addr);
+    assert(addr != nullptr);
 
-    fprintf(dmpf, "Hex dump of %s:\n", name);
-
-    for (unsigned i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        if ((i % 16) == 0)
-        {
-            fprintf(dmpf, "\n    %04X: ", i);
-        }
-
-        fprintf(dmpf, "%02X ", *addr++);
+        fprintf(dmpf, "%02X", *addr++);
     }
-
-    fprintf(dmpf, "\n\n");
 }
 
 #endif // DEBUG
@@ -1222,6 +1519,8 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
+        bool isNoGC        = false; // true is the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1229,6 +1528,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LLSH:
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_LMUL:
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2DBL:
@@ -1240,7 +1541,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBLREM:
             case CORINFO_HELP_FLTROUND:
             case CORINFO_HELP_DBLROUND:
-
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1280,6 +1580,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
             case CORINFO_HELP_NEWFAST:
+            case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
@@ -1295,7 +1596,9 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             case CORINFO_HELP_NEW_MDARR:
+            case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
+            case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
@@ -1347,7 +1650,6 @@ void HelperCallProperties::init()
                 noThrow = true; // These return null for a failing cast
                 break;
 
-            case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;
@@ -1360,6 +1662,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1368,10 +1671,20 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_GETREFANY:
-            case CORINFO_HELP_LDELEMA_REF:
+                isNoEscape = true;
+                isPure     = true;
+                break;
 
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure = true;
+                break;
+
+            // GETREFANY is pure up to the value of the struct argument. We
+            // only support that when it is not an implicit byref.
+            case CORINFO_HELP_GETREFANY:
+#ifndef WINDOWS_AMD64_ABI
+                isPure = true;
+#endif
                 break;
 
             // helpers that return internal handle
@@ -1385,20 +1698,17 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
@@ -1413,10 +1723,28 @@ void HelperCallProperties::init()
                 mayRunCctor   = true;
                 break;
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
+                break;
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
                 //
@@ -1425,30 +1753,41 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
+#ifdef TARGET_X86
+            case CORINFO_HELP_ASSIGN_REF_EAX:
+            case CORINFO_HELP_ASSIGN_REF_ECX:
+            case CORINFO_HELP_ASSIGN_REF_EBX:
+            case CORINFO_HELP_ASSIGN_REF_EBP:
+            case CORINFO_HELP_ASSIGN_REF_ESI:
+            case CORINFO_HELP_ASSIGN_REF_EDI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+#endif
             // GC Write barrier support
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
-            case CORINFO_HELP_ASSIGN_STRUCT:
-
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
+            case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;
 
             // Accessing fields (write)
-            case CORINFO_HELP_SETFIELD32:
-            case CORINFO_HELP_SETFIELD64:
-            case CORINFO_HELP_SETFIELDOBJ:
-            case CORINFO_HELP_SETFIELDSTRUCT:
-            case CORINFO_HELP_SETFIELDFLOAT:
-            case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
-
                 mutatesHeap = true;
                 break;
 
             // These helper calls always throw an exception
+            case CORINFO_HELP_FAIL_FAST:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_OVERFLOW:
             case CORINFO_HELP_VERIFICATION:
             case CORINFO_HELP_RNGCHKFAIL:
@@ -1461,17 +1800,14 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
             case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
-            case CORINFO_HELP_FAIL_FAST:
             case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
             case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
             case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-
                 alwaysThrow = true;
                 break;
 
             // These helper calls may throw an exception
             case CORINFO_HELP_MON_EXIT_STATIC:
-
                 break;
 
             // This is a debugging aid; it simply returns a constant address.
@@ -1480,26 +1816,37 @@ void HelperCallProperties::init()
                 noThrow = true;
                 break;
 
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: // Never present on stack at the time of GC.
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_ENTER_STATIC:
-            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_GETFIELDADDR:
-            case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-
                 noThrow = true;
                 break;
 
-            // Not sure how to handle optimization involving the rest of these  helpers
-            default:
+            case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
+            case CORINFO_HELP_STACK_PROBE:
+            case CORINFO_HELP_CHECK_OBJ:
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_TAILCALL:
+                isNoGC      = true;
+                mutatesHeap = true; // Conservatively.
+                break;
 
-                // The most pessimistic results are returned for these helpers
+            default:
+                // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
                 break;
         }
@@ -1511,6 +1858,8 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
+        m_isNoGC[helper]        = isNoGC;
     }
 }
 
@@ -1523,7 +1872,8 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) : m_alloc(alloc)
+AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+    : m_alloc(alloc)
 {
     WCHAR          prevChar   = '?';     // dummy
     LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
@@ -1547,11 +1897,11 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc) :
 
                 // How much space do we need?
                 int convertedNameLenBytes =
-                    WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
+                    WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
                 newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
                                                                                      // the trailing null character
-                if (WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                           nullptr, nullptr) != 0)
+                if (WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
+                                        nullptr, nullptr) != 0)
                 {
                     *ppPrevLink = newName;
                     ppPrevLink  = &newName->m_next;
@@ -1610,7 +1960,9 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(nullptr), m_alloc(alloc)
+MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+    : m_pInfos(nullptr)
+    , m_alloc(alloc)
 {
     FILE* methodSetFile = _wfopen(filename, W("r"));
     if (methodSetFile == nullptr)
@@ -1839,11 +2191,12 @@ double CachedCyclesPerSecond()
 }
 
 #ifdef FEATURE_JIT_METHOD_PERF
-CycleCount::CycleCount() : cps(CachedCyclesPerSecond())
+CycleCount::CycleCount()
+    : cps(CachedCyclesPerSecond())
 {
 }
 
-bool CycleCount::GetCycles(unsigned __int64* time)
+bool CycleCount::GetCycles(uint64_t* time)
 {
     return CycleTimer::GetThreadCyclesS(time);
 }
@@ -1855,7 +2208,7 @@ bool CycleCount::Start()
 
 double CycleCount::ElapsedTime()
 {
-    unsigned __int64 nowCycles;
+    uint64_t nowCycles;
     (void)GetCycles(&nowCycles);
     return ((double)(nowCycles - beginCycles) / cps) * 1000.0;
 }
@@ -1914,79 +2267,84 @@ unsigned CountDigits(double num, unsigned base /* = 10 */)
 
 #endif // DEBUG
 
-double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
+double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 {
-    __int64 s64 = uIntVal;
-    double  d;
-    if (s64 < 0)
-    {
-#if defined(TARGET_XARCH)
-        // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
-        // double, and the clang result is more accurate. For example,
-        //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
-        //    2) (double)0x84595161401484A0UL --> 43e08b2a2c280291  (clang or gcc)
-        // If the folding optimization below is implemented by simple casting of (double)uint64_val
-        // and it is compiled by clang, casting result can be inconsistent, depending on whether
-        // the folding optimization is triggered or the codegen generates instructions for casting. //
-        // The current solution is to force the same math as the codegen does, so that casting
-        // result is always consistent.
-
-        // d = (double)(int64_t)uint64 + 0x1p64
-        uint64_t adjHex = 0x43F0000000000000UL;
-        d               = (double)s64 + *(double*)&adjHex;
-#else
-        d = (double)uIntVal;
-#endif
-    }
-    else
-    {
-        d = (double)uIntVal;
-    }
-    return d;
+    return (double)uIntVal;
 }
 
-float FloatingPointUtils::convertUInt64ToFloat(unsigned __int64 u64)
+float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
     double d = convertUInt64ToDouble(u64);
     return (float)d;
 }
 
-unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
+uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
 {
-    unsigned __int64 u64;
-    if (d >= 0.0)
+    return (uint64_t)d;
+}
+
+//------------------------------------------------------------------------
+// convertToDouble: Convert a single to a double with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   f - the single
+//
+// Return Value:
+//   A double.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+double FloatingPointUtils::convertToDouble(float f)
+{
+#ifdef HOST_RISCV64
+    if (f == f)
     {
-        // Work around a C++ issue where it doesn't properly convert large positive doubles
-        const double two63 = 2147483648.0 * 4294967296.0;
-        if (d < two63)
-        {
-            u64 = UINT64(d);
-        }
-        else
-        {
-            // subtract 0x8000000000000000, do the convert then add it back again
-            u64 = INT64(d - two63) + I64(0x8000000000000000);
-        }
-        return u64;
+        return f;
     }
 
-#ifdef TARGET_XARCH
-
-    // While the Ecma spec does not specifically call this out,
-    // the case of conversion from negative double to unsigned integer is
-    // effectively an overflow and therefore the result is unspecified.
-    // With MSVC for x86/x64, such a conversion results in the bit-equivalent
-    // unsigned value of the conversion to integer. Other compilers convert
-    // negative doubles to zero when the target is unsigned.
-    // To make the behavior consistent across OS's on TARGET_XARCH,
-    // this double cast is needed to conform MSVC behavior.
-
-    u64 = UINT64(INT64(d));
+    uint32_t bits    = BitOperations::SingleToUInt32Bits(f);
+    uint32_t payload = bits & ((1u << 23) - 1);
+    uint64_t newBits = ((uint64_t)(bits >> 31) << 63) | 0x7FF8000000000000ul | ((uint64_t)payload << 29);
+    return BitOperations::UInt64BitsToDouble(newBits);
 #else
-    u64   = UINT64(d);
-#endif // TARGET_XARCH
+    return f;
+#endif
+}
 
-    return u64;
+//------------------------------------------------------------------------
+// convertToSingle: Convert a double to a single with platform independent
+// preservation of payload bits.
+//
+// Arguments:
+//   d - the double
+//
+// Return Value:
+//   A float.
+//
+// Remarks:
+//   All our host platforms except for RISCV-64 will preserve payload bits of
+//   NaNs. This function implements the conversion in software for RISCV-64 to
+//   mimic other platforms.
+//
+float FloatingPointUtils::convertToSingle(double d)
+{
+#ifdef HOST_RISCV64
+    if (d == d)
+    {
+        return (float)d;
+    }
+
+    uint64_t bits       = BitOperations::DoubleToUInt64Bits(d);
+    uint32_t newPayload = (uint32_t)((bits >> 29) & ((1u << 23) - 1));
+    uint32_t newBits    = ((uint32_t)(bits >> 63) << 31) | 0x7F800000u | newPayload;
+    return BitOperations::UInt32BitsToSingle(newBits);
+#else
+    return (float)d;
+#endif
 }
 
 // Rounds a double-precision floating-point value to the nearest integer,
@@ -1998,78 +2356,35 @@ double FloatingPointUtils::round(double x)
     //            MathF.Round(float), and FloatingPointUtils::round(float)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This represents the boundary at which point we can only represent whole integers
+    const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-    uint64_t bits     = *reinterpret_cast<uint64_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 52) & 0x07FF;
-
-    if (exponent <= 0x03FE)
+    if (fabs(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
-        return _copysign(result, x);
-    }
-
-    if (exponent >= 0x0433)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x03FF <= exponent) && (exponent <= 0x0432));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint64_t lastBitMask   = UI64(1) << (0x0433 - exponent);
-    uint64_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<double*>(&bits);
+    double temp = copysign(IntegerBoundary, x);
+    return copysign((x + temp) - temp, x);
 }
-
-// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
-// We will redirect the macro to this other functions if the macro is not defined for the platform.
-// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
-// downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf (float)_copysign
-#endif
-
-#endif
 
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
@@ -2080,65 +2395,40 @@ float FloatingPointUtils::round(float x)
     //            Math.Round(double), and FloatingPointUtils::round(double)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This code is based on `nearbyint` from amd/aocl-libm-ose
+    // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+    //
+    // Licensed under the BSD 3-Clause "New" or "Revised" License
+    // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-    uint32_t bits     = *reinterpret_cast<uint32_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 23) & 0xFF;
+    // This represents the boundary at which point we can only represent whole integers
+    const float IntegerBoundary = 8388608.0f; // 2^23
 
-    if (exponent <= 0x7E)
+    if (fabsf(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
-        return _copysignf(result, x);
-    }
-
-    if (exponent >= 0x96)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x7F <= exponent) && (exponent <= 0x95));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint32_t lastBitMask   = 1U << (0x96 - exponent);
-    uint32_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<float*>(&bits);
+    float temp = copysignf(IntegerBoundary, x);
+    return copysignf((x + temp) - temp, x);
 }
 
 bool FloatingPointUtils::isNormal(double x)
@@ -2266,6 +2556,38 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 }
 
 //------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (~bits & 0x7F800000U) != 0;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (~bits & 0x7FF0000000000000ULL) != 0;
+}
+
+//------------------------------------------------------------------------
 // isNegative: Determines whether the specified value is negative
 //
 // Arguments:
@@ -2361,9 +2683,10 @@ bool FloatingPointUtils::isPositiveZero(double val)
 
 //------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2372,7 +2695,6 @@ bool FloatingPointUtils::isPositiveZero(double val)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::maximum(double val1, double val2)
 {
     if (val1 != val2)
@@ -2381,16 +2703,112 @@ double FloatingPointUtils::maximum(double val1, double val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::maximumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // maximum: This matches the IEEE 754:2019 `maximum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the greater of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2399,7 +2817,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::maximum(float val1, float val2)
 {
     if (val1 != val2)
@@ -2408,16 +2825,112 @@ float FloatingPointUtils::maximum(float val1, float val2)
         {
             return val2 < val1 ? val1 : val2;
         }
+
         return val1;
     }
+
     return isNegative(val2) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a greater magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax > ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? y : x;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::maximumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return y < x ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(y) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2426,21 +2939,120 @@ float FloatingPointUtils::maximum(float val1, float val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 double FloatingPointUtils::minimum(double val1, double val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
 }
 
 //------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitude(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
+{
+    double ax = fabs(x);
+    double ay = fabs(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+double FloatingPointUtils::minimumNumber(double x, double y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
+}
+
+//------------------------------------------------------------------------
 // minimum: This matches the IEEE 754:2019 `minimum` function
-//    It propagates NaN inputs back to the caller and
-//    otherwise returns the larger of the inputs. It
-//    treats +0 as larger than -0 as per the specification.
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the lesser of the inputs. It
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2451,11 +3063,110 @@ double FloatingPointUtils::minimum(double val1, double val2)
 //
 float FloatingPointUtils::minimum(float val1, float val2)
 {
-    if (val1 != val2 && !isNaN(val1))
+    if (val1 != val2)
     {
-        return val1 < val2 ? val1 : val2;
+        if (!isNaN(val1))
+        {
+            return val1 < val2 ? val1 : val2;
+        }
+
+        return val1;
     }
+
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
+//
+// It propagates NaN inputs back to the caller and
+// otherwise returns the input with a lesser magnitude.
+// It treats +0 as greater than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitude(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ax))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the input with a larger magnitude.
+// It treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
+{
+    float ax = fabsf(x);
+    float ay = fabsf(y);
+
+    if ((ax < ay) || isNaN(ay))
+    {
+        return x;
+    }
+
+    if (ax == ay)
+    {
+        return isNegative(x) ? x : y;
+    }
+
+    return y;
+}
+
+//------------------------------------------------------------------------
+// minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
+//
+// It does not propagate NaN inputs back to the caller and
+// otherwise returns the larger of the inputs. It
+// treats +0 as larger than -0 as per the specification.
+//
+// Arguments:
+//    x - left operand
+//    y - right operand
+//
+// Return Value:
+//    Either x or y
+//
+float FloatingPointUtils::minimumNumber(float x, float y)
+{
+    if (x != y)
+    {
+        if (!isNaN(y))
+        {
+            return x < y ? x : y;
+        }
+
+        return x;
+    }
+
+    return isNegative(x) ? x : y;
 }
 
 //------------------------------------------------------------------------
@@ -2492,6 +3203,499 @@ double FloatingPointUtils::normalize(double value)
 #else
     return value;
 #endif
+}
+
+int FloatingPointUtils::ilogb(double value)
+{
+    if (value == 0.0)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogb(value);
+}
+
+int FloatingPointUtils::ilogb(float value)
+{
+    if (value == 0.0f)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogbf(value);
+}
+
+//------------------------------------------------------------------------
+// BitOperations::BitScanReverse: Search the mask data from most significant bit (MSB) to least significant bit
+// (LSB) for a set bit (1).
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    0 if the mask is zero; nonzero otherwise.
+//
+uint32_t BitOperations::BitScanReverse(uint32_t value)
+{
+    assert(value != 0);
+
+#if defined(_MSC_VER)
+    unsigned long result;
+    ::_BitScanReverse(&result, value);
+    return static_cast<uint32_t>(result);
+#else
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+
+    int32_t result = __builtin_clz(value);
+    return static_cast<uint32_t>(31 ^ result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::BitScanReverse: Search the mask data from most significant bit (MSB) to least significant bit
+// (LSB) for a set bit (1).
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    0 if the mask is zero; nonzero otherwise.
+//
+uint32_t BitOperations::BitScanReverse(uint64_t value)
+{
+    assert(value != 0);
+
+#if defined(_MSC_VER)
+#if defined(HOST_64BIT)
+    unsigned long result;
+    ::_BitScanReverse64(&result, value);
+    return static_cast<uint32_t>(result);
+#else
+    uint32_t upper = static_cast<uint32_t>(value >> 32);
+
+    if (upper == 0)
+    {
+        uint32_t lower = static_cast<uint32_t>(value);
+        return BitScanReverse(lower);
+    }
+
+    return 32 + BitScanReverse(upper);
+#endif // HOST_64BIT
+#else
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 63 ^ BSR here is equivalent to 63 - BSR since the BSR result is always between 0 and 63.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+
+    int32_t result = __builtin_clzll(value);
+    return static_cast<uint32_t>(63 ^ result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::DoubleToUInt64Bits: Gets the underlying bits for a double-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint64_t BitOperations::DoubleToUInt64Bits(double value)
+{
+    uint64_t result;
+    memcpy(&result, &value, sizeof(double));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::LeadingZeroCount: Count the number of leading zero bits in a mask.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The number of leading bits in value
+//
+uint32_t BitOperations::LeadingZeroCount(uint32_t value)
+{
+    if (value == 0)
+    {
+        return 32;
+    }
+
+#if defined(_MSC_VER)
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+
+    uint32_t result = BitOperations::BitScanReverse(value);
+    return 31 ^ result;
+#else
+    int32_t result = __builtin_clz(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::LeadingZeroCount: Count the number of leading zero bits in a mask.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The number of leading bits in value
+//
+uint32_t BitOperations::LeadingZeroCount(uint64_t value)
+{
+    if (value == 0)
+    {
+        return 64;
+    }
+
+#if defined(_MSC_VER)
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 63 ^ BSR here is equivalent to 63 - BSR since the BSR result is always between 0 and 63.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+
+    uint32_t result = BitOperations::BitScanReverse(value);
+    return 63 ^ result;
+#else
+    int32_t result = __builtin_clzll(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::Log2: Returns the integer (floor) log of the specified value, base 2.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The integer (floor) log of value, base 2
+//
+uint32_t BitOperations::Log2(uint32_t value)
+{
+    // The 0->0 contract is fulfilled by setting the LSB to 1.
+    // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+    return 31 ^ BitOperations::LeadingZeroCount(value | 1);
+}
+
+//------------------------------------------------------------------------
+// BitOperations::Log2: Returns the integer (floor) log of the specified value, base 2.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The integer (floor) log of value, base 2
+//
+uint32_t BitOperations::Log2(uint64_t value)
+{
+    // The 0->0 contract is fulfilled by setting the LSB to 1.
+    // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+    return 63 ^ BitOperations::LeadingZeroCount(value | 1);
+}
+
+//------------------------------------------------------------------------
+// BitOperations::PopCount: Returns the population count (number of bits set) of a mask.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The population count (number of bits set) of value
+//
+uint32_t BitOperations::PopCount(uint32_t value)
+{
+#if defined(_MSC_VER)
+    // Inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
+    // http://graphics.stanford.edu/~seander/bithacks.html
+
+    const uint32_t c1 = 0x55555555u;
+    const uint32_t c2 = 0x33333333u;
+    const uint32_t c3 = 0x0F0F0F0Fu;
+    const uint32_t c4 = 0x01010101u;
+
+    value -= (value >> 1) & c1;
+    value = (value & c2) + ((value >> 2) & c2);
+    value = (((value + (value >> 4)) & c3) * c4) >> 24;
+
+    return value;
+#else
+    int32_t result = __builtin_popcount(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::PopCount: Returns the population count (number of bits set) of a mask.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The population count (number of bits set) of value
+//
+uint32_t BitOperations::PopCount(uint64_t value)
+{
+#if defined(_MSC_VER)
+    // Inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
+    // http://graphics.stanford.edu/~seander/bithacks.html
+
+    const uint64_t c1 = 0x5555555555555555ull;
+    const uint64_t c2 = 0x3333333333333333ull;
+    const uint64_t c3 = 0x0F0F0F0F0F0F0F0Full;
+    const uint64_t c4 = 0x0101010101010101ull;
+
+    value -= (value >> 1) & c1;
+    value = (value & c2) + ((value >> 2) & c2);
+    value = (((value + (value >> 4)) & c3) * c4) >> 56;
+
+    return static_cast<uint32_t>(value);
+#else
+    int32_t result = __builtin_popcountll(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::ReverseBits: Reverses the bits in an integer value
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The reversed bits of value
+//
+uint32_t BitOperations::ReverseBits(uint32_t value)
+{
+    // Inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
+    // http://graphics.stanford.edu/~seander/bithacks.html
+
+    uint32_t result = value;
+
+    // swap odd and even bits
+    result = ((result >> 1) & 0x55555555) | ((result & 0x55555555) << 1);
+
+    // swap consecutive pairs
+    result = ((result >> 2) & 0x33333333) | ((result & 0x33333333) << 2);
+
+    // swap nibbles ...
+    result = ((result >> 4) & 0x0F0F0F0F) | ((result & 0x0F0F0F0F) << 4);
+
+    // swap bytes
+    result = ((result >> 8) & 0x00FF00FF) | ((result & 0x00FF00FF) << 8);
+
+    // swap 2-byte pairs
+    result = (result >> 16) | (result << 16);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::ReverseBits: Reverses the bits in an integer value
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The reversed bits of value
+//
+uint64_t BitOperations::ReverseBits(uint64_t value)
+{
+    // Inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
+    // http://graphics.stanford.edu/~seander/bithacks.html
+
+    uint64_t result = value;
+
+    // swap odd and even bits
+    result = ((result >> 1) & 0x5555555555555555ull) | ((result & 0x5555555555555555ull) << 1);
+
+    // swap consecutive pairs
+    result = ((result >> 2) & 0x3333333333333333ull) | ((result & 0x3333333333333333ull) << 2);
+
+    // swap nibbles ...
+    result = ((result >> 4) & 0x0F0F0F0F0F0F0F0Full) | ((result & 0x0F0F0F0F0F0F0F0Full) << 4);
+
+    // swap bytes
+    result = ((result >> 8) & 0x00FF00FF00FF00FFull) | ((result & 0x00FF00FF00FF00FFull) << 8);
+
+    // swap 2-byte pairs
+    result = ((result >> 16) & 0x0000FFFF0000FFFFull) | ((result & 0x0000FFFF0000FFFFull) << 16);
+
+    // swap 4-byte pairs
+    result = (result >> 32) | (result << 32);
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::RotateLeft: Rotates the specified value left by the specified number of bits.
+//
+// Arguments:
+//    value  - the value to rotate
+//    offset - the number of bits to rotate by
+//
+// Return Value:
+//    The rotated value
+//
+uint32_t BitOperations::RotateLeft(uint32_t value, uint32_t offset)
+{
+    // Mask the offset to ensure deterministic xplat behavior for overshifting
+    return (value << (offset & 0x1F)) | (value >> ((32 - offset) & 0x1F));
+}
+
+//------------------------------------------------------------------------
+// BitOperations::RotateLeft: Rotates the specified value left by the specified number of bits.
+//
+// Arguments:
+//    value  - the value to rotate
+//    offset - the number of bits to rotate by
+//
+// Return Value:
+//    The rotated value
+//
+uint64_t BitOperations::RotateLeft(uint64_t value, uint32_t offset)
+{
+    // Mask the offset to ensure deterministic xplat behavior for overshifting
+    return (value << (offset & 0x3F)) | (value >> ((64 - offset) & 0x3F));
+}
+
+//------------------------------------------------------------------------
+// BitOperations::RotateRight: Rotates the specified value right by the specified number of bits.
+//
+// Arguments:
+//    value  - the value to rotate
+//    offset - the number of bits to rotate by
+//
+// Return Value:
+//    The rotated value
+//
+uint32_t BitOperations::RotateRight(uint32_t value, uint32_t offset)
+{
+    // Mask the offset to ensure deterministic xplat behavior for overshifting
+    return (value >> (offset & 0x1F)) | (value << ((32 - offset) & 0x1F));
+}
+
+//------------------------------------------------------------------------
+// BitOperations::RotateRight: Rotates the specified value right by the specified number of bits.
+//
+// Arguments:
+//    value  - the value to rotate
+//    offset - the number of bits to rotate by
+//
+// Return Value:
+//    The rotated value
+//
+uint64_t BitOperations::RotateRight(uint64_t value, uint32_t offset)
+{
+    // Mask the offset to ensure deterministic xplat behavior for overshifting
+    return (value >> (offset & 0x3F)) | (value << ((64 - offset) & 0x3F));
+}
+
+//------------------------------------------------------------------------
+// BitOperations::SingleToUInt32Bits: Gets the underlying bits for a single-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint32_t BitOperations::SingleToUInt32Bits(float value)
+{
+    uint32_t result;
+    memcpy(&result, &value, sizeof(float));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::TrailingZeroCount: Count the number of trailing zero bits in an integer value.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The number of trailing zero bits in value
+//
+uint32_t BitOperations::TrailingZeroCount(uint32_t value)
+{
+    if (value == 0)
+    {
+        return 32;
+    }
+
+#if defined(_MSC_VER)
+    return BitOperations::BitScanForward(value);
+#else
+    int32_t result = __builtin_ctz(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::TrailingZeroCount: Count the number of trailing zero bits in an integer value.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    The number of trailing zero bits in value
+//
+uint32_t BitOperations::TrailingZeroCount(uint64_t value)
+{
+    if (value == 0)
+    {
+        return 64;
+    }
+
+#if defined(_MSC_VER)
+    return BitOperations::BitScanForward(value);
+#else
+    int32_t result = __builtin_ctzll(value);
+    return static_cast<uint32_t>(result);
+#endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt32BitsToSingle: Gets a single-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The single-precision floating-point from value.
+//
+float BitOperations::UInt32BitsToSingle(uint32_t value)
+{
+    float result;
+    memcpy(&result, &value, sizeof(uint32_t));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt64BitsToDouble: Gets a double-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The double-precision floating-point from value.
+//
+double BitOperations::UInt64BitsToDouble(uint64_t value)
+{
+    double result;
+    memcpy(&result, &value, sizeof(uint64_t));
+    return result;
 }
 
 namespace MagicDivide
@@ -2811,7 +4015,7 @@ T GetSignedMagic(T denom, int* shift /*out*/)
     UT  t;
     T   result_magic;
 
-    absDenom = abs(denom);
+    absDenom = std::abs(denom);
     t        = two_nminus1 + (UT(denom) >> bits_minus_1);
     absNc    = t - 1 - (t % absDenom);        // absolute value of nc
     p        = bits_minus_1;                  // initialize p
@@ -2865,7 +4069,7 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
     return GetSignedMagic<int64_t>(d, shift);
 }
 #endif
-}
+} // namespace MagicDivide
 
 namespace CheckedOps
 {
@@ -2873,7 +4077,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -2897,7 +4100,6 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3012,7 +4214,6 @@ bool CastFromFloatOverflows(float fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0f < fromValue && fromValue < 128.0f);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0f < fromValue && fromValue < 256.0f);
         case TYP_SHORT:
@@ -3041,7 +4242,6 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0 < fromValue && fromValue < 128.0);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0 < fromValue && fromValue < 256.0);
         case TYP_SHORT:
@@ -3063,4 +4263,4 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
             unreached();
     }
 }
-}
+} // namespace CheckedOps

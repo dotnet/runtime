@@ -1,12 +1,20 @@
-﻿using System;
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	// NativeAOT/analyzer differences in behavior compared to ILLink:
+	//
+	// See the description on top of GenericParameterWarningLocation for the expected differences in behavior
+	// for NativeAOT and the analyzer.
+	// The tests affected by this are marked with "NativeAOT_StorageSpaceType"
+	//
+
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	public class GenericParameterDataFlow
@@ -29,8 +37,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestStructConstraintSatisfiesParameterlessConstructor<TestStruct> ();
 			TestUnmanagedConstraintSatisfiesParameterlessConstructor<byte> ();
 
+			TestEnumConstraintSatisfiesPublicFields<Enum> ();
+
 			TestGenericParameterFlowsToField ();
 			TestGenericParameterFlowsToReturnValue ();
+
+			TestGenericParameterFlowsToDelegateMethod<TestType> ();
+			TestGenericParameterFlowsToDelegateMethodDeclaringType<TestType> ();
+			TestGenericParameterFlowsToDelegateMethodDeclaringTypeInstance<TestType> ();
 
 			TestNoWarningsInRUCMethod<TestType> ();
 			TestNoWarningsInRUCType<TestType, TestType> ();
@@ -190,7 +204,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
 		{
 			// Analyzer does not see the base class constructor
-			[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", nameof (GenericBaseTypeWithRequirements<T>))]
 			public DerivedTypeWithOpenGenericOnBase () { }
 		}
 
@@ -201,10 +215,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2109", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
 		[ExpectedWarning ("IL2091", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
-		class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>
+		[ExpectedWarning ("IL2091", nameof (IGenericInterfaceTypeWithRequirements<T>))]
+		class DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T> : BaseTypeWithOpenGenericDAMTAndRUC<T>, IGenericInterfaceTypeWithRequirements<T>
 		{
-			[ExpectedWarning ("IL2091", nameof (DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>), ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", nameof (DerivedTypeWithOpenGenericOnBaseWithRUCOnBase<T>))]
+			[ExpectedWarning ("IL2026", nameof (BaseTypeWithOpenGenericDAMTAndRUC<T>))]
 			public DerivedTypeWithOpenGenericOnBaseWithRUCOnBase () { }
 		}
 
@@ -218,8 +233,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<TestType> ();
 		}
 		[ExpectedWarning ("IL2091", nameof (BaseTypeWithOpenGenericDAMT<T>))]
+		[ExpectedWarning ("IL2091", nameof (IGenericInterfaceTypeWithRequirements<T>))]
 		[RequiresUnreferencedCode ("RUC")]
-		class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>
+		class DerivedTypeWithOpenGenericOnBaseWithRUCOnDerived<T> : BaseTypeWithOpenGenericDAMT<T>, IGenericInterfaceTypeWithRequirements<T>
 		{
 		}
 
@@ -318,6 +334,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new InterfaceImplementationTypeWithInstantiationOverSelfOnBase ();
 			new InterfaceImplementationTypeWithOpenGenericOnBase<TestType> ();
 			new InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
+
+			RecursiveGenericWithInterfacesRequirement.Test ();
 		}
 
 		interface IGenericInterfaceTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
@@ -345,6 +363,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
+		class RecursiveGenericWithInterfacesRequirement
+		{
+			interface IFace<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] T>
+			{
+			}
+
+			class TestType : IFace<TestType>
+			{
+			}
+
+			public static void Test ()
+			{
+				var a = typeof (IFace<string>);
+				var t = new TestType ();
+			}
+		}
+
 		static void TestTypeGenericRequirementsOnMembers ()
 		{
 			// Basically just root everything we need to test
@@ -357,6 +392,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PublicFieldsProperty = null;
 			_ = instance.PublicMethodsProperty;
 			instance.PublicMethodsProperty = null;
+			_ = instance.PublicMethodsImplicitGetter;
 
 			instance.PublicFieldsMethodParameter (null);
 			instance.PublicMethodsMethodParameter (null);
@@ -372,7 +408,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public TypeRequiresPublicFields<TOuter> PublicFieldsField;
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsField;
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsProperty {
@@ -380,22 +416,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set;
 			}
 
-			[ExpectedWarning ("IL2091", nameof (TypeGenericRequirementsOnMembers<TOuter>), ProducedBy = ProducedBy.Analyzer)]
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsProperty {
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 				get => null;
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 				set { }
 			}
 
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
+			public TypeRequiresPublicMethods<TOuter> PublicMethodsImplicitGetter => null;
+
 			public void PublicFieldsMethodParameter (TypeRequiresPublicFields<TOuter> param) { }
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
 			public void PublicFieldsMethodLocalVariable ()
@@ -403,7 +441,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeRequiresPublicFields<TOuter> t = null;
 			}
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			// The analyzer matches NativeAot behavior for local variables - it doesn't warn on generic types of local variables.
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public void PublicMethodsMethodLocalVariable ()
 			{
 				TypeRequiresPublicMethods<TOuter> t = null;
@@ -438,8 +477,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class PartialyInstantiatedMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseForPartialInstantiation<TestType, TOuter>
 		{
-			// Analyzer does not see the base class constructor
-			[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", nameof (BaseForPartialInstantiation<TestType, TOuter>), "'TMethods'")]
 			public PartialyInstantiatedMethods () { }
 		}
 
@@ -673,17 +711,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2091",
-				nameof (TOuter),
+				[nameof (TOuter),
 				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
 				"TMethods",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()",
-				ProducedBy = ProducedBy.Analyzer)]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "")]
 			[ExpectedWarning ("IL2091",
-				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				["'TOuter'",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter",
 				"'TMethods'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields,TMethods>()",
-				ProducedBy = ProducedBy.Trimmer)]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams"], Tool.Trimmer | Tool.NativeAot, "")]
 			public static void StaticPartialInstantiationUnrecognized ()
 			{
 				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
@@ -691,9 +727,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2091",
 				"'TInner'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>.InstanceRequiresPublicFields<TInner>()",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter", "InstanceRequiresPublicFields",
 				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods")]
 			public void InstanceRequiresPublicFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TInner> ()
 			{
 				InstanceRequiresPublicFields<TInner> ();
@@ -702,9 +738,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2091",
 				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter",
 				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods<T>()")]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.InstanceRequiresPublicMethods")]
 			public void InstanceRequiresPublicFieldsNonGeneric ()
 			{
 				InstanceRequiresPublicFields<TOuter> ();
@@ -733,9 +769,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[ExpectedWarning ("IL2091",
 				"'TOuter'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter",
 				"'T'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods<T>()")]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.IInterfaceWithGenericMethod.InterfaceRequiresPublicMethods")]
 			public void CallInterface ()
 			{
 				IInterfaceWithGenericMethod interfaceInstance = (IInterfaceWithGenericMethod) this;
@@ -762,12 +798,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
+		static void TestEnumConstraintSatisfiesPublicFields<T> () where T : Enum
+		{
+			typeof (T).RequiresPublicFields ();
+		}
+
 		// Warn about calls to static methods:
-		[ExpectedWarning ("IL2026", "TypeRequiresPublicFields<T>.RUCTest()", "message")]
-		[ExpectedWarning ("IL2026", "RUCMethodRequiresPublicMethods<T>()", "message")]
+		[ExpectedWarning ("IL2026", "TypeRequiresPublicFields", "RUCTest()", "message")]
+		[ExpectedWarning ("IL2026", "RUCMethodRequiresPublicMethods", "message")]
 		// And about type/method generic parameters on the RUC methods:
-		[ExpectedWarning ("IL2091", "TypeRequiresPublicFields<T>")]
-		[ExpectedWarning ("IL2091", "RUCMethodRequiresPublicMethods<T>()")]
+		[ExpectedWarning ("IL2091", "TypeRequiresPublicFields")]
+		[ExpectedWarning ("IL2091", "RUCMethodRequiresPublicMethods")]
 		static void TestNoWarningsInRUCMethod<T> ()
 		{
 			TypeRequiresPublicFields<T>.RUCTest ();
@@ -775,26 +816,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// Warn about calls to the static methods and the ctor on the RUC type:
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethod", "message")]
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message")]
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message")]
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message")]
-		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.RUCTypeRequiresPublicFields", "message")]
+		[ExpectedWarning ("IL2026", "StaticMethod", "message")]
+		[ExpectedWarning ("IL2026", "StaticMethodRequiresPublicMethods", "message")]
+		[ExpectedWarning ("IL2026", "StaticMethodRequiresPublicMethods", "message")]
+		[ExpectedWarning ("IL2026", "StaticMethodRequiresPublicMethods", "message")]
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields", "message")]
 		// And about method generic parameters:
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.InstanceMethodRequiresPublicMethods<U>()")]
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>()")]
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>()")]
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.VirtualMethodRequiresPublicMethods<U>()")]
+		[ExpectedWarning ("IL2091", "InstanceMethodRequiresPublicMethods")]
+		[ExpectedWarning ("IL2091", "StaticMethodRequiresPublicMethods")]
+		[ExpectedWarning ("IL2091", "StaticMethodRequiresPublicMethods")]
+		[ExpectedWarning ("IL2091", "VirtualMethodRequiresPublicMethods")]
 		// And about type generic parameters: (one for each reference to the type):
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethod
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethodRequiresPublicMethods<T>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethodRequiresPublicMethods<U>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // RUCTypeRequiresPublicFields<T> ctor
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // RUCTypeRequiresPublicFields<T> local
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // InstanceMethod
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // InstanceMethodRequiresPublicMethods<T>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // VirtualMethod
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>", ProducedBy = ProducedBy.Trimmer)] // VirtualMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // StaticMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // StaticMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // StaticMethodRequiresPublicMethods<U>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // RUCTypeRequiresPublicFields<T> ctor
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // RUCTypeRequiresPublicFields<T> local, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // InstanceMethod, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // InstanceMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // VirtualMethod, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // VirtualMethodRequiresPublicMethods<T>
 		static void TestNoWarningsInRUCType<T, U> ()
 		{
 			RUCTypeRequiresPublicFields<T>.StaticMethod ();
@@ -849,6 +890,40 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestGenericParameterFlowsToField ()
 		{
 			TypeRequiresPublicFields<TestType>.TestFields ();
+		}
+
+		[ExpectedWarning ("IL2091", nameof (MethodRequiresPublicFields))]
+		static void TestGenericParameterFlowsToDelegateMethod<T> ()
+		{
+			Action a = MethodRequiresPublicFields<T>;
+		}
+
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), nameof (DelegateMethodTypeRequiresFields<T>.Method))]
+		static void TestGenericParameterFlowsToDelegateMethodDeclaringType<T> ()
+		{
+			Action a = DelegateMethodTypeRequiresFields<T>.Method;
+		}
+
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>))]
+		// NativeAOT_StorageSpaceType: illink warns about the type of 'instance' local variable
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), Tool.Trimmer, "")]
+		// NativeAOT_StorageSpaceType: illink warns about the declaring type of 'InstanceMethod' on ldftn
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), Tool.Trimmer, "")]
+		static void TestGenericParameterFlowsToDelegateMethodDeclaringTypeInstance<T> ()
+		{
+			var instance = new DelegateMethodTypeRequiresFields<T> ();
+			Action a = instance.InstanceMethod;
+		}
+
+		class DelegateMethodTypeRequiresFields<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>
+		{
+			public static void Method ()
+			{
+			}
+
+			public void InstanceMethod ()
+			{
+			}
 		}
 
 		public class TestType

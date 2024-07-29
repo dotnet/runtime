@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization.Metadata;
@@ -34,6 +35,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
 
             TestIListNonThrowingOperationsWhenMutable(options.Converters, () => new TestConverter());
+            TestIListNonThrowingOperationsWhenMutable(options.TypeInfoResolverChain, () => new DefaultJsonTypeInfoResolver());
 
             // Now set DefaultTypeInfoResolver
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
@@ -46,6 +48,7 @@ namespace System.Text.Json.Serialization.Tests
             (options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers.Add(tiModifier);
 
             TestIListThrowingOperationsWhenMutable(options.Converters);
+            TestIListThrowingOperationsWhenMutable(options.TypeInfoResolverChain);
             TestIListThrowingOperationsWhenMutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers);
 
             // Perform serialization.
@@ -61,13 +64,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(options.PropertyNameCaseInsensitive);
             Assert.Null(options.PropertyNamingPolicy);
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
+            Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
+            Assert.False(options.RespectNullableAnnotations);
+            Assert.False(options.RespectRequiredConstructorParameters);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
+            TestIListNonThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
             TestIListNonThrowingOperationsWhenImmutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers, tiModifier);
 
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
+            Assert.Throws<InvalidOperationException>(() => options.AllowOutOfOrderMetadataProperties = options.AllowOutOfOrderMetadataProperties);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
@@ -76,10 +84,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
+            Assert.Throws<InvalidOperationException>(() => options.UnmappedMemberHandling = options.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
+            Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = options.RespectNullableAnnotations);
+            Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = options.RespectRequiredConstructorParameters);
 
             TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
+            TestIListThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
             TestIListThrowingOperationsWhenImmutable((options.TypeInfoResolver as DefaultJsonTypeInfoResolver).Modifiers, tiModifier);
 
             static void TestIListNonThrowingOperationsWhenMutable<T>(IList<T> list, Func<T> newT)
@@ -167,6 +179,57 @@ namespace System.Text.Json.Serialization.Tests
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
             options.MakeReadOnly();
             Assert.True(options.IsReadOnly);
+        }
+
+        [Fact]
+        public static void NewDefaultOptions_MakeReadOnlyWithPopulateParameterFalse_NoTypeInfoResolver_ThrowsInvalidOperation()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.False(options.IsReadOnly);
+
+            Assert.Throws<InvalidOperationException>(() => options.MakeReadOnly(populateMissingResolver: false));
+            Assert.Null(options.TypeInfoResolver);
+            Assert.False(options.IsReadOnly);
+        }
+
+        [Fact]
+        public static void NewDefaultOptions_MakeReadOnlyWithPopulateParameterTrue_NoTypeInfoResolver_UsesDefaultTypeInfoResolver()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Null(options.TypeInfoResolver);
+            Assert.False(options.IsReadOnly);
+
+            options.MakeReadOnly(populateMissingResolver: true);
+
+            DefaultJsonTypeInfoResolver resolver = Assert.IsType<DefaultJsonTypeInfoResolver>(options.TypeInfoResolver);
+            Assert.True(options.IsReadOnly);
+
+            // Method is idempotent
+            options.MakeReadOnly(populateMissingResolver: false);
+            Assert.True(options.IsReadOnly);
+            Assert.Same(resolver, options.TypeInfoResolver);
+
+            options.MakeReadOnly(populateMissingResolver: true);
+            Assert.True(options.IsReadOnly);
+            Assert.Same(resolver, options.TypeInfoResolver);
+
+            options.MakeReadOnly();
+            Assert.True(options.IsReadOnly);
+            Assert.Same(resolver, options.TypeInfoResolver);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void NewDefaultOptions_MakeReadOnlyWithPopulateParameter_HasTypeInfoResolver_DoesNotReplaceResolver(bool populateMissingResolver)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = JsonContext.Default };
+            Assert.False(options.IsReadOnly);
+
+            options.MakeReadOnly(populateMissingResolver);
+
+            Assert.True(options.IsReadOnly);
+            Assert.Same(JsonContext.Default, options.TypeInfoResolver);
         }
 
         [Fact]
@@ -272,6 +335,90 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(Environment.NewLine, json);
         }
 
+        [Theory]
+        [InlineData('\f')]
+        [InlineData('\n')]
+        [InlineData('\r')]
+        [InlineData('\0')]
+        [InlineData('a')]
+        public static void IndentCharacters_WithInvalidChartacters_ThrowsArgumentOutOfRangeException(char character)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentCharacter = character);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(128)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public static void IndentSize_WithInvalidSize_ThrowsArgumentOutOfRangeException(int size)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentSize = size);
+        }
+
+        [Fact]
+        public static void IndentCharacter()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            // Verify default value.
+            var defaultIndent = "  ";
+            string json = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Verify default value on options.
+            var options = new JsonSerializerOptions();
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Enable default indentation.
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(defaultIndent, json);
+
+            // Set custom indentCharacter without enabling indentation
+            var tab = '\t';
+            Assert.DoesNotContain(tab, json);
+            options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentCharacter with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(tab, json);
+        }
+
+        [Fact]
+        public static void IndentSize()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var tab = '\t';
+            // Set custom indentSize without enabling indentation
+            var options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            options.IndentSize = 1;
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentSize with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            options.IndentSize = 4;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(new string(tab, 4), json);
+        }
+
         [Fact]
         public static void ExtensionDataUsesReaderOptions()
         {
@@ -373,6 +520,57 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options));
         }
 
+        [Theory]
+        [InlineData(new char[] { '\n' }, '\r')]
+        [InlineData(new char[] { '\r', '\n' }, null)]
+        public static void NewLine(char[] newLineChars, char? notExpectedNewLineChars)
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var newLine = new string(newLineChars);
+            var options = new JsonSerializerOptions();
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(newLine, json);
+
+            // Set custom newLine with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.NewLine = newLine;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(newLine, json);
+
+            if (notExpectedNewLineChars is { } notExpected)
+            {
+                Assert.DoesNotContain(notExpected, json);
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\r")]
+        [InlineData("\n\n")]
+        [InlineData("\r\n\r\n")]
+        [InlineData("0")]
+        [InlineData("a")]
+        [InlineData("foo")]
+        [InlineData("$")]
+        [InlineData(".")]
+        [InlineData("\u03b1")]
+        public static void TestNewLineInvalid(string value)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.NewLine = value);
+        }
+
+        [Fact]
+        public static void TestNewLineNullThrows()
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentNullException>("value", () => options.NewLine = null);
+        }
+
         private class TestClassForEncoding
         {
             public string MyString { get; set; }
@@ -457,7 +655,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Options_GetConverterForObjectJsonElement_GivesCorrectConverter()
         {
-            GenericObjectOrJsonElementConverterTestHelper<object>("ObjectConverter", new object(), "{}");
+            GenericObjectOrJsonElementConverterTestHelper<object>("DefaultObjectConverter", new object(), "{}");
             JsonElement element = JsonDocument.Parse("[3]").RootElement;
             GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonElementConverter", element, "[3]");
         }
@@ -472,6 +670,140 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(JsonContext.Default.GetTypeInfo(unsupportedValue.GetType()));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, options));
+        }
+
+        [Fact]
+        public static void JsonSerializer_IsReflectionEnabledByDefault_DefaultsToTrue()
+        {
+            Assert.True(JsonSerializer.IsReflectionEnabledByDefault);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_DefaultOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = JsonSerializerOptions.Default;
+                Assert.True(options.IsReadOnly);
+
+                Assert.NotNull(options.TypeInfoResolver);
+                Assert.True(options.TypeInfoResolver is not DefaultJsonTypeInfoResolver);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+                Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
+                Assert.Null(typeInfo);
+
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string"));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\""));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_NewOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = new JsonSerializerOptions();
+                Assert.False(options.IsReadOnly);
+
+                Assert.Null(options.TypeInfoResolver);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => options.MakeReadOnly(populateMissingResolver: true));
+                Assert.Contains("JsonSerializerOptions.TypeInfoResolver", ex.Message);
+
+                Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
+                Assert.Null(typeInfo);
+
+                Assert.False(options.IsReadOnly); // failed operations should not lock the instance
+                Assert.Empty(options.TypeInfoResolverChain);
+                Assert.Null(options.TypeInfoResolver);
+
+                // Can still use reflection via explicit configuration
+                options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+                Assert.Equal(new[] { options.TypeInfoResolver }, options.TypeInfoResolverChain);
+
+                Assert.NotNull(options.GetTypeInfo(typeof(string)));
+                Assert.NotNull(options.GetConverter(typeof(string)));
+
+                string json = JsonSerializer.Serialize("string", options);
+                string value = JsonSerializer.Deserialize<string>(json, options);
+                Assert.Equal("string", value);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_CanUseSourceGen()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = new JsonSerializerOptions();
+                options.TypeInfoResolverChain.Add(JsonContext.Default);
+
+                string json = JsonSerializer.Serialize(new WeatherForecastWithPOCOs(), options);
+                WeatherForecastWithPOCOs result = JsonSerializer.Deserialize<WeatherForecastWithPOCOs>(json, options);
+                Assert.NotNull(result);
+
+            }, options).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -521,7 +853,7 @@ namespace System.Text.Json.Serialization.Tests
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
-            
+
             RemoteExecutor.Invoke(static () =>
             {
                 var unsupportedValue = new MyClass { Value = "value" };
@@ -540,6 +872,37 @@ namespace System.Text.Json.Serialization.Tests
                 JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
                 Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
 
+                // Serialization using JsonSerializerContext now uses the reflection fallback.
+                json = JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default);
+                JsonTestHelper.AssertJsonEqual("""{"Value":"value", "Thing":null}""", json);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisablingIsReflectionEnabledByDefault()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false,
+                    ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                JsonContext context = JsonContext.Default;
+                var unsupportedValue = new MyClass();
+
+                Assert.Null(context.GetTypeInfo(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
+
             }, options).Dispose();
         }
 
@@ -554,6 +917,89 @@ namespace System.Text.Json.Serialization.Tests
             var value = new MyClass();
             string json = JsonSerializer.Serialize(value, options);
             JsonTestHelper.AssertJsonEqual("""{"Value":null,"Thing":null}""", json);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_RespectNullableAnnotationsDefault_FeatureSwitch(bool? state)
+        {
+            var options = new RemoteInvokeOptions();
+            if (state.HasValue)
+            {
+                options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectNullableAnnotationsDefault"] = state.Value;
+            }
+
+            string arg = state ?? false ? "true" : "false";
+            RemoteExecutor.Invoke(static arg =>
+            {
+                bool shouldRespectNullableAnnotations = bool.Parse(arg);
+
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.Equal(shouldRespectNullableAnnotations, jsonOptions.RespectNullableAnnotations);
+                Assert.Equal(shouldRespectNullableAnnotations, JsonSerializerOptions.Default.RespectNullableAnnotations);
+
+                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
+                string expectedJson = """{"Property":null}""";
+
+                Assert.Null(value.Property);
+
+                if (shouldRespectNullableAnnotations)
+                {
+                    Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value));
+                    Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(expectedJson));
+                }
+                else
+                {
+                    string json = JsonSerializer.Serialize(value, jsonOptions);
+                    Assert.Equal(expectedJson, json);
+                    value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json, jsonOptions);
+                    Assert.Null(value.Property);
+                }
+
+            }, arg, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_RespectRequiredConstructorParameters_FeatureSwitch(bool? state)
+        {
+            var options = new RemoteInvokeOptions();
+            if (state.HasValue)
+            {
+                options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault"] = state.Value;
+            }
+
+            string arg = state ?? false ? "true" : "false";
+            RemoteExecutor.Invoke(static arg =>
+            {
+                bool shouldRespectRequiredConstructorParameters = bool.Parse(arg);
+
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.Equal(shouldRespectRequiredConstructorParameters, jsonOptions.RespectRequiredConstructorParameters);
+                Assert.Equal(shouldRespectRequiredConstructorParameters, JsonSerializerOptions.Default.RespectRequiredConstructorParameters);
+
+                string json = """{"X":1,"Z":3}""";
+
+                if (shouldRespectRequiredConstructorParameters)
+                {
+                    JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_3D>(json));
+                    Assert.Contains("'Y'", ex.Message);
+                }
+                else
+                {
+                    Point_3D result = JsonSerializer.Deserialize<Point_3D>(json);
+                    Assert.Equal(1, result.X);
+                    Assert.Equal(0, result.Y);
+                    Assert.Equal(3, result.Z);
+                }
+
+            }, arg, options).Dispose();
         }
 
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)
@@ -574,7 +1020,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             else
             {
-                Assert.True(false, "Must be JsonElement");
+                Assert.Fail("Must be JsonElement");
             }
 
             using (var stream = new MemoryStream())
@@ -704,7 +1150,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var newOptions = new JsonSerializerOptions(options);
             Assert.False(newOptions.IsReadOnly);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
 
             // No exception is thrown on mutating the new options instance because it is "unlocked".
             newOptions.ReferenceHandler = ReferenceHandler.Preserve;
@@ -728,10 +1174,10 @@ namespace System.Text.Json.Serialization.Tests
                 string effectiveMaxDepthAsStr = effectiveMaxDepth.ToString();
 
                 JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, options));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
 
                 ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, newOptions));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
             }
 
             // Zero max depth
@@ -746,7 +1192,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = GetFullyPopulatedOptionsInstance();
             var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
@@ -773,7 +1219,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CopyConstructor_NullInput()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
-            Assert.Contains("options", ex.ToString());
+            Assert.Contains("options", ex.Message);
         }
 
         [Fact]
@@ -781,7 +1227,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver };
             JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Default;
-            VerifyOptionsEqual(options, optionsSingleton);
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
         }
 
         [Fact]
@@ -797,6 +1243,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(optionsSingleton.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => optionsSingleton.IncludeFields = true);
             Assert.Throws<InvalidOperationException>(() => optionsSingleton.Converters.Add(new JsonStringEnumConverter()));
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.TypeInfoResolverChain.Add(new DefaultJsonTypeInfoResolver()));
             Assert.Throws<InvalidOperationException>(() => optionsSingleton.AddContext<JsonContext>());
             Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
 
@@ -805,7 +1252,257 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => resolver.Modifiers.Add(ti => { }));
             Assert.Throws<InvalidOperationException>(() => resolver.Modifiers.Insert(0, ti => { }));
 
-            optionsSingleton.MakeReadOnly(); // MakeReadOnly is idempontent.
+            // MakeReadOnly is idempotent.
+            optionsSingleton.MakeReadOnly();
+            optionsSingleton.MakeReadOnly(populateMissingResolver: false);
+            optionsSingleton.MakeReadOnly(populateMissingResolver: true);
+            Assert.Same(resolver, optionsSingleton.TypeInfoResolver);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_MatchesConstructorWithJsonSerializerDefaults()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver
+            };
+
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Web;
+
+            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
+
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_SerializesWithExpectedSettings()
+        {
+            string json = JsonSerializer.Serialize(new { PropertyName = 42 }, JsonSerializerOptions.Web);
+            Assert.Equal("""{"propertyName":42}""", json);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Web, JsonSerializerOptions.Web);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Web;
+            Assert.True(optionsSingleton.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNameCaseInsensitive = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInitialTypeInfoResolversAndExpectedChains))]
+        public static void TypeInfoResolverChain_SetTypeInfoResolver_ReturnsExpectedChain(
+            IJsonTypeInfoResolver? initialResolver,
+            IJsonTypeInfoResolver[] expectedChainValues)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = initialResolver };
+
+            Assert.Equal(expectedChainValues, options.TypeInfoResolverChain);
+
+            // We materialized the resolver chain without mutating it.
+            // This should not have impact on the reported resolver
+            Assert.Same(initialResolver, options.TypeInfoResolver);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInitialTypeInfoResolversAndExpectedChains))]
+        public static void TypeInfoResolverChain_Add_UpdatesTypeInfoResolver(
+            IJsonTypeInfoResolver? initialResolver,
+            IJsonTypeInfoResolver[] expectedChainValues)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = initialResolver };
+            Assert.Equal(expectedChainValues, options.TypeInfoResolverChain);
+            Assert.Same(initialResolver, options.TypeInfoResolver);
+
+            var appendedResolver = new DefaultJsonTypeInfoResolver();
+            options.TypeInfoResolverChain.Add(appendedResolver);
+
+            Assert.Equal(expectedChainValues.Concat(new[] { appendedResolver }), options.TypeInfoResolverChain);
+            Assert.NotSame(initialResolver, options.TypeInfoResolver);
+            Assert.Same(options.TypeInfoResolverChain, options.TypeInfoResolver);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInitialTypeInfoResolversAndExpectedChains))]
+        public static void TypeInfoResolverChain_Clear_UpdatesTypeInfoResolver(
+            IJsonTypeInfoResolver? initialResolver,
+            IJsonTypeInfoResolver[] expectedChainValues)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolver = initialResolver };
+            Assert.Equal(expectedChainValues, options.TypeInfoResolverChain);
+            Assert.Same(initialResolver, options.TypeInfoResolver);
+
+            options.TypeInfoResolverChain.Clear();
+
+            Assert.Empty(options.TypeInfoResolverChain);
+            Assert.Same(options.TypeInfoResolverChain, options.TypeInfoResolver);
+        }
+
+        public static IEnumerable<object[]> GetInitialTypeInfoResolversAndExpectedChains()
+        {
+            yield return WrapArgs(null, Array.Empty<IJsonTypeInfoResolver>());
+
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            yield return WrapArgs(defaultResolver, new[] { defaultResolver });
+            yield return WrapArgs(JsonContext.Default, new[] { JsonContext.Default });
+            yield return WrapArgs(JsonTypeInfoResolver.Combine(), Array.Empty<IJsonTypeInfoResolver>());
+            yield return WrapArgs(
+                JsonTypeInfoResolver.Combine(JsonContext.Default, defaultResolver, null, JsonContext.Default),
+                new IJsonTypeInfoResolver[] { JsonContext.Default, defaultResolver, JsonContext.Default });
+
+            var optionsWithChain = new JsonSerializerOptions { TypeInfoResolverChain = { JsonContext.Default, defaultResolver, JsonContext.Default } };
+            yield return WrapArgs(optionsWithChain.TypeInfoResolver, new IJsonTypeInfoResolver[] { JsonContext.Default, defaultResolver, JsonContext.Default });
+
+            static object[] WrapArgs(IJsonTypeInfoResolver? jsonTypeInfoResolver, IJsonTypeInfoResolver[] expectedChainValues)
+                => new object[] { jsonTypeInfoResolver, expectedChainValues };
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_SetToOtherOptions_UsesCopy()
+        {
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            var originalOptions = new JsonSerializerOptions
+            {
+                TypeInfoResolverChain = { JsonContext.Default, JsonContext.Default, defaultResolver }
+            };
+
+            // The TypeInfoResolver of the original options should be the chain itself
+            Assert.Same(originalOptions.TypeInfoResolver, originalOptions.TypeInfoResolverChain);
+            Assert.Equal(new IJsonTypeInfoResolver[] { JsonContext.Default, JsonContext.Default, defaultResolver }, originalOptions.TypeInfoResolverChain);
+
+            var optionsCopy = new JsonSerializerOptions
+            {
+                TypeInfoResolver = originalOptions.TypeInfoResolver
+            };
+
+            // The new options should preserve the original TypeInfoResolver but use a copy for the chain that it owns
+            Assert.Same(originalOptions.TypeInfoResolver, optionsCopy.TypeInfoResolver);
+            Assert.Equal(new IJsonTypeInfoResolver[] { JsonContext.Default, JsonContext.Default, defaultResolver }, optionsCopy.TypeInfoResolverChain);
+            Assert.NotSame(originalOptions.TypeInfoResolverChain, optionsCopy.TypeInfoResolverChain);
+
+            // Mutating the resolver chain should update the TypeInfoResolver property but not impact the original options
+            var appendedResolver = new DefaultJsonTypeInfoResolver();
+            optionsCopy.TypeInfoResolverChain.Add(appendedResolver);
+
+            Assert.NotSame(originalOptions.TypeInfoResolver, optionsCopy.TypeInfoResolver);
+            Assert.Equal(new IJsonTypeInfoResolver[] { JsonContext.Default, JsonContext.Default, defaultResolver }, originalOptions.TypeInfoResolverChain);
+            Assert.Equal(new IJsonTypeInfoResolver[] { JsonContext.Default, JsonContext.Default, defaultResolver, appendedResolver }, optionsCopy.TypeInfoResolverChain);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_UpdateTypeInfoResolver_ResetsResolverChain()
+        {
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { JsonContext.Default, JsonContext.Default, defaultResolver } };
+            Assert.Equal(new IJsonTypeInfoResolver[] { JsonContext.Default, JsonContext.Default, defaultResolver }, options.TypeInfoResolverChain);
+
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+
+            Assert.Equal(new IJsonTypeInfoResolver[] { options.TypeInfoResolver }, options.TypeInfoResolverChain);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_AppendTypeInfoResolverToChain_ThrowsInvalidOperationException()
+        {
+            var defaultResolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions { TypeInfoResolver = defaultResolver };
+
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolverChain.Add(options.TypeInfoResolver));
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_AppendTypeInfoResolverChainToChain_ThrowsInvalidOperationException()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolverChain = { JsonContext.Default, JsonContext.Default }
+            };
+
+            var castChain = (IJsonTypeInfoResolver)options.TypeInfoResolverChain;
+            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolverChain.Add(castChain));
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_IsSameAsResolver_SettingChainToResolver_PreservesConfiguration()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolverChain = { JsonContext.Default, JsonContext.Default }
+            };
+
+            Assert.Same(options.TypeInfoResolverChain, options.TypeInfoResolver);
+
+            options.TypeInfoResolver = options.TypeInfoResolver;
+
+            Assert.Equal(new[] { JsonContext.Default, JsonContext.Default }, options.TypeInfoResolverChain);
+            Assert.Same(options.TypeInfoResolverChain, options.TypeInfoResolver);
+        }
+
+        [Fact]
+        public static void TypeInfoResolverChain_ResolvesInExpectedOrder()
+        {
+            int resolver1Invocations = 0;
+            int resolver2Invocations = 0;
+            int resolver3Invocations = 0;
+            int resolver4Invocations = 0;
+
+            var resolver1 = new TestResolver((type, options) =>
+            {
+                resolver1Invocations++;
+                return null;
+            });
+
+            var resolver2 = new TestResolver((type, options) =>
+            {
+                resolver2Invocations++;
+                return (type == typeof(int)) ? JsonTypeInfo.CreateJsonTypeInfo(type, options) : null;
+            });
+
+            var resolver3 = new TestResolver((type, options) =>
+            {
+                resolver3Invocations++;
+                return (type == typeof(int) || type == typeof(string)) ? JsonTypeInfo.CreateJsonTypeInfo(type, options) : null;
+            });
+
+            var resolver4 = new TestResolver((type, options) =>
+            {
+                resolver4Invocations++;
+                return (type == typeof(int) || type == typeof(string) || type == typeof(double)) ? JsonTypeInfo.CreateJsonTypeInfo(type, options) : null;
+            });
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolverChain = { resolver1, resolver2, resolver3, resolver4 }
+            };
+
+            options.GetTypeInfo(typeof(int));
+            Assert.Equal(1, resolver1Invocations);
+            Assert.Equal(1, resolver2Invocations);
+            Assert.Equal(0, resolver3Invocations);
+            Assert.Equal(0, resolver4Invocations);
+
+            options.GetTypeInfo(typeof(string));
+            Assert.Equal(2, resolver1Invocations);
+            Assert.Equal(2, resolver2Invocations);
+            Assert.Equal(1, resolver3Invocations);
+            Assert.Equal(0, resolver4Invocations);
+
+            options.GetTypeInfo(typeof(double));
+            Assert.Equal(3, resolver1Invocations);
+            Assert.Equal(3, resolver2Invocations);
+            Assert.Equal(2, resolver3Invocations);
+            Assert.Equal(1, resolver4Invocations);
         }
 
         [Fact]
@@ -814,7 +1511,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             var newOptions = new JsonSerializerOptions(JsonSerializerDefaults.General);
             Assert.False(newOptions.IsReadOnly);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
@@ -855,6 +1552,17 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     property.SetValue(options, 32);
                 }
+                else if (propertyType == typeof(string))
+                {
+                    if (property.Name is nameof(JsonSerializerOptions.NewLine))
+                    {
+                        property.SetValue(options, "\n");
+                    }
+                    else
+                    {
+                        property.SetValue(options, "\t");
+                    }
+                }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
                     options.Converters.Add(new JsonStringEnumConverter());
@@ -867,7 +1575,7 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(JsonNamingPolicy))
                 {
                     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    options.DictionaryKeyPolicy = new SimpleSnakeCasePolicy();
+                    options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
                 }
                 else if (propertyType == typeof(ReferenceHandler))
                 {
@@ -877,12 +1585,17 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
                 }
+                else if (propertyType == typeof(IList<IJsonTypeInfoResolver>))
+                {
+                    // Do nothing -- setting the TypeInfoResolver property should ensure this is populated.
+                }
                 else if (propertyType.IsValueType)
                 {
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                     options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
+                    options.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
                 }
                 else
                 {
@@ -895,72 +1608,12 @@ namespace System.Text.Json.Serialization.Tests
             return options;
         }
 
-        private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
-        {
-            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                Type propertyType = property.PropertyType;
-
-                if (propertyType == typeof(bool))
-                {
-                    if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
-                    {
-                        break; // readonly-ness is not a structural property of JsonSerializerOptions.
-                    }
-
-                    Assert.Equal((bool)property.GetValue(options), (bool)property.GetValue(newOptions));
-                }
-                else if (propertyType == typeof(int))
-                {
-                    Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
-                }
-                else if (propertyType == typeof(IList<JsonConverter>))
-                {
-                    var list1 = (IList<JsonConverter>)property.GetValue(options);
-                    var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
-
-                    Assert.Equal(list1.Count, list2.Count);
-                    for (int i = 0; i < list1.Count; i++)
-                    {
-                        Assert.Same(list1[i], list2[i]);
-                    }
-                }
-                else if (propertyType.IsValueType)
-                {
-                    if (property.Name == nameof(JsonSerializerOptions.ReadCommentHandling))
-                    {
-                        Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.DefaultIgnoreCondition))
-                    {
-                        Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.NumberHandling))
-                    {
-                        Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.UnknownTypeHandling))
-                    {
-                        Assert.Equal(options.UnknownTypeHandling, newOptions.UnknownTypeHandling);
-                    }
-                    else
-                    {
-                        Assert.True(false, $"Public option was added to JsonSerializerOptions but not copied in the copy ctor: {property.Name}");
-                    }
-                }
-                else
-                {
-                    Assert.Same(property.GetValue(options), property.GetValue(newOptions));
-                }
-            }
-        }
-
         [Fact]
         public static void CopyConstructor_IgnoreNullValuesCopied()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
             var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
@@ -1041,9 +1694,12 @@ namespace System.Text.Json.Serialization.Tests
 
             // An unset resolver results in NotSupportedException.
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(type));
+            // And returns false in the Try-method
+            Assert.False(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo));
+            Assert.Null(typeInfo);
 
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
-            JsonTypeInfo typeInfo = options.GetTypeInfo(type);
+            typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
             Assert.False(typeInfo.IsReadOnly);
 
@@ -1052,6 +1708,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(typeInfo2.IsReadOnly);
 
             Assert.NotSame(typeInfo, typeInfo2);
+
+            Assert.True(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo3));
+            Assert.Equal(type, typeInfo3.Type);
+            Assert.False(typeInfo3.IsReadOnly);
+
+            Assert.NotSame(typeInfo, typeInfo3);
 
             options.WriteIndented = true; // can mutate without issue
         }
@@ -1072,6 +1734,9 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Same(typeInfo, typeInfo2);
+
+            Assert.True(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo3));
+            Assert.Same(typeInfo, typeInfo3);
         }
 
         [Fact]
@@ -1119,6 +1784,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentNullException>(() => options.GetTypeInfo(null));
+            Assert.Throws<ArgumentNullException>(() => options.TryGetTypeInfo(null, out JsonTypeInfo? _));
         }
 
         [Fact]
@@ -1171,6 +1837,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentException>(() => options.GetTypeInfo(type));
+            Assert.Throws<ArgumentException>(() => options.TryGetTypeInfo(type, out JsonTypeInfo? _));
         }
 
         [Fact]
@@ -1180,6 +1847,9 @@ namespace System.Text.Json.Serialization.Tests
             options.AddContext<JsonContext>();
 
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(BasicCompany)));
+
+            Assert.False(options.TryGetTypeInfo(typeof(BasicCompany), out JsonTypeInfo? typeInfo));
+            Assert.Null(typeInfo);
         }
 
         [Theory]

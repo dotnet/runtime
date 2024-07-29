@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+
 using Internal.IL;
 using Internal.TypeSystem;
+
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
@@ -13,13 +16,11 @@ namespace ILCompiler
     public class PreinitializationManager
     {
         private readonly bool _supportsLazyCctors;
-        private readonly bool _enableInterpreter;
 
-        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, bool enableInterpreter)
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", throwIfNotFound: false) != null;
-            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider);
-            _enableInterpreter = enableInterpreter;
+            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider, policy, readOnlyPolicy, flowAnnotations);
         }
 
         /// <summary>
@@ -82,10 +83,6 @@ namespace ILCompiler
 
         public bool IsPreinitialized(MetadataType type)
         {
-            // If the cctor interpreter is not enabled, no type is preinitialized.
-            if (!_enableInterpreter)
-                return false;
-
             if (!type.HasStaticConstructor)
                 return false;
 
@@ -102,7 +99,7 @@ namespace ILCompiler
 
         public void LogStatistics(Logger logger)
         {
-            if (!_enableInterpreter)
+            if (_preinitHashTable._policy is TypePreinit.DisabledPreinitializationPolicy)
                 return;
 
             int totalEligibleTypes = 0;
@@ -112,6 +109,10 @@ namespace ILCompiler
             {
                 foreach (var item in LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>.Enumerator.Get(_preinitHashTable))
                 {
+                    // Canonical types are not actual types. They represent the pessimized version of all types that share the form.
+                    if (item.Type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        continue;
+
                     totalEligibleTypes++;
                     if (item.IsPreinitialized)
                     {
@@ -137,11 +138,17 @@ namespace ILCompiler
         {
             private readonly CompilationModuleGroup _compilationGroup;
             private readonly ILProvider _ilProvider;
+            internal readonly TypePreinit.TypePreinitializationPolicy _policy;
+            private readonly ReadOnlyFieldPolicy _readOnlyPolicy;
+            private readonly FlowAnnotations _flowAnnotations;
 
-            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider)
+            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinit.TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations)
             {
                 _compilationGroup = compilationGroup;
                 _ilProvider = ilProvider;
+                _policy = policy;
+                _readOnlyPolicy = readOnlyPolicy;
+                _flowAnnotations = flowAnnotations;
             }
 
             protected override bool CompareKeyToValue(MetadataType key, TypePreinit.PreinitializationInfo value) => key == value.Type;
@@ -151,7 +158,15 @@ namespace ILCompiler
 
             protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
             {
-                return TypePreinit.ScanType(_compilationGroup, _ilProvider, key);
+                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, _readOnlyPolicy, _flowAnnotations, key);
+
+                // We either successfully preinitialized or
+                // the type doesn't have a canonical form or
+                // the policy doesn't allow treating canonical forms of this type as preinitialized
+                Debug.Assert(info.IsPreinitialized ||
+                    (key.ConvertToCanonForm(CanonicalFormKind.Specific) is DefType canonType && (key == canonType || !_policy.CanPreinitializeAllConcreteFormsForCanonForm(canonType))));
+
+                return info;
             }
         }
         private PreinitializationInfoHashtable _preinitHashTable;

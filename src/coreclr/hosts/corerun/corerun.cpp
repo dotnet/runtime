@@ -3,6 +3,7 @@
 
 // Runtime headers
 #include <coreclrhost.h>
+#include <corehost/host_runtime_contract.h>
 
 #include "corerun.hpp"
 #include "dotenv.hpp"
@@ -210,6 +211,35 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "%s\n", line);
 }
 
+size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
+    const char* key,
+    char* value_buffer,
+    size_t value_buffer_size,
+    void* contract_context)
+{
+    configuration* config = static_cast<configuration *>(contract_context);
+
+    if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+    {
+        // Compute the entry assembly name based on the entry assembly full path
+        pal::string_t dir;
+        pal::string_t file;
+        pal::split_path_to_dir_filename(config->entry_assembly_fullpath, dir, file);
+        file = file.substr(0, file.rfind(W('.')));
+
+        pal::string_utf8_t file_utf8 = pal::convert_to_utf8(file.c_str());
+        size_t len = file_utf8.size() + 1;
+        if (value_buffer_size < len)
+            return len;
+
+        ::strncpy(value_buffer, file_utf8.c_str(), len - 1);
+        value_buffer[len - 1] = '\0';
+        return len;
+    }
+
+    return -1;
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -217,7 +247,9 @@ static int run(const configuration& config)
     // Check if debugger attach scenario was requested.
     if (config.wait_to_debug)
         wait_for_debugger();
-
+    
+    config.dotenv_configuration.load_into_current_process();
+    
     string_t exe_path = pal::get_exe_path();
 
     // Determine the managed application's path.
@@ -272,8 +304,6 @@ static int run(const configuration& config)
             return -1;
         }
     }
-
-    config.dotenv_configuration.load_into_current_process();
 
     actions.before_coreclr_load();
 
@@ -338,6 +368,18 @@ static int run(const configuration& config)
         propertyKeys.push_back(str.c_str());
     for (const pal::string_utf8_t& str : user_defined_values_utf8)
         propertyValues.push_back(str.c_str());
+
+    host_runtime_contract host_contract = {
+        sizeof(host_runtime_contract),
+        (void*)&config,
+        &get_runtime_property,
+        nullptr,
+        nullptr };
+    propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
+    std::stringstream ss;
+    ss << "0x" << std::hex << (size_t)(&host_contract);
+    pal::string_utf8_t contract_str = ss.str();
+    propertyValues.push_back(contract_str.c_str());
 
     assert(propertyKeys.size() == propertyValues.size());
     int propertyCount = (int)propertyKeys.size();

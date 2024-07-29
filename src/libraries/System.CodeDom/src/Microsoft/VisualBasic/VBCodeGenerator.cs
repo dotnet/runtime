@@ -765,7 +765,7 @@ namespace Microsoft.VisualBasic
             OutputType(typeRef);
         }
 
-        private string GetArrayPostfix(CodeTypeReference typeRef)
+        private static string GetArrayPostfix(CodeTypeReference typeRef)
         {
             string s = "";
             if (typeRef.ArrayElementType != null)
@@ -865,7 +865,7 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-#if NETCOREAPP
+#if NET
                 if (!typeName.Contains('('))
 #else
                 if (typeName.IndexOf('(') == -1)
@@ -892,7 +892,7 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
-#if NETCOREAPP
+#if NET
                     Output.Write(typeName.AsSpan(0, index + 1));
 #else
                     Output.Write(typeName.Substring(0, index + 1));
@@ -917,7 +917,7 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
-#if NETCOREAPP
+#if NET
                     Output.Write(typeName.AsSpan(index + 1));
 #else
                     Output.Write(typeName.Substring(index + 1));

@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// </param>
         public static partial ECDsa Create(ECParameters parameters)
         {
-            ECDsa ec = new ECDsaImplementation.ECDsaAndroid();
+            var ec = new ECDsaImplementation.ECDsaAndroid();
             ec.ImportParameters(parameters);
             return ec;
         }

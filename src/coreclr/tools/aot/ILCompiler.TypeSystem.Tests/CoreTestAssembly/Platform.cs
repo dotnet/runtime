@@ -60,6 +60,11 @@ namespace System
     public struct RuntimeMethodHandle { }
     public struct RuntimeFieldHandle { }
 
+    public class Type
+    {
+        public static Type GetTypeFromHandle(RuntimeTypeHandle handle) => null;
+    }
+
     public class Attribute { }
     public class AttributeUsageAttribute : Attribute
     {
@@ -151,6 +156,79 @@ namespace System.Runtime.InteropServices
         }
         public int Value { get { return _val; } }
     }
+
+    public sealed class TypeIdentifierAttribute : Attribute
+    {
+        public TypeIdentifierAttribute() { }
+        public TypeIdentifierAttribute(string scope, string identifier)
+        {
+            Scope = scope;
+            Identifier = identifier;
+        }
+
+        public string Scope { get; }
+        public string Identifier { get; }
+    }
+
+    public enum UnmanagedType
+    {
+        Bool = 2,
+        I1 = 3,
+        U1 = 4,
+        I2 = 5,
+        U2 = 6,
+        I4 = 7,
+        U4 = 8,
+        I8 = 9,
+        U8 = 10,
+        R4 = 11,
+        R8 = 12,
+        Currency = 15,
+        BStr = 19,
+        LPStr = 20,
+        LPWStr = 21,
+        LPTStr = 22,
+        ByValTStr = 23,
+        IUnknown = 25,
+        IDispatch = 26,
+        Struct = 27,
+        Interface = 28,
+        SafeArray = 29,
+        ByValArray = 30,
+        SysInt = 31,
+        SysUInt = 32,
+        VBByRefStr = 34,
+        AnsiBStr = 35,
+        TBStr = 36,
+        VariantBool = 37,
+        FunctionPtr = 38,
+        AsAny = 40,
+        LPArray = 42,
+        LPStruct = 43,
+        CustomMarshaler = 44,
+        Error = 45,
+        IInspectable = 46,
+        HString = 47,
+        LPUTF8Str = 48
+    }
+    public sealed class MarshalAsAttribute : Attribute
+    {
+        public MarshalAsAttribute(UnmanagedType unmanagedType) { }
+    }
+
+    public sealed class ComImportAttribute : Attribute
+    {
+    }
+
+    public sealed class ComEventInterfaceAttribute : Attribute
+    {
+        public ComEventInterfaceAttribute(Type SourceInterface, Type EventProvider) { }
+    }
+
+    public sealed class GuidAttribute : Attribute
+    {
+        public GuidAttribute(string guid) { }
+    }
 }
 
 namespace System.Runtime.CompilerServices
@@ -159,9 +237,15 @@ namespace System.Runtime.CompilerServices
     {
     }
 
+    public class CallConvCdecl { }
+    public class CallConvStdcall { }
+    public class CallConvSuppressGCTransition { }
+
     public static class RuntimeFeature
     {
         public const string ByRefFields = nameof(ByRefFields);
+        public const string ByRefLikeGenerics = nameof(ByRefLikeGenerics);
+        public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
     }
 
@@ -181,5 +265,23 @@ namespace System.Runtime.Intrinsics
         // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
         private readonly ulong _00;
         private readonly ulong _01;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential, Size = 32)]
+    public readonly struct Vector256<T>
+        where T : struct
+    {
+        private readonly Vector128<T> _lower;
+        private readonly Vector128<T> _upper;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential, Size = 64)]
+    public readonly struct Vector512<T>
+        where T : struct
+    {
+        private readonly Vector256<T> _lower;
+        private readonly Vector256<T> _upper;
     }
 }

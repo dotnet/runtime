@@ -23,7 +23,9 @@ namespace System
           IEquatable<sbyte>,
           IBinaryInteger<sbyte>,
           IMinMaxValue<sbyte>,
-          ISignedNumber<sbyte>
+          ISignedNumber<sbyte>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<sbyte>
     {
         private readonly sbyte m_value; // Do not rename (binary serialization)
 
@@ -121,106 +123,56 @@ namespace System
             return Number.TryFormatInt32(m_value, 0x000000FF, format, provider, destination, out charsWritten);
         }
 
-        public static sbyte Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt32(m_value, 0x000000FF, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static sbyte Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static sbyte Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static sbyte Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static sbyte Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses a signed byte from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
+        public static sbyte Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
+
         public static sbyte Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, sbyte>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
-        {
-            Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);
-            if (status != Number.ParsingStatus.OK)
-            {
-                Number.ThrowOverflowOrFormatException(status, s, TypeCode.SByte);
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out sbyte result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            // For hex number styles AllowHexSpecifier >> 2 == 0x80 and cancels out MinValue so the check is effectively: (uint)i > byte.MaxValue
-            // For integer styles it's zero and the effective check is (uint)(i - MinValue) > byte.MaxValue
-            if ((uint)(i - MinValue - ((int)(style & NumberStyles.AllowHexSpecifier) >> 2)) > byte.MaxValue)
-            {
-                Number.ThrowOverflowException(TypeCode.SByte);
-            }
-            return (sbyte)i;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out sbyte result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out sbyte result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        public static bool TryParse(ReadOnlySpan<char> s, out sbyte result)
-        {
-            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its 8-bit signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the 8-bit signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out sbyte result) => TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out sbyte result)
-        {
-            // For hex number styles AllowHexSpecifier >> 2 == 0x80 and cancels out MinValue so the check is effectively: (uint)i > byte.MaxValue
-            // For integer styles it's zero and the effective check is (uint)(i - MinValue) > byte.MaxValue
-            if (Number.TryParseInt32(s, style, info, out int i) != Number.ParsingStatus.OK
-                || (uint)(i - MinValue - ((int)(style & NumberStyles.AllowHexSpecifier) >> 2)) > byte.MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (sbyte)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -362,7 +314,7 @@ namespace System
                 // We need to also track if the input data is unsigned
                 isUnsigned |= (sign == 0);
 
-                if (isUnsigned && sbyte.IsNegative(sign))
+                if (isUnsigned && IsNegative(sign))
                 {
                     // When we are unsigned and the most significant bit is set, we are a large positive
                     // and therefore definitely out of range
@@ -373,7 +325,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[..^sizeof(sbyte)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(sbyte)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -382,7 +334,7 @@ namespace System
                         return false;
                     }
 
-                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^sizeof(sbyte)]))
+                    if (isUnsigned == IsNegative((sbyte)source[^sizeof(sbyte)]))
                     {
                         // When the most significant bit of the value being set/clear matches whether we are unsigned
                         // or signed then we are a large positive/negative and therefore definitely out of range
@@ -415,7 +367,7 @@ namespace System
                 // We need to also track if the input data is unsigned
                 isUnsigned |= (sign == 0);
 
-                if (isUnsigned && sbyte.IsNegative(sign))
+                if (isUnsigned && IsNegative(sign))
                 {
                     // When we are unsigned and the most significant bit is set, we are a large positive
                     // and therefore definitely out of range
@@ -426,7 +378,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[sizeof(sbyte)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(sbyte)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -435,7 +387,7 @@ namespace System
                         return false;
                     }
 
-                    if (isUnsigned == sbyte.IsNegative((sbyte)source[sizeof(sbyte) - 1]))
+                    if (isUnsigned == IsNegative((sbyte)source[sizeof(sbyte) - 1]))
                     {
                         // When the most significant bit of the value being set/clear matches whether we are unsigned
                         // or signed then we are a large positive/negative and therefore definitely out of range
@@ -884,6 +836,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static sbyte INumberBase<sbyte>.MinMagnitudeNumber(sbyte x, sbyte y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static sbyte INumberBase<sbyte>.MultiplyAddEstimate(sbyte left, sbyte right, sbyte addend) => (sbyte)((left * right) + addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1379,5 +1334,49 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static sbyte IUnaryPlusOperators<sbyte, sbyte>.operator +(sbyte value) => (sbyte)(+value);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static sbyte Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseBinaryInteger<byte, sbyte>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out sbyte result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static sbyte Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out sbyte result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<sbyte>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<sbyte>.MaxDigitCount => 3; // 127
+
+        static int IBinaryIntegerParseAndFormatInfo<sbyte>.MaxHexDigitCount => 2; // 0x7F
+
+        static sbyte IBinaryIntegerParseAndFormatInfo<sbyte>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<sbyte>.OverflowMessage => SR.Overflow_SByte;
+
+        static bool IBinaryIntegerParseAndFormatInfo<sbyte>.IsGreaterThanAsUnsigned(sbyte left, sbyte right) => (byte)(left) > (byte)(right);
+
+        static sbyte IBinaryIntegerParseAndFormatInfo<sbyte>.MultiplyBy10(sbyte value) => (sbyte)(value * 10);
+
+        static sbyte IBinaryIntegerParseAndFormatInfo<sbyte>.MultiplyBy16(sbyte value) => (sbyte)(value * 16);
     }
 }

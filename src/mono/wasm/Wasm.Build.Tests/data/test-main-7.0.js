@@ -23,6 +23,16 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
+if (is_node) {
+    // the emscripten 3.1.34 stopped handling these when MODULARIZE is enabled
+    process.on('uncaughtException', function(ex) {
+        // ignore UnhandledPromiseRejection exceptions with exit status
+        if (ex !== 'unwind' && (ex.name !== "UnhandledPromiseRejection" || !ex.message.includes('"#<ExitStatus>"'))) {
+          throw ex;
+        }
+      });
+}
+
 if (typeof globalThis.crypto === 'undefined') {
     // **NOTE** this is a simple insecure polyfill for testing purposes only
     // /dev/random doesn't work on js shells, so define our own

@@ -3,7 +3,6 @@ trigger:
   branches:
     include:
       - main
-      - release/*.*
   paths:
     include:
     - '*'
@@ -37,10 +36,13 @@ extends:
             - windows_x64
           jobParameters:
             enableRichCodeNavigation: true
-            richCodeNavigationEnvironment: "production"
             richCodeNavigationLanguage: "csharp"
+            nameSuffix: Libs
             timeoutInMinutes: 240
             buildArgs: -s libs.sfx+libs.oob -allConfigurations
+            preBuildSteps:
+              - script: dotnet.cmd nuget add source -n richnav "https://pkgs.dev.azure.com/azure-public/vside/_packaging/vs-buildservices/nuget/v3/index.json"
+                displayName: Add richnav NuGet feed
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -50,7 +52,10 @@ extends:
             - windows_x64
           jobParameters:
             enableRichCodeNavigation: true
-            nameSuffix: Mono
-            richCodeNavigationEnvironment: "production"
             richCodeNavigationLanguage: "csharp,cpp"
-            buildArgs: -s mono -c debug
+            nameSuffix: Runtimes
+            timeoutInMinutes: 240
+            buildArgs: -s clr+mono
+            preBuildSteps:
+              - script: dotnet.cmd nuget add source -n richnav "https://pkgs.dev.azure.com/azure-public/vside/_packaging/vs-buildservices/nuget/v3/index.json"
+                displayName: Add richnav NuGet feed

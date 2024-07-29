@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
-
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
@@ -52,7 +50,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			return "test";
 		}
 
-		[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 		[UnconditionalSuppressMessage ("Test", "IL2071")]
 		public class RedundantSuppressionOnType
 		{
@@ -64,7 +62,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		public class RedundantSuppressionOnMethod
 		{
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static void Test ()
 			{
@@ -79,7 +77,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				NestedType.TrimmerCompatibleMethod ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public class NestedType
 			{
@@ -98,7 +96,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			}
 
 			public static string TrimmerCompatibleProperty {
-				[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2071")]
 				get {
 					return TrimmerCompatibleMethod ();
@@ -114,7 +112,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				TrimmerCompatibleProperty = "test";
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static string TrimmerCompatibleProperty {
 				get {
@@ -133,7 +131,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				var property = TrimmerCompatibleProperty;
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static string TrimmerCompatibleProperty {
 				get {
@@ -149,7 +147,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				TrimmerCompatibleProperty = "test";
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static string TrimmerCompatibleProperty {
 				set {
@@ -165,7 +163,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				typeof (RedundantSuppressionOnPropertyAccessedByReflection).GetProperty ("TrimmerCompatibleProperty");
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static string TrimmerCompatibleProperty {
 				get {
@@ -187,7 +185,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			}
 
 			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
-				[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 				[UnconditionalSuppressMessage ("Test", "IL2072")]
 				add { TrimmerCompatibleMethod (); }
 				remove { }
@@ -206,7 +204,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			}
 
-			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
 			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
 				add { TrimmerCompatibleMethod (); }
@@ -221,7 +219,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				typeof (RedundantSuppressionOnEventAccessedByReflection).GetEvent ("TrimmerCompatibleEvent");
 			}
 
-			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
 			public static event EventHandler<EventArgs> TrimmerCompatibleEvent {
 				add { TrimmerCompatibleMethod (); }
@@ -229,15 +227,15 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			}
 		}
 
-		[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 		[UnconditionalSuppressMessage ("Test", "IL2072")]
-		[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 		[UnconditionalSuppressMessage ("Test", "IL2071")]
 		public class MultipleRedundantSuppressions
 		{
-			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			public static void Test ()
 			{
@@ -247,7 +245,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		public class RedundantAndUsedSuppressions
 		{
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2071")]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
 			public static void Test ()
@@ -319,7 +317,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				MethodMarkedRUC ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2072", Tool.Trimmer, "")]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
 			[RequiresUnreferencedCode ("Test")]
 			public static void MethodMarkedRUC ()

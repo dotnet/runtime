@@ -39,6 +39,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunGenericHelperNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
         {
+            Debug.Assert(
+                (dictionaryOwner is TypeDesc type && type.HasInstantiation)
+                || (dictionaryOwner is MethodDesc method && method.HasInstantiation));
             _id = helperId;
             _dictionaryOwner = dictionaryOwner;
             _target = target;
@@ -107,13 +110,19 @@ namespace ILCompiler.DependencyAnalysis
                 layout.EnsureEntry(_lookupSignature);
 
                 if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
-                    factory.PreinitializationManager.HasLazyStaticConstructor((TypeDesc)_target))
+                    TriggersLazyStaticConstructor(factory))
                 {
                     // If the type has a lazy static constructor, we also need the non-GC static base
                     // because that's where the class constructor context is.
                     layout.EnsureEntry(factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target));
                 }
             }
+        }
+
+        private bool TriggersLazyStaticConstructor(NodeFactory factory)
+        {
+            TypeDesc type = (TypeDesc)_target;
+            return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -129,13 +138,11 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // If the type has a lazy static constructor, we also need the non-GC static base
                         // because that's where the class constructor context is.
-                        TypeDesc type = (TypeDesc)_target;
-
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             result.Add(
                                 new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase(type).GetTarget(factory, lookupContext),
+                                    factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext),
                                     "Dictionary dependency"));
                         }
                     }
@@ -147,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (createInfo.NeedsVirtualMethodUseTracking)
                         {
                             MethodDesc instantiatedTargetMethod = createInfo.TargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasFixedSlots)
+                            if (!factory.VTable(instantiatedTargetMethod.OwningType).HasKnownVirtualMethodUse)
                             {
                                 result.Add(
                                     new DependencyListEntry(
@@ -217,8 +224,9 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_id == ReadyToRunHelperId.DelegateCtor)
             {
-                MethodDesc targetMethod = ((DelegateCreationInfo)_target).PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+                var delegateCreationInfo = (DelegateCreationInfo)_target;
+                MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
 
             return dependencies;
@@ -250,13 +258,20 @@ namespace ILCompiler.DependencyAnalysis
                 // a template dictionary node.
                 TypeDesc type = (TypeDesc)_target;
                 Debug.Assert(templateLayout != null);
-                if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
+                if (TriggersLazyStaticConstructor(factory))
                 {
                     GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
                     conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
                 }
+            }
+
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                var delegateCreationInfo = (DelegateCreationInfo)_target;
+                MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref conditionalDependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
 
             return conditionalDependencies;
@@ -327,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis
             else
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-            sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
+            sb.Append("__GenericLookupFromDict_"u8).Append(mangledContextName).Append("_"u8);
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
 
@@ -349,7 +364,7 @@ namespace ILCompiler.DependencyAnalysis
             else
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-            sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
+            sb.Append("__GenericLookupFromType_"u8).Append(mangledContextName).Append("_"u8);
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
 

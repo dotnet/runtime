@@ -44,7 +44,7 @@
   .field public int32 x2
 } // end of class MyStruct
 
-.class private auto ansi beforefieldinit MainApp
+.class public auto ansi beforefieldinit MainApp
        extends [mscorlib]System.Object
 {
   .field private static uint8 s

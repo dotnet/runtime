@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
 {
@@ -126,6 +127,32 @@ namespace System.Text.Json.Nodes.Tests
 
                 return manager;
             }
+        }
+
+        internal static void AssertDeepEqual(JsonNode? left, JsonNode? right)
+        {
+            // Assert Reflexivity
+            Assert.True(JsonNode.DeepEquals(left, left));
+            Assert.True(JsonNode.DeepEquals(right, right));
+
+            // Core Assertion
+            Assert.True(JsonNode.DeepEquals(left, right));
+
+            // Assert Symmetry
+            Assert.True(JsonNode.DeepEquals(right, left));
+        }
+
+        internal static void AssertNotDeepEqual(JsonNode? left, JsonNode? right)
+        {
+            // Assert Reflexivity
+            Assert.True(JsonNode.DeepEquals(left, left));
+            Assert.True(JsonNode.DeepEquals(right, right));
+
+            // Core assertion
+            Assert.False(JsonNode.DeepEquals(left, right));
+
+            // Assert Symmetry
+            Assert.False(JsonNode.DeepEquals(right, left));
         }
     }
 }

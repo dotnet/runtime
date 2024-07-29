@@ -248,18 +248,27 @@ namespace System.IO.Pipelines
 
                     while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                     {
-                        FlushResult flushResult = await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
-
-                        if (flushResult.IsCanceled)
+                        if (memory.IsEmpty)
                         {
-                            ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                            // advance tracking only (to account for any boundary scenarios)
+                            consumed = position;
                         }
-
-                        consumed = position;
-
-                        if (flushResult.IsCompleted)
+                        else
                         {
-                            return;
+                            // write and advance
+                            FlushResult flushResult = await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
+
+                            if (flushResult.IsCanceled)
+                            {
+                                ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                            }
+
+                            consumed = position;
+
+                            if (flushResult.IsCompleted)
+                            {
+                                return;
+                            }
                         }
                     }
 

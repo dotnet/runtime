@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RestorePackages>true</RestorePackages>
+    <!-- Needed for JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

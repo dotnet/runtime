@@ -15,7 +15,11 @@ namespace System
 {
     public static partial class AppContext
     {
-        private static Dictionary<string, object?>? s_dataStore;
+        private static Dictionary<string, object?>? s_dataStore
+#if NATIVEAOT
+            = InitializeDataStore()
+#endif
+            ;
         private static Dictionary<string, bool>? s_switches;
         private static string? s_defaultBaseDirectory;
 
@@ -67,14 +71,16 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+#if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
+#endif
         internal static event UnhandledExceptionEventHandler? UnhandledException;
 
+#if MONO
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
+#endif
         internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
-
-        internal static event EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {
@@ -83,8 +89,7 @@ namespace System
             {
                 EventListener.DisposeOnShutdown();
             }
-
-            ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
+            AppDomain.OnProcessExit();
         }
 
         /// <summary>
@@ -136,7 +141,17 @@ namespace System
             }
         }
 
-#if !NATIVEAOT
+#if MONO
+        internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
+        {
+            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
+            s_dataStore = new Dictionary<string, object?>(count);
+            for (int i = 0; i < count; i++)
+            {
+                s_dataStore.Add(new string(pNames[i], 0, (int)pNameLengths[i]), new string(pValues[i], 0, (int)pValueLengths[i]));
+            }
+        }
+#elif !NATIVEAOT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

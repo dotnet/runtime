@@ -1,19 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <!-- This test isn't technically incompatible with GCStress, but it ends up running very slowly
-         in some configurations, e.g. GCStress=3 on Linux/arm32 measured at 15 minutes.
-    -->
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExceptionThrown_V1.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

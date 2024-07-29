@@ -7,12 +7,14 @@
 // OSR method frame is also variable sized.
 
 using System;
+using Xunit;
 
-class DoubleStackAlloc
+public class DoubleStackAlloc
 {
     static int outerSize = 1000;
     static int innerSize = 1;
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         long* result = stackalloc long[outerSize];
         *result = 0;

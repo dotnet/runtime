@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -15,20 +16,13 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
-        //
-        // Caution: There can be and are multiple MethodTable for the "same" type (e.g. int[]). That means
-        // you can't use the raw IntPtr value for comparisons.
-        //
+        private IntPtr _value;
 
-        internal RuntimeTypeHandle(EETypePtr pEEType)
-            : this(pEEType.RawValue)
-        {
-        }
+        internal unsafe RuntimeTypeHandle(MethodTable* pEEType)
+            => _value = (IntPtr)pEEType;
 
         private RuntimeTypeHandle(IntPtr value)
-        {
-            _value = value;
-        }
+            => _value = value;
 
         public override bool Equals(object? obj)
         {
@@ -39,29 +33,18 @@ namespace System
             return false;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             if (IsNull)
                 return 0;
 
-            return this.ToEETypePtr().GetHashCode();
+            return (int)this.ToMethodTable()->HashCode;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(RuntimeTypeHandle handle)
         {
-            if (_value == handle._value)
-            {
-                return true;
-            }
-            else if (this.IsNull || handle.IsNull)
-            {
-                return false;
-            }
-            else
-            {
-                return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
-            }
+            return _value == handle._value;
         }
 
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
@@ -107,15 +90,17 @@ namespace System
             return type.Module.ModuleHandle;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal EETypePtr ToEETypePtr()
+        internal MethodTable* ToMethodTable()
         {
-            return new EETypePtr(_value);
+            return (MethodTable*)_value;
         }
 
         internal bool IsNull
@@ -125,45 +110,5 @@ namespace System
                 return _value == new IntPtr(0);
             }
         }
-
-        // Last resort string for Type.ToString() when no metadata around.
-        internal string LastResortToString
-        {
-            get
-            {
-                string s;
-                EETypePtr eeType = this.ToEETypePtr();
-                IntPtr rawEEType = eeType.RawValue;
-                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromEEType(rawEEType);
-                if (moduleBase != IntPtr.Zero)
-                {
-                    uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());
-                    s = "EETypeRva:0x" + rva.LowLevelToString();
-                }
-                else
-                {
-                    s = "EETypePointer:0x" + rawEEType.LowLevelToString();
-                }
-
-                ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
-                if (callbacks != null)
-                {
-                    string penultimateLastResortString = callbacks.GetBetterDiagnosticInfoIfAvailable(this);
-                    if (penultimateLastResortString != null)
-                        s += "(" + penultimateLastResortString + ")";
-                }
-                return s;
-            }
-        }
-
-        internal IntPtr RawValue
-        {
-            get
-            {
-                return _value;
-            }
-        }
-
-        private IntPtr _value;
     }
 }

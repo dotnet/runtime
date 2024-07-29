@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 // A class that provides a simple, lightweight implementation of thread-local lazy-initialization, where a value is initialized once per accessing
 // thread; this provides an alternative to using a ThreadStatic static variable and having
@@ -23,7 +24,7 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [DebuggerTypeProxy(typeof(SystemThreading_ThreadLocalDebugView<>))]
-    [DebuggerDisplay("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
+    [DebuggerDisplay("IsValueCreated = {IsValueCreated}, Value = {ValueForDebugDisplay}, Count = {ValuesCountForDebugDisplay}")]
     public class ThreadLocal<T> : IDisposable
     {
         // a delegate that returns the created value, if null the created value will be default(T)
@@ -50,8 +51,11 @@ namespace System.Threading
         // when the instance is disposed.
         private volatile bool _initialized;
 
-        // IdManager assigns and reuses slot IDs. Additionally, the object is also used as a global lock.
+        // IdManager assigns and reuses slot IDs.
         private static readonly IdManager s_idManager = new IdManager();
+
+        // Global Lock for the IdManager.
+        private static readonly Lock s_idManagerLock = new Lock();
 
         // A linked list of all values associated with this ThreadLocal<T> instance.
         // We create a dummy head node. That allows us to remove any (non-dummy)  node without having to locate the m_linkedSlot field.
@@ -61,7 +65,7 @@ namespace System.Threading
         private bool _trackAllValues;
 
         /// <summary>
-        /// Initializes the <see cref="System.Threading.ThreadLocal{T}"/> instance.
+        /// Initializes the <see cref="ThreadLocal{T}"/> instance.
         /// </summary>
         public ThreadLocal()
         {
@@ -69,7 +73,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes the <see cref="System.Threading.ThreadLocal{T}"/> instance.
+        /// Initializes the <see cref="ThreadLocal{T}"/> instance.
         /// </summary>
         /// <param name="trackAllValues">Whether to track all values set on the instance and expose them through the Values property.</param>
         public ThreadLocal(bool trackAllValues)
@@ -79,15 +83,15 @@ namespace System.Threading
 
 
         /// <summary>
-        /// Initializes the <see cref="System.Threading.ThreadLocal{T}"/> instance with the
+        /// Initializes the <see cref="ThreadLocal{T}"/> instance with the
         /// specified <paramref name="valueFactory"/> function.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> invoked to produce a lazily-initialized value when
+        /// The <see cref="Func{T}"/> invoked to produce a lazily-initialized value when
         /// an attempt is made to retrieve <see cref="Value"/> without it having been previously initialized.
         /// </param>
-        /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="valueFactory"/> is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
         public ThreadLocal(Func<T> valueFactory)
         {
@@ -97,16 +101,16 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes the <see cref="System.Threading.ThreadLocal{T}"/> instance with the
+        /// Initializes the <see cref="ThreadLocal{T}"/> instance with the
         /// specified <paramref name="valueFactory"/> function.
         /// </summary>
         /// <param name="valueFactory">
-        /// The <see cref="System.Func{T}"/> invoked to produce a lazily-initialized value when
+        /// The <see cref="Func{T}"/> invoked to produce a lazily-initialized value when
         /// an attempt is made to retrieve <see cref="Value"/> without it having been previously initialized.
         /// </param>
         /// <param name="trackAllValues">Whether to track all values set on the instance and expose them via the Values property.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="valueFactory"/> is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
         public ThreadLocal(Func<T> valueFactory, bool trackAllValues)
         {
@@ -121,7 +125,7 @@ namespace System.Threading
             _trackAllValues = trackAllValues;
 
             // Assign the ID and mark the instance as initialized.
-             _idComplement = ~s_idManager.GetId(trackAllValues);
+            _idComplement = ~s_idManager.GetId(trackAllValues);
 
             // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
             // occurred in the constructor.)
@@ -129,7 +133,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Releases the resources used by this <see cref="System.Threading.ThreadLocal{T}" /> instance.
+        /// Releases the resources used by this <see cref="ThreadLocal{T}" /> instance.
         /// </summary>
         ~ThreadLocal()
         {
@@ -140,10 +144,10 @@ namespace System.Threading
         #region IDisposable Members
 
         /// <summary>
-        /// Releases the resources used by this <see cref="System.Threading.ThreadLocal{T}" /> instance.
+        /// Releases the resources used by this <see cref="ThreadLocal{T}" /> instance.
         /// </summary>
         /// <remarks>
-        /// Unlike most of the members of <see cref="System.Threading.ThreadLocal{T}"/>, this method is not thread-safe.
+        /// Unlike most of the members of <see cref="ThreadLocal{T}"/>, this method is not thread-safe.
         /// </remarks>
         public void Dispose()
         {
@@ -152,19 +156,19 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Releases the resources used by this <see cref="System.Threading.ThreadLocal{T}" /> instance.
+        /// Releases the resources used by this <see cref="ThreadLocal{T}" /> instance.
         /// </summary>
         /// <param name="disposing">
         /// A Boolean value that indicates whether this method is being called due to a call to <see cref="Dispose()"/>.
         /// </param>
         /// <remarks>
-        /// Unlike most of the members of <see cref="System.Threading.ThreadLocal{T}"/>, this method is not thread-safe.
+        /// Unlike most of the members of <see cref="ThreadLocal{T}"/>, this method is not thread-safe.
         /// </remarks>
         protected virtual void Dispose(bool disposing)
         {
             int id;
 
-            lock (s_idManager)
+            lock (s_idManagerLock)
             {
                 id = ~_idComplement;
                 _idComplement = 0;
@@ -206,13 +210,13 @@ namespace System.Threading
 
         /// <summary>Creates and returns a string representation of this instance for the current thread.</summary>
         /// <returns>The result of calling <see cref="object.ToString"/> on the <see cref="Value"/>.</returns>
-        /// <exception cref="System.NullReferenceException">
-        /// The <see cref="Value"/> for the current thread is a null reference (Nothing in Visual Basic).
+        /// <exception cref="NullReferenceException">
+        /// The <see cref="Value"/> for the current thread is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The initialization function referenced <see cref="Value"/> in an improper manner.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">
+        /// <exception cref="ObjectDisposedException">
         /// The <see cref="ThreadLocal{T}"/> instance has been disposed.
         /// </exception>
         /// <remarks>
@@ -227,10 +231,10 @@ namespace System.Threading
         /// <summary>
         /// Gets or sets the value of this instance for the current thread.
         /// </summary>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The initialization function referenced <see cref="Value"/> in an improper manner.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">
+        /// <exception cref="ObjectDisposedException">
         /// The <see cref="ThreadLocal{T}"/> instance has been disposed.
         /// </exception>
         /// <remarks>
@@ -383,7 +387,7 @@ namespace System.Threading
             var linkedSlot = new LinkedSlot(slotArray);
 
             // Insert the LinkedSlot into the linked list maintained by this ThreadLocal<> instance and into the slot array
-            lock (s_idManager)
+            lock (s_idManagerLock)
             {
                 // Check that the instance has not been disposed. It is important to check this under a lock, since
                 // Dispose also executes under a lock.
@@ -414,7 +418,7 @@ namespace System.Threading
         /// <summary>
         /// Gets a list for all of the values currently stored by all of the threads that have accessed this instance.
         /// </summary>
-        /// <exception cref="System.ObjectDisposedException">
+        /// <exception cref="ObjectDisposedException">
         /// The <see cref="ThreadLocal{T}"/> instance has been disposed.
         /// </exception>
         public IList<T> Values
@@ -471,7 +475,7 @@ namespace System.Threading
         /// <summary>
         /// Gets whether <see cref="Value"/> is initialized on the current thread.
         /// </summary>
-        /// <exception cref="System.ObjectDisposedException">
+        /// <exception cref="ObjectDisposedException">
         /// The <see cref="ThreadLocal{T}"/> instance has been disposed.
         /// </exception>
         public bool IsValueCreated
@@ -524,7 +528,7 @@ namespace System.Threading
             // Dispose could use a stale SlotArray reference and clear out a slot in the old array only, while
             // the value continues to be referenced from the new (larger) array.
             //
-            lock (s_idManager)
+            lock (s_idManagerLock)
             {
                 for (int i = 0; i < table.Length; i++)
                 {
@@ -552,40 +556,15 @@ namespace System.Threading
             }
             Debug.Assert(minSize > 0);
 
-            //
-            // Round up the size to the next power of 2
-            //
-            // The algorithm takes three steps:
-            // input -> subtract one -> propagate 1-bits to the right -> add one
-            //
-            // Let's take a look at the 3 steps in both interesting cases: where the input
-            // is (Example 1) and isn't (Example 2) a power of 2.
-            //
-            // Example 1: 100000 -> 011111 -> 011111 -> 100000
-            // Example 2: 011010 -> 011001 -> 011111 -> 100000
-            //
-            int newSize = minSize;
-
-            // Step 1: Decrement
-            newSize--;
-
-            // Step 2: Propagate 1-bits to the right.
-            newSize |= newSize >> 1;
-            newSize |= newSize >> 2;
-            newSize |= newSize >> 4;
-            newSize |= newSize >> 8;
-            newSize |= newSize >> 16;
-
-            // Step 3: Increment
-            newSize++;
+            uint newSize = BitOperations.RoundUpToPowerOf2((uint)minSize);
 
             // Don't set newSize to more than Array.MaxArrayLength
-            if ((uint)newSize > Array.MaxLength)
+            if (newSize > Array.MaxLength)
             {
-                newSize = Array.MaxLength;
+                newSize = (uint)Array.MaxLength;
             }
 
-            return newSize;
+            return (int)newSize;
         }
 
         /// <summary>
@@ -638,13 +617,15 @@ namespace System.Threading
             // Stores IDs that are used, and if each ID tracksAllValues or not.
             private readonly Dictionary<int, bool> _usedIdToTracksAllValuesMap = new Dictionary<int, bool>();
 
-            // Stores IDs that were previously used and are now free to reuse. Additionally, the object is also used as a lock
-            // for the IdManager.
+            // Stores IDs that were previously used and are now free to reuse.
             private readonly List<int> _freeIds = new List<int>();
+
+            // Lock for the IdManager.
+            private readonly Lock _freeIdsLock = new Lock();
 
             internal int GetId(bool trackAllValues)
             {
-                lock (_freeIds)
+                lock (_freeIdsLock)
                 {
                     int availableId;
                     int freeIdCount = _freeIds.Count;
@@ -682,7 +663,7 @@ namespace System.Threading
             // Identify if an allocated id tracks all values or not
             internal bool IdTracksAllValues(int id)
             {
-                lock (_freeIds)
+                lock (_freeIdsLock)
                 {
                     return _usedIdToTracksAllValuesMap.TryGetValue(id, out bool tracksAllValues) && tracksAllValues;
                 }
@@ -693,7 +674,7 @@ namespace System.Threading
             // Return an ID to the pool
             internal void ReturnId(int id, bool idTracksAllValues)
             {
-                lock (_freeIds)
+                lock (_freeIdsLock)
                 {
                     if (!idTracksAllValues)
                         _idsThatDoNotTrackAllValues--;
@@ -752,7 +733,7 @@ namespace System.Threading
                     {
                         // Remove the LinkedSlot from the linked list. Once the FinalizationHelper is done, all back-references to
                         // the table will be have been removed, and so the table can get GC'd.
-                        lock (s_idManager)
+                        lock (s_idManagerLock)
                         {
                             // If the slot wasn't disposed between reading it above and entering the lock
                             // decrement idsThatDoNotTrackAllValuesCountRemaining

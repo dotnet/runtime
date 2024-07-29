@@ -1,0 +1,117 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_CryptographyException" xml:space="preserve">
+    <value>Error occurred during a cryptographic operation.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_KOut_Too_Large" xml:space="preserve">
+    <value>The number of bytes requested is too large. The number of bytes produced by SP800108HmacCounterKdf cannot exceed 536,870,911 bytes.</value>
+  </data>
+  <data name="Argument_EmptyString" xml:space="preserve">
+    <value>The value cannot be an empty string.</value>
+  </data>
+  <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
+    <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
+  </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_Pfx_BadPassword" xml:space="preserve">
+    <value>The certificate data cannot be read with the provided password, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_Pfx_NoCertificates" xml:space="preserve">
+    <value>The provided PFX data contains no certificates.</value>
+  </data>
+  <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
+    <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
+    <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
+  </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitExceeded" xml:space="preserve">
+    <value>The PKCS#12/PFX violated the '{0}' limit.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitsReadOnly" xml:space="preserve">
+    <value>This Pkcs12LoaderLimits object has been made read-only and can no longer be modified.</value>
+  </data>
+</root>

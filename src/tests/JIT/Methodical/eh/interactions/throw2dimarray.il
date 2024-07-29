@@ -18,7 +18,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly 'throw2dimarray'
+.assembly ASSEMBLY_NAME
 {
   .ver 0:0:0:0
 }

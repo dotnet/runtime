@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
 using Internal.ReadyToRunConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -30,6 +31,7 @@ namespace ILCompiler
         public IEnumerable<ModuleDesc> CrossModuleInlineable;
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
+        public InstructionSetSupport InstructionSetSupport;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -64,9 +66,11 @@ namespace ILCompiler
         private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
+        private InstructionSetSupport _instructionSetSupport;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
+            _instructionSetSupport = config.InstructionSetSupport;
             _compilationModuleSet = new HashSet<EcmaModule>(config.CompilationModuleSet);
             _isCompositeBuildMode = config.IsCompositeBuildMode;
             _isInputBubble = config.IsInputBubble;
@@ -359,8 +363,7 @@ namespace ILCompiler
 
         public sealed override bool VersionsWithType(TypeDesc typeDesc)
         {
-            return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
-                _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
+            return _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
         }
 
         public bool CrossModuleInlineableModule(ModuleDesc module)
@@ -408,6 +411,12 @@ namespace ILCompiler
             // and if the callee is either in the same version bubble or is marked as non-versionable.
             bool canInline = (VersionsWithMethodBody(callerMethod) || CrossModuleInlineable(callerMethod)) &&
                 (VersionsWithMethodBody(calleeMethod) || CrossModuleInlineable(calleeMethod) || IsNonVersionableWithILTokensThatDoNotNeedTranslation(calleeMethod));
+
+            if (canInline)
+            {
+                if (CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(_instructionSetSupport, calleeMethod))
+                    canInline = false;
+            }
 
             return canInline;
         }
@@ -745,6 +754,16 @@ namespace ILCompiler
 
         private bool ComputeTypeVersionsWithCode(TypeDesc type)
         {
+            if (type.IsParameterizedType)
+            {
+                return VersionsWithType(type.GetParameterType());
+            }
+
+            if (!(type.GetTypeDefinition() is EcmaType))
+            {
+                return false;
+            }
+            
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return true;
 
@@ -841,7 +860,7 @@ namespace ILCompiler
                 return true;
             }
 
-            Debug.Assert(false, "Unhandled form of type in VersionsWithTypeReference");
+            Debug.Fail("Unhandled form of type in VersionsWithTypeReference");
             return false;
         }
 
@@ -899,19 +918,7 @@ namespace ILCompiler
 
             static bool ComputeInstantiationTypeVersionsWithCode(Func<TypeDesc, bool> versionsWithTypePredicate, TypeDesc type)
             {
-                if (type == type.Context.CanonType)
-                    return true;
-
-                if (versionsWithTypePredicate(type))
-                    return true;
-
-                if (type.IsArray)
-                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
-
-                if (type.IsPointer)
-                    return ComputeInstantiationTypeVersionsWithCode(versionsWithTypePredicate, type.GetParameterType());
-
-                return false;
+                return type == type.Context.CanonType || versionsWithTypePredicate(type);
             }
         }
 

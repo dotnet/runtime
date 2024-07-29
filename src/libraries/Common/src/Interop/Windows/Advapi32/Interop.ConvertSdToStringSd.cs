@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertSecurityDescriptorToStringSecurityDescriptorW",
             SetLastError = true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool ConvertSdToStringSd(
             byte[] securityDescriptor,
             /* DWORD */ uint requestedRevision,

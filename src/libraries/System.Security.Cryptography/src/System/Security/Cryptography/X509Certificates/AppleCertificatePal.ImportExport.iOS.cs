@@ -4,8 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Asn1.Pkcs12;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -22,7 +22,9 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                         {
-                            PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                            // Permit trailing data after the PKCS12.
+                            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+                            PfxAsn.Decode(ref reader, manager.Memory, out _);
                         }
 
                         return true;
@@ -91,11 +93,10 @@ namespace System.Security.Cryptography.X509Certificates
             ReadOnlySpan<byte> rawData,
             X509ContentType contentType,
             SafePasswordHandle password,
+            bool readingFromFile,
             X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
-
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (contentType == X509ContentType.Pkcs7)
             {
@@ -106,17 +107,20 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                if ((keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable)
+                try
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_ExportableNotSupported);
+                    return (AppleCertificatePal)X509CertificateLoader.LoadPkcs12Pal(
+                        rawData,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(readingFromFile, password));
                 }
-
-                if ((keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet)
+                catch (Pkcs12LoadLimitExceededException e)
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
                 }
-
-                return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 
             SafeSecIdentityHandle identityHandle;
@@ -144,6 +148,15 @@ namespace System.Security.Cryptography.X509Certificates
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ICertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
+            X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             ICertificatePal? result = null;
@@ -151,14 +164,11 @@ namespace System.Security.Cryptography.X509Certificates
                 rawData,
                 (derData, contentType) =>
                 {
-                    result = FromDerBlob(derData, contentType, password, keyStorageFlags);
+                    result = FromDerBlob(derData, contentType, password, readingFromFile, keyStorageFlags);
                     return false;
                 });
 
-            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
+            return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, readingFromFile, keyStorageFlags);
         }
-
-        // No temporary keychain on iOS
-        partial void DisposeTempKeychain();
     }
 }

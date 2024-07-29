@@ -19,7 +19,6 @@
 #include "holder.h"
 #include "bundle.h"
 #include "strongnameinternal.h"
-#include "strongnameholders.h"
 
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
@@ -27,21 +26,6 @@
 
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
-
-static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    StackSString name;
-    pSpec->GetDisplayName(0, name);
-    EEFileLoadException::Throw(name, hr);
-}
 
 HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
@@ -393,16 +377,14 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
             }
             else
             {
-                DWORD cbToken = 0;
-                StrongNameBufferHolder<BYTE> pbToken;
+                StrongNameToken strongNameToken;
 
                 // Try to get the strong name
                 IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
                     m_cbPublicKeyOrToken,
-                    &pbToken,
-                    &cbToken));
+                    &strongNameToken));
 
-                assemblyIdentity.m_publicKeyOrTokenBLOB.Set(pbToken, cbToken);
+                assemblyIdentity.m_publicKeyOrTokenBLOB.Set(strongNameToken.m_token, StrongNameToken::SIZEOF_TOKEN);
             }
         }
         else

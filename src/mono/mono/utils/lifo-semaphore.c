@@ -1,4 +1,11 @@
+#include <config.h>
+#include <glib.h>
 #include <mono/utils/lifo-semaphore.h>
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <emscripten/eventloop.h>
+#include <emscripten/threading.h>
+#endif
 
 LifoSemaphore *
 mono_lifo_semaphore_init (void)

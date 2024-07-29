@@ -23,7 +23,9 @@ namespace System
           IEquatable<short>,
           IBinaryInteger<short>,
           IMinMaxValue<short>,
-          ISignedNumber<short>
+          ISignedNumber<short>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<short>
     {
         private readonly short m_value; // Do not rename (binary serialization)
 
@@ -118,102 +120,56 @@ namespace System
             return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, destination, out charsWritten);
         }
 
-        public static short Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt32(m_value, 0x0000FFFF, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static short Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static short Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static short Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static short Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
+
+        public static short Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static short Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static short Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, short>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static short Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
-        {
-            Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);
-            if (status != Number.ParsingStatus.OK)
-            {
-                Number.ThrowOverflowOrFormatException(status, s, TypeCode.Int16);
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out short result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            // For hex number styles AllowHexSpecifier << 6 == 0x8000 and cancels out MinValue so the check is effectively: (uint)i > ushort.MaxValue
-            // For integer styles it's zero and the effective check is (uint)(i - MinValue) > ushort.MaxValue
-            if ((uint)(i - MinValue - ((int)(style & NumberStyles.AllowHexSpecifier) << 6)) > ushort.MaxValue)
-            {
-                Number.ThrowOverflowException(TypeCode.Int16);
-            }
-            return (short)i;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out short result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out short result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        public static bool TryParse(ReadOnlySpan<char> s, out short result)
-        {
-            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its 16-bit signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the 16-bit signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out short result) => TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out short result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out short result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out short result)
-        {
-            // For hex number styles AllowHexSpecifier << 6 == 0x8000 and cancels out MinValue so the check is effectively: (uint)i > ushort.MaxValue
-            // For integer styles it's zero and the effective check is (uint)(i - MinValue) > ushort.MaxValue
-            if (Number.TryParseInt32(s, style, info, out int i) != Number.ParsingStatus.OK
-                || (uint)(i - MinValue - ((int)(style & NumberStyles.AllowHexSpecifier) << 6)) > ushort.MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (short)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -366,7 +322,7 @@ namespace System
 
                 if (source.Length > sizeof(short))
                 {
-                    if (source[..^sizeof(short)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(short)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -441,7 +397,7 @@ namespace System
 
                 if (source.Length > sizeof(short))
                 {
-                    if (source[sizeof(short)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(short)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -919,6 +875,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static short INumberBase<short>.MinMagnitudeNumber(short x, short y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static short INumberBase<short>.MultiplyAddEstimate(short left, short right, short addend) => (short)((left * right) + addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1414,5 +1373,49 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static short IUnaryPlusOperators<short, short>.operator +(short value) => (short)(+value);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static short Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseBinaryInteger<byte, short>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out short result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static short Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out short result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<short>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<short>.MaxDigitCount => 5; // 32_767
+
+        static int IBinaryIntegerParseAndFormatInfo<short>.MaxHexDigitCount => 4; // 0x7FFF
+
+        static short IBinaryIntegerParseAndFormatInfo<short>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<short>.OverflowMessage => SR.Overflow_Int16;
+
+        static bool IBinaryIntegerParseAndFormatInfo<short>.IsGreaterThanAsUnsigned(short left, short right) => (ushort)(left) > (ushort)(right);
+
+        static short IBinaryIntegerParseAndFormatInfo<short>.MultiplyBy10(short value) => (short)(value * 10);
+
+        static short IBinaryIntegerParseAndFormatInfo<short>.MultiplyBy16(short value) => (short)(value * 16);
     }
 }

@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     enum LongEnum : long
     {
@@ -25,7 +26,8 @@ class Program
         return s;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (Test(LongEnum.Option0) == "Option0") ? 100 : 1;
     }

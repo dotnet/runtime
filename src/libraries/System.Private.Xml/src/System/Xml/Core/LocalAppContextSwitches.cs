@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using SwitchesHelpers = System.LocalAppContextSwitches;
 
-namespace System
+namespace System.Xml
 {
-    internal static partial class LocalAppContextSwitches
+    internal static class LocalAppContextSwitches
     {
         private static int s_dontThrowOnInvalidSurrogatePairs;
         public static bool DontThrowOnInvalidSurrogatePairs
@@ -13,7 +14,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return GetCachedSwitchValue("Switch.System.Xml.DontThrowOnInvalidSurrogatePairs", ref s_dontThrowOnInvalidSurrogatePairs);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.DontThrowOnInvalidSurrogatePairs", ref s_dontThrowOnInvalidSurrogatePairs);
             }
         }
 
@@ -23,7 +24,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequencess", ref s_ignoreEmptyKeySequences);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequences", ref s_ignoreEmptyKeySequences);
             }
         }
 
@@ -33,7 +34,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return GetCachedSwitchValue("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", ref s_ignoreKindInUtcTimeSerialization);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", ref s_ignoreKindInUtcTimeSerialization);
             }
         }
 
@@ -43,7 +44,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return GetCachedSwitchValue("Switch.System.Xml.LimitXPathComplexity", ref s_limitXPathComplexity);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.LimitXPathComplexity", ref s_limitXPathComplexity);
             }
         }
 
@@ -53,7 +54,17 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return GetCachedSwitchValue("Switch.System.Xml.AllowDefaultResolver", ref s_allowDefaultResolver);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.AllowDefaultResolver", ref s_allowDefaultResolver);
+            }
+        }
+
+        private static int s_isNetworkingEnabledByDefault;
+        public static bool IsNetworkingEnabledByDefault
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
             }
         }
     }

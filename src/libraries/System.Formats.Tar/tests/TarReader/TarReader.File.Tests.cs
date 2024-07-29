@@ -271,12 +271,21 @@ namespace System.Formats.Tar.Tests
         [InlineData("invalid-go17")] // Many octal fields are all zero chars
         [InlineData("issue11169")] // Checksum with null in the middle
         [InlineData("issue10968")] // Garbage chars
-        [InlineData("writer-big")] // The size field contains an euro char
         public void Throw_ArchivesWithRandomChars(string testCaseName)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Throw_ArchiveIsShort()
+        {
+            // writer-big has a header for a 16G file but not its contents.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
+            using TarReader reader = new TarReader(archiveStream);
+            // MemoryStream throws when we try to change its Position past its Length.
+            Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
         }
 
         [Fact]
@@ -331,30 +340,6 @@ namespace System.Formats.Tar.Tests
             // The extended attribute 'size' has the value 17179869184
             // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
             Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
-        }
-
-        [Theory]
-        [InlineData("key", "value")]
-        [InlineData("key    ", "value    ")]
-        [InlineData("    key", "    value")]
-        [InlineData("    key   ", "    value    ")]
-        [InlineData("    key spaced   ", "    value spaced    ")]
-        [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
-        public void PaxExtendedAttribute_Roundtrips(string key, string value)
-        {
-            var stream = new MemoryStream();
-            using (var writer = new TarWriter(stream, leaveOpen: true))
-            {
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "entryName", new Dictionary<string, string>() { { key, value } }));
-            }
-
-            stream.Position = 0;
-            using (var reader = new TarReader(stream))
-            {
-                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
-                Assert.Equal(5, entry.ExtendedAttributes.Count);
-                Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
-            }
         }
 
         private static void VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData)

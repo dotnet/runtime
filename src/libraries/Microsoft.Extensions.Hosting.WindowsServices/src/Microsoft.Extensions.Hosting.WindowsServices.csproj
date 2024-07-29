@@ -4,15 +4,11 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs"
-             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
@@ -23,6 +19,11 @@
              Link="Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>

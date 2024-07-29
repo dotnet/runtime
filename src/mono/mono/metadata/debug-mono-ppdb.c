@@ -30,12 +30,8 @@
 #include <mono/utils/mono-logger-internals.h>
 
 #ifndef DISABLE_EMBEDDED_PDB
-#ifdef INTERNAL_ZLIB
-#include <external/zlib/zlib.h>
-#else
 #include <zlib.h>
-#endif
-#endif
+#endif // DISABLE_EMBEDDED_PDB
 
 #include "debug-mono-ppdb.h"
 
@@ -60,19 +56,20 @@ enum {
 	MONO_HAS_CUSTOM_DEBUG_MASK = 0x1f
 };
 
-static gboolean
-get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
-				   int *ppdb_uncompressed_size, int *ppdb_compressed_size)
+gboolean
+mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
+				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, GArray *pdb_checksum_hash_type, GArray *pdb_checksum)
 {
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory debug_dir;
 	gboolean guid_found = FALSE;
 	guint8 *data;
-
+	if (!image || !image->image_info)
+		return FALSE;
 	*ppdb_data = NULL;
 
 	debug_dir_entry = (MonoPEDirEntry *) &image->image_info->cli_header.datadir.pe_debug;
-	if (!debug_dir_entry->size)
+	if (!debug_dir_entry || !debug_dir_entry->size)
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
@@ -87,6 +84,15 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 		debug_dir.address         = read32(data + 20);
 		debug_dir.pointer         = read32(data + 24);
 
+		if (pdb_checksum_hash_type && pdb_checksum && debug_dir.type == DEBUG_DIR_PDB_CHECKSUM)
+		{
+			data  = (guint8 *) (image->raw_data + debug_dir.pointer);
+			char* alg_name = (char*)data;
+			guint8*	checksum = (guint8 *) (data + strlen(alg_name)+ 1);
+			g_array_append_val (pdb_checksum_hash_type, alg_name);
+			g_array_append_val (pdb_checksum, checksum);
+		}
+
 		if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
 			/* This is a 'CODEVIEW' debug directory */
 			CodeviewDebugDirectory dir;
@@ -96,6 +102,8 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 			if (dir.signature == 0x53445352) {
 				memcpy (out_guid, data + 4, 16);
 				*out_age = read32(data + 20);
+				if (pdb_path)
+					*pdb_path = (char*) data + 24;
 				*out_timestamp = debug_dir.time_date_stamp;
 				guid_found = TRUE;
 			}
@@ -113,6 +121,13 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 		}
 	}
 	return guid_found;
+}
+
+static gboolean
+get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
+				   int *ppdb_uncompressed_size, int *ppdb_compressed_size)
+{
+	return mono_get_pe_debug_info_full (image, out_guid, out_age, out_timestamp, ppdb_data, ppdb_uncompressed_size, ppdb_compressed_size, NULL, NULL, NULL);
 }
 
 static void
@@ -390,7 +405,10 @@ mono_ppdb_lookup_location_internal (MonoImage *image, int idx, uint32_t offset, 
 		if (!first && delta_il == 0) {
 			/* document-record */
 			docidx = mono_metadata_decode_value (ptr, &ptr);
-			docname = get_docname (ppdb, image, docidx);
+			// check the current iloffset to ensure that we do not update docname after the target
+			// offset has been reached (the updated docname will be for the next sequence point)
+			if (iloffset < offset)
+				docname = get_docname (ppdb, image, docidx);
 			continue;
 		}
 		if (!first && iloffset + delta_il > offset)
@@ -739,20 +757,11 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 
-/*
-* We use this to pass context information to the row locator
-*/
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} locator_t;
-
+// FIXME: This duplicates table_locator from metadata.c
 static int
 table_locator (const void *a, const void *b)
 {
-	locator_t *loc = (locator_t *)a;
+	mono_locator_t *loc = (mono_locator_t *)a;
 	const char *bb = (const char *)b;
 	guint32 table_index = GPTRDIFF_TO_UINT32 ((bb - loc->t->base) / loc->t->row_size);
 	guint32 col;
@@ -786,14 +795,16 @@ lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent
 {
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *table = &tables[MONO_TABLE_CUSTOMDEBUGINFORMATION];
-	locator_t loc;
+	mono_locator_t loc;
 
 	if (!table->base)
 		return 0;
 
-	loc.idx = (mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type;
-	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
-	loc.t = table;
+	loc = mono_locator_init (
+		table,
+		(mono_metadata_token_index (token) << MONO_HAS_CUSTOM_DEBUG_BITS) | parent_type,
+		MONO_CUSTOMDEBUGINFORMATION_PARENT
+	);
 
 	if (!mono_binary_search (&loc, table->base, table_info_get_rows (table), table->row_size, table_locator))
 		return NULL;

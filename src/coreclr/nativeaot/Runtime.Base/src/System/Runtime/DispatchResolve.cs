@@ -18,9 +18,6 @@ namespace System.Runtime
             // Start at the current type and work up the inheritance chain
             MethodTable* pCur = pTgtType;
 
-            if (pItfType->IsCloned)
-                pItfType = pItfType->CanonicalEEType;
-
             // We first look at non-default implementation. Default implementations are only considered
             // if the "old algorithm" didn't come up with an answer.
             bool fDoDefaultImplementationLookup = false;
@@ -126,7 +123,7 @@ namespace System.Runtime
             Debug.Assert(pTgtType->HasDispatchMap, "Missing dispatch map");
 
             MethodTable* pItfOpenGenericType = null;
-            EETypeRef* pItfInstantiation = null;
+            MethodTableList itfInstantiation = default;
             int itfArity = 0;
             GenericVariance* pItfVarianceInfo = null;
 
@@ -185,10 +182,7 @@ namespace System.Runtime
                 if (i->_usInterfaceMethodSlot == itfSlotNumber)
                 {
                     MethodTable* pCurEntryType =
-                        pTgtType->InterfaceMap[i->_usInterfaceIndex].InterfaceType;
-
-                    if (pCurEntryType->IsCloned)
-                        pCurEntryType = pCurEntryType->CanonicalEEType;
+                        pTgtType->InterfaceMap[i->_usInterfaceIndex];
 
                     if (pCurEntryType == pItfType)
                     {
@@ -213,7 +207,7 @@ namespace System.Runtime
                         {
                             pItfOpenGenericType = pItfType->GenericDefinition;
                             itfArity = (int)pItfType->GenericArity;
-                            pItfInstantiation = pItfType->GenericArguments;
+                            itfInstantiation = pItfType->GenericArguments;
                             pItfVarianceInfo = pItfType->GenericVariance;
                         }
 
@@ -225,13 +219,13 @@ namespace System.Runtime
                             continue;
 
                         // Grab instantiation details for the candidate interface.
-                        EETypeRef* pCurEntryInstantiation = pCurEntryType->GenericArguments;
+                        MethodTableList curEntryInstantiation = pCurEntryType->GenericArguments;
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
                         Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch between generic instantiations");
 
-                        if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance, null))
+                        if (TypeCast.TypeParametersAreCompatible(itfArity, curEntryInstantiation, itfInstantiation, pItfVarianceInfo, fArrayCovariance, null))
                         {
                             *pImplSlotNumber = i->_usImplMethodSlot;
 
@@ -256,7 +250,7 @@ namespace System.Runtime
             {
                 StaticVirtualMethodContextSource.None => null,
                 StaticVirtualMethodContextSource.ContextFromThisClass => pTgtType,
-                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface].InterfaceType
+                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface]
             };
         }
     }

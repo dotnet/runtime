@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -41,13 +41,18 @@ namespace ILLink.Shared.TrimAnalysis
             CompilerGeneratedState = compilerGeneratedState;
         }
 
-        public bool RequiresDataflowAnalysis(MethodDesc method)
+        /// <summary>
+        /// Determines if the method has any annotations on its parameters or return values.
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(MethodDesc method)
         {
             try
             {
                 method = method.GetTypicalMethodDefinition();
-                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var methodAnnotations)
-                    && (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+                TypeAnnotations typeAnnotations = GetAnnotations(method.OwningType);
+                // This will return true even if the method has annotations on generic parameters,
+                // but the callers don't rely on that - it's just easier to leave it this way (and it makes very little difference)
+                return typeAnnotations.TryGetAnnotation(method, out _);
             }
             catch (TypeSystemException)
             {
@@ -68,12 +73,16 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool RequiresDataflowAnalysis(FieldDesc field)
+        /// <summary>
+        /// Determines if the field has any annotations on itself (not looking at owning type).
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(FieldDesc field)
         {
             try
             {
                 field = field.GetTypicalFieldDefinition();
-                return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
+                TypeAnnotations typeAnnotations = GetAnnotations(field.OwningType);
+                return typeAnnotations.TryGetAnnotation(field, out _);
             }
             catch (TypeSystemException)
             {
@@ -81,11 +90,11 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameterDesc genericParameter)
+        public bool HasGenericParameterAnnotation(TypeDesc type)
         {
             try
             {
-                return GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
+                return GetAnnotations(type.GetTypeDefinition()).HasGenericParameterAnnotation();
             }
             catch (TypeSystemException)
             {
@@ -93,11 +102,12 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool HasAnyAnnotations(TypeDesc type)
+        public bool HasGenericParameterAnnotation(MethodDesc method)
         {
             try
             {
-                return !GetAnnotations(type.GetTypeDefinition()).IsDefault;
+                method = method.GetTypicalMethodDefinition();
+                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var annotation) && annotation.GenericParameterAnnotations != null;
             }
             catch (TypeSystemException)
             {
@@ -218,7 +228,7 @@ namespace ILLink.Shared.TrimAnalysis
             //   class DerivedAtRuntimeFromBase
             //   {
             //       // No point in adding annotation on the return value - nothing will look at it anyway
-            //       // Linker will not see this code, so there are no checks
+            //       // ILLink will not see this code, so there are no checks
             //       public override Type GetTypeWithFields() { return typeof(TestType); }
             //   }
             //
@@ -243,7 +253,7 @@ namespace ILLink.Shared.TrimAnalysis
 
         public static bool IsTypeInterestingForDataflow(TypeDesc type)
         {
-            // NOTE: this method is not particulary fast. It's assumed that the caller limits
+            // NOTE: this method is not particularly fast. It's assumed that the caller limits
             // calls to this method as much as possible.
 
             if (type.IsWellKnownType(WellKnownType.String))
@@ -304,6 +314,11 @@ namespace ILLink.Shared.TrimAnalysis
                 return (DynamicallyAccessedMemberTypes)blobReader.ReadUInt32();
             }
 
+            private static DynamicallyAccessedMemberTypes GetMemberTypesForConstraints(GenericParameterDesc genericParameter)
+                => genericParameter.HasDefaultConstructorConstraint ?
+                    DynamicallyAccessedMemberTypes.PublicParameterlessConstructor :
+                    DynamicallyAccessedMemberTypes.None;
+
             protected override bool CompareKeyToValue(TypeDesc key, TypeAnnotations value) => key == value.Type;
             protected override bool CompareValueToValue(TypeAnnotations value1, TypeAnnotations value2) => value1.Type == value2.Type;
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
@@ -330,7 +345,7 @@ namespace ILLink.Shared.TrimAnalysis
                 try
                 {
                     // Also inherit annotation from bases
-                    TypeDesc baseType = key.BaseType;
+                    DefType baseType = key.BaseType;
                     while (baseType != null)
                     {
                         var ecmaBaseType = (EcmaType)baseType.GetTypeDefinition();
@@ -440,8 +455,6 @@ namespace ILLink.Shared.TrimAnalysis
                                 continue;
                             }
 
-                            // We convert indices from metadata space to IL space here.
-                            // IL space assigns index 0 to the `this` parameter on instance methods.
                             paramAnnotations ??= new DynamicallyAccessedMemberTypes[method.GetParametersCount()];
                             paramAnnotations[parameter.SequenceNumber - 1 + (signature.IsStatic ? 0 : 1)] = pa;
                         }
@@ -452,6 +465,7 @@ namespace ILLink.Shared.TrimAnalysis
                     {
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             genericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[method.Instantiation.Length];
@@ -613,6 +627,7 @@ namespace ILLink.Shared.TrimAnalysis
                         genericParameter = (attrs?[genericParameterIndex] as EcmaGenericParameter) ?? genericParameter;
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             typeGenericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
@@ -626,7 +641,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsGeneratedType(typeDef.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
                 {
                     return null;
                 }
@@ -691,7 +706,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        internal void ValidateMethodAnnotationsAreSame(MethodDesc method, MethodDesc baseMethod)
+        internal void ValidateMethodAnnotationsAreSame(MethodDesc method, MethodDesc baseMethod, TypeSystemEntity origin)
         {
             method = method.GetTypicalMethodDefinition();
             baseMethod = baseMethod.GetTypicalMethodDefinition();
@@ -700,14 +715,14 @@ namespace ILLink.Shared.TrimAnalysis
             GetAnnotations(baseMethod.OwningType).TryGetAnnotation(baseMethod, out var baseMethodAnnotations);
 
             if (methodAnnotations.ReturnParameterAnnotation != baseMethodAnnotations.ReturnParameterAnnotation)
-                LogValidationWarning(method.Signature.ReturnType, baseMethod, method);
+                LogValidationWarning((method.Signature.ReturnType, method), baseMethod, origin);
 
             if (methodAnnotations.ParameterAnnotations != null || baseMethodAnnotations.ParameterAnnotations != null)
             {
                 if (methodAnnotations.ParameterAnnotations == null)
-                    ValidateMethodParametersHaveNoAnnotations(baseMethodAnnotations.ParameterAnnotations!, method, baseMethod, method);
+                    ValidateMethodParametersHaveNoAnnotations(baseMethodAnnotations.ParameterAnnotations!, method, baseMethod, origin);
                 else if (baseMethodAnnotations.ParameterAnnotations == null)
-                    ValidateMethodParametersHaveNoAnnotations(methodAnnotations.ParameterAnnotations, method, baseMethod, method);
+                    ValidateMethodParametersHaveNoAnnotations(methodAnnotations.ParameterAnnotations, method, baseMethod, origin);
                 else
                 {
                     if (methodAnnotations.ParameterAnnotations.Length != baseMethodAnnotations.ParameterAnnotations.Length)
@@ -719,7 +734,7 @@ namespace ILLink.Shared.TrimAnalysis
                             LogValidationWarning(
                                 (new MethodProxy(method)).GetParameter((ParameterIndex)parameterIndex),
                                 (new MethodProxy(baseMethod)).GetParameter((ParameterIndex)parameterIndex),
-                                method);
+                                origin);
                     }
                 }
             }
@@ -727,9 +742,9 @@ namespace ILLink.Shared.TrimAnalysis
             if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null)
             {
                 if (methodAnnotations.GenericParameterAnnotations == null)
-                    ValidateMethodGenericParametersHaveNoAnnotations(baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, method);
+                    ValidateMethodGenericParametersHaveNoAnnotations(baseMethodAnnotations.GenericParameterAnnotations!, method, baseMethod, origin);
                 else if (baseMethodAnnotations.GenericParameterAnnotations == null)
-                    ValidateMethodGenericParametersHaveNoAnnotations(methodAnnotations.GenericParameterAnnotations, method, baseMethod, method);
+                    ValidateMethodGenericParametersHaveNoAnnotations(methodAnnotations.GenericParameterAnnotations, method, baseMethod, origin);
                 else
                 {
                     if (methodAnnotations.GenericParameterAnnotations.Length != baseMethodAnnotations.GenericParameterAnnotations.Length)
@@ -742,14 +757,14 @@ namespace ILLink.Shared.TrimAnalysis
                             LogValidationWarning(
                                 method.Instantiation[genericParameterIndex],
                                 baseMethod.Instantiation[genericParameterIndex],
-                                method);
+                                origin);
                         }
                     }
                 }
             }
         }
 
-        private void ValidateMethodParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
+        private void ValidateMethodParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDesc method, MethodDesc baseMethod, TypeSystemEntity origin)
         {
             for (int parameterIndex = 0; parameterIndex < parameterAnnotations.Length; parameterIndex++)
             {
@@ -762,7 +777,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        private void ValidateMethodGenericParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
+        private void ValidateMethodGenericParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDesc method, MethodDesc baseMethod, TypeSystemEntity origin)
         {
             for (int genericParameterIndex = 0; genericParameterIndex < genericParameterAnnotations.Length; genericParameterIndex++)
             {
@@ -776,7 +791,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        private void LogValidationWarning(object provider, object baseProvider, MethodDesc origin)
+        private void LogValidationWarning(object provider, object baseProvider, TypeSystemEntity origin)
         {
             switch (provider)
             {
@@ -792,12 +807,12 @@ namespace ILLink.Shared.TrimAnalysis
                     break;
                 case GenericParameterDesc genericParameterOverride:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
-                        genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin(genericParameterOverride)),
-                        ((GenericParameterDesc)baseProvider).Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin((GenericParameterDesc)baseProvider)));
+                        genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(genericParameterOverride),
+                        ((GenericParameterDesc)baseProvider).Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName((GenericParameterDesc)baseProvider));
                     break;
-                case TypeDesc:
+                case (TypeDesc, MethodDesc method):
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides,
-                        DiagnosticUtilities.GetMethodSignatureDisplayName(origin), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
+                        DiagnosticUtilities.GetMethodSignatureDisplayName(method), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
                     break;
                 // No fields - it's not possible to have a virtual field and override it
                 default:
@@ -884,6 +899,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
+
+            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         private readonly struct MethodAnnotations
@@ -931,15 +948,20 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method)
-            => RequiresDataflowAnalysis(method.Method);
+            => RequiresDataflowAnalysisDueToSignature(method.Method);
 
 #pragma warning disable CA1822 // Other partial implementations are not in the ilc project
-        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 #pragma warning restore CA1822 // Mark members as static
-            => new MethodReturnValue(method.Method, dynamicallyAccessedMemberTypes);
+            => new MethodReturnValue(method.Method, isNewObj, dynamicallyAccessedMemberTypes);
 
-        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method)
-            => GetMethodReturnValue(method, GetReturnParameterAnnotation(method.Method));
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj)
+            => GetMethodReturnValue(method, isNewObj, GetReturnParameterAnnotation(method.Method));
+
+#pragma warning disable CA1822 // Other partial implementations are not in the ilc project
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+#pragma warning restore CA1822 // Mark members as static
+            => new GenericParameterValue(genericParameter.GenericParameter, dynamicallyAccessedMemberTypes);
 
         internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter)
             => new GenericParameterValue(genericParameter.GenericParameter, GetGenericParameterAnnotation(genericParameter.GenericParameter));
@@ -953,17 +975,13 @@ namespace ILLink.Shared.TrimAnalysis
             => GetMethodParameterValue(param, GetParameterAnnotation(param));
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
-        // overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
-        internal MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
-            if (!method.HasImplicitThis() && !overrideIsThis)
+            if (!method.HasImplicitThis())
                 throw new InvalidOperationException($"Cannot get 'this' parameter of method {method.GetDisplayName()} with no 'this' parameter.");
-            return new MethodParameterValue(new ParameterProxy(method, (ParameterIndex)0), dynamicallyAccessedMemberTypes, overrideIsThis);
+            return new MethodParameterValue(new ParameterProxy(method, (ParameterIndex)0), dynamicallyAccessedMemberTypes);
         }
 #pragma warning restore CA1822 // Mark members as static
-
-        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-            => GetMethodThisParameterValue(method, dynamicallyAccessedMemberTypes, false);
 
         internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method)
         {
@@ -1005,6 +1023,10 @@ namespace ILLink.Shared.TrimAnalysis
                 }
                 // All values except for Nullable<T>, including Nullable<> (with no type arguments)
                 return new SystemTypeValue(genericArgumentType);
+            }
+            else if (genericArgument is ArrayType arrayType)
+            {
+                return new SystemTypeValue(arrayType);
             }
             else
             {

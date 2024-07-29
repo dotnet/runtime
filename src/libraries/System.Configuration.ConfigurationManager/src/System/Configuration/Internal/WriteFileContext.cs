@@ -203,7 +203,7 @@ namespace System.Configuration.Internal
 
         private static bool FileIsWriteLocked(string fileName)
         {
-            Stream fileStream = null;
+            FileStream fileStream = null;
 
             if (!File.Exists(fileName))
             {

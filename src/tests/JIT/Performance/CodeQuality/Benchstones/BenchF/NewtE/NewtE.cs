@@ -6,6 +6,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchF
 {
@@ -105,7 +106,8 @@ public static class NewtE
         return (-(x));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = Bench();
         return (result ? 100 : -1);

@@ -211,9 +211,38 @@
     <value>Can't have the same template with different casing</value>
   </data>
   <data name="MalformedFormatStringsMessage" xml:space="preserve">
-    <value>Can't have malformed format strings (like dangling {, etc)</value>
+    <value>Logging method '{0}' contains malformed format strings</value>
   </data>
   <data name="GeneratingForMax6ArgumentsMessage" xml:space="preserve">
     <value>Generating more than 6 arguments is not supported</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterOutMessage" xml:space="preserve">
+    <value>Argument '{0}' is using the unsupported out parameter modifier</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterOutTitle" xml:space="preserve">
+    <value>Argument is using the unsupported out parameter modifier</value>
+  </data>
+  <data name="ShouldntReuseEventNamesMessage" xml:space="preserve">
+    <value>Multiple logging methods are using event name {0} in class {1}</value>
+  </data>
+  <data name="ShouldntReuseEventNamesTitle" xml:space="preserve">
+    <value>Multiple logging methods should not use the same event name within a class</value>
+  </data>
+  <data name="MalformedFormatStringsTitle" xml:space="preserve">
+    <value>Logging method contains malformed format strings</value>
+  </data>
+  <data name="LoggingUnsupportedLanguageVersionTitle" xml:space="preserve">
+    <value>C# language version not supported by the source generator.</value>
+  </data>
+  <data name="LoggingUnsupportedLanguageVersionMessageFormat" xml:space="preserve">
+    <value>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</value>
+  </data>
+  <data name="PrimaryConstructorParameterLoggerHiddenMessage" xml:space="preserve">
+    <value>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
+  </data>
+  <data name="PrimaryConstructorParameterLoggerHiddenTitle" xml:space="preserve">
+    <value>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
 </root>

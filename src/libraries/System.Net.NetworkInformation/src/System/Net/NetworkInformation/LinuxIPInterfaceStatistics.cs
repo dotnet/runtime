@@ -16,7 +16,7 @@ namespace System.Net.NetworkInformation
         private readonly IPInterfaceStatisticsTable _table;
 
         // From /sys/class/net/<interface>/tx_queue_len
-        private int _transmitQueueLength;
+        private readonly int _transmitQueueLength;
 
         public LinuxIPInterfaceStatistics(string name)
         {

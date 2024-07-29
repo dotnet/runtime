@@ -1,6 +1,8 @@
 Interop Guidelines
 ==================
 
+We follow the [best practices for native interop](https://learn.microsoft.com/dotnet/standard/native-interop/best-practices) with the additional guidelines below that are specific to this repo.
+
 ## Goals
 We have the following goals related to interop code being used in dotnet/runtime:
 
@@ -126,10 +128,10 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are windows (which is the default value from MSBuild when running on Windows), Linux and OSX.
+When building dotnet/runtime, we use the "TargetOS" property to control what target platform we are building for. The valid values for this property are windows (which is the default value from MSBuild when running on Windows), linux and osx.
 
 #### Project Files
-Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=OSX System.Console.csproj`.
+Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux. A property can be passed to dotnet build to control which flavor is built, e.g. `dotnet build /p:TargetOS=osx System.Console.csproj`.
 
 ### Constants
 - Wherever possible, constants should be defined as "const". Only if the data type doesn't support this (e.g. IntPtr) should they instead be static readonly fields.
@@ -164,7 +166,7 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 ## P/Invoke Definitions
 
-When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
+When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://learn.microsoft.com/dotnet/standard/native-interop/best-practices).
 
 The runtime repo makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/LibraryImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `LibraryImport` and be `static` and `partial`.
 

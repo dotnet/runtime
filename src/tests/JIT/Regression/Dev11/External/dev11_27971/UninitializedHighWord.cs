@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 namespace UninitializedHighWord
@@ -74,7 +75,7 @@ namespace UninitializedHighWord
     }
 
 
-    internal static class App
+    public static class App
     {
 
 
@@ -238,7 +239,8 @@ namespace UninitializedHighWord
         }
 
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             App.PrepareMethods();
 

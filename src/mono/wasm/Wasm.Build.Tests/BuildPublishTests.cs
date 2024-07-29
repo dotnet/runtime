@@ -8,6 +8,7 @@ using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -21,11 +22,33 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
+        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost _, string id)
+        {
+            string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
+            (string projectDir, string buildOutput) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                        DotnetWasmFromRuntimePack: true,
+                        CreateProject: true,
+                        Publish: true,
+                        ExpectSuccess: false
+                        ));
+
+            Console.WriteLine($"buildOutput={buildOutput}");
+
+            Assert.Contains("AOT is not supported in debug configuration", buildOutput);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            string projectName = GetTestProjectPath(prefix: "build_publish", config: buildArgs.Config);
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -40,7 +63,6 @@ namespace Wasm.Build.Tests
                         CreateProject: true,
                         Publish: false
                         ));
-
 
             Run();
 
@@ -71,13 +93,14 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"build_publish_{buildArgs.Config}";
+            bool testUnicode = true;
+            string projectName = GetTestProjectPath(
+                prefix: "build_publish", config: buildArgs.Config, appendUnicode: testUnicode);
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<_WasmDevel>true</_WasmDevel>");
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             // no relinking for build
             bool relinked = false;
@@ -91,14 +114,14 @@ namespace Wasm.Build.Tests
                                         Label: "first_build"));
 
             BuildPaths paths = GetBuildPaths(buildArgs);
-            var pathsDict = GetFilesTable(buildArgs, paths, unchanged: false);
+            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
 
             string mainDll = $"{buildArgs.ProjectName}.dll";
-            var firstBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var firstBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
 
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, buildArgs, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: relinked, buildArgs, output, testUnicode);
 
             Run(expectAOT: false);
 
@@ -109,21 +132,22 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            Dictionary<string, FileStat> publishStat = new();
             // relink by default for Release+publish
             (_, output) = BuildProject(buildArgs,
-                                    id: id,
-                                    new BuildProjectOptions(
-                                        DotnetWasmFromRuntimePack: false,
-                                        CreateProject: false,
-                                        Publish: true,
-                                        UseCache: false,
-                                        Label: "first_publish"));
+                                id: id,
+                                new BuildProjectOptions(
+                                    DotnetWasmFromRuntimePack: false,
+                                    CreateProject: false,
+                                    Publish: true,
+                                    UseCache: false,
+                                    Label: "first_publish"));
 
-            var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            publishStat = (Dictionary<string, FileStat>)_provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
-            CompareStat(firstBuildStat, publishStat, pathsDict.Values);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output, testUnicode);
+            _provider.CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
             Run(expectAOT: true);
 
@@ -136,14 +160,14 @@ namespace Wasm.Build.Tests
                                             CreateProject: true,
                                             Publish: false,
                                             Label: "second_build"));
-            var secondBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var secondBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // no relinking, or AOT
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, buildArgs, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, buildArgs, output, testUnicode);
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
-            CompareStat(publishStat, secondBuildStat, pathsDict.Values);
+            _provider.CompareStat(publishStat, secondBuildStat, pathsDict.Values);
 
             void Run(bool expectAOT) => RunAndTestWasmApp(
                                 buildArgs with { AOT = expectAOT },
@@ -151,13 +175,20 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
         }
 
-        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput)
+        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput, bool testUnicode)
         {
-            AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, expectAOT);
-            AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, expectAOT);
-
-            AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, expectRelinking || expectAOT);
+            if (testUnicode)
+            {
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
+                TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
+                TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
+            }
+            else
+            {
+                TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, contains: expectAOT);
+                TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, contains: expectAOT);
+            }
+            TestUtils.AssertMatches("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
-
     }
 }

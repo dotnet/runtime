@@ -138,9 +138,12 @@ namespace System.Linq.Expressions.Tests
         [Theory, PerCompilationType(nameof(IncrementableValues), true)]
         public static void CustomOpIncrement(Incrementable? operand, Incrementable? expected, bool useInterpreter)
         {
-            Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
-                Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)))).Compile(useInterpreter);
-            Assert.Equal(expected, func());
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
+                    Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)))).Compile(useInterpreter);
+                Assert.Equal(expected, func());
+            });
         }
 
         [Theory, PerCompilationType(nameof(IncrementableWhenNullableValues))]
@@ -155,10 +158,13 @@ namespace System.Linq.Expressions.Tests
         [Theory, PerCompilationType(nameof(DoublyIncrementedIncrementableValues), true)]
         public static void UserDefinedOpIncrement(Incrementable? operand, Incrementable? expected, bool useInterpreter)
         {
-            MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrement));
-            Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
-                Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)), method)).Compile(useInterpreter);
-            Assert.Equal(expected, func());
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
+            {
+                MethodInfo method = typeof(IncrementDecrementTests).GetMethod(nameof(DoublyIncrement));
+                Func<Incrementable?> func = Expression.Lambda<Func<Incrementable?>>(
+                    Expression.Increment(Expression.Constant(operand, typeof(Incrementable?)), method)).Compile(useInterpreter);
+                Assert.Equal(expected, func());
+            });
         }
 
         [Theory, PerCompilationType(nameof(DoublyIncrementedInt32s), true)]

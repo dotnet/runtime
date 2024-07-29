@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .namespace Test
 {
-  .class auto ansi BB extends [mscorlib]System.Object
+  .class public auto ansi BB extends [mscorlib]System.Object
   {
     .field public static class Test.BB[] m_axStatic1
     .field public class [mscorlib]System.Object[] m_axField1
@@ -49,7 +49,7 @@
       IL_0001:  ret
     } // end of method 'BB::AA_Static2'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

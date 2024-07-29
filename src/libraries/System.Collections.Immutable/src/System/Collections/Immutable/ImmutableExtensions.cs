@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     {
         internal static bool IsValueType<T>()
         {
-#if NETCOREAPP
+#if NET
             return typeof(T).IsValueType;
 #else
             if (default(T) != null)
@@ -45,14 +45,12 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(sequence, nameof(sequence));
 
-            var orderedCollection = sequence as IOrderedCollection<T>;
-            if (orderedCollection != null)
+            if (sequence is IOrderedCollection<T> orderedCollection)
             {
                 return orderedCollection;
             }
 
-            var listOfT = sequence as IList<T>;
-            if (listOfT != null)
+            if (sequence is IList<T> listOfT)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
@@ -91,8 +89,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(enumerable, nameof(enumerable));
 
-            var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
-            if (strongEnumerable != null)
+            if (enumerable is IStrongEnumerable<T, TEnumerator> strongEnumerable)
             {
                 return new DisposableEnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
             }
@@ -178,7 +175,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The list-ified sequence.
             /// </summary>
+#pragma warning disable CA1859
             private IList<T>? _collection;
+#pragma warning restore
 
             /// <summary>
             /// Initializes a new instance of the <see cref="FallbackWrapper{T}"/> class.

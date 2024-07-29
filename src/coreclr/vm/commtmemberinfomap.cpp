@@ -332,7 +332,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
 
             IfFailThrow(pField->GetMDImport()->GetNameOfFieldDef(pField->GetMemberDef(), &pszName));
             IfFailThrow(Utf2Quick(pszName, rName));
-            ULONG cchpName = ((int)wcslen(rName.Ptr())) + 1;
+            ULONG cchpName = ((int)u16_strlen(rName.Ptr())) + 1;
             m_MethodProps[i].pName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpName * sizeof(WCHAR)));
 
             m_MethodProps[i].pMeth = (MethodDesc*)pFieldMeth;
@@ -451,12 +451,12 @@ UnLink:
             WCHAR *pNewName;
             //string length + "get" + null terminator.
             //XXX Fri 11/19/2004 Why is this + 4 rather than +3?
-            ULONG cchpNewName = ((int)wcslen(m_MethodProps[ixGet].pName)) + 4 + 1;
+            ULONG cchpNewName = ((int)u16_strlen(m_MethodProps[ixGet].pName)) + 4 + 1;
             pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("get"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixGet].pName);
             m_MethodProps[ixGet].pName = pNewName;
-            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc((int)((4+wcslen(m_MethodProps[ixSet].pName))*sizeof(WCHAR)+2)));
+            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc((int)((4+u16_strlen(m_MethodProps[ixSet].pName))*sizeof(WCHAR)+2)));
             wcscpy_s(pNewName, cchpNewName, W("set"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixSet].pName);
             m_MethodProps[ixSet].pName = pNewName;
@@ -689,7 +689,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     rProps[ix].bFunction2Getter = FALSE;
 
     // See if there is property information for this member.
-    hr = pMeth->GetModule()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
+    hr = pMeth->GetMDImport()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)
@@ -714,13 +714,13 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         if (i < 0)
         {
             // Save the name.  Have to convert from UTF8.
-            int iLen = WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
+            int iLen = MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
             rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(iLen*sizeof(WCHAR)));
             if (rProps[ix].pName == NULL)
             {
                 ThrowHR(E_OUTOFMEMORY);
             }
-            WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
+            MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
 
             // Check whether the property has a dispid attribute.
             hr = pMeth->GetMDImport()->GetDispIdOfMemberDef(pd, &dispid);
@@ -775,7 +775,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
             }
         }
 
-        ULONG len = ((int)wcslen(pName)) + 1;
+        ULONG len = ((int)u16_strlen(pName)) + 1;
         rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
         if (rProps[ix].pName == NULL)
         {
@@ -896,7 +896,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             if (bDup)
             {
                 // Duplicate.
-                DWORD cchName = (DWORD) wcslen(rProps[iCur].pName);
+                DWORD cchName = (DWORD) u16_strlen(rProps[iCur].pName);
                 if (cchName > MAX_CLASSNAME_LENGTH-cchDuplicateDecoration)
                     cchName = MAX_CLASSNAME_LENGTH-cchDuplicateDecoration;
 
@@ -925,7 +925,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 }
 
                 // Remember the new name.
-                ULONG len = ((int)wcslen(rcName)) + 1;
+                ULONG len = ((int)u16_strlen(rcName)) + 1;
                 rProps[iCur].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
                 if (rProps[iCur].pName == NULL)
                 {
@@ -989,7 +989,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             iCur = piTable[i];
 
             // Copy name into local buffer
-            DWORD cchName = (DWORD) wcslen(rProps[iCur].pName);
+            DWORD cchName = (DWORD) u16_strlen(rProps[iCur].pName);
             if (cchName > MAX_CLASSNAME_LENGTH-cchDuplicateDecoration)
                 cchName = MAX_CLASSNAME_LENGTH-cchDuplicateDecoration;
 
@@ -1007,7 +1007,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             } while (htNames.Find(rcName) != NULL);
 
             // Now rcName has an acceptable (unique) name.  Remember the new name.
-            ULONG len = ((int)wcslen(rcName)) + 1;
+            ULONG len = ((int)u16_strlen(rcName)) + 1;
             rProps[iCur].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
             if (rProps[iCur].pName == NULL)
             {

@@ -439,9 +439,9 @@ typedef enum CorMethodAttr
 
 #define IsMdRTSpecialName(x)                ((x) & mdRTSpecialName)
 #define IsMdInstanceInitializer(x, str)     (((x) & mdRTSpecialName) && !strcmp((str), COR_CTOR_METHOD_NAME))
-#define IsMdInstanceInitializerW(x, str)    (((x) & mdRTSpecialName) && !wcscmp((str), COR_CTOR_METHOD_NAME_W))
+#define IsMdInstanceInitializerW(x, str)    (((x) & mdRTSpecialName) && !u16_strcmp((str), COR_CTOR_METHOD_NAME_W))
 #define IsMdClassConstructor(x, str)        (((x) & mdRTSpecialName) && !strcmp((str), COR_CCTOR_METHOD_NAME))
-#define IsMdClassConstructorW(x, str)       (((x) & mdRTSpecialName) && !wcscmp((str), COR_CCTOR_METHOD_NAME_W))
+#define IsMdClassConstructorW(x, str)       (((x) & mdRTSpecialName) && !u16_strcmp((str), COR_CCTOR_METHOD_NAME_W))
 #define IsMdHasSecurity(x)                  ((x) & mdHasSecurity)
 #define IsMdRequireSecObject(x)             ((x) & mdRequireSecObject)
 
@@ -847,7 +847,7 @@ typedef enum CorGenericParamAttr
     gpReferenceTypeConstraint = 0x0004,      // type argument must be a reference type
     gpNotNullableValueTypeConstraint   =   0x0008,      // type argument must be a value type but not Nullable
     gpDefaultConstructorConstraint = 0x0010, // type argument must have a public default constructor
-    gpAcceptByRefLike = 0x0020, // type argument can be ByRefLike
+    gpAllowByRefLike = 0x0020, // type argument can be ByRefLike
 } CorGenericParamAttr;
 
 // structures and enums moved from COR.H
@@ -1715,6 +1715,7 @@ typedef enum LoadHintEnum
 #define CMOD_CALLCONV_NAME_STDCALL              "CallConvStdcall"
 #define CMOD_CALLCONV_NAME_THISCALL             "CallConvThiscall"
 #define CMOD_CALLCONV_NAME_FASTCALL             "CallConvFastcall"
+#define CMOD_CALLCONV_NAME_SWIFT                "CallConvSwift"
 #define CMOD_CALLCONV_NAME_SUPPRESSGCTRANSITION "CallConvSuppressGCTransition"
 #define CMOD_CALLCONV_NAME_MEMBERFUNCTION       "CallConvMemberFunction"
 

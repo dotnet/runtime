@@ -617,20 +617,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public async Task ReadISetTOfHashSetT()
         {
             ISet<HashSet<int>> result = await Serializer.DeserializeWrapper<ISet<HashSet<int>>>(@"[[1,2],[3,4]]");
 
             if (result.First().Contains(1))
             {
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.First());
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.Last());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.Last());
             }
             else
             {
-                Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
-                Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, result.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, result.Last());
             }
         }
 
@@ -1256,7 +1255,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task CustomInterfacesNotSupported_Enumerables(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper("[]", type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Theory]
@@ -1264,7 +1263,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task CustomInterfacesNotSupported_Dictionaries(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper("{}", type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         public static IEnumerable<object[]> CustomInterfaces_Enumerables()

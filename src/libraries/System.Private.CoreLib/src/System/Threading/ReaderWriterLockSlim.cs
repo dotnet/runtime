@@ -230,7 +230,7 @@ namespace System.Threading
         //
         // Common timeout support
         //
-        private struct TimeoutTracker
+        private readonly struct TimeoutTracker
         {
             private readonly int _total;
             private readonly int _start;
@@ -238,13 +238,14 @@ namespace System.Threading
             public TimeoutTracker(TimeSpan timeout)
             {
                 long ltm = (long)timeout.TotalMilliseconds;
-                if (ltm < -1 || ltm > (long)int.MaxValue)
-                    throw new ArgumentOutOfRangeException(nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfLessThan(ltm, -1, nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(ltm, int.MaxValue, nameof(timeout));
+
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public TimeoutTracker(int millisecondsTimeout)
@@ -252,9 +253,9 @@ namespace System.Threading
                 ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public int RemainingMilliseconds
@@ -1415,7 +1416,7 @@ namespace System.Threading
 
         private struct SpinLock
         {
-            private int _isLocked;
+            private bool _isLocked;
 
             /// <summary>
             /// Used to deprioritize threads attempting to enter the lock when they would not make progress after doing so.
@@ -1534,7 +1535,7 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool TryEnter()
             {
-                return Interlocked.CompareExchange(ref _isLocked, 1, 0) == 0;
+                return !Interlocked.Exchange(ref _isLocked, true);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1576,7 +1577,7 @@ namespace System.Threading
 
                     if (!IsEnterDeprioritized(reason))
                     {
-                        if (_isLocked == 0 && TryEnter())
+                        if (!_isLocked && TryEnter())
                         {
                             if (deprioritizationStateChange != 0)
                             {
@@ -1605,12 +1606,12 @@ namespace System.Threading
 
             public void Exit()
             {
-                Debug.Assert(_isLocked != 0, "Exiting spin lock that is not held");
-                Volatile.Write(ref _isLocked, 0);
+                Debug.Assert(_isLocked, "Exiting spin lock that is not held");
+                Volatile.Write(ref _isLocked, false);
             }
 
 #if DEBUG
-            public bool IsHeld => _isLocked != 0;
+            public bool IsHeld => _isLocked;
 #endif
         }
 

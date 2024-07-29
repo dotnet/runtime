@@ -133,9 +133,11 @@ namespace System.Net.NetworkInformation
                 return false;
             }
 
-            // look for address in "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
+            // look for address in:
+            // - "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
+            // - "From 172.21.64.1: icmp_seq=1 Time to live exceeded"
             int addressStart = stdout.IndexOf("From ", StringComparison.Ordinal) + 5;
-            int addressLength = stdout.IndexOf(' ', Math.Max(addressStart, 0)) - addressStart;
+            int addressLength = stdout.AsSpan(Math.Max(addressStart, 0)).IndexOfAny(' ', ':');
             IPAddress? address;
             if (addressStart < 5 || addressLength <= 0 || !IPAddress.TryParse(stdout.AsSpan(addressStart, addressLength), out address))
             {

@@ -1,16 +1,14 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
+	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[SetupCompileBefore ("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupLinkerArgument ("-a", "test.exe", "library")]

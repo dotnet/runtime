@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections;
+using Xunit;
 
 public class Regression13056
 {
@@ -28,7 +29,8 @@ public class Regression13056
         return value;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Clamp(1, 2, 3)   != 2)  return Fail;
         if (Clamp(4, 2, 10)  != 4)  return Fail;

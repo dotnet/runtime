@@ -12,7 +12,7 @@
 // and it is marked as an 'UnusedValue', but the BuildSimple method wasn't creating a def
 // for an unused value. This led to an assert in the code generator.
 // 
-.class private auto ansi beforefieldinit GitHub_18295
+.class public auto ansi beforefieldinit GitHub_18295
        extends [mscorlib]System.Object
 {
     .method private hidebysig static int32 Test(int64 l, int32 i) cil managed
@@ -35,7 +35,7 @@
         ret
     }
 
-    .method private hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

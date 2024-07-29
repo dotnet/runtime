@@ -20,12 +20,23 @@ To run the benchmark on windows:
 
     > dotnet build /t:RunSample
 
+### Blazor startup measurements
+
+To run the benchmark with blazor startup measurements, set `BlazorStartup` property to `true`, like:
+
+    > dotnet build /t:RunSample /p:BlazorStartup=true
+
+### Additional build arguments
+
+The benchmark project is built in a separate process, so to pass additional msbuild arguments, use `BuildAdditionalArgs` property, like:
+
+    > dotnet build /t:RunSample  /p:BuildAdditionalArgs="/p:WasmEnableSIMD=false"
+
 Example console output:
 
     > make run
     console.debug: MONO_WASM: Initializing mono runtime
     console.debug: MONO_WASM: ICU data archive(s) loaded, disabling invariant mode
-    console.debug: mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
     console.info: Initializing.....
     Benchmark started
     Exceptions, NoExceptionHandling count: 8344090, per call: 6.807213249138013E-05ms, total: 0.568s

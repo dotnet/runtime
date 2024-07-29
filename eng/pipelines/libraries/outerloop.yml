@@ -30,14 +30,14 @@ extends:
                 - windows_x64
             - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
               - ${{ if eq(variables['isRollingBuild'], true) }}:
-                - Linux_x64
-                - Linux_arm
-                - Linux_arm64
-                - Linux_musl_x64
-                - Linux_musl_arm64
+                - linux_x64
+                - linux_arm
+                - linux_arm64
+                - linux_musl_x64
+                - linux_musl_arm64
             - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isRollingBuild'], true)) }}:
-              - OSX_arm64
-              - OSX_x64
+              - osx_arm64
+              - osx_x64
             jobParameters:
               testScope: outerloop
               nameSuffix: CoreCLR_Release
@@ -45,11 +45,12 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-              extraStepsParameters:
-                testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
         - ${{ if eq(variables['isRollingBuild'], false) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -61,23 +62,24 @@ extends:
               - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
                 - windows_x64
               - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
-                - Linux_x64
-                - Linux_musl_x64
+                - linux_x64
+                - linux_musl_x64
               - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
-                - OSX_arm64
-                - OSX_x64
+                - osx_arm64
+                - osx_x64
               jobParameters:
                 testScope: outerloop
-                nameSuffix: CoreCLR_Release
+                nameSuffix: CoreCLR_Debug
                 buildArgs: -s clr+host.native+libs+libs.tests -lc $(_BuildConfig) -hc $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                extraStepsParameters:
-                  testScope: outerloop
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -97,8 +99,9 @@ extends:
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                extraStepsParameters:
-                  testScope: outerloop
-                  creator: dotnet-bot
-                  extraHelixArguments: /p:BuildTargetFramework=net48
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      extraHelixArguments: /p:BuildTargetFramework=net48

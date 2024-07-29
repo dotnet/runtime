@@ -102,6 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private readonly List<Framework> _frameworks = new List<Framework>();
         private readonly List<Framework> _includedFrameworks = new List<Framework>();
         private readonly List<Tuple<string, string>> _properties = new List<Tuple<string, string>>();
+        private readonly List<string> _additionalProbingPaths = new List<string>();
 
         /// <summary>
         /// Creates new runtime config - overwrites existing file on Save if any.
@@ -144,7 +145,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     {
                         foreach (var includedFramework in includedFrameworks)
                         {
-                            runtimeConfig.WithFramework(Framework.FromJson((JsonObject)includedFramework));
+                            runtimeConfig.WithIncludedFramework(Framework.FromJson((JsonObject)includedFramework));
                         }
                     }
 
@@ -171,6 +172,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return new RuntimeConfig(path);
         }
 
+        public string Tfm => _tfm;
+
         public Framework GetFramework(string name)
         {
             return _frameworks.FirstOrDefault(f => f.Name == name);
@@ -196,6 +199,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             return this;
+        }
+
+        public Framework GetIncludedFramework(string name)
+        {
+            return _includedFrameworks.FirstOrDefault(f => f.Name == name);
         }
 
         public RuntimeConfig WithIncludedFramework(Framework framework)
@@ -230,6 +238,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public RuntimeConfig WithTfm(string tfm)
         {
             _tfm = tfm;
+            return this;
+        }
+
+        public RuntimeConfig WithAdditionalProbingPath(string path)
+        {
+            _additionalProbingPaths.Add(path);
             return this;
         }
 
@@ -280,6 +294,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (_tfm is not null)
             {
                 runtimeOptions.Add("tfm", _tfm);
+            }
+
+            if (_additionalProbingPaths.Count > 0)
+            {
+                runtimeOptions.Add(
+                    Constants.AdditionalProbingPath.RuntimeConfigPropertyName,
+                    new JsonArray(_additionalProbingPaths.Select(p => JsonValue.Create(p)).ToArray()));
             }
 
             if (_properties.Count > 0)

@@ -66,8 +66,8 @@
 #error The Volatile type is currently only defined for Visual C++ and GNU C++
 #endif
 
-#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_WASM)
-#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64 or Wasm
+#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_WASM) && !defined(HOST_RISCV64)
+#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64, Wasm, RISCV64
 #endif
 
 #if defined(__GNUC__)
@@ -76,6 +76,8 @@
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
 #elif defined(HOST_LOONGARCH64)
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dbar 0 " : : : "memory")
+#elif defined(HOST_RISCV64)
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("fence rw,rw" : : : "memory")
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
@@ -159,16 +161,16 @@ T VolatileLoad(T const * pt)
     switch (sizeof(T))
     {
     case 1:
-        *(unsigned __int8* )pv = __ldar8 ((unsigned __int8   volatile*)pt);
+        *(uint8_t* )pv = __ldar8 ((uint8_t   volatile*)pt);
         break;
     case 2:
-        *(unsigned __int16*)pv = __ldar16((unsigned __int16  volatile*)pt);
+        *(uint16_t*)pv = __ldar16((uint16_t  volatile*)pt);
         break;
     case 4:
-        *(unsigned __int32*)pv = __ldar32((unsigned __int32  volatile*)pt);
+        *(uint32_t*)pv = __ldar32((uint32_t  volatile*)pt);
         break;
     case 8:
-        *(unsigned __int64*)pv = __ldar64((unsigned __int64  volatile*)pt);
+        *(uint64_t*)pv = __ldar64((uint64_t  volatile*)pt);
         break;
     default:
         val = *(T volatile const*)pt;
@@ -238,16 +240,16 @@ void VolatileStore(T* pt, T val)
     switch (sizeof(T))
     {
     case 1:
-        __stlr8 ((unsigned __int8  volatile*)pt, *(unsigned __int8* )pv);
+        __stlr8 ((uint8_t  volatile*)pt, *(uint8_t* )pv);
         break;
     case 2:
-        __stlr16((unsigned __int16 volatile*)pt, *(unsigned __int16*)pv);
+        __stlr16((uint16_t volatile*)pt, *(uint16_t*)pv);
         break;
     case 4:
-        __stlr32((unsigned __int32 volatile*)pt, *(unsigned __int32*)pv);
+        __stlr32((uint32_t volatile*)pt, *(uint32_t*)pv);
         break;
     case 8:
-        __stlr64((unsigned __int64 volatile*)pt, *(unsigned __int64*)pv);
+        __stlr64((uint64_t volatile*)pt, *(uint64_t*)pv);
         break;
     default:
         __dmb(_ARM64_BARRIER_ISH);

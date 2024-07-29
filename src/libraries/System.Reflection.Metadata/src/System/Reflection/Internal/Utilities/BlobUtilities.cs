@@ -20,12 +20,20 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
+#if NET
+            WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
+#else
             WriteUInt64(buffer, start, *(ulong*)&value);
+#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
+#if NET
+            WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
+#else
             WriteUInt32(buffer, start, *(uint*)&value);
+#endif
         }
 
         public static void WriteByte(this byte[] buffer, int start, byte value)
@@ -68,7 +76,7 @@ namespace System.Reflection
 
         public static void WriteGuid(this byte[] buffer, int start, Guid value)
         {
-#if NETCOREAPP
+#if NET
             bool written = value.TryWriteBytes(buffer.AsSpan(start));
             // This function is not public, callers have to ensure that enough space is available.
             Debug.Assert(written);

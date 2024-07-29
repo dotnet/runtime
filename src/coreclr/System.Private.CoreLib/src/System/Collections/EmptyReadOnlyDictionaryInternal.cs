@@ -68,12 +68,6 @@ namespace System.Collections
             {
                 ArgumentNullException.ThrowIfNull(key);
 
-                if (!key.GetType().IsSerializable)
-                    throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
-
-                if ((value != null) && (!value.GetType().IsSerializable))
-                    throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
-
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
         }
@@ -90,12 +84,6 @@ namespace System.Collections
         public void Add(object key, object? value)
         {
             ArgumentNullException.ThrowIfNull(key);
-
-            if (!key.GetType().IsSerializable)
-                throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
-
-            if ((value != null) && (!value.GetType().IsSerializable))
-                throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
 
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
         }

@@ -25,7 +25,9 @@ namespace Internal.JitInterface
 
         public override void AppendName(StringBuilder sb, GenericParameterDesc type)
         {
-            Debug.Fail("Unexpected generic parameter type in JitTypeNameFormatter");
+            string prefix = type.Kind == GenericParameterKind.Type ? "!" : "!!";
+            sb.Append(prefix);
+            sb.Append(type.Name);
         }
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)

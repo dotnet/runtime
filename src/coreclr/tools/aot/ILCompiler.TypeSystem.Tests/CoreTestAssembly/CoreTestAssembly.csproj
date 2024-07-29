@@ -4,6 +4,7 @@
     <AssemblyName>CoreTestAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsCoreAssembly>true</IsCoreAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SkipTestRun>true</SkipTestRun>
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Don't add references to the netstandard platform since this is a core assembly -->
@@ -12,5 +13,7 @@
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <RunAnalyzers>false</RunAnalyzers>
+    <!-- This assembly has no LibraryImports and is used as a custom corelib, so disable the generator. -->
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
   </PropertyGroup>
 </Project>

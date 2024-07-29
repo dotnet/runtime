@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly extern System.Console {}
-.assembly GenericCatchInterface {}
+.assembly GenericCatchInterfaceProgram {}
 
 // IL in this file is based on this C# program with a few IL modifications:
 
@@ -61,14 +62,17 @@
 // class MyException : Exception, IMyInterface {}
 
 
-.class private abstract auto ansi sealed beforefieldinit GenericCatchInterfaceProgram
+.class public abstract auto ansi sealed beforefieldinit GenericCatchInterfaceProgram
        extends [System.Runtime]System.Object
 {
   // 
   .field private static int32 retCode
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     IL_0000:  newobj     instance void MyException::.ctor()

@@ -71,7 +71,7 @@ namespace System.Resources
             {
                 if (!InitializeBinaryFormatterLocal())
                 {
-                    // The linker trimmed away the BinaryFormatter implementation and we can't call into it.
+                    // Trimming took away the BinaryFormatter implementation and we can't call into it.
                     // We'll throw an exception with the same text that BinaryFormatter would have thrown
                     // had we been able to call into it. Keep this resource string in sync with the same
                     // resource from the Formatters assembly.
@@ -96,13 +96,13 @@ namespace System.Resources
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
         {
-            // If BinaryFormatter support is disabled for the app, the linker will replace this entire
+            // If BinaryFormatter support is disabled for the app, the trimmer will replace this entire
             // method body with "return false;", skipping all reflection code below.
 
             if (Volatile.Read(ref s_binaryFormatterType) is null || Volatile.Read(ref s_deserializeMethod) is null)
             {
                 Type binaryFormatterType = Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters", throwOnError: true)!;
-                MethodInfo? binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", new[] { typeof(Stream) });
+                MethodInfo? binaryFormatterDeserialize = binaryFormatterType.GetMethod("Deserialize", [typeof(Stream)]);
                 Func<object?, Stream, object>? deserializeMethod = (Func<object?, Stream, object>?)
                     typeof(ResourceReader)
                         .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)

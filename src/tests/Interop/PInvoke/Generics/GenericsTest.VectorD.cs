@@ -63,9 +63,11 @@ unsafe partial class GenericsNative
     public static extern Vector<double> AddVectorD256s(in Vector<double> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVectorD()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVectorD()
     {
         if (Vector<double>.Count == 4)
         {
@@ -73,25 +75,25 @@ unsafe partial class GenericsTest
         }
         else
         {
-            Assert.Equal(Vector<double>.Count, 2);
+            Assert.Equal(2, Vector<double>.Count);
             TestVectorD128();
         }
     }
 
-    private static void TestVectorD128()
+    public static void TestVectorD128()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD128(1.0, 2.0));
 
         Vector<double> value2;
         GenericsNative.GetVectorD128Out(1.0, 2.0, &value2);
-        Assert.Equal(value2[0], 1.0);
-        Assert.Equal(value2[1], 2.0);
+        Assert.Equal(1.0, value2[0]);
+        Assert.Equal(2.0, value2[1]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD128Out(1.0, 2.0, out Vector<double> value3));
 
         Vector<double>* value4 = GenericsNative.GetVectorD128Ptr(1.0, 2.0);
-        Assert.Equal((*value4)[0], 1.0);
-        Assert.Equal((*value4)[1], 2.0);
+        Assert.Equal(1.0, (*value4)[0]);
+        Assert.Equal(2.0, (*value4)[1]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD128Ref(1.0, 2.0));
 
@@ -117,24 +119,24 @@ unsafe partial class GenericsTest
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddVectorD128s(in values[0], values.Length));
     }
 
-    private static void TestVectorD256()
+    public static void TestVectorD256()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD256(1.0, 2.0, 3.0, 4.0));
 
         Vector<double> value2;
         GenericsNative.GetVectorD256Out(1.0, 2.0, 3.0, 4.0, &value2);
-        Assert.Equal(value2[0], 1.0);
-        Assert.Equal(value2[1], 2.0);
-        Assert.Equal(value2[2], 3.0);
-        Assert.Equal(value2[3], 4.0);
+        Assert.Equal(1.0, value2[0]);
+        Assert.Equal(2.0, value2[1]);
+        Assert.Equal(3.0, value2[2]);
+        Assert.Equal(4.0, value2[3]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD256Out(1.0, 2.0, 3.0, 4.0, out Vector<double> value3));
 
         Vector<double>* value4 = GenericsNative.GetVectorD256Ptr(1.0, 2.0, 3.0, 4.0);
-        Assert.Equal((*value4)[0], 1.0);
-        Assert.Equal((*value4)[1], 2.0);
-        Assert.Equal((*value4)[2], 3.0);
-        Assert.Equal((*value4)[3], 4.0);
+        Assert.Equal(1.0, (*value4)[0]);
+        Assert.Equal(2.0, (*value4)[1]);
+        Assert.Equal(3.0, (*value4)[2]);
+        Assert.Equal(4.0, (*value4)[3]);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorD256Ref(1.0, 2.0, 3.0, 4.0));
 

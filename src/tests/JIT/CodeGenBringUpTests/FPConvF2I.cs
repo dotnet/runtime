@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPConvF2I
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_FPConvF2I
     public static byte FPConvF2I(double x) { return (byte) x; }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = Fail;
         int x = FPConvF2I(3.14f);

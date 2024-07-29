@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using static System.Collections.Specialized.BitVector32;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -78,7 +77,12 @@ namespace Microsoft.Extensions.DependencyInjection
                     : config.GetSection(configSectionPath);
                 section.Bind(opts, configureBinder);
             });
-            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>();
+
+            optionsBuilder.Services.AddSingleton<IOptionsChangeTokenSource<TOptions>, ConfigurationChangeTokenSource<TOptions>>(sp =>
+            {
+                return new ConfigurationChangeTokenSource<TOptions>(optionsBuilder.Name, sp.GetRequiredService<IConfiguration>());
+            });
+
             return optionsBuilder;
         }
     }

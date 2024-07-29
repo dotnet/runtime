@@ -116,7 +116,12 @@ mini_llvmonly_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 MonoFtnDesc*
 mini_llvmonly_create_ftndesc (MonoMethod *m, gpointer addr, gpointer arg)
 {
-	MonoFtnDesc *ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, sizeof (MonoFtnDesc));
+	MonoFtnDesc *ftndesc;
+
+	if (m->dynamic)
+		ftndesc = mono_dyn_method_alloc0 (m, sizeof (MonoFtnDesc));
+	else
+		ftndesc = (MonoFtnDesc*)m_method_alloc0 (m, sizeof (MonoFtnDesc));
 	ftndesc->addr = addr;
 	ftndesc->arg = arg;
 	ftndesc->method = m;
@@ -459,8 +464,8 @@ mini_llvmonly_get_vtable_trampoline (MonoVTable *vt, int slot_index, int index)
 	if (slot_index < 0) {
 		/* Initialize the IMT trampoline to a 'trampoline' so the generated code doesn't have to initialize it */
 		// FIXME: Memory management
-		gpointer *ftndesc = g_malloc (2 * sizeof (gpointer));
-		IMTTrampInfo *info = g_new0 (IMTTrampInfo, 1);
+		gpointer *ftndesc = m_class_alloc0 (vt->klass, 2 * sizeof (gpointer));
+		IMTTrampInfo *info = m_class_alloc0 (vt->klass, sizeof (IMTTrampInfo));
 		info->vtable = vt;
 		info->slot = index;
 		ftndesc [0] = (gpointer)mini_llvmonly_initial_imt_tramp;
@@ -757,6 +762,12 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 	ERROR_DECL (error);
 	MonoFtnDesc *ftndesc;
 
+	if (info && info->is_virtual) {
+		del->method = mono_object_get_virtual_method_internal (del->target, info->method);
+		/* Create a new one below for the new class+method pair */
+		info = NULL;
+	}
+
 	if (!info && !del->method) {
 		// Multicast delegate init
 		// Have to set the invoke_impl field
@@ -771,7 +782,7 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	if (G_UNLIKELY (!info)) {
 		g_assert (del->method);
-		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method);
+		info = mono_create_delegate_trampoline_info (del->object.vtable->klass, del->method, FALSE);
 	}
 
 	del->method = info->method;
@@ -821,16 +832,6 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 		}
 	}
 	del->invoke_impl = ftndesc;
-}
-
-void
-mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
-{
-	g_assert (target);
-
-	del->method = mono_object_get_virtual_method_internal (target, method);
-
-	mini_llvmonly_init_delegate (del, NULL);
 }
 
 /*
@@ -957,6 +958,8 @@ mini_llvm_init_method (MonoAotFileInfo *info, gpointer aot_module, gpointer meth
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")
+static GENERATE_GET_CLASS_WITH_CACHE (index_out_of_range, "System", "IndexOutOfRangeException")
+static GENERATE_GET_CLASS_WITH_CACHE (invalid_cast, "System", "InvalidCastException")
 
 void
 mini_llvmonly_throw_nullref_exception (void)
@@ -975,6 +978,26 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
+}
+
+void
+mini_llvmonly_throw_index_out_of_range_exception (void)
+{
+	MonoClass *klass = mono_class_get_index_out_of_range_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
+}
+
+void
+mini_llvmonly_throw_invalid_cast_exception (void)
+{
+	MonoClass *klass = mono_class_get_invalid_cast_class ();
+
+	guint32 ex_token_index = m_class_get_type_token (klass) - MONO_TOKEN_TYPE_DEF;
+
+	mini_llvmonly_throw_corlib_exception (ex_token_index);
 }
 
 void

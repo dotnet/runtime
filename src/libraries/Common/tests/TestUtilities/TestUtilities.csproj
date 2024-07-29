@@ -8,7 +8,6 @@
       and instead use runtime checks.
     -->
     <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkMinimum)</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
@@ -107,13 +106,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
+    <!-- Use the arcade fork of xunit.assert for AOT-compat -->
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
 </Project>

@@ -21,8 +21,6 @@ namespace System.Collections.Concurrent
     [EventSource(
         Name = "System.Collections.Concurrent.ConcurrentCollectionsEventSource",
         Guid = "35167F8E-49B2-4b96-AB86-435B59336B5E"
-        //TODO:Bug455853:Add support for reading localized string in the EventSource il2il transform
-        //,LocalizationResources = "mscorlib"
         )]
     internal sealed class CDSCollectionETWBCLProvider : EventSource
     {
@@ -30,7 +28,7 @@ namespace System.Collections.Concurrent
         /// Defines the singleton instance for the collection ETW provider.
         /// The collection provider GUID is {35167F8E-49B2-4b96-AB86-435B59336B5E}.
         /// </summary>
-        public static CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
+        public static readonly CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
         private CDSCollectionETWBCLProvider() { }
 

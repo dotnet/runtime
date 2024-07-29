@@ -11,17 +11,17 @@ namespace System.Reflection
     internal sealed unsafe class RuntimeEventInfo : EventInfo
     {
         #region Private Data Members
-        private int m_token;
-        private EventAttributes m_flags;
+        private readonly int m_token;
+        private readonly EventAttributes m_flags;
         private string? m_name;
-        private void* m_utf8name;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo? m_addMethod;
-        private RuntimeMethodInfo? m_removeMethod;
-        private RuntimeMethodInfo? m_raiseMethod;
-        private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType;
-        private BindingFlags m_bindingFlags;
+        private readonly void* m_utf8name;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeMethodInfo? m_addMethod;
+        private readonly RuntimeMethodInfo? m_removeMethod;
+        private readonly RuntimeMethodInfo? m_raiseMethod;
+        private readonly MethodInfo[]? m_otherMethod;
+        private readonly RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
         #endregion
 
         #region Constructor
@@ -63,10 +63,14 @@ namespace System.Reflection
         #region Object Overrides
         public override string ToString()
         {
-            if (m_addMethod == null || m_addMethod.GetParametersNoCopy().Length == 0)
+            ReadOnlySpan<ParameterInfo> parameters;
+            if (m_addMethod == null ||
+                (parameters = m_addMethod.GetParametersAsSpan()).Length == 0)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
+            }
 
-            return m_addMethod.GetParametersNoCopy()[0].ParameterType.FormatTypeName() + " " + Name;
+            return parameters[0].ParameterType.FormatTypeName() + " " + Name;
         }
 
         public override bool Equals(object? obj) =>

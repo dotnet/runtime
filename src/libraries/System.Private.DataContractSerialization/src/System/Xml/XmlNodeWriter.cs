@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Collections;
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.Serialization;
-using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Xml
@@ -21,7 +21,7 @@ namespace System.Xml
         public abstract void Flush();
         public virtual Task FlushAsync()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public abstract void Close();
         public abstract void WriteDeclaration();
@@ -30,7 +30,7 @@ namespace System.Xml
         public abstract void WriteStartElement(string? prefix, string localName);
         public virtual Task WriteStartElementAsync(string? prefix, string localName)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public virtual void WriteStartElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
@@ -40,12 +40,12 @@ namespace System.Xml
         public abstract void WriteEndStartElement(bool isEmpty);
         public virtual Task WriteEndStartElementAsync(bool isEmpty)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public abstract void WriteEndElement(string? prefix, string localName);
         public virtual Task WriteEndElementAsync(string? prefix, string localName)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public virtual void WriteEndElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
@@ -66,7 +66,7 @@ namespace System.Xml
         public abstract void WriteEndAttribute();
         public virtual Task WriteEndAttributeAsync()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public abstract void WriteCharEntity(int ch);
         public abstract void WriteEscapedText(string value);
@@ -94,7 +94,7 @@ namespace System.Xml
         public abstract void WriteBase64Text(byte[] trailBuffer, int trailCount, byte[] buffer, int offset, int count);
         public virtual Task WriteBase64TextAsync(byte[] trailBuffer, int trailCount, byte[] buffer, int offset, int count)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
+            throw NotImplemented.ByDesign;
         }
         public abstract void WriteQualifiedName(string prefix, XmlDictionaryString localName);
 

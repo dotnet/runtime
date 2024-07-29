@@ -9,21 +9,23 @@ parameters:
   crossBuild: false
   strategy: ''
   pool: ''
+  logsName: ''
 
   # arcade-specific parameters
   condition: ''
   continueOnError: false
   dependsOn: ''
-  dependOnEvaluatePaths: false
   displayName: ''
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  disableComponentGovernance: ''
+  templatePath: 'templates'
 
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
 
     name: ${{ parameters.name }}
@@ -31,8 +33,6 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-        - evaluate_paths
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 
@@ -54,11 +54,11 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if eq(parameters.osGroup, 'linux') }}:
       agentOs: Ubuntu
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    ${{ if eq(parameters.osGroup, 'freebsd') }}:
       agentOs: FreeBSD
-    ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
+    ${{ if in(parameters.osGroup, 'osx', 'ios') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'windows') }}:
       agentOs: windows
@@ -66,24 +66,26 @@ jobs:
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
       disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline
     # storage. Only relevant for build jobs.
     enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
 
+    artifacts:
+      publish:
+        ${{ if ne(parameters.logsName, '') }}:
+          logs:
+            name: '${{ parameters.logsName }}'
+
     variables:
     - name: buildConfig
       value: ${{ parameters.buildConfig }}
 
-    - name: archType
-      value: ${{ parameters.archType }}
-
-    - name: osGroup
-      value: ${{ parameters.osGroup }}
-
-    - name: osSubgroup
-      value: ${{ parameters.osSubgroup }}
+    - name: _BuildConfig
+      value: ${{ parameters.buildConfig }}
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
@@ -105,6 +107,9 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
+
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)

@@ -31,16 +31,6 @@ namespace System.Globalization
         // Number of days in 4 years
         private const int JulianDaysPer4Years = JulianDaysPerYear * 4 + 1;
 
-        private static readonly int[] s_daysToMonth365 =
-        {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365
-        };
-
-        private static readonly int[] s_daysToMonth366 =
-        {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
-        };
-
         // Gregorian Calendar 9999/12/31 = Julian Calendar 9999/10/19
         // keep it as variable field for serialization compat.
         internal int MaxYear = 9999;
@@ -106,7 +96,7 @@ namespace System.Globalization
             }
 
             bool isLeapYear = (year % 4) == 0;
-            int[] days = isLeapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = isLeapYear ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int monthDays = days[month] - days[month - 1];
             if (day < 1 || day > monthDays)
             {
@@ -121,13 +111,13 @@ namespace System.Globalization
         /// Returns a given date part of this DateTime. This method is used
         /// to compute the year, day-of-year, month, or day part.
         /// </summary>
-        internal static int GetDatePart(long ticks, int part)
+        private static int GetDatePart(long ticks, int part)
         {
             // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is referred to Gregorian 1/1/0001.
             // The following line convert Gregorian ticks to Julian ticks.
-            long julianTicks = ticks + TicksPerDay * 2;
+            long julianTicks = ticks + TimeSpan.TicksPerDay * 2;
             // n = number of days since 1/1/0001
-            int n = (int)(julianTicks / TicksPerDay);
+            int n = (int)(julianTicks / TimeSpan.TicksPerDay);
             // y4 = number of whole 4-year periods within 100-year period
             int y4 = n / JulianDaysPer4Years;
             // n = day number within 4-year period
@@ -153,7 +143,7 @@ namespace System.Globalization
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = (y1 == 3);
-            int[] days = leapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = leapYear ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             int m = (n >> 5) + 1;
@@ -178,13 +168,13 @@ namespace System.Globalization
         /// </summary>
         internal static long DateToTicks(int year, int month, int day)
         {
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int y = year - 1;
             int n = y * 365 + y / 4 + days[month - 1] + day - 1;
             // Gregorian 1/1/0001 is Julian 1/3/0001. n * TicksPerDay is the ticks in JulianCalendar.
             // Therefore, we subtract two days in the following to convert the ticks in JulianCalendar
             // to ticks in Gregorian calendar.
-            return (n - 2) * TicksPerDay;
+            return (n - 2) * TimeSpan.TicksPerDay;
         }
 
         public override DateTime AddMonths(DateTime time, int months)
@@ -212,15 +202,15 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int days = daysArray[m] - daysArray[m - 1];
             if (d > days)
             {
                 d = days;
             }
 
-            long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            long ticks = DateToTicks(y, m, d) + time.Ticks % TimeSpan.TicksPerDay;
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -245,7 +235,7 @@ namespace System.Globalization
         {
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             return days[month] - days[month - 1];
         }
 
@@ -262,7 +252,7 @@ namespace System.Globalization
             return GetDatePart(time.Ticks, DatePartMonth);
         }
 
-        public override int[] Eras => new int[] { JulianEra };
+        public override int[] Eras => [JulianEra];
 
         public override int GetMonthsInYear(int year, int era)
         {
@@ -313,12 +303,12 @@ namespace System.Globalization
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
             CheckDayRange(year, month, day);
-            if (millisecond < 0 || millisecond >= MillisPerSecond)
+            if (millisecond < 0 || millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecond),
                     millisecond,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0, TimeSpan.MillisecondsPerSecond - 1));
             }
 
             if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60 || second < 0 || second >= 60)

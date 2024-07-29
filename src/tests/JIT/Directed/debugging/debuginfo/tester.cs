@@ -15,10 +15,12 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Tracing.Tests.Common;
 using DebugInfoMethodsD = tests_d::DebugInfoMethods;
 using DebugInfoMethodsR = tests_r::DebugInfoMethods;
+using Xunit;
 
 public unsafe class DebugInfoTest
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         var keywords =
             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.JittedMethodILToNativeMap;

@@ -212,7 +212,7 @@ namespace System.IO
         {
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(encoding);
@@ -225,7 +225,7 @@ namespace System.IO
             return new FileStream(path, options);
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
+        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
             ArgumentNullException.ThrowIfNull(encoding);
@@ -320,7 +320,7 @@ namespace System.IO
 
             if (_charPos == _charLen)
             {
-                if (_isBlocked || ReadBuffer() == 0)
+                if (ReadBuffer() == 0)
                 {
                     return -1;
                 }

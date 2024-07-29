@@ -11,9 +11,8 @@ namespace System.Globalization
         private const int nDaysPerMonth = 3;
 
         // # of days so far in the solar year
-        private static readonly int[] s_daysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
-
-        private static readonly int[] s_daysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 };
+        private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+        private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
 
         public override CalendarAlgorithmType AlgorithmType => CalendarAlgorithmType.LunisolarCalendar;
 
@@ -83,7 +82,7 @@ namespace System.Globalization
                 return MinCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -113,7 +112,7 @@ namespace System.Globalization
                 return MaxCalendarYear;
             }
 
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -153,7 +152,7 @@ namespace System.Globalization
 
         internal void CheckEraRange(int era)
         {
-            if (era == Calendar.CurrentEra)
+            if (era == CurrentEra)
             {
                 era = CurrentEraValue;
             }
@@ -273,7 +272,7 @@ namespace System.Globalization
             int jan1Date;
 
             // Calculate the day number in the solar year.
-            int solarDay = isLeapYear ? s_daysToMonth366[solarMonth - 1] : s_daysToMonth365[solarMonth - 1];
+            int solarDay = isLeapYear ? DaysToMonth366[solarMonth - 1] : DaysToMonth365[solarMonth - 1];
             solarDay += solarDate;
 
             // Calculate the day number in the lunar year.
@@ -314,7 +313,7 @@ namespace System.Globalization
             // part of the lunar year.  since this part is always in Jan or Feb,
             // we don't need to handle Leap Year (LY only affects March
             // and later).
-            lunarDay -= s_daysToMonth365[jan1Month - 1];
+            lunarDay -= DaysToMonth365[jan1Month - 1];
             lunarDay -= (jan1Date - 1);
 
             // convert the lunar day into a lunar month/date
@@ -362,7 +361,7 @@ namespace System.Globalization
 
             // calc the solar day of year of 1 Lunar day
             bool isLeapYear = GregorianIsLeapYear(lunarYear);
-            int[] days = isLeapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = isLeapYear ? DaysToMonth366 : DaysToMonth365;
 
             solarDay = jan1Date;
 

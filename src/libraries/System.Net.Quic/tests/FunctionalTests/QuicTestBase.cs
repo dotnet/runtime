@@ -13,9 +13,13 @@ using Xunit;
 using Xunit.Abstractions;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
+using System.Reflection;
+using Microsoft.Quic;
 
 namespace System.Net.Quic.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public abstract class QuicTestBase : IDisposable
     {
         public const long DefaultStreamErrorCodeClient = 123456;
@@ -27,9 +31,9 @@ namespace System.Net.Quic.Tests
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+        public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
 
-        private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
-        public static bool IsIPv6Available => _isIPv6Available.Value;
+        public static bool IsIPv6Available => Configuration.Sockets.IsIPv6LoopbackAvailable;
 
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
@@ -84,13 +88,13 @@ namespace System.Net.Quic.Tests
             };
         }
 
-        public SslClientAuthenticationOptions GetSslClientAuthenticationOptions()
+        public SslClientAuthenticationOptions GetSslClientAuthenticationOptions(string targetHost = "localhost")
         {
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 RemoteCertificateValidationCallback = RemoteCertificateValidationCallback,
-                TargetHost = "localhost"
+                TargetHost = targetHost
             };
         }
 
@@ -116,29 +120,46 @@ namespace System.Net.Quic.Tests
             return QuicConnection.ConnectAsync(clientOptions);
         }
 
-        internal QuicListenerOptions CreateQuicListenerOptions()
+        internal QuicListenerOptions CreateQuicListenerOptions(IPAddress address = null, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
+            address ??= IPAddress.Loopback;
             return new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(address, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var options = CreateQuicServerOptions();
+                    if (changeServerOptions is not null)
+                    {
+                        changeServerOptions(options);
+                    }
+                    return ValueTask.FromResult(options);
+                }
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(int MaxInboundUnidirectionalStreams = 100, int MaxInboundBidirectionalStreams = 100)
+        internal ValueTask<QuicListener> CreateQuicListener(IPAddress address = null, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
-            var options = CreateQuicListenerOptions();
+            var options = CreateQuicListenerOptions(address, changeServerOptions);
             return CreateQuicListener(options);
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint)
+        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
             var options = new QuicListenerOptions()
             {
                 ListenEndPoint = endpoint,
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var options = CreateQuicServerOptions();
+                    if (changeServerOptions is not null)
+                    {
+                        changeServerOptions(options);
+                    }
+                    return ValueTask.FromResult(options);
+                }
             };
             return CreateQuicListener(options);
         }
@@ -335,7 +356,7 @@ namespace System.Net.Quic.Tests
         internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: true, iterations, millisecondsTimeout);
 
-        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
+        internal Task RunUnidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: false, iterations, millisecondsTimeout);
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
@@ -369,20 +390,6 @@ namespace System.Net.Quic.Tests
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
-
-        internal static bool GetIsIPv6Available()
-        {
-            try
-            {
-                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
-                return true;
-            }
-            catch (SocketException)
-            {
-                return false;
             }
         }
     }

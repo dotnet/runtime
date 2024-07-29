@@ -1,15 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using Test.Cryptography;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Linq;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class PfxTests
     {
+        private const long UnspecifiedIterations = -2;
+        private const long UnlimitedIterations = -1;
+        internal const long DefaultIterations = 600_000;
+        private const long DefaultIterationsWindows = 600_000;
+
+        // We don't know for sure this is a correct Windows version when this support was added but
+        // we know for a fact lower versions don't support it.
+        public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
+
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
             get
@@ -237,6 +251,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Only windows cares about the key usage attribute in the PKCS12
+        public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
+        {
+            // [SuppressMessage("Microsoft.Security", "CSCAN0220.DefaultPasswordContexts", Justification="Legacy Test Data")]
+            using (X509Certificate2 cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test"))
+            {
+                    Assert.Null(cert.GetECDiffieHellmanPrivateKey());
+                    Assert.NotNull(cert.GetECDiffieHellmanPublicKey());
+                    Assert.NotNull(cert.GetECDsaPrivateKey());
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void DsaPrivateKeyProperty()
         {
@@ -454,6 +481,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void VerifyNamesWithDuplicateAttributes()
+        {
+            // This is the same as the Windows Attributes test for X509CertificateLoaderPkcs12Tests,
+            // but using the legacy X509Certificate2 ctor, to test the settings for that set of
+            // loader limits with respect to duplicates.
+
+            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
+
+            using (cert)
+            {
+                Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cert.FriendlyName);
+
+                    using (RSA key = cert.GetRSAPrivateKey())
+                    using (CngKey cngKey = Assert.IsType<RSACng>(key).Key)
+                    {
+                        Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cngKey.Provider.Provider);
+                        Assert.True(cngKey.IsMachineKey, "cngKey.IsMachineKey");
+
+                        // If keyname000 gets taken, we'll get a random key name on import.  What's important is that we
+                        // don't pick the second entry: keyname001.
+                        Assert.NotEqual("keyname001", cngKey.KeyName);
+                    }
+                }
+            }
+        }
+
+        internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
+        {
+            if (allowedIterations == UnlimitedIterations)
+            {
+                return true;
+            }
+
+            if (allowedIterations == UnspecifiedIterations)
+            {
+                allowedIterations = DefaultIterations;
+            }
+
+            Assert.True(allowedIterations >= 0);
+
+            return iterationCount <= allowedIterations;
+        }
+
+        // This is a horrible way to produce SecureString. SecureString is deprecated and should not be used.
+        // This is only reasonable because it is a test driver.
+        internal static SecureString GetSecureString(string password)
+        {
+            if (password == null)
+                return null;
+
+            SecureString secureString = new SecureString();
+            foreach (char c in password)
+            {
+                secureString.AppendChar(c);
+            }
+
+            return secureString;
+        }
+
         // Keep the ECDsaCng-ness contained within this helper method so that it doesn't trigger a
         // FileNotFoundException on Unix.
         private static void AssertEccAlgorithm(ECDsa ecdsa, string algorithmId)
@@ -482,5 +574,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             c.Dispose();
             return newC;
         }
+
+        internal delegate ulong GetIterationCountDelegate(ReadOnlySpan<byte> pkcs12, out int bytesConsumed);
     }
 }

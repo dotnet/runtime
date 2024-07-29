@@ -734,7 +734,11 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	mono_restore_context (&ctx);
 }
@@ -834,5 +838,8 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 	ctx->regs[2] = (gulong)handler_ftnptr->toc;
 #else
 	MONO_CONTEXT_SET_IP(ctx, (unsigned long) func);
+#ifdef TARGET_POWERPC64
+        ctx->regs[12] = (gulong)func;
+#endif
 #endif
 }

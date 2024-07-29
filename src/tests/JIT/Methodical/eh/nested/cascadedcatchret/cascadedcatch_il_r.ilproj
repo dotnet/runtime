@@ -6,6 +6,7 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cascadedcatch_r.il" />
     <Compile Include="cascadedcatch.il" />
   </ItemGroup>
   <ItemGroup>

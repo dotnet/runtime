@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsXarchOnly>true</HWITestsXarchOnly>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

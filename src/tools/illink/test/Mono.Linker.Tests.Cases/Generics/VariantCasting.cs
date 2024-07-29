@@ -1,11 +1,16 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+﻿using System.Reflection;
+
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
 	public class VariantCasting
 	{
 		[Kept]
-		interface IVariant<out T> { }
+		interface IVariant<
+			[KeptGenericParamAttributes (GenericParameterAttributes.Covariant)]
+			out T
+		> { }
 
 		[Kept]
 		interface IFoo { }
@@ -15,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Generics
 		class Foo : IFoo
 		{
 			// Even though Foo is never allocated (as seen from the removal of the constructor),
-			// we need to make sure linker keeps its interface list because it's relevant
+			// we need to make sure trimming tools keep its interface list because it's relevant
 			// for variant casting.
 			public Foo () { }
 		}
@@ -32,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.Generics
 		class Derived : Base
 		{
 			// Even though Derived is never allocated (as seen from the removal of the constructor),
-			// we need to make sure linker keeps its base types because it's relevant
+			// we need to make sure trimming tools keep its base types because it's relevant
 			// for variant casting.
 			public Derived () { }
 		}

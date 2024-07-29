@@ -3,20 +3,22 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 unsafe public class GitHub_24846
 {
-    public static void TestCopy(byte* destination, byte* source)
+    internal static void TestCopy(byte* destination, byte* source)
     {
         Unsafe.CopyBlockUnaligned(destination, source, 0);
     }
 
-    public static void TestInit(byte* destination)
+    internal static void TestInit(byte* destination)
     {
         Unsafe.InitBlockUnaligned(destination, 0xff, 0);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = 100;
         var destination = new byte[1];

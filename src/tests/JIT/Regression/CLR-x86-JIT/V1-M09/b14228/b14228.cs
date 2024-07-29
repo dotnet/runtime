@@ -3,18 +3,19 @@
 
 
 using System;
+using Xunit;
 
 
 namespace DefaultNamespace
 {
     public class MainClass
     {
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Decimal c1 = new Decimal();
 
             Console.WriteLine(c1);
-            return 100;
         }
     }
 }

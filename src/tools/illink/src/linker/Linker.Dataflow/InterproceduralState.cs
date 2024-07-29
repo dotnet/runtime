@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -31,10 +32,10 @@ namespace Mono.Linker.Dataflow
 		public override bool Equals (object? obj)
 			=> obj is InterproceduralState state && Equals (state);
 
-		public override int GetHashCode () => base.GetHashCode ();
+		public override int GetHashCode () => HashUtils.Combine (MethodBodies.GetHashCode (), HoistedLocals.GetHashCode ());
 
 		public InterproceduralState Clone ()
-			=> new (MethodBodies.Clone (), HoistedLocals.Clone (), lattice);
+			=> new (MethodBodies.DeepCopy (), HoistedLocals.Clone (), lattice);
 
 		public void TrackMethod (MethodDefinition method)
 		{
@@ -52,7 +53,8 @@ namespace Mono.Linker.Dataflow
 		public void TrackMethod (MethodIL methodIL)
 		{
 			// Work around the fact that ValueSet is readonly
-			var methodsList = new List<MethodIL> (MethodBodies);
+			Debug.Assert (!MethodBodies.IsUnknown ());
+			var methodsList = new List<MethodIL> (MethodBodies.GetKnownValues ());
 			methodsList.Add (methodIL);
 
 			// For state machine methods, also scan the state machine members.

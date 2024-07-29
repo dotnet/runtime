@@ -15,6 +15,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 //using BenchmarkDotNet.Attributes;
 //using MicroBenchmarks;
 
@@ -23,9 +24,16 @@ namespace BenchmarksGame
     //[BenchmarkCategory(Categories.Runtime, Categories.BenchmarksGame, Categories.JIT)]
     public unsafe class FannkuchRedux_9
     {
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
-            int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             int sum = Bench(n, true);
 
             int expected = 228;

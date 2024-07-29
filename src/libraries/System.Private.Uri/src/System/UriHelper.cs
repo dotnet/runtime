@@ -1,15 +1,24 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Buffers;
+using System.Text;
 
 namespace System
 {
     internal static class UriHelper
     {
+        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        {
+            return string.Create(span.Length, span, static (buffer, span) =>
+            {
+                int charsWritten = span.ToLowerInvariant(buffer);
+                Debug.Assert(charsWritten == buffer.Length);
+            });
+        }
+
         // http://host/Path/Path/File?Query is the base of
         //      - http://host/Path/Path/File/ ...    (those "File" words may be different in semantic but anyway)
         //      - http://host/Path/Path/#Fragment
@@ -107,30 +116,104 @@ namespace System
             return true;
         }
 
-        internal static string EscapeString(string stringToEscape, bool checkExistingEscaped, IndexOfAnyValues<char> noEscape)
+        public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten)
+        {
+            if (destination.Length < charsToEscape.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            int indexOfFirstToEscape = charsToEscape.IndexOfAnyExcept(Unreserved);
+            if (indexOfFirstToEscape < 0)
+            {
+                // Nothing to escape, just copy the original chars.
+                charsToEscape.CopyTo(destination);
+                charsWritten = charsToEscape.Length;
+                return true;
+            }
+
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            scoped ValueStringBuilder vsb;
+
+            // If the input and destination buffers overlap, we must take care not to overwrite parts of the input before we've processed it.
+            bool overlapped = charsToEscape.Overlaps(destination);
+
+            if (overlapped)
+            {
+                vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+                vsb.EnsureCapacity(charsToEscape.Length);
+            }
+            else
+            {
+                vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToEscape));
+            }
+
+            EscapeStringToBuilder(charsToEscape.Slice(indexOfFirstToEscape), ref vsb, Unreserved, checkExistingEscaped: false);
+
+            int newLength = checked(indexOfFirstToEscape + vsb.Length);
+            Debug.Assert(newLength > charsToEscape.Length);
+
+            if (destination.Length >= newLength)
+            {
+                charsToEscape.Slice(0, indexOfFirstToEscape).CopyTo(destination);
+
+                if (overlapped)
+                {
+                    vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToEscape));
+                    vsb.Dispose();
+                }
+                else
+                {
+                    // We are expecting the builder not to grow if the original span was large enough.
+                    // This means that we MUST NOT over allocate anywhere in EscapeStringToBuilder (e.g. append and then decrease the length).
+                    Debug.Assert(vsb.RawChars.Overlaps(destination));
+                }
+
+                charsWritten = newLength;
+                return true;
+            }
+
+            vsb.Dispose();
+            charsWritten = 0;
+            return false;
+        }
+
+        public static string EscapeString(string stringToEscape, bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             ArgumentNullException.ThrowIfNull(stringToEscape);
 
-            Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
+            return EscapeString(stringToEscape, checkExistingEscaped, noEscape, stringToEscape);
+        }
 
-            int indexOfFirstToEscape = stringToEscape.AsSpan().IndexOfAnyExcept(noEscape);
+        public static string EscapeString(ReadOnlySpan<char> charsToEscape, bool checkExistingEscaped, SearchValues<char> noEscape, string? backingString)
+        {
+            Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
+            Debug.Assert(backingString is null || backingString.Length == charsToEscape.Length);
+
+            int indexOfFirstToEscape = charsToEscape.IndexOfAnyExcept(noEscape);
             if (indexOfFirstToEscape < 0)
             {
-                // Nothing to escape, just return the original string.
-                return stringToEscape;
+                // Nothing to escape, just return the original value.
+                return backingString ?? charsToEscape.ToString();
             }
 
             // Otherwise, create a ValueStringBuilder to store the escaped data into,
-            // append to it all of the noEscape chars we already iterated through,
-            // escape the rest, and return the result as a string.
+            // escape the rest, and concat the result with the characters we skipped above.
             var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
-            vsb.Append(stringToEscape.AsSpan(0, indexOfFirstToEscape));
-            EscapeStringToBuilder(stringToEscape.AsSpan(indexOfFirstToEscape), ref vsb, noEscape, checkExistingEscaped);
-            return vsb.ToString();
+
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            vsb.EnsureCapacity(charsToEscape.Length);
+
+            EscapeStringToBuilder(charsToEscape.Slice(indexOfFirstToEscape), ref vsb, noEscape, checkExistingEscaped);
+
+            string result = string.Concat(charsToEscape.Slice(0, indexOfFirstToEscape), vsb.AsSpan());
+            vsb.Dispose();
+            return result;
         }
 
-        internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
-            bool checkExistingEscaped, IndexOfAnyValues<char> noEscape)
+        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+            bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
 
@@ -149,8 +232,8 @@ namespace System
         }
 
         private static void EscapeStringToBuilder(
-            ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
-            IndexOfAnyValues<char> noEscape, bool checkExistingEscaped)
+            scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
+            SearchValues<char> noEscape, bool checkExistingEscaped)
         {
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));
 
@@ -269,7 +352,7 @@ namespace System
                 UnescapeString(pStr, start, end, ref dest, rsvd1, rsvd2, rsvd3, unescapeMode, syntax, isQuery);
             }
         }
-        internal static unsafe void UnescapeString(ReadOnlySpan<char> input, ref ValueStringBuilder dest,
+        internal static unsafe void UnescapeString(scoped ReadOnlySpan<char> input, scoped ref ValueStringBuilder dest,
            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
             fixed (char* pStr = &MemoryMarshal.GetReference(input))
@@ -290,7 +373,7 @@ namespace System
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
 
-            for (int next = start; next < end; )
+            for (int next = start; next < end;)
             {
                 char ch = (char)0;
 
@@ -311,11 +394,6 @@ namespace System
                             {
                                 if (ch == Uri.c_DummyChar)
                                 {
-                                    if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                                    {
-                                        // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                        throw new UriFormatException(SR.net_uri_BadString);
-                                    }
                                     continue;
                                 }
                             }
@@ -358,11 +436,6 @@ namespace System
                         }
                         else if (unescapeMode >= UnescapeMode.UnescapeAll)
                         {
-                            if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                            {
-                                // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                throw new UriFormatException(SR.net_uri_BadString);
-                            }
                             // keep a '%' as part of a bogus sequence
                             continue;
                         }
@@ -485,18 +558,18 @@ namespace System
         }
 
         // true for all ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'
-        public static readonly IndexOfAnyValues<char> Unreserved =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> Unreserved =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
 
         // true for all ASCII letters and digits, as well as the RFC3986 reserved characters, unreserved characters, and hash
-        public static readonly IndexOfAnyValues<char> UnreservedReserved =
-            IndexOfAnyValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReserved =
+            SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
-        public static readonly IndexOfAnyValues<char> UnreservedReservedExceptHash =
-            IndexOfAnyValues.Create("!$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReservedExceptHash =
+            SearchValues.Create("!$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
-        public static readonly IndexOfAnyValues<char> UnreservedReservedExceptQuestionMarkHash =
-            IndexOfAnyValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        public static readonly SearchValues<char> UnreservedReservedExceptQuestionMarkHash =
+            SearchValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
         //
         // Is this a gen delim char from RFC 3986
@@ -543,12 +616,10 @@ namespace System
                 return backingString ?? new string(strToClean);
             }
 
-#pragma warning disable CS8500 // takes address of managed type
-            ReadOnlySpan<char> tmpStrToClean = strToClean; // avoid address exposing the span and impacting the other code in the method that uses it
-            return string.Create(tmpStrToClean.Length - charsToRemove, (IntPtr)(&tmpStrToClean), static (buffer, strToCleanPtr) =>
+            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
-                foreach (char c in *(ReadOnlySpan<char>*)strToCleanPtr)
+                foreach (char c in strToClean)
                 {
                     if (!IsBidiControlCharacter(c))
                     {
@@ -557,7 +628,6 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
-#pragma warning restore CS8500
         }
     }
 }

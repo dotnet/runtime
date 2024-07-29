@@ -6,13 +6,15 @@
 //The test checks for a gchole and an assert. The expected output is 33 and 3 when the test passes.
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 class IntWrapper
 {
     public int value;
 }
 
-class ReproTwo
+public class ReproTwo
 {
     static IntWrapper Add36(int ecx, int edx, int i3, int i4, int i5, int i6,
                                               int i7, int i8, int i9, int i10,
@@ -162,15 +164,14 @@ class ReproTwo
 
     }
 
-    static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint() => Run(0);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Run(int val)
     {
         try
         {
-            int val = 0;
-            if (args.Length > 0)
-            {
-                val = Int32.Parse(args[0]);
-            }
             bool bugResult = Bug(val);
             if (bugResult) return 100;
             else return 101;
@@ -181,7 +182,5 @@ class ReproTwo
             Console.WriteLine(e.Message);
             return 666;
         }
-
-
     }
 }

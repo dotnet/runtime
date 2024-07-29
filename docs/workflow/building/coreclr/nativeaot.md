@@ -22,13 +22,12 @@ The Native AOT toolchain can be currently built for Linux (x64/arm64), macOS (x6
 
 The paths to major components can be overridden using `IlcToolsPath`, `IlcSdkPath`, `IlcFrameworkPath`, `IlcFrameworkNativePath` and `IlcMibcPath` properties for `dotnet publish`. For example, `/p:IlcToolsPath=<repo root>\artifacts\bin\coreclr\windows.x64.Debug\ilc` can be used to override the compiler with a local debug build for troubleshooting or quick iterations.
 
-The component that writes out object files (objwriter.dll/libobjwriter.so/libobjwriter.dylib) is based on LLVM and doesn't build in the runtime repo. It gets published as a NuGet package out of the [dotnet/llvm-project](https://github.com/dotnet/llvm-project) repo (branch [objwriter/12.x](https://github.com/dotnet/llvm-project/tree/objwriter/12.x)). If you're working on ObjWriter or bringing up a new platform that doesn't have ObjWriter packages yet, as additional pre-requisites you need to build objwriter out of that repo and replace the file in the output.
-
 ### Building packages
 
 Run `build[.cmd|.sh] -c Release` from the repo root to build the NativeAOT toolchain packages. The build will place the toolchain packages at `artifacts\packages\Release\Shipping`. To publish your project using these packages:
 
 * Add the package directory to your `nuget.config` file. For example, add `<add key="local" value="C:\runtime\artifacts\packages\Release\Shipping" />`
+* Run `dotnet add package Microsoft.DotNet.ILCompiler -v 9.0.0-dev` to add the local package reference to your project.
 * Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
 
 ## High Level Overview
@@ -75,7 +74,7 @@ The workflow looks like this:
 * Build the repo using the Building instructions above
 * Open the ilc.sln solution described above. This solution contains the compiler, but also an unrelated project named "repro". This repro project is a small Hello World. You can place any piece of C# you would like to compile in it. Building the project will compile the source code into IL, but also generate a response file that is suitable to pass to the AOT compiler.
 * Make sure you set the solution configuration in VS to the configuration you just built (e.g. x64 Debug).
-* In the ILCompiler project properties, on the Debug tab, set the "Application arguments" to the generated response file. This will be a file such as "C:\runtime\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp". Prefix the path to the file with "@" to indicate this is a response file so that the "Application arguments" field looks like "@some\path\to\file.rsp".
+* In the ILCompiler project properties, on the Debug tab, set the "Application arguments" to `@$(ArtifactsBinDir)repro\$(TargetArchitecture)\$(Configuration)\compile-with-Release-libs.rsp`. The `@` at the front of the argument indicates that this is the path to the response file generated when "repro" was built. Adjust the "compile-with-Release-libs" part to "compile-with-Debug-libs" depending on how you built the libraries (the `-lc` argument to `build.cmd`). Visual Studio will expand the path to something like `@C:\runtime\artifacts\bin\repro\x64\Debug\compile-with-Release-libs.rsp`.
 * Build & run ILCompiler using **F5**. This will compile the repro project into an `.obj` file. You can debug the compiler and set breakpoints in it at this point.
 * The last step is linking the object file into an executable so that we can launch the result of the AOT compilation.
 * Open the src\coreclr\tools\aot\ILCompiler\reproNative\reproNative.vcxproj project in Visual Studio. This project is configured to pick up the `.obj` file we just compiled and link it with the rest of the runtime.
@@ -88,14 +87,14 @@ If you haven't built the tests yet, run `src\tests\build.cmd nativeaot [Debug|Re
 
 To run all the tests that got built, run `src\tests\run.cmd runnativeaottests [Debug|Release]` on Windows, or `src/tests/run.sh --runnativeaottests [Debug|Release]` on Linux. The `Debug`/`Release` flag should match the flag that was passed to `build.cmd` in the previous step.
 
-To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[Windows|Linux|OSX[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
+To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[windows|linux|osx[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
 
-* CORE_ROOT=$repo_root\artifacts\tests\coreclr\[Windows|Linux|OSX].x64.[Debug|Release]\Tests\Core_Root
+* CORE_ROOT=$repo_root\artifacts\tests\coreclr\[windows|linux|osx].x64.[Debug|Release]\Tests\Core_Root
 * CLRCustomTestLauncher=$repo_root\src\tests\Common\scripts\nativeaottest[.cmd|.sh]
 
 `$repo_root` is the root of your clone of the repo.
 
-Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[Windows|Linux|OSX].x64.[Debug|Release]\Managed`.
+Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[windows|linux|osx].x64.[Debug|Release]\Managed`.
 
 For more advanced scenarios, look for at [Building the Tests](/docs/workflow/testing/coreclr/testing.md#building-the-tests) and [Building the Core_Root](../../testing/coreclr/testing.md#building-the-coreroot)
 
@@ -107,6 +106,10 @@ Build library tests by passing the `libs.tests` subset together with the `/p:Tes
 
 * [ILC Compiler Architecture](/docs/design/coreclr/botr/ilc-architecture.md)
 * [Managed Type System](/docs/design/coreclr/botr/managed-type-system.md)
+
+## Native Sanitizers
+
+Using native sanitizers with NativeAOT requires additional care compared to using them with CoreCLR. In addition to passing the `-fsanitize` flag to the command that builds NativeAOT, you must also pass the `EnableNativeSanitizers` MSBuild property to any commands that build projects with a sanitized NativeAOT build to ensure that any sanitizer runtimes are correctly linked with the project.
 
 ## Further Reading
 

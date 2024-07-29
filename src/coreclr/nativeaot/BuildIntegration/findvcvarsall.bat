@@ -33,6 +33,9 @@ IF /I "%~1"=="arm64" (
     SET vcEnvironment=x86_arm64
     IF /I "%procArch%"=="AMD64" SET vcEnvironment=amd64_arm64
 )
+IF /I "%~1"=="x86" (
+    IF /I "%procArch%"=="AMD64" SET vcEnvironment=amd64_x86
+)
 
 CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %vcEnvironment% > NUL
 

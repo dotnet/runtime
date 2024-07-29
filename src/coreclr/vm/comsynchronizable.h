@@ -54,33 +54,23 @@ public:
 
     static FCDECL1(INT32,   GetPriority,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(void,    SetPriority,       ThreadBaseObject* pThisUNSAFE, INT32 iPriority);
-    static FCDECL1(void,    Interrupt,         ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsAlive,       ThreadBaseObject* pThisUNSAFE);
     static FCDECL2(FC_BOOL_RET, Join,          ThreadBaseObject* pThisUNSAFE, INT32 Timeout);
-    static FCDECL1(void,    Sleep,             INT32 iTime);
     static FCDECL1(void,    Initialize,        ThreadBaseObject* pThisUNSAFE);
-    static FCDECL2(void,    SetBackground,     ThreadBaseObject* pThisUNSAFE, CLR_BOOL isBackground);
-    static FCDECL1(FC_BOOL_RET, IsBackground,  ThreadBaseObject* pThisUNSAFE);
+    static FCDECL1(FC_BOOL_RET, GetIsBackground,  ThreadBaseObject* pThisUNSAFE);
     static FCDECL1(INT32,   GetThreadState,    ThreadBaseObject* pThisUNSAFE);
-    static FCDECL1(INT32,   GetThreadContext,  ThreadBaseObject* pThisUNSAFE);
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     static FCDECL1(INT32,   GetApartmentState, ThreadBaseObject* pThis);
     static FCDECL2(INT32,   SetApartmentState, ThreadBaseObject* pThisUNSAFE, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 
-    static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,    SpinWait,                       int iterations);
     static FCDECL0(Object*, GetCurrentThread);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
-#ifdef FEATURE_COMINTEROP
-    static FCDECL1(void,    DisableComObjectEagerCleanup,   ThreadBaseObject* pThis);
-#endif //FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
-
-    static FCDECL0(INT32,   GetCurrentProcessorNumber);
 
     static void Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName);
     static void InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len);
@@ -98,13 +88,18 @@ private:
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, PCWSTR pThreadName);
-extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0();
+extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
-extern "C" UINT64 QCALLTYPE ThreadNative_GetProcessDefaultStackSize();
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
+extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
+extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
+#ifdef FEATURE_COMINTEROP
+extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
+#endif // FEATURE_COMINTEROP
 
 #endif // _COMSYNCHRONIZABLE_H
 

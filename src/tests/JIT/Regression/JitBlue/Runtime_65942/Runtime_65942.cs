@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class Runtime_65942
+public unsafe class Runtime_65942
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Test1(double* a, int i)
@@ -17,13 +18,13 @@ unsafe class Runtime_65942
         float unused1 = a[i];
     }
 
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         double d = 0;
         Test1(&d, 0);
 
         float f = 0;
         Test2(&f, 0);
-        return 100;
     }
 }

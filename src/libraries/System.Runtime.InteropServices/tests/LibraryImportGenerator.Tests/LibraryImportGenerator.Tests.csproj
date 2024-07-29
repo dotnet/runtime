@@ -1,16 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
+    <ReferencesNativeExports>true</ReferencesNativeExports>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Declare InteropCompilerGeneratedFilesOutputPath to put generated files in a single repo to easily view diffs -->
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' == ''">$(OutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' != ''">$(InteropCompilerGeneratedFilesOutputPath)\LibraryImportGenerator.Tests</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />

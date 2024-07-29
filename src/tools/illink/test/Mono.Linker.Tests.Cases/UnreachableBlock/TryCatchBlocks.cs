@@ -6,12 +6,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
+	[SkipKeptItemsValidation (By = Tool.NativeAot)]
 	public class TryCatchBlocks
 	{
 		public static void Main ()
 		{
 			TryCatchInRemovedBranch.Test ();
 			TryCatchInKeptBranchBeforeRemovedBranch.Test ();
+			RemovedBranchInFilterBlock.Test ();
 		}
 
 		class TryCatchInRemovedBranch
@@ -86,6 +88,45 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			static void Reached_2 () { }
 
 			static void Unreached () { }
+		}
+
+		class RemovedBranchInFilterBlock
+		{
+			[Kept]
+			[ExpectedInstructionSequence (new[] {
+				".try",
+				"newobj System.Void System.Exception::.ctor()",
+				"throw",
+				".endtry",
+				".filter",
+				"pop",
+				"ldc.i4.0",
+				"brfalse.s il_a",
+				"newobj System.Void System.Exception::.ctor()",
+				"throw",
+				"endfilter",
+				".catch",
+				"pop",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/RemovedBranchInFilterBlock::Reached()",
+				"leave.s il_1a",
+				".endcatch",
+				"ret"
+			})]
+			public static void Test ()
+			{
+				try {
+					throw new System.Exception ();
+				} catch when (Prop == 0 ? throw new System.Exception() : true) {
+					// Technically this is unreachable as well, since the filter will always throw
+					// but illink is not clever enough to figure this out yet.
+					Reached ();
+				}
+			}
+
+			static int Prop { get => 0; }
+
+			[Kept]
+			static void Reached () { }
 		}
 	}
 }

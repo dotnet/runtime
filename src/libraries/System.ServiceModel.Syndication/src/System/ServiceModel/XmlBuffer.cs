@@ -86,13 +86,27 @@ namespace System.ServiceModel
             _bufferState = BufferState.Reading;
             _buffer = new byte[_stream.Length];
             _stream.Position = 0;
-            _stream.Read(_buffer, 0, _buffer.Length);
+
+#if NET
+            _stream.ReadExactly(_buffer);
+#else
+            int totalRead = 0;
+            while (totalRead < _buffer.Length)
+            {
+                int bytesRead = _stream.Read(_buffer, totalRead, _buffer.Length - totalRead);
+                if (bytesRead <= 0)
+                {
+                    throw new EndOfStreamException();
+                }
+                totalRead += bytesRead;
+            }
+#endif
 
             _writer = null;
             _stream = null;
         }
 
-        private static Exception CreateInvalidStateException() => new InvalidOperationException(SR.XmlBufferInInvalidState);
+        private static InvalidOperationException CreateInvalidStateException() => new InvalidOperationException(SR.XmlBufferInInvalidState);
 
         public XmlDictionaryReader GetReader(int sectionIndex)
         {

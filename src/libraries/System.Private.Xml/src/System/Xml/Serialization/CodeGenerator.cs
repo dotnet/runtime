@@ -13,10 +13,10 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Resources;
 using System.Runtime.CompilerServices;
-using System.Xml;
-using System.Xml.Serialization.Configuration;
 using System.Security;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Serialization.Configuration;
 
 namespace System.Xml.Serialization
 {
@@ -1628,7 +1628,7 @@ namespace System.Xml.Serialization
         private readonly string _reason;
 
         public CodeGeneratorConversionException(Type sourceType, Type targetType, bool isAddress, string reason)
-            : base()
+            : base(SR.Format(SR.CodeGenConvertError, reason, sourceType.ToString(), targetType.ToString()))
         {
             _sourceType = sourceType;
             _targetType = targetType;

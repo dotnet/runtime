@@ -23,8 +23,8 @@ namespace System.Net.Sockets
         // Used by the class to indicate that the stream is writable.
         private bool _writeable;
 
-        // Whether Dispose has been called. 0 == false, 1 == true
-        private int _disposed;
+        // Whether Dispose has been called.
+        private bool _disposed;
 
         // Creates a new instance of the System.Net.Sockets.NetworkStream class for the specified System.Net.Sockets.Socket.
         public NetworkStream(Socket socket)
@@ -360,16 +360,16 @@ namespace System.Net.Sockets
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
             return (int)totalMilliseconds;
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            if (Interlocked.Exchange(ref _disposed, true))
             {
                 return;
             }
@@ -685,7 +685,7 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed != 0, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private static IOException WrapException(string resourceFormatString, Exception innerException)

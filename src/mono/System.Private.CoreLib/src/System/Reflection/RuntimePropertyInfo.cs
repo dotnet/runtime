@@ -27,8 +27,8 @@
 //
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -77,7 +77,7 @@ namespace System.Reflection
                                    PInfo req_info);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetTypeModifiers(RuntimePropertyInfo prop, bool optional);
+        internal static extern Type[] GetTypeModifiers(RuntimePropertyInfo prop, bool optional, int genericArgumentPosition = -1);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object get_default_value(RuntimePropertyInfo prop);
@@ -402,7 +402,7 @@ namespace System.Reflection
                 {
                     MethodInfo? method = GetGetMethod(true);
                     if (method == null)
-                        throw new ArgumentException($"Get Method not found for '{Name}'");
+                        throw new ArgumentException(SR.Arg_GetMethNotFnd);
                     if (!DeclaringType.IsValueType && !PropertyType.IsByRef && !method.ContainsGenericParameters)
                     {
                         //FIXME find a way to build an invoke delegate for value types.
@@ -440,7 +440,7 @@ namespace System.Reflection
 
             MethodInfo? method = GetGetMethod(true);
             if (method == null)
-                throw new ArgumentException($"Get Method not found for '{Name}'");
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
 
             if (index == null || index.Length == 0)
                 ret = method.Invoke(obj, invokeAttr, binder, null, culture);
@@ -454,7 +454,7 @@ namespace System.Reflection
         {
             MethodInfo? method = GetSetMethod(true);
             if (method == null)
-                throw new ArgumentException("Set Method not found for '" + Name + "'");
+                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
             object?[] parms;
             if (index == null || index.Length == 0)
@@ -503,8 +503,12 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
-                throw new ArgumentException("The property handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return pi;
         }
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(this, optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, this);
     }
 }

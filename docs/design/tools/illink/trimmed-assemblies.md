@@ -2,11 +2,11 @@
 
 ## Background
 
-The SDK publish targets run `ILLink`, which has subtargets that process `ResolvedFileToPublish`. This list gets filtered down to the managed assemblies with `PostProcessAssemblies == true`, which are passed to the linker. Those with `IsTrimmable != true` by default are rooted and linked with the `copy` action, and the rest have the action determined by `TrimMode`.
+The SDK publish targets run `ILLink`, which has subtargets that process `ResolvedFileToPublish`. This list gets filtered down to the managed assemblies with `PostProcessAssemblies == true`, which are passed to the IL Linker. Those with `IsTrimmable != true` by default are rooted and linked with the `copy` action, and the rest have the action determined by `TrimMode`.
 
 It is worth reiterating that there are three conditions that influence the behavior:
-1. `PostProcessAssemblies` controls whether the linker will see the assembly at all
-2. `IsTrimmable` controls whether the linker will tree-shake the assembly (if not, it gets rooted, and gets action `copy`)
+1. `PostProcessAssemblies` controls whether the IL Linker will see the assembly at all
+2. `IsTrimmable` controls whether the IL Linker will tree-shake the assembly (if not, it gets rooted, and gets action `copy`)
 3. the action (per-assembly `TrimMode` metadata, or global `TrimMode`) controls the level of tree-shaking
 
 Different SDKs have different defaults for these options. The .NET Core sets `TrimMode` to `copyused`, which does assembly-level trimming, by default, but the Blazor SDK sets it to `link` for more aggressive trimming. Blazor also uses extension points to control which assemblies are trimmed by filtering on the assembly name, and to generate custom "type-granularity" roots for some assemblies.
@@ -15,7 +15,7 @@ Different SDKs have different defaults for these options. The .NET Core sets `Tr
 
 ### IsTrimmable metadata
 
-An SDK target runs before the linker to populate an ItemGroup of assemblies passed to the linker. Assemblies in this ItemGroup with metadata `IsTrimmable` set to `true` are trimmed with the default mode. In 3.x, there are no public extension points for developers to set this metadata, but SDK authors can set `IsTrimmable` on `KnownFrameworkReference` and it is applied to all of the assemblies that are part of the framework reference. In 3.x, this was used to enable trimming of netcoreapp assemblies.
+An SDK target runs before the IL Linker to populate an ItemGroup of assemblies passed to the IL Linker. Assemblies in this ItemGroup with metadata `IsTrimmable` set to `true` are trimmed with the default mode. In 3.x, there are no public extension points for developers to set this metadata, but SDK authors can set `IsTrimmable` on `KnownFrameworkReference` and it is applied to all of the assemblies that are part of the framework reference. In 3.x, this was used to enable trimming of netcoreapp assemblies.
 
 ## .NET 5 options
 
@@ -28,9 +28,9 @@ There is a public target `PrepareForILLink` that runs before the `ILLink` target
 The global `TrimMode` may be set any time before `PrepareForILLink` runs, which sets it to a default value if not set previously.
 
 ### `ManagedAssemblyToLink`
-The `PrepareForILLink` has a dependency that creates the ItemGroup `ManagedAssemblyToLink`, which represents the set of assemblies that will be passed to the linker. Custom targets may modify `IsTrimmable` and `TrimMode` metadata on these assemblies before `PrepareForILLink`, which sets the assembly action based on this metadata, or they may modify the metadata after `PrepareForILLink` has run.
+The `PrepareForILLink` has a dependency that creates the ItemGroup `ManagedAssemblyToLink`, which represents the set of assemblies that will be passed to the IL Linker. Custom targets may modify `IsTrimmable` and `TrimMode` metadata on these assemblies before `PrepareForILLink`, which sets the assembly action based on this metadata, or they may modify the metadata after `PrepareForILLink` has run.
 
-It is not possible to change the items in `ManagedAssemblyToLink`, since this represents the set that needs to be filtered and replaced in the publish output. To change which assemblies are passed to the linker, a different extension point should be used to set `PostProcessAssemblies` metadata.
+It is not possible to change the items in `ManagedAssemblyToLink`, since this represents the set that needs to be filtered and replaced in the publish output. To change which assemblies are passed to the IL Linker, a different extension point should be used to set `PostProcessAssemblies` metadata.
 
 ### Examples
 
@@ -66,7 +66,7 @@ This shows how Blazor (or a developer) can hook into the build to opt assemblies
 
 ### Other options
 
-.NET 5 introduced a host of additional SDK options that map directly to the underlying illink options. The full list is documented at https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming-options.
+.NET 5 introduced a host of additional SDK options that map directly to the underlying illink options. The full list is documented at https://learn.microsoft.com/dotnet/core/deploying/trimming-options.
 
 ## .NET 6
 
@@ -82,7 +82,7 @@ The behavior is the same as the `IsTrimmable` MSBuild metadata, so that:
 - Assemblies with this attribute are trimmed with the global `TrimMode`
 - Assemblies without this attribute are rooted, and given the `copy` action
 
-The only understood value is `True` (case-insensitive). Adding `[assembly: AssemblyMetadata("IsTrimmable", "False")]` will have no effect on the linker's behavior, because unattributed assemblies are assumed not to be trimmable by default. We will issue a warning in this case, to discourage misleading use of the attribute.
+The only understood value is `True` (case-insensitive). Adding `[assembly: AssemblyMetadata("IsTrimmable", "False")]` will have no effect on the IL Linker's behavior, because unattributed assemblies are assumed not to be trimmable by default. We will issue a warning in this case, to discourage misleading use of the attribute.
 
 The attribute survives trimming like other assembly-level attributes do.
 
@@ -100,7 +100,7 @@ This ItemGroup contains assembly names that get opted into trimming via `IsTrimm
 </ItemGroup>
 ```
 
-The above opts `MyAssembly.dll` into trimming. Note that the ItemGroup should contain assembly names without an extension, similar to [`TrimmerRootAssembly`](https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming-options#root-assemblies). Before .NET 6 this would have been done with a target:
+The above opts `MyAssembly.dll` into trimming. Note that the ItemGroup should contain assembly names without an extension, similar to [`TrimmerRootAssembly`](https://learn.microsoft.com/dotnet/core/deploying/trimming-options#root-assemblies). Before .NET 6 this would have been done with a target:
 
 ```xml
 <Target Name="ConfigureTrimming"
@@ -121,7 +121,7 @@ We expect that the .NET SDK will eventually set `TrimMode` to `link` instead of 
 
 ### `TrimAllAssemblies` global opt-in
 
-We could make it it easier to enable trimming for all assemblies with a simple boolean. This would be equivalent to setting `IsTrimmable` to `true` on every assembly that is input to the linker. For example:
+We could make it it easier to enable trimming for all assemblies with a simple boolean. This would be equivalent to setting `IsTrimmable` to `true` on every assembly that is input to the IL Linker. For example:
 
 ```xml
 <PropertyGroup>
@@ -155,7 +155,7 @@ The attribute opt-out would be useful for a scenario where multiple projects wit
 
 We would like to avoid a situation where developers overuse the attribute, and we end up with many libraries that can't be trimmed because of it. This would be especially counterproductive for developers interested in aggressive trimming. Its use should be reserved for cases where a library is intrinsically not trimmable - but it's not obvious when this would be the case. Typically, whether a library is safe to trim depends on the context of the application that uses it. We should discourage use of the assembly-level opt-out in cases where one might reasonably use only a part of the assembly.
 
-We may also consider whether the opt-out should instead prevent the linker from rewriting the attributed assembly. A developer might reasonably expect that adding this attribute would prevent modification by the linker. This could be useful as a way to preserve assemblies that have invariants which would be broken by rewriting, or which contain data that would be removed by the linker even with the `copy` action. We would need to decide how to handle removed type forwarders - we could preserve referenced type forwarders, or produce an error if the assembly references a removed type forwarder.
+We may also consider whether the opt-out should instead prevent the IL Linker from rewriting the attributed assembly. A developer might reasonably expect that adding this attribute would prevent modification by the IL Linker. This could be useful as a way to preserve assemblies that have invariants which would be broken by rewriting, or which contain data that would be removed by the IL Linker even with the `copy` action. We would need to decide how to handle removed type forwarders - we could preserve referenced type forwarders, or produce an error if the assembly references a removed type forwarder.
 
 ### `NonTrimmableAssembly` opt-out
 
@@ -182,7 +182,6 @@ If there is a use case for specifying trimmable assemblies on the command-line, 
 We will use `AssemblyMetadataAttribute` to specify `IsTrimmable` on an assembly, instead of introducing a new attribute. The existing attribute seems well-suited for this use case, as it is already similarly used to control servicing for framework assemblies, for example via:
 
 ```csharp
-[assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
 [assembly: AssemblyMetadata("Serviceable", "True")]
 [assembly: AssemblyMetadata("PreferInbox", "True")]
 ```
@@ -191,10 +190,10 @@ This way there is no need to define a new attribute in the framework, and librar
 
 ### `IsTrimmable` attribute vs `DefaultTrimMode` attribute
 
-We considered allowing the assembly-level attribute to specify the linker "action" to take, instead of making it a simple opt-in. This is a more flexible option, which would allow library authors to precisely control the default trimming behavior for their libraries. However, we prefer a simple `IsTrimmable` opt-in because this:
-- Simplifies the linker configuration options (it is already possible to specify the action from MSBuild)
-- Handles the common scenario of enabling trimming by default for an assembly that is linker friendly
-- Avoids avoids baking knowledge of the linker "actions" into assembly metadata
+We considered allowing the assembly-level attribute to specify the IL Linker "action" to take, instead of making it a simple opt-in. This is a more flexible option, which would allow library authors to precisely control the default trimming behavior for their libraries. However, we prefer a simple `IsTrimmable` opt-in because this:
+- Simplifies the IL Linker configuration options (it is already possible to specify the action from MSBuild)
+- Handles the common scenario of enabling trimming by default for an assembly that is trimming friendly
+- Avoids baking knowledge of the IL Linker "actions" into assembly metadata
 
 We also anticipate that the SDK may in the future move to using `<TrimMode>link</TrimMode>` by default (like in Blazor today), deprecating `TrimMode` as a configuration knob.
 
@@ -210,12 +209,12 @@ The `IsTrimmable` MSBuild metadata takes precedence over `IsTrimmable` `Assembly
 ### Naming of `TrimMode` values
 
 We have considered a few naming conventions for the `TrimMode` values:
-- `Conservative`/`Aggressive` - avoids complex terminology and would be easy to use for app developers without requiring an understanding of the linker, and might let us change optimization levels in the future, but hides details from developers who are interested in the underlying behavior
-- `TrimAssembly`/`TrimMembers` - describes what the linker is doing in each mode, but is incomplete because it doesn't mention the various optimizations that are turned on
-- `copyused`/`link` - maps directly to the underlying terminology used in the linker, letting developers who understand the linker make informed decisions, but requires more understanding of the linker
+- `Conservative`/`Aggressive` - avoids complex terminology and would be easy to use for app developers without requiring an understanding of the IL Linker, and might let us change optimization levels in the future, but hides details from developers who are interested in the underlying behavior
+- `TrimAssembly`/`TrimMembers` - describes what the IL Linker is doing in each mode, but is incomplete because it doesn't mention the various optimizations that are turned on
+- `copyused`/`link` - maps directly to the underlying terminology used in the IL Linker, letting developers who understand the IL Linker make informed decisions, but requires more understanding of the IL Linker
 
-We chose to stay with the `copyused`/`link` terminology that is used by the tool itself. `IsTrimmable` allows opting into or out of trimming without referencing this terminology. If we add higher-level options to the linker in the future, we could expose those as new `TrimMode` values, or aliases for existing values.
+We chose to stay with the `copyused`/`link` terminology that is used by the tool itself. `IsTrimmable` allows opting into or out of trimming without referencing this terminology. If we add higher-level options to the IL Linker in the future, we could expose those as new `TrimMode` values, or aliases for existing values.
 
 ### `Build` vs `Publish`
 
-The public properties and targets exposed in this design do not require modifying `ResolvedFileToPublish` or other MSBuild entities that are related to publish, leaving some room for us to potentially reuse targets if we ever need to run the linker during build instead of publish.
+The public properties and targets exposed in this design do not require modifying `ResolvedFileToPublish` or other MSBuild entities that are related to publish, leaving some room for us to potentially reuse targets if we ever need to run the IL Linker during build instead of publish.

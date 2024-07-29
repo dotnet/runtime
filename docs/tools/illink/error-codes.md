@@ -1,6 +1,6 @@
 # ILLink Errors and Warnings
 
-Every linker error and warning has an assigned unique error code for easier
+Every error and warning has an assigned unique error code for easier
 identification. The known codes are in the range 1000 to 6000. Custom
 steps should avoid using this range not to collide with existing or future
 error and warning codes.
@@ -23,7 +23,7 @@ the error code. For example:
 
 #### `IL1003`: Error processing 'XML document name': 'XmlException'
 
-- There was an error processing a resource linker descriptor, embedded resource linker descriptor or external substitution XML (`ILLink.Substitutions.xml`). The most likely reason for this is that the descriptor file has syntactical errors.
+- There was an error processing a resource descriptor, embedded resource descriptor or external substitution XML (`ILLink.Substitutions.xml`). The most likely reason for this is that the descriptor file has syntactical errors.
 
 #### `IL1005`: Error processing method 'method' in assembly 'assembly'
 
@@ -49,7 +49,7 @@ the error code. For example:
 
 - There was an error writing the linked assembly 'output'. An exception with more details is printed.
 
-#### `IL1012`: IL Linker has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues
+#### `IL1012`: IL Linker has encountered an unexpected error. Please report the issue at https://aka.ms/report-illink
 
 - There was an unexpected error while trimming. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.
 
@@ -63,7 +63,7 @@ the error code. For example:
 
 #### `IL1015`: Unrecognized command-line option: 'option'
 
-- The linker was passed a string that was not a linker option.
+- The IL Linker was passed a string that was not a IL Linker option.
 
 #### `IL1016`: Invalid warning version 'version'
 
@@ -105,7 +105,7 @@ the error code. For example:
 
 - The custom step 'type' could not be found in the given assembly.
 
-#### `IL1028`: Custom step '{type}' is incompatible with this linker version
+#### `IL1028`: Custom step '{type}' is incompatible with this ILLink version
 
 #### `IL1029`: Invalid optimization value '{text}'
 
@@ -522,7 +522,7 @@ the error code. For example:
 
 #### `IL2027`: Attribute 'attribute' should only be used once on 'member'.
 
-- The linker found multiple instances of attribute 'attribute' on 'member'. This attribute is only allowed to have one instance, linker will only use the fist instance and ignore the rest.
+- The trimming tool found multiple instances of attribute 'attribute' on 'member'. This attribute is only allowed to have one instance, it will only use the fist instance and ignore the rest.
 
   ```C#
   // Note: C# won't allow this because RequiresUnreferencedCodeAttribute only allows one instantiation,
@@ -538,7 +538,7 @@ the error code. For example:
 
 #### `IL2028`: Attribute 'attribute' doesn't have the required number of parameters specified
 
-- The linker found an instance of attribute 'attribute' on 'method' but it lacks a required constructor parameter or it has more parameters than accepted. Linker will ignore this attribute.
+- The trimmer found an instance of attribute 'attribute' on 'method' but it lacks a required constructor parameter or it has more parameters than accepted. The trimmer will ignore this attribute.
 This is technically possible if a custom assembly defines for example the `RequiresUnreferencedCodeAttribute` type with parameterless constructor and uses it. ILLink will recognize the attribute since it only does a namespace and type name match, but it expects it to have exactly one parameter in its constructor.
 
 #### `IL2029`: 'attribute' element does not contain required attribute 'fullname' or it's empty
@@ -614,7 +614,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
 
 #### `IL2035`: Unresolved assembly 'assemblyName' in 'DynamicDependencyAttribute'
 
-- The assembly string 'assemblyName' given in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid assembly name, and that the assembly is available to the linker.
+- The assembly string 'assemblyName' given in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid assembly name, and that the assembly is available to the trimming tool.
 
   ```C#
   // IL2035: Unresolved assembly 'NonExistentAssembly' in 'DynamicDependencyAttribute'
@@ -626,7 +626,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
 
 #### `IL2036`: Unresolved type 'typeName' in 'DynamicDependencyAttribute'
 
-- The type in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the linker.
+- The type in a `DynamicDependencyAttribute` constructor could not be resolved. Ensure that the argument specifies a valid type name or type reference, that the type exists in the specified assembly, and that the assembly is available to the trimming tool.
 
   ```C#
   // IL2036: Unresolved type 'NonExistentType' in 'DynamicDependencyAttribute'
@@ -705,7 +705,7 @@ This is technically possible if a custom assembly defines `DynamicDependencyAttr
 
 #### `IL2042` Trim analysis: Could not find a unique backing field for property 'property' to propagate 'DynamicallyAccessedMembersAttribute'
 
-- The property 'property' has `DynamicallyAccessedMembersAttribute` on it, but the linker could not determine the backing field for the property to propagate the attribute to the field.
+- The property 'property' has `DynamicallyAccessedMembersAttribute` on it, but the trimming tool could not determine the backing field for the property to propagate the attribute to the field.
 
   ```C#
   // IL2042: Could not find a unique backing field for property 'MyProperty' to propagate 'DynamicallyAccessedMembersAttribute'
@@ -1623,8 +1623,8 @@ class Test
 
 #### `IL2105`: Type 'type' was not found in the caller assembly nor in the base library. Type name strings used for dynamically accessing a type should be assembly qualified.
 
-- Type name strings representing dynamically accessed types must be assembly qualified, otherwise linker will first search for the type name in the caller's assembly and then in System.Private.CoreLib.
-  If the linker fails to resolve the type name, null will be returned.
+- Type name strings representing dynamically accessed types must be assembly qualified, otherwise trimmer will first search for the type name in the caller's assembly and then in System.Private.CoreLib.
+  If the trimmer fails to resolve the type name, null will be returned.
 
   ```C#
   void TestInvalidTypeName()
@@ -1870,6 +1870,22 @@ void TestMethod()
   }
   ```
 
+#### `IL2122`: Type 'typeName' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.
+
+- The type name string passed to a location with `DynamicallyAccessedMembers` requirements was not assembly-qualified, so the trimmer cannot guarantee that the type is preserved. Consider using an assembly-qualified name instead.
+
+  ```C#
+  // warning IL2122: Type 'MyClass' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.
+  GetTypeWrapper("MyClass");
+
+  class MyClass { }
+
+  // May be defined in another assembly, so at runtime Type.GetType will look in that assembly for "MyClass".
+  void GetTypeWrapper([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
+  {
+      var type = Type.GetType(typeName);
+  }
+  ```
 
 ## Single-File Warning Codes
 
@@ -1901,7 +1917,7 @@ void TestMethod()
 
 #### `IL3002`: Using member 'member' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. [message]. [url]
 
-- The linker found a call to a member annotated with 'RequiresAssemblyFilesAttribute' which can break functionality of a single-file application.
+- Found a call to a member annotated with 'RequiresAssemblyFilesAttribute' which can break functionality of a single-file application.
 
   ```C#
   [RequiresAssemblyFiles(Message="Use 'MethodFriendlyToSingleFile' instead", Url="http://help/assemblyfiles")]

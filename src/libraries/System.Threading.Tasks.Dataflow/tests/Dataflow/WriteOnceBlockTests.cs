@@ -250,7 +250,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.False(((IReceivableSourceBlock<int>)wob).TryReceiveAll(out ignoredValues));
                 Assert.NotNull(wob.Completion);
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wob.Completion);
+                await AssertExtensions.CanceledAsync(cts.Token, wob.Completion);
             }
         }
 

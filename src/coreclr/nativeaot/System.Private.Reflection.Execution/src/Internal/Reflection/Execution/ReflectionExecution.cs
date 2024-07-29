@@ -22,16 +22,14 @@
 //        System.Private.CoreLib.dll, via a callback (see Internal.System.Runtime.Augment)
 //
 
+using global::Internal.Metadata.NativeFormat;
+using global::Internal.Reflection.Core;
+using global::Internal.Reflection.Core.Execution;
+using global::Internal.Runtime.Augments;
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Reflection;
 using global::System.Reflection.Runtime.General;
-
-using global::Internal.Runtime.Augments;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Metadata.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -48,36 +46,9 @@ namespace Internal.Reflection.Execution
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             var executionEnvironment = new ExecutionEnvironmentImplementation();
-            var setup = new ReflectionDomainSetupImplementation();
-            ReflectionCoreExecution.InitializeExecutionDomain(setup, executionEnvironment);
-
-            // Initialize our two-way communication with System.Private.CoreLib.
-            ExecutionDomain executionDomain = ReflectionCoreExecution.ExecutionDomain;
-            var runtimeCallbacks = new ReflectionExecutionDomainCallbacksImplementation(executionDomain, executionEnvironment);
-            RuntimeAugments.Initialize(runtimeCallbacks);
+            ReflectionCoreExecution.InitializeExecutionDomain(executionEnvironment);
 
             ExecutionEnvironment = executionEnvironment;
-        }
-
-        //
-        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
-        // a default assembly name.
-        //
-        public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
-        {
-            return ExtensibleGetType(typeName, callingAssemblyName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
-        }
-
-        //
-        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
-        // a default assembly name.
-        //
-        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
-        {
-            LowLevelListWithIList<string> defaultAssemblies = new LowLevelListWithIList<string>();
-            defaultAssemblies.Add(callingAssemblyName);
-            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
-            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
         public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
@@ -98,8 +69,7 @@ namespace Internal.Reflection.Execution
             if (!qMethodDefinition.IsNativeFormatMetadataBased)
                 return false;
 
-            if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
-                return false;
+            QTypeDefinition qTypeDefinition = ExecutionEnvironment.GetMetadataForNamedType(declaringTypeHandle);
 
             Debug.Assert(qTypeDefinition.IsNativeFormatMetadataBased);
             Debug.Assert(qTypeDefinition.NativeFormatReader == qMethodDefinition.NativeFormatReader);
@@ -109,6 +79,19 @@ namespace Internal.Reflection.Execution
             methodHandle = qMethodDefinition.NativeFormatHandle;
 
             return true;
+        }
+
+        public static MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
+            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
+            {
+                return null;
+            }
+
+            // We don't use the type argument handles as we want the uninstantiated method info
+            return ExecutionDomain.GetMethod(declaringTypeHandle, qMethodDefinition, genericMethodTypeArgumentHandles: null);
         }
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }

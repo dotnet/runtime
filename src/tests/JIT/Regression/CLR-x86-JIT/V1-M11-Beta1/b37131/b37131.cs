@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         int[] an = null;
         object obj = null;
@@ -31,7 +32,8 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -13,11 +13,12 @@ namespace System.Linq
 
         public static long Min(this IEnumerable<long> source) => MinMaxInteger<long, MinCalc<long>>(source);
 
-        private struct MinCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        private readonly struct MinCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
         {
             public static bool Compare(T left, T right) => left < right;
             public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
             public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
+            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Min(left, right);
         }
 
         public static int? Min(this IEnumerable<int?> source) => MinInteger(source);
@@ -26,7 +27,7 @@ namespace System.Linq
 
         private static T? MinInteger<T>(this IEnumerable<T?> source) where T : struct, IBinaryInteger<T>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -79,6 +80,11 @@ namespace System.Linq
         private static T MinFloat<T>(this IEnumerable<T> source) where T : struct, IFloatingPointIeee754<T>
         {
             T value;
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
 
             if (source.TryGetSpan(out ReadOnlySpan<T> span))
             {
@@ -145,7 +151,7 @@ namespace System.Linq
 
         private static T? MinFloat<T>(this IEnumerable<T?> source) where T : struct, IFloatingPointIeee754<T>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -196,6 +202,11 @@ namespace System.Linq
         {
             decimal value;
 
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
             if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
                 if (span.IsEmpty)
@@ -238,7 +249,7 @@ namespace System.Linq
 
         public static decimal? Min(this IEnumerable<decimal?> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -289,28 +300,32 @@ namespace System.Linq
         /// </remarks>
         public static TSource? Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             comparer ??= Comparer<TSource>.Default;
 
+            // TODO https://github.com/dotnet/csharplang/discussions/6308: Update this to use generic constraint bridging if/when available.
             if (typeof(TSource) == typeof(byte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<byte, MinCalc<byte>>((IEnumerable<byte>)source);
             if (typeof(TSource) == typeof(sbyte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<sbyte, MinCalc<sbyte>>((IEnumerable<sbyte>)source);
             if (typeof(TSource) == typeof(ushort) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ushort, MinCalc<ushort>>((IEnumerable<ushort>)source);
             if (typeof(TSource) == typeof(short) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<short, MinCalc<short>>((IEnumerable<short>)source);
+            if (typeof(TSource) == typeof(char) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<char, MinCalc<char>>((IEnumerable<char>)source);
             if (typeof(TSource) == typeof(uint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<uint, MinCalc<uint>>((IEnumerable<uint>)source);
             if (typeof(TSource) == typeof(int) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<int, MinCalc<int>>((IEnumerable<int>)source);
             if (typeof(TSource) == typeof(ulong) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ulong, MinCalc<ulong>>((IEnumerable<ulong>)source);
             if (typeof(TSource) == typeof(long) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<long, MinCalc<long>>((IEnumerable<long>)source);
             if (typeof(TSource) == typeof(nuint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nuint, MinCalc<nuint>>((IEnumerable<nuint>)source);
             if (typeof(TSource) == typeof(nint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nint, MinCalc<nint>>((IEnumerable<nint>)source);
+            if (typeof(TSource) == typeof(Int128) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<Int128, MinCalc<Int128>>((IEnumerable<Int128>)source);
+            if (typeof(TSource) == typeof(UInt128) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<UInt128, MinCalc<UInt128>>((IEnumerable<UInt128>)source);
 
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (value == null)
+                if (value is null)
                 {
                     do
                     {
@@ -321,12 +336,12 @@ namespace System.Linq
 
                         value = e.Current;
                     }
-                    while (value == null);
+                    while (value is null);
 
                     while (e.MoveNext())
                     {
                         TSource next = e.Current;
-                        if (next != null && comparer.Compare(next, value) < 0)
+                        if (next is not null && comparer.Compare(next, value) < 0)
                         {
                             value = next;
                         }
@@ -395,12 +410,12 @@ namespace System.Linq
         /// </remarks>
         public static TSource? MinBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (keySelector == null)
+            if (keySelector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
@@ -426,7 +441,7 @@ namespace System.Linq
 
             if (default(TKey) is null)
             {
-                if (key == null)
+                if (key is null)
                 {
                     TSource firstValue = value;
 
@@ -441,14 +456,14 @@ namespace System.Linq
                         value = e.Current;
                         key = keySelector(value);
                     }
-                    while (key == null);
+                    while (key is null);
                 }
 
                 while (e.MoveNext())
                 {
                     TSource nextValue = e.Current;
                     TKey nextKey = keySelector(nextValue);
-                    if (nextKey != null && comparer.Compare(nextKey, key) < 0)
+                    if (nextKey is not null && comparer.Compare(nextKey, key) < 0)
                     {
                         key = nextKey;
                         value = nextValue;
@@ -498,12 +513,12 @@ namespace System.Linq
 
         private static TResult MinInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IBinaryInteger<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -532,12 +547,12 @@ namespace System.Linq
 
         private static TResult? MinInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IBinaryInteger<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -589,12 +604,12 @@ namespace System.Linq
 
         private static TResult MinFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -641,12 +656,12 @@ namespace System.Linq
 
         private static TResult? MinFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -695,12 +710,12 @@ namespace System.Linq
 
         public static decimal Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -729,12 +744,12 @@ namespace System.Linq
 
         public static decimal? Min<TSource>(this IEnumerable<TSource> source, Func<TSource, decimal?> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -771,12 +786,12 @@ namespace System.Linq
 
         public static TResult? Min<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (selector == null)
+            if (selector is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
@@ -784,7 +799,7 @@ namespace System.Linq
             TResult? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (value == null)
+                if (value is null)
                 {
                     do
                     {
@@ -795,13 +810,13 @@ namespace System.Linq
 
                         value = selector(e.Current);
                     }
-                    while (value == null);
+                    while (value is null);
 
                     Comparer<TResult> comparer = Comparer<TResult>.Default;
                     while (e.MoveNext())
                     {
                         TResult x = selector(e.Current);
-                        if (x != null && comparer.Compare(x, value) < 0)
+                        if (x is not null && comparer.Compare(x, value) < 0)
                         {
                             value = x;
                         }

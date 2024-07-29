@@ -3,15 +3,14 @@
 
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
 
@@ -29,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
         public Instantiation _typeArgumentHandles;
         public Instantiation _methodArgumentHandles;
 
-        private TypeDesc GetInstantiationType(ref NativeParser parser, uint arity)
+        private DefType GetInstantiationType(ref NativeParser parser, uint arity)
         {
             DefType typeDefinition = (DefType)GetType(ref parser);
 
@@ -125,7 +124,7 @@ namespace Internal.Runtime.TypeLoader
 
                 case TypeSignatureKind.MultiDimArray:
                     {
-                        DefType elementType = (DefType)GetType(ref parser);
+                        TypeDesc elementType = GetType(ref parser);
                         int rank = (int)data;
 
                         // Skip encoded bounds and lobounds
@@ -150,9 +149,25 @@ namespace Internal.Runtime.TypeLoader
                     return _typeSystemContext.GetWellKnownType((WellKnownType)data);
 
                 case TypeSignatureKind.FunctionPointer:
-                    Debug.Fail("NYI!");
-                    NativeParser.ThrowBadImageFormatException();
-                    return null;
+                    {
+                        var callConv = (MethodCallingConvention)parser.GetUnsigned();
+                        Debug.Assert((callConv & MethodCallingConvention.Generic) == 0);
+
+                        uint numParams = parser.GetUnsigned();
+
+                        TypeDesc returnType = GetType(ref parser);
+                        TypeDesc[] parameters = new TypeDesc[numParams];
+                        for (uint i = 0; i < parameters.Length; i++)
+                            parameters[i] = GetType(ref parser);
+
+                        return _typeSystemContext.GetFunctionPointerType(
+                            new MethodSignature(
+                                (callConv & MethodCallingConvention.Unmanaged) != 0 ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                                0,
+                                returnType,
+                                parameters
+                                ));
+                    }
 
                 default:
                     NativeParser.ThrowBadImageFormatException();
@@ -178,18 +193,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
                 Debug.Assert(typeArguments.Length > 0);
-                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments), functionPointer, (flags & MethodFlags.FunctionPointerIsUSG) != 0);
+                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments));
             }
             else
             {
-                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, containingType, nameAndSignature, functionPointer, (flags & MethodFlags.FunctionPointerIsUSG) != 0);
+                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, containingType, nameAndSignature);
             }
 
-            if ((flags & MethodFlags.FunctionPointerIsUSG) != 0)
+            if ((flags & MethodFlags.HasFunctionPointer) != 0)
             {
-                // TODO, consider a change such that if a USG function pointer is passed in, but we have
-                // a way to get a non-usg pointer, that may be preferable
-                Debug.Assert(retVal.UsgFunctionPointer != IntPtr.Zero);
+                retVal.SetFunctionPointer(functionPointer);
             }
 
             return retVal;

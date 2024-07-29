@@ -6,9 +6,12 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
+using MethodTable = Internal.Runtime.MethodTable;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
+
 namespace System
 {
-    internal static class InvokeUtils
+    internal static unsafe class InvokeUtils
     {
         //
         // Various reflection scenarios (Array.SetValue(), reflection Invoke, delegate DynamicInvoke and FieldInfo.Set()) perform
@@ -37,22 +40,22 @@ namespace System
             SetFieldDirect,      // Throws ArgumentException - other than that, like DynamicInvoke except that enums and integers cannot be intermingled, and null cannot substitute for default(valuetype).
         }
 
-        internal static object? CheckArgument(object? srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
+        internal static object? CheckArgument(object? srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
             // Methods with ByRefLike types in signatures should be filtered out earlier
-            Debug.Assert(!dstEEType.IsByRefLike);
+            Debug.Assert(!dstEEType->IsByRefLike);
 
             if (srcObject == null)
             {
                 // null -> default(T)
-                if (dstEEType.IsPointer)
+                if (dstEEType->IsPointer)
                 {
                     return default(IntPtr);
                 }
-                else if (dstEEType.IsValueType && !dstEEType.IsNullable)
+                else if (dstEEType->IsValueType && !dstEEType->IsNullable)
                 {
                     if (semantics == CheckArgumentSemantics.SetFieldDirect)
-                        throw CreateChangeTypeException(typeof(object).TypeHandle.ToEETypePtr(), dstEEType, semantics);
+                        throw CreateChangeTypeException(MethodTable.Of<object>(), dstEEType, semantics);
                     return Runtime.RuntimeImports.RhNewObject(dstEEType);
                 }
                 else
@@ -62,11 +65,11 @@ namespace System
             }
             else
             {
-                EETypePtr srcEEType = srcObject.GetEETypePtr();
+                MethodTable* srcEEType = srcObject.GetMethodTable();
 
-                if (srcEEType.RawValue == dstEEType.RawValue ||
+                if (srcEEType == dstEEType ||
                     RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                    (dstEEType.IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
+                    (dstEEType->IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
                         && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false)))
                 {
                     return srcObject;
@@ -76,7 +79,7 @@ namespace System
             }
         }
 
-        internal static object? CheckArgumentConversions(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
+        internal static object? CheckArgumentConversions(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
             object? dstObject;
             Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, semantics, out dstObject);
@@ -96,17 +99,17 @@ namespace System
         }
 
         // Special coersion rules for primitives, enums and pointer.
-        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
         {
-            EETypePtr srcEEType = srcObject.GetEETypePtr();
+            MethodTable* srcEEType = srcObject.GetMethodTable();
 
-            if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
+            if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType->IsEnum || dstEEType->IsEnum))
             {
                 dstObject = null;
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            if (dstEEType.IsPointer)
+            if (dstEEType->IsPointer || dstEEType->IsFunctionPointer)
             {
                 Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
@@ -118,104 +121,258 @@ namespace System
                 return null;
             }
 
-            if (!(srcEEType.IsPrimitive && dstEEType.IsPrimitive))
+            if (!(srcEEType->IsPrimitive && dstEEType->IsPrimitive))
             {
                 dstObject = null;
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            CorElementType dstCorElementType = dstEEType.CorElementType;
-            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
+            EETypeElementType dstElementType = dstEEType->ElementType;
+            EETypeElementType srcElementType = srcEEType->ElementType;
+
+            if (dstElementType == srcElementType)
             {
-                dstObject = null;
-                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                // Rebox the value if the EETypeElementTypes match
+                dstObject = RuntimeImports.RhBox(dstEEType, ref srcObject.GetRawData());
             }
-
-            switch (dstCorElementType)
+            else
             {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
-                    break;
+                if (!CanPrimitiveWiden(dstElementType, srcElementType))
+                {
+                    dstObject = null;
+                    return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                }
 
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    char charValue = Convert.ToChar(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
-                    break;
+                dstObject = RuntimeImports.RhNewObject(dstEEType);
+                PrimitiveWiden(dstElementType, srcElementType, ref dstObject.GetRawData(), ref srcObject.GetRawData());
+            }
+            return null;
+        }
 
-                case CorElementType.ELEMENT_TYPE_I1:
-                    sbyte sbyteValue = Convert.ToSByte(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
-                    break;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
+        internal static void PrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType, ref byte dstValue, ref byte srcValue)
+        {
+            // Caller must check that the conversion is valid and the source/destination types are different
+            Debug.Assert(CanPrimitiveWiden(dstType, srcType) && dstType != srcType);
 
-                case CorElementType.ELEMENT_TYPE_I2:
-                    short shortValue = Convert.ToInt16(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_I4:
-                    int intValue = Convert.ToInt32(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_I8:
-                    long longValue = Convert.ToInt64(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_U1:
-                    byte byteValue = Convert.ToByte(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_U2:
-                    ushort ushortValue = Convert.ToUInt16(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_U4:
-                    uint uintValue = Convert.ToUInt32(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_U8:
-                    ulong ulongValue = Convert.ToUInt64(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
-                    break;
-
-                case CorElementType.ELEMENT_TYPE_R4:
-                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
+            switch (srcType)
+            {
+                case EETypeElementType.Byte:
+                    switch (dstType)
                     {
-                        dstObject = (float)(char)srcObject;
-                    }
-                    else
-                    {
-                        dstObject = Convert.ToSingle(srcObject);
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Char:
+                        case EETypeElementType.Int16:
+                        case EETypeElementType.UInt16:
+                            Unsafe.As<byte, short>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Int32:
+                        case EETypeElementType.UInt32:
+                            Unsafe.As<byte, int>(ref dstValue) = srcValue;
+                            break;
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, long>(ref dstValue) = srcValue;
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
                     break;
 
-                case CorElementType.ELEMENT_TYPE_R8:
-                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
+                case EETypeElementType.SByte:
+                    switch (dstType)
                     {
-                        dstObject = (double)(char)srcObject;
+                        case EETypeElementType.Int16:
+                            Unsafe.As<byte, short>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int32:
+                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, sbyte>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
-                    else
+                    break;
+
+                case EETypeElementType.UInt16:
+                case EETypeElementType.Char:
+                    switch (dstType)
                     {
-                        dstObject = Convert.ToDouble(srcObject);
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
+                            Unsafe.As<byte, ushort>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int32:
+                        case EETypeElementType.UInt32:
+                            Unsafe.As<byte, uint>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, ulong>(ref dstValue) = Unsafe.As<byte, ushort>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.Int16:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Int32:
+                            Unsafe.As<byte, int>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, short>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.Int32:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Int64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, int>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, int>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.UInt32:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Int64:
+                        case EETypeElementType.UInt64:
+                            Unsafe.As<byte, long>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
+                            break;
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, uint>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, uint>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.Int64:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, long>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, long>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.UInt64:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Single:
+                            Unsafe.As<byte, float>(ref dstValue) = (float)Unsafe.As<byte, ulong>(ref srcValue);
+                            break;
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = (double)Unsafe.As<byte, ulong>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
+                    }
+                    break;
+
+                case EETypeElementType.Single:
+                    switch (dstType)
+                    {
+                        case EETypeElementType.Double:
+                            Unsafe.As<byte, double>(ref dstValue) = Unsafe.As<byte, float>(ref srcValue);
+                            break;
+                        default:
+                            Debug.Fail("Expected to be unreachable");
+                            break;
                     }
                     break;
 
                 default:
-                    Debug.Fail("Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
-                    dstObject = null;
-                    return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                    Debug.Fail("Expected to be unreachable");
+                    break;
             }
-
-            Debug.Assert(dstObject.GetEETypePtr() == dstEEType);
-            return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
+        internal static bool CanPrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType)
+        {
+            Debug.Assert(dstType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
+            Debug.Assert(srcType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
+
+            ReadOnlySpan<ushort> primitiveAttributes = [
+                0x0000, // Unknown
+                0x0000, // Void
+                0x0004, // Boolean (W = BOOL)
+                0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
+                0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+                0xC540, // Int16 (W = I2, I4, I8, R4, R8)
+                0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC500, // Int32 (W = I4, I8, R4, R8)
+                0xCE00, // UInt32 (W = U4, I8, U8, R4, R8)
+                0xC400, // Int64 (W = I8, R4, R8)
+                0xC800, // UInt64 (W = U8, R4, R8)
+                0x0000, // IntPtr
+                0x0000, // UIntPtr
+                0xC000, // Single (W = R4, R8)
+                0x8000, // Double (W = R8)
+            ];
+
+            ushort mask = (ushort)(1 << (byte)dstType);
+            return (primitiveAttributes[(int)srcType & 0xF] & mask) != 0;
+        }
+
+        private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
             if (srcObject is IntPtr or UIntPtr)
             {
@@ -225,7 +382,7 @@ namespace System
 
             if (srcObject is Pointer srcPointer)
             {
-                if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
+                if (dstEEType == typeof(void*).TypeHandle.ToMethodTable() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToMethodTable(), pTargetType: dstEEType))
                 {
                     dstPtr = srcPointer.GetPointerValue();
                     return null;
@@ -233,10 +390,10 @@ namespace System
             }
 
             dstPtr = null;
-            return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
+            return CreateChangeTypeException(srcObject.GetMethodTable(), dstEEType, semantics);
         }
 
-        private static Exception CreateChangeTypeException(EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics)
+        private static Exception CreateChangeTypeException(MethodTable* srcEEType, MethodTable* dstEEType, CheckArgumentSemantics semantics)
         {
             switch (semantics)
             {
@@ -251,9 +408,12 @@ namespace System
             }
         }
 
-        internal static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType, bool destinationIsByRef = false)
+        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, MethodTable* dstEEType, bool destinationIsByRef = false)
+            => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
+
+        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, Type dstType, bool destinationIsByRef = false)
         {
-            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
+            object? destinationTypeName = dstType;
             if (destinationIsByRef)
                 destinationTypeName += "&";
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));

@@ -69,10 +69,6 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(USE_INDIRECT_CODEHEADER)
-#error "FEATURE_EH_FUNCLETS requires USE_INDIRECT_CODEHEADER"
-#endif // FEATURE_EH_FUNCLETS && !USE_INDIRECT_CODEHEADER
-
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
@@ -100,6 +96,12 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_JUMPSTUB,
     STUB_CODE_BLOCK_PRECODE,
     STUB_CODE_BLOCK_DYNAMICHELPER,
+    STUB_CODE_BLOCK_STUBPRECODE,
+    STUB_CODE_BLOCK_FIXUPPRECODE,
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
@@ -119,20 +121,10 @@ enum StubCodeBlockKind : int
 // Today CodeHeader is used by the EEJitManager.
 // The GCInfo version is always current GCINFO_VERSION in this header.
 
-#ifdef USE_INDIRECT_CODEHEADER
 typedef DPTR(struct _hpRealCodeHdr) PTR_RealCodeHeader;
 typedef DPTR(struct _hpCodeHdr) PTR_CodeHeader;
 
-#else // USE_INDIRECT_CODEHEADER
-typedef DPTR(struct _hpCodeHdr) PTR_CodeHeader;
-
-#endif // USE_INDIRECT_CODEHEADER
-
-#ifdef USE_INDIRECT_CODEHEADER
 typedef struct _hpRealCodeHdr
-#else // USE_INDIRECT_CODEHEADER
-typedef struct _hpCodeHdr
-#endif // USE_INDIRECT_CODEHEADER
 {
 public:
     PTR_BYTE            phdrDebugInfo;
@@ -154,95 +146,9 @@ public:
 #endif // FEATURE_EH_FUNCLETS
 
 public:
-#ifndef USE_INDIRECT_CODEHEADER
-    //
-    // Note: that the JITted code follows immediately after the MethodDesc*
-    //
-    PTR_BYTE                GetDebugInfo()
-    {
-        SUPPORTS_DAC;
-
-        return phdrDebugInfo;
-    }
-    PTR_EE_ILEXCEPTION      GetEHInfo()
-    {
-        return phdrJitEHInfo;
-    }
-    PTR_BYTE                GetGCInfo()
-    {
-        SUPPORTS_DAC;
-        return phdrJitGCInfo;
-    }
-    PTR_MethodDesc          GetMethodDesc()
-    {
-        SUPPORTS_DAC;
-        return phdrMDesc;
-    }
-#if defined(FEATURE_GDBJIT)
-    VOID*                GetCalledMethods()
-    {
-        SUPPORTS_DAC;
-        return pCalledMethods;
-    }
-#endif
-    TADDR                   GetCodeStartAddress()
-    {
-        SUPPORTS_DAC;
-        return dac_cast<TADDR>(dac_cast<PTR_CodeHeader>(this) + 1);
-    }
-    StubCodeBlockKind       GetStubCodeBlockKind()
-    {
-        SUPPORTS_DAC;
-        return (StubCodeBlockKind)dac_cast<TADDR>(phdrMDesc);
-    }
-    BOOL                    IsStubCodeBlock()
-    {
-        SUPPORTS_DAC;
-        // Note that it is important for this comparison to be unsigned
-        return dac_cast<TADDR>(phdrMDesc) <= (TADDR)STUB_CODE_BLOCK_LAST;
-    }
-
-    void SetDebugInfo(PTR_BYTE pDI)
-    {
-        phdrDebugInfo = pDI;
-    }
-    void SetEHInfo(PTR_EE_ILEXCEPTION pEH)
-    {
-        phdrJitEHInfo = pEH;
-    }
-    void SetGCInfo(PTR_BYTE pGC)
-    {
-        phdrJitGCInfo = pGC;
-    }
-    void SetMethodDesc(PTR_MethodDesc pMD)
-    {
-        phdrMDesc = pMD;
-    }
-#if defined(FEATURE_GDBJIT)
-    void SetCalledMethods(VOID* pCM)
-    {
-        pCalledMethods = pCM;
-    }
-#endif
-    void SetStubCodeBlockKind(StubCodeBlockKind kind)
-    {
-        phdrMDesc = (PTR_MethodDesc)kind;
-    }
-#endif // !USE_INDIRECT_CODEHEADER
-
 // if we're using the indirect codeheaders then all enumeration is done by the code header
-#ifndef USE_INDIRECT_CODEHEADER
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
-#endif  // DACCESS_COMPILE
-#endif  // USE_INDIRECT_CODEHEADER
-#ifdef USE_INDIRECT_CODEHEADER
 } RealCodeHeader;
-#else // USE_INDIRECT_CODEHEADER
-} CodeHeader;
-#endif // USE_INDIRECT_CODEHEADER
 
-#ifdef USE_INDIRECT_CODEHEADER
 typedef struct _hpCodeHdr
 {
     PTR_RealCodeHeader   pRealCodeHeader;
@@ -349,7 +255,6 @@ public:
 #endif  // DACCESS_COMPILE
 
 } CodeHeader;
-#endif // USE_INDIRECT_CODEHEADER
 
 
 //-----------------------------------------------------------------------------
@@ -478,13 +383,14 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;
@@ -608,44 +514,929 @@ private:
 // address range to track the code heaps.
 
 typedef DPTR(struct RangeSection) PTR_RangeSection;
+typedef VPTR(class CodeRangeMapRangeList) PTR_CodeRangeMapRangeList;
+
+class RangeSectionMap;
+
+class Range
+{
+    // [begin,end) (This is an inclusive range)
+    TADDR begin;
+    TADDR end;
+
+public:
+    Range(TADDR begin, TADDR end) : begin(begin), end(end)
+    {
+        assert(end >= begin);
+    }
+
+    bool IsInRange(TADDR address) const
+    {
+        return address >= begin && address < end;
+    }
+
+    TADDR RangeSize() const
+    {
+        return end - begin;
+    }
+
+    TADDR RangeStart() const
+    {
+        return begin;
+    }
+
+    TADDR RangeEnd() const
+    {
+        assert(RangeSize() > 0);
+        return end - 1;
+    }
+
+    TADDR RangeEndOpen() const
+    {
+        return end;
+    }
+};
 
 struct RangeSection
 {
-    TADDR               LowAddress;
-    TADDR               HighAddress;
-
-    PTR_IJitManager     pjit;           // The owner of this address range
-
-#ifndef DACCESS_COMPILE
-    // Volatile because of the list can be walked lock-free
-    Volatile<RangeSection *> pnext;  // link rangesections in a sorted list
-#else
-    PTR_RangeSection    pnext;
-#endif
-
-    PTR_RangeSection    pLastUsed;      // for the head node only:  a link to rangesections that was used most recently
-
+    friend class RangeSectionMap;
     enum RangeSectionFlags
     {
         RANGE_SECTION_NONE          = 0x0,
         RANGE_SECTION_COLLECTIBLE   = 0x1,
         RANGE_SECTION_CODEHEAP      = 0x2,
-#ifdef FEATURE_READYTORUN
-        RANGE_SECTION_READYTORUN    = 0x4,
-#endif
+        RANGE_SECTION_RANGELIST     = 0x4,
     };
 
-    DWORD               flags;
+#ifdef FEATURE_READYTORUN
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_Module pR2RModule) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(pR2RModule),
+        _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0))
+#if defined(TARGET_AMD64)
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
+    {
+        assert(!(flags & RANGE_SECTION_COLLECTIBLE));
+        assert(pR2RModule != NULL);
+    }
+#endif
 
-    // union
-    // {
-    //    PTR_CodeHeap    pCodeHeap;    // valid if RANGE_SECTION_HEAP is set
-    //    PTR_Module      pZapModule;   // valid if RANGE_SECTION_HEAP is not set
-    // };
-    TADDR           pHeapListOrZapModule;
-#if defined(HOST_64BIT)
-    PTR_UnwindInfoTable pUnwindInfoTable; // Points to unwind information for this memory range.
-#endif // defined(HOST_64BIT)
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_HeapList pHeapList) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
+        _pHeapList(pHeapList),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0))
+#if defined(TARGET_AMD64)
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
+    {}
+
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
+        _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
+        _pRangeList(pRangeList)
+#if defined(TARGET_AMD64)
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
+    {}
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+#endif
+
+    const Range _range;
+    const RangeSectionFlags _flags;
+    const PTR_IJitManager _pjit;
+    const PTR_Module _pR2RModule;
+    const PTR_HeapList _pHeapList;
+    const PTR_CodeRangeMapRangeList _pRangeList;
+
+#if defined(TARGET_AMD64)
+    PTR_UnwindInfoTable _pUnwindInfoTable; // Points to unwind information for this memory range.
+#endif // defined(TARGET_AMD64)
+
+
+    RangeSection* _pRangeSectionNextForDelete = NULL; // Used for adding to the cleanup list
+};
+
+enum class RangeSectionLockState
+{
+    None,
+    NeedsLock,
+    ReaderLocked,
+    WriteLocked,
+};
+
+// For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
+// For *reasons* the X64 hardware is limited to 57bits of addressable address space, and to make the math work out nicely, the minimum granularity that
+// is 128KB (or every 2^17 bits) for the tree structure.
+//  Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
+// So the first level is bits [56:49] -> L5
+// Then                       [48:41] -> L4
+//                            [40:33] -> L3
+//                            [32:25] -> L2
+//                            [24:17] -> L1
+// This leaves 17 bits of the address to be handled by the RangeSectionFragment linked list
+//
+// For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bits of address resolution per level.    [31:24] and [23:16].
+// For the 32bit processes, only the last 16bits are handled by the RangeSectionFragment linked list.
+
+// Each level of the tree may be considered collectible or non-collectible (except for the top level, which is ALWAYS non-collectible)
+// The locking model of the tree structure is as follows.
+// Adding a newly allocated level requires holding the Reader lock. Multiple threads may add a level in parallel.
+// Removing a level requires holding the Writer lock.
+// No level which refers to a non-collectible fragment may be considered collectible.
+// A level may be upgraded from collectible to non-collectible, by changing the pointer which points at it to not have the sentinel bit.
+// A level may NOT ever be downgraded from non-collectible to collectible.
+// When a level becomes empty, it may be freed, and the pointer which points at it may be nulled out.
+//
+// Within the linked list of RangeSectionFragments, there are effectively 2 lists.
+// - The non-collectible list, which are always found first.
+// - The collectible list, which follows the non-collectible list.
+//
+// Insertion into the map uses atomic updates and fully pre-initialized RangeSection structures, so that insertions can be lock-free with regards to each other.
+// However, they are not lock-free with regards to removals, so the insertions use a Reader lock.
+//
+// Reading from the non-collectible data (the non-collectible portion of tree structure + the non-collectible list) does not require any locking at all.
+// Reading from the collectible data will require a ReaderLock. There is a scheme using the RangeSectionLockState where when there is an attempt to read without the
+// lock and we find collectible data, which will cause the runtime to upgrade to using the Reader lock in that situation.
+//
+// Reading this code you will ALSO find that the ReaderLock logic used here is intertwined with the GC mode of the process. In particular,
+// in cooperative mode and during GC stackwalking, the ReaderLock is always considered to be held.
+class RangeSectionMap
+{
+    class RangeSectionFragment;
+    class RangeSectionFragmentPointer;
+    typedef DPTR(RangeSectionFragment) PTR_RangeSectionFragment;
+    typedef DPTR(RangeSectionFragmentPointer) PTR_RangeSectionFragmentPointer;
+
+    // Helper structure which forces all access to the various pointers to be handled via volatile/interlocked operations
+    // The copy/move constructors are all deleted to forbid accidental reads into temporaries, etc.
+    class RangeSectionFragmentPointer
+    {
+    private:
+        TADDR _ptr;
+
+        static TADDR FragmentToPtr(RangeSectionFragment* fragment)
+        {
+            TADDR ptr = dac_cast<TADDR>(fragment);
+            if (ptr == 0)
+                return ptr;
+
+            if (fragment->isCollectibleRangeSectionFragment)
+            {
+                ptr += 1;
+            }
+
+            return ptr;
+        }
+
+        RangeSectionFragmentPointer() { _ptr = 0; }
+    public:
+
+        RangeSectionFragmentPointer(RangeSectionFragmentPointer &) = delete;
+        RangeSectionFragmentPointer(RangeSectionFragmentPointer &&) = delete;
+        RangeSectionFragmentPointer& operator=(const RangeSectionFragmentPointer&) = delete;
+
+        bool PointerIsCollectible()
+        {
+            return ((_ptr & 1) == 1);
+        }
+
+        bool IsNull()
+        {
+            return _ptr == 0;
+        }
+
+        PTR_RangeSectionFragment VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
+        {
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
+                {
+                    *pLockState = RangeSectionLockState::NeedsLock;
+                    return NULL;
+                }
+                return dac_cast<PTR_RangeSectionFragment>(ptr - 1);
+            }
+            else
+            {
+                return dac_cast<PTR_RangeSectionFragment>(ptr);
+            }
+        }
+
+#ifndef DACCESS_COMPILE
+        void VolatileStore(RangeSectionFragment* fragment)
+        {
+            ::VolatileStore(&_ptr, FragmentToPtr(fragment));
+        }
+
+        bool AtomicReplace(RangeSectionFragment* newFragment, RangeSectionFragment* oldFragment)
+        {
+            TADDR oldPtr = FragmentToPtr(oldFragment);
+            TADDR newPtr = FragmentToPtr(newFragment);
+
+            return oldPtr == InterlockedCompareExchangeT(&_ptr, newPtr, oldPtr);
+        }
+#endif // DACCESS_COMPILE
+    };
+
+    // Helper structure which forces all access to the various pointers to be handled via volatile/interlocked operations
+    // The copy/move constructors are all deleted to forbid accidental reads into temporaries, etc.
+    template <class TPtr>
+    class RangeSectionLevelPointer
+    {
+    private:
+        TADDR _ptr;
+
+        static TADDR LevelToPtr(TPtr level, bool collectible)
+        {
+            TADDR ptr = dac_cast<TADDR>(level);
+            if (ptr == 0)
+                return ptr;
+
+            if (collectible)
+            {
+                ptr += 1;
+            }
+
+            return ptr;
+        }
+
+        RangeSectionLevelPointer() { _ptr = 0; }
+    public:
+
+        RangeSectionLevelPointer(RangeSectionLevelPointer<TPtr> &) = delete;
+        RangeSectionLevelPointer(RangeSectionLevelPointer<TPtr> &&) = delete;
+        RangeSectionLevelPointer<TPtr>& operator=(const RangeSectionLevelPointer<TPtr>&) = delete;
+
+        bool PointerIsCollectible()
+        {
+            return ((::VolatileLoadWithoutBarrier(&_ptr) & 1) == 1);
+        }
+
+        bool IsNull()
+        {
+            return _ptr == 0;
+        }
+
+        TPtr VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
+        {
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
+                {
+                    *pLockState = RangeSectionLockState::NeedsLock;
+                    return NULL;
+                }
+                return dac_cast<TPtr>(ptr - 1);
+            }
+            else
+            {
+                return dac_cast<TPtr>(ptr);
+            }
+        }
+
+        TPtr VolatileLoad(RangeSectionLockState *pLockState)
+        {
+            TADDR ptr = ::VolatileLoad(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
+                {
+                    *pLockState = RangeSectionLockState::NeedsLock;
+                    return NULL;
+                }
+                return dac_cast<TPtr>(ptr - 1);
+            }
+            else
+            {
+                return dac_cast<TPtr>(ptr);
+            }
+        }
+
+#ifndef DACCESS_COMPILE
+
+        void UpgradeToNonCollectible()
+        {
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                // Upgrade to non-collectible
+#ifdef _DEBUG
+                TADDR initialValue = 
+#endif
+                InterlockedCompareExchangeT(&_ptr, ptr - 1, ptr);
+                assert(initialValue == ptr || initialValue == (ptr - 1));
+            }
+        }
+
+        // Install a newly allocated level pointer. Return true if the new buffer is installed.
+        // Return false if a buffer is already installed.
+        bool Install(TPtr level, bool collectible)
+        {
+            TADDR initialPointerStoreAttempt = LevelToPtr(level, collectible);
+            if (0 == InterlockedCompareExchangeT(&_ptr, initialPointerStoreAttempt, (TADDR)0))
+            {
+                return true;
+            }
+            else if (!collectible)
+            {
+                // In this case we update the already stored level to be pointed at via a non-collectible pointer
+                // But since we don't actually install the newly passed in pointer, we still return false.
+                UpgradeToNonCollectible();
+            }
+
+            return false;
+        }
+
+        void Uninstall()
+        {
+            ::VolatileStore(&_ptr, (TADDR)0);
+        }
+#endif // DACCESS_COMPILE
+    };
+
+    // Unlike a RangeSection, a RangeSectionFragment cannot span multiple elements of the last level of the RangeSectionMap
+    // Always allocated via memset/free
+    class RangeSectionFragment
+    {
+    public:
+        RangeSectionFragmentPointer pRangeSectionFragmentNext;
+        Range _range;
+        PTR_RangeSection pRangeSection;
+        bool InRange(TADDR address) { return _range.IsInRange(address) && pRangeSection->_pRangeSectionNextForDelete == NULL; }
+        bool isPrimaryRangeSectionFragment; // RangeSectionFragment are allocated in arrays, but we only need to free the first allocated one. It will be marked with this flag.
+        bool isCollectibleRangeSectionFragment; // RangeSectionFragments
+    };
+
+#ifdef TARGET_64BIT
+    static constexpr uintptr_t entriesPerMapLevel = 256;
+#else
+    static constexpr uintptr_t entriesPerMapLevel = 256;
+#endif
+
+    typedef RangeSectionFragmentPointer RangeSectionList;
+    typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL1)> RangeSectionL2[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL2)> RangeSectionL3[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL3)> RangeSectionL4[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL4)> RangeSectionL5[entriesPerMapLevel];
+
+#ifdef TARGET_64BIT
+    typedef RangeSectionL5 RangeSectionTopLevel;
+    static constexpr uintptr_t mapLevels = 5;
+    static constexpr uintptr_t maxSetBit = 56; // This is 0 indexed
+    static constexpr uintptr_t bitsPerLevel = 8;
+#else
+    typedef RangeSectionL2 RangeSectionTopLevel;
+    static constexpr uintptr_t mapLevels = 2;
+    static constexpr uintptr_t maxSetBit = 31; // This is 0 indexed
+    static constexpr uintptr_t bitsPerLevel = 8;
+#endif
+
+    BYTE _topLevelData[sizeof(RangeSectionTopLevel)];
+    RangeSectionTopLevel &GetTopLevel()
+    {
+        return *(RangeSectionTopLevel*)&_topLevelData;
+    }
+
+    RangeSection* _pCleanupList;
+
+    static constexpr uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
+    static constexpr uintptr_t bytesAtLastLevel = (((uintptr_t)1) << bitsAtLastLevel);
+
+    RangeSection* EndOfCleanupListMarker() { return (RangeSection*)1; }
+
+    void* AllocateLevel()
+    {
+        size_t size = entriesPerMapLevel * sizeof(void*);
+        void *buf = malloc(size);
+        if (buf == NULL)
+            return NULL;
+        memset(buf, 0, size);
+        return buf;
+    }
+
+    uintptr_t EffectiveBitsForLevel(TADDR address, uintptr_t level)
+    {
+        TADDR addressAsInt = address;
+        TADDR addressBitsUsedInMap = addressAsInt >> (maxSetBit + 1 - (mapLevels * bitsPerLevel));
+        TADDR addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * bitsPerLevel);
+        TADDR addressBitsUsedInLevel = (entriesPerMapLevel - 1) & addressBitsShifted;
+        return addressBitsUsedInLevel;
+    }
+
+#ifndef DACCESS_COMPILE
+    template<class T>
+    auto EnsureLevel(TADDR address, T* outerLevel, uintptr_t level, bool collectible) -> decltype(&((*outerLevel->VolatileLoad(NULL))[0]))
+    {
+        RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // This function may only be called while the lock is held at least at ReaderLocked
+        uintptr_t index = EffectiveBitsForLevel(address, level);
+        auto levelToGetPointerIn = outerLevel->VolatileLoad(&lockState);
+
+        if (levelToGetPointerIn == NULL)
+        {
+            auto levelNew = static_cast<decltype(&(outerLevel->VolatileLoad(NULL))[0])>(AllocateLevel());
+            if (levelNew == NULL)
+                return NULL;
+            
+            if (!outerLevel->Install(levelNew, collectible))
+            {
+                // Handle race where another thread grew the table
+                levelToGetPointerIn = outerLevel->VolatileLoad(&lockState);
+                free(levelNew);
+            }
+            else
+            {
+                levelToGetPointerIn = levelNew;
+            }
+            assert(levelToGetPointerIn != NULL);
+        }
+        else if (!collectible && outerLevel->PointerIsCollectible())
+        {
+            outerLevel->UpgradeToNonCollectible();
+        }
+
+        return &((*levelToGetPointerIn)[index]);
+    }
+    // Returns pointer to address in last level map that actually points at RangeSection space.
+    RangeSectionFragmentPointer* EnsureMapsForAddress(TADDR address, bool collectible)
+    {
+        uintptr_t level = mapLevels + 1;
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, --level);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
+#ifdef TARGET_64BIT
+        auto rangeSectionL4 = nextLevelAddress;
+        auto rangeSectionL3 = EnsureLevel(address, rangeSectionL4, --level, collectible);
+        if (rangeSectionL3 == NULL)
+            return NULL; // Failure case
+        auto rangeSectionL2 = EnsureLevel(address, rangeSectionL3, --level, collectible);
+        if (rangeSectionL2 == NULL)
+            return NULL; // Failure case
+        auto rangeSectionL1 = EnsureLevel(address, rangeSectionL2, --level, collectible);
+        if (rangeSectionL1 == NULL)
+            return NULL; // Failure case
+#else
+        auto rangeSectionL1 = nextLevelAddress;
+#endif
+        auto result = EnsureLevel(address, rangeSectionL1, --level, collectible);
+        if (result == NULL)
+            return NULL; // Failure case
+
+        return result;
+    }
+#endif // DACCESS_COMPILE
+
+    void* GetRangeSectionMapLevelForAddress(TADDR address, uintptr_t level, RangeSectionLockState *pLockState)
+    {
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
+#ifdef TARGET_64BIT
+        if (level == 4)
+            return nextLevelAddress;
+
+        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (rangeSectionL4 == NULL)
+            return NULL;
+        auto rangeSectionL3Ptr = &((*rangeSectionL4)[EffectiveBitsForLevel(address, 4)]);
+        if (level == 3)
+            return rangeSectionL3Ptr;
+
+        auto rangeSectionL3 = rangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL3 == NULL)
+            return NULL;
+        
+        auto rangeSectionL2Ptr = &((*rangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
+        if (level == 2)
+            return rangeSectionL2Ptr;
+
+        auto rangeSectionL2 = rangeSectionL2Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL2 == NULL)
+            return NULL;
+
+        auto rangeSectionL1Ptr = &((*rangeSectionL2)[EffectiveBitsForLevel(address, 2)]);
+        if (level == 1)
+            return rangeSectionL1Ptr;
+#else
+        if (level == 1)
+        {
+            return nextLevelAddress;
+        }
+#endif
+        assert(!"Unexpected level searched for");
+        return NULL;
+    }
+
+    PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
+    {
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
+#ifdef TARGET_64BIT
+        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (rangeSectionL4 == NULL)
+            return NULL;
+        auto rangeSectionL3 = (*rangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL3 == NULL)
+            return NULL;
+        auto rangeSectionL2 = (*rangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL2 == NULL)
+            return NULL;
+        auto rangeSectionL1 = (*rangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
+#else
+        auto rangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
+#endif
+        if (rangeSectionL1 == NULL)
+            return NULL;
+
+        return ((*rangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
+    }
+
+    static uintptr_t RangeSectionFragmentCount(PTR_RangeSection pRangeSection)
+    {
+        uintptr_t rangeSize = pRangeSection->_range.RangeSize();
+        if (rangeSize == 0)
+            return 0;
+
+        // Account for the range not starting at the beginning of a last level fragment
+        rangeSize += pRangeSection->_range.RangeStart() & (bytesAtLastLevel - 1);
+        
+        uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
+        return fragmentCount;
+    }
+
+    static TADDR IncrementAddressByMaxSizeOfFragment(TADDR input)
+    {
+        return input + bytesAtLastLevel;
+    }
+
+#ifndef DACCESS_COMPILE
+    bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection, RangeSectionLockState *pLockState)
+    {
+        assert(*pLockState == RangeSectionLockState::ReaderLocked); // Must be locked so that the cannot fail case, can't fail. NOTE: This only needs the reader lock, as the attach process can happen in parallel to reads.
+
+        // Currently all use of the RangeSection should be with aligned addresses, so validate that the start and end are at aligned boundaries
+        assert((pRangeSection->_range.RangeStart() & 0xF) == 0);
+        assert((pRangeSection->_range.RangeEnd() & 0xF) == 0xF);
+        assert((pRangeSection->_range.RangeEndOpen() & 0xF) == 0);
+
+        uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
+        size_t fragmentsSize = rangeSectionFragmentCount * sizeof(RangeSectionFragment);
+        void* fragmentsMemory = (RangeSectionFragment*)malloc(fragmentsSize);
+        if (fragmentsMemory == NULL)
+        {
+            return false;
+        }
+        memset(fragmentsMemory, 0, fragmentsSize);
+
+        RangeSectionFragment* fragments = (RangeSectionFragment*)fragmentsMemory;
+
+
+        size_t entryUpdateSize = rangeSectionFragmentCount * sizeof(RangeSectionFragmentPointer*);
+        RangeSectionFragmentPointer** entriesInMapToUpdate = (RangeSectionFragmentPointer**)malloc(entryUpdateSize);
+        if (entriesInMapToUpdate == NULL)
+        {
+            free(fragments);
+            return false;
+        }
+
+        memset(entriesInMapToUpdate, 0, entryUpdateSize);
+
+        fragments[0].isPrimaryRangeSectionFragment = true;
+
+        TADDR addressToPrepForUpdate = pRangeSection->_range.RangeStart();
+
+        // Assert that range is not already mapped in any way
+        assert(LookupRangeSection(addressToPrepForUpdate, pLockState) == NULL);
+        assert(LookupRangeSection(pRangeSection->_range.RangeEnd(), pLockState) == NULL);
+        for (TADDR fragmentAddress = addressToPrepForUpdate; pRangeSection->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+        {
+            assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
+        }
+
+        bool collectible = !!(pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
+
+        for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
+        {
+            fragments[iFragment].pRangeSection = pRangeSection;
+            fragments[iFragment]._range = pRangeSection->_range;
+            fragments[iFragment].isCollectibleRangeSectionFragment = collectible;
+            RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate, collectible);
+            if (entryInMapToUpdate == NULL)
+            {
+                free(fragments);
+                free(entriesInMapToUpdate);
+                return false;
+            }
+
+            entriesInMapToUpdate[iFragment] = entryInMapToUpdate;
+            addressToPrepForUpdate = IncrementAddressByMaxSizeOfFragment(addressToPrepForUpdate);
+        }
+
+        // At this point all the needed memory is allocated, and it is no longer possible to fail.
+        for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
+        {
+            RangeSectionFragmentPointer* pFragmentPointerToUpdate = entriesInMapToUpdate[iFragment];
+            do
+            {
+                RangeSectionFragment* initialFragmentInMap = pFragmentPointerToUpdate->VolatileLoadWithoutBarrier(pLockState);
+
+                // When inserting collectible elements into the range section map, ALWAYS put them after any non-collectible
+                // fragments. This is so that when looking up ReadyToRun data, we never will need to take the ReaderLock for real.
+                while (initialFragmentInMap != NULL && collectible && !initialFragmentInMap->isCollectibleRangeSectionFragment)
+                {
+                    pFragmentPointerToUpdate = &initialFragmentInMap->pRangeSectionFragmentNext;
+                    initialFragmentInMap = pFragmentPointerToUpdate->VolatileLoadWithoutBarrier(pLockState);
+                }
+
+                fragments[iFragment].pRangeSectionFragmentNext.VolatileStore(initialFragmentInMap);
+                if (pFragmentPointerToUpdate->AtomicReplace(&(fragments[iFragment]), initialFragmentInMap))
+                    break;
+            } while (true);
+        }
+
+        // Assert that range is now found via lookup
+        assert(LookupRangeSection(pRangeSection->_range.RangeStart(), pLockState) == pRangeSection);
+        assert(LookupRangeSection(pRangeSection->_range.RangeEnd(), pLockState) == pRangeSection);
+        for (TADDR fragmentAddress = pRangeSection->_range.RangeStart(); pRangeSection->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+        {
+            assert(LookupRangeSection(fragmentAddress, pLockState) == pRangeSection);
+        }
+
+        // entriesInMapToUpdate was just a temporary allocation
+        free(entriesInMapToUpdate);
+
+        return true;
+    }
+#endif // DACCESS_COMPILE
+
+
+public:
+    RangeSectionMap() : _pCleanupList(EndOfCleanupListMarker())
+    {
+        memset(&_topLevelData, 0, sizeof(_topLevelData));
+    }
+
+#ifndef DACCESS_COMPILE
+
+#ifdef FEATURE_READYTORUN
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pR2RModule));
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeSectionToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+#endif
+
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_HeapList pHeapList, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pHeapList));
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeSectionToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pRangeList));
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeSectionToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+#endif // DACCESS_COMPILE
+
+    PTR_RangeSection LookupRangeSection(TADDR address, RangeSectionLockState *pLockState)
+    {
+        PTR_RangeSectionFragment fragment = GetRangeSectionForAddress(address, pLockState);
+        if (fragment == NULL)
+            return NULL;
+
+        while ((fragment != NULL) && !fragment->InRange(address))
+        {
+            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+        }
+
+        if (fragment != NULL)
+        {
+            if (fragment->pRangeSection->_pRangeSectionNextForDelete != NULL)
+                return NULL;
+            return fragment->pRangeSection;
+        }
+
+        return NULL;
+    }
+
+#ifndef DACCESS_COMPILE
+    void RemoveRangeSection(RangeSection* pRangeSection)
+    {
+        assert(pRangeSection->_pRangeSectionNextForDelete == NULL);
+        assert(pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
+#ifdef FEATURE_READYTORUN
+        assert(pRangeSection->_pR2RModule == NULL);
+#endif
+
+        // Removal is implemented by placing onto the cleanup linked list. This is then processed later during cleanup
+        RangeSection* pLatestRemovedRangeSection;
+        do
+        {
+            pLatestRemovedRangeSection = VolatileLoad(&_pCleanupList);
+            VolatileStore(&pRangeSection->_pRangeSectionNextForDelete, pLatestRemovedRangeSection);
+        } while (InterlockedCompareExchangeT(&_pCleanupList, pRangeSection, pLatestRemovedRangeSection) != pLatestRemovedRangeSection);
+    }
+
+    void CleanupRangeSections(RangeSectionLockState *pLockState)
+    {
+        assert(*pLockState == RangeSectionLockState::WriteLocked);
+
+        while (this->_pCleanupList != EndOfCleanupListMarker())
+        {
+            PTR_RangeSection pRangeSectionToCleanup(this->_pCleanupList);
+            RangeSectionFragment* pRangeSectionFragmentToFree = NULL;
+            this->_pCleanupList = pRangeSectionToCleanup->_pRangeSectionNextForDelete;
+
+            uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSectionToCleanup);
+
+            TADDR addressToPrepForCleanup = pRangeSectionToCleanup->_range.RangeStart();
+
+            assert(LookupRangeSection(addressToPrepForCleanup, pLockState) == NULL);
+            assert(LookupRangeSection(pRangeSectionToCleanup->_range.RangeEnd(), pLockState) == NULL);
+            for (TADDR fragmentAddress = addressToPrepForCleanup; pRangeSectionToCleanup->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+            {
+                assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
+            }
+
+            // Remove fragments from each of the fragment linked lists
+            for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
+            {
+                RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup, true /* collectible */);
+                assert(entryInMapToUpdate != NULL);
+
+#ifdef _DEBUG
+                bool seenCollectibleRangeList = false;
+#endif
+                while ((entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSection != pRangeSectionToCleanup)
+                {
+#ifdef _DEBUG
+                    if (entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState)->isCollectibleRangeSectionFragment)
+                    {
+                        seenCollectibleRangeList = true;
+                    }
+                    else
+                    {
+                        // Since the fragment linked lists are sorted such that the collectible ones are always after the non-collectible ones, this should never happen.
+                        assert(!seenCollectibleRangeList); 
+                    }
+#endif
+                    entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSectionFragmentNext;
+                }
+
+                RangeSectionFragment* fragment = entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState);
+
+                // The fragment associated with the start of the range has the address that was allocated earlier
+                if (iFragment == 0)
+                {
+                    pRangeSectionFragmentToFree = fragment;
+                    assert(pRangeSectionFragmentToFree->isPrimaryRangeSectionFragment);
+                }
+
+                auto fragmentThatRemains = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+                entryInMapToUpdate->VolatileStore(fragmentThatRemains);
+
+                // Now determine if we need to actually free portions of the map structure
+                if (fragmentThatRemains == NULL)
+                {
+                    for (uintptr_t level = 1; level < mapLevels; level++)
+                    {
+                        // Note that the type here is actually not necessarily correct, but its close enough
+                        auto pointerToLevelData = (RangeSectionLevelPointer<DPTR(RangeSectionL2)>*)GetRangeSectionMapLevelForAddress(addressToPrepForCleanup, level, pLockState);
+                        if (pointerToLevelData == NULL)
+                            break;
+                        auto &rawData = *pointerToLevelData->VolatileLoad(pLockState);
+                        bool foundMeaningfulValue = false;
+
+                        for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
+                        {
+                            if (!rawData[i].IsNull())
+                            {
+                                foundMeaningfulValue = true;
+                                break;
+                            }
+                        }
+
+                        if (foundMeaningfulValue)
+                            break;
+                        
+                        // This level is completely empty. Free it, and then null out the pointer to it.
+                        pointerToLevelData->Uninstall();
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object" // The compiler can't tell that this pointer always comes from a malloc call.
+                        free((void*)rawData);
+#pragma GCC diagnostic pop
+#endif
+                    }
+                }
+
+                addressToPrepForCleanup = IncrementAddressByMaxSizeOfFragment(addressToPrepForCleanup);
+            }
+
+            // Free the array of fragments
+            delete pRangeSectionToCleanup;
+            free(pRangeSectionFragmentToFree);
+        }
+    }
+#endif // DACCESS_COMPILE
+
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, RangeSectionFragmentPointer& fragmentPointer, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSectionFragment fragment = fragmentPointer.VolatileLoadWithoutBarrier(pLockState);
+        while (fragment != NULL)
+        {
+            if (!DacEnumMemoryRegion(dac_cast<TADDR>(fragment), sizeof(RangeSectionFragment)))
+                return;
+
+            fragment->pRangeSection->EnumMemoryRegions(flags);
+
+            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+        }
+    }
+
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, RangeSectionL1& level, RangeSectionLockState* pLockState)
+    {
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(&level), sizeof(level)))
+            return;
+
+        for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
+        {
+            if (!level[i].IsNull())
+            {
+                EnumMemoryRangeSectionMapLevel(flags, level[i], pLockState);
+            }
+        }
+    }
+
+    template<class T>
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, T& level, RangeSectionLockState* pLockState)
+    {
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(&level), sizeof(level)))
+            return;
+
+        for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
+        {
+            if (level[i].IsNull())
+            {
+                EnumMemoryRangeSectionMapLevel(flags, *level[i].VolatileLoad(pLockState), pLockState);
+            }
+        }
+    }
+
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+    {
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(*this)))
+            return;
+
+        // Always assume we are locked when enumerating
+        RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
+        EnumMemoryRangeSectionMapLevel(flags, GetTopLevel(), &lockState);
+    }
+#endif// DACCESS_COMPILE
+
+};
+
+struct RangeSectionMapData
+{
+    BYTE Data[sizeof(RangeSectionMap)];
 };
 
 /*****************************************************************************/
@@ -984,9 +1775,7 @@ public:
 
     void                allocCode(MethodDesc* pFD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, CodeHeader** ppCodeHeader, CodeHeader** ppCodeHeaderRW,
                                   size_t* pAllocatedSize, HeapList** ppCodeHeap
-#ifdef USE_INDIRECT_CODEHEADER
                                 , BYTE** ppRealHeader
-#endif
 #ifdef FEATURE_EH_FUNCLETS
                                 , UINT nUnwindInfos
 #endif
@@ -1216,9 +2005,6 @@ public:
     // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
     static BOOL IsManagedCode(PCODE currentPC);
 
-    // Special version with profiler hook
-    static BOOL IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock);
-
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
 
@@ -1239,7 +2025,7 @@ public:
         } CONTRACTL_END;
 
         RangeSection * pRange = FindCodeRange(currentPC, GetScanFlags());
-        return (pRange != NULL) ? pRange->pjit : NULL;
+        return (pRange != NULL) ? pRange->_pjit : NULL;
     }
 
     static RangeSection * FindCodeRange(PCODE currentPC, ScanFlag scanFlag);
@@ -1249,7 +2035,7 @@ public:
     class ReaderLockHolder
     {
     public:
-        ReaderLockHolder(HostCallPreference hostCallPreference = AllowHostCalls);
+        ReaderLockHolder();
         ~ReaderLockHolder();
 
         BOOL Acquired();
@@ -1284,11 +2070,17 @@ public:
     static void           AddCodeRange(TADDR StartRange, TADDR EndRange,
                                        IJitManager* pJit,
                                        RangeSection::RangeSectionFlags flags,
-                                       void * pHp);
+                                       PTR_CodeRangeMapRangeList pRangeList);
 
-    static void           AddNativeImageRange(TADDR StartRange,
-                                              SIZE_T Size,
-                                              Module * pModule);
+    static void           AddCodeRange(TADDR StartRange, TADDR EndRange,
+                                       IJitManager* pJit,
+                                       RangeSection::RangeSectionFlags flags,
+                                       PTR_HeapList pHp);
+
+    static void           AddCodeRange(TADDR StartRange, TADDR EndRange,
+                                       IJitManager* pJit,
+                                       RangeSection::RangeSectionFlags flags,
+                                       PTR_Module pModule);
 
     static void           DeleteRange(TADDR StartRange);
 
@@ -1300,17 +2092,12 @@ public:
         return (ICodeManager *)m_pDefaultCodeMan;
     }
 
-    static PTR_Module FindZapModule(TADDR currentData);
     static PTR_Module FindReadyToRunModule(TADDR currentData);
 
-    // FindZapModule flavor to be used during GC to find GCRefMap
+    // FindReadyToRunModule flavor to be used during GC to find GCRefMap
     static PTR_Module FindModuleForGCRefMap(TADDR currentData);
 
-    static RangeSection*  GetRangeSectionAndPrev(RangeSection *pRS, TADDR addr, RangeSection **ppPrev);
-
 #ifdef DACCESS_COMPILE
-    static void EnumRangeList(RangeSection* list,
-                              CLRDataEnumMemoryFlags flags);
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
@@ -1327,9 +2114,9 @@ private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
 
     static BOOL IsManagedCodeWithLock(PCODE currentPC);
-    static BOOL IsManagedCodeWorker(PCODE currentPC);
+    static BOOL IsManagedCodeWorker(PCODE currentPC, RangeSectionLockState *pLockState);
 
-    static RangeSection* GetRangeSection(TADDR addr);
+    static RangeSection* GetRangeSection(TADDR addr, RangeSectionLockState *pLockState);
 
     SPTR_DECL(EECodeManager, m_pDefaultCodeMan);
 
@@ -1341,9 +2128,18 @@ private:
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
 
+    // Make the CodeRangeMap a global, initialized as the process starts up.
+    // The odd formulation of a BYTE array is used to avoid an extra memory indirection
+    // that would be needed if the memory for the CodeRangeMap was dynamically allocated.
+    SVAL_DECL(RangeSectionMapData,  g_codeRangeMap);
+    static PTR_RangeSectionMap GetCodeRangeMap()
+    {
+        TADDR codeRangeMapAddress = dac_cast<TADDR>(&(g_codeRangeMap));
+        return dac_cast<PTR_RangeSectionMap>(codeRangeMapAddress);
+    }
+
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-    VOLATILE_SPTR_DECL(RangeSection,  m_CodeRangeList);
     VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
     VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
 
@@ -1371,14 +2167,6 @@ private:
         return (void *) &m_dwReaderCount;
     }
 #endif // defined(_DEBUG)
-
-    static void AddRangeHelper(TADDR StartRange,
-                               TADDR EndRange,
-                               IJitManager* pJit,
-                               RangeSection::RangeSectionFlags flags,
-                               TADDR pHeapListOrZapModule);
-    static void DeleteRangeHelper(RangeSection** ppRangeList,
-                                  TADDR StartRange);
 
 #ifndef DACCESS_COMPILE
     static PCODE getNextJumpStub(MethodDesc* pMD,
@@ -1422,9 +2210,9 @@ private:
 #endif
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = NULL; e.m_jumpStub = NULL; return e; }
-        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == NULL; }
-        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = NULL; return e; }
+        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = 0; e.m_jumpStub = 0; return e; }
+        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == 0; }
+        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = 0; return e; }
         static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == (PCODE)-1; }
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
@@ -1470,7 +2258,7 @@ inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(methodStartAddress != NULL);
+    _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_CodeHeader>(methodStartAddress - sizeof(CodeHeader));
 }
@@ -1480,7 +2268,6 @@ inline TADDR EEJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1494,7 +2281,6 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
         PRECONDITION(methodRegionInfo != NULL);
     } CONTRACTL_END;
@@ -1730,23 +2516,22 @@ public:
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
     EECodeInfo  GetMainFunctionInfo();
-    ULONG               GetFixedStackSize();
+#endif // FEATURE_EH_FUNCLETS
 
-#if defined(TARGET_AMD64)
-    BOOL        HasFrameRegister();
-#endif // TARGET_AMD64
-
-#else // FEATURE_EH_FUNCLETS
+#if defined(TARGET_X86)
     ULONG       GetFixedStackSize()
     {
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
-#endif // FEATURE_EH_FUNCLETS
+#endif // TARGET_X86
 
 #if defined(TARGET_AMD64)
-    void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
+    BOOL        HasFrameRegister();
+    ULONG       GetFixedStackSize();
 
+    void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
+    ULONG        GetFrameOffsetFromUnwindInfo();
 #if defined(_DEBUG) && defined(HAVE_GCCOVER)
     // Find first funclet inside (pvFuncletStart, pvFuncletStart + cbCode)
     static LPVOID findNextFunclet (LPVOID pvFuncletStart, SIZE_T cbCode, LPVOID *ppvFuncletEnd);

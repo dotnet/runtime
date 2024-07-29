@@ -16,7 +16,7 @@ namespace System.Runtime.Loader
             yield return new LibraryNameVariation(string.Empty, string.Empty);
 
             if (isRelativePath
-                && !libName.EndsWith(".", StringComparison.OrdinalIgnoreCase)
+                && !libName.EndsWith('.')
                 && !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                 && !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {

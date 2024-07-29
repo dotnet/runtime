@@ -32,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AsyncCapture ();
 			AsyncTypeMismatch ();
 			AsyncInsideClosure ();
+			AsyncInsideClosureNonGeneric ();
 			AsyncInsideClosureMismatch ();
 
 			// Closures
@@ -42,6 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			CapturingLocalFunctionInsideIterator<int> ();
 			LambdaInsideAsync<int> ();
 			LocalFunctionInsideAsync<int> ();
+			NestedStaticLambda.Test<int> ();
 		}
 
 		private static void UseIterator ()
@@ -220,6 +222,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		private static void AsyncInsideClosureNonGeneric ()
+		{
+			Outer<string> ();
+			void Outer<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T1> ()
+			{
+				int x = 0;
+				Inner ().Wait ();
+				async Task Inner ()
+				{
+					await Task.Delay (0);
+					x++;
+					_ = typeof (T1).GetMethods ();
+				}
+			}
+		}
+
 		private static void AsyncInsideClosureMismatch ()
 		{
 			Outer<string> ();
@@ -334,6 +352,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			void LocalFunction () => typeof (T).GetMethods ();
 			await Task.Delay (0);
 			LocalFunction ();
+		}
+
+		class NestedStaticLambda
+		{
+			public static class Container<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> {
+				public static Func<Func<T, T>, Func<T, T>> NestedLambda =
+					(Func<T, T> x) => v => x(v);
+			}
+
+			[ExpectedWarning ("IL2091", "T", nameof (Container<T>), nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+			public static void Test<T> ()
+			{
+				Container<T>.NestedLambda ((T t) => t) (default (T));
+			}
 		}
 	}
 }

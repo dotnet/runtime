@@ -34,11 +34,11 @@
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
-#include "mono/metadata/cominterop.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/icall-internals.h"
+#include "mono/metadata/unsafe-accessor.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/atomic.h"
@@ -87,23 +87,6 @@ mono_mb_strdup (MonoMethodBuilder *mb, const char *s)
 		res = g_strdup (s);
 	return res;
 }
-
-#ifndef DISABLE_COM
-
-// FIXME There are multiple caches of "Clear".
-G_GNUC_UNUSED
-static MonoMethod*
-mono_get_Variant_Clear (void)
-{
-	MONO_STATIC_POINTER_INIT (MonoMethod, variant_clear)
-		variant_clear = mono_marshal_shared_get_method_nofail (mono_class_get_variant_class (), "Clear", 0, 0);
-	MONO_STATIC_POINTER_INIT_END (MonoMethod, variant_clear)
-
-	g_assert (variant_clear);
-	return variant_clear;
-}
-
-#endif
 
 // FIXME There are multiple caches of "GetObjectForNativeVariant".
 G_GNUC_UNUSED
@@ -435,6 +418,7 @@ handle_enum:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		/* The result is an IntPtr */
 		mono_mb_emit_op (mb, CEE_BOX, mono_defaults.int_class);
 		break;
@@ -523,7 +507,7 @@ emit_runtime_invoke_body_ilgen (MonoMethodBuilder *mb, const char **param_names,
 	emit_thread_force_interrupt_checkpoint (mb);
 	emit_invoke_call (mb, method, sig, callsig, loc_res, virtual_, need_direct_wrapper);
 
-	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_ldloc (mb, loc_res);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
@@ -600,9 +584,6 @@ typedef struct EmitGCSafeTransitionBuilder {
 	MonoMethodBuilder *mb;
 	gboolean func_param;
 	int coop_gc_var;
-#ifndef DISABLE_COM
-	int coop_cominterop_fnptr;
-#endif
 } GCSafeTransitionBuilder;
 
 static gboolean
@@ -611,9 +592,6 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	builder->mb = mb;
 	builder->func_param = func_param;
 	builder->coop_gc_var = -1;
-#ifndef DISABLE_COM
-	builder->coop_cominterop_fnptr = -1;
-#endif
 #if defined (TARGET_WASM)
 	#ifndef DISABLE_THREADS
 		return TRUE;
@@ -635,11 +613,6 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 	MonoType *int_type = mono_get_int_type();
 	/* local 4, the local to be used when calling the suspend funcs */
 	builder->coop_gc_var = mono_mb_add_local (builder->mb, int_type);
-#ifndef DISABLE_COM
-	if (!builder->func_param && MONO_CLASS_IS_IMPORT (builder->mb->method->klass)) {
-		builder->coop_cominterop_fnptr = mono_mb_add_local (builder->mb, int_type);
-	}
-#endif
 }
 
 /**
@@ -650,21 +623,13 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 static void
 gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, gboolean aot)
 {
-
 	// Perform an extra, early lookup of the function address, so any exceptions
 	// potentially resulting from the lookup occur before entering blocking mode.
-	if (!builder->func_param && !MONO_CLASS_IS_IMPORT (builder->mb->method->klass) && aot) {
+	if (!builder->func_param && aot) {
 		mono_mb_emit_byte (builder->mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_op (builder->mb, CEE_MONO_ICALL_ADDR, method);
 		mono_mb_emit_byte (builder->mb, CEE_POP); // Result not needed yet
 	}
-
-#ifndef DISABLE_COM
-	if (!builder->func_param && MONO_CLASS_IS_IMPORT (builder->mb->method->klass)) {
-		mono_mb_emit_cominterop_get_function_pointer (builder->mb, method);
-		mono_mb_emit_stloc (builder->mb, builder->coop_cominterop_fnptr);
-	}
-#endif
 
 	mono_mb_emit_byte (builder->mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (builder->mb, CEE_MONO_GET_SP);
@@ -691,9 +656,87 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
 {
 	builder->mb = NULL;
 	builder->coop_gc_var = -1;
-#ifndef DISABLE_COM
-	builder->coop_cominterop_fnptr = -1;
-#endif
+}
+
+typedef struct EmitGCUnsafeTransitionBuilder {
+	MonoMethodBuilder *mb;
+	int orig_domain_var;
+	int attach_cookie_var;
+} GCUnsafeTransitionBuilder;
+
+static void
+gc_unsafe_transition_builder_init (GCUnsafeTransitionBuilder *builder, MonoMethodBuilder *mb, gboolean use_attach)
+{
+	g_assert_checked (use_attach);
+	// Right now we always set use_attach and use mono_threads_coop_attach to enter into gc
+	// unsafe regions.  If !use_attach is needed (ie adding transitions, using
+	// mono_threads_enter_gc_unsafe_region_unbalanced) that needs to be implemented.
+	builder->mb = mb;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
+}
+
+static void
+gc_unsafe_transition_builder_add_vars (GCUnsafeTransitionBuilder *builder)
+{
+	MonoType *int_type = mono_get_int_type ();
+	builder->orig_domain_var = mono_mb_add_local (builder->mb, int_type);
+	builder->attach_cookie_var = mono_mb_add_local (builder->mb, int_type);
+}
+
+static void
+gc_unsafe_transition_builder_emit_enter (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int attach_cookie = builder->attach_cookie_var;
+	int orig_domain = builder->orig_domain_var;
+	/*
+	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
+	 * intptr_t attach_cookie;
+	 * intptr_t orig_domain = mono_threads_attach_coop (domain, &attach_cookie);
+	 * <interrupt check>
+	 */
+	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/*
+	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
+	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+	 *
+	 * Special cased in interpreter, keep in sync.
+	 */
+	mono_mb_emit_icall (mb, mono_threads_attach_coop);
+	mono_mb_emit_stloc (mb, orig_domain);
+
+	/* <interrupt check> */
+	emit_thread_interrupt_checkpoint (mb);
+}
+
+static void
+gc_unsafe_transition_builder_emit_exit (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int orig_domain = builder->orig_domain_var;
+	int attach_cookie = builder->attach_cookie_var;
+	/*
+	 * // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
+	 * mono_threads_detach_coop (orig_domain, &attach_cookie);
+	 */
+
+	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
+	mono_mb_emit_ldloc (mb, orig_domain);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/* Special cased in interpreter, keep in sync */
+	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+}
+
+static void
+gc_unsafe_transition_builder_cleanup (GCUnsafeTransitionBuilder *builder)
+{
+	builder->mb = NULL;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
 }
 
 static gboolean
@@ -754,6 +797,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 static void
 emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
+	g_assert (!MONO_CLASS_IS_IMPORT (mb->method->klass));
 	gboolean aot = (flags & EMIT_NATIVE_WRAPPER_AOT) != 0;
 	gboolean check_exceptions = (flags & EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS) != 0;
 	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
@@ -819,7 +863,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
-	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+	if (!func && !aot && !func_param) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
 		 * a pinvoke lookup can fail, and then succeed later. So if the
@@ -914,17 +958,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}
 		mono_mb_emit_calli (mb, csig);
-	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
-#ifndef DISABLE_COM
-		mono_mb_emit_ldloc (mb, gc_safe_transition_builder.coop_cominterop_fnptr);
-		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
-		}
-		mono_mb_emit_cominterop_call_function_pointer (mb, csig);
-#else
-		g_assert_not_reached ();
-#endif
 	} else {
 		if (func_addr_local != -1) {
 			mono_mb_emit_ldloc (mb, func_addr_local);
@@ -1908,8 +1941,10 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 		mono_mb_emit_restore_result (mb, sig->ret);
 }
 
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 static void
-emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
+emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, MonoMethodSignature *target_method_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 	int local_i, local_len, local_delegates, local_d, local_target, local_res = 0;
 	int pos0, pos1, pos2;
@@ -2007,19 +2042,18 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	if (callvirt) {
 		if (!closed_over_null) {
-			/* if target_method is not really virtual, turn it into a direct call */
-			if (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) || m_class_is_valuetype (target_class)) {
-				mono_mb_emit_ldarg (mb, 1);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALL, target_method);
-			} else {
-				mono_mb_emit_ldarg (mb, 1);
-				mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
+			for (i = 1; i <= sig->param_count; ++i) {
+				mono_mb_emit_ldarg (mb, i);
+				if (i == 1) {
+					MonoType *t = sig->params [0];
+					if (!m_type_is_byref (t))
+						mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (t));
+				}
 			}
+			mono_mb_emit_ldarg_addr (mb, 1);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
 			for (i = 0; i < sig->param_count; ++i)
@@ -2103,9 +2137,13 @@ mb_skip_visibility_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
-mb_set_dynamic_ilgen (MonoMethodBuilder *mb)
+mb_inflate_wrapper_data_ilgen (MonoMethodBuilder *mb)
 {
-	mb->dynamic = 1;
+	g_assert (!mb->dynamic); // dynamic methods with inflated data not implemented yet - needs at least mono_free_method changes, probably more
+	mb->inflate_wrapper_data = TRUE;
+	int idx = mono_mb_add_data (mb, NULL);
+	// note: match index used in create_method_ilgen
+	g_assertf (idx == MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX, "mb_inflate_wrapper_data called after data already added");
 }
 
 static void
@@ -2237,6 +2275,274 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+static gboolean
+unsafe_accessor_target_type_forbidden (MonoType *target_type);
+
+static void
+emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	// Field access requires a single argument for target type and a return type.
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
+	g_assert (member_name != NULL);
+
+
+	MonoType *target_type = sig->param_count == 1 ? sig->params[0] : NULL; // params[0] is the field's parent
+
+	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+
+	MonoType *ret_type = sig->ret;
+
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+	gboolean target_byref = m_type_is_byref (target_type);
+	gboolean target_valuetype = m_class_is_valuetype (target_class);
+	gboolean ret_byref = m_type_is_byref (ret_type);
+	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+
+	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
+	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), TRUE)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
+			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
+		return;
+	}
+	gboolean is_field_static = !!(target_field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	if ((kind == MONO_UNSAFE_ACCESSOR_FIELD && is_field_static) || (kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD && !is_field_static)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("UnsafeAccessorKind does not match expected static modifier on field '%s' in '%s'", member_name, m_class_get_name (target_class)));
+		return;
+	}
+	if (is_field_static && m_field_get_parent (target_field) != target_class) {
+		// don't look up static fields using the inheritance hierarchy
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("Field '%s' not found in '%s'", member_name, m_class_get_name (target_class)));
+	}
+
+	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
+		mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_op (mb, kind == MONO_UNSAFE_ACCESSOR_FIELD ? CEE_LDFLDA : CEE_LDSFLDA, target_field);
+	if (inflate_generic_data)
+		mono_mb_set_wrapper_data_kind (mb, MONO_MB_ILGEN_WRAPPER_DATA_FIELD);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+/*
+ * Given an accessor method signature (where the first arg is a target class) creates the signature
+ * of the expected member method (ie, with the first arg removed)
+ */
+static MonoMethodSignature *
+method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMethodSignature *accessor_sig)
+{
+	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
+	g_assert (ret->param_count > 0);
+	ret->hasthis = hasthis;
+	for (int i = 1; i < ret->param_count; i++)
+		ret->params [i - 1] = ret->params [i];
+	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType*)); // just in case
+	ret->param_count--;
+	return ret;
+}
+
+/*
+ * Given an accessor method signature (where the return type is a target class) creates the signature
+ * of the expected constructor method (same args, but return type is void).
+ */
+static MonoMethodSignature *
+ctor_sig_from_accessor_sig (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig)
+{
+	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
+	ret->hasthis = TRUE; /* ctors are considered instance methods */
+	ret->ret = mono_get_void_type ();
+	return ret;
+}
+
+static void
+emit_unsafe_accessor_ldargs (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig, int skip_count)
+{
+	for (int i = skip_count; i < accessor_sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+}
+
+static gboolean
+unsafe_accessor_target_type_forbidden (MonoType *target_type)
+{
+	switch (target_type->type)
+	{
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+emit_missing_method_error (MonoMethodBuilder *mb, MonoError *failure, const char *display_member_name)
+{
+	if (!is_ok (failure)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s due to: %s", display_member_name, mono_error_get_message (failure)));
+	} else {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s", display_member_name));
+	}
+}
+
+static MonoMethod *
+inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_method, MonoError *error)
+{
+	MonoMethod *result = method;
+	MonoGenericContext context = { NULL, NULL };
+	if (mono_class_is_ginst (klass))
+		context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
+	if (accessor_method->is_inflated)
+		context.method_inst = mono_method_get_context (accessor_method)->method_inst;
+	if ((context.class_inst != NULL) || (context.method_inst != NULL))
+		result = mono_class_inflate_generic_method_checked (method, &context, error);
+	mono_error_assert_ok (error);
+	
+	return result;
+}
+
+static void
+emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
+	// null or empty string member name is ok for a constructor
+	if (!member_name || member_name[0] == '\0')
+		member_name = ".ctor";
+	if (strcmp (member_name, ".ctor") != 0) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid UnsafeAccessorAttribute for constructor.");
+		return;
+	}
+
+	MonoType *target_type = sig->ret; // for constructors the return type is the target type
+
+	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+	
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+
+	ERROR_DECL(find_method_error);
+
+	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
+	
+	MonoClass *in_class = target_class;
+
+	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
+	if (!is_ok (find_method_error) || target_method == NULL) {
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, "constructor");
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+
+	target_method = inflate_method (target_class, target_method, accessor_method, find_method_error);
+
+	g_assert (target_method->klass == target_class);
+
+	emit_unsafe_accessor_ldargs (mb, sig, 0);
+
+	mono_mb_emit_op (mb, CEE_NEWOBJ, target_method);
+	if (inflate_generic_data)
+		mono_mb_set_wrapper_data_kind (mb, MONO_MB_ILGEN_WRAPPER_DATA_METHOD);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
+	g_assert (member_name != NULL);
+
+	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
+	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
+
+	MonoType *target_type = sig->param_count >= 1 ? sig->params[0] : NULL;
+
+	if (sig->param_count < 1 || target_type == NULL || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+
+	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+
+	if (hasthis && m_class_is_valuetype (target_class) && !m_type_is_byref (target_type)) {
+		// If the non-static method access is for a value type, the instance must be byref.
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+	}
+
+	ERROR_DECL(find_method_error);
+
+	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig);
+
+	MonoClass *in_class = target_class;
+
+	MonoMethod *target_method = NULL;
+	if (!ctor_as_method)
+		target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
+	else
+		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
+	if (!is_ok (find_method_error) || target_method == NULL) {
+		if (mono_error_get_error_code (find_method_error) == MONO_ERROR_GENERIC)
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		else
+			emit_missing_method_error (mb, find_method_error, member_name);
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+
+	target_method = inflate_method (target_class, target_method, accessor_method, find_method_error);
+
+	if (!hasthis && target_method->klass != target_class) {
+		emit_missing_method_error (mb, find_method_error, member_name);
+		return;
+	}
+	
+	g_assert (target_method->klass == target_class);
+
+	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
+
+	mono_mb_emit_op (mb, hasthis ? CEE_CALLVIRT : CEE_CALL, target_method);
+	if (inflate_generic_data)
+		mono_mb_set_wrapper_data_kind (mb, MONO_MB_ILGEN_WRAPPER_DATA_METHOD);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, gboolean inflate_generic_data, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	if (!m_method_is_static (accessor_method)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
+		return;
+	}
+
+	switch (kind) {
+	case MONO_UNSAFE_ACCESSOR_FIELD:
+	case MONO_UNSAFE_ACCESSOR_STATIC_FIELD:
+		emit_unsafe_accessor_field_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
+		return;
+	case MONO_UNSAFE_ACCESSOR_CTOR:
+		emit_unsafe_accessor_ctor_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
+		return;
+	case MONO_UNSAFE_ACCESSOR_METHOD:
+	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
+		emit_unsafe_accessor_method_wrapper (mb, inflate_generic_data, accessor_method, sig, kind, member_name);
+		return;
+	default:
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");
+		return;
+	}
+}
+
 static void
 emit_generic_array_helper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
@@ -2253,7 +2559,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoImage *image = get_method_image (method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int param_count = sig->param_count + sig->hasthis + 1;
-	int pos_leave, coop_gc_var = 0;
+	int pos_leave;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
@@ -2266,6 +2572,10 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+
+	if (do_blocking_transition)
+		gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, object_type);
@@ -2275,8 +2585,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		mono_mb_add_local (mb, sig->ret);
 
 	if (do_blocking_transition) {
-		/* local 4, the local to be used when calling the suspend funcs */
-		coop_gc_var = mono_mb_add_local (mb, mono_get_int_type ());
+		gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 	}
 
 	/* clear exception arg */
@@ -2285,10 +2594,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 	if (do_blocking_transition) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_enter_gc_unsafe_region_unbalanced);
-		mono_mb_emit_stloc (mb, coop_gc_var);
+		gc_unsafe_transition_builder_emit_enter (&gc_unsafe_builder);
 	}
 
 	/* try */
@@ -2361,10 +2667,9 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 
 	if (do_blocking_transition) {
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_exit_gc_unsafe_region_unbalanced);
+		gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+		gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -2411,18 +2716,57 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
+emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig, SwiftPhysicalLowering swift_lowering, int tmp_local, uint32_t csig_argnum)
+{
+	guint8 stind_op;
+	uint32_t offset = 0;
+
+	for (uint32_t idx_lowered = 0; idx_lowered < swift_lowering.num_lowered_elements; idx_lowered++) {
+		offset = swift_lowering.offsets [idx_lowered];
+		mono_mb_emit_ldloc_addr (mb, tmp_local);
+		mono_mb_emit_icon (mb, offset);
+		mono_mb_emit_byte (mb, CEE_ADD);
+
+		mono_mb_emit_ldarg (mb, csig_argnum + idx_lowered);
+		stind_op = mono_type_to_stind (csig->params [csig_argnum + idx_lowered]);
+		mono_mb_emit_byte (mb, stind_op);
+    }
+}
+
+/* Swift struct lowering handling causes csig to have additional arguments. 
+ * This function returns the index of the argument in the csig that corresponds to the argument in the original signature.
+ */
+static int
+get_csig_argnum (int i, EmitMarshalContext* m)
+{
+	if (m->swift_sig_to_csig_mp) {
+		g_assert (i < m->sig->param_count);
+		int csig_argnum = m->swift_sig_to_csig_mp [i];
+		g_assert (csig_argnum >= 0 && csig_argnum < m->csig->param_count);
+		return csig_argnum;
+	}
+	return i;
+}
+
+static void
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals, orig_domain, attach_cookie;
+	int i, *tmp_locals;
 	gboolean closed = FALSE;
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+	SwiftPhysicalLowering *swift_lowering = m->swift_lowering;
 
 	sig = m->sig;
 	csig = m->csig;
 
 	if (!sig->hasthis && sig->param_count != invoke_sig->param_count) {
 		/* Closed delegate */
-		g_assert (sig->param_count == invoke_sig->param_count + 1);
+		if (sig->param_count != invoke_sig->param_count + 1) {
+			g_warning ("Closed delegate has incorrect number of arguments: %s.", mono_method_full_name (method, TRUE));
+			g_assert_not_reached ();
+		}
+
 		closed = TRUE;
 		/* Use a new signature without the first argument */
 		sig = mono_metadata_signature_dup (sig);
@@ -2453,8 +2797,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		m->vtaddr_var = mono_mb_add_local (mb, int_type);
 
-	orig_domain = mono_mb_add_local (mb, int_type);
-	attach_cookie = mono_mb_add_local (mb, int_type);
+	gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
+	gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 
 	/*
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
@@ -2469,43 +2813,50 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	 * return ret;
 	 */
 
+	/* delete_old = FALSE */
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
 	/*
-	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
-	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
-	 *
-	 * Special cased in interpreter, keep in sync.
-	 */
-	mono_mb_emit_icall (mb, mono_threads_attach_coop);
-	mono_mb_emit_stloc (mb, orig_domain);
+	* Transformed into a direct icall when runtime init callback is enabled for a native-to-managed wrapper.
+	* This icall is special cased in the JIT so it can be called in native-to-managed wrapper before
+	* runtime has been initialized. On return, runtime must be fully initialized.
+	*/
+	if (runtime_init_callback)
+		mono_mb_emit_icall (mb, mono_dummy_runtime_init_callback);
 
-	/* <interrupt check> */
-	emit_thread_interrupt_checkpoint (mb);
+	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
 		MonoMarshalSpec *spec = mspecs [i + 1];
+		int csig_argnum = get_csig_argnum (i, m);
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0,  &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0,  &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 		} else {
 			switch (t->type) {
+			case MONO_TYPE_VALUETYPE:
+				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+					if (swift_lowering [i].num_lowered_elements > 0) {
+						tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
+						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
+						break;
+					} else if (swift_lowering [i].by_reference) {
+						/* Structs passed by reference are handled during arg loading emission */
+						tmp_locals [i] = 0;
+						break;
+					}
+				} /* else fallthru */
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
-			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_BOOLEAN:
-				tmp_locals [i] = mono_emit_marshal (m, i, t, mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+				tmp_locals [i] = mono_emit_marshal (m, csig_argnum, t, mspecs [i + 1], 0, &csig->params [csig_argnum], MARSHAL_ACTION_MANAGED_CONV_IN);
 				break;
 			default:
 				tmp_locals [i] = 0;
@@ -2531,15 +2882,18 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-
-		if (tmp_locals [i]) {
+		int csig_argnum = get_csig_argnum (i, m);
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
+			mono_mb_emit_ldarg (mb, csig_argnum);
+			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
+			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
+		} else if (tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-		}
-		else
-			mono_mb_emit_ldarg (mb, i);
+		} else
+			mono_mb_emit_ldarg (mb, csig_argnum);
 	}
 
 	/* ret = method (...) */
@@ -2629,6 +2983,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_I:
 				mono_emit_marshal (m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			default:
@@ -2637,11 +2993,9 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 	}
 
-	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
-	mono_mb_emit_ldloc (mb, orig_domain);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
-	/* Special cased in interpreter, keep in sync */
-	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+	gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+	gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 
 	/* return ret; */
 	if (m->retobj_var) {
@@ -3077,6 +3431,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_synchronized_wrapper = emit_synchronized_wrapper_ilgen;
 	cb.emit_unbox_wrapper = emit_unbox_wrapper_ilgen;
 	cb.emit_array_accessor_wrapper = emit_array_accessor_wrapper_ilgen;
+	cb.emit_unsafe_accessor_wrapper = emit_unsafe_accessor_wrapper_ilgen;
 	cb.emit_generic_array_helper = emit_generic_array_helper_ilgen;
 	cb.emit_thunk_invoke_wrapper = emit_thunk_invoke_wrapper_ilgen;
 	cb.emit_create_string_hack = emit_create_string_hack_ilgen;
@@ -3085,7 +3440,7 @@ mono_marshal_lightweight_init (void)
 	cb.emit_return = emit_return_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
-	cb.mb_set_dynamic = mb_set_dynamic_ilgen;
+	cb.mb_inflate_wrapper_data = mb_inflate_wrapper_data_ilgen;
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;

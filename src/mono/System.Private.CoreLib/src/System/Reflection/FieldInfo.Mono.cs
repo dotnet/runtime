@@ -24,7 +24,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             FieldInfo fi = internal_from_handle_type(handle.Value, declaringType.Value);
             if (fi == null)
-                throw new ArgumentException("The field handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return fi;
         }
 
@@ -40,8 +40,10 @@ namespace System.Reflection
         {
             int count = 0;
 
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
             if (IsNotSerialized)
                 count++;
+#pragma warning restore SYSLIB0050
 
             if (DeclaringType!.IsExplicitLayout)
                 count++;
@@ -55,8 +57,10 @@ namespace System.Reflection
             object[] attrs = new object[count];
             count = 0;
 
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
             if (IsNotSerialized)
                 attrs[count++] = new NonSerializedAttribute();
+#pragma warning restore SYSLIB0050
             if (DeclaringType.IsExplicitLayout)
                 attrs[count++] = new FieldOffsetAttribute(GetFieldOffset());
             if (marshalAs != null)
@@ -69,8 +73,10 @@ namespace System.Reflection
         {
             int count = 0;
 
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
             if (IsNotSerialized)
                 count++;
+#pragma warning restore SYSLIB0050
 
             if (DeclaringType!.IsExplicitLayout)
                 count++;
@@ -84,8 +90,10 @@ namespace System.Reflection
             CustomAttributeData[] attrsData = new CustomAttributeData[count];
             count = 0;
 
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
             if (IsNotSerialized)
                 attrsData[count++] = new RuntimeCustomAttributeData((typeof(NonSerializedAttribute)).GetConstructor(Type.EmptyTypes)!);
+#pragma warning restore SYSLIB0050
             if (DeclaringType.IsExplicitLayout)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(int), GetFieldOffset()) };

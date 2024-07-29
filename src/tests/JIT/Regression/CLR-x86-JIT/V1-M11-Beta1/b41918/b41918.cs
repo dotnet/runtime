@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public static ulong m_ulStatic1 = 237u;
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             try { }
             finally
@@ -22,7 +24,6 @@ namespace Test
                 }
                 catch (Exception) { }
             }
-            return 100;
         }
     }
 }

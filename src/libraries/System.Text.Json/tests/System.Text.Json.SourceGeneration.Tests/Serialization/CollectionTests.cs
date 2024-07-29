@@ -18,7 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_String : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_String()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -26,7 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_AsyncStream : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -110,6 +110,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]
@@ -128,6 +130,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
@@ -279,6 +282,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyObservableCollection<bool>))]
         [JsonSerializable(typeof(ReadOnlyDictionary<string, bool>))]
         [JsonSerializable(typeof(KeyedCollection<string, bool>))]
+        [JsonSerializable(typeof(MyKeyedCollection))]
+        [JsonSerializable(typeof(KeyedCollection<int, int>))]
         [JsonSerializable(typeof(BitVector32))]
         [JsonSerializable(typeof(HybridDictionary))]
         [JsonSerializable(typeof(OrderedDictionary))]
@@ -341,16 +346,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(StringIImmutableSetWrapper))]
         [JsonSerializable(typeof(IEnumerable<ValueB>))]
         [JsonSerializable(typeof(ICollection<ICollection<int>>))]
+        [JsonSerializable(typeof(IEnumerable<int>))]
+        [JsonSerializable(typeof(IEnumerable<string>))]
+        [JsonSerializable(typeof(IEnumerable<AsyncEnumerableElement>))]
+        [JsonSerializable(typeof(IEnumerable<IEnumerable<int>>))]
+        [JsonSerializable(typeof(IEnumerable<IEnumerable<string>>))]
+        [JsonSerializable(typeof(IEnumerable<IEnumerable<AsyncEnumerableElement>>))]
+        [JsonSerializable(typeof((IEnumerable<int>, bool)?))]
+        [JsonSerializable(typeof((IEnumerable<string>, bool)?))]
+        [JsonSerializable(typeof((IEnumerable<AsyncEnumerableElement>, bool)?))]
         [JsonSerializable(typeof(IAsyncEnumerable<int>))]
         [JsonSerializable(typeof(IAsyncEnumerable<string>))]
         [JsonSerializable(typeof(IAsyncEnumerable<AsyncEnumerableElement>))]
+        [JsonSerializable(typeof(EnumerableDto<int>))]
+        [JsonSerializable(typeof(EnumerableDto<string>))]
+        [JsonSerializable(typeof(EnumerableDto<AsyncEnumerableElement>))]
         [JsonSerializable(typeof(AsyncEnumerableDto<int>))]
         [JsonSerializable(typeof(AsyncEnumerableDto<string>))]
         [JsonSerializable(typeof(AsyncEnumerableDto<AsyncEnumerableElement>))]
+        [JsonSerializable(typeof(AsyncEnumerableDto<IEnumerable<int>>))]
+        [JsonSerializable(typeof(EnumerableDtoWithTwoProperties<int>))]
+        [JsonSerializable(typeof(EnumerableDtoWithTwoProperties<string>))]
+        [JsonSerializable(typeof(EnumerableDtoWithTwoProperties<AsyncEnumerableElement>))]
         [JsonSerializable(typeof(AsyncEnumerableDtoWithTwoProperties<int>))]
         [JsonSerializable(typeof(AsyncEnumerableDtoWithTwoProperties<string>))]
         [JsonSerializable(typeof(AsyncEnumerableDtoWithTwoProperties<AsyncEnumerableElement>))]
-        [JsonSerializable(typeof(AsyncEnumerableDto<IEnumerable<int>>))]
         [JsonSerializable(typeof(MockedAsyncEnumerable<int>))]
         [JsonSerializable(typeof(MockedAsyncEnumerable<string>))]
         [JsonSerializable(typeof(MockedAsyncEnumerable<AsyncEnumerableElement>))]
@@ -366,6 +386,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyListWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>))]
+        [JsonSerializable(typeof(Dictionary<ETestEnum, ETestEnum>))]
+        [JsonSerializable(typeof(ClassWithEnumProperties))]
+        [JsonSerializable(typeof(DayOfWeek))]
+        [JsonSerializable(typeof(List<DayOfWeek>))]
         [JsonSerializable(typeof(GenericICollectionWrapper<GenericICollectionWrapper<string>>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapperPrivateConstructor<string>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapperInternalConstructor<string>))]
@@ -432,6 +456,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
+        [JsonSerializable(typeof(MemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(MemoryOfTClass<int>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
+        [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -440,7 +471,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class CollectionTests_Default : CollectionTests
     {
         public CollectionTests_Default()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default, (options) => new CollectionTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default))
         {
         }
 
@@ -506,6 +537,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]
@@ -524,6 +557,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(string))]
         [JsonSerializable(typeof(IDictionary<int, int>))]
+        [JsonSerializable(typeof(IDictionary<int, IEnumerable<int>>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithInternalParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
@@ -675,6 +709,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyObservableCollection<bool>))]
         [JsonSerializable(typeof(ReadOnlyDictionary<string, bool>))]
         [JsonSerializable(typeof(KeyedCollection<string, bool>))]
+        [JsonSerializable(typeof(MyKeyedCollection))]
+        [JsonSerializable(typeof(KeyedCollection<int, int>))]
         [JsonSerializable(typeof(BitVector32))]
         [JsonSerializable(typeof(HybridDictionary))]
         [JsonSerializable(typeof(OrderedDictionary))]
@@ -762,6 +798,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyListWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>))]
+        [JsonSerializable(typeof(Dictionary<ETestEnum, ETestEnum>))]
+        [JsonSerializable(typeof(ClassWithEnumProperties))]
+        [JsonSerializable(typeof(DayOfWeek))]
+        [JsonSerializable(typeof(List<DayOfWeek>))]
         [JsonSerializable(typeof(GenericICollectionWrapper<GenericICollectionWrapper<string>>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapperPrivateConstructor<string>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapperInternalConstructor<string>))]
@@ -828,6 +868,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
+        [JsonSerializable(typeof(MemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(MemoryOfTClass<int>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
+        [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }

@@ -6,8 +6,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class MutateStructArg
+public class MutateStructArg
 {
     public struct P
     {
@@ -15,7 +16,8 @@ class MutateStructArg
         public int X;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         P l1 = new P();
         l1.S = "Hello World";

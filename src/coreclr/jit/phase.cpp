@@ -80,7 +80,15 @@ void Phase::PrePhase()
         }
         else
         {
-            printf("\n*************** Starting PHASE %s\n", m_name);
+            if (comp->opts.optRepeatActive)
+            {
+                printf("\n*************** Starting PHASE %s (OptRepeat iteration %d of %d)\n", m_name,
+                       comp->opts.optRepeatIteration, comp->opts.optRepeatCount);
+            }
+            else
+            {
+                printf("\n*************** Starting PHASE %s\n", m_name);
+            }
         }
     }
 #endif // DEBUG
@@ -102,11 +110,15 @@ void Phase::PostPhase(PhaseStatus status)
 
 #ifdef DEBUG
 
+#if DUMP_FLOWGRAPHS
+    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
+#endif // DUMP_FLOWGRAPHS
+
     // Don't dump or check post phase unless the phase made changes.
     //
     const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
     const bool doPostPhase       = madeChanges;
-    const bool doPostPhaseChecks = (comp->activePhaseChecks == PhaseChecks::CHECK_ALL);
+    const bool doPostPhaseChecks = (comp->activePhaseChecks != PhaseChecks::CHECK_NONE);
     const bool doPostPhaseDumps  = (comp->activePhaseDumps == PhaseDumps::DUMP_ALL);
 
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
@@ -120,7 +132,15 @@ void Phase::PostPhase(PhaseStatus status)
         }
         else
         {
-            printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
+            if (comp->opts.optRepeatActive)
+            {
+                printf("\n*************** Finishing PHASE %s%s (OptRepeat iteration %d of %d)\n", m_name, statusMessage,
+                       comp->opts.optRepeatIteration, comp->opts.optRepeatCount);
+            }
+            else
+            {
+                printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
+            }
         }
 
         if (doPostPhase && doPostPhaseDumps)
@@ -132,30 +152,44 @@ void Phase::PostPhase(PhaseStatus status)
 
     if (doPostPhase && doPostPhaseChecks)
     {
-        comp->fgDebugCheckBBlist();
-        comp->fgDebugCheckLinks();
-        comp->fgDebugCheckNodesUniqueness();
-        comp->fgVerifyHandlerTab();
-        comp->fgDebugCheckLoopTable();
-    }
+        PhaseChecks const checks = comp->activePhaseChecks;
 
-    // Optionally check profile data, if we have any.
-    //
-    // There's no point checking until we've built pred lists, as
-    // we can't easily reason about consistency without them.
-    //
-    // Bypass the "doPostPhase" filter until we're sure all
-    // phases that mess with profile counts set their phase status
-    // appropriately.
-    //
-    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileWeights() && comp->fgComputePredsDone)
-    {
-        comp->fgDebugCheckProfileWeights();
-    }
+        if (hasFlag(checks, PhaseChecks::CHECK_UNIQUE))
+        {
+            comp->fgDebugCheckNodesUniqueness();
+        }
 
+        if (hasFlag(checks, PhaseChecks::CHECK_FG))
+        {
+            comp->fgDebugCheckBBlist();
+        }
+
+        if (hasFlag(checks, PhaseChecks::CHECK_IR))
+        {
+            comp->fgDebugCheckLinks();
+        }
+
+        if (hasFlag(checks, PhaseChecks::CHECK_EH))
+        {
+            comp->fgVerifyHandlerTab();
+        }
+
+        if (hasFlag(checks, PhaseChecks::CHECK_LOOPS))
+        {
+            comp->fgDebugCheckLoops();
+        }
+
+        if (hasFlag(checks, PhaseChecks::CHECK_PROFILE) || hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
+        {
+            comp->fgDebugCheckProfile(checks);
+        }
+
+        if (hasFlag(checks, PhaseChecks::CHECK_LINKED_LOCALS))
+        {
+            comp->fgDebugCheckLinkedLocals();
+        }
+
+        comp->fgDebugCheckFlowGraphAnnotations();
+    }
 #endif // DEBUG
-
-#if DUMP_FLOWGRAPHS
-    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
-#endif // DUMP_FLOWGRAPHS
 }

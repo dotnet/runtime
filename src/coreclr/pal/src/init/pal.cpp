@@ -36,7 +36,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/utils.h"
 #include "pal/debug.h"
 #include "pal/init.h"
-#include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
@@ -77,15 +76,10 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(__sun)
+#include <procfs.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -96,13 +90,6 @@ int CacheLineSize;
 #include <clrconfignocache.h>
 
 using namespace CorUnix;
-
-//
-// $$TODO The C++ compiler doesn't like pal/cruntime.h so duplicate the
-// necessary prototype here
-//
-
-extern "C" BOOL CRTInitStdStreams( void );
 
 extern bool g_running_in_exe;
 
@@ -288,6 +275,14 @@ InitializeDefaultStackSize()
             g_defaultStackSize = std::max(size, (DWORD)PTHREAD_STACK_MIN);
         }
     }
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
@@ -666,13 +661,6 @@ Initialize(
             }
         }
 
-        if (FALSE == CRTInitStdStreams())
-        {
-            ERROR("Unable to initialize CRT standard streams\n");
-            palError = ERROR_PALINIT_STD_STREAMS;
-            goto CLEANUP15;
-        }
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;
 
@@ -692,10 +680,6 @@ Initialize(
     }
     goto done;
 
-    NUMASupportCleanup();
-    /* No cleanup required for CRTInitStdStreams */
-CLEANUP15:
-    FILECleanupStdHandles();
 CLEANUP14:
     SEHCleanup();
 CLEANUP13:
@@ -1181,7 +1165,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         length+=3;
         length+=strlen(argv[i])*2;
     }
-    command_line = reinterpret_cast<LPSTR>(InternalMalloc(length));
+    command_line = reinterpret_cast<LPSTR>(malloc(length != 0 ? length : 1));
 
     if(!command_line)
     {
@@ -1233,7 +1217,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         return nullptr;
     }
 
-    retval = reinterpret_cast<LPWSTR>(InternalMalloc((sizeof(WCHAR)*i)));
+    retval = reinterpret_cast<LPWSTR>(malloc((sizeof(WCHAR)*i)));
     if(retval == nullptr)
     {
         ERROR("can't allocate memory for Unicode command line!\n");
@@ -1289,7 +1273,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
         return nullptr;
     }
 
-    return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
+    return_value = reinterpret_cast<LPWSTR>(malloc((return_size*sizeof(WCHAR))));
     if (nullptr == return_value)
     {
         ERROR("Not enough memory to create full path\n");

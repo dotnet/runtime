@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
@@ -14,9 +14,17 @@
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
   <ItemGroup>
+      <ProjectReference Include="$(RepoRoot)src\tasks\MobileBuildTasks\MobileBuildTasks.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
     <Compile Include="AndroidApkFileReplacerTask.cs" />
+    <Compile Include="AndroidLibBuilderTask.cs" />
+    <Compile Include="..\Common\AndroidSdkHelper.cs" />
+    <Compile Include="..\Common\DexBuilder.cs" />
+    <Compile Include="..\Common\JarBuilder.cs" />
+    <Compile Include="..\Common\JavaCompiler.cs" />
     <Compile Include="..\Common\Utils.cs" />
   </ItemGroup>
 
@@ -24,6 +32,12 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- non-net4* -->
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -12,12 +12,13 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class UpDownCounter<T> : Instrument<T> where T : struct
     {
-        internal UpDownCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        internal UpDownCounter(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        internal UpDownCounter(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
         {
             Publish();
         }
@@ -57,7 +58,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
-        public void Add(T delta, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
+        public void Add(T delta, params ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.

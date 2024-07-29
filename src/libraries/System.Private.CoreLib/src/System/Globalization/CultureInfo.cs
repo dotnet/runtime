@@ -126,8 +126,8 @@ namespace System.Globalization
             s_currentThreadUICulture = args.CurrentValue;
         }
 
-        private static volatile Dictionary<string, CultureInfo>? s_cachedCulturesByName;
-        private static volatile Dictionary<int, CultureInfo>? s_cachedCulturesByLcid;
+        private static Dictionary<string, CultureInfo>? s_cachedCulturesByName;
+        private static Dictionary<int, CultureInfo>? s_cachedCulturesByLcid;
 
         // The parent culture.
         private CultureInfo? _parent;
@@ -164,14 +164,8 @@ namespace System.Globalization
             ArgumentNullException.ThrowIfNull(name);
 
             // Get our data providing record
-            CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
-
-            if (cultureData == null)
-            {
+            _cultureData = CultureData.GetCultureData(name, useUserOverride) ??
                 throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
-            }
-
-            _cultureData = cultureData;
             _name = _cultureData.CultureName;
             _isInherited = GetType() != typeof(CultureInfo);
         }
@@ -205,21 +199,15 @@ namespace System.Globalization
             // We don't check for other invalid LCIDS here...
             ArgumentOutOfRangeException.ThrowIfNegative(culture);
 
-            switch (culture)
+            if (culture is LOCALE_CUSTOM_DEFAULT or LOCALE_SYSTEM_DEFAULT or LOCALE_NEUTRAL or LOCALE_USER_DEFAULT or LOCALE_CUSTOM_UNSPECIFIED)
             {
-                case LOCALE_CUSTOM_DEFAULT:
-                case LOCALE_SYSTEM_DEFAULT:
-                case LOCALE_NEUTRAL:
-                case LOCALE_USER_DEFAULT:
-                case LOCALE_CUSTOM_UNSPECIFIED:
-                    // Can't support unknown custom cultures and we do not support neutral or
-                    // non-custom user locales.
-                    throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
-                default:
-                    // Now see if this LCID is supported in the system default CultureData table.
-                    _cultureData = CultureData.GetCultureData(culture, useUserOverride);
-                    break;
+                // Can't support unknown custom cultures and we do not support neutral or
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
             }
+
+            // Now see if this LCID is supported in the system default CultureData table.
+            _cultureData = CultureData.GetCultureData(culture, useUserOverride);
+
             _isInherited = GetType() != typeof(CultureInfo);
             _name = _cultureData.CultureName;
         }
@@ -405,7 +393,7 @@ namespace System.Globalization
             {
                 ArgumentNullException.ThrowIfNull(value);
 
-                CultureInfo.VerifyCultureName(value, true);
+                VerifyCultureName(value, true);
 
                 if (s_asyncLocalCurrentUICulture == null)
                 {
@@ -443,7 +431,7 @@ namespace System.Globalization
 
                 if (value != null)
                 {
-                    CultureInfo.VerifyCultureName(value, true);
+                    VerifyCultureName(value, true);
                 }
 
                 s_DefaultThreadCurrentUICulture = value;
@@ -462,7 +450,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(s_InvariantCultureInfo != null);
+                Debug.Assert(s_InvariantCultureInfo != null, "[CultureInfo.InvariantCulture] s_InvariantCultureInfo is null");
                 return s_InvariantCultureInfo;
             }
         }
@@ -490,14 +478,14 @@ namespace System.Globalization
                             //      zh-SG -> zh-Hans -> zh -> Invariant
                             //      zh-TW -> zh-Hant -> zh -> Invariant
 
-                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
-                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            if ((_name[3] == 'C' && _name[4] == 'N') || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G'))   // zh-SG
                             {
                                 parentName = "zh-Hans";
                             }
-                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
-                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
-                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            else if ((_name[3] == 'H' && _name[4] == 'K') ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O') ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W'))      // zh-TW
                             {
                                 parentName = "zh-Hant";
                             }
@@ -647,7 +635,7 @@ namespace System.Globalization
 
         public override bool Equals([NotNullWhen(true)] object? value)
         {
-            if (object.ReferenceEquals(this, value))
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -813,32 +801,19 @@ namespace System.Globalization
         {
             Debug.Assert(calType != CalendarId.GREGORIAN, "calType!=CalendarId.GREGORIAN");
 
-            switch (calType)
+            return calType switch
             {
-                case CalendarId.GREGORIAN_US:               // Gregorian (U.S.) calendar
-                case CalendarId.GREGORIAN_ME_FRENCH:        // Gregorian Middle East French calendar
-                case CalendarId.GREGORIAN_ARABIC:           // Gregorian Arabic calendar
-                case CalendarId.GREGORIAN_XLIT_ENGLISH:     // Gregorian Transliterated English calendar
-                case CalendarId.GREGORIAN_XLIT_FRENCH:      // Gregorian Transliterated French calendar
-                    return new GregorianCalendar((GregorianCalendarTypes)calType);
-                case CalendarId.TAIWAN:                     // Taiwan Era calendar
-                    return new TaiwanCalendar();
-                case CalendarId.JAPAN:                      // Japanese Emperor Era calendar
-                    return new JapaneseCalendar();
-                case CalendarId.KOREA:                      // Korean Tangun Era calendar
-                    return new KoreanCalendar();
-                case CalendarId.THAI:                       // Thai calendar
-                    return new ThaiBuddhistCalendar();
-                case CalendarId.HIJRI:                      // Hijri (Arabic Lunar) calendar
-                    return new HijriCalendar();
-                case CalendarId.HEBREW:                     // Hebrew (Lunar) calendar
-                    return new HebrewCalendar();
-                case CalendarId.UMALQURA:
-                    return new UmAlQuraCalendar();
-                case CalendarId.PERSIAN:
-                    return new PersianCalendar();
-            }
-            return new GregorianCalendar();
+                CalendarId.GREGORIAN_US or CalendarId.GREGORIAN_ME_FRENCH or CalendarId.GREGORIAN_ARABIC or CalendarId.GREGORIAN_XLIT_ENGLISH or CalendarId.GREGORIAN_XLIT_FRENCH => new GregorianCalendar((GregorianCalendarTypes)calType),
+                CalendarId.TAIWAN => new TaiwanCalendar(),
+                CalendarId.JAPAN => new JapaneseCalendar(),
+                CalendarId.KOREA => new KoreanCalendar(),
+                CalendarId.THAI => new ThaiBuddhistCalendar(),
+                CalendarId.HIJRI => new HijriCalendar(),
+                CalendarId.HEBREW => new HebrewCalendar(),
+                CalendarId.UMALQURA => new UmAlQuraCalendar(),
+                CalendarId.PERSIAN => new PersianCalendar(),
+                _ => new GregorianCalendar(),
+            };
         }
 
         /// <summary>
@@ -1132,7 +1107,7 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name) : !CultureData.IcuIsEnsurePredefinedLocaleName(name))
                 {
                     throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
                 }

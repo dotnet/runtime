@@ -33,6 +33,7 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-proclib.h"
+#include "mono/utils/options.h"
 
 static int ms_block_size;
 
@@ -772,48 +773,6 @@ get_block:
 	return (GCObject *)obj;
 }
 
-/*
- * We're not freeing the block if it's empty.  We leave that work for
- * the next major collection.
- *
- * This is just called from the domain clearing code, which runs in a
- * single thread and has the GC lock, so we don't need an extra lock.
- */
-static void
-free_object (GCObject *obj, size_t size, gboolean pinned)
-{
-	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	int word, bit;
-	gboolean in_free_list;
-
-	SGEN_ASSERT (9, sweep_state == SWEEP_STATE_SWEPT, "Should have waited for sweep to free objects.");
-
-	ensure_can_access_block_free_list (block);
-	SGEN_ASSERT (9, (pinned && block->pinned) || (!pinned && !block->pinned), "free-object pinning mixup object %p pinned %d block %p pinned %d", obj, pinned, block, block->pinned);
-	SGEN_ASSERT (9, MS_OBJ_ALLOCED (obj, block), "object %p is already free", obj);
-	MS_CALC_MARK_BIT (word, bit, obj);
-	SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p has mark bit set", obj);
-
-	memset (obj, 0, size);
-
-	in_free_list = !!block->free_list;
-	*(void**)obj = block->free_list;
-	block->free_list = (void**)obj;
-
-	if (!in_free_list) {
-		MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (pinned, block->has_references);
-		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks", block);
-		add_free_block (free_blocks, size_index, block);
-	}
-}
-
-static void
-major_free_non_pinned_object (GCObject *obj, size_t size)
-{
-	free_object (obj, size, FALSE);
-}
-
 /* size is a multiple of SGEN_ALLOC_ALIGN */
 static GCObject*
 major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_references)
@@ -829,12 +788,6 @@ major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_referen
 		res = alloc_obj (vtable, size, TRUE, has_references);
 	 }
 	 return (GCObject *)res;
-}
-
-static void
-free_pinned_object (GCObject *obj, size_t size)
-{
-	free_object (obj, size, TRUE);
 }
 
 /*
@@ -1572,6 +1525,7 @@ static size_t *sweep_num_blocks;
 
 static volatile size_t num_major_sections_before_sweep;
 static volatile size_t num_major_sections_freed_in_sweep;
+static volatile size_t num_major_sections_survived_in_sweep;
 
 static void
 sgen_worker_clear_free_block_lists (WorkerData *worker)
@@ -1755,6 +1709,7 @@ ensure_block_is_checked_for_sweeping (guint32 block_index, gboolean wait, gboole
 
 		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
 		update_heap_boundaries_for_block (block);
+		SGEN_ATOMIC_ADD_P (num_major_sections_survived_in_sweep, 1);
 	} else {
 		/*
 		 * Blocks without live objects are removed from the
@@ -1890,6 +1845,7 @@ major_sweep (void)
 
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
+	num_major_sections_survived_in_sweep = 0;
 
 	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
@@ -2178,11 +2134,14 @@ major_free_swept_blocks (size_t section_reserve)
 {
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
-#if defined(HOST_WIN32) || defined(HOST_ORBIS) || defined (HOST_WASM)
+#if defined(HOST_WIN32) || defined(HOST_ORBIS)
 		/*
 		 * sgen_free_os_memory () asserts in mono_vfree () because windows doesn't like freeing the middle of
 		 * a VirtualAlloc ()-ed block.
 		 */
+		return;
+#elif defined(HOST_WASM)
+	if (!mono_opt_wasm_mmap)
 		return;
 #endif
 
@@ -2346,26 +2305,17 @@ major_report_pinned_memory_usage (void)
 	g_assert_not_reached ();
 }
 
+static void
+increment_used_size (GCObject *obj, size_t obj_size, gpointer data)
+{
+	*((gint64*)data) += obj_size;
+}
+
 static gint64
 major_get_used_size (void)
 {
 	gint64 size = 0;
-	MSBlockInfo *block;
-
-	/*
-	 * We're holding the GC lock, but the sweep thread might be running.  Make sure it's
-	 * finished, then we can iterate over the block array.
-	 */
-	major_finish_sweep_checking ();
-
-	FOREACH_BLOCK_NO_LOCK (block) {
-		int count = MS_BLOCK_FREE / block->obj_size;
-		void **iter;
-		size += count * block->obj_size;
-		for (iter = block->free_list; iter; iter = (void**)*iter)
-			size -= block->obj_size;
-	} END_FOREACH_BLOCK_NO_LOCK;
-
+	major_iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, increment_used_size, &size);
 	return size;
 }
 
@@ -2374,6 +2324,34 @@ static size_t
 get_num_major_sections (void)
 {
 	return num_major_sections;
+}
+
+// Conservative values for computing trigger size, without needing concurrent sweep to finish
+// As concurrent sweep job advances in execution, these values get closer to the real value.
+// This contains at least the number of blocks determined to be live by sweep job (which increases
+// as sweep progresses) plus any new blocks allocated by the application.
+static size_t
+get_min_live_major_sections (void)
+{
+	// Note that num_major_sections gets decremented for each freed block, so to obtain the real block count
+	// we would need to add back num_major_sections_freed_in_sweep, but this is racy so we are being conservative.
+	if (num_major_sections > num_major_sections_before_sweep)
+		return num_major_sections_survived_in_sweep + (num_major_sections - num_major_sections_before_sweep);
+	else
+		return num_major_sections_survived_in_sweep;
+}
+
+static size_t
+get_max_last_major_survived_sections (void)
+{
+	// num_major_sections_freed_in_sweep increases as sweep progresses.
+	return num_major_sections_before_sweep - num_major_sections_freed_in_sweep;
+}
+
+static size_t
+get_num_empty_blocks (void)
+{
+	return num_empty_blocks;
 }
 
 /*
@@ -2479,19 +2457,6 @@ major_iterate_block_ranges_in_parallel (sgen_cardtable_block_callback callback, 
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
 	} END_FOREACH_BLOCK_RANGE_NO_LOCK;
-}
-
-static void
-major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	MSBlockInfo *block;
-	gboolean has_references;
-
-	major_finish_sweep_checking ();
-	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
-		if (has_references)
-			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
-	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 #ifdef HEAVY_STATISTICS
@@ -2922,13 +2887,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	collector->alloc_object_par = major_alloc_object_par;
 #endif
-	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
-	collector->free_non_pinned_object = major_free_non_pinned_object;
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
-	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
 	collector->iterate_block_ranges = major_iterate_block_ranges;
 	collector->iterate_block_ranges_in_parallel = major_iterate_block_ranges_in_parallel;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
@@ -2953,6 +2915,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->ptr_is_from_pinned_alloc = ptr_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->get_min_live_major_sections = get_min_live_major_sections;
+	collector->get_max_last_major_survived_sections = get_max_last_major_survived_sections;
+	collector->get_num_empty_blocks = get_num_empty_blocks;
 	collector->get_bytes_survived_last_sweep = get_bytes_survived_last_sweep;
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;

@@ -26,7 +26,9 @@ public unsafe class Program
     private delegate int IntNativeMethodInvoker();
     private delegate void NativeMethodInvoker();
 
-    public static int Main(string[] args)
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try
         {
@@ -37,17 +39,13 @@ public unsafe class Program
             NegativeTest_FromInstantiatedGenericClass();
             TestUnmanagedCallersOnlyViaUnmanagedCalli();
             TestPInvokeMarkedWithUnmanagedCallersOnly();
+            TestUnmanagedCallersOnlyWithGeneric();
 
             // Exception handling is only supported on CoreCLR Windows.
             if (TestLibrary.Utilities.IsWindows && !TestLibrary.Utilities.IsMonoRuntime)
             {
                 TestUnmanagedCallersOnlyValid_ThrowException();
                 TestUnmanagedCallersOnlyViaUnmanagedCalli_ThrowException();
-            }
-
-            if (args.Length != 0 && args[0].Equals("calli"))
-            {
-                NegativeTest_ViaCalli();
             }
         }
         catch (Exception e)
@@ -107,7 +105,7 @@ public unsafe class Program
     [UnmanagedCallersOnly]
     public static int CallbackMethodNonBlittable(bool x1)
     {
-        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
         return -1;
     }
 
@@ -139,27 +137,6 @@ public unsafe class Program
         int n = 12345;
         // Try invoking method
         Assert.Throws<InvalidProgramException>(() => { UnmanagedCallersOnlyDll.CallManagedProc((IntPtr)(delegate* unmanaged<int, int>)&GenericClass<int>.CallbackMethod, n); });
-    }
-
-    [UnmanagedCallersOnly]
-    public static void CallbackViaCalli(int val)
-    {
-        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot be called via calli");
-    }
-
-    public static void NegativeTest_ViaCalli()
-    {
-        Console.WriteLine($"{nameof(NegativeTest_ViaCalli)} function via calli instruction. The CLR _will_ crash.");
-
-        // It is not possible to catch the resulting ExecutionEngineException exception.
-        // To observe the crashing behavior set a breakpoint in the ReversePInvokeBadTransition() function
-        // located in src/vm/dllimportcallback.cpp.
-        TestNativeMethod();
-
-        static void TestNativeMethod()
-        {
-            ((delegate*<int, void>)(delegate* unmanaged<int, void>)&CallbackViaCalli)(1234);
-        }
     }
 
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
@@ -194,7 +171,7 @@ public unsafe class Program
         try
         {
             testNativeMethod(n);
-            Assert.True(false, $"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
+            Assert.Fail($"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
         }
         catch (Exception e)
         {
@@ -217,4 +194,30 @@ public unsafe class Program
         int n = 1234;
         Assert.Throws<NotSupportedException>(() => ((delegate* unmanaged<int, int>)&CallingUnmanagedCallersOnlyDirectly.PInvokeMarkedWithUnmanagedCallersOnly)(n));
     }
+
+    public static void TestUnmanagedCallersOnlyWithGeneric()
+    {
+        Assert.Equal(0, ((delegate* unmanaged<Blittable<nint>, int>)&BlittableGenericStruct)(new Blittable<nint>()));
+
+        Assert.Equal(0, ((delegate* unmanaged<MaybeBlittable<nint>, int>)&MaybeBlittableGenericStruct)(new MaybeBlittable<nint>()));
+
+
+        Assert.Throws<InvalidProgramException>(()
+            => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<NotBlittable<int>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericClass)((nint)1));
+
+        Assert.Throws<InvalidProgramException>(()
+            => ((delegate* unmanaged<nint, int>)(void*)(delegate* unmanaged<MaybeBlittable<object>, int>)&InvalidGenericUnmanagedCallersOnlyParameters.GenericStructWithObjectField)((nint)1));
+    }
+
+    internal struct Blittable<T> where T : unmanaged
+    {
+        T Value;
+    }
+
+
+    [UnmanagedCallersOnly]
+    internal static int BlittableGenericStruct(Blittable<nint> param) => 0;
+
+    [UnmanagedCallersOnly]
+    internal static int MaybeBlittableGenericStruct(MaybeBlittable<nint> param) => 0;
 }

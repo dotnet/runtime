@@ -44,6 +44,21 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void IDisposable_DisposeWorksAsStop()
+        {
+            var listener = new DerivedTcpListener(IPAddress.Loopback, 0);
+            using (listener)
+            {
+                Assert.False(listener.Active);
+                listener.Start();
+                Assert.True(listener.Active);
+            }
+            Assert.False(listener.Active);
+            listener.Dispose();
+            Assert.False(listener.Active);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void AllowNatTraversal_NotStarted_SetSuccessfully()
         {

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <xplatform.h>
 #include <platformdefines.h>
+#include <stdint.h>
 
 namespace
 {
@@ -29,3 +30,14 @@ extern "C" DLL_EXPORT bool CheckFcnPtr(bool(STDMETHODCALLTYPE *fcnptr)(long long
         return fcnptr(999999999999);
     }
 }
+
+extern "C" DLL_EXPORT void FillOutPtr(intptr_t *p)
+{
+    *p = 60;
+}
+
+extern "C" DLL_EXPORT void FillOutIntParameter(intptr_t *p)
+{
+    *p = 50;
+}
+

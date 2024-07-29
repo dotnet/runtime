@@ -11,7 +11,10 @@
 **
 ===========================================================*/
 
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
@@ -51,10 +54,10 @@ namespace System.Collections
     // the Hashtable.  That hash function (and the equals method on the
     // IEqualityComparer) would be used for all objects in the table.
     //
-    [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
+    [DebuggerTypeProxy(typeof(HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
@@ -361,6 +364,8 @@ namespace System.Collections
                 Add(e.Key, e.Value);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Hashtable(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -577,13 +582,9 @@ namespace System.Collections
             CopyEntries(array, arrayIndex);
         }
 
-        // Copies the values in this Hashtable to an KeyValuePairs array.
-        // KeyValuePairs is different from Dictionary Entry in that it has special
-        // debugger attributes on its fields.
-
-        internal virtual KeyValuePairs[] ToKeyValuePairsArray()
+        internal virtual DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
         {
-            KeyValuePairs[] array = new KeyValuePairs[_count];
+            var array = new DebugViewDictionaryItem<object, object?>[_count];
             int index = 0;
             Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
@@ -591,7 +592,7 @@ namespace System.Collections
                 object? keyv = lbuckets[i].key;
                 if ((keyv != null) && (keyv != _buckets))
                 {
-                    array[index++] = new KeyValuePairs(keyv, lbuckets[i].val);
+                    array[index++] = new DebugViewDictionaryItem<object, object?>(keyv, lbuckets[i].val);
                 }
             }
 
@@ -787,12 +788,12 @@ namespace System.Collections
         protected virtual bool KeyEquals(object? item, object key)
         {
             Debug.Assert(key != null, "key can't be null here!");
-            if (object.ReferenceEquals(_buckets, item))
+            if (ReferenceEquals(_buckets, item))
             {
                 return false;
             }
 
-            if (object.ReferenceEquals(item, key))
+            if (ReferenceEquals(item, key))
                 return true;
 
             if (_keycomparer != null)
@@ -936,7 +937,7 @@ namespace System.Collections
 
         private void putEntry(Bucket[] newBuckets, object key, object? nvalue, int hashcode)
         {
-            Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
+            Debug.Assert(hashcode >= 0);  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
             uint incr = unchecked((uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)newBuckets.Length - 1))));
@@ -1019,6 +1020,8 @@ namespace System.Collections
             return new SyncHashtable(table);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -1245,18 +1248,14 @@ namespace System.Collections
         // Synchronized wrapper for hashtable
         private sealed class SyncHashtable : Hashtable, IEnumerable
         {
-            private Hashtable _table;
+            private readonly Hashtable _table;
 
             internal SyncHashtable(Hashtable table) : base(false)
             {
                 _table = table;
             }
 
-            internal SyncHashtable(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
+            [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 throw new PlatformNotSupportedException();
@@ -1332,7 +1331,7 @@ namespace System.Collections
             {
                 lock (_table.SyncRoot)
                 {
-                    return Hashtable.Synchronized((Hashtable)_table.Clone());
+                    return Synchronized((Hashtable)_table.Clone());
                 }
             }
 
@@ -1383,9 +1382,9 @@ namespace System.Collections
                 // call OnDeserialization on our parent table.
             }
 
-            internal override KeyValuePairs[] ToKeyValuePairsArray()
+            internal override DebugViewDictionaryItem<object, object?>[] ToDebugViewDictionaryItemArray()
             {
-                return _table.ToKeyValuePairsArray();
+                return _table.ToDebugViewDictionaryItemArray();
             }
         }
 
@@ -1507,7 +1506,7 @@ namespace System.Collections
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public KeyValuePairs[] Items => _hashtable.ToKeyValuePairsArray();
+            public DebugViewDictionaryItem<object, object?>[] Items => _hashtable.ToDebugViewDictionaryItemArray();
         }
     }
 }

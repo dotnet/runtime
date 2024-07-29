@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -25,6 +27,13 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { SHA256.Create(), HashAlgorithmName.SHA256 };
             yield return new object[] { SHA384.Create(), HashAlgorithmName.SHA384 };
             yield return new object[] { SHA512.Create(), HashAlgorithmName.SHA512 };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { SHA3_256.Create(), HashAlgorithmName.SHA3_256 };
+                yield return new object[] { SHA3_384.Create(), HashAlgorithmName.SHA3_384 };
+                yield return new object[] { SHA3_512.Create(), HashAlgorithmName.SHA3_512 };
+            }
         }
 
         public static IEnumerable<object[]> GetHMACs()
@@ -33,10 +42,18 @@ namespace System.Security.Cryptography.Tests
             {
                 yield return new object[] { new HMACMD5(), HashAlgorithmName.MD5 };
             }
+
             yield return new object[] { new HMACSHA1(), HashAlgorithmName.SHA1 };
             yield return new object[] { new HMACSHA256(), HashAlgorithmName.SHA256 };
             yield return new object[] { new HMACSHA384(), HashAlgorithmName.SHA384 };
             yield return new object[] { new HMACSHA512(), HashAlgorithmName.SHA512 };
+
+            if (PlatformDetection.SupportsSha3)
+            {
+                yield return new object[] { new HMACSHA3_256(), HashAlgorithmName.SHA3_256 };
+                yield return new object[] { new HMACSHA3_384(), HashAlgorithmName.SHA3_384 };
+                yield return new object[] { new HMACSHA3_512(), HashAlgorithmName.SHA3_512 };
+            }
         }
 
         [Fact]
@@ -104,6 +121,83 @@ namespace System.Security.Cryptography.Tests
 
                 VerifyIncrementalResult(referenceAlgorithm, incrementalHash);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support Clone.")]
+        public static void Verify_Clone_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithmName)
+        {
+            referenceAlgorithm.Key = s_hmacKey;
+            VerifyCloneResult(referenceAlgorithm, () => IncrementalHash.CreateHMAC(hashAlgorithmName, s_hmacKey));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void Verify_Clone_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithmName)
+        {
+            VerifyCloneResult(referenceAlgorithm, () => IncrementalHash.CreateHash(hashAlgorithmName));
+        }
+
+        private static void VerifyCloneResult(HashAlgorithm reference, Func<IncrementalHash> originalFactory)
+        {
+            IncrementalHash original = originalFactory();
+            IncrementalHash clone = original.Clone();
+            byte[] originalHash;
+            byte[] cloneHash;
+            byte[] referenceHash;
+
+            // Simple case for starting from nothing, appending to same, should get the same.
+            original.AppendData("potato"u8);
+            clone.AppendData("potato"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original and same appended after the clone.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            original.AppendData("carrot"u8);
+            clone.AppendData("carrot"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original and different appended after the clone.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            original.AppendData("carrot"u8);
+            clone.AppendData("banana"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.NotEqual(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Independent life, clone disposed.
+            clone = original.Clone();
+            clone.Dispose();
+            original.AppendData("orange"u8);
+            referenceHash = reference.ComputeHash("orange"u8.ToArray());
+            originalHash = original.GetHashAndReset();
+            Assert.Equal(referenceHash, originalHash);
+
+            // Independent life, original disposed.
+            clone = original.Clone();
+            original.Dispose();
+            clone.AppendData("orange"u8);
+            referenceHash = reference.ComputeHash("orange"u8.ToArray());
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(referenceHash, cloneHash);
         }
 
         private static void VerifyIncrementalResult(HashAlgorithm referenceAlgorithm, IncrementalHash incrementalHash)
@@ -298,6 +392,22 @@ namespace System.Security.Cryptography.Tests
                 () => IncrementalHash.CreateHMAC(new HashAlgorithmName("SHA0"), Array.Empty<byte>()));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DoesNotSupportSha3))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
+        public static void UnsupportedAlgorithms(string algorithmName)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHMAC(new HashAlgorithmName(algorithmName), ReadOnlySpan<byte>.Empty));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHMAC(new HashAlgorithmName(algorithmName), Array.Empty<byte>()));
+
+            Assert.Throws<PlatformNotSupportedException>(() =>
+                IncrementalHash.CreateHash(new HashAlgorithmName(algorithmName)));
+        }
+
         [Theory]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyIncrementalHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
@@ -460,6 +570,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]
@@ -483,6 +595,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]
@@ -589,6 +703,106 @@ namespace System.Security.Cryptography.Tests
                     (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
                         inc.TryGetHashAndReset(dest, out bytesWritten));
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Hash_GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
+        {
+            static void ThreadWork(object obj)
+            {
+                try
+                {
+                    IncrementalHash hash = (IncrementalHash)obj;
+
+                    for (int i = 0; i < 10_000; i++)
+                    {
+                        hash.AppendData("potatos and carrots make for a fine stew."u8);
+                        hash.GetHashAndReset();
+                    }
+                }
+                catch
+                {
+                    // Ignore all managed exceptions. IncrementalHash is not thread safe, but we don't want process
+                    // crashes.
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                foreach(object[] items in GetHashAlgorithms())
+                {
+                    if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
+                    {
+                        referenceAlgorithm.Dispose();
+
+                        using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
+                        {
+                            Thread thread1 = new(ThreadWork);
+                            Thread thread2 = new(ThreadWork);
+                            thread1.Start(hash);
+                            thread2.Start(hash);
+                            thread1.Join();
+                            thread2.Join();
+                        }
+                    }
+                    else
+                    {
+                        Assert.Fail("Test is not set up correctly.");
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void HMAC_GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
+        {
+            static void ThreadWork(object obj)
+            {
+                try
+                {
+                    IncrementalHash hash = (IncrementalHash)obj;
+
+                    for (int i = 0; i < 10_000; i++)
+                    {
+                        hash.AppendData("potatos and carrots make for a fine stew."u8);
+                        hash.GetHashAndReset();
+                    }
+                }
+                catch
+                {
+                    // Ignore all managed exceptions. IncrementalHash is not thread safe, but we don't want process
+                    // crashes.
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                foreach(object[] items in GetHMACs())
+                {
+                    if (items is [HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm])
+                    {
+                        referenceAlgorithm.Dispose();
+
+                        using (IncrementalHash hash = IncrementalHash.CreateHMAC(hashAlgorithm, [1, 2, 3, 4]))
+                        {
+                            Thread thread1 = new(ThreadWork);
+                            Thread thread2 = new(ThreadWork);
+                            thread1.Start(hash);
+                            thread2.Start(hash);
+                            thread1.Join();
+                            thread2.Join();
+                        }
+                    }
+                    else
+                    {
+                        Assert.Fail("Test is not set up correctly.");
+                    }
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
 
         private static void VerifyGetCurrentHash(IncrementalHash single, IncrementalHash accumulated)

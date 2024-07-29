@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -11,7 +13,7 @@ namespace System.Dynamic.Utils
 {
     internal static class DelegateHelpers
     {
-        // This can be flipped to true using feature switches at publishing time
+        // This can be flipped to false using feature switches at publishing time
         internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
@@ -21,19 +23,43 @@ namespace System.Dynamic.Utils
             public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
                 = CreateObjectArrayDelegateInternal();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "Works around https://github.com/dotnet/linker/issues/2392")]
             private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
-                => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
-                    .GetMethod("CreateObjectArrayDelegate")!
-                    .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+            {
+                // This is only supported by NativeAOT which always expects CanEmitObjectArrayDelegate to be false.
+                // This check guards static constructor of trying to resolve 'Internal.Runtime.Augments.DynamicDelegateAugments'
+                // on runtimes which do not support this private API.
+                if (!CanEmitObjectArrayDelegate)
+                {
+                    return Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib", throwOnError: true)!
+                        .GetMethod("CreateObjectArrayDelegate")!
+                        .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+                }
+                else
+                {
+                    return new Func<Type, Func<object?[], object?>, Delegate>((_x, _y) => throw new NotImplementedException());
+                }
+            }
+        }
+
+        private static class ForceAllowDynamicCodeLightup
+        {
+            public static Func<IDisposable>? ForceAllowDynamicCodeDelegate { get; }
+                = ForceAllowDynamicCodeDelegateInternal();
+
+            private static Func<IDisposable>? ForceAllowDynamicCodeDelegateInternal()
+                => typeof(AssemblyBuilder)
+                    .GetMethod("ForceAllowDynamicCode", BindingFlags.NonPublic | BindingFlags.Static)
+                    ?.CreateDelegate<Func<IDisposable>>();
         }
 
         internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
         {
             if (CanEmitObjectArrayDelegate)
             {
+#pragma warning disable IL3050
+                // Suppress analyzer warnings since they don't currently support feature flags
                 return CreateObjectArrayDelegateRefEmit(delegateType, handler);
+#pragma warning restore IL3050
             }
             else
             {
@@ -55,12 +81,12 @@ namespace System.Dynamic.Utils
 
         public static void ActionThunk1<T1>(Func<object?[], object?> handler, T1 t1)
         {
-            handler(new object?[]{t1});
+            handler(new object?[] { t1 });
         }
 
         public static void ActionThunk2<T1, T2>(Func<object?[], object?> handler, T1 t1, T2 t2)
         {
-            handler(new object?[]{t1, t2});
+            handler(new object?[] { t1, t2 });
         }
 
         public static TReturn FuncThunk<TReturn>(Func<object?[], object> handler)
@@ -70,16 +96,15 @@ namespace System.Dynamic.Utils
 
         public static TReturn FuncThunk1<T1, TReturn>(Func<object?[], object> handler, T1 t1)
         {
-            return (TReturn)handler(new object?[]{t1});
+            return (TReturn)handler(new object?[] { t1 });
         }
 
         public static TReturn FuncThunk2<T1, T2, TReturn>(Func<object?[], object> handler, T1 t1, T2 t2)
         {
-            return (TReturn)handler(new object?[]{t1, t2});
+            return (TReturn)handler(new object?[] { t1, t2 });
         }
 
-        private static MethodInfo GetEmptyObjectArrayMethod() =>
-            typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+        private static MethodInfo GetEmptyObjectArrayMethod() => ((Func<object[]>)Array.Empty<object>).GetMethodInfo();
 
         private static MethodInfo[] GetActionThunks()
         {
@@ -99,6 +124,7 @@ namespace System.Dynamic.Utils
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "The above ActionThunk and FuncThunk methods don't have trimming annotations.")]
+        [RequiresDynamicCode(Expression.GenericMethodRequiresDynamicCode)]
         private static MethodInfo? GetCSharpThunk(Type returnType, bool hasReturnValue, ParameterInfo[] parameters)
         {
             try
@@ -116,7 +142,7 @@ namespace System.Dynamic.Utils
                 foreach (ParameterInfo parameter in parameters)
                 {
                     Type parameterType = parameter.ParameterType;
-                    if  (parameterType.IsByRefLike || parameterType.IsByRef || parameterType.IsPointer)
+                    if (parameterType.IsByRefLike || parameterType.IsByRef || parameterType.IsPointer)
                     {
                         return null; // Don't use C# thunks for types that cannot be generic arguments
                     }
@@ -171,6 +197,7 @@ namespace System.Dynamic.Utils
         //      param0 = (T0)args[0];   // only generated for each byref argument
         // }
         // return (TRet)ret;
+        [RequiresDynamicCode("Ref emit requires dynamic code.")]
         private static Delegate CreateObjectArrayDelegateRefEmit(Type delegateType, Func<object?[], object?> handler)
         {
             if (!s_thunks.TryGetValue(delegateType, out MethodInfo? thunkMethod))
@@ -186,6 +213,23 @@ namespace System.Dynamic.Utils
 
                 if (thunkMethod == null)
                 {
+                    static IDisposable? CreateForceAllowDynamicCodeScope()
+                    {
+                        if (!RuntimeFeature.IsDynamicCodeSupported)
+                        {
+                            // Force 'new DynamicMethod' to not throw even though RuntimeFeature.IsDynamicCodeSupported is false.
+                            // If we are running on a runtime that supports dynamic code, even though the feature switch is off,
+                            // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
+                            // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
+                            // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
+                            return ForceAllowDynamicCodeLightup.ForceAllowDynamicCodeDelegate?.Invoke();
+                        }
+
+                        return null;
+                    }
+
+                    using IDisposable? forceAllowDynamicCodeScope = CreateForceAllowDynamicCodeScope();
+
                     int thunkIndex = Interlocked.Increment(ref s_ThunksCreated);
                     Type[] paramTypes = new Type[parameters.Length + 1];
                     paramTypes[0] = typeof(Func<object[], object>);
@@ -270,8 +314,8 @@ namespace System.Dynamic.Utils
                         ilgen.BeginFinallyBlock();
                         for (int i = 0; i < parameters.Length; i++)
                         {
-                           if (parameters[i].ParameterType.IsByRef)
-                           {
+                            if (parameters[i].ParameterType.IsByRef)
+                            {
                                 Type byrefToType = parameters[i].ParameterType.GetElementType()!;
 
                                 // update parameter

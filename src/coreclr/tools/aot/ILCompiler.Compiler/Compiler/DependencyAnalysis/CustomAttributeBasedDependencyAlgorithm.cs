@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -128,8 +129,8 @@ namespace ILCompiler.DependencyAnalysis
                     // Make a new list in case we need to abort.
                     var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
-                    caDependencies.Add(factory.ReflectableMethod(constructor), "Attribute constructor");
-                    caDependencies.Add(factory.ConstructedTypeSymbol(constructor.OwningType), "Attribute type");
+                    caDependencies.Add(factory.ReflectedMethod(constructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Attribute constructor");
+                    caDependencies.Add(factory.ReflectedType(constructor.OwningType), "Attribute type");
 
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
                     {
@@ -150,6 +151,12 @@ namespace ILCompiler.DependencyAnalysis
                     // work with the same failure modes at runtime as the CLR, but it might not be
                     // worth the hassle: the input was invalid. The most important thing is that we
                     // don't crash the compilation.
+                }
+                catch (BadImageFormatException)
+                {
+                    // System.Reflection.Metadata will throw BadImageFormatException if the blob is malformed.
+                    // This can happen if e.g. underlying type of an enum changes between versions and
+                    // we can no longer decode the custom attribute blob.
                 }
             }
         }
@@ -193,7 +200,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.MetadataManager.IsReflectionBlocked(field))
                     return false;
 
-                dependencies.Add(factory.ReflectableField(field), "Custom attribute blob");
+                dependencies.Add(factory.ReflectedField(field), "Custom attribute blob");
 
                 return true;
             }
@@ -234,7 +241,7 @@ namespace ILCompiler.DependencyAnalysis
                             setterMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(setterMethod, (InstantiatedType)attributeType);
                         }
 
-                        dependencies.Add(factory.ReflectableMethod(setterMethod), "Custom attribute blob");
+                        dependencies.Add(factory.ReflectedMethod(setterMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Custom attribute blob");
                     }
 
                     return true;
@@ -259,7 +266,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Reflection will need to be able to allocate this type at runtime
             // (e.g. this could be an array that needs to be allocated, or an enum that needs to be boxed).
-            dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
+            dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value == null)
                 return true;

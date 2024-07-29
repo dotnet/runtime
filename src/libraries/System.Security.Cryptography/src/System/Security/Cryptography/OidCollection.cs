@@ -2,16 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using Internal.Cryptography;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
     public sealed class OidCollection : ICollection
     {
-        private Oid[] _oids = Array.Empty<Oid>();
+        private Oid[] _oids;
         private int _count;
 
-        public OidCollection() { }
+        public OidCollection()
+        {
+            _oids = [];
+        }
+
+        internal OidCollection(int initialCapacity)
+        {
+            Debug.Assert(initialCapacity >= 0);
+            _oids = initialCapacity == 0 ? [] : new Oid[initialCapacity];
+        }
 
         public int Add(Oid oid)
         {
@@ -29,12 +38,10 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if ((uint)index >= (uint)_count)
-                {
-                    // For compat, throw an ArgumentOutOfRangeException instead of
-                    // the IndexOutOfRangeException that comes from the array's indexer.
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                // For compat, throw an ArgumentOutOfRangeException instead of
+                // the IndexOutOfRangeException that comes from the array's indexer.
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_count, nameof(index));
+
                 return _oids[index];
             }
         }

@@ -4,10 +4,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
-using System.Runtime.CompilerServices;
+using System.Threading;
 
-using Internal.DeveloperExperience;
-using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -22,8 +21,7 @@ namespace System
         }
     }
 
-    [ReflectionBlocked]
-    public class RuntimeExceptionHelpers
+    internal static class RuntimeExceptionHelpers
     {
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
@@ -118,77 +116,28 @@ namespace System
             }
         }
 
-        public enum RhFailFastReason
-        {
-            Unknown = 0,
-            InternalError = 1,                                   // "Runtime internal error"
-            UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
-            UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
-            ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-        }
-
-        private static string GetStringForFailFastReason(RhFailFastReason reason)
-        {
-            switch (reason)
+        private static string GetStringForFailFastReason(RhFailFastReason reason) => reason switch
             {
-                case RhFailFastReason.InternalError:
-                    return "Runtime internal error";
-                case RhFailFastReason.UnhandledException_ExceptionDispatchNotAllowed:
-                    return "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope.";
-                case RhFailFastReason.UnhandledException_CallerDidNotHandle:
-                    return "Unhandled exception: no handler found in calling method.";
-                case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
-                    return "Unable to translate failure into a classlib-specific exception object.";
-                case RhFailFastReason.UnhandledException:
-                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
-                case RhFailFastReason.UnhandledExceptionFromPInvoke:
-                    return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
-                default:
-                    return "Unknown reason.";
-            }
-        }
-
-
-        [DoesNotReturn]
-        public static void FailFast(string message)
-        {
-            FailFast(message, null, RhFailFastReason.Unknown, IntPtr.Zero, IntPtr.Zero);
-        }
-
-        [DoesNotReturn]
-        public static unsafe void FailFast(string message, Exception? exception)
-        {
-            FailFast(message, exception, RhFailFastReason.Unknown, IntPtr.Zero, IntPtr.Zero);
-        }
+                RhFailFastReason.InternalError => "Runtime internal error",
+                RhFailFastReason.UnhandledException => "Unhandled exception: a managed exception was not handled before reaching unmanaged code",
+                RhFailFastReason.UnhandledExceptionFromPInvoke => "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition",
+                RhFailFastReason.EnvironmentFailFast => "Environment.FailFast was called",
+                RhFailFastReason.AssertionFailure => "Assertion failure",
+                _ => "Unknown reason."
+            };
 
         // Used to report exceptions that *logically* go unhandled in the Fx code.  For example, an
         // exception that escapes from a ThreadPool workitem, or from a void-returning async method.
         public static void ReportUnhandledException(Exception exception)
         {
-#if FEATURE_DUMP_DEBUGGING
-            // ReportUnhandledError will also call this in APPX scenarios,
-            // but WinRT can failfast before we get another chance
-            // (in APPX scenarios, this one will get overwritten by the one with the CCW pointer)
-            GenerateExceptionInformationForDump(exception, IntPtr.Zero);
-#endif
-
-#if ENABLE_WINRT
-            // If possible report the exception to GEH, if not fail fast.
-            WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-            if (callbacks == null || !callbacks.ReportUnhandledError(exception))
-                FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
-#else
-            FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
-#endif
+            FailFast(exception: exception, reason: RhFailFastReason.UnhandledException);
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
         // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
-        [RuntimeExport("FailFast")]
-        public static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
+        [RuntimeExport("RuntimeFailFast")]
+        internal static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
         {
             if (!SafeToPerformRichExceptionSupport)
                 return;
@@ -197,99 +146,167 @@ namespace System
             // back into the dispatcher.
             try
             {
-                // Avoid complex processing and allocations if we are already in failfast or recursive out of memory.
-                // We do not set InFailFast.Value here, because we want rich diagnostics in the FailFast
-                // call below and reentrancy is not possible for this method (all exceptions are ignored).
-                bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-                string failFastMessage = "";
-
-                if (!minimalFailFast)
-                {
-                    if ((reason == RhFailFastReason.UnhandledException) && (exception != null))
-                    {
-                        Debug.WriteLine("Unhandled Exception: " + exception.ToString());
-                    }
-
-                    failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                        reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
-                        GetStringForFailFastReason(reason),
-                        exception != null ? " [exception object available]" : "");
-                }
-
-                FailFast(failFastMessage, exception, reason, pExAddress, pExContext);
+                FailFast(exception: exception, reason: reason, pExAddress: pExAddress, pExContext: pExContext);
             }
             catch
             {
-                // Returning from this callback will cause the runtime to FailFast without involving the class
-                // library.
+                // Returning from this callback will cause the runtime to FailFast without involving the class library.
             }
         }
 
-        [DoesNotReturn]
-        internal static void FailFast(string message, Exception? exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
-        {
-            // If this a recursive call to FailFast, avoid all unnecessary and complex activity the second time around to avoid the recursion
-            // that got us here the first time (Some judgement is required as to what activity is "unnecessary and complex".)
-            bool minimalFailFast = InFailFast.Value || (exception == PreallocatedOutOfMemoryException.Instance);
-            InFailFast.Value = true;
+        internal const uint EXCEPTION_NONCONTINUABLE = 0x1;
+        internal const uint FAIL_FAST_GENERATE_EXCEPTION_ADDRESS = 0x1;
+        internal const uint STATUS_STACK_BUFFER_OVERRUN = 0xC0000409;
+        internal const uint FAST_FAIL_EXCEPTION_DOTNET_AOT = 0x48;
 
-            if (!minimalFailFast)
+#pragma warning disable 649
+        internal unsafe struct EXCEPTION_RECORD
+        {
+            internal uint ExceptionCode;
+            internal uint ExceptionFlags;
+            internal IntPtr ExceptionRecord;
+            internal IntPtr ExceptionAddress;
+            internal uint NumberParameters;
+#if TARGET_64BIT
+            internal fixed ulong ExceptionInformation[15];
+#else
+            internal fixed uint ExceptionInformation[15];
+#endif
+        }
+#pragma warning restore 649
+
+        private static ulong s_crashingThreadId;
+
+        [DoesNotReturn]
+        internal static unsafe void FailFast(string? message = null, Exception? exception = null, string? errorSource = null,
+            RhFailFastReason reason = RhFailFastReason.EnvironmentFailFast,
+            IntPtr pExAddress = 0, IntPtr pExContext = 0)
+        {
+            IntPtr triageBufferAddress = IntPtr.Zero;
+            int triageBufferSize = 0;
+            int errorCode = 0;
+
+            ulong currentThreadId = Thread.CurrentOSThreadId;
+            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            if (previousThreadId == 0)
             {
-                string prefix;
-                string outputMessage;
-                if (exception != null)
+                CrashInfo crashInfo = new();
+                crashInfo.Open(reason, s_crashingThreadId, message ?? GetStringForFailFastReason(reason));
+
+                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
+                if (!minimalFailFast)
                 {
-                    prefix = "Unhandled Exception: ";
-                    outputMessage = exception.ToString();
+                    Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
+                        "Process terminated. " : "Unhandled exception. ");
+
+                    if (errorSource != null)
+                    {
+                        Internal.Console.Error.Write(errorSource);
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (message != null)
+                    {
+                        Internal.Console.Error.Write(message);
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
+                    {
+                        Internal.Console.Error.Write(GetStringForFailFastReason(reason));
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (reason is RhFailFastReason.EnvironmentFailFast)
+                    {
+                        Internal.Console.Error.Write(new StackTrace().ToString());
+                    }
+
+                    if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
+                    {
+                        Internal.Console.Error.Write(exception.ToString());
+                        Internal.Console.Error.WriteLine();
+                    }
+
+#if TARGET_WINDOWS
+                    if (EventReporter.ShouldLogInEventLog)
+                    {
+                        var reporter = new EventReporter(reason);
+                        if (exception != null && reason is not RhFailFastReason.AssertionFailure)
+                        {
+                            reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            reporter.AddStackTrace(exception.StackTrace);
+                        }
+                        else
+                        {
+                            if (message != null)
+                                reporter.AddDescription(message);
+                            reporter.BeginStackTrace();
+                            reporter.AddStackTrace(new StackTrace().ToString());
+                        }
+
+                        reporter.Report();
+                    }
+#endif
+
+                    if (exception != null)
+                    {
+                        crashInfo.WriteException(exception);
+                    }
+                }
+
+                crashInfo.Close();
+
+                triageBufferAddress = crashInfo.TriageBufferAddress;
+                triageBufferSize = crashInfo.TriageBufferSize;
+
+                // Try to map the failure into a HRESULT that makes sense
+                errorCode = exception != null ? exception.HResult : reason switch
+                {
+                    RhFailFastReason.EnvironmentFailFast => HResults.COR_E_FAILFAST,
+                    RhFailFastReason.InternalError => HResults.COR_E_EXECUTIONENGINE,
+                    // Error code for unhandled exceptions is expected to come from the exception object above
+                    // RhFailFastReason.UnhandledException or
+                    // RhFailFastReason.UnhandledExceptionFromPInvoke
+                    _ => HResults.E_FAIL
+                };
+            }
+            else
+            {
+                if (previousThreadId == currentThreadId)
+                {
+                    // Fatal error while processing another FailFast (recursive call)
+                    errorCode = HResults.COR_E_EXECUTIONENGINE;
                 }
                 else
                 {
-                    prefix = "Process terminated. ";
-                    outputMessage = message;
+                    // The first thread generates the crash info and any other threads are blocked
+                    Thread.Sleep(int.MaxValue);
                 }
-
-                Internal.Console.Error.Write(prefix);
-                if (outputMessage != null)
-                    Internal.Console.Error.Write(outputMessage);
-                Internal.Console.Error.Write(Environment.NewLine);
-
-#if FEATURE_DUMP_DEBUGGING
-                GenerateExceptionInformationForDump(exception, IntPtr.Zero);
-#endif
             }
+
+            EXCEPTION_RECORD exceptionRecord;
+            // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing
+            exceptionRecord.ExceptionCode = STATUS_STACK_BUFFER_OVERRUN;
+            exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE;
+            exceptionRecord.ExceptionRecord = IntPtr.Zero;
+            exceptionRecord.ExceptionAddress = pExAddress;
+            exceptionRecord.NumberParameters = 4;
+            exceptionRecord.ExceptionInformation[0] = FAST_FAIL_EXCEPTION_DOTNET_AOT;
+            exceptionRecord.ExceptionInformation[1] = (uint)errorCode;
+#if TARGET_64BIT
+            exceptionRecord.ExceptionInformation[2] = (ulong)triageBufferAddress;
+#else
+            exceptionRecord.ExceptionInformation[2] = (uint)triageBufferAddress;
+#endif
+            exceptionRecord.ExceptionInformation[3] = (uint)triageBufferSize;
 
 #if TARGET_WINDOWS
-            uint errorCode = 0x80004005; // E_FAIL
-            // To help enable testing to bucket the failures we choose one of the following as errorCode:
-            // * hashcode of EETypePtr if it is an unhandled managed exception
-            // * HRESULT, if available
-            // * RhFailFastReason, if it is one of the known reasons
-            if (exception != null)
-            {
-                if (reason == RhFailFastReason.UnhandledException)
-                    errorCode = (uint)(exception.GetEETypePtr().GetHashCode());
-                else if (exception.HResult != 0)
-                    errorCode = (uint)exception.HResult;
-            }
-            else if (reason != RhFailFastReason.Unknown)
-            {
-                errorCode = (uint)reason + 0x1000; // Add something to avoid common low level exit codes
-            }
-
-            Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext);
+            Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
 #else
+            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord), pExContext);
             Interop.Sys.Abort();
 #endif
-        }
-
-        // Use a nested class to avoid running the class constructor of the outer class when
-        // accessing this flag.
-        private static class InFailFast
-        {
-            // This boolean is used to stop runaway FailFast recursions. Though this is technically a concurrently set field, it only gets set during
-            // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
-            // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
-            public static bool Value;
         }
 
         // This returns "true" once enough of the framework has been initialized to safely perform operations
@@ -299,379 +316,8 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                if (RuntimeAugments.CallbacksIfAvailable == null)
-                    return false;
-                return true;
+                return ReflectionAugments.IsInitialized;
             }
         }
-
-#if FEATURE_DUMP_DEBUGGING
-
-#pragma warning disable 414 // field is assigned, but never used -- This is because C# doesn't realize that we
-        //                                      copy the field into a buffer.
-        /// <summary>
-        /// This is the header that describes our 'error report' buffer to the minidump auxiliary provider.
-        /// Its format is know to that system-wide DLL, so do not change it.  The remainder of the buffer is
-        /// opaque to the minidump auxiliary provider, so it'll have its own format that is more easily
-        /// changed.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        private struct ERROR_REPORT_BUFFER_HEADER
-        {
-            private int _headerSignature;
-            private int _bufferByteCount;
-
-            public void WriteHeader(int cbBuffer)
-            {
-                _headerSignature = 0x31304244;   // 'DB01'
-                _bufferByteCount = cbBuffer;
-            }
-        }
-
-        /// <summary>
-        /// This header describes the contents of the serialized error report to DAC, which can deserialize it
-        /// from a dump file or live debugging session.  This format is easier to change than the
-        /// ERROR_REPORT_BUFFER_HEADER, but it is still well-known to DAC, so any changes must update the
-        /// version number and also have corresponding changes made to DAC.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SERIALIZED_ERROR_REPORT_HEADER
-        {
-            private int _errorReportSignature;           // This is the version of the 'container format'.
-            private int _exceptionSerializationVersion;  // This is the version of the Exception format.  It is
-                                                         // separate from the 'container format' version since the
-                                                         // implementation of the Exception serialization is owned by
-                                                         // the Exception class.
-            private int _exceptionCount;                 // We just contain a logical array of exceptions.
-            private int _loadedModuleCount;              // Number of loaded modules. present when signature >= ER02.
-            // {ExceptionCount} serialized Exceptions follow.
-            // {LoadedModuleCount} module handles follow. present when signature >= ER02.
-
-            public void WriteHeader(int nExceptions, int nLoadedModules)
-            {
-                _errorReportSignature = 0x32305245;  // 'ER02'
-                _exceptionSerializationVersion = Exception.CurrentSerializationSignature;
-                _exceptionCount = nExceptions;
-                _loadedModuleCount = nLoadedModules;
-            }
-        }
-
-        /// <summary>
-        /// Holds metadata about an exception in flight. Class because ConditionalWeakTable only accepts reference types
-        /// </summary>
-        private class ExceptionData
-        {
-            public ExceptionData()
-            {
-                // Set this to a non-zero value so that logic mapping entries to threads
-                // doesn't think an uninitialized ExceptionData is on thread 0
-                ExceptionMetadata.ThreadId = 0xFFFFFFFF;
-            }
-
-            public struct ExceptionMetadataStruct
-            {
-                public uint ExceptionId { get; set; } // Id assigned to the exception. May not be contiguous or start at 0.
-                public uint InnerExceptionId { get; set; } // ID of the inner exception or 0xFFFFFFFF for 'no inner exception'
-                public uint ThreadId { get; set; } // Managed thread ID the eception was thrown on
-                public int NestingLevel { get; set; } // If multiple exceptions are currently active on a thread, this gives the ordering for them.
-                                                        // The highest number is the most recent exception. -1 means the exception is not currently in flight
-                                                        // (but it may still be an InnerException).
-                public IntPtr ExceptionCCWPtr { get; set; } // If the exception was thrown in an interop scenario, this contains the CCW pointer, otherwise, IntPtr.Zero
-            }
-
-            public ExceptionMetadataStruct ExceptionMetadata;
-
-            /// <summary>
-            /// Data created by Exception.SerializeForDump()
-            /// </summary>
-            public byte[] SerializedExceptionData { get; set; }
-
-            /// <summary>
-            /// Serializes the exception metadata and SerializedExceptionData
-            /// </summary>
-            public unsafe byte[] Serialize()
-            {
-                checked
-                {
-                    byte[] serializedData = new byte[sizeof(ExceptionMetadataStruct) + SerializedExceptionData.Length];
-                    fixed (byte* pSerializedData = &serializedData[0])
-                    {
-                        ExceptionMetadataStruct* pMetadata = (ExceptionMetadataStruct*)pSerializedData;
-                        pMetadata->ExceptionId = ExceptionMetadata.ExceptionId;
-                        pMetadata->InnerExceptionId = ExceptionMetadata.InnerExceptionId;
-                        pMetadata->ThreadId = ExceptionMetadata.ThreadId;
-                        pMetadata->NestingLevel = ExceptionMetadata.NestingLevel;
-                        pMetadata->ExceptionCCWPtr = ExceptionMetadata.ExceptionCCWPtr;
-
-                        SerializedExceptionData.AsSpan().CopyTo(new Span<byte>(pSerializedData + sizeof(ExceptionMetadataStruct), SerializedExceptionData.Length));
-                    }
-                    return serializedData;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Table of exceptions that were on stacks triggering GenerateExceptionInformationForDump
-        /// </summary>
-        private static readonly ConditionalWeakTable<Exception, ExceptionData> s_exceptionDataTable = new ConditionalWeakTable<Exception, ExceptionData>();
-
-        /// <summary>
-        /// Counter for exception ID assignment
-        /// </summary>
-        private static int s_currentExceptionId;
-
-        /// <summary>
-        /// This method will call the runtime to gather the Exception objects from every exception dispatch in
-        /// progress on the current thread.  It will then serialize them into a new buffer and pass that
-        /// buffer back to the runtime, which will publish it to a place where a global "minidump auxiliary
-        /// provider" will be able to save the buffer's contents into triage dumps.
-        ///
-        /// Thread safety information: The guarantee of this method is that the buffer it produces will have
-        /// complete and correct information for all live exceptions on the current thread (as long as the same exception object
-        /// is not thrown simultaneously on multiple threads). It will do a best-effort attempt to serialize information about exceptions
-        /// already recorded on other threads, but that data can be lost or corrupted. The restrictions are:
-        /// 1. Only exceptions active or recorded on the current thread have their table data modified.
-        /// 2. After updating data in the table, we serialize a snapshot of the table (provided by ConditionalWeakTable.Values),
-        ///    regardless of what other threads might do to the table before or after. However, because of #1, this thread's
-        ///    exception data should stay stable
-        /// 3. There is a dependency on the fact that ConditionalWeakTable's members are all threadsafe and that .Values returns a snapshot
-        /// </summary>
-        public static void GenerateExceptionInformationForDump(Exception currentException, IntPtr exceptionCCWPtr)
-        {
-            LowLevelList<byte[]> serializedExceptions = new LowLevelList<byte[]>();
-
-            // If currentException is null, there's a state corrupting exception in flight and we can't serialize it
-            if (currentException != null)
-            {
-                SerializeExceptionsForDump(currentException, exceptionCCWPtr, serializedExceptions);
-            }
-
-            GenerateErrorReportForDump(serializedExceptions);
-        }
-
-        private static void SerializeExceptionsForDump(Exception currentException, IntPtr exceptionCCWPtr, LowLevelList<byte[]> serializedExceptions)
-        {
-            const uint NoInnerExceptionValue = 0xFFFFFFFF;
-
-            // Approximate upper size limit for the serialized exceptions (but we'll always serialize currentException)
-            // If we hit the limit, because we serialize in arbitrary order, there may be missing InnerExceptions or nested exceptions.
-            const int MaxBufferSize = 20000;
-
-            int nExceptions;
-            RuntimeImports.RhGetExceptionsForCurrentThread(null, out nExceptions);
-            Exception[] curThreadExceptions = new Exception[nExceptions];
-            RuntimeImports.RhGetExceptionsForCurrentThread(curThreadExceptions, out nExceptions);
-            LowLevelList<Exception> exceptions = new LowLevelList<Exception>(curThreadExceptions);
-            LowLevelList<Exception> nonThrownInnerExceptions = new LowLevelList<Exception>();
-
-            uint currentThreadId = (uint)Environment.CurrentManagedThreadId;
-
-            // Reset nesting levels for exceptions on this thread that might not be currently in flight
-            foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
-            {
-                ExceptionData exceptionData = item.Value;
-                if (exceptionData.ExceptionMetadata.ThreadId == currentThreadId)
-                {
-                    exceptionData.ExceptionMetadata.NestingLevel = -1;
-                }
-            }
-
-            // Find all inner exceptions, even if they're not currently being handled
-            for (int i = 0; i < exceptions.Count; i++)
-            {
-                if (exceptions[i].InnerException != null && !exceptions.Contains(exceptions[i].InnerException))
-                {
-                    exceptions.Add(exceptions[i].InnerException);
-                    nonThrownInnerExceptions.Add(exceptions[i].InnerException);
-                }
-            }
-
-            int currentNestingLevel = curThreadExceptions.Length - 1;
-
-            // Make sure we serialize currentException
-            if (!exceptions.Contains(currentException))
-            {
-                // When this happens, currentException is probably passed to this function through System.Environment.FailFast(), we
-                // would want to treat as if this exception is last thrown in the current thread.
-                exceptions.Insert(0, currentException);
-                currentNestingLevel++;
-            }
-
-            // Populate exception data for all exceptions interesting to this thread.
-            // Whether or not there was previously data for that object, it might have changed.
-            for (int i = 0; i < exceptions.Count; i++)
-            {
-                ExceptionData exceptionData = s_exceptionDataTable.GetOrCreateValue(exceptions[i]);
-
-                exceptionData.ExceptionMetadata.ExceptionId = (uint)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
-                if (exceptionData.ExceptionMetadata.ExceptionId == NoInnerExceptionValue)
-                {
-                    exceptionData.ExceptionMetadata.ExceptionId = (uint)System.Threading.Interlocked.Increment(ref s_currentExceptionId);
-                }
-
-                exceptionData.ExceptionMetadata.ThreadId = currentThreadId;
-
-                // Only include nesting information for exceptions that were thrown on this thread
-                if (!nonThrownInnerExceptions.Contains(exceptions[i]))
-                {
-                    exceptionData.ExceptionMetadata.NestingLevel = currentNestingLevel;
-                    currentNestingLevel--;
-                }
-                else
-                {
-                    exceptionData.ExceptionMetadata.NestingLevel = -1;
-                }
-
-                // Only match the CCW pointer up to the current exception
-                if (object.ReferenceEquals(exceptions[i], currentException))
-                {
-                    exceptionData.ExceptionMetadata.ExceptionCCWPtr = exceptionCCWPtr;
-                }
-
-                byte[] serializedEx = exceptions[i].SerializeForDump();
-                exceptionData.SerializedExceptionData = serializedEx;
-            }
-
-            // Populate inner exception ids now that we have all of them in the table
-            for (int i = 0; i < exceptions.Count; i++)
-            {
-                ExceptionData exceptionData;
-                if (!s_exceptionDataTable.TryGetValue(exceptions[i], out exceptionData))
-                {
-                    // This shouldn't happen, but we can't meaningfully throw here
-                    continue;
-                }
-
-                if (exceptions[i].InnerException != null)
-                {
-                    ExceptionData innerExceptionData;
-                    if (s_exceptionDataTable.TryGetValue(exceptions[i].InnerException, out innerExceptionData))
-                    {
-                        exceptionData.ExceptionMetadata.InnerExceptionId = innerExceptionData.ExceptionMetadata.ExceptionId;
-                    }
-                }
-                else
-                {
-                    exceptionData.ExceptionMetadata.InnerExceptionId = NoInnerExceptionValue;
-                }
-            }
-
-            int totalSerializedExceptionSize = 0;
-            // Make sure we include the current exception, regardless of buffer size
-            ExceptionData currentExceptionData = null;
-            if (s_exceptionDataTable.TryGetValue(currentException, out currentExceptionData))
-            {
-                byte[] serializedExceptionData = currentExceptionData.Serialize();
-                serializedExceptions.Add(serializedExceptionData);
-                totalSerializedExceptionSize = serializedExceptionData.Length;
-            }
-
-            checked
-            {
-                foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)
-                {
-                    ExceptionData exceptionData = item.Value;
-
-                    // Already serialized currentException
-                    if (currentExceptionData != null && exceptionData.ExceptionMetadata.ExceptionId == currentExceptionData.ExceptionMetadata.ExceptionId)
-                    {
-                        continue;
-                    }
-
-                    byte[] serializedExceptionData = exceptionData.Serialize();
-                    if (totalSerializedExceptionSize + serializedExceptionData.Length >= MaxBufferSize)
-                    {
-                        break;
-                    }
-
-                    serializedExceptions.Add(serializedExceptionData);
-                    totalSerializedExceptionSize += serializedExceptionData.Length;
-                }
-            }
-        }
-
-        private static unsafe void GenerateErrorReportForDump(LowLevelList<byte[]> serializedExceptions)
-        {
-            checked
-            {
-                int loadedModuleCount = (int)RuntimeImports.RhGetLoadedOSModules(null);
-                int cbModuleHandles = sizeof(System.IntPtr) * loadedModuleCount;
-                int cbFinalBuffer = sizeof(ERROR_REPORT_BUFFER_HEADER) + sizeof(SERIALIZED_ERROR_REPORT_HEADER) + cbModuleHandles;
-                for (int i = 0; i < serializedExceptions.Count; i++)
-                {
-                    cbFinalBuffer += serializedExceptions[i].Length;
-                }
-
-                byte[] finalBuffer = new byte[cbFinalBuffer];
-                fixed (byte* pBuffer = &finalBuffer[0])
-                {
-                    byte* pCursor = pBuffer;
-                    int cbRemaining = cbFinalBuffer;
-
-                    ERROR_REPORT_BUFFER_HEADER* pDacHeader = (ERROR_REPORT_BUFFER_HEADER*)pCursor;
-                    pDacHeader->WriteHeader(cbFinalBuffer);
-                    pCursor += sizeof(ERROR_REPORT_BUFFER_HEADER);
-                    cbRemaining -= sizeof(ERROR_REPORT_BUFFER_HEADER);
-
-                    SERIALIZED_ERROR_REPORT_HEADER* pPayloadHeader = (SERIALIZED_ERROR_REPORT_HEADER*)pCursor;
-                    pPayloadHeader->WriteHeader(serializedExceptions.Count, loadedModuleCount);
-                    pCursor += sizeof(SERIALIZED_ERROR_REPORT_HEADER);
-                    cbRemaining -= sizeof(SERIALIZED_ERROR_REPORT_HEADER);
-
-                    // copy the serialized exceptions to report buffer
-                    for (int i = 0; i < serializedExceptions.Count; i++)
-                    {
-                        int cbChunk = serializedExceptions[i].Length;
-                        serializedExceptions[i].AsSpan().CopyTo(new Span<byte>(pCursor, cbChunk));
-                        cbRemaining -= cbChunk;
-                        pCursor += cbChunk;
-                    }
-
-                    // copy the module-handle array to report buffer
-                    IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
-                    RuntimeImports.RhGetLoadedOSModules(loadedModuleHandles);
-                    loadedModuleHandles.AsSpan().CopyTo(new Span<IntPtr>(pCursor, loadedModuleHandles.Length));
-                    cbRemaining -= cbModuleHandles;
-                    pCursor += cbModuleHandles;
-
-                    Debug.Assert(cbRemaining == 0);
-                }
-                UpdateErrorReportBuffer(finalBuffer);
-            }
-        }
-
-        private static GCHandle s_ExceptionInfoBufferPinningHandle;
-        private static Lock s_ExceptionInfoBufferLock = new Lock();
-
-        private static unsafe void UpdateErrorReportBuffer(byte[] finalBuffer)
-        {
-            Debug.Assert(finalBuffer?.Length > 0);
-
-            using (LockHolder.Hold(s_ExceptionInfoBufferLock))
-            {
-                fixed (byte* pBuffer = &finalBuffer[0])
-                {
-                    byte* pPrevBuffer = (byte*)RuntimeImports.RhSetErrorInfoBuffer(pBuffer);
-                    Debug.Assert(s_ExceptionInfoBufferPinningHandle.IsAllocated == (pPrevBuffer != null));
-                    if (pPrevBuffer != null)
-                    {
-                        byte[] currentExceptionInfoBuffer = (byte[])s_ExceptionInfoBufferPinningHandle.Target;
-                        Debug.Assert(currentExceptionInfoBuffer?.Length > 0);
-                        fixed (byte* pPrev = &currentExceptionInfoBuffer[0])
-                            Debug.Assert(pPrev == pPrevBuffer);
-                    }
-                    if (!s_ExceptionInfoBufferPinningHandle.IsAllocated)
-                    {
-                        // We allocate a pinning GC handle because we are logically giving the runtime 'unmanaged memory'.
-                        s_ExceptionInfoBufferPinningHandle = GCHandle.Alloc(finalBuffer, GCHandleType.Pinned);
-                    }
-                    else
-                    {
-                        s_ExceptionInfoBufferPinningHandle.Target = finalBuffer;
-                    }
-                }
-            }
-        }
-#endif // FEATURE_DUMP_DEBUGGING
     }
 }

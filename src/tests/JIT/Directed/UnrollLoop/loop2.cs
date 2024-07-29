@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class A
+using Xunit;
+public class A
 {
     public virtual int f0(int i)
     {
@@ -10,7 +11,7 @@ internal class A
     }
 }
 
-internal unsafe class B : A
+public unsafe class B : A
 {
     public override int f0(int i)
     {
@@ -927,7 +928,8 @@ internal unsafe class B : A
         return sum + i;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool failed = false;
 

@@ -19,7 +19,8 @@ namespace System.Numerics
         : IEquatable<Complex>,
           IFormattable,
           INumberBase<Complex>,
-          ISignedNumber<Complex>
+          ISignedNumber<Complex>,
+          IUtf8SpanFormattable
     {
         private const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -64,7 +65,8 @@ namespace System.Numerics
 
         public static Complex FromPolarCoordinates(double magnitude, double phase)
         {
-            return new Complex(magnitude * Math.Cos(phase), magnitude * Math.Sin(phase));
+            (double sin, double cos) = Math.SinCos(phase);
+            return new Complex(magnitude * cos, magnitude * sin);
         }
 
         public static Complex Negate(Complex value)
@@ -287,46 +289,7 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            return Hypot(value.m_real, value.m_imaginary);
-        }
-
-        private static double Hypot(double a, double b)
-        {
-            // Using
-            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
-            // we can factor out the larger component to dodge overflow even when a * a would overflow.
-
-            a = Math.Abs(a);
-            b = Math.Abs(b);
-
-            double small, large;
-            if (a < b)
-            {
-                small = a;
-                large = b;
-            }
-            else
-            {
-                small = b;
-                large = a;
-            }
-
-            if (small == 0.0)
-            {
-                return (large);
-            }
-            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
-            {
-                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
-                // NaN in any other place returns NaN without any special handling.
-                return (double.PositiveInfinity);
-            }
-            else
-            {
-                double ratio = small / large;
-                return (large * Math.Sqrt(1.0 + ratio * ratio));
-            }
-
+            return double.Hypot(value.m_real, value.m_imaginary);
         }
 
         private static double Log1P(double x)
@@ -393,7 +356,7 @@ namespace System.Numerics
 
         public override int GetHashCode() => HashCode.Combine(m_real, m_imaginary);
 
-        public override string ToString() => $"<{m_real}; {m_imaginary}>";
+        public override string ToString() => ToString(null, null);
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
@@ -401,18 +364,20 @@ namespace System.Numerics
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return string.Format(provider, "<{0}; {1}>", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
+            // $"<{m_real.ToString(format, provider)}; {m_imaginary.ToString(format, provider)}>";
+            var handler = new DefaultInterpolatedStringHandler(4, 2, provider, stackalloc char[512]);
+            handler.AppendLiteral("<");
+            handler.AppendFormatted(m_real, format);
+            handler.AppendLiteral("; ");
+            handler.AppendFormatted(m_imaginary, format);
+            handler.AppendLiteral(">");
+            return handler.ToStringAndClear();
         }
 
         public static Complex Sin(Complex value)
         {
-            // We need both sinh and cosh of imaginary part. To avoid multiple calls to Math.Exp with the same value,
-            // we compute them both here from a single call to Math.Exp.
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Sin(value.m_real) * cosh, Math.Cos(value.m_real) * sinh);
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(sin * Math.Cosh(value.m_imaginary), cos * Math.Sinh(value.m_imaginary));
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
@@ -449,11 +414,8 @@ namespace System.Numerics
 
         public static Complex Cos(Complex value)
         {
-            double p = Math.Exp(value.m_imaginary);
-            double q = 1.0 / p;
-            double sinh = (p - q) * 0.5;
-            double cosh = (p + q) * 0.5;
-            return new Complex(Math.Cos(value.m_real) * cosh, -Math.Sin(value.m_real) * sinh);
+            (double sin, double cos) = Math.SinCos(value.m_real);
+            return new Complex(cos * Math.Cosh(value.m_imaginary), -sin * Math.Sinh(value.m_imaginary));
         }
 
         public static Complex Cosh(Complex value)
@@ -496,19 +458,17 @@ namespace System.Numerics
 
             double x2 = 2.0 * value.m_real;
             double y2 = 2.0 * value.m_imaginary;
-            double p = Math.Exp(y2);
-            double q = 1.0 / p;
-            double cosh = (p + q) * 0.5;
+            (double sin, double cos) = Math.SinCos(x2);
+            double cosh = Math.Cosh(y2);
             if (Math.Abs(value.m_imaginary) <= 4.0)
             {
-                double sinh = (p - q) * 0.5;
-                double D = Math.Cos(x2) + cosh;
-                return new Complex(Math.Sin(x2) / D, sinh / D);
+                double D = cos + cosh;
+                return new Complex(sin / D, Math.Sinh(y2) / D);
             }
             else
             {
-                double D = 1.0 + Math.Cos(x2) / cosh;
-                return new Complex(Math.Sin(x2) / cosh / D, Math.Tanh(y2) / D);
+                double D = 1.0 + cos / cosh;
+                return new Complex(sin / cosh / D, Math.Tanh(y2) / D);
             }
         }
 
@@ -591,8 +551,8 @@ namespace System.Numerics
             }
             else
             {
-                double r = Hypot((x + 1.0), y);
-                double s = Hypot((x - 1.0), y);
+                double r = double.Hypot((x + 1.0), y);
+                double s = double.Hypot((x - 1.0), y);
 
                 double a = (r + s) * 0.5;
                 b = x / a;
@@ -668,13 +628,33 @@ namespace System.Numerics
         public static Complex Exp(Complex value)
         {
             double expReal = Math.Exp(value.m_real);
-            double cosImaginary = expReal * Math.Cos(value.m_imaginary);
-            double sinImaginary = expReal * Math.Sin(value.m_imaginary);
-            return new Complex(cosImaginary, sinImaginary);
+            return FromPolarCoordinates(expReal, value.m_imaginary);
         }
 
         public static Complex Sqrt(Complex value)
         {
+
+            // Handle NaN input cases according to IEEE 754
+            if (double.IsNaN(value.m_real))
+            {
+                if (double.IsInfinity(value.m_imaginary))
+                {
+                    return new Complex(double.PositiveInfinity, value.m_imaginary);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
+            if (double.IsNaN(value.m_imaginary))
+            {
+                if (double.IsPositiveInfinity(value.m_real))
+                {
+                    return new Complex(double.NaN, double.PositiveInfinity);
+                }
+                if (double.IsNegativeInfinity(value.m_real))
+                {
+                    return new Complex(double.PositiveInfinity, double.NaN);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
 
             if (value.m_imaginary == 0.0)
             {
@@ -718,11 +698,10 @@ namespace System.Numerics
             double imaginaryCopy = value.m_imaginary;
             if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
+                if (double.IsInfinity(value.m_imaginary))
                 {
                     // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN. The NaN test is necessary
-                    // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                    // our formulas below produce inf/inf = NaN.
                     return (new Complex(double.PositiveInfinity, imaginaryCopy));
                 }
 
@@ -735,12 +714,12 @@ namespace System.Numerics
             double x, y;
             if (realCopy >= 0.0)
             {
-                x = Math.Sqrt((Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
+                x = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
                 y = imaginaryCopy / (2.0 * x);
             }
             else
             {
-                y = Math.Sqrt((Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
+                y = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
                 if (imaginaryCopy < 0.0) y = -y;
                 x = imaginaryCopy / (2.0 * y);
             }
@@ -775,9 +754,9 @@ namespace System.Numerics
             double theta = Math.Atan2(valueImaginary, valueReal);
             double newRho = powerReal * theta + powerImaginary * Math.Log(rho);
 
-            double t = Math.Pow(rho, powerReal) * Math.Pow(Math.E, -powerImaginary * theta);
+            double t = Math.Pow(rho, powerReal) * Math.Exp(-powerImaginary * theta);
 
-            return new Complex(t * Math.Cos(newRho), t * Math.Sin(newRho));
+            return FromPolarCoordinates(t, newRho);
         }
 
         public static Complex Pow(Complex value, double power)
@@ -1458,6 +1437,23 @@ namespace System.Numerics
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Complex INumberBase<Complex>.MultiplyAddEstimate(Complex left, Complex right, Complex addend)
+        {
+            // Multiplication:  (a + bi)(c + di) = (ac - bd) + (bc + ad)i
+            // Addition:        (a + bi) + (c + di) = (a + c) + (b + d)i
+
+            double result_realpart = addend.m_real;
+            result_realpart = double.MultiplyAddEstimate(-left.m_imaginary, right.m_imaginary, result_realpart);
+            result_realpart = double.MultiplyAddEstimate(left.m_real, right.m_real, result_realpart);
+
+            double result_imaginarypart = addend.m_imaginary;
+            result_imaginarypart = double.MultiplyAddEstimate(left.m_real, right.m_imaginary, result_imaginarypart);
+            result_imaginarypart = double.MultiplyAddEstimate(left.m_imaginary, right.m_real, result_imaginarypart);
+
+            return new Complex(result_realpart, result_imaginarypart);
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
         public static Complex Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
         {
@@ -2117,7 +2113,7 @@ namespace System.Numerics
                 return false;
             }
 
-            if (!double.TryParse(s.Slice(openBracket + 1, semicolon), style, provider, out double real))
+            if (!double.TryParse(s.Slice(openBracket + 1, semicolon - openBracket - 1), style, provider, out double real))
             {
                 result = default;
                 return false;
@@ -2130,7 +2126,7 @@ namespace System.Numerics
                 semicolon += 1;
             }
 
-            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon), style, provider, out double imaginary))
+            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon - 1), style, provider, out double imaginary))
             {
                 result = default;
                 return false;
@@ -2201,46 +2197,52 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            TryFormatCore(destination, out charsWritten, format, provider);
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            TryFormatCore(utf8Destination, out bytesWritten, format, provider);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int charsWrittenSoFar = 0;
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             // We have at least 6 more characters for: <0; 0>
-            if (destination.Length < 6)
+            if (destination.Length >= 6)
             {
-                charsWritten = charsWrittenSoFar;
-                return false;
+                int realChars;
+                if (typeof(TChar) == typeof(char) ?
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider) :
+                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out realChars, format, provider))
+                {
+                    destination[0] = TChar.CreateTruncating('<');
+                    destination = destination.Slice(1 + realChars); // + 1 for <
+
+                    // We have at least 4 more characters for: ; 0>
+                    if (destination.Length >= 4)
+                    {
+                        int imaginaryChars;
+                        if (typeof(TChar) == typeof(char) ?
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider) :
+                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out imaginaryChars, format, provider))
+                        {
+                            // We have 1 more character for: >
+                            if ((uint)(2 + imaginaryChars) < (uint)destination.Length)
+                            {
+                                destination[0] = TChar.CreateTruncating(';');
+                                destination[1] = TChar.CreateTruncating(' ');
+                                destination[2 + imaginaryChars] = TChar.CreateTruncating('>');
+
+                                charsWritten = realChars + imaginaryChars + 4;
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
 
-            destination[charsWrittenSoFar++] = '<';
-
-            bool tryFormatSucceeded = m_real.TryFormat(destination.Slice(charsWrittenSoFar), out int tryFormatCharsWritten, format, provider);
-            charsWrittenSoFar += tryFormatCharsWritten;
-
-            // We have at least 4 more characters for: ; 0>
-            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 4)))
-            {
-                charsWritten = charsWrittenSoFar;
-                return false;
-            }
-
-            destination[charsWrittenSoFar++] = ';';
-            destination[charsWrittenSoFar++] = ' ';
-
-            tryFormatSucceeded = m_imaginary.TryFormat(destination.Slice(charsWrittenSoFar), out tryFormatCharsWritten, format, provider);
-            charsWrittenSoFar += tryFormatCharsWritten;
-
-            // We have at least 1 more character for: >
-            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 1)))
-            {
-                charsWritten = charsWrittenSoFar;
-                return false;
-            }
-
-            destination[charsWrittenSoFar++] = '>';
-
-            charsWritten = charsWrittenSoFar;
-            return true;
+            charsWritten = 0;
+            return false;
         }
 
         //

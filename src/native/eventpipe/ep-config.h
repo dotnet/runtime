@@ -24,7 +24,7 @@ struct _EventPipeConfiguration {
 #else
 struct _EventPipeConfiguration_Internal {
 #endif
-	ep_rt_provider_list_t provider_list;
+	dn_list_t *provider_list;
 	EventPipeProvider *config_provider;
 	EventPipeEvent *metadata_event;
 	ep_char8_t *config_provider_name;
@@ -56,7 +56,6 @@ ep_config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 

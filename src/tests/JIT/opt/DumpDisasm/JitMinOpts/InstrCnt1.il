@@ -10,8 +10,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly InstrCnt1 {}
-.class private auto ansi beforefieldinit InstrCnt1
+.assembly InstrCnt1_DumpDisasm {}
+.class public auto ansi beforefieldinit InstrCnt1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="gcval_nested_r.il" />
+    <Compile Include="gcval_nested.il" />
+  </ItemGroup>
+</Project>

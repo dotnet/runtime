@@ -112,7 +112,7 @@ namespace System.IO
             fixed (byte* pPath = path)
             {
                 // if this returns ENOENT it's because TMPDIR doesn't exist, so isDirError:true
-                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength), tempPath, isDirError:true);
+                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength), tempPath, isDirError: true);
                 Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
             }
 
@@ -131,7 +131,7 @@ namespace System.IO
 
         public static bool IsPathRooted(ReadOnlySpan<char> path)
         {
-            return path.Length > 0 && path[0] == PathInternal.DirectorySeparatorChar;
+            return path.StartsWith(PathInternal.DirectorySeparatorChar);
         }
 
         /// <summary>

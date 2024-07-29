@@ -10,6 +10,8 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
+    /// Represents a use of a generic virtual method slot. This node only tracks
+    /// the use of the slot definition.
     /// This analysis node is used for computing GVM dependencies for the following cases:
     ///    1) Derived types where the GVM is overridden
     ///    2) Variant-interfaces GVMs
@@ -19,13 +21,15 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GVMDependenciesNode : DependencyNodeCore<NodeFactory>
     {
-        private const int UniversalCanonGVMDepthHeuristic_CanonDepth = 2;
         private readonly MethodDesc _method;
 
         public GVMDependenciesNode(MethodDesc method)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
-            Debug.Assert(method.IsVirtual && method.HasInstantiation);
+            Debug.Assert(method.HasInstantiation);
+            Debug.Assert(method.IsVirtual);
+            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) == method);
+
             _method = method;
         }
 
@@ -34,41 +38,10 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => "__GVMDependenciesNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = null;
-
-            context.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, context, _method);
-
             if (!_method.IsAbstract)
-            {
-                bool validInstantiation =
-                    _method.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)
-                        _method.Instantiation.CheckValidInstantiationArguments() &&
-                        _method.OwningType.Instantiation.CheckValidInstantiationArguments() &&
-                        _method.CheckConstraints());
-
-                if (validInstantiation)
-                {
-                    if (context.TypeSystemContext.SupportsUniversalCanon && _method.IsGenericDepthGreaterThan(UniversalCanonGVMDepthHeuristic_CanonDepth))
-                    {
-                        // fall back to using the universal generic variant of the generic method
-                        return dependencies;
-                    }
-
-                    bool getUnboxingStub = _method.OwningType.IsValueType;
-                    dependencies ??= new DependencyList();
-                    dependencies.Add(context.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
-
-                    if (_method.IsSharedByGenericInstantiations)
-                    {
-                        dependencies.Add(context.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
-                        dependencies.Add(context.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
-                    }
-                }
-            }
-
-            return dependencies;
+                yield return new DependencyListEntry(factory.GenericVirtualMethodImpl(_method), "Implementation of the generic virtual method");
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
@@ -100,9 +73,18 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
                 DependencyNodeCore<NodeFactory> entry = markedNodes[i];
-                EETypeNode entryAsEETypeNode = entry as EETypeNode;
+                EETypeNode entryAsEETypeNode;
 
-                if (entryAsEETypeNode == null)
+                // This method is often called with a long list of ScannedMethodNode
+                // or MethodCodeNode nodes. We are not interested in those. In order
+                // to make the type check as cheap as possible we check for specific
+                // *sealed* types instead of doing `entry is EETypeNode` which has
+                // to walk the whole class hierarchy for the non matching nodes.
+                if (entry is ConstructedEETypeNode constructedEETypeNode)
+                    entryAsEETypeNode = constructedEETypeNode;
+                else if (entry is CanonicalEETypeNode canonicalEETypeNode)
+                    entryAsEETypeNode = canonicalEETypeNode;
+                else
                     continue;
 
                 TypeDesc potentialOverrideType = entryAsEETypeNode.Type;
@@ -141,7 +123,9 @@ namespace ILCompiler.DependencyAnalysis
                                 interfaceMethod = context.GetMethodForInstantiatedType(
                                     _method.GetTypicalMethodDefinition(), (InstantiatedType)potentialDefinitionInterfaces[interfaceIndex]);
 
-                            MethodDesc slotDecl = potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
+                            MethodDesc slotDecl = interfaceMethod.Signature.IsStatic ?
+                                potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
+                                : potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
                             if (slotDecl == null)
                             {
                                 // The method might be implemented through a default interface method
@@ -158,9 +142,15 @@ namespace ILCompiler.DependencyAnalysis
                                 for (int instArg = 0; instArg < openInstantiation.Length; instArg++)
                                     openInstantiation[instArg] = context.GetSignatureVariable(instArg, method: true);
                                 MethodDesc implementingMethodInstantiation = slotDecl.MakeInstantiatedMethod(openInstantiation).InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
-                                dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
 
-                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation);
+                                // Static virtuals cannot be further overriden so this is an impl use. Otherwise it's a virtual slot use.
+                                if (implementingMethodInstantiation.Signature.IsStatic)
+                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GenericVirtualMethodImpl(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
+                                else
+                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
+
+                                TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
+                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
                             }
                         }
                     }
@@ -210,7 +200,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (instantiatedTargetMethod != _method)
                     {
                         dynamicDependencies.Add(new CombinedDependencyListEntry(
-                            factory.GVMDependencies(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
+                            factory.GenericVirtualMethodImpl(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
 
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
                     }

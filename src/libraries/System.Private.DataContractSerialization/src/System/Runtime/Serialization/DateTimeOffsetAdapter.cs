@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
-using System.Globalization;
 
 
 namespace System.Runtime.Serialization
@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTimeOffset", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTimeOffset", exception);
             }
         }
 

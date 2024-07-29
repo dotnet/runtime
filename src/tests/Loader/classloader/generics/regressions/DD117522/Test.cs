@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class A<T>
 {
@@ -16,7 +17,8 @@ public class A<T>
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 	try
 	{

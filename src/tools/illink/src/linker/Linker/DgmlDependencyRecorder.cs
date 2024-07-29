@@ -38,7 +38,7 @@ namespace Mono.Linker
 				Directory.CreateDirectory (context.OutputDirectory);
 			}
 
-			var depsFile = File.OpenWrite (fileName);
+			var depsFile = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
 			stream = depsFile;
 
 			writer = XmlWriter.Create (stream, settings);
@@ -137,7 +137,7 @@ namespace Mono.Linker
 			}
 		}
 
-		private int _nodeIndex = 0;
+		private int _nodeIndex;
 
 		void AddNode (string node)
 		{

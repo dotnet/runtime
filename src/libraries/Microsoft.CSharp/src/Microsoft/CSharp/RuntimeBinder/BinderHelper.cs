@@ -4,14 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Numerics.Hashing;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.CSharp.RuntimeBinder.Errors;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -157,7 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             if (arguments != null) // null is treated as empty, so not invalid
             {
-                for (int i = 0; i != arguments.Length; ++i)
+                for (int i = 0; i < arguments.Length; ++i)
                 {
                     ValidateBindArgument(arguments[i], $"{paramName}[{i}]");
                 }

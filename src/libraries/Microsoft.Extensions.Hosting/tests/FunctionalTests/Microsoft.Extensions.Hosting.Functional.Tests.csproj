@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- ActiveIssue in AssemblyInfo.cs -->
+    <IgnoreForCI>true</IgnoreForCI>
   </PropertyGroup>
 
   <ItemGroup>

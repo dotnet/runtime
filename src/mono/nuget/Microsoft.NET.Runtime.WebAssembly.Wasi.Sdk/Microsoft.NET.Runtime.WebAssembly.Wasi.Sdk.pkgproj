@@ -1,0 +1,52 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>Provides the tasks+targets, for consumption by wasi based workloads</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" />
+    <ProjectReference Include="$(WasmProjectRoot)host\WasmAppHost.csproj" />
+
+    <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\WasiApp.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\WasiApp.targets" TargetPath="Sdk" />
+
+    <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
+
+    <PackageFile Include="$(WasiProjectRoot)build\WasiSdk.Defaults.props" TargetPath="Sdk" />
+    
+    <PackageFile Include="$(WasiProjectRoot)build\wasiconsole.runtimeconfig.template.json" TargetPath="Sdk" />
+  </ItemGroup>
+
+  <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
+    <PropertyGroup>
+      <SdkTargetsPath>$(IntermediateOutputPath)Sdk.targets</SdkTargetsPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
+      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="Sdk/Sdk.targets.in"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
+      OutputPath="$(SdkTargetsPath)" />
+
+    <ItemGroup>
+      <PackageFile Include="$(SdkTargetsPath)" TargetPath="Sdk" />
+
+      <_WasmAppHostFiles Include="$(WasmAppHostDir)\*" TargetPath="WasmAppHost" />
+      <PackageFile Include="@(_WasmAppHostFiles)" />
+    </ItemGroup>
+
+    <Error Text="Could not find WasmAppHost files in $(WasmAppHostDir)" Condition="@(_WasmAppHostFiles->Count()) == 0" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

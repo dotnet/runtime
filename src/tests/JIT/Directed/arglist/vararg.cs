@@ -5,10 +5,11 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace NativeVarargTest
 {
-    class VarArg
+    public class VarArg
     {
         ////////////////////////////////////////////////////////////////////////////
         // Member Variables
@@ -4550,7 +4551,8 @@ namespace NativeVarargTest
         ////////////////////////////////////////////////////////////////////////////
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             int success = 100;
             m_testCount = 0;

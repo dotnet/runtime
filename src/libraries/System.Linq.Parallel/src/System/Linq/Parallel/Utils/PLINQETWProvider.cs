@@ -11,10 +11,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Tracing;
 
 namespace System.Linq.Parallel
 {
@@ -22,14 +22,13 @@ namespace System.Linq.Parallel
     [EventSource(
         Name = "System.Linq.Parallel.PlinqEventSource",
         Guid = "159eeeec-4a14-4418-a8fe-faabcd987887")]
-    /* LocalizationResources = "System.Linq")]*/
     internal sealed class PlinqEtwProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the PLINQ ETW provider.
         /// The PLINQ Event provider GUID is {159eeeec-4a14-4418-a8fe-faabcd987887}.
         /// </summary>
-        internal static PlinqEtwProvider Log = new PlinqEtwProvider();
+        internal static readonly PlinqEtwProvider Log = new PlinqEtwProvider();
         /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
         private PlinqEtwProvider() { }
 

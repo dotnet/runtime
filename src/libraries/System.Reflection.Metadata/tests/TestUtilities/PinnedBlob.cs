@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Reflection.Internal;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata.Tests
@@ -13,7 +12,7 @@ namespace System.Reflection.Metadata.Tests
         private readonly byte[] _blob;
 
         public PinnedBlob(ImmutableArray<byte> blob)
-            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(blob))
+            : this(ImmutableCollectionsMarshal.AsArray(blob))
         {
         }
 

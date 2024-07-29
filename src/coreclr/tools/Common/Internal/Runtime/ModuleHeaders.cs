@@ -8,14 +8,15 @@ namespace Internal.Runtime
     //
     // Please keep the data structures in this file in sync with the native version at
     //  src/coreclr/inc/readytorun.h
+    //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
     //
 
     internal struct ReadyToRunHeaderConstants
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 8;
-        public const ushort CurrentMinorVersion = 0;
+        public const ushort CurrentMajorVersion = 10;
+        public const ushort CurrentMinorVersion = 1;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -44,7 +45,12 @@ namespace Internal.Runtime
     // This list should be kept in sync with the runtime version at
     // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
-    public enum ReadyToRunSectionType
+#if SYSTEM_PRIVATE_CORELIB
+    internal
+#else
+    public
+#endif
+    enum ReadyToRunSectionType
     {
         //
         // CoreCLR ReadyToRun sections
@@ -70,6 +76,9 @@ namespace Internal.Runtime
         ManifestAssemblyMvids = 118, // Added in 5.3
         CrossModuleInlineInfo = 119, // Added in 6.3
         HotColdMap = 120, // Added in 8.0
+        MethodIsGenericMap = 121, // Added in V9.0
+        EnclosingTypeMap = 122, // Added in V9.0
+        TypeGenericInfoMap = 123, // Added in V9.0
 
         //
         // NativeAOT ReadyToRun sections
@@ -77,7 +86,7 @@ namespace Internal.Runtime
         StringTable = 200, // Unused
         GCStaticRegion = 201,
         ThreadStaticRegion = 202,
-        InterfaceDispatchTable = 203,
+        // Unused = 203,
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -125,6 +126,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SortedSet(SerializationInfo info, StreamingContext context) => siInfo = info;
 
         #endregion
@@ -591,7 +594,7 @@ namespace System.Collections.Generic
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         #endregion
 
@@ -2008,7 +2011,7 @@ namespace System.Collections.Generic
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value) => BitOperations.Log2((uint) value);
+        private static int Log2(int value) => BitOperations.Log2((uint)value);
 
         #endregion
     }

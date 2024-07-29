@@ -10,14 +10,19 @@
 #ifndef __UtilCode_h__
 #define __UtilCode_h__
 
+#include <type_traits>
+#include <algorithm>
+#include <stdio.h>
+#include <limits.h>
+#include <new>
+
+using std::nothrow;
+
 #include "crtwrap.h"
 #include "winwrap.h"
 #include <wchar.h>
-#include <stdio.h>
-#include <malloc.h>
 #include <ole2.h>
 #include <oleauto.h>
-#include <limits.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
@@ -27,17 +32,11 @@
 #include "corhlprpriv.h"
 #include "check.h"
 #include "safemath.h"
-#include "new.hpp"
-
-#ifdef PAL_STDCPP_COMPAT
-#include <type_traits>
-#else
-#include "clr_std/type_traits"
-#endif
 
 #include "contract.h"
 
-#include<minipal/utils.h>
+#include <minipal/utils.h>
+#include <dn-u16.h>
 
 #include "clrnt.h"
 
@@ -57,6 +56,8 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
+
+bool ValidateModuleName(LPCWSTR pwzModuleName);
 
 class StringArrayList;
 
@@ -165,6 +166,12 @@ typedef LPSTR   LPUTF8;
 #define DEBUGARG(x)
 #endif
 
+#if defined(FEATURE_READYTORUN)
+#define R2RARG(x)           , x
+#else
+#define R2RARG(x)
+#endif
+
 #ifndef sizeofmember
 // Returns the size of a class or struct member.
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
@@ -184,15 +191,6 @@ typedef LPSTR   LPUTF8;
 // given and ANSI String, copy it into a wide buffer.
 // be careful about scoping when using this macro!
 //
-// how to use the below two macros:
-//
-//  ...
-//  LPSTR pszA;
-//  pszA = MyGetAnsiStringRoutine();
-//  MAKE_WIDEPTR_FROMANSI(pwsz, pszA);
-//  MyUseWideStringRoutine(pwsz);
-//  ...
-//
 // similarily for MAKE_ANSIPTR_FROMWIDE.  note that the first param does not
 // have to be declared, and no clean up must be done.
 //
@@ -210,177 +208,78 @@ typedef LPSTR   LPUTF8;
 #define MAKE_TRANSLATIONFAILED ThrowWin32(ERROR_NO_UNICODE_TRANSLATION)
 #endif
 
-// This version throws on conversion errors (ie, no best fit character
-// mapping to characters that look similar, and no use of the default char
-// ('?') when printing out unrepresentable characters.  Use this method for
-// most development in the EE, especially anything like metadata or class
-// names.  See the BESTFIT version if you're printing out info to the console.
-#define MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)wcslen(widestr);        \
-    if (__l##ptrname > MAKE_MAX_LENGTH)         \
-        MAKE_TOOLONGACTION;                     \
-    __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
-    CQuickBytes __CQuickBytes##ptrname; \
-    __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    BOOL __b##ptrname; \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, &__b##ptrname); \
-    if (__b##ptrname || (__cBytes##ptrname == 0 && (widestr[0] != W('\0')))) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
-
 // This version does best fit character mapping and also allows the use
 // of the default char ('?') for any Unicode character that isn't
 // representable.  This is reasonable for writing to the console, but
 // shouldn't be used for most string conversions.
 #define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)wcslen(widestr);        \
+    int __l##ptrname = (int)u16_strlen(widestr);        \
     if (__l##ptrname > MAKE_MAX_LENGTH)         \
         MAKE_TOOLONGACTION;                     \
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
     CQuickBytes __CQuickBytes##ptrname; \
     __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
+    DWORD __cBytes##ptrname = WideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
     if (__cBytes##ptrname == 0 && __l##ptrname != 0) { \
         MAKE_TRANSLATIONFAILED; \
     } \
     LPSTR ptrname = (LPSTR)__CQuickBytes##ptrname.Ptr()
 
-// Use for anything critical other than output to console, where weird
-// character mappings are unacceptable.
-#define MAKE_ANSIPTR_FROMWIDE(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, CP_ACP)
-
-// Use for output to the console.
-#define MAKE_ANSIPTR_FROMWIDE_BESTFIT(ptrname, widestr) MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, CP_ACP)
-
-#define MAKE_WIDEPTR_FROMANSI(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname.AllocThrows((__l##ptrname+1)*sizeof(WCHAR));  \
-    if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) == 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    }
-
-#define MAKE_WIDEPTR_FROMANSI_NOTHROW(ptrname, ansistr) \
-    CQuickBytes __qb##ptrname; \
-    LPWSTR ptrname = 0; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_ACP, 0, ansistr, -1, 0, 0); \
-    if (__l##ptrname <= MAKE_MAX_LENGTH) { \
-        ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
-        if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS, ansistr, -1, ptrname, __l##ptrname) != 0) { \
-                ptrname[__l##ptrname] = 0; \
-            } else { \
-                ptrname = 0; \
-            } \
-        } \
-    }
-
 #define MAKE_UTF8PTR_FROMWIDE(ptrname, widestr) CQuickBytes _##ptrname; _##ptrname.ConvertUnicode_Utf8(widestr); LPSTR ptrname = (LPSTR) _##ptrname.Ptr();
 
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname = (int)wcslen(widestr); \
-    LPUTF8 ptrname = 0; \
+    int __l##ptrname = (int)u16_strlen(widestr); \
+    LPUTF8 ptrname = NULL; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
         ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
     } \
     if (ptrname) { \
-        INT32 __lresult##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
+        INT32 __lresult##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
         DWORD __dwCaptureLastError##ptrname = ::GetLastError(); \
         if ((__lresult##ptrname==0) && (((LPCWSTR)widestr)[0] != W('\0'))) { \
             if (__dwCaptureLastError##ptrname==ERROR_INSUFFICIENT_BUFFER) { \
-                INT32 __lsize##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
+                INT32 __lsize##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
                 ptrname = (LPSTR) __qb##ptrname .AllocNoThrow(__lsize##ptrname); \
                 if (ptrname) { \
-                    if (WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
+                    if (WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
                         ptrname[__l##ptrname] = 0; \
                     } else { \
-                        ptrname = 0; \
+                        ptrname = NULL; \
                     } \
                 } \
             } \
             else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     } \
 
-#define MAKE_WIDEPTR_FROMUTF8N(ptrname, utf8str, n8chrs) \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    LPWSTR ptrname = (LPWSTR) __qb##ptrname .AllocThrows((__l##ptrname+1)*sizeof(WCHAR)); \
-    if (0==WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-
 #define MAKE_WIDEPTR_FROMUTF8(ptrname, utf8str) CQuickBytes _##ptrname;  _##ptrname.ConvertUtf8_Unicode(utf8str); LPCWSTR ptrname = (LPCWSTR) _##ptrname.Ptr();
-
 
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname; \
-    LPWSTR ptrname = 0; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
+    LPWSTR ptrname = NULL; \
+    __l##ptrname = MultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
         if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
+            if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
                 ptrname[__l##ptrname] = 0; \
             } else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     }
 
 #define MAKE_WIDEPTR_FROMUTF8_NOTHROW(ptrname, utf8str)   MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, -1)
 
-// This method takes the number of characters
-#define MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    BOOL __b##ptrname; \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, WC_NO_BEST_FIT_CHARS, widestr, _nCharacters, ptrname, __l##ptrname, NULL, &__b##ptrname);  \
-    if (__b##ptrname || (_pCnt == 0 && _nCharacters > 0)) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(ptrname, widestr, _nCharacters, _pCnt, codepage)        \
-    CQuickBytes __qb##ptrname; \
-    int __l##ptrname; \
-    __l##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, NULL, 0, NULL, NULL);           \
-    if (__l##ptrname > MAKE_MAX_LENGTH) \
-        MAKE_TOOLONGACTION; \
-    ptrname = (LPUTF8) __qb##ptrname .AllocThrows(__l##ptrname+1); \
-    DWORD _pCnt = WszWideCharToMultiByte(codepage, 0, widestr, _nCharacters, ptrname, __l##ptrname, NULL, NULL);  \
-    if (_pCnt == 0 && _nCharacters > 0) { \
-        MAKE_TRANSLATIONFAILED; \
-    } \
-    ptrname[__l##ptrname] = 0;
-
-#define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
-       MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
-
 const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
 const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
 const SIZE_T MaxIntegerDecHexString = ARRAY_SIZE("-9223372036854775808") - 1;
 
-const SIZE_T Max16BitHexString = ARRAY_SIZE("1234") - 1;
 const SIZE_T Max32BitHexString = ARRAY_SIZE("12345678") - 1;
 const SIZE_T Max64BitHexString = ARRAY_SIZE("1234567812345678") - 1;
 
@@ -409,99 +308,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString,
-    size_t  cchString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    LPWSTR wszDup = NULL;
-    if (wszString != NULL)
-    {
-        wszDup = new (nothrow) WCHAR[cchString + 1];
-        if (wszDup != NULL)
-        {
-            wcscpy_s(wszDup, cchString + 1, wszString);
-        }
-    }
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateString(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (wszString != NULL)
-    {
-        return DuplicateString(wszString, wcslen(wszString));
-    }
-    else
-    {
-        return NULL;
-    }
-}
-
-void DECLSPEC_NORETURN ThrowOutOfMemory();
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString,
-    size_t cchString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString, cchString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
-inline
-LPWSTR DuplicateStringThrowing(
-    LPCWSTR wszString)
-{
-    STATIC_CONTRACT_THROWS;
-
-    if (wszString == NULL)
-        return NULL;
-
-    LPWSTR wszDup = DuplicateString(wszString);
-    if (wszDup == NULL)
-        ThrowOutOfMemory();
-
-    return wszDup;
-}
-
-
-//*****************************************************************************
-// Placement new is used to new and object at an exact location.  The pointer
-// is simply returned to the caller without actually using the heap.  The
-// advantage here is that you cause the ctor() code for the object to be run.
-// This is ideal for heaps of C++ objects that need to get init'd multiple times.
-// Example:
-//      void        *pMem = GetMemFromSomePlace();
-//      Foo *p = new (pMem) Foo;
-//      DoSomething(p);
-//      p->~Foo();
-//*****************************************************************************
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-
-
 /********************************************************************************/
 /* portability helpers */
 
@@ -520,10 +326,10 @@ _Ret_bytecap_(n) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl
-operator delete(void *p) NOEXCEPT;
+operator delete(void *p) noexcept;
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT;
+operator delete[](void *p) noexcept;
 
 #ifdef _DEBUG_IMPL
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine);
@@ -626,7 +432,7 @@ public:
         if (id == UICULTUREID_DONTCARE)
             return FALSE;
 
-        return wcscmp(id, m_LangId) == 0;
+        return u16_strcmp(id, m_LangId) == 0;
     }
 
     HRESOURCEDLL GetLibraryHandle()
@@ -872,8 +678,6 @@ inline int CountBits(int iNum)
     return (iBits);
 }
 
-#include "bitposition.h"
-
 // Convert the currency to a decimal and canonicalize.
 inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 {
@@ -981,7 +785,6 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_NATIVEAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
@@ -992,7 +795,6 @@ public:
     static void ChooseCPUGroupAffinity(GROUP_AFFINITY *gf);
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
-#endif
 };
 
 DWORD_PTR GetCurrentProcessCpuMask();
@@ -1051,7 +853,7 @@ template<typename T>
 class SimpleListNode
 {
 public:
-    SimpleListNode<T>(const T& _t)
+    SimpleListNode(const T& _t)
     {
         data = _t;
         next = 0;
@@ -1067,7 +869,7 @@ class SimpleList
 public:
     typedef SimpleListNode<T> NodeType;
 
-    SimpleList<T>()
+    SimpleList()
     {
         head = NULL;
     }
@@ -1950,7 +1752,7 @@ public:
         HASHFIND    *psSrch)            // Search object.
     {
         WRAPPER_NO_CONTRACT;
-        if (m_piBuckets == 0)
+        if (m_piBuckets == nullptr)
             return (0);
         psSrch->iBucket = 1;
         psSrch->iNext = m_piBuckets[0];
@@ -2102,7 +1904,7 @@ public:
     ~CHashTableAndData()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pcEntries != NULL)
+        if (m_pcEntries != (TADDR)NULL)
             MemMgr::Free((BYTE*)m_pcEntries, MemMgr::RoundSize(m_iEntries * m_iEntrySize));
     }
 
@@ -2282,7 +2084,7 @@ int CHashTableAndData<MemMgr>::Grow()   // 1 if successful, 0 if not.
     int         iCurSize;               // Current size in bytes.
     int         iEntries;               // New # of entries.
 
-    _ASSERTE(m_pcEntries != NULL);
+    _ASSERTE(m_pcEntries != (TADDR)NULL);
     _ASSERTE(m_iFree == UINT32_MAX);
 
     // Compute the current size and new # of entries.
@@ -2382,7 +2184,7 @@ inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
     ULONG *ptr = (ULONG *)szStr;
 
     // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= wcslen(szStr));
+    _ASSERTE(cchStr <= u16_strlen(szStr));
     SIZE_T cDwordCount = (cchStr + 1) / 2;
 
     for (SIZE_T i = 0; i < cDwordCount; i++)
@@ -3460,49 +3262,6 @@ HRESULT Utf2Quick(
     int         iCurLen = 0);           // Initial characters in the array to leave (default 0).
 
 //*****************************************************************************
-//  Extract the movl 64-bit unsigned immediate from an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-UINT64 GetIA64Imm64(UINT64 * pBundle);
-UINT64 GetIA64Imm64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the movl 64-bit unsigned immediate into an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-void PutIA64Imm64(UINT64 * pBundle, UINT64 imm64);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 25-bit immediate from an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits in the result will always be zero.
-//*****************************************************************************
-INT32 GetIA64Rel25(UINT64 * pBundle, UINT32 slot);
-INT32 GetIA64Rel25(UINT64 qword0, UINT64 qword1, UINT32 slot);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 25-bit immediate into an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits are required to be zero.
-//*****************************************************************************
-void PutIA64Rel25(UINT64 * pBundle, UINT32 slot, INT32 imm25);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 64-bit immediate from an IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-INT64 GetIA64Rel64(UINT64 * pBundle);
-INT64 GetIA64Rel64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 64-bit immediate into a IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-void PutIA64Rel64(UINT64 * pBundle, INT64 imm64);
-
-//*****************************************************************************
 //  Extract the 32-bit immediate from movw/movt Thumb2 sequence
 //*****************************************************************************
 UINT32 GetThumb2Mov32(UINT16 * p);
@@ -3551,6 +3310,26 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 //  Deposit the page offset 'imm12' into an add instruction
 //*****************************************************************************
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
+
+//*****************************************************************************
+//  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
+//*****************************************************************************
+INT64 GetLoongArch64PC12(UINT32 * pCode);
+
+//*****************************************************************************
+//  Extract the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+INT64 GetLoongArch64JIR(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative page address and page offset into pcalau12i+add/ld
+//*****************************************************************************
+void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
+//  Deposit the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -3633,19 +3412,19 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // stackbase is the unique fiber identifier
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackBase()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackBase;
+        return ((NT_TIB*)NtCurrentTeb())->StackBase;
     }
 
     static void* GetStackLimit()
     {
         LIMITED_METHOD_CONTRACT;
-        return NtCurrentTeb()->NtTib.StackLimit;
+        return ((NT_TIB*)NtCurrentTeb())->StackLimit;
     }
 
     static void* GetOleReservedPtr()
@@ -3670,16 +3449,6 @@ inline BOOL IsGCSpecialThread ()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     return !!(t_ThreadType & ThreadType_GC);
-}
-
-// check if current thread is a Gate thread
-inline BOOL IsGateSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Gate);
 }
 
 // check if current thread is a debugger helper thread
@@ -3722,33 +3491,6 @@ inline BOOL IsShutdownSpecialThread ()
     return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
-inline BOOL IsThreadPoolIOCompletionSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
-}
-
-inline BOOL IsThreadPoolWorkerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
-}
-
-inline BOOL IsWaitSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Wait);
-}
-
 // check if current thread is a thread which is performing shutdown
 inline BOOL IsSuspendEEThread ()
 {
@@ -3766,15 +3508,6 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Finalizer);
-}
-
-inline BOOL IsShutdownHelperThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()
@@ -3967,40 +3700,7 @@ namespace util
     }
 }
 
-
-/* ------------------------------------------------------------------------ *
- * Overloaded operators for the executable heap
- * ------------------------------------------------------------------------ */
-
-#ifdef HOST_WINDOWS
-
-struct CExecutable { int x; };
-extern const CExecutable executable;
-
-void * __cdecl operator new(size_t n, const CExecutable&);
-void * __cdecl operator new[](size_t n, const CExecutable&);
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&);
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&);
-
-
-//
-// Executable heap delete to match the executable heap new above.
-//
-template<class T> void DeleteExecutable(T *p)
-{
-    if (p != NULL)
-    {
-        p->T::~T();
-
-        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
-    }
-}
-
-#endif // HOST_WINDOWS
-
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }
@@ -4157,37 +3857,6 @@ inline T* InterlockedCompareExchangeT(
 {
     //STATIC_ASSERT(comparand == 0);
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, nullptr);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, nullptr, comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 #undef InterlockedExchangePointer

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Strategies;
 using System.Runtime.Versioning;
 
 namespace System.IO
@@ -34,7 +35,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="System.IO.FileStream.CanRead" /> and <see cref="System.IO.FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
+        /// A bitwise combination of the enumeration values that determines how the file can be accessed by the <see cref="FileStream" /> object. This also determines the values returned by the <see cref="FileStream.CanRead" /> and <see cref="FileStream.CanWrite" /> properties of the <see cref="FileStream" /> object.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileAccess Access
@@ -52,7 +53,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="System.IO.FileShare.Read" />.
+        /// A bitwise combination of the enumeration values that determines how the file will be shared by processes. The default value is <see cref="FileShare.Read" />.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileShare Share
@@ -72,7 +73,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="System.IO.FileOptions.None" />, which indicates synchronous IO.
+        /// A bitwise combination of the enumeration values that specifies additional file options. The default value is <see cref="FileOptions.None" />, which indicates synchronous IO.
         /// </summary>
         /// <exception cref="T:System.ArgumentOutOfRangeException">When <paramref name="value" /> contains an invalid value.</exception>
         public FileOptions Options
@@ -80,8 +81,7 @@ namespace System.IO
             get => _options;
             set
             {
-                // NOTE: any change to FileOptions enum needs to be matched here in the error validation
-                if (value != FileOptions.None && (value & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
+                if (FileStreamHelpers.AreInvalid(value))
                 {
                     ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
                 }

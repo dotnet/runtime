@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 
 namespace System.Net.WebSockets
@@ -23,11 +23,19 @@ namespace System.Net.WebSockets
         internal const int MaxDeflateWindowBits = 15;
 
         internal const int MaxControlFramePayloadLength = 123;
+#if TARGET_BROWSER
+        private const int ValidCloseStatusCodesFrom = 3000;
+        private const int ValidCloseStatusCodesTo = 4999;
+#else
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
         private const int InvalidCloseStatusCodesFrom = 0;
         private const int InvalidCloseStatusCodesTo = 999;
-        private const string Separators = "()<>@,;:\\\"/[]?={} ";
+#endif
+
+        // [0x21, 0x7E] except separators "()<>@,;:\\\"/[]?={} ".
+        private static readonly SearchValues<char> s_validSubprotocolChars =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
         {
@@ -55,37 +63,18 @@ namespace System.Net.WebSockets
 
         internal static void ValidateSubprotocol(string subProtocol)
         {
-            if (string.IsNullOrWhiteSpace(subProtocol))
+            ArgumentException.ThrowIfNullOrWhiteSpace(subProtocol);
+
+            int indexOfInvalidChar = subProtocol.AsSpan().IndexOfAnyExcept(s_validSubprotocolChars);
+            if (indexOfInvalidChar >= 0)
             {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
-            }
+                char invalidChar = subProtocol[indexOfInvalidChar];
 
-            string? invalidChar = null;
-            int i = 0;
-            while (i < subProtocol.Length)
-            {
-                char ch = subProtocol[i];
-                if (ch < 0x21 || ch > 0x7e)
-                {
-                    invalidChar = $"[{(int)ch}]";
-                    break;
-                }
+                string invalidCharDescription = char.IsBetween(invalidChar, (char)0x21, (char)0x7E)
+                    ? invalidChar.ToString() // ASCII separator
+                    : $"[{(int)invalidChar}]";
 
-                if (!char.IsLetterOrDigit(ch) &&
-#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'.  This file is built into a project that doesn't have string.Contains(char).
-                    Separators.IndexOf(ch) >= 0)
-#pragma warning restore CA2249
-                {
-                    invalidChar = ch.ToString();
-                    break;
-                }
-
-                i++;
-            }
-
-            if (invalidChar != null)
-            {
-                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar), nameof(subProtocol));
+                throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidCharDescription), nameof(subProtocol));
             }
         }
 
@@ -100,11 +89,15 @@ namespace System.Net.WebSockets
             }
 
             int closeStatusCode = (int)closeStatus;
-
+#if TARGET_BROWSER
+            // as defined in https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#code
+            if (closeStatus != WebSocketCloseStatus.NormalClosure && (closeStatusCode < ValidCloseStatusCodesFrom || closeStatusCode > ValidCloseStatusCodesTo))
+#else
             if ((closeStatusCode >= InvalidCloseStatusCodesFrom &&
                 closeStatusCode <= InvalidCloseStatusCodesTo) ||
                 closeStatusCode == CloseStatusCodeAbort ||
                 closeStatusCode == CloseStatusCodeFailedTLSHandshake)
+#endif
             {
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,
@@ -112,13 +105,9 @@ namespace System.Net.WebSockets
                     nameof(closeStatus));
             }
 
-            int length = 0;
-            if (!string.IsNullOrEmpty(statusDescription))
-            {
-                length = Encoding.UTF8.GetByteCount(statusDescription);
-            }
-
-            if (length > MaxControlFramePayloadLength)
+            if (!string.IsNullOrEmpty(statusDescription) &&
+                Encoding.UTF8.GetMaxByteCount(statusDescription.Length) > MaxControlFramePayloadLength &&
+                Encoding.UTF8.GetByteCount(statusDescription) > MaxControlFramePayloadLength)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusDescription,
                     statusDescription,
@@ -149,15 +138,11 @@ namespace System.Net.WebSockets
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
 
-            if (count < 0 || count > (buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
         }
     }
 }

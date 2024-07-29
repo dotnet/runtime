@@ -32,7 +32,8 @@ namespace System
           ISerializable,
           IBinaryInteger<nuint>,
           IMinMaxValue<nuint>,
-          IUnsignedNumber<nuint>
+          IUnsignedNumber<nuint>,
+          IUtf8SpanFormattable
     {
         private readonly nuint _value;
 
@@ -206,6 +207,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nuint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            ((nuint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
+
         public static nuint Parse(string s) => (nuint)nuint_t.Parse(s);
         public static nuint Parse(string s, NumberStyles style) => (nuint)nuint_t.Parse(s, style);
         public static nuint Parse(string s, IFormatProvider? provider) => (nuint)nuint_t.Parse(s, provider);
@@ -240,6 +245,16 @@ namespace System
         {
             Unsafe.SkipInit(out result);
             return nuint_t.TryParse(s, out Unsafe.As<nuint, nuint_t>(ref result));
+        }
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its unsigned integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the unsigned integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out nuint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(utf8Text, out Unsafe.As<nuint, nuint_t>(ref result));
         }
 
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
@@ -280,18 +295,23 @@ namespace System
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nuint LeadingZeroCount(nuint value) => (nuint)BitOperations.LeadingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static nuint PopCount(nuint value) => (nuint)BitOperations.PopCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static nuint RotateLeft(nuint value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static nuint RotateRight(nuint value, int rotateAmount) => BitOperations.RotateRight(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nuint TrailingZeroCount(nuint value) => (nuint)BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -310,7 +330,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(nuint_t)) && (source[..^sizeof(nuint_t)].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(nuint_t)) && (source[..^sizeof(nuint_t)].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -367,7 +387,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(nuint_t)) && (source[sizeof(nuint_t)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(nuint_t)) && (source[sizeof(nuint_t)..].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -481,6 +501,7 @@ namespace System
         public static bool IsPow2(nuint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static nuint Log2(nuint value) => (nuint)BitOperations.Log2(value);
 
         //
@@ -736,6 +757,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static nuint INumberBase<nuint>.MinMagnitudeNumber(nuint x, nuint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static nuint INumberBase<nuint>.MultiplyAddEstimate(nuint left, nuint right, nuint addend) => (nuint)((left * right) + addend);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1198,5 +1222,29 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value) => +value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static nuint Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nuint)nuint_t.Parse(utf8Text, style, provider);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nuint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nuint, nuint_t>(ref result));
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static nuint Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => (nuint)nuint_t.Parse(utf8Text, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out nuint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nuint_t.TryParse(utf8Text, provider, out Unsafe.As<nuint, nuint_t>(ref result));
+        }
     }
 }

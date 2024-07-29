@@ -81,5 +81,98 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod(attributes.ToString(), attributes);
             Assert.NotNull(method.GetILGenerator());
         }
+
+        [Fact]
+        public void LoadPointerTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type pointerType = type.MakePointerType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, pointerType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType*", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        public void LoadArrayTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type arrayType = type.MakeArrayType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, arrayType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType[]", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82257", TestRuntimes.Mono)]
+        public void LoadByRefTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type byrefType = type.MakeByRefType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, byrefType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType&", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        public void HasDefaultValueShouldBeFalseWhenParameterDoNotDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var methodBuilder = type.DefineMethod("DoSomething", MethodAttributes.Public, CallingConventions.Standard, typeof(void), new[] { typeof(Version) });
+            var il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var method = typeInfo.GetMethod("DoSomething", new[] { typeof(Version) });
+            var parameters = method.GetParameters();
+            Assert.False(parameters[0].HasDefaultValue);
+        }
+
+        [Fact]
+        public void HasDefaultValueShouldBeTrueWhenParameterDoDefineDefaultValue()
+        {
+            var builder = Helpers.DynamicModule();
+            var type = builder.DefineType("MyProxy", TypeAttributes.Public);
+
+            var methodBuilder = type.DefineMethod("DoSomething", MethodAttributes.Public, CallingConventions.Standard, typeof(void), new[] { typeof(Version) });
+            ParameterBuilder parameter = methodBuilder.DefineParameter(1, ParameterAttributes.Optional | ParameterAttributes.HasDefault, "param1");
+            parameter.SetConstant(default(Version));
+            var il = methodBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+
+            var typeInfo = type.CreateTypeInfo();
+            var method = typeInfo.GetMethod("DoSomething", new[] { typeof(Version) });
+            var parameters = method.GetParameters();
+            Assert.True(parameters[0].HasDefaultValue);
+            Assert.Null(parameters[0].DefaultValue);
+        }
     }
 }

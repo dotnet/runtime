@@ -41,7 +41,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		if (TARGET_SIZEOF_VOID_P == 4)
 			;
 		else
-			ins->opcode = OP_SEXT_I4;
+			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:
@@ -216,9 +216,8 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
 		MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-		/* The int cast is needed for the VS compiler.  See Compiler Warning (level 2) C4146. */
 #if SIZEOF_REGISTER == 8
-		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, (-(int)2147483648));
+		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, INT_MIN);
 #else
 		g_assert (COMPILE_LLVM (cfg));
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648LL);
@@ -1214,6 +1213,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				mono_simd_decompose_intrinsic (cfg, bb, ins);
 #endif
 				switch (ins->opcode) {
+				case OP_LDTOKEN_FIELD:
+					ins->opcode = OP_VMOVE;
+					restart = TRUE;
+					break;
 				case OP_VMOVE: {
 					g_assert (ins->klass);
 					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))
@@ -1222,7 +1225,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
 
 					if (!src_var)
-						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);
+						src_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->sreg1);
 
 					if (!dest_var)
 						dest_var = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL, ins->dreg);
@@ -1333,7 +1336,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_VCALL:
 				case OP_VCALL_REG:
-				case OP_VCALL_MEMBASE: {
+				case OP_VCALL_MEMBASE:
+				case OP_XCALL:
+				case OP_XCALL_REG:
+				case OP_XCALL_MEMBASE: {
 					MonoCallInst *call = (MonoCallInst*)ins;
 					int size;
 
@@ -1356,6 +1362,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							call2->inst.opcode = call->vret_in_reg_fp ? OP_FCALL_MEMBASE : OP_CALL_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						call2->inst.dreg = alloc_preg (cfg);
@@ -1432,6 +1441,18 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 							break;
 						case OP_VCALL_MEMBASE:
 							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						case OP_XCALL:
+							ins->opcode = OP_VCALL2;
+							break;
+						case OP_XCALL_REG:
+							ins->opcode = OP_VCALL2_REG;
+							break;
+						case OP_XCALL_MEMBASE:
+							ins->opcode = OP_VCALL2_MEMBASE;
+							break;
+						default:
+							g_assert_not_reached ();
 							break;
 						}
 						ins->dreg = -1;
@@ -1541,16 +1562,24 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 											ins->inst_imm, ins->flags);
 					MONO_ADD_INS (cfg->cbb, dest);
 					break;
-				case OP_BOUNDS_CHECK:
+				case OP_BOUNDS_CHECK: {
+					gboolean need_sext = ins->backend.need_sext;
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
 					if (COMPILE_LLVM (cfg)) {
-						int index2_reg = alloc_preg (cfg);
-						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+						int index2_reg;
+						if (need_sext) {
+							index2_reg = alloc_preg (cfg);
+							MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+						} else {
+							index2_reg = ins->sreg2;
+						}
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
+						g_assert (!need_sext);
 						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
 					}
 					break;
+				}
 				case OP_NEWARR: {
 					ERROR_DECL (vt_error);
 					MonoClass *array_class = mono_class_create_array (ins->inst_newa_class, 1);

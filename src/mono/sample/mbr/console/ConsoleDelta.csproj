@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- always set SelfContained when running to use Mono on desktop -->
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup>

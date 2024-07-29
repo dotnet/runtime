@@ -165,9 +165,11 @@ const BYTE CMiniMdBase::s_GenericParamConstraintCol[] = {1,
 };
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 // Dummy descriptors to fill the gap to 0x30
-const BYTE CMiniMdBase::s_Dummy1Col[] = { NULL };
-const BYTE CMiniMdBase::s_Dummy2Col[] = { NULL };
-const BYTE CMiniMdBase::s_Dummy3Col[] = { NULL };
+// Our parsing process assumes that each colum def will have at least 1 entry,
+// so add enough bytes for a full table descriptor (1 + sizeof(CMiniColDef) bytes)
+const BYTE CMiniMdBase::s_Dummy1Col[] = { 0, 0, 0, 0 };
+const BYTE CMiniMdBase::s_Dummy2Col[] = { 0, 0, 0, 0 };
+const BYTE CMiniMdBase::s_Dummy3Col[] = { 0, 0, 0, 0 };
 // Actual portable PDB tables descriptors
 const BYTE CMiniMdBase::s_DocumentCol[] = { 2,
   103,0,2, 102,2,2, 103,4,2, 102,6,2,

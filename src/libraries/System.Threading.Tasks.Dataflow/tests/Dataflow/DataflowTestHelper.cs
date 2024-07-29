@@ -249,6 +249,5 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
             return DataflowBlock.Encapsulate(transforms[0], transforms[transforms.Length - 1]);
         }
-
     }
 }

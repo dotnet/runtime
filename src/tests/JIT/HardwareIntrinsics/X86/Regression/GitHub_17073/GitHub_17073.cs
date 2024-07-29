@@ -893,7 +893,7 @@ public class GitHub_17073
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(1.0f), Vector256.Create(1.0f)));
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(1.0f), Vector256.Create(-1.0f)));
         r &= !Avx.IsSupported || Check(true, Test_Avx_TestNotZAndNotC_LogicalNot_Branch_Swap(Vector256.Create(-1.0f), Vector256.Create(-1.0f)));
-        Assert.Equal(true, r);
+        Assert.True(r);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

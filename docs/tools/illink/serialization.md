@@ -1,16 +1,16 @@
 # Serialization
 
-The linker cannot analyze the patterns typically used by reflection-based serializers. Such serializers should be annotated with `RequiresUnreferencedCodeAttribute`, and using them in a trimmed app will likely not work (or will work unpredictably). The linker will produce static analysis [warnings](https://docs.microsoft.com/dotnet/core/deploying/trimming-options#analysis-warnings) for these patterns.
+Trimming tools cannot analyze the patterns typically used by reflection-based serializers. Such serializers should be annotated with `RequiresUnreferencedCodeAttribute`, and using them in a trimmed app will likely not work (or will work unpredictably). Trimming tools will produce static analysis [warnings](https://learn.microsoft.com/dotnet/core/deploying/trimming-options#analysis-warnings) for these patterns.
 
 If possible, avoid using reflection-based serializers with trimming, and prefer solutions based on source generators where the serialized types and all required members are statically referenced.
 
-As a last resort, the linker does have limited heuristics that can be enabled to keep _some_ of the types and members required for serialization, but this provides no correctness guarantees; apps which use reflection-based serializers are still considered "broken" as far as the static analysis can tell, and it is up to you to make sure that the app works as intended.
+As a last resort, trimming tools does have limited heuristics that can be enabled to keep _some_ of the types and members required for serialization, but this provides no correctness guarantees; apps which use reflection-based serializers are still considered "broken" as far as the static analysis can tell, and it is up to you to make sure that the app works as intended.
 
 Serialization discovery is disabled by default, and can be enabled by passing `--enable-serialization-discovery`.
 
 ## History
 
-The linker has historically been used for Xamarin scenarios that use reflection-based serializers like XmlSerializer, since before the introduction of the trim analysis warnings. There were limited heuristics to satisfy some simple uses of serializers. To provide backwards compatibility for such scenarios, the linker has built-in heuristics that makes some simple cases "just work", albeit in an opaque and unpredictable way.
+Trimming tools have historically been used for Xamarin scenarios that use reflection-based serializers like XmlSerializer, since before the introduction of the trim analysis warnings. There were limited heuristics to satisfy some simple uses of serializers. To provide backwards compatibility for such scenarios, trimming tools have built-in heuristics that makes some simple cases "just work", albeit in an opaque and unpredictable way.
 
 Consider disabling this behavior if possible, but it may be necessary when using legacy serializers that don't provide source generators or a similar solution that is statically analyzable. The following is a description of the heuristics for anyone who is unfortunate enough to have to rely on this behavior.
 
@@ -20,7 +20,7 @@ There are four parts to the heuristics:
 - Activation: which conditions cause the discovered roots and their recursive types to be kept
 - Root discovery: logic to discover types and members are entry points to serialization
 - Type graph: recursive logic to build a set of types to consider for serialization, starting from the roots
-- Preservation logic: what the linker does with the discovered types
+- Preservation logic: what the trimming tools do with the discovered types
 
 ## Activation
 
@@ -55,7 +55,7 @@ The heuristics will discover types and members that satisfy _all_ of the followi
 
 - The type, or the declaring type of the member, is used
 
-  There must be a statically discoverable reference to the type. In other words, if running the linker without the serialization heuristics removes a given type, then the heuristics will not discover it or any of its members as a serialization root.
+  There must be a statically discoverable reference to the type. In other words, if running trimming tools without the serialization heuristics removes a given type, then the heuristics will not discover it or any of its members as a serialization root.
 
 - The type or member is attributed with a serializer-specific attribute.
 
@@ -107,7 +107,7 @@ Note that the types of implemented interfaces are not necessarily discovered.
 
 ## Preservation logic
 
-For each discovered type (including root types and the recursive type graph), if the corresponding serializer is active, the linker marks the type and the following members:
+For each discovered type (including root types and the recursive type graph), if the corresponding serializer is active, trimming tools will mark the type and the following members:
 
 - Public instance properties
   - including public or private getters and setters for such properties
@@ -116,7 +116,7 @@ For each discovered type (including root types and the recursive type graph), if
 
 Note that in general, private members and static members are not preserved, nor are methods or events (other than the mentioned constructor).
 
-In addition, the linker marks:
+In addition, trimming tools mark:
 - Any discovered root members (from the attribute-based root discovery)
   - including private members
   - including static members
@@ -129,12 +129,12 @@ Most features of reflection-based serializers will not work even with these heur
 - Serializing/deserializing types which are not attributed and don't have attributed members
 - Passing `typeof(MyType)` (directly or indirectly) into serializer constructors or methods
 - "Known type" mechanisms, such as:
-  - [`KnownTypeAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute?view=net-5.0)
-  - [`DataContractSerializer.KnownTypes`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.datacontractserializer.knowntypes?view=net-5.0)
-  - `extraTypes` argument of the [`XmlSerializer ctor`](https://docs.microsoft.com/dotnet/api/system.xml.serialization.xmlserializer.-ctor?view=net-5.0#System_Xml_Serialization_XmlSerializer__ctor_System_Type_System_Type___)
+  - [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute?view=net-5.0)
+  - [`DataContractSerializer.KnownTypes`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractserializer.knowntypes?view=net-5.0)
+  - `extraTypes` argument of the [`XmlSerializer ctor`](https://learn.microsoft.com/dotnet/api/system.xml.serialization.xmlserializer.-ctor?view=net-5.0#System_Xml_Serialization_XmlSerializer__ctor_System_Type_System_Type___)
 - Serializing types which implement special interfaces
-  - [`ISerializable`](https://docs.microsoft.com/dotnet/api/system.runtime.serialization.iserializable?view=net-5.0)
-  - [`IXmlSerializable`](https://docs.microsoft.com/dotnet/api/system.xml.serialization.ixmlserializable?view=net-5.0)
+  - [`ISerializable`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.iserializable?view=net-5.0)
+  - [`IXmlSerializable`](https://learn.microsoft.com/dotnet/api/system.xml.serialization.ixmlserializable?view=net-5.0)
 - Serializer-specific handling of collection types
-  - Types which implement [`ICollection`](https://docs.microsoft.com/dotnet/standard/serialization/examples-of-xml-serialization#serializing-a-class-that-implements-the-icollection-interface)
-  - Deserializing [`collection interfaces`](https://docs.microsoft.com/dotnet/framework/wcf/feature-details/collection-types-in-data-contracts#using-collection-interface-types-and-read-only-collections) into serializer-specific default types
+  - Types which implement [`ICollection`](https://learn.microsoft.com/dotnet/standard/serialization/examples-of-xml-serialization#serializing-a-class-that-implements-the-icollection-interface)
+  - Deserializing [`collection interfaces`](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/collection-types-in-data-contracts#using-collection-interface-types-and-read-only-collections) into serializer-specific default types

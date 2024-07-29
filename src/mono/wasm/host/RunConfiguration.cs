@@ -27,12 +27,7 @@ internal sealed class RunConfiguration
 
         RuntimeConfig? rconfig = JsonSerializer.Deserialize<RuntimeConfig>(
                                                 File.ReadAllText(runtimeConfigPath),
-                                                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                {
-                                                    AllowTrailingCommas = true,
-                                                    ReadCommentHandling = JsonCommentHandling.Skip,
-                                                    PropertyNameCaseInsensitive = true
-                                                });
+                                                CommonConfiguration.JsonOptions);
         if (rconfig == null)
             throw new Exception($"Failed to deserialize {runtimeConfigPath}");
 
@@ -41,7 +36,7 @@ internal sealed class RunConfiguration
 
         HostProperties = rconfig.RuntimeOptions.WasmHostProperties;
         if (HostProperties == null)
-            throw new Exception($"Failed to deserialize {runtimeConfigPath} - config");
+            throw new Exception($"Could not find any {nameof(RuntimeOptions.WasmHostProperties)} in {runtimeConfigPath}");
 
         if (HostProperties.HostConfigs is null || HostProperties.HostConfigs.Count == 0)
             throw new Exception($"no perHostConfigs found");

@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CoreFXTestLibrary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -123,6 +124,110 @@ public static class B282745
     public static void testMDArrayWithPointerLikeValuesOfKnownStructType()
     {
         GenericType<object>.test();
+    }
+
+    struct SomeGenStruct1<T>
+    {
+        public T o;
+        public int i;
+        public long l;
+        public long l1;
+    }
+
+    public class GenericType1<T>
+    {
+        public static void test()
+        {
+            int[] lengths = { 42, 2, 3 };
+            SomeGenStruct1<T>[,,] array = (SomeGenStruct1<T>[,,])Array.CreateInstance(typeof(SomeGenStruct1<T>), lengths);
+
+            for (int i = 0; i < 42; i++)
+            {
+                array[i,0,0].o = default(T);
+                array[i,0,0].i = GetIntPtrOnHeapAsInt();
+                array[i,0,0].l = GetIntPtrOnHeapAsInt();
+
+                array[i,1,2].o = default(T);
+                array[i,1,2].i = GetIntPtrOnHeapAsInt();
+                array[i,1,2].l = GetIntPtrOnHeapAsLong();
+
+                array[i,1,1].o = default(T);
+                array[i,1,1].i = GetIntPtrOnHeapAsInt();
+                array[i,1,1].l = GetIntPtrOnHeapAsLong();
+            }
+
+            GC.Collect();
+ 
+            GC.KeepAlive(array);
+
+            RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
+            Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
+        }
+    }
+
+    unsafe struct StructWithNonGCValuesAtZeroOffset<T>
+    {
+        // Generic structs cannot have explicit layout. We make do with a non-generic one.
+        public StructWithNonGCValuesAtZeroOffsetImpl v;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    struct StructWithNonGCValuesAtZeroOffsetImpl
+    {
+        [FieldOffset(0)]
+        public int i;
+        [FieldOffset(8)]
+        public object o;
+        [FieldOffset(16)]
+        public long l;
+    }
+
+    public class GenericTypeForStructWithNonGCValuesAtZeroOffset<T>
+    {
+        public static void test()
+        {
+            int[] lengths = { 1, 2, 3 };
+            StructWithNonGCValuesAtZeroOffset<T>[,,] array = (StructWithNonGCValuesAtZeroOffset<T>[,,])Array.CreateInstance(typeof(StructWithNonGCValuesAtZeroOffset<T>), lengths);
+
+            array[0, 0, 0].v.o = null;
+            array[0, 0, 0].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 0, 0].v.l = GetIntPtrOnHeapAsLong();
+
+            array[0, 1, 2].v.o = null;
+            array[0, 1, 2].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 1, 2].v.l = GetIntPtrOnHeapAsLong();
+
+            array[0, 1, 1].v.o = null;
+            array[0, 1, 1].v.i = GetIntPtrOnHeapAsInt();
+            array[0, 1, 1].v.l = GetIntPtrOnHeapAsLong();
+
+            GC.Collect();
+
+            GC.KeepAlive(array);
+
+            RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
+            Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [TestMethod]
+    public static void testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType()
+    {
+        GenericType1<object>.test();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    [TestMethod]
+    public static void testMDArrayWithPointerLikeValuesOfUnknownStructTypeWithNonGCValuesAtZeroOffset()
+    {
+        Type genType = typeof(GenericTypeForStructWithNonGCValuesAtZeroOffset<>).MakeGenericType(TypeOf.String);
+        MethodInfo m = genType.GetTypeInfo().GetDeclaredMethod("test");
+        m.Invoke(null, new object[] { });
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -487,7 +487,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
 
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     // TLS1.3 uses different API for renegotiation/delayed client cert request
     #ifndef TLS1_3_VERSION
     #define TLS1_3_VERSION 0x0304
@@ -577,7 +577,7 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
     X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL)
+    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 
@@ -593,6 +593,11 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 
     // No error queue impact.
     return cert;
+}
+
+X509* CryptoNative_SslGetCertificate(SSL* ssl)
+{
+    return SSL_get_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -701,9 +706,19 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int con
     return retValue;
 }
 
+int CryptoNative_SslCtxRemoveSession(SSL_CTX* ctx, SSL_SESSION* session)
+{
+    return SSL_CTX_remove_session(ctx, session);
+}
+
 const char* CryptoNative_SslGetServerName(SSL* ssl)
 {
     return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+}
+
+SSL_SESSION* CryptoNative_SslGetSession(SSL* ssl)
+{
+    return SSL_get_session(ssl);
 }
 
 int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session)
@@ -741,6 +756,16 @@ int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostnam
     (const void*)hostname;
 #endif
     return 0;
+}
+
+void CryptoNative_SslSessionSetData(SSL_SESSION* session, void* val)
+{
+    SSL_SESSION_set_ex_data(session, g_ssl_sess_cert_index, val);
+}
+
+void* CryptoNative_SslSessionGetData(SSL_SESSION* session)
+{
+    return SSL_SESSION_get_ex_data(session, g_ssl_sess_cert_index);
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
@@ -1005,9 +1030,16 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
 }
 
+void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback cb)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
+    SSL_CTX_set_keylog_callback(ctx, cb);
+}
+
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     if (API_EXISTS(SSL_set_post_handshake_auth))
     {
         SSL_set_post_handshake_auth(ssl, val);
@@ -1051,7 +1083,7 @@ int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t 
     }
     else
 #else
-    (void)ctx;
+    (void)ssl;
     (void)protos;
     (void)protos_len;
 #endif
@@ -1229,7 +1261,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (evp != NULL)
     {
-        CryptoNative_EvpPkeyDestroy(evp);
+        CryptoNative_EvpPkeyDestroy(evp, NULL);
     }
 
     if (bio1)

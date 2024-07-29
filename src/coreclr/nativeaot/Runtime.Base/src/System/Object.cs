@@ -45,17 +45,6 @@ namespace System
             }
         }
 
-        [Runtime.CompilerServices.Intrinsic]
-        internal static extern MethodTable* MethodTableOf<T>();
-
-        internal EETypePtr EETypePtr
-        {
-            get
-            {
-                return new EETypePtr(new IntPtr(m_pEEType));
-            }
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         private class RawData
         {
@@ -77,7 +66,9 @@ namespace System
         /// </summary>
         internal uint GetRawDataSize()
         {
-            return EETypePtr.BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
+            return m_pEEType->BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
         }
+
+        internal MethodTable* GetMethodTable() => m_pEEType;
     }
 }

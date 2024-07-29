@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -80,7 +83,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append(ref ValueStringBuilder outputBuffer, int Number)
+        internal static void Append<TChar>(ref ValueListBuilder<TChar> outputBuffer, int Number) where TChar : unmanaged, IUtfChar<TChar>
         {
             int outputBufferStartingLength = outputBuffer.Length;
 
@@ -113,13 +116,13 @@ namespace System.Globalization
                 // If the number is greater than 400, use the multiples of 400.
                 for (int i = 0; i < (Hundreds / 4); i++)
                 {
-                    outputBuffer.Append('\x05ea');
+                    DateTimeFormat.AppendChar(ref outputBuffer, '\x05ea');
                 }
 
                 int remains = Hundreds % 4;
                 if (remains > 0)
                 {
-                    outputBuffer.Append((char)((int)'\x05e6' + remains));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)('\x05e6' + remains));
                 }
             }
 
@@ -188,24 +191,35 @@ namespace System.Globalization
 
             if (cTens != '\x0')
             {
-                outputBuffer.Append(cTens);
+                DateTimeFormat.AppendChar(ref outputBuffer, cTens);
             }
 
             if (cUnits != '\x0')
             {
-                outputBuffer.Append(cUnits);
+                DateTimeFormat.AppendChar(ref outputBuffer, cUnits);
             }
 
             if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                char last = outputBuffer[outputBuffer.Length - 1];
-                outputBuffer.Length--;
-                outputBuffer.Append('"');
-                outputBuffer.Append(last);
+                if (typeof(TChar) == typeof(char))
+                {
+                    TChar last = outputBuffer[^1];
+                    outputBuffer.Length--;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    outputBuffer.Append(last);
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(byte));
+                    Rune.DecodeLastFromUtf8(MemoryMarshal.AsBytes(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
+                    outputBuffer.Length -= bytesConsumed;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)value.Value);
+                }
             }
             else
             {
-                outputBuffer.Append('\'');
+                DateTimeFormat.AppendChar(ref outputBuffer, '\'');
             }
         }
 
@@ -237,10 +251,11 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        private struct HebrewValue
+        private readonly struct HebrewValue
         {
-            internal HebrewToken token;
-            internal short value;
+            internal readonly HebrewToken token;
+            internal readonly short value;
+
             internal HebrewValue(HebrewToken token, short value)
             {
                 this.token = token;
@@ -252,7 +267,7 @@ namespace System.Globalization
         // Map a Hebrew character from U+05D0 ~ U+05EA to its digit value.
         // The value is -1 if the Hebrew character does not have a associated value.
         //
-        private static readonly HebrewValue[] s_hebrewValues = {
+        private static readonly HebrewValue[] s_hebrewValues = [
             new HebrewValue(HebrewToken.Digit1, 1), // '\x05d0
             new HebrewValue(HebrewToken.Digit1, 2), // '\x05d1
             new HebrewValue(HebrewToken.Digit1, 3), // '\x05d2
@@ -280,7 +295,7 @@ namespace System.Globalization
             new HebrewValue(HebrewToken.Digit200_300, 200), // '\x05e8;
             new HebrewValue(HebrewToken.Digit200_300, 300), // '\x05e9;
             new HebrewValue(HebrewToken.Digit400, 400), // '\x05ea;
-        };
+        ];
 
         private const int minHebrewNumberCh = 0x05d0;
         private static readonly char s_maxHebrewNumberCh = (char)(minHebrewNumberCh + s_hebrewValues.Length - 1);
@@ -320,7 +335,7 @@ namespace System.Globalization
         // The state machine for Hebrew number passing.
         //
         private static readonly HS[] s_numberPassingState =
-        {
+        [
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
                              HS.S400,       HS.X00,         HS.X00,          HS.X0,          HS.X,    HS.X,    HS.X,    HS.S9,      HS._err,    HS._err,
@@ -356,7 +371,7 @@ namespace System.Globalization
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.S9_DQ,
             /* 16: S9_DQ */
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
-        };
+        ];
 
         // Count of valid HebrewToken, column count in the NumberPassingState array
         private const int HebrewTokenCount = 10;

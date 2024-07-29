@@ -34,7 +34,7 @@ namespace System.Diagnostics.Metrics
     //   it may also not be a win to further pessimize the slow-path (JIT compilation is expensive) to squeeze yet more cycles out of
     //   the fast path.
     //   - Allocations per lookup: Any lookup of 3 or fewer labels on the above fast path is allocation free. We have separate
-    //   dictionaries dependending on the number of labels in the list and the dictionary keys are structures representing fixed size
+    //   dictionaries depending on the number of labels in the list and the dictionary keys are structures representing fixed size
     //   lists of strings or objects. For example with two labels the lookup is done in a
     //   FixedSizeLabelNameDictionary<StringSequence2, ConcurrentDictionary<ObjectSequence2, TAggregator>>
     //   Above 3 labels we have StringSequenceMany and ObjectSequenceMany which wraps an underlying string[] or object?[] respectively.
@@ -309,7 +309,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal struct LabelInstruction
+    internal readonly struct LabelInstruction
     {
         public LabelInstruction(int sourceIndex, string labelName)
         {
@@ -410,10 +410,10 @@ namespace System.Diagnostics.Metrics
         where TObjectSequence : struct, IObjectSequence, IEquatable<TObjectSequence>
         where TAggregator : Aggregator
     {
-        private int _expectedLabelCount;
-        private LabelInstruction[] _instructions;
-        private ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
-        private Func<TObjectSequence, TAggregator?> _createAggregator;
+        private readonly int _expectedLabelCount;
+        private readonly LabelInstruction[] _instructions;
+        private readonly ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
+        private readonly Func<TObjectSequence, TAggregator?> _createAggregator;
 
         public LabelInstructionInterpreter(
             int expectedLabelCount,

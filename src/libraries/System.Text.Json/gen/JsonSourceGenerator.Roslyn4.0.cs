@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -10,6 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 #if !ROSLYN4_4_OR_GREATER
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 #endif
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -19,72 +19,74 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
+#if ROSLYN4_4_OR_GREATER
+        public const string SourceGenerationSpecTrackingName = "SourceGenerationSpec";
+#endif
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+#if LAUNCH_DEBUGGER
+            System.Diagnostics.Debugger.Launch();
+#endif
+            IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
+                .Select((compilation, _) => new KnownTypeSymbols(compilation));
+
+            IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
 #endif
                     Parser.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
-                    (context, _) => (ClassDeclarationSyntax)context.TargetNode);
+                    (context, _) => (ContextClass: (ClassDeclarationSyntax)context.TargetNode, context.SemanticModel))
+                .Combine(knownTypeSymbols)
+                .Select(static (tuple, cancellationToken) =>
+                {
+                    Parser parser = new(tuple.Right);
+                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
+                    ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
+                    return (contextGenerationSpec, diagnostics);
+                })
+#if ROSLYN4_4_OR_GREATER
+                .WithTrackingName(SourceGenerationSpecTrackingName)
+#endif
+                ;
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(classDeclarations.Collect());
-
-            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            context.RegisterSourceOutput(contextGenerationSpecs, ReportDiagnosticsAndEmitSource);
         }
 
-        private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext sourceProductionContext)
+        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (ContextGenerationSpec? ContextGenerationSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics) input)
         {
-#if LAUNCH_DEBUGGER
-            if (!Diagnostics.Debugger.IsAttached)
+            // Report any diagnostics ahead of emitting.
+            foreach (DiagnosticInfo diagnostic in input.Diagnostics)
             {
-                Diagnostics.Debugger.Launch();
+                sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
             }
-#endif
-            if (contextClasses.IsDefaultOrEmpty)
+
+            if (input.ContextGenerationSpec is null)
             {
                 return;
             }
 
-            JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
-            Parser parser = new(compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses, sourceProductionContext.CancellationToken);
-            if (spec != null)
-            {
-                _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
-
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
-            }
+            OnSourceEmitting?.Invoke(ImmutableArray.Create(input.ContextGenerationSpec));
+            Emitter emitter = new(sourceProductionContext);
+            emitter.Emit(input.ContextGenerationSpec);
         }
 
         /// <summary>
-        /// Helper for unit tests.
+        /// Instrumentation helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName!, p => p.Type);
-        private List<TypeGenerationSpec>? _rootTypes;
-    }
+        public Action<ImmutableArray<ContextGenerationSpec>>? OnSourceEmitting { get; init; }
 
-    internal readonly struct JsonSourceGenerationContext
-    {
-        private readonly SourceProductionContext _context;
-
-        public JsonSourceGenerationContext(SourceProductionContext context)
+        private partial class Emitter
         {
-            _context = context;
-        }
+            private readonly SourceProductionContext _context;
 
-        public void ReportDiagnostic(Diagnostic diagnostic)
-        {
-            _context.ReportDiagnostic(diagnostic);
-        }
+            public Emitter(SourceProductionContext context)
+                => _context = context;
 
-        public void AddSource(string hintName, SourceText sourceText)
-        {
-            _context.AddSource(hintName, sourceText);
+            private partial void AddSource(string hintName, SourceText sourceText)
+                => _context.AddSource(hintName, sourceText);
         }
     }
 }

@@ -83,7 +83,13 @@ namespace Mono.Linker
 				Debug.Assert (context != null);
 				return context;
 			}
+			set {
+				Debug.Assert (context == null);
+				context = value;
+			}
 		}
+
+		private static readonly char[] s_separators = new char[] { ',', ';', ' ' };
 
 		public Driver (Queue<string> arguments)
 		{
@@ -94,7 +100,7 @@ namespace Mono.Linker
 		{
 			result = new Queue<string> ();
 			foreach (string arg in args) {
-				if (arg.StartsWith ("@")) {
+				if (arg.StartsWith ('@')) {
 					try {
 						string responseFileName = arg.Substring (1);
 						using (var responseFileText = new StreamReader (responseFileName))
@@ -152,7 +158,7 @@ namespace Mono.Linker
 						numBackslash /= 2;
 					}
 					if (numBackslash > 0)
-						argBuilder.Append (new String ('\\', numBackslash));
+						argBuilder.Append (new string ('\\', numBackslash));
 					if (cur < 0 || (!inquote && char.IsWhiteSpace ((char) cur)))
 						break;
 					if (copyChar)
@@ -168,7 +174,11 @@ namespace Mono.Linker
 			Context.LogError (null, DiagnosticId.MissingArgumentForCommanLineOptionName, optionName);
 		}
 
-		public enum DependenciesFileFormat { Xml, Dgml };
+		public enum DependenciesFileFormat
+		{
+			Xml,
+			Dgml
+		};
 
 		// Perform setup of the LinkContext and parse the arguments.
 		// Return values:
@@ -227,9 +237,22 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--dump-dependencies":
-						dumpDependencies = true;
-						continue;
+					case "--dump-dependencies": {
+							dumpDependencies = true;
+
+							string? assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError (null, DiagnosticId.InvalidAssemblyName, assemblyName);
+									return -1;
+								}
+
+								context.TraceAssembly ??= new HashSet<string> ();
+								context.TraceAssembly.Add (assemblyName);
+							}
+
+							continue;
+						}
 
 					case "--dependencies-file-format":
 						if (!GetStringParam (token, out var dependenciesFileFormat))
@@ -350,6 +373,12 @@ namespace Mono.Linker
 						}
 
 						context.SetCustomData (values[0], values[1]);
+						continue;
+
+					case "--keep-com-interfaces":
+						if (!GetBoolParam (token, l => context.KeepComInterfaces = l))
+							return -1;
+
 						continue;
 
 					case "--keep-compilers-resources":
@@ -589,6 +618,12 @@ namespace Mono.Linker
 							continue;
 						}
 
+					case "--preserve-symbol-paths":
+						if (!GetBoolParam (token, l => context.PreserveSymbolPaths = l))
+							return -1;
+
+						continue;
+
 					case "--version":
 						Version ();
 						return 1;
@@ -639,10 +674,10 @@ namespace Mono.Linker
 								return -1;
 							}
 
-							AssemblyRootMode rmode = AssemblyRootMode.Default;
+							AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
 							var rootMode = GetNextStringValue ();
 							if (rootMode != null) {
-								var parsed_rmode = ParseAssemblyRootsMode (rootMode);
+								var parsed_rmode = ParseAssemblyRootMode (rootMode);
 								if (parsed_rmode is null)
 									return -1;
 
@@ -843,7 +878,7 @@ namespace Mono.Linker
 
 		private static IEnumerable<int> ProcessWarningCodes (string value)
 		{
-			string Unquote (string arg)
+			static string Unquote (string arg)
 			{
 				if (arg.Length > 1 && arg[0] == '"' && arg[arg.Length - 1] == '"')
 					return arg.Substring (1, arg.Length - 2);
@@ -852,7 +887,7 @@ namespace Mono.Linker
 			}
 
 			value = Unquote (value);
-			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] values = value.Split (s_separators, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string v in values) {
 				var id = v.Trim ();
 				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.AsSpan (2), out ushort code))
@@ -892,7 +927,7 @@ namespace Mono.Linker
 			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (File.OpenRead (file), file));
 		}
 
-		static void AddBodySubstituterStep (Pipeline pipeline, string file)
+		protected virtual void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}
@@ -923,7 +958,7 @@ namespace Mono.Linker
 		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
-			int pos = arg.IndexOf (",");
+			int pos = arg.IndexOf (',');
 			if (pos == -1)
 				return false;
 
@@ -953,7 +988,7 @@ namespace Mono.Linker
 				}
 				customStepName = parts[1];
 
-				if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
+				if (!parts[0].StartsWith ('-') && !parts[0].StartsWith ('+')) {
 					Context.LogError (null, DiagnosticId.ExpectedSignToControlNewStepInsertion);
 					return false;
 				}
@@ -1115,11 +1150,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		AssemblyRootMode? ParseAssemblyRootsMode (string s)
+		AssemblyRootMode? ParseAssemblyRootMode (string s)
 		{
 			switch (s.ToLowerInvariant ()) {
-			case "default":
-				return AssemblyRootMode.Default;
 			case "all":
 				return AssemblyRootMode.AllMembers;
 			case "visible":
@@ -1170,6 +1203,9 @@ namespace Mono.Linker
 				return true;
 			case "sealer":
 				optimization = CodeOptimizations.Sealer;
+				return true;
+			case "substitutefeatureguards":
+				optimization = CodeOptimizations.SubstituteFeatureGuards;
 				return true;
 			}
 
@@ -1228,7 +1264,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			if (arg.StartsWith ("-") || arg.StartsWith ("/")) {
+			if (arg.StartsWith ('-') || arg.StartsWith ('/')) {
 				action (true);
 				return true;
 			}
@@ -1261,7 +1297,7 @@ namespace Mono.Linker
 				return null;
 
 			var arg = arguments.Peek ();
-			if (arg.StartsWith ("-") || arg.StartsWith ("/"))
+			if (arg.StartsWith ('-') || arg.StartsWith ('/'))
 				return null;
 
 			arguments.Dequeue ();
@@ -1273,6 +1309,7 @@ namespace Mono.Linker
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,
 				DefaultAction = AssemblyAction.Link,
+				KeepComInterfaces = true,
 			};
 		}
 
@@ -1302,12 +1339,13 @@ namespace Mono.Linker
 
 			Console.WriteLine ();
 			Console.WriteLine ("Options");
-			Console.WriteLine ("  -d PATH             Specify additional directory to search in for assembly references");
-			Console.WriteLine ("  -reference FILE     Specify additional file location used to resolve assembly references");
-			Console.WriteLine ("  -b                  Update debug symbols for all modified files. Defaults to false");
-			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
-			Console.WriteLine ("  -h                  Lists all {0} options", _linker);
-			Console.WriteLine ("  @FILE               Read response file for more options");
+			Console.WriteLine ("  -d PATH                  Specify additional directory to search in for assembly references");
+			Console.WriteLine ("  -reference FILE          Specify additional file location used to resolve assembly references");
+			Console.WriteLine ("  -b                       Update debug symbols for all modified files. Defaults to false");
+			Console.WriteLine ("  --preserve-symbol-paths  Preserve debug header paths to pdb files. Defaults to false");
+			Console.WriteLine ("  -out PATH                Specify the output directory. Defaults to 'output'");
+			Console.WriteLine ("  -h                       Lists all {0} options", _linker);
+			Console.WriteLine ("  @FILE                    Read response file for more options");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");
@@ -1332,7 +1370,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  --custom-data KEY=VALUE   Populates context data set with user specified key-value pair");
 			Console.WriteLine ("  --deterministic           Produce a deterministic output for modified assemblies");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
-			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
+			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to true");
 			Console.WriteLine ("  --output-pinvokes PATH    Output a JSON file with all modules and entry points of the P/Invokes found");
 			Console.WriteLine ("  --verbose                 Log messages indicating progress and warnings");
 			Console.WriteLine ("  --nowarn WARN             Disable specific warning messages");
@@ -1353,10 +1391,12 @@ namespace Mono.Linker
 			Console.WriteLine ("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                               unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("                               unusedtypechecks: Inlines never successful type checks");
+			Console.WriteLine ("                               substitutefeatureguards: Substitutes properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) to false");
 			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
 			Console.WriteLine ("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+			Console.WriteLine ("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
 			Console.WriteLine ("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
 			Console.WriteLine ("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
 			Console.WriteLine ("  --keep-metadata NAME       Keep metadata which would otherwise be removed if not used");
@@ -1369,7 +1409,7 @@ namespace Mono.Linker
 			Console.WriteLine ("  --ignore-substitutions     Skips reading embedded substitutions. Defaults to false");
 			Console.WriteLine ("  --strip-substitutions      Remove XML substitution resources for linked assemblies. Defaults to true");
 			Console.WriteLine ("  --used-attrs-only          Attribute usage is removed if the attribute type is not used. Defaults to false");
-			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the linker behavior.");
+			Console.WriteLine ("  --link-attributes FILE     Supplementary custom attribute definitions for attributes controlling the trimming behavior.");
 			Console.WriteLine ("  --ignore-link-attributes   Skips reading embedded attributes. Defaults to false");
 			Console.WriteLine ("  --strip-link-attributes    Remove XML link attributes resources for linked assemblies. Defaults to true");
 
@@ -1377,7 +1417,7 @@ namespace Mono.Linker
 			Console.WriteLine ("Analyzer");
 			Console.WriteLine ("  --dependencies-file FILE              Specify the dependencies output. Defaults to 'output/linker-dependencies.xml'");
 			Console.WriteLine ("                                        if 'xml' is file format, 'output/linker-dependencies.dgml if 'dgml' is file format");
-			Console.WriteLine ("  --dump-dependencies                   Dump dependencies for the linker analyzer tool");
+			Console.WriteLine ("  --dump-dependencies                   Dump dependencies for the ILLink analyzer tool");
 			Console.WriteLine ("  --dependencies-file-format FORMAT     Specify output file type. Defaults to 'xml'");
 			Console.WriteLine ("                                          xml: outputs an .xml file");
 			Console.WriteLine ("                                          dgml: outputs a .dgml file");
@@ -1395,7 +1435,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/dotnet/linker");
+			Console.WriteLine ("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
 		}
 
 		static Pipeline GetStandardPipeline ()

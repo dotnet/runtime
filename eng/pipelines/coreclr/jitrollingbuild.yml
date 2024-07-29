@@ -13,37 +13,53 @@ trigger:
 # and should not be triggerable from a PR.
 pr: none
 
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
     - stage: Build
       jobs:
-
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
+          - osx_arm64
+          - osx_x64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
           - windows_x64
           - windows_x86
           - windows_arm64
+          jobParameters:
+            disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
+          - osx_arm64
+          - osx_x64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
           - windows_x64
           - windows_x86
           - windows_arm64
+          jobParameters:
+            disableComponentGovernance: true # Not a shipping artifact
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig) /p:NoPgoOptimize=true
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/upload-jits-steps.yml
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml

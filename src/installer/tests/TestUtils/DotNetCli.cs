@@ -11,27 +11,20 @@ namespace Microsoft.DotNet.Cli.Build
     public partial class DotNetCli
     {
         public string BinPath { get; }
+        public string SharedFxPath { get; }
         public string GreatestVersionSharedFxPath { get; }
         public string GreatestVersionHostFxrPath { get; }
-        public string GreatestVersionHostFxrFilePath { get => Path.Combine(
-            GreatestVersionHostFxrPath,
-            RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")); }
-        public string DotnetExecutablePath
-        {
-            get
-            {
-                return Path.Combine(BinPath, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet"));
-            }
-        }
+        public string GreatestVersionHostFxrFilePath => Path.Combine(GreatestVersionHostFxrPath, Binaries.HostFxr.FileName);
+        public string DotnetExecutablePath => Path.Combine(BinPath, Binaries.DotNet.FileName);
 
         public DotNetCli(string binPath)
         {
             BinPath = binPath;
 
-            var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");
-            if (Directory.Exists(sharedFxBaseDirectory))
+            SharedFxPath = Path.Combine(BinPath, "shared", Constants.MicrosoftNETCoreApp);
+            if (Directory.Exists(SharedFxPath))
             {
-                var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
+                var sharedFxVersionDirectories = Directory.EnumerateDirectories(SharedFxPath);
                 GreatestVersionSharedFxPath = sharedFxVersionDirectories
                     .OrderByDescending(p => p.ToLower())
                     .First();
@@ -54,15 +47,7 @@ namespace Microsoft.DotNet.Cli.Build
 
             return Command.Create(DotnetExecutablePath, newArgs)
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0"); // Avoid looking at machine state by default
+                .MultilevelLookup(false); // Avoid looking at machine state by default
         }
-
-        public Command Restore(params string[] args) => Exec("restore", args);
-        public Command Build(params string[] args) => Exec("build", args);
-        public Command Pack(params string[] args) => Exec("pack", args);
-        public Command Test(params string[] args) => Exec("test", args);
-        public Command Publish(params string[] args) => Exec("publish", args);
-
-        public Command Store(params string[] args) => Exec("store", args);
     }
 }

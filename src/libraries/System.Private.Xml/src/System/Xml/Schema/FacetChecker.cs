@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
-using System.Xml.Serialization;
-using System.Xml.Schema;
-using System.Xml.XPath;
-using System.Diagnostics;
 using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Globalization;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using System.Xml.XPath;
 
 namespace System.Xml.Schema
 {
@@ -1452,7 +1452,7 @@ namespace System.Xml.Schema
                     break;
 
                 case XmlTypeCode.Language:
-                    if (s == null || s.Length == 0)
+                    if (string.IsNullOrEmpty(s))
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }

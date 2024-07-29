@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   backport:
-    if: ${{ contains(github.event.comment.body, '/backport to') }}
+    if: ${{ contains(github.event.comment.body, '/backport to') || github.event_name == 'schedule' }}
     uses: dotnet/arcade/.github/workflows/backport-base.yml@main
     with:
       pr_description_template: |
@@ -24,8 +24,28 @@ jobs:
 
         ## Customer Impact
 
+        - [ ] Customer reported
+        - [ ] Found internally
+
+        [Select one or both of the boxes. Describe how this issue impacts customers, citing the expected and actual behaviors and scope of the issue. If customer-reported, provide the issue number.]
+
+        ## Regression
+
+        - [ ] Yes
+        - [ ] No
+
+        [If yes, specify when the regression was introduced. Provide the PR or commit if known.]
+
         ## Testing
+
+        [How was the fix verified? How was the issue missed previously? What tests were added?]
 
         ## Risk
 
-        IMPORTANT: Is this backport for a servicing release? If so and this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.
+        [High/Medium/Low. Justify the indication by mentioning how risks were measured and addressed.]
+
+        **IMPORTANT**: If this backport is for a servicing release, please verify that:
+
+        - The PR target branch is `release/X.0-staging`, not `release/X.0`.
+
+        - If the change touches code that ships in a NuGet package, you have added the necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.

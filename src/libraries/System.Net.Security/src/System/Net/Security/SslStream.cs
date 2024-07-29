@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -51,7 +54,7 @@ namespace System.Net.Security
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
-        private SslBuffer _buffer;
+        private SslBuffer _buffer = new();
 
         // internal buffer for storing incoming data. Wrapper around ArrayBuffer which adds
         // separation between decrypted and still encrypted part of the active region.
@@ -65,14 +68,15 @@ namespace System.Net.Security
             // padding between decrypted part of the active memory and following undecrypted TLS frame.
             private int _decryptedPadding;
 
+            // Indicates whether the _buffer currently holds a rented buffer.
             private bool _isValid;
 
-            public SslBuffer(int initialSize)
+            public SslBuffer()
             {
-                _buffer = new ArrayBuffer(initialSize, true);
+                _buffer = new ArrayBuffer(initialSize: 0, usePool: true);
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
-                _isValid = true;
+                _isValid = false;
             }
 
             public bool IsValid => _isValid;
@@ -81,7 +85,7 @@ namespace System.Net.Security
 
             public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
             {
-                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                Debug.Assert(length <= DecryptedLength);
                 return _buffer.ActiveSpan.Slice(0, length);
             }
 
@@ -105,15 +109,8 @@ namespace System.Net.Security
 
             public void EnsureAvailableSpace(int byteCount)
             {
-                if (_isValid)
-                {
-                    _buffer.EnsureAvailableSpace(byteCount);
-                }
-                else
-                {
-                    _isValid = true;
-                    _buffer = new ArrayBuffer(byteCount, true);
-                }
+                _isValid = true;
+                _buffer.EnsureAvailableSpace(byteCount);
             }
 
             public void Discard(int byteCount)
@@ -163,15 +160,25 @@ namespace System.Net.Security
 
             public void ReturnBuffer()
             {
-                _buffer.Dispose();
+                _buffer.ClearAndReturnBuffer();
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
                 _isValid = false;
             }
         }
 
-        private int _nestedWrite;
-        private int _nestedRead;
+        private enum NestedState
+        {
+            StreamNotInUse = 0,
+            StreamInUse = 1,
+            StreamDisposed = 2,
+        }
+
+        private NestedState _nestedWrite;
+        private NestedState _nestedRead;
+
+        private PoolingPointerMemoryManager? _readPointerMemoryManager;
+        private PoolingPointerMemoryManager? _writePointerMemoryManager;
 
         public SslStream(Stream innerStream)
                 : this(innerStream, false, null, null)
@@ -209,6 +216,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.CertValidationDelegate = userCertificateValidationCallback;
             _sslAuthenticationOptions.CertSelectionDelegate = userCertificateSelectionCallback;
 
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
+#endif
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 
@@ -244,9 +255,9 @@ namespace System.Net.Security
         }
 
         internal IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(AuthenticateAsClientAsync(sslClientAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(AuthenticateAsClientAsync(sslClientAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
 
-        public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) => TaskToAsyncResult.End(asyncResult);
 
         //
         // Server side auth.
@@ -283,13 +294,13 @@ namespace System.Net.Security
         }
 
         private IAsyncResult BeginAuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(AuthenticateAsServerAsync(sslServerAuthenticationOptions, cancellationToken)!, asyncCallback, asyncState);
 
-        public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => TaskToAsyncResult.End(asyncResult);
 
-        internal IAsyncResult BeginShutdown(AsyncCallback? asyncCallback, object? asyncState) => TaskToApm.Begin(ShutdownAsync(), asyncCallback, asyncState);
+        internal IAsyncResult BeginShutdown(AsyncCallback? asyncCallback, object? asyncState) => TaskToAsyncResult.Begin(ShutdownAsync(), asyncCallback, asyncState);
 
-        internal static void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        internal static void EndShutdown(IAsyncResult asyncResult) => TaskToAsyncResult.End(asyncResult);
 
         public TransportContext TransportContext => new SslStreamContext(this);
 
@@ -437,9 +448,14 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            ProtocolToken message = CreateShutdownToken()!;
+            ProtocolToken token = CreateShutdownToken();
             _shutdown = true;
-            return InnerStream.WriteAsync(message.Payload, default).AsTask();
+            if (token.Size > 0 && token.Payload != null)
+            {
+                return InnerStream.WriteAsync(new ReadOnlyMemory<byte>(token.Payload, 0, token.Size), default).AsTask();
+            }
+
+            return Task.CompletedTask;
         }
         #endregion
 
@@ -472,7 +488,7 @@ namespace System.Net.Security
         }
 
         // Skips the ThrowIfExceptionalOrNotHandshake() check
-        private SslProtocols GetSslProtocolInternal()
+        internal SslProtocols GetSslProtocolInternal()
         {
             if (_connectionInfo.Protocol == 0)
             {
@@ -665,6 +681,9 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("freebsd")]
         public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -700,10 +719,25 @@ namespace System.Net.Security
             }
         }
 
+        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, byte* pointer, int length)
+        {
+            // we get null when called for the first-time, or concurrent read or write operation
+            var manager = Interlocked.Exchange(ref field, null) ?? new PoolingPointerMemoryManager();
+
+            manager.Reset(pointer, length);
+            return manager;
+        }
+
+        private static unsafe void ReturnPointerMemoryManager(ref PoolingPointerMemoryManager? field, PoolingPointerMemoryManager manager)
+        {
+            manager.Reset(null, 0);
+            field = manager;
+        }
+
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (Interlocked.Exchange(ref _nestedRead, NestedState.StreamInUse) == NestedState.StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -724,16 +758,37 @@ namespace System.Net.Security
                 // Regardless of whether we were able to read a byte from the buffer,
                 // reset the read tracking.  If we weren't able to read a byte, the
                 // subsequent call to Read will set the flag again.
-                _nestedRead = 0;
+                _nestedRead = NestedState.StreamNotInUse;
             }
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
             // per buffer fill internally by Read.
-            byte[] oneByte = new byte[1];
-            int bytesRead = Read(oneByte, 0, 1);
+            byte oneByte = default;
+            int bytesRead = Read(new Span<byte>(ref oneByte));
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
-            return bytesRead == 1 ? oneByte[0] : -1;
+            return bytesRead == 1 ? oneByte : -1;
+        }
+
+        public override unsafe int Read(Span<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    return vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _readPointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -743,6 +798,29 @@ namespace System.Net.Security
             ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
+        }
+
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));
+
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _writePointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
@@ -760,25 +838,25 @@ namespace System.Net.Security
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            return TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return TaskToApm.End<int>(asyncResult);
+            return TaskToAsyncResult.End<int>(asyncResult);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            return TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -875,6 +953,41 @@ namespace System.Net.Security
         private static void ThrowNotAuthenticated()
         {
             throw new InvalidOperationException(SR.net_auth_noauth);
+        }
+
+        // (non-generic) copy of the PointerMemoryManager<T> which supports resetting the stored
+        // pointer to allow pooling its instances instead of allocating a new one per Read/Write call.
+        // The memory ponted to by the intenal poiner is assumed to be externally pinned (or naive memory).
+        internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
+        {
+            private byte* _pointer;
+            private int _length;
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            public void Reset(byte* pointer, int length)
+            {
+                _pointer = pointer;
+                _length = length;
+            }
+
+            public override Span<byte> GetSpan()
+            {
+                return new Span<byte>(_pointer, _length);
+            }
+
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                // memory assumed to be pinned already
+                return new MemoryHandle(_pointer + elementIndex, default, null);
+            }
+
+            public override void Unpin()
+            {
+                // nop
+            }
         }
     }
 }

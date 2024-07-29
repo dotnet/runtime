@@ -175,6 +175,8 @@ namespace System.Data.OleDb
             }
         }
 
+        internal static readonly char[] s_comma = new char[] { ',' };
+
         // grouping the native OLE DB casts togther by required interfaces and optional interfaces, connection then session
         // want these to be methods, not properties otherwise they appear in VS7 managed debugger which attempts to evaluate them
 
@@ -475,7 +477,7 @@ namespace System.Data.OleDb
 
                 if (null != keywords)
                 {
-                    string[] values = keywords.Split(new char[1] { ',' });
+                    string[] values = keywords.Split(s_comma);
                     for (int i = 0; i < values.Length; ++i)
                     {
                         DataRow row = table.NewRow();
@@ -622,7 +624,7 @@ namespace System.Data.OleDb
 
                 UnsafeNativeMethods.IRowset? rowset = null;
                 OleDbHResult hr;
-                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
+                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, in schema, restrictions.Length, restrictions, in ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
 
                 if (hr < 0)
                 { // ignore infomsg

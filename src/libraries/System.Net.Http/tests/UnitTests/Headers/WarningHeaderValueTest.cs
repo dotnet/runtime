@@ -27,13 +27,13 @@ namespace System.Net.Http.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { new WarningHeaderValue(-1, "host", "\"\""); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { new WarningHeaderValue(1000, "host", "\"\""); });
 
-            AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
+            AssertExtensions.Throws<ArgumentNullException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
             AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, "", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "x y", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "x ", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, " x", "\"\""); });
 
-            AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
+            AssertExtensions.Throws<ArgumentNullException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
             AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, "", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "h", "x"); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "h", "\"x"); });
@@ -52,13 +52,13 @@ namespace System.Net.Http.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { new WarningHeaderValue(-1, "host", "\"\""); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { new WarningHeaderValue(1000, "host", "\"\""); });
 
-            AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
+            AssertExtensions.Throws<ArgumentNullException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
             AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, "", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "[::1]:80(x)", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "host::80", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "192.168.0.1=", "\"\""); });
 
-            AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
+            AssertExtensions.Throws<ArgumentNullException>("agent", () => { new WarningHeaderValue(100, null, "\"\""); });
             AssertExtensions.Throws<ArgumentException>("agent", () => { new WarningHeaderValue(100, "", "\"\""); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "h", "(x)"); });
             Assert.Throws<FormatException>(() => { new WarningHeaderValue(100, "h", "\"x\"y"); });
@@ -213,6 +213,7 @@ namespace System.Net.Http.Tests
                 new WarningHeaderValue(1, "h", "\"t\"",
                     new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)));
             CheckValidParse("1 \u4F1A \"t\" ", new WarningHeaderValue(1, "\u4F1A", "\"t\""));
+            CheckValidParse("1 \u2000 \"\"", new WarningHeaderValue(1, "\u2000", "\"\""));
         }
 
         [Fact]

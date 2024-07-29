@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class Sample4
+public class Sample4
 {
     private static int s_s = 1;
 
@@ -19,7 +20,8 @@ internal class Sample4
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

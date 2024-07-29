@@ -16,7 +16,7 @@
 namespace System.Text.Json.Tests.SourceGenRegressionTests.Net70
 {
     
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.Json.SourceGeneration", "7.0.7.1805")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.Json.SourceGeneration", "7.0.8.17405")]
     public partial class Net70GeneratedContext
     {
         

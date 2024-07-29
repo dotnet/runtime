@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Xunit;
 
-class Runtime_39823
+public class Runtime_39823
 {
     struct IntsWrapped
     {
@@ -23,12 +24,13 @@ class Runtime_39823
     }
 
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         try
         {
             TestUnusedObjCopy((IntsWrapped*)0);
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
         }
         catch
         {

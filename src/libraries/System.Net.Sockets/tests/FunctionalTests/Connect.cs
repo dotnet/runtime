@@ -137,6 +137,13 @@ namespace System.Net.Sockets.Tests
         [InlineData("[::ffff:1.1.1.1]", true, false)]
         public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
+            // Skip test on Linux kernels that may have a regression that was fixed in 6.6.
+            // See TcpReceiveSendGetsCanceledByDispose test for additional information.
+            if (UsesSync && PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6))
+            {
+                return;
+            }
+
             // Aborting sync operations for non-owning handles is not supported on Unix.
             if (!owning && UsesSync && !PlatformDetection.IsWindows)
             {
@@ -195,6 +202,43 @@ namespace System.Net.Sockets.Tests
                 }
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
+
+        [OuterLoop("Connection failure takes long on Windows.")]
+        [Fact]
+        public async Task Connect_WithoutListener_ThrowSocketExceptionWithAppropriateInfo()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            using Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(b, a.LocalEndPoint));
+            Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
+
+            if (UsesSync)
+            {
+                Assert.Contains(a.LocalEndPoint.ToString(), ex.Message);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(LoopbacksAndAny))]
+        public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt(IPAddress listenAt, IPAddress secondConnection)
+        {
+            using Socket listener = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            using Socket s = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            listener.Bind(new IPEndPoint(listenAt, 0));
+
+            await ConnectAsync(s, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
+            Assert.True(s.Connected);
+            // According to the OSX man page, it's enough connecting to an invalid address to dissolve the connection. (0 port connection returns error on OSX)
+            await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsApplePlatform ? 1 : 0));
+            Assert.True(s.Connected);
+        }
     }
 
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
@@ -215,28 +259,6 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
         public ConnectTask(ITestOutputHelper output) : base(output) {}
-
-        [OuterLoop]
-        [Fact]
-        public static void Connect_ThrowSocketException_Success()
-        {
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                int anonymousPort = socket.BindToAnonymousPort(IPAddress.Loopback);
-                IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, anonymousPort);
-                Assert.ThrowsAsync<SocketException>(() => socket.ConnectAsync(ep));
-                try
-                {
-                    socket.Connect(ep);
-                    Assert.Fail("Socket Connect should throw SocketException in this case.");
-                }
-                catch (SocketException ex)
-                {
-                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
-                    Assert.Contains(ep.ToString(), ex.Message);
-                }
-            }
-        }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
@@ -244,7 +266,6 @@ namespace System.Net.Sockets.Tests
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)

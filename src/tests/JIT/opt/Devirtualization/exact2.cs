@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class B
 {
@@ -28,9 +29,10 @@ class G<T> : E
 
 // All of the calls to F() in Main should devirtualize and inline
 
-class Program
+public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         B b = new B();
         D<string> ds = new D<string>();

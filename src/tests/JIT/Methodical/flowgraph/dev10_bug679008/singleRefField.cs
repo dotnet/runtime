@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
- * The JIT generates incorrect code for occasional uses of a struct parameter that contains a single field that is a reference type.
- * This can cause GC holes, GC overreporting, crashes, corrupt data.
- * Fix is to not undo a register allocation as worthless, but rather to just force it to spill (and not spill when the spill would be redundant).
- */
+* The JIT generates incorrect code for occasional uses of a struct parameter that contains a single field that is a reference type.
+* This can cause GC holes, GC overreporting, crashes, corrupt data.
+* Fix is to not undo a register allocation as worthless, but rather to just force it to spill (and not spill when the spill would be redundant).
+*/
 
 using System;
 using System.Runtime.CompilerServices;
@@ -39,13 +39,13 @@ public class Repro
     {
     }
 
-    private Repro[] _preExecutionDelegates = new Repro[0];
+    private Repro[] _preExecutionDelegates = Array.Empty<Repro>();
 
     private int Bug(MB8 mb8, string V_2)
     {
         if (V_2 == null)
         {
-            throw new ArgumentNullException("V_2");
+            throw new ArgumentNullException(nameof(V_2));
         }
         _state = 2;
         int loc0 = 0;
@@ -70,10 +70,10 @@ public class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    [OuterLoop]
+    public static void TestEntryPoint()
     {
         new Repro().Bug(new MB8(), "Test");
-        return 100;
     }
 }
 }

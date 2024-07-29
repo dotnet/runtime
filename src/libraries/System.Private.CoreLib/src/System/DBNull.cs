@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -12,16 +13,15 @@ namespace System
         {
         }
 
-        private DBNull(SerializationInfo info, StreamingContext context)
-        {
-            throw new NotSupportedException(SR.NotSupported_DBNullSerial);
-        }
-
         public static readonly DBNull Value = new DBNull();
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+#pragma warning disable SYSLIB0050 // UnitySerializationHolder is obsolete
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.NullUnity);
+#pragma warning restore SYSLIB0050
         }
 
         public override string ToString()

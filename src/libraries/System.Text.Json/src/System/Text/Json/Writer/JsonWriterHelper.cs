@@ -10,9 +10,8 @@ namespace System.Text.Json
 {
     internal static partial class JsonWriterHelper
     {
-        public static void WriteIndentation(Span<byte> buffer, int indent)
+        public static void WriteIndentation(Span<byte> buffer, int indent, byte indentByte)
         {
-            Debug.Assert(indent % JsonConstants.SpacesPerIndent == 0);
             Debug.Assert(buffer.Length >= indent);
 
             // Based on perf tests, the break-even point where vectorized Fill is faster
@@ -20,16 +19,45 @@ namespace System.Text.Json
             if (indent < 8)
             {
                 int i = 0;
-                while (i < indent)
+                while (i + 1 < indent)
                 {
-                    buffer[i++] = JsonConstants.Space;
-                    buffer[i++] = JsonConstants.Space;
+                    buffer[i++] = indentByte;
+                    buffer[i++] = indentByte;
+                }
+
+                if (i < indent)
+                {
+                    buffer[i] = indentByte;
                 }
             }
             else
             {
-                buffer.Slice(0, indent).Fill(JsonConstants.Space);
+                buffer.Slice(0, indent).Fill(indentByte);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateNewLine(string value)
+        {
+            if (value is null)
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+
+            if (value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
+                ThrowHelper.ThrowArgumentOutOfRangeException_NewLine(nameof(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateIndentCharacter(char value)
+        {
+            if (value is not JsonConstants.DefaultIndentCharacter and not JsonConstants.TabIndentCharacter)
+                ThrowHelper.ThrowArgumentOutOfRangeException_IndentCharacter(nameof(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateIndentSize(int value)
+        {
+            if (value is < JsonConstants.MinimumIndentSize or > JsonConstants.MaximumIndentSize)
+                ThrowHelper.ThrowArgumentOutOfRangeException_IndentSize(nameof(value), JsonConstants.MinimumIndentSize, JsonConstants.MaximumIndentSize);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,13 +72,6 @@ namespace System.Text.Json
         {
             if (value.Length > JsonConstants.MaxUnescapedTokenSize)
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(value.Length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidateBytes(ReadOnlySpan<byte> bytes)
-        {
-            if (bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(bytes.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,17 +135,17 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndBytes(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
+        public static void ValidatePropertyNameLength(ReadOnlySpan<char> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, bytes);
+            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize)
+                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndBytes(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> bytes)
+        public static void ValidatePropertyNameLength(ReadOnlySpan<byte> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, bytes);
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
+                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
         }
 
         internal static void ValidateNumber(ReadOnlySpan<byte> utf8FormattedNumber)
@@ -232,13 +253,18 @@ namespace System.Text.Json
             }
         }
 
+#if !NET8_0_OR_GREATER
         private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+#endif
 
         public static unsafe bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
         {
+#if NET8_0_OR_GREATER
+            return Utf8.IsValid(bytes);
+#else
             try
             {
-#if NETCOREAPP
+#if NET
                 s_utf8Encoding.GetCharCount(bytes);
 #else
                 if (!bytes.IsEmpty)
@@ -255,11 +281,12 @@ namespace System.Text.Json
             {
                 return false;
             }
+#endif
         }
 
         internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
         {
-#if NETCOREAPP
+#if NET
             OperationStatus status = Utf8.FromUtf16(source, destination, out int charsRead, out written, replaceInvalidSequences: false, isFinalBlock: true);
             Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall or OperationStatus.InvalidData);
             Debug.Assert(charsRead == source.Length || status is not OperationStatus.Done);

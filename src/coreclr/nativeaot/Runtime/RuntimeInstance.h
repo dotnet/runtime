@@ -23,14 +23,15 @@ class RuntimeInstance
 
     PTR_ThreadStore             m_pThreadStore;
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
-    ReaderWriterLock            m_TypeManagerLock;
 
 public:
     struct OsModuleEntry;
     typedef DPTR(OsModuleEntry) PTR_OsModuleEntry;
     struct OsModuleEntry
     {
-        PTR_OsModuleEntry      m_pNext;
+        // os Module list is add-only, so we can use PushHeadInterlocked and iterate without synchronization.
+        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
+        PTR_OsModuleEntry      volatile m_pNext;
         HANDLE                 m_osModule;
     };
 
@@ -47,7 +48,9 @@ private:
 public:
     struct TypeManagerEntry
     {
-        TypeManagerEntry*         m_pNext;
+        // TypeManager list is add-only, so we can use PushHeadInterlocked and iterate without synchronization.
+        // m_pNext is volatile - to make sure there are no re-reading optimizations when iterating.
+        TypeManagerEntry*         volatile m_pNext;
         TypeManager*              m_pTypeManager;
     };
 
@@ -84,8 +87,8 @@ public:
     ThreadStore *   GetThreadStore();
     HANDLE          GetPalInstance();
 
-    PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
-    PTR_UInt8 GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC);
+    PTR_uint8_t FindMethodStartAddress(PTR_VOID ControlPC);
+    PTR_uint8_t GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC);
     void EnableConservativeStackReporting();
     bool IsConservativeStackReportingEnabled() { return m_conservativeStackReportingEnabled; }
 
@@ -97,7 +100,6 @@ public:
     bool RegisterTypeManager(TypeManager * pTypeManager);
     TypeManagerList& GetTypeManagerList();
     OsModuleList* GetOsModuleList();
-    ReaderWriterLock& GetTypeManagerLock();
 
     bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
     bool IsUnboxingStub(uint8_t* pCode);

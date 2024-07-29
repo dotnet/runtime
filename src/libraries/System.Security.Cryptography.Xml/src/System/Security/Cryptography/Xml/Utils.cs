@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;
@@ -621,9 +621,9 @@ namespace System.Security.Cryptography.Xml
         // Mimic the behavior of the X509IssuerSerial constructor with null and empty checks
         internal static X509IssuerSerial CreateX509IssuerSerial(string? issuerName, string? serialNumber)
         {
-            if (issuerName == null || issuerName.Length == 0)
+            if (string.IsNullOrEmpty(issuerName))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
-            if (serialNumber == null || serialNumber.Length == 0)
+            if (string.IsNullOrEmpty(serialNumber))
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
 
             return new X509IssuerSerial()
@@ -720,10 +720,17 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
+#if NET
+        internal static string EncodeHexString(byte[] sArray)
+        {
+            return Convert.ToHexString(sArray);
+        }
+#else
         internal static string EncodeHexString(byte[] sArray)
         {
             return HexConverter.ToString(sArray);
         }
+#endif
 
         internal static byte[] DecodeHexString(string s)
         {
@@ -754,7 +761,7 @@ namespace System.Security.Cryptography.Xml
         {
             AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm?)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 
-#if NETCOREAPP
+#if NET
             if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS())
             {
                 algorithm = certificate.GetDSAPublicKey();

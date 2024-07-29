@@ -44,7 +44,7 @@ namespace System.Buffers
         /// <summary>
         /// The underlying <see cref="ReadOnlySequence{T}"/> for the reader.
         /// </summary>
-        public readonly ReadOnlySequence<T> Sequence { get; }
+        public ReadOnlySequence<T> Sequence { get; }
 
         /// <summary>
         /// Gets the unread portion of the <see cref="Sequence"/>.
@@ -63,12 +63,12 @@ namespace System.Buffers
         /// <summary>
         /// The current segment in the <see cref="Sequence"/> as a span.
         /// </summary>
-        public ReadOnlySpan<T> CurrentSpan { readonly get; private set; }
+        public ReadOnlySpan<T> CurrentSpan { get; private set; }
 
         /// <summary>
         /// The index in the <see cref="CurrentSpan"/>.
         /// </summary>
-        public int CurrentSpanIndex { readonly get; private set; }
+        public int CurrentSpanIndex { get; private set; }
 
         /// <summary>
         /// The unread portion of the <see cref="CurrentSpan"/>.
@@ -82,7 +82,7 @@ namespace System.Buffers
         /// <summary>
         /// The total number of <typeparamref name="T"/>'s processed by the reader.
         /// </summary>
-        public long Consumed { readonly get; private set; }
+        public long Consumed { get; private set; }
 
         /// <summary>
         /// Remaining <typeparamref name="T"/>'s in the reader's <see cref="Sequence"/>.
@@ -99,7 +99,7 @@ namespace System.Buffers
                 if (_length < 0)
                 {
                     // Cast-away readonly to initialize lazy field
-                    Unsafe.AsRef(_length) = Sequence.Length;
+                    Unsafe.AsRef(in _length) = Sequence.Length;
                 }
                 return _length;
             }
@@ -221,6 +221,11 @@ namespace System.Buffers
             if ((ulong)count > (ulong)Consumed)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+            }
+
+            if (count == 0)
+            {
+                return;
             }
 
             Consumed -= count;

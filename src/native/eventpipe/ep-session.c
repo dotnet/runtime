@@ -26,6 +26,10 @@ static
 void
 session_create_streaming_thread (EventPipeSession *session);
 
+static
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session);
+
 /*
  * EventPipeSession.
  */
@@ -49,6 +53,8 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 
 	bool success = true;
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+
+	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
 	EP_GCX_PREEMP_ENTER
 		while (ep_session_get_streaming_enabled (session)) {
@@ -127,7 +133,8 @@ ep_session_alloc (
 	IpcStream *stream,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
+	bool stackwalk_requested,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
@@ -157,7 +164,7 @@ ep_session_alloc (
 	instance->rundown_enabled = 0;
 	instance->session_type = session_type;
 	instance->format = format;
-	instance->rundown_requested = rundown_requested;
+	instance->rundown_keyword = rundown_keyword;
 	instance->synchronous_callback = sync_callback;
 	instance->callback_additional_data = callback_additional_data;
 
@@ -202,6 +209,8 @@ ep_session_alloc (
 	instance->session_start_time = ep_system_timestamp_get ();
 	instance->session_start_timestamp = ep_perf_timestamp_get ();
 	instance->paused = false;
+	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk () && stackwalk_requested;
+	instance->started = 0;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -213,6 +222,48 @@ ep_on_error:
 	ep_session_free (instance);
 
 	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session)
+{
+	ep_return_void_if_nok (session != NULL);
+
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
+
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
+
+	dn_vector_ptr_t threads;
+
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
+				EventPipeThreadSessionState *session_state = ep_thread_get_session_state(thread, session);
+				if (session_state) {
+					// If a buffer tries to write event(s) but never gets a buffer because the maximum total buffer size
+					// has been exceeded, we can leak the EventPipeThreadSessionState* and crash later trying to access 
+					// the session from the thread session state. Whenever we terminate a session we check to make sure
+					// we haven't leaked any thread session states.
+					ep_thread_delete_session_state(thread, session);
+				}
+				EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section1);
+
+				ep_thread_release (thread);
+			}
+		} DN_VECTOR_PTR_FOREACH_END;
+
+		dn_vector_ptr_dispose (&threads);
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
 	ep_exit_error_handler ();
 }
 
@@ -229,6 +280,8 @@ ep_session_free (EventPipeSession *session)
 
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
+
+	ep_session_remove_dangling_session_states (session);
 
 	ep_rt_object_free (session);
 }
@@ -250,7 +303,7 @@ ep_session_get_session_provider (
 	if (catch_all)
 		return catch_all;
 
-	EventPipeSessionProvider *session_provider = ep_rt_session_provider_list_find_by_name (ep_session_provider_list_get_providers_ref (providers), ep_provider_get_provider_name (provider));
+	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (providers), ep_provider_get_provider_name (provider));
 
 	ep_requires_lock_held ();
 	return session_provider;
@@ -264,36 +317,19 @@ ep_session_enable_rundown (EventPipeSession *session)
 	ep_requires_lock_held ();
 
 	bool result = false;
-
-	//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
-	//! The keywords below seems to correspond to:
-	//!  LoaderKeyword                      (0x00000008)
-	//!  JitKeyword                         (0x00000010)
-	//!  NgenKeyword                        (0x00000020)
-	//!  unused_keyword                     (0x00000100)
-	//!  JittedMethodILToNativeMapKeyword   (0x00020000)
-	//!  ThreadTransferKeyword              (0x80000000)
-	const uint64_t keywords = 0x80020138;
+	const uint64_t keywords = ep_session_get_rundown_keyword (session);
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
-	EventPipeProviderConfiguration rundown_providers [2];
-	uint32_t rundown_providers_len = (uint32_t)ARRAY_SIZE (rundown_providers);
+	EventPipeProviderConfiguration rundown_provider;
+	ep_provider_config_init (&rundown_provider, ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.
 
-	ep_provider_config_init (&rundown_providers [0], ep_config_get_public_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Public provider.
-	ep_provider_config_init (&rundown_providers [1], ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.
+	EventPipeSessionProvider *session_provider = ep_session_provider_alloc (
+		ep_provider_config_get_provider_name (&rundown_provider),
+		ep_provider_config_get_keywords (&rundown_provider),
+		ep_provider_config_get_logging_level (&rundown_provider),
+		ep_provider_config_get_filter_data (&rundown_provider));
 
-	// Update provider list with rundown configuration.
-	for (uint32_t i = 0; i < rundown_providers_len; ++i) {
-		const EventPipeProviderConfiguration *config = &rundown_providers [i];
-
-		EventPipeSessionProvider *session_provider = ep_session_provider_alloc (
-			ep_provider_config_get_provider_name (config),
-			ep_provider_config_get_keywords (config),
-			ep_provider_config_get_logging_level (config),
-			ep_provider_config_get_filter_data (config));
-
-		ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
-	}
+	ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
 
 	ep_session_set_rundown_enabled (session, true);
 	result = true;
@@ -310,7 +346,7 @@ ep_on_error:
 void
 ep_session_execute_rundown (
 	EventPipeSession *session,
-	ep_rt_execution_checkpoint_array_t *execution_checkpoints)
+	dn_vector_ptr_t *execution_checkpoints)
 {
 	EP_ASSERT (session != NULL);
 
@@ -330,26 +366,29 @@ ep_session_suspend_write_event (EventPipeSession *session)
 	// Need to disable the session before calling this method.
 	EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 
-	EP_RT_DECLARE_LOCAL_THREAD_ARRAY (threads);
-	ep_rt_thread_array_init (&threads);
+	DN_DEFAULT_LOCAL_ALLOCATOR (allocator, dn_vector_ptr_default_local_allocator_byte_size);
 
-	ep_thread_get_threads (&threads);
+	dn_vector_ptr_custom_init_params_t params = {0, };
+	params.allocator = (dn_allocator_t *)&allocator;
+	params.capacity = dn_vector_ptr_default_local_allocator_capacity_size;
 
-	ep_rt_thread_array_iterator_t threads_iterator = ep_rt_thread_array_iterator_begin (&threads);
-	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
-		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
-		if (thread) {
-			// Wait for the thread to finish any writes to this session
-			EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+	dn_vector_ptr_t threads;
 
-			// Since we've already disabled the session, the thread won't call back in to this
-			// session once its done with the current write
-			ep_thread_release (thread);
-		}
-		ep_rt_thread_array_iterator_next (&threads_iterator);
+	if (dn_vector_ptr_custom_init (&threads, &params)) {
+		ep_thread_get_threads (&threads);
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &threads) {
+			if (thread) {
+				// Wait for the thread to finish any writes to this session
+				EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+
+				// Since we've already disabled the session, the thread won't call back in to this
+				// session once its done with the current write
+				ep_thread_release (thread);
+			}
+		} DN_VECTOR_PTR_FOREACH_END;
+
+		dn_vector_ptr_dispose (&threads);
 	}
-
-	ep_rt_thread_array_fini (&threads);
 
 	if (session->buffer_manager)
 		// Convert all buffers to read only to ensure they get flushed
@@ -387,6 +426,9 @@ ep_session_start_streaming (EventPipeSession *session)
 		EP_ASSERT (session->file == NULL);
 		EP_ASSERT (!ep_session_get_streaming_enabled (session));
 	}
+
+	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
+		ep_rt_volatile_store_uint32_t_without_barrier (&session->started, 1);
 
 	ep_requires_lock_held ();
 	return;
@@ -574,6 +616,13 @@ ep_session_resume (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	session->paused = false;
+}
+
+bool
+ep_session_has_started (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	return ep_rt_volatile_load_uint32_t (&session->started) == 1 ? true : false;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

@@ -218,40 +218,33 @@ namespace System.Collections.Tests
             Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_NormalList()
         {
             var list = new SortedList() { { "a", 1 }, { "b", 2 } };
             DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
-            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
-            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
-            Assert.Equal(list.Count, items.Length);
+            PropertyInfo itemProperty = debuggerAttribute.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            Array itemArray = (Array)itemProperty.GetValue(debuggerAttribute.Instance);
+
+            Assert.Equal(list.Count, itemArray.Length);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_SynchronizedList()
         {
             var list = SortedList.Synchronized(new SortedList() { { "a", 1 }, { "b", 2 } });
-            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), list);
-            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
-            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
-            Assert.Equal(list.Count, items.Length);
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
+            PropertyInfo itemProperty = debuggerAttribute.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            Array itemArray = (Array)itemProperty.GetValue(debuggerAttribute.Instance);
+
+            Assert.Equal(list.Count, itemArray.Length);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute_NullSortedList_ThrowsArgumentNullException()
         {
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(ArrayList)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

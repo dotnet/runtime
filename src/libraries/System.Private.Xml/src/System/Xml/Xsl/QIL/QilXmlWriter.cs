@@ -37,8 +37,8 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilXmlWriter : QilScopedVisitor
     {
-        private XmlWriter writer;
-        private Options options;
+        private readonly XmlWriter writer;
+        private readonly Options options;
         private readonly NameGenerator _ngen;
 
         [Flags]
@@ -114,8 +114,8 @@ namespace System.Xml.Xsl.Qil
                 return;
             }
 
-            if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
+            if (!string.IsNullOrEmpty(s))
+                this.writer.WriteComment(!string.IsNullOrEmpty(name) ? $"{name}: {s}" : s);
         }
 
         /// <summary>
@@ -206,7 +206,7 @@ namespace System.Xml.Xsl.Qil
                 foreach (QilNode n in fdecls)
                 {
                     // i.e. <Function id="$a"/>
-                    this.writer.WriteStartElement(Enum.GetName(typeof(QilNodeType), n.NodeType)!);
+                    this.writer.WriteStartElement(Enum.GetName(n.NodeType)!);
                     this.writer.WriteAttributeString("id", _ngen.NameOf(n));
                     WriteXmlType(n);
 
@@ -277,7 +277,7 @@ namespace System.Xml.Xsl.Qil
                 WriteAnnotations(node.Annotation);
 
             // Call WriteStartElement
-            this.writer.WriteStartElement("", Enum.GetName(typeof(QilNodeType), node.NodeType)!, "");
+            this.writer.WriteStartElement("", Enum.GetName(node.NodeType)!, "");
 
             // Write common attributes
 #if QIL_TRACE_NODE_CREATION

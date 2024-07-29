@@ -19,8 +19,7 @@ namespace System.Collections.Immutable.Tests
 
         public override bool Equals(object obj)
         {
-            var other = obj as GenericParameterHelper;
-            if (other != null)
+            if (obj is GenericParameterHelper other)
             {
                 return this.Data == other.Data;
             }

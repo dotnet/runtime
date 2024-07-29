@@ -1069,13 +1069,14 @@ mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char 
 	pthread_mutex_init (&nm->deadlock_mutex, NULL);
 
 	pthread_mutex_lock (&nm->deadlock_mutex); // lock the mutex and never unlock it.
+
+	pthread_mutex_lock (&nm->coord_mutex);
 	pthread_t t;
 	int res = pthread_create (&t, NULL, invoke_block_foreign_thread, (void*)nm);
 	assert (res == 0);
 	/* wait for the foreign thread to finish calling the runtime before
 	 * detaching it and returning
 	 */
-	pthread_mutex_lock (&nm->coord_mutex);
 	pthread_cond_wait (&nm->coord_cond, &nm->coord_mutex);
 	pthread_mutex_unlock (&nm->coord_mutex);
 	pthread_detach (t);

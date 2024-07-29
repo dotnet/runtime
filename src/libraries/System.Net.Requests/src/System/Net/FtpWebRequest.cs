@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Sockets;
-using System.Security;
 using System.Runtime.ExceptionServices;
+using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net
 {
@@ -176,6 +176,9 @@ namespace System.Net
         };
     }
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
+
     /// <summary>
     /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>
@@ -261,10 +264,8 @@ namespace System.Net
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_method_name, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
+
                 if (InUse)
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
@@ -300,10 +301,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
 
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException(SR.net_ftp_invalid_renameto, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _renameTo = value;
             }
@@ -491,23 +489,26 @@ namespace System.Net
             if ((object)uri.Scheme != (object)Uri.UriSchemeFtp)
                 throw new ArgumentOutOfRangeException(nameof(uri));
 
+            if (uri.OriginalString.Contains("\r\n", StringComparison.Ordinal))
+                throw new FormatException(SR.net_ftp_no_newlines);
+
             _timerCallback = new TimerThread.Callback(TimerCallback);
             _syncObject = new object();
 
             NetworkCredential? networkCredential = null;
             _uri = uri;
             _methodInfo = FtpMethodInfo.GetMethodInfo(WebRequestMethods.Ftp.DownloadFile);
-            if (_uri.UserInfo != null && _uri.UserInfo.Length != 0)
+
+            if (_uri.UserInfo is { Length: > 0 } userInfo)
             {
-                string userInfo = _uri.UserInfo;
                 string username = userInfo;
                 string password = "";
                 int index = userInfo.IndexOf(':');
                 if (index != -1)
                 {
-                    username = Uri.UnescapeDataString(userInfo.Substring(0, index));
+                    username = Uri.UnescapeDataString(userInfo.AsSpan(0, index));
                     index++; // skip ':'
-                    password = Uri.UnescapeDataString(userInfo.Substring(index));
+                    password = Uri.UnescapeDataString(userInfo.AsSpan(index));
                 }
                 networkCredential = new NetworkCredential(username, password);
             }

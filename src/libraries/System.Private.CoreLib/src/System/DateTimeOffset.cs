@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -41,7 +42,8 @@ namespace System
           IEquatable<DateTimeOffset>,
           ISerializable,
           IDeserializationCallback,
-          ISpanParsable<DateTimeOffset>
+          ISpanParsable<DateTimeOffset>,
+          IUtf8SpanFormattable
     {
         // Constants
         internal const long MaxOffset = TimeSpan.TicksPerHour * 14;
@@ -114,6 +116,17 @@ namespace System
             }
             _offsetMinutes = ValidateOffset(offset);
             _dateTime = ValidateDate(dateTime, offset);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTimeOffset"/> structure by <paramref name="date"/>, <paramref name="time"/> and <paramref name="offset"/>.
+        /// </summary>
+        /// <param name="date">The date part</param>
+        /// <param name="time">The time part</param>
+        /// <param name="offset">The time's offset from Coordinated Universal Time (UTC).</param>
+        public DateTimeOffset(DateOnly date, TimeOnly time, TimeSpan offset)
+            : this(new DateTime(date, time), offset)
+        {
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -237,7 +250,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
             : this(year, month, day, hour, minute, second, millisecond, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond)
             {
                 throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -314,7 +327,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, TimeSpan offset)
         : this(year, month, day, hour, minute, second, millisecond, calendar, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond)
             {
                 throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -558,26 +571,16 @@ namespace System
         int IComparable.CompareTo(object? obj)
         {
             if (obj == null) return 1;
-            if (!(obj is DateTimeOffset))
+            if (obj is not DateTimeOffset other)
             {
                 throw new ArgumentException(SR.Arg_MustBeDateTimeOffset);
             }
 
-            DateTime objUtc = ((DateTimeOffset)obj).UtcDateTime;
-            DateTime utc = UtcDateTime;
-            if (utc > objUtc) return 1;
-            if (utc < objUtc) return -1;
-            return 0;
+            return DateTime.Compare(UtcDateTime, other.UtcDateTime);
         }
 
-        public int CompareTo(DateTimeOffset other)
-        {
-            DateTime otherUtc = other.UtcDateTime;
-            DateTime utc = UtcDateTime;
-            if (utc > otherUtc) return 1;
-            if (utc < otherUtc) return -1;
-            return 0;
-        }
+        public int CompareTo(DateTimeOffset other) =>
+            DateTime.Compare(UtcDateTime, other.UtcDateTime);
 
         // Checks if this DateTimeOffset is equal to a given object. Returns
         // true if the given object is a boxed DateTimeOffset and its value
@@ -849,6 +852,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
             DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, formatProvider, Offset);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+            DateTimeFormat.TryFormat(ClockDateTime, utf8Destination, out bytesWritten, format, formatProvider, Offset);
+
         public DateTimeOffset ToUniversalTime() =>
             new DateTimeOffset(UtcDateTime);
 
@@ -1047,6 +1054,25 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateTimeOffset"/> into <see cref="DateOnly"/>, <see cref="TimeOnly"/> and <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>
+        /// </param>
+        /// <param name="offset">
+        /// Deconstructed parameter for <see cref="Offset"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time, out TimeSpan offset)
+        {
+            (date, time) = ClockDateTime;
+            offset = Offset;
+        }
 
         //
         // IParsable

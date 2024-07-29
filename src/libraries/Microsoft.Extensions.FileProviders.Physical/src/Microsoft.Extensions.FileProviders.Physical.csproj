@@ -4,9 +4,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1865;CA1866</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>File provider for physical files for Microsoft.Extensions.FileProviders.</PackageDescription>
   </PropertyGroup>
 
@@ -17,6 +17,9 @@
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs"
+             Link="Common\System\Security\Cryptography\IncrementalHash.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,8 +28,4 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 
-  <!-- For IncrementalHash -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
-  </ItemGroup>
 </Project>

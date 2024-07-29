@@ -7,10 +7,10 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
-    [ReflectionBlocked]
     public abstract class EnumInfo
     {
         private protected EnumInfo(Type underlyingType, string[] names, bool isFlags)
@@ -25,11 +25,10 @@ namespace System.Reflection
         internal bool HasFlagsAttribute { get; }
     }
 
-    [ReflectionBlocked]
-    public sealed class EnumInfo<TUnderlyingValue> : EnumInfo
-        where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+    public sealed class EnumInfo<TStorage> : EnumInfo
+        where TStorage : struct, INumber<TStorage>
     {
-        public EnumInfo(Type underlyingType, TUnderlyingValue[] values, string[] names, bool isFlags) :
+        public EnumInfo(Type underlyingType, TStorage[] values, string[] names, bool isFlags) :
             base(underlyingType, names, isFlags)
         {
             Debug.Assert(values.Length == names.Length);
@@ -39,10 +38,14 @@ namespace System.Reflection
             ValuesAreSequentialFromZero = Enum.AreSequentialFromZero(values);
         }
 
-        internal TUnderlyingValue[] Values { get; }
+        internal TStorage[] Values { get; }
         internal bool ValuesAreSequentialFromZero { get; }
 
-        public TUnderlyingValue[] CloneValues() =>
-            new ReadOnlySpan<TUnderlyingValue>(Values).ToArray();
+        /// <summary>Create a copy of <see cref="Values"/>.</summary>
+        public unsafe TResult[] CloneValues<TResult>() where TResult : struct
+        {
+            Debug.Assert(sizeof(TStorage) == sizeof(TResult));
+            return MemoryMarshal.Cast<TStorage, TResult>(Values).ToArray();
+        }
     }
 }

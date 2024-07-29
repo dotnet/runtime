@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -83,7 +82,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 1;
 		}
 
-		// Methods with NoInlining won't be evaluated by the linker
+		// Methods with NoInlining won't be evaluated by ILLink
 		[Kept]
 		static void NoInlining ()
 		{

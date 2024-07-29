@@ -24,7 +24,7 @@ namespace System.IO
             int count = BitOperations.PopCount((uint)drives);
 
             string[] result = new string[count];
-            Span<char> root = stackalloc char[] { 'A', ':', '\\' };
+            Span<char> root = ['A', ':', '\\'];
             uint d = (uint)drives;
             count = 0;
             while (d != 0)

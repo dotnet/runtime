@@ -31,9 +31,9 @@
 
 using System.IO;
 using System.Net.Sockets;
-using System.Text;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,10 +41,10 @@ namespace System.Net
 {
     internal sealed partial class HttpResponseStream : Stream
     {
-        private HttpListenerResponse _response;
-        private bool _ignore_errors;
+        private readonly HttpListenerResponse _response;
+        private readonly bool _ignore_errors;
         private bool _trailer_sent;
-        private Stream _stream;
+        private readonly Stream _stream;
 
         internal HttpResponseStream(Stream stream, HttpListenerResponse response, bool ignore_errors)
         {

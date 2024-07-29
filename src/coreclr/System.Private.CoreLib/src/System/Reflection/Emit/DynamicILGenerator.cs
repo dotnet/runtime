@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.SymbolStore;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class DynamicILGenerator : ILGenerator
+    internal sealed class DynamicILGenerator : RuntimeILGenerator
     {
         internal DynamicScope m_scope;
-        private int m_methodSigToken;
+        private readonly int m_methodSigToken;
 
         internal DynamicILGenerator(DynamicMethod method, byte[] methodSignature, int size)
             : base(method, size)
@@ -35,16 +35,13 @@ namespace System.Reflection.Emit
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
             ArgumentNullException.ThrowIfNull(localType);
-
-            LocalBuilder localBuilder;
-
-            RuntimeType? rtType = localType as RuntimeType;
-
-            if (rtType == null)
+            if (localType is not RuntimeType)
+            {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
+            }
 
-            localBuilder = new LocalBuilder(m_localCount, localType, m_methodBuilder);
             // add the localType to local signature
+            RuntimeLocalBuilder localBuilder = new RuntimeLocalBuilder(m_localCount, localType, m_methodBuilder, pinned);
             m_localSignature.AddArgument(localType, pinned);
             m_localCount++;
             return localBuilder;
@@ -64,23 +61,24 @@ namespace System.Reflection.Emit
             DynamicMethod? dynMeth = meth as DynamicMethod;
             if (dynMeth == null)
             {
-                RuntimeMethodInfo? rtMeth = meth as RuntimeMethodInfo;
-                if (rtMeth == null)
+                RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo ??
                     throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(meth));
 
                 RuntimeType declaringType = rtMeth.GetRuntimeType();
-                if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                    token = GetTokenFor(rtMeth, declaringType);
-                else
-                    token = GetTokenFor(rtMeth);
+                token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                    GetTokenFor(rtMeth, declaringType) :
+                    GetTokenFor(rtMeth);
             }
             else
             {
                 // rule out not allowed operations on DynamicMethods
-                if (opcode.Equals(OpCodes.Ldtoken) || opcode.Equals(OpCodes.Ldftn) || opcode.Equals(OpCodes.Ldvirtftn))
+                if (opcode.Equals(OpCodes.Ldtoken) ||
+                    opcode.Equals(OpCodes.Ldftn) ||
+                    opcode.Equals(OpCodes.Ldvirtftn))
                 {
                     throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
                 }
+
                 token = GetTokenFor(dynMeth);
             }
 
@@ -94,7 +92,7 @@ namespace System.Reflection.Emit
             }
             if (opcode.StackBehaviourPop == StackBehaviour.Varpop)
             {
-                stackchange -= meth.GetParametersNoCopy().Length;
+                stackchange -= meth.GetParametersAsSpan().Length;
             }
             // Pop the "this" parameter if the method is non-static,
             //  and the instruction is not newobj/ldtoken/ldftn.
@@ -105,7 +103,6 @@ namespace System.Reflection.Emit
             }
 
             UpdateStackSize(opcode, stackchange);
-
             PutInteger4(token);
         }
 
@@ -113,25 +110,19 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(con);
 
-            RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
-            if (rtConstructor == null)
+            RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
 
             RuntimeType declaringType = rtConstructor.GetRuntimeType();
-            int token;
-
-            if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                // need to sort out the stack size story
-                token = GetTokenFor(rtConstructor, declaringType);
-            else
-                token = GetTokenFor(rtConstructor);
+            int token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                GetTokenFor(rtConstructor, declaringType) : // need to sort out the stack size story
+                GetTokenFor(rtConstructor);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
 
             // need to sort out the stack size story
             UpdateStackSize(opcode, 1);
-
             PutInteger4(token);
         }
 
@@ -139,11 +130,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
-            RuntimeType? rtType = type as RuntimeType;
-
-            if (rtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
-
+            RuntimeType rtType = type as RuntimeType ?? throw new ArgumentException(SR.Argument_MustBeRuntimeType);
             int token = GetTokenFor(rtType);
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -154,15 +141,12 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(field);
 
-            RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
-            if (runtimeField == null)
+            RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
 
-            int token;
-            if (field.DeclaringType == null)
-                token = GetTokenFor(runtimeField);
-            else
-                token = GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
+            int token = field.DeclaringType == null ?
+                GetTokenFor(runtimeField) :
+                GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -282,7 +266,7 @@ namespace System.Reflection.Emit
             stackchange -= methodInfo.GetParameterTypes().Length;
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
-            if (!(methodInfo is SymbolMethod) && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
+            if (methodInfo is not SymbolMethod && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
                 stackchange--;
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
@@ -403,7 +387,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        private int GetMemberRefToken(MethodBase methodInfo, Type[]? optionalParameterTypes)
+        private int GetMemberRefToken(MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             Type[]? parameterTypes;
             Type[][]? requiredCustomModifiers;
@@ -418,8 +402,8 @@ namespace System.Reflection.Emit
             if (rtMeth == null && dm == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(methodInfo));
 
-            ParameterInfo[] paramInfo = methodInfo.GetParametersNoCopy();
-            if (paramInfo != null && paramInfo.Length != 0)
+            ReadOnlySpan<ParameterInfo> paramInfo = methodInfo.GetParametersAsSpan();
+            if (paramInfo.Length != 0)
             {
                 parameterTypes = new Type[paramInfo.Length];
                 requiredCustomModifiers = new Type[parameterTypes.Length][];
@@ -440,7 +424,7 @@ namespace System.Reflection.Emit
             }
 
             SignatureHelper sig = GetMethodSigHelper(methodInfo.CallingConvention,
-                                                     MethodBuilder.GetMethodBaseReturnType(methodInfo),
+                                                     RuntimeMethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
                                                      requiredCustomModifiers,
                                                      optionalCustomModifiers,
@@ -571,13 +555,13 @@ namespace System.Reflection.Emit
     internal sealed class DynamicResolver : Resolver
     {
         #region Private Data Members
-        private __ExceptionInfo[]? m_exceptions;
-        private byte[]? m_exceptionHeader;
-        private DynamicMethod m_method;
-        private byte[] m_code;
-        private byte[] m_localSignature;
-        private int m_stackSize;
-        private DynamicScope m_scope;
+        private readonly __ExceptionInfo[]? m_exceptions;
+        private readonly byte[]? m_exceptionHeader;
+        private readonly DynamicMethod m_method;
+        private readonly byte[] m_code;
+        private readonly byte[] m_localSignature;
+        private readonly int m_stackSize;
+        private readonly DynamicScope m_scope;
         #endregion
 
         #region Internal Methods
@@ -785,11 +769,7 @@ namespace System.Reflection.Emit
             methodHandle = default;
             fieldHandle = default;
 
-            object? handle = m_scope[token];
-
-            if (handle == null)
-                throw new InvalidProgramException();
-
+            object handle = m_scope[token] ?? throw new InvalidProgramException();
             if (handle is RuntimeTypeHandle)
             {
                 typeHandle = ((RuntimeTypeHandle)handle).Value;
@@ -857,13 +837,13 @@ namespace System.Reflection.Emit
     public class DynamicILInfo
     {
         #region Private Data Members
-        private DynamicMethod m_method;
-        private DynamicScope m_scope;
+        private readonly DynamicMethod m_method;
+        private readonly DynamicScope m_scope;
         private byte[] m_exceptions;
         private byte[] m_code;
         private byte[] m_localSignature;
         private int m_maxStackSize;
-        private int m_methodSignature;
+        private readonly int m_methodSignature;
         #endregion
 
         #region Constructor
@@ -1012,7 +992,7 @@ namespace System.Reflection.Emit
             if (fromMethod == 0)
                 return (byte[]?)this[token];
 
-            if (!(this[token] is VarArgMethod vaMethod))
+            if (this[token] is not VarArgMethod vaMethod)
                 return null;
 
             return vaMethod.m_signature.GetSignature(true);

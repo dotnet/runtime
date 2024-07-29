@@ -178,5 +178,14 @@ namespace System.PrivateUri.Tests
             Assert.Equal("", uri.AbsolutePath);
             Assert.Equal("\u30AF@\u30AF", uri.GetComponents(UriComponents.UserInfo | UriComponents.Host, UriFormat.SafeUnescaped));
         }
+
+        [Fact]
+        public void UriMailTo_DifferentEmailAddressesNotEqual_Success()
+        {
+            var uri1 = new Uri("mailto:first@contoso.com");
+            var uri2 = new Uri("mailto:second@contoso.com");
+
+            Assert.NotEqual(uri1, uri2);
+        }
     }
 }

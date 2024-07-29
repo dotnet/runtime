@@ -16,12 +16,7 @@
 #ifndef TARGET_UNIX
 #define DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
 #endif // !TARGET_UNIX
-
-#ifndef USE_INDIRECT_CODEHEADER
-#define USE_INDIRECT_CODEHEADER
-#endif  // USE_INDIRECT_CODEHEADER
 #endif
-
 
 struct FakeEEJitManager
 {
@@ -41,6 +36,7 @@ struct FakeHeapList
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
     size_t              reserveForJumpStubs;
+    DWORD_PTR           pLoaderAllocator;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     DWORD_PTR           CLRPersonalityRoutine;
 #endif

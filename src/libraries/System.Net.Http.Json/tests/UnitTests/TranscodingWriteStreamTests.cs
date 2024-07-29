@@ -67,7 +67,7 @@ namespace System.Net.Http.Json.Functional.Tests
             var model = new TestModel { Message = message };
             var stream = new MemoryStream();
 
-            var transcodingStream = new TranscodingWriteStream(stream, targetEncoding);
+            using var transcodingStream = new TranscodingWriteStream(stream, targetEncoding);
             await JsonSerializer.SerializeAsync(transcodingStream, model, model.GetType());
             // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
             // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's

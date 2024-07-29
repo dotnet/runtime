@@ -26,7 +26,7 @@
 #define COM_METHOD HRESULT STDMETHODCALLTYPE
 
 #ifdef _DEBUG
-// On DEBUG builds, setting the COMPlus_ProfAPIFault to a bitmask of the flags
+// On DEBUG builds, setting the DOTNET_ProfAPIFault to a bitmask of the flags
 // below forces the Profiling API to return failures at various points.
 // Useful for event log testing.  Also see code:ProfilingAPIUtility.ShouldInjectProfAPIFault
 enum ProfAPIFaultFlags
@@ -106,7 +106,7 @@ private:
         LPVOID pvClientData,
         UINT cbClientData,
         DWORD dwConcurrentGCWaitTimeoutInMs = INFINITE);
-    static HRESULT ProfilerCLSIDFromString(__inout_z LPWSTR wszClsid, CLSID * pClsid);
+    static HRESULT ProfilerCLSIDFromString(__in_z LPCWSTR wszClsid, CLSID * pClsid);
     static HRESULT AttemptLoadProfilerForStartup();
     static HRESULT AttemptLoadDelayedStartupProfilers();
     static HRESULT AttemptLoadProfilerList();

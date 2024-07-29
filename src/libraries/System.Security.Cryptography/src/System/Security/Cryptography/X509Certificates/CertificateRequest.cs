@@ -812,7 +812,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
-            if (serialNumber == null || serialNumber.Length < 1)
+            if (serialNumber.Length < 1)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
 
             byte[] signatureAlgorithm = generator.GetSignatureAlgorithmIdentifier(HashAlgorithm);
@@ -890,7 +890,7 @@ namespace System.Security.Cryptography.X509Certificates
             };
 
             certificate.Encode(writer);
-            X509Certificate2 ret = new X509Certificate2(writer.Encode());
+            X509Certificate2 ret = X509CertificateLoader.LoadCertificate(writer.Encode());
             CryptoPool.Return(normalizedSerial);
             return ret;
         }

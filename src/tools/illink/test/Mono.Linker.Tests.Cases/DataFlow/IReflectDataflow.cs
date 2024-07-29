@@ -6,9 +6,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// Hits what appears to be a bug in the tool
-	// Could not initialize vtable of class(0x02000007) .MyReflect due to VTable setup of type Mono.Linker.Tests.Cases.DataFlow.IReflectDataflow+MyReflect failed assembly:/tmp/linker_tests/output/test.exe type:MyReflect member:(null)
-	[SkipPeVerify]
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[ExpectedNoWarnings]
 	class IReflectDataflow
 	{
@@ -165,6 +164,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
+			// MyReflectOverType is not intrinsically understood by the analysis, so
+			// it doesn't satisfy the PublicFields | NonPublicFields requirement.
+			[ExpectedWarning ("IL2075")]
 			public static void Test ()
 			{
 				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);

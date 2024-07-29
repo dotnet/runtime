@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-class WriterGen : CsWriter
+namespace NativeFormatGen;
+
+internal sealed class WriterGen : CsWriter
 {
     public WriterGen(string fileName)
         : base(fileName)
@@ -10,13 +12,18 @@ class WriterGen : CsWriter
 
     public void EmitSource()
     {
-        WriteLine("#pragma warning disable 649");
+        WriteLine("#pragma warning disable 649, SA1121, IDE0036, SA1129");
         WriteLine();
 
+        WriteLine("using System;");
+        WriteLine("using System.IO;");
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Threading;");
+        WriteLine("using Internal.LowLevelLinq;");
+        WriteLine("using Internal.Metadata.NativeFormat.Writer;");
         WriteLine("using Internal.NativeFormat;");
+        WriteLine("using HandleType = Internal.Metadata.NativeFormat.HandleType;");
         WriteLine("using Debug = System.Diagnostics.Debug;");
         WriteLine();
 
@@ -59,8 +66,8 @@ class WriterGen : CsWriter
         }
         CloseScope("Visit");
 
-        OpenScope("public sealed override bool Equals(object obj)");
-        WriteLine("if (ReferenceEquals(this, obj)) return true;");
+        OpenScope("public override sealed bool Equals(Object obj)");
+        WriteLine("if (Object.ReferenceEquals(this, obj)) return true;");
         WriteLine($"var other = obj as {record.Name};");
         WriteLine("if (other == null) return false;");
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)
@@ -89,7 +96,7 @@ class WriterGen : CsWriter
             else
             if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.RecordRef)) != 0)
             {
-                WriteLine($"if (!Equals({member.Name}, other.{member.Name})) return false;");
+                WriteLine($"if (!Object.Equals({member.Name}, other.{member.Name})) return false;");
             }
             else
             if ((member.Flags & MemberDefFlags.CustomCompare) != 0)
@@ -108,7 +115,7 @@ class WriterGen : CsWriter
             WriteLine("finally");
             WriteLine("{");
             WriteLine("    var popped = _equalsReentrancyGuard.Value.Pop();");
-            WriteLine("    Debug.Assert(ReferenceEquals(other, popped));");
+            WriteLine("    Debug.Assert(Object.ReferenceEquals(other, popped));");
             WriteLine("}");
         }
         WriteLine("return true;");
@@ -116,14 +123,14 @@ class WriterGen : CsWriter
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)
             WriteLine("private ThreadLocal<ReentrancyGuardStack> _equalsReentrancyGuard;");
 
-        OpenScope("public sealed override int GetHashCode()");
+        OpenScope("public override sealed int GetHashCode()");
         WriteLine("if (_hash != 0)");
         WriteLine("    return _hash;");
         WriteLine("EnterGetHashCode();");
 
         // Compute hash seed using stable hashcode
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(record.Name);
-        byte[] hashBytes = System.Security.Cryptography.SHA256.Create().ComputeHash(nameBytes);
+        byte[] hashBytes = System.Security.Cryptography.SHA256.HashData(nameBytes);
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
         WriteLine($"int hash = {hashSeed};");
 
@@ -142,12 +149,9 @@ class WriterGen : CsWriter
             else
             if ((member.Flags & MemberDefFlags.Array) != 0)
             {
-                WriteLine($"if ({member.Name} != null)");
+                WriteLine($"for (int i = 0; i < {member.Name}.Length; i++)");
                 WriteLine("{");
-                WriteLine($"    for (int i = 0; i < {member.Name}.Length; i++)");
-                WriteLine("    {");
-                WriteLine($"        hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
-                WriteLine("    }");
+                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ {member.Name}[i].GetHashCode();");
                 WriteLine("}");
             }
             else
@@ -156,12 +160,9 @@ class WriterGen : CsWriter
                 if ((member.Flags & MemberDefFlags.EnumerateForHashCode) == 0)
                     continue;
 
-                WriteLine($"if ({member.Name} != null)");
-                WriteLine("{");
                 WriteLine($"for (int i = 0; i < {member.Name}.Count; i++)");
-                WriteLine("    {");
-                WriteLine($"        hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
-                WriteLine("    }");
+                WriteLine("{");
+                WriteLine($"    hash = ((hash << 13) - (hash >> 19)) ^ ({member.Name}[i] == null ? 0 : {member.Name}[i].GetHashCode());");
                 WriteLine("}");
             }
             else

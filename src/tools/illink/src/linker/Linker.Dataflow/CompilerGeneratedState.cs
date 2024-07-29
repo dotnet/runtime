@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -43,7 +44,7 @@ namespace Mono.Linker.Dataflow
 		static IEnumerable<TypeDefinition> GetCompilerGeneratedNestedTypes (TypeDefinition type)
 		{
 			foreach (var nestedType in type.NestedTypes) {
-				if (!CompilerGeneratedNames.IsGeneratedMemberName (nestedType.Name))
+				if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass (nestedType.Name))
 					continue;
 
 				yield return nestedType;
@@ -114,7 +115,7 @@ namespace Mono.Linker.Dataflow
 			// State machines can be emitted into display classes, so we may also need to go one more level up.
 			// To avoid depending on implementation details, we go up until we see a non-compiler-generated type.
 			// This is the counterpart to GetCompilerGeneratedNestedTypes.
-			while (type != null && CompilerGeneratedNames.IsGeneratedMemberName (type.Name))
+			while (type != null && CompilerGeneratedNames.IsStateMachineOrDisplayClass (type.Name))
 				type = type.DeclaringType;
 
 			if (type is null)
@@ -126,6 +127,7 @@ namespace Mono.Linker.Dataflow
 
 			var callGraph = new CompilerGeneratedCallGraph ();
 			var userDefinedMethods = new HashSet<MethodDefinition> ();
+			var generatedTypeToTypeArgs = new Dictionary<TypeDefinition, TypeArgumentInfo> ();
 
 			void ProcessMethod (MethodDefinition method)
 			{
@@ -145,21 +147,22 @@ namespace Mono.Linker.Dataflow
 				// Discover calls or references to lambdas or local functions. This includes
 				// calls to local functions, and lambda assignments (which use ldftn).
 				if (method.Body != null) {
-					foreach (var instruction in _context.GetMethodIL (method).Instructions) {
+					foreach (var instruction in method.Body.Instructions (_context)) {
 						switch (instruction.OpCode.OperandType) {
 						case OperandType.InlineMethod: {
 								MethodDefinition? referencedMethod = _context.TryResolve ((MethodReference) instruction.Operand);
 								if (referencedMethod == null)
 									continue;
 
+								// Find calls to state machine constructors that occur outside the type
 								if (referencedMethod.IsConstructor &&
 									referencedMethod.DeclaringType is var generatedType &&
 									// Don't consider calls in the same type, like inside a static constructor
 									method.DeclaringType != generatedType &&
 									CompilerGeneratedNames.IsLambdaDisplayClass (generatedType.Name)) {
 									// fill in null for now, attribute providers will be filled in later
-									if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
-										var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
+									if (!generatedTypeToTypeArgs.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
+										var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
 										_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
 									}
 									continue;
@@ -178,7 +181,8 @@ namespace Mono.Linker.Dataflow
 
 						case OperandType.InlineField: {
 								// Same as above, but stsfld instead of a call to the constructor
-								if (instruction.OpCode.Code is not Code.Stsfld)
+								// Ldsfld may also trigger a cctor that creates a closure environment
+								if (instruction.OpCode.Code is not (Code.Stsfld or Code.Ldsfld))
 									continue;
 
 								FieldDefinition? field = _context.TryResolve ((FieldReference) instruction.Operand);
@@ -189,7 +193,7 @@ namespace Mono.Linker.Dataflow
 									// Don't consider field accesses in the same type, like inside a static constructor
 									method.DeclaringType != generatedType &&
 									CompilerGeneratedNames.IsLambdaDisplayClass (generatedType.Name)) {
-									if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
+									if (!generatedTypeToTypeArgs.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
 										// It's expected that there may be multiple methods associated with the same static closure environment.
 										// All of these methods will substitute the same type arguments into the closure environment
 										// (if it is generic). Don't warn.
@@ -204,7 +208,7 @@ namespace Mono.Linker.Dataflow
 
 				if (TryGetStateMachineType (method, out TypeDefinition? stateMachineType)) {
 					Debug.Assert (stateMachineType.DeclaringType == type ||
-						CompilerGeneratedNames.IsGeneratedMemberName (stateMachineType.DeclaringType.Name) &&
+						CompilerGeneratedNames.IsStateMachineOrDisplayClass (stateMachineType.DeclaringType.Name) &&
 						 stateMachineType.DeclaringType.DeclaringType == type);
 					callGraph.TrackCall (method, stateMachineType);
 
@@ -214,7 +218,7 @@ namespace Mono.Linker.Dataflow
 					}
 					// Already warned above if multiple methods map to the same type
 					// Fill in null for argument providers now, the real providers will be filled in later
-					_generatedTypeToTypeArgumentInfo[stateMachineType] = new TypeArgumentInfo (method, null);
+					generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo (method, null);
 				}
 			}
 
@@ -280,39 +284,58 @@ namespace Mono.Linker.Dataflow
 
 			// Now that we have instantiating methods fully filled out, walk the generated types and fill in the attribute
 			// providers
-			foreach (var generatedType in _generatedTypeToTypeArgumentInfo.Keys) {
-				if (HasGenericParameters (generatedType))
-					MapGeneratedTypeTypeParameters (generatedType);
+			foreach (var generatedType in generatedTypeToTypeArgs.Keys) {
+				if (generatedType.HasGenericParameters) {
+					MapGeneratedTypeTypeParameters (generatedType, generatedTypeToTypeArgs, _context);
+					// Finally, add resolved type arguments to the cache
+					var info = generatedTypeToTypeArgs[generatedType];
+					if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, info)) {
+						var method = info.CreatingMethod;
+						var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
+						_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
+					}
+				}
 			}
 
 			_cachedTypeToCompilerGeneratedMembers.Add (type, compilerGeneratedCallees);
 			return type;
 
 			/// <summary>
-			/// Check if the type itself is generic. The only difference is that
-			/// if the type is a nested type, the generic parameters from its
-			/// parent type don't count.
+			/// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
+			/// something like this:
+			/// <code>
+			/// void M&lt;T&gt; () {
+			///     Action a = () => { Console.WriteLine (typeof (T)); };
+			/// }
+			/// </code>
+			/// The compiler will generate a nested class like this:
+			/// <code>
+			/// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
+			///     public void &lt;M&gt;b__0 () {
+			///         Console.WriteLine (typeof (T));
+			///     }
+			/// }
+			/// </code>
+			/// The task of this method is to figure out that the type parameter T in the nested class is the same
+			/// as the type parameter T in the parent method M.
+			/// <paramref name="generatedTypeToTypeArgs"/> acts as a memoization table to avoid recalculating the
+			/// mapping multiple times.
 			/// </summary>
-			static bool HasGenericParameters (TypeDefinition typeDef)
+			static void MapGeneratedTypeTypeParameters (
+				TypeDefinition generatedType,
+				Dictionary<TypeDefinition, TypeArgumentInfo> generatedTypeToTypeArgs,
+				LinkContext context)
 			{
-				if (!typeDef.IsNested)
-					return typeDef.HasGenericParameters;
+				Debug.Assert (CompilerGeneratedNames.IsStateMachineOrDisplayClass (generatedType.Name));
 
-				return typeDef.GenericParameters.Count > typeDef.DeclaringType.GenericParameters.Count;
-			}
-
-			void MapGeneratedTypeTypeParameters (TypeDefinition generatedType)
-			{
-				Debug.Assert (CompilerGeneratedNames.IsGeneratedType (generatedType.Name));
-
-				var typeInfo = _generatedTypeToTypeArgumentInfo[generatedType];
+				var typeInfo = generatedTypeToTypeArgs[generatedType];
 				if (typeInfo.OriginalAttributes is not null) {
 					return;
 				}
 				var method = typeInfo.CreatingMethod;
 				if (method.Body is { } body) {
 					var typeArgs = new ICustomAttributeProvider[generatedType.GenericParameters.Count];
-					var typeRef = ScanForInit (generatedType, body);
+					var typeRef = ScanForInit (generatedType, body, context);
 					if (typeRef is null) {
 						return;
 					}
@@ -332,11 +355,11 @@ namespace Mono.Linker.Dataflow
 							} else {
 								// Must be a type ref
 								var owningRef = (TypeReference) owner;
-								if (!CompilerGeneratedNames.IsGeneratedType (owningRef.Name)) {
+								if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass (owningRef.Name)) {
 									userAttrs = param;
-								} else if (_context.TryResolve ((TypeReference) param.Owner) is { } owningType) {
-									MapGeneratedTypeTypeParameters (owningType);
-									if (_generatedTypeToTypeArgumentInfo[owningType].OriginalAttributes is { } owningAttrs) {
+								} else if (context.TryResolve ((TypeReference) param.Owner) is { } owningType) {
+									MapGeneratedTypeTypeParameters (owningType, generatedTypeToTypeArgs, context);
+									if (generatedTypeToTypeArgs[owningType].OriginalAttributes is { } owningAttrs) {
 										userAttrs = owningAttrs[param.Position];
 									} else {
 										Debug.Assert (false, "This should be impossible in valid code");
@@ -348,27 +371,31 @@ namespace Mono.Linker.Dataflow
 						typeArgs[i] = userAttrs;
 					}
 
-					_generatedTypeToTypeArgumentInfo[generatedType] = typeInfo with { OriginalAttributes = typeArgs };
+					generatedTypeToTypeArgs[generatedType] = typeInfo with { OriginalAttributes = typeArgs };
 				}
 			}
 
-			GenericInstanceType? ScanForInit (TypeDefinition compilerGeneratedType, MethodBody body)
+			static GenericInstanceType? ScanForInit (
+				TypeDefinition compilerGeneratedType,
+				MethodBody body,
+				LinkContext context)
 			{
-				foreach (var instr in _context.GetMethodIL (body).Instructions) {
+				foreach (var instr in context.GetMethodIL (body).Instructions) {
 					bool handled = false;
 					switch (instr.OpCode.Code) {
 					case Code.Initobj:
 					case Code.Newobj: {
 							if (instr.Operand is MethodReference { DeclaringType: GenericInstanceType typeRef }
-								&& compilerGeneratedType == _context.TryResolve (typeRef)) {
+								&& compilerGeneratedType == context.TryResolve (typeRef)) {
 								return typeRef;
 							}
 							handled = true;
 						}
 						break;
-					case Code.Stsfld: {
+					case Code.Stsfld:
+					case Code.Ldsfld: {
 							if (instr.Operand is FieldReference { DeclaringType: GenericInstanceType typeRef }
-								&& compilerGeneratedType == _context.TryResolve (typeRef)) {
+								&& compilerGeneratedType == context.TryResolve (typeRef)) {
 								return typeRef;
 							}
 							handled = true;
@@ -381,7 +408,7 @@ namespace Mono.Linker.Dataflow
 					if (!handled && instr.OpCode.OperandType is OperandType.InlineMethod) {
 						if (instr.Operand is GenericInstanceMethod gim) {
 							foreach (var tr in gim.GenericArguments) {
-								if (tr is GenericInstanceType git && compilerGeneratedType == _context.TryResolve (git)) {
+								if (tr is GenericInstanceType git && compilerGeneratedType == context.TryResolve (git)) {
 									return git;
 								}
 							}
@@ -419,7 +446,7 @@ namespace Mono.Linker.Dataflow
 		/// </summary>
 		public IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes (TypeDefinition generatedType)
 		{
-			Debug.Assert (CompilerGeneratedNames.IsGeneratedType (generatedType.Name));
+			Debug.Assert (CompilerGeneratedNames.IsStateMachineOrDisplayClass (generatedType.Name));
 
 			var typeToCache = GetCompilerGeneratedStateForType (generatedType);
 			if (typeToCache is null)

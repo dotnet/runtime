@@ -5,7 +5,8 @@
 
 // The first byte of the index is the count of bytes
 typedef unsigned char SYMBOL_INDEX;
-#define RUNTIME_INFO_SIGNATURE "DotNetRuntimeInfo"
+#define RUNTIME_INFO_SIGNATURE  "DotNetRuntimeInfo"
+#define RUNTIME_INFO_VERSION    2
 
 // Make sure that if you update this structure
 //    - You do so in a in a way that it is backwards compatible. For example, only tail append to this.
@@ -14,10 +15,11 @@ typedef unsigned char SYMBOL_INDEX;
 typedef struct _RuntimeInfo
 {
     const char Signature[18];
-    int Version;
+    const int Version;
     const SYMBOL_INDEX RuntimeModuleIndex[24];
     const SYMBOL_INDEX DacModuleIndex[24];
     const SYMBOL_INDEX DbiModuleIndex[24];
+    const int RuntimeVersion[4];                // major, minor, build, revision
 } RuntimeInfo;
 
 extern RuntimeInfo DotNetRuntimeInfo;

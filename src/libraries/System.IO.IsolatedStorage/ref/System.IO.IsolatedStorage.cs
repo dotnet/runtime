@@ -36,6 +36,8 @@ namespace System.IO.IsolatedStorage
     public partial class IsolatedStorageException : System.Exception
     {
         public IsolatedStorageException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected IsolatedStorageException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public IsolatedStorageException(string? message) { }
         public IsolatedStorageException(string? message, System.Exception? inner) { }

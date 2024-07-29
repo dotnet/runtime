@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Xml;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
@@ -149,6 +149,8 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        private static readonly string[] s_expectedAttrNames = new string[] { "Id", "URI", "Type" };
+
         //
         // public methods
         //
@@ -202,6 +204,8 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -212,7 +216,7 @@ namespace System.Security.Cryptography.Xml
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
-            if (!Utils.VerifyAttributes(value, new string[] { "Id", "URI", "Type" }))
+            if (!Utils.VerifyAttributes(value, s_expectedAttrNames))
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "Reference");
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -262,18 +266,31 @@ namespace System.Security.Cryptography.Xml
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
                         // Hack! this is done to get around the lack of here() function support in XPath
-                        if (transform is XmlDsigEnvelopedSignatureTransform
-                            && _uri != null && (_uri.Length == 0 || _uri[0] == '#'))
+                        if (transform is XmlDsigEnvelopedSignatureTransform)
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
                             XmlNode? signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
 
                             // Resolve the reference to get starting point for position calculation.
-                            XmlNode? referenceTarget =
-                                _uri.Length == 0
-                                ? transformElement.OwnerDocument
-                                : SignedXml!.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
+                            // This needs to match the way CalculateSignature resolves URI references.
+                            XmlNode? referenceTarget = null;
+                            if (_uri == null || _uri.Length == 0)
+                            {
+                                referenceTarget = transformElement.OwnerDocument;
+                            }
+                            else if (_uri[0] == '#')
+                            {
+                                string idref = Utils.ExtractIdFromLocalUri(_uri);
+                                if (idref == "xpointer(/)")
+                                {
+                                    referenceTarget = transformElement.OwnerDocument;
+                                }
+                                else
+                                {
+                                    referenceTarget = SignedXml!.GetIdElement(transformElement.OwnerDocument, idref);
+                                }
+                            }
 
                             XmlNodeList? signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
@@ -332,6 +349,7 @@ namespace System.Security.Cryptography.Xml
             TransformChain.Add(transform);
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void UpdateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             DigestValue = CalculateHashValue(document, refList);
@@ -339,11 +357,12 @@ namespace System.Security.Cryptography.Xml
 
         // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal byte[]? CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             // refList is a list of elements that might be targets of references
             // Now's the time to create our hashing algorithm
-            _hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(_digestMethod);
+            _hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(_digestMethod);
             if (_hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
 

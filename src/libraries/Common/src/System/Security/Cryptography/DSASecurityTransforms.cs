@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
                 }
 
-                return HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+                return CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
             }
 
             protected override void Dispose(bool disposing)
@@ -146,10 +146,7 @@ namespace System.Security.Cryptography
                 // if a failed attempt to generate a key happened, or we're in a pristine state.
                 //
                 // So this type uses an explicit field, rather than inferred state.
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(DSA));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
             }
 
             internal SecKeyPair GetKeys()

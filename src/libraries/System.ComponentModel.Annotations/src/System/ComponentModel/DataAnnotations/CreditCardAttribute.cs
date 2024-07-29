@@ -3,8 +3,7 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
-        AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
     public sealed class CreditCardAttribute : DataTypeAttribute
     {
         public CreditCardAttribute()
@@ -22,26 +21,28 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            if (!(value is string ccValue))
+            if (value is not string ccValue)
             {
                 return false;
             }
-            ccValue = ccValue.Replace("-", string.Empty);
-            ccValue = ccValue.Replace(" ", string.Empty);
 
-            var checksum = 0;
-            var evenDigit = false;
+            int checksum = 0;
+            bool evenDigit = false;
 
-            // Note: string.Reverse() does not exist for WinPhone
-            for (var i = ccValue.Length - 1; i >= 0; i--)
+            for (int i = ccValue.Length - 1; i >= 0; i--)
             {
                 char digit = ccValue[i];
                 if (!char.IsAsciiDigit(digit))
                 {
+                    if (digit is '-' or ' ')
+                    {
+                        continue;
+                    }
+
                     return false;
                 }
 
-                var digitValue = (digit - '0') * (evenDigit ? 2 : 1);
+                int digitValue = (digit - '0') * (evenDigit ? 2 : 1);
                 evenDigit = !evenDigit;
 
                 while (digitValue > 0)

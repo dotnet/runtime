@@ -31,7 +31,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
@@ -66,8 +66,6 @@ ErrExit:
 void STDMETHODCALLTYPE RegMeta::CloseEnum(
     HCORENUM        hEnum)          // The enumerator.
 {
-    LOG((LOGMD, "RegMeta::CloseEnum(0x%08x)\n", hEnum));
-
     // No need to lock this function.
     HENUMInternal   *pmdEnum = reinterpret_cast<HENUMInternal *> (hEnum);
 
@@ -88,8 +86,6 @@ HRESULT CountEnum(
     HRESULT         hr = S_OK;
 
     // No need to lock this function.
-
-    LOG((LOGMD, "RegMeta::CountEnum(0x%08x, 0x%08x)\n", hEnum, pulCount));
 
     _ASSERTE( pulCount );
 
@@ -130,8 +126,6 @@ STDMETHODIMP RegMeta::ResetEnum(
 
     // No need to lock this function.
 
-    LOG((LOGMD, "RegMeta::ResetEnum(0x%08x, 0x%08x)\n", hEnum, ulPos));
-
     if (pmdEnum != NULL)
         pmdEnum->u.m_ulCur = pmdEnum->u.m_ulStart + ulPos;
 
@@ -152,10 +146,7 @@ STDMETHODIMP RegMeta::EnumTypeDefs(
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal   *pEnum = NULL;
 
-    LOG((LOGMD, "RegMeta::EnumTypeDefs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, rTypeDefs, cMax, pcTypeDefs));
     LOCKREAD();
-
 
     if ( *ppmdEnum == 0 )
     {
@@ -225,8 +216,6 @@ STDMETHODIMP RegMeta::EnumInterfaceImpls(
     InterfaceImplRec    *pRec;
     RID                 index;
 
-    LOG((LOGMD, "RegMeta::EnumInterfaceImpls(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, td, rImpls, cMax, pcImpls));
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
@@ -289,9 +278,6 @@ STDMETHODIMP RegMeta::EnumGenericParams(HCORENUM *phEnum, mdToken tkOwner,
     RID                 index;
     CMiniMdRW           *pMiniMd = NULL;
 
-
-    LOG((LOGMD, "RegMeta::EnumGenericParams(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -380,8 +366,6 @@ STDMETHODIMP RegMeta::EnumMethodSpecs(
     RID                 index;
     CMiniMdRW       *pMiniMd = NULL;
 
-    LOG((LOGMD, "RegMeta::EnumMethodSpecs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -478,8 +462,6 @@ STDMETHODIMP RegMeta::EnumGenericParamConstraints(
     RID                 index;
     CMiniMdRW       *pMiniMd = NULL;
 
-    LOG((LOGMD, "RegMeta::EnumGenericParamConstraints(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -558,8 +540,6 @@ STDMETHODIMP RegMeta::EnumTypeRefs(
     ULONG           cTotal;
     HENUMInternal   *pEnum = *ppmdEnum;
 
-    LOG((LOGMD, "RegMeta::EnumTypeRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, rTypeRefs, cMax, pcTypeRefs));
     LOCKREAD();
 
     if ( pEnum == 0 )
@@ -593,10 +573,7 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    LOG((LOGMD, "{%08x} RegMeta::FindTypeDefByName(%S, 0x%08x, 0x%08x)\n",
-            this, MDSTR(wzTypeDef), tkEnclosingClass, ptd));
     LOCKREAD();
-
 
     if (wzTypeDef == NULL)
         IfFailGo(E_INVALIDARG);
@@ -638,9 +615,6 @@ STDMETHODIMP RegMeta::GetScopeProps(
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
     ModuleRec   *pModuleRec;
 
-
-    LOG((LOGMD, "RegMeta::GetScopeProps(%S, 0x%08x, 0x%08x, 0x%08x)\n",
-            MDSTR(szName), cchName, pchName, pmvid));
     LOCKREAD();
 
     // there is only one module record
@@ -663,8 +637,6 @@ ErrExit:
 STDMETHODIMP RegMeta::GetModuleFromScope(// S_OK.
     mdModule    *pmd)                   // [OUT] Put mdModule token here.
 {
-    LOG((LOGMD, "RegMeta::GetModuleFromScope(0x%08x)\n", pmd));
-
     _ASSERTE(pmd);
 
     // No need to lock this function.
@@ -685,8 +657,6 @@ HRESULT RegMeta::IsGlobal(              // S_OK ir error.
 
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
     mdToken     tkParent;               // Parent of field or method.
-
-    LOG((LOGMD, "RegMeta::GetTokenForGlobalType(0x%08x, %08x)\n", tk, pbGlobal));
 
     // No need to lock this function.
 
@@ -746,9 +716,6 @@ RegMeta::GetTypeDefProps(
     TypeDefRec *pTypeDefRec;
     BOOL        fTruncation = FALSE;    // Was there name truncation?
 
-    LOG((LOGMD, "{%08x} RegMeta::GetTypeDefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            this, td, szTypeDef, cchTypeDef, pchTypeDef,
-            pdwTypeDefFlags, ptkExtends));
     LOCKREAD();
 
     if (TypeFromToken(td) != mdtTypeDef)
@@ -798,7 +765,7 @@ RegMeta::GetTypeDefProps(
             }
             else
             {
-                *pchTypeDef = (ULONG)(wcslen(szTypeDef) + 1);
+                *pchTypeDef = (ULONG)(u16_strlen(szTypeDef) + 1);
             }
         }
     }
@@ -843,8 +810,6 @@ STDMETHODIMP RegMeta::GetInterfaceImplProps(        // S_OK or error.
     CMiniMdRW       *pMiniMd = NULL;
     InterfaceImplRec *pIIRec = NULL;
 
-    LOG((LOGMD, "RegMeta::GetInterfaceImplProps(0x%08x, 0x%08x, 0x%08x)\n",
-            iiImpl, pClass, ptkIface));
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(iiImpl) == mdtInterfaceImpl);
@@ -881,9 +846,6 @@ RegMeta::GetTypeRefProps(
     CMiniMdRW  *pMiniMd;
     TypeRefRec *pTypeRefRec;
     BOOL        fTruncation = FALSE;    // Was there name truncation?
-
-    LOG((LOGMD, "RegMeta::GetTypeRefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tr, ptkResolutionScope, szTypeRef, cchTypeRef, pchTypeRef));
 
     LOCKREAD();
 
@@ -938,7 +900,7 @@ RegMeta::GetTypeRefProps(
             }
             else
             {
-                *pchTypeRef = (ULONG)(wcslen(szTypeRef) + 1);
+                *pchTypeRef = (ULONG)(u16_strlen(szTypeRef) + 1);
             }
         }
     }
@@ -972,8 +934,6 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
 
     _ASSERTE(wzTypeName && ptk);
 
-    LOG((LOGMD, "RegMeta::FindTypeRef(0x%8x, %ls, 0x%08x)\n",
-            tkResolutionScope, MDSTR(wzTypeName), ptk));
     LOCKREAD();
 
     // Convert the  name to UTF8.

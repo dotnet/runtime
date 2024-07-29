@@ -4,12 +4,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace Test
 { 
-    static class Program
+    public static class Program
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point x = new Point(1);
 			Point y, z;

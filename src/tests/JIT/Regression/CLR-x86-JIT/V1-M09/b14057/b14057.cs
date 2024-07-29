@@ -3,17 +3,18 @@
 //
 
 using System;
+using Xunit;
 
 public class test
 {
     static byte by = 13;
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         byte by1 = (byte)(by >> 1);
         byte by2 = (byte)(by >> 1);
 
         Console.WriteLine(by1);
         Console.WriteLine(by2);
-        return 100;
     }
 }

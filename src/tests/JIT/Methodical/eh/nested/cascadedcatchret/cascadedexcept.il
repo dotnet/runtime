@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'cascadedexcept' {}
+.assembly ASSEMBLY_NAME {}
 
 
 .class public auto ansi Test_cascadedexcept extends [mscorlib] System.Object {

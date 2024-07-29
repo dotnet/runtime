@@ -13,9 +13,11 @@ using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Net;
 using HttpStress;
+using System.Net.Quic;
+using Microsoft.Quic;
 
-[assembly:SupportedOSPlatform("windows")]
-[assembly:SupportedOSPlatform("linux")]
+[assembly: SupportedOSPlatform("windows")]
+[assembly: SupportedOSPlatform("linux")]
 
 namespace HttpStress
 {
@@ -25,6 +27,8 @@ namespace HttpStress
     public static class Program
     {
         public enum ExitCode { Success = 0, StressError = 1, CliError = 2 };
+
+        public static readonly bool IsQuicSupported = QuicListener.IsSupported && QuicConnection.IsSupported;
 
         public static async Task<int> Main(string[] args)
         {
@@ -47,7 +51,7 @@ namespace HttpStress
             cmd.AddOption(new Option("-maxRequestUriSize", "Max query string length support by the server.") { Argument = new Argument<int>("numChars", 5000) });
             cmd.AddOption(new Option("-maxRequestHeaderCount", "Maximum number of headers to place in request") { Argument = new Argument<int>("numHeaders", 90) });
             cmd.AddOption(new Option("-maxRequestHeaderTotalSize", "Max request header total size.") { Argument = new Argument<int>("numBytes", 1000) });
-            cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
+            cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0 or 3.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
             cmd.AddOption(new Option("-connectionLifetime", "Max connection lifetime length (milliseconds).") { Argument = new Argument<int?>("connectionLifetime", null) });
             cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]?>("space-delimited indices", null) });
             cmd.AddOption(new Option("-xops", "Indices of the operations to exclude") { Argument = new Argument<int[]?>("space-delimited indices", null) });
@@ -158,6 +162,9 @@ namespace HttpStress
 
             string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
+            Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic")!;
+            string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static)!.GetGetMethod(true)!.Invoke(null, Array.Empty<object?>())!;
+
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
             Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
             Console.WriteLine(" System.Net.Http: " + GetAssemblyInfo(typeof(System.Net.Http.HttpClient).Assembly));
@@ -169,6 +176,8 @@ namespace HttpStress
             Console.WriteLine("     Concurrency: " + config.ConcurrentRequests);
             Console.WriteLine("  Content Length: " + config.MaxContentLength);
             Console.WriteLine("    HTTP Version: " + config.HttpVersion);
+            Console.WriteLine("  QUIC supported: " + (IsQuicSupported ? "yes" : "no"));
+            Console.WriteLine("  MsQuic Version: " + msQuicLibraryVersion);
             Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
             Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
             Console.WriteLine("     Random Seed: " + config.RandomSeed);
@@ -176,7 +185,6 @@ namespace HttpStress
             Console.WriteLine("Max Content Size: " + config.MaxContentLength);
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
-
 
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))

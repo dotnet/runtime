@@ -349,26 +349,17 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, float.NegativeInfinity, null)); // Load factor is infinity
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
 
             var hash = new Hashtable() { { "a", 1 }, { "b", 2 } };
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(hash);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(Hashtable), Hashtable.Synchronized(hash));
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(Hashtable.Synchronized(hash));
 
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(Hashtable), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(Hashtable)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

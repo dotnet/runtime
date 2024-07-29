@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-FreeBSD;$(NetCoreAppPrevious)-illumos;$(NetCoreAppPrevious)-Solaris;$(NetCoreAppPrevious)-Linux;$(NetCoreAppPrevious)-OSX;$(NetCoreAppPrevious)-iOS;$(NetCoreAppPrevious)-tvOS;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-FreeBSD;$(NetCoreAppMinimum)-Linux;$(NetCoreAppMinimum)-OSX;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-unix;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-unix;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CA2249;CA1838;CA1846</NoWarn>
-    <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
-    <NoWarn>$(NoWarn);CA1845</NoWarn>
+    <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 
@@ -42,7 +44,6 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="Common\System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs"
              Link="Common\System\Data\Common\NameValuePair.cs" />
-    <Compile Include="Common\System\Data\Common\NameValuePermission.cs" />
     <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
     <Compile Include="Common\System\Data\DataStorage.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbBuffer.cs" />
@@ -119,6 +120,8 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="System\Data\Odbc\OdbcUtils.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
              Link="Common\System\Data\Common\MultipartIdentifier.cs" />
@@ -128,23 +131,16 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" >
     <Compile Include="System\Data\Odbc\ODBC32.Common.cs"/>
-  </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'FreeBSD' or '$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'Solaris'">
-    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
-             Link="Common\Interop\Linux\Interop.Libraries.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
-             Link="Common\Interop\OSX\Interop.Libraries.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Odbc.cs"
+             Link="Common\Interop\Unix\Interop.Odbc.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -164,4 +160,5 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
+
 </Project>

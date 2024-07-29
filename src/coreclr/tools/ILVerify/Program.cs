@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -114,13 +113,13 @@ namespace ILVerify
                 IncludeMetadataTokensInErrorMessages = Get(_command.Tokens),
                 SanityChecks = Get(_command.SanityChecks)
             });
-            _verifier.SetSystemModuleName(new AssemblyName(Get(_command.SystemModule) ?? "mscorlib"));
+            _verifier.SetSystemModuleName(new AssemblyNameInfo(Get(_command.SystemModule) ?? "mscorlib"));
 
             int numErrors = 0;
 
             foreach (var kvp in _inputFilePaths)
             {
-                numErrors += VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
+                numErrors += VerifyAssembly(new AssemblyNameInfo(kvp.Key), kvp.Value);
             }
 
             if (numErrors > 0)
@@ -152,12 +151,9 @@ namespace ILVerify
 
             MetadataReader metadataReader = module.MetadataReader;
 
-            TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
-            string typeNamespace = metadataReader.GetString(typeDef.Namespace);
-            Write(typeNamespace);
-            Write(".");
-            string typeName = metadataReader.GetString(typeDef.Name);
-            Write(typeName);
+            TypeDefinitionHandle typeDef = metadataReader.GetMethodDefinition(result.Method).GetDeclaringType();
+            string fullClassName = GetFullClassName(metadataReader, typeDef);
+            Write(fullClassName);
 
             Write("::");
             var method = (EcmaMethod)module.GetMethod(result.Method);
@@ -228,7 +224,7 @@ namespace ILVerify
             Write(")");
         }
 
-        private int VerifyAssembly(AssemblyName name, string path)
+        private int VerifyAssembly(AssemblyNameInfo name, string path)
         {
             PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
@@ -352,6 +348,35 @@ namespace ILVerify
         }
 
         /// <summary>
+        /// Returns full class name, includes parent class for nested class.
+        /// </summary>
+        private string GetFullClassName(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)
+        {
+            var typeDef = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+
+            var fullName = new StringBuilder();
+
+            var declaringType = typeDef.GetDeclaringType();
+            if (!declaringType.IsNil)
+            {
+                fullName.Append(GetFullClassName(metadataReader, declaringType));
+                fullName.Append('+');
+            }
+            
+            var namespaceName = metadataReader.GetString(typeDef.Namespace);
+            if (!string.IsNullOrEmpty(namespaceName))
+            {
+                fullName.Append(namespaceName);
+                fullName.Append('.');
+            }
+
+            var typeName = metadataReader.GetString(typeDef.Name);
+            fullName.Append(typeName);
+            
+            return fullName.ToString();
+        }
+
+        /// <summary>
         /// This method returns the fully qualified class name.
         /// </summary>
         private string GetQualifiedClassName(MetadataReader metadataReader, TypeDefinitionHandle typeHandle)
@@ -426,10 +451,10 @@ namespace ILVerify
             return false;
         }
 
-        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+        PEReader IResolver.ResolveAssembly(AssemblyNameInfo assemblyName)
             => Resolve(assemblyName.Name);
 
-        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+        PEReader IResolver.ResolveModule(AssemblyNameInfo referencingModule, string fileName)
             => Resolve(Path.GetFileNameWithoutExtension(fileName));
 
         public PEReader Resolve(string simpleName)
@@ -450,16 +475,13 @@ namespace ILVerify
             return null;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
 
         private static int Main(string[] args) =>
-            new CommandLineBuilder(new ILVerifyRootCommand())
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp()
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new ILVerifyRootCommand().UseVersion())
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+            }.Invoke(args);
     }
 }

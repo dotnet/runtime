@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -169,6 +170,8 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Regex(SerializationInfo info, StreamingContext context) =>
             throw new PlatformNotSupportedException();
 
@@ -224,8 +227,41 @@ namespace System.Text.RegularExpressions
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile) =>
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
+        {
+#if DEBUG
+            // This code exists only to help with the development of the RegexCompiler.
+            // .NET no longer supports CompileToAssembly; the source generator should be used instead.
+#pragma warning disable IL3050
+            ArgumentNullException.ThrowIfNull(assemblyname);
+            ArgumentNullException.ThrowIfNull(regexinfos);
+
+            var c = new RegexAssemblyCompiler(assemblyname, attributes, resourceFile);
+
+            for (int i = 0; i < regexinfos.Length; i++)
+            {
+                ArgumentNullException.ThrowIfNull(regexinfos[i]);
+
+                string pattern = regexinfos[i].Pattern;
+
+                RegexOptions options = regexinfos[i].Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
+
+                string fullname = regexinfos[i].Namespace.Length == 0 ?
+                    regexinfos[i].Name :
+                    regexinfos[i].Namespace + "." + regexinfos[i].Name;
+
+                RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                RegexInterpreterCode code = RegexWriter.Write(tree);
+
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, code, regexinfos[i].MatchTimeout);
+            }
+
+            c.Save(assemblyname.Name ?? "RegexCompileToAssembly");
+#pragma warning restore IL3050
+#else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+#endif
+        }
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
@@ -364,6 +400,8 @@ namespace System.Text.RegularExpressions
             Interlocked.CompareExchange(ref _replref, new WeakReference<RegexReplacement?>(null), null) ??
             _replref;
 
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected void InitializeReferences()
         {
             // This method no longer has anything to initialize. It continues to exist
@@ -612,9 +650,13 @@ namespace System.Text.RegularExpressions
             factory!.CreateInstance();
 
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
         /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
-        protected internal bool UseOptionR() => RightToLeft;
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected bool UseOptionR() => RightToLeft;
     }
 }

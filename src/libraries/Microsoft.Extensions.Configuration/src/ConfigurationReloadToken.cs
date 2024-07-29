@@ -3,8 +3,8 @@
 
 using System;
 using System.Threading;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationReloadToken : IChangeToken
     {
-        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
         /// <summary>
         /// Indicates if this token will proactively raise callbacks. Callbacks are still guaranteed to be invoked, eventually.

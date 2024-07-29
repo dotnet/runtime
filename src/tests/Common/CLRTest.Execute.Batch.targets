@@ -82,7 +82,7 @@ IF NOT "%RunTieringTest%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono' and '$(TestBuildMode)' != 'nativeaot'">
     <![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 REM JitOptimizationSensitive includes our set of tests which cannot run under:
@@ -136,7 +136,7 @@ IF NOT "%CrossGen2SynthesizePgo"=="" (
 
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
-if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
+set CLRTestExpectedExitCode=$(CLRTestExitCode)
 ECHO BEGIN EXECUTION
       ]]>
       </BatchCLRTestExitCodePrep>
@@ -164,8 +164,8 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 :TakeLock
 md %lockFolder%
 IF NOT "!ERRORLEVEL!"=="0" (
-timeout /t 10 /nobreak
-goto :TakeLock
+  timeout /t 10 /nobreak
+  goto :TakeLock
 )
 Exit /b 2
 
@@ -216,6 +216,14 @@ Exit /b 0
         ]]></Command>
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
+        <Command><![CDATA[
+    set /A _RunWithWatcher=1
+        ]]></Command>
+        <Description>Run the tests using the test watcher.</Description>
+      </BatchCLRTestExecutionScriptArgument>
     </ItemGroup>
 
       <PropertyGroup>
@@ -260,17 +268,18 @@ IF defined DoLink (
       Exit /b 1
     )
 
-    REM Copy CORECLR native binaries to %LinkBin%, so that we can run the test based on that directory
+    REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
     copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
 
     REM Copy some files that may be arguments
     copy *.txt %LinkBin% > nul 2> nul
 
     set ExePath=%LinkBin%\$(InputAssemblyName)
-    set CORE_ROOT=%scriptPath%LinkBin%
+    set CORE_ROOT=%scriptPath%\%LinkBin%
 )
 ]]>
           </BatchLinkerTestLaunchCmds>
@@ -289,23 +298,25 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
+      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
+
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Android' ">
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android'">
     <![CDATA[
 $(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
+) ELSE IF %_RunWithWatcher% EQU 1 (
+  set LAUNCHER=$(WatcherRunFile) $(CLRTestRunFile)
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
-
-$(BatchIlrtTestLaunchCmds)
 
 if defined RunCrossGen2 (
   call :TakeLock
@@ -319,7 +330,7 @@ if defined RunCrossGen2 (
 )
 $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'android'">
     <![CDATA[
 REM run Android app
 IF NOT "%__TestDotNetCmd%"=="" (
@@ -390,15 +401,17 @@ IF /I [%1] == [-%(Identity)] set cond=1
 IF /I [%1] == [/%(Identity)] set cond=1
 IF %cond% EQU 1 (
 %(Command)
-shift
-IF /I [%(HasParam)] == [true] shift
-goto NextArg
+    shift
+    IF /I [%(HasParam)] == [true] shift
+    goto NextArg
 )','
 ')
 
+:ExtraArgs
 if NOT "%1" == "" (
-set CLRTestExecutionArguments=%*
-goto :ArgsDone
+    set CLRTestExecutionArguments=%CLRTestExecutionArguments% %1
+    shift
+    goto :ExtraArgs
 )
 
 goto ArgsDone
@@ -425,6 +438,20 @@ setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
+set /A _RunWithWatcher=0
+set /A _WatcherTimeoutMins=10
+
+IF NOT "%__TestCollectionTimeoutMins%"=="" (
+    set /A _WatcherTimeoutMins=%__TestCollectionTimeoutMins%
+)
+
+REM The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+REM Because of this, we pass a smaller timeout than the test collection one.
+REM For simplicity purposes, we will assume there are no work items with just
+REM a one-minute max timeout.
+IF %_WatcherTimeoutMins% GTR 1 (
+    set /A _WatcherTimeoutMins-=1
+)
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)

@@ -2,17 +2,23 @@
   <PropertyGroup>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
-    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
-    <Scenario>WasmTestOnBrowser</Scenario>
+    <Scenario>WasmTestOnChrome</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
+    <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
   <ItemGroup>
@@ -250,7 +256,6 @@
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlDocument\XmlTextTests\SplitTextTests.cs" />
-    <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />
     <Content Include="XmlDocument\example.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -322,6 +327,7 @@
     <Compile Include="XmlReader\Tests\AsyncReaderLateInitTests.cs" />
     <Compile Include="XmlReader\Tests\DisposeTests.cs" />
     <Compile Include="XmlReader\Tests\BaseUriTests.cs" />
+    <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />
     <Compile Include="XmlReader\Tests\ReaderEncodingTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -433,6 +439,7 @@
     <Compile Include="XmlWriter\WriteWithEncoding.cs" />
     <Compile Include="XmlWriter\WriteWithEncodingWithFallback.cs" />
     <Compile Include="XmlWriter\WriteWithInvalidSurrogate.cs" />
+    <Compile Include="XmlWriter\WriteWithXmlnsNewLine.cs" />
     <Compile Include="XmlWriter\XmlTextWriterTests.cs" />
   </ItemGroup>
 

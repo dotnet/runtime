@@ -15,11 +15,17 @@
 #include <ifaddrs.h>
 #endif
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
+#if HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
+#if HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
 #include "pal_ifaddrs.h" // fallback for Android API 21-23
 #endif
+#if HAVE_NET_IF_H
 #include <net/if.h>
+#endif
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -50,6 +56,7 @@
 #elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
+#elif defined(TARGET_WASI)
 #else
 #error System must have AF_PACKET or AF_LINK.
 #endif
@@ -66,6 +73,7 @@
 // mask parameter is pointer to buffer where address starts and length is
 // buffer length e.g. 4 for IPv4 and 16 for IPv6.
 // Code bellow counts consecutive number of 1 bits.
+#if !defined(TARGET_WASI)
 static inline uint8_t mask2prefix(uint8_t* mask, int length)
 {
     uint8_t len = 0;
@@ -101,6 +109,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
     return len;
 }
+#endif /* TARGET_WASI */
 
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
 // This workaround is necessary as long as we support Android API 21-23 and it can be removed once
@@ -108,7 +117,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
-static void try_loading_getifaddrs()
+static void try_loading_getifaddrs(void)
 {
     if (android_get_device_api_level() >= 24)
     {
@@ -130,7 +139,7 @@ static void try_loading_getifaddrs()
     }
 }
 
-static bool ensure_getifaddrs_is_loaded()
+static bool ensure_getifaddrs_is_loaded(void)
 {
     static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
     pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
@@ -160,11 +169,12 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
     for (struct ifaddrs* current = headAddr; current != NULL; current = current->ifa_next)
     {
-        if (current->ifa_addr == NULL)
+        char *ifa_name = current->ifa_name;
+        if (current->ifa_addr == NULL || ifa_name == NULL)
         {
             continue;
         }
-        uint32_t interfaceIndex = if_nametoindex(current->ifa_name);
+        uint32_t interfaceIndex = if_nametoindex(ifa_name);
         // ifa_name may be an aliased interface name.
         // Use if_indextoname to map back to the true device name.
         char actualName[IF_NAMESIZE];
@@ -367,9 +377,17 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     while (ifaddrsEntry != NULL)
     {
+        char *ifa_name = ifaddrsEntry->ifa_name;
+
+        if (ifa_name == NULL)
+        {
+            ifaddrsEntry = ifaddrsEntry->ifa_next;
+            continue;
+        }
+
         //current = NULL;
         nii = NULL;
-        uint ifindex = if_nametoindex(ifaddrsEntry->ifa_name);
+        uint ifindex = if_nametoindex(ifa_name);
         for (index = 0; index < (int)ifcount; index ++)
         {
             if (((NetworkInterfaceInfo*)memoryBlock)[index].InterfaceIndex == ifindex)
@@ -384,8 +402,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             // We git new interface.
             nii = &((NetworkInterfaceInfo*)memoryBlock)[ifcount++];
 
-            memcpy(nii->Name, ifaddrsEntry->ifa_name, sizeof(nii->Name));
-            nii->InterfaceIndex = if_nametoindex(ifaddrsEntry->ifa_name);
+            memcpy(nii->Name, ifa_name, sizeof(nii->Name));
+            nii->InterfaceIndex = ifindex;
             nii->Speed = -1;
             nii->HardwareType = ((ifaddrsEntry->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) ? NetworkInterfaceType_Loopback : NetworkInterfaceType_Unknown;
 

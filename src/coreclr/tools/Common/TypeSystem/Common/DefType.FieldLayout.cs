@@ -73,6 +73,11 @@ namespace Internal.TypeSystem
             /// True if the type transitively has an Int128 in it or is an Int128
             /// </summary>
             public const int IsInt128OrHasInt128Fields = 0x800;
+
+            /// <summary>
+            /// True if the type transitively has a Vector<T> in it or is Vector<T>
+            /// </summary>
+            public const int IsVectorTOrHasVectorTFields = 0x1000;
         }
 
         private sealed class StaticBlockInfo
@@ -150,6 +155,21 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsInt128OrHasInt128Fields);
+            }
+        }
+
+        /// <summary>
+        /// Is a type Vector<T> or transitively have any fields of a type Vector<T>.
+        /// </summary>
+        public virtual bool IsVectorTOrHasVectorTFields
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
             }
         }
 
@@ -450,6 +470,10 @@ namespace Internal.TypeSystem
             if (computedLayout.IsInt128OrHasInt128Fields)
             {
                 _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsInt128OrHasInt128Fields);
+            }
+            if (computedLayout.IsVectorTOrHasVectorTFields)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
             }
 
             if (computedLayout.Offsets != null)

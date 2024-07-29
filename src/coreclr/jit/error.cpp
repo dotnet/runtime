@@ -32,7 +32,7 @@ unsigned fatal_NYI;
 void DECLSPEC_NORETURN fatal(int errCode)
 {
 #ifdef DEBUG
-    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use COMPlus_AltJitAssertOnNYI for that.
+    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
     {
         if (JitConfig.DebugBreakOnVerificationFailure())
         {
@@ -108,32 +108,15 @@ void DECLSPEC_NORETURN noWayAssertBody()
     fatal(CORJIT_RECOVERABLEERROR);
 }
 
-inline static bool ShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+inline static bool ShouldThrowOnNoway()
 {
-    return JitTls::GetCompiler() == nullptr ||
-           JitTls::GetCompiler()->compShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-               filename, line
-#endif
-               );
+    return JitTls::GetCompiler() == nullptr || JitTls::GetCompiler()->compShouldThrowOnNoway();
 }
 
 /*****************************************************************************/
-void noWayAssertBodyConditional(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+void noWayAssertBodyConditional()
 {
-#ifdef FEATURE_TRACELOGGING
-    if (ShouldThrowOnNoway(filename, line))
-#else
     if (ShouldThrowOnNoway())
-#endif // FEATURE_TRACELOGGING
     {
         noWayAssertBody();
     }
@@ -251,11 +234,13 @@ void debugError(const char* msg, const char* file, unsigned line)
 
     LogEnv* env = JitTls::GetLogEnv();
 
+    JITDUMP("\nCOMPILATION FAILED: %s (%s:%d)\n", msg, tail, line);
+
     logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", tail, line,
          env->compiler->info.compFullName, msg);
 
-    // We now only assert when user explicitly set ComPlus_JitRequired=1
-    // If ComPlus_JitRequired is 0 or is not set, we will not assert.
+    // We now only assert when user explicitly set DOTNET_JitRequired=1
+    // If DOTNET_JitRequired is 0 or is not set, we will not assert.
     if (JitConfig.JitRequired() == 1 || getBreakOnBadCode())
     {
         assertAbort(msg, file, line);
@@ -265,7 +250,9 @@ void debugError(const char* msg, const char* file, unsigned line)
 }
 
 /*****************************************************************************/
-LogEnv::LogEnv(ICorJitInfo* aCompHnd) : compHnd(aCompHnd), compiler(nullptr)
+LogEnv::LogEnv(ICorJitInfo* aCompHnd)
+    : compHnd(aCompHnd)
+    , compiler(nullptr)
 {
 }
 
@@ -306,13 +293,13 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     if (comp != nullptr && comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
-        // dialog pop-up, or they set COMPlus_ContinueOnAssert=1 to not emit a pop-up, but just continue.
+        // dialog pop-up, or they set DOTNET_ContinueOnAssert=1 to not emit a pop-up, but just continue.
         // If we're an altjit, we have two options: (1) silently continue, as a normal JIT would, probably
         // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
-        // thus falling back to the fallback JIT. Setting COMPlus_AltJitSkipOnAssert=1 chooses this "skip"
+        // thus falling back to the fallback JIT. Setting DOTNET_AltJitSkipOnAssert=1 chooses this "skip"
         // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
         // the first assert for any function, but we don't want to kill the whole ngen process on the
-        // first assert (which would happen if you used COMPlus_NoGuiOnAssert=1 for example).
+        // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
         if (JitConfig.AltJitSkipOnAssert() != 0)
         {
             fatal(CORJIT_SKIPPED);
@@ -385,7 +372,7 @@ int logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        written = vflogf(jitstdout, fmt, args);
+        written = vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
@@ -446,7 +433,7 @@ void gcDump_logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
@@ -511,11 +498,7 @@ void noWayAssertAbortHelper(const char* cond, const char* file, unsigned line)
 
 void noWayAssertBodyConditional(const char* cond, const char* file, unsigned line)
 {
-#ifdef FEATURE_TRACELOGGING
-    if (ShouldThrowOnNoway(file, line))
-#else
     if (ShouldThrowOnNoway())
-#endif
     {
         noWayAssertBody(cond, file, line);
     }

@@ -88,7 +88,7 @@ For the small object heap, the generation number represents the age – gen0
 being the youngest generation. This doesn't mean all objects in gen0
 are younger than any objects in gen1 or gen2. There are exceptions
 which will be explained below. Collecting a generation means collecting
-objects in that generation and all its younger generations.
+objects in that generation and all of its younger generations.
 
 In principle large objects can be handled the same way as small
 objects but since compacting large objects is very expensive, they are treated differently. There is only one generation for large objects and
@@ -100,8 +100,8 @@ Allocations are made in the youngest generation – for small objects this means
 Physical representation of the managed heap
 -------------------------------------------
 
-The managed heap is a set of managed heap segments. A heap segment is a contiguous block of memory that is acquired by the GC from the OS. The heap segments are
-partitioned into small and large object segments, given the distinction of small and large objects. On each heap the heap segments are chained together. There is at least one small object segment and one large segment - they are reserved when CLR is loaded.
+The managed heap is a set of managed heap segments. A heap segment is a contiguous block of memory that is acquired by the GC from the OS. Heap segments can be
+small, large, or pinned object segments depending on what they contain. On each heap the heap segments are chained together. There is at least one small object segment and one large segment - they are reserved when CLR is loaded. There is also a NonGC heap that contains ro (readonly) segments.
 
 There's always only one ephemeral segment in each small object heap, which is where gen0 and gen1 live. This segment may or may not include gen2
 objects. In addition to the ephemeral segment, there can be zero, one or more additional segments, which will be gen2 segments since they only contain gen2 objects.
@@ -243,7 +243,7 @@ Physical Architecture
 
 This section is meant to help you follow the code flow.
 
-User thread runs out of quantum and gets a new quantum via try_allocate_more_space.
+User thread runs out of space in an allocation context and gets a new one via try_allocate_more_space.
 
 try_allocate_more_space calls GarbageCollectGeneration when it needs to trigger a GC.
 

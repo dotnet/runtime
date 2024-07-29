@@ -32,10 +32,10 @@
   .field public int32 dummy
 } 
 
-.class private auto ansi beforefieldinit Test_cs_il
+.class public auto ansi beforefieldinit Test_cs_il
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Test_UnsafeBlockCopy 
+public class Test_UnsafeBlockCopy 
 {
     static int SIZE = 100;
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         byte* source = stackalloc byte[SIZE];
         byte* dest   = stackalloc byte[SIZE];

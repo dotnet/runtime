@@ -91,7 +91,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// startOffset: offset of the start 'file' within 'bundle'
         /// compressedSize: size of the compressed data, if entry was compressed, otherwise 0
         /// </returns>
-        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, Stream file, FileType type)
+        private (long startOffset, long compressedSize) AddToBundle(Stream bundle, FileStream file, FileType type)
         {
             long startOffset = bundle.Position;
             if (ShouldCompress(type))
@@ -101,7 +101,8 @@ namespace Microsoft.NET.HostModel.Bundle
 
                 // We use DeflateStream here.
                 // It uses GZip algorithm, but with a trivial header that does not contain file info.
-                using (DeflateStream compressionStream = new DeflateStream(bundle, CompressionLevel.Optimal, leaveOpen: true))
+                CompressionLevel smallestSize = (CompressionLevel)3;
+                using (DeflateStream compressionStream = new DeflateStream(bundle, Enum.IsDefined(typeof(CompressionLevel), smallestSize) ? smallestSize : CompressionLevel.Optimal, leaveOpen: true))
                 {
                     file.CopyTo(compressionStream);
                 }

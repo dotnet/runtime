@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -27,7 +28,7 @@ namespace System.Net.Security.Tests
         public CertificateSetup()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (serverCert, serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
 
         public void Dispose()
@@ -694,10 +695,9 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
-            string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            string targetName = useEmptyName ? string.Empty : $"{Guid.NewGuid().ToString("N")}.dot.net";
             int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -750,12 +750,16 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
+        public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
+            if (usePartialChain && OperatingSystem.IsAndroid())
+            {
+                throw new SkipTestException("Android does not support partial chain validation.");
+            }
+
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
@@ -806,103 +810,9 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(true)]
-        [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
+        private async Task SslStream_ClientSendsChain_Core(SslClientAuthenticationOptions clientOptions, X509Certificate2Collection clientChain)
         {
-            string errorMessage;
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            if (customCallback)
-            {
-                clientOptions.RemoteCertificateValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        // Add only root CA to verify that peer did send intermediate CA cert.
-                        chain.ChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        // This should work and we should be able to trust the chain.
-                        Assert.True(chain.Build((X509Certificate2)certificate));
-                        // Reject it in custom callback to simulate for example pinning.
-                        return false;
-                    };
-
-                errorMessage = "RemoteCertificateValidationCallback";
-            }
-            else
-            {
-                // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
-            }
-
-            var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
-
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
-            using (serverStream)
-            using (SslStream client = new SslStream(clientStream))
-            using (SslStream server = new SslStream(serverStream))
-            {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-
-                var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
-                Assert.Contains(errorMessage, e.Message);
-                // Server side should finish since we run custom callback after handshake is done.
-                await t2;
-            }
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862")]
-        public async Task SslStream_ClientCertificate_SendsChain()
-        {
-            // macOS ignores CertificateAuthority
-            // https://github.com/dotnet/runtime/issues/48207
-            StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
             List<SslStream> streams = new List<SslStream>();
-            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
-
-            using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
-            {
-                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
-                store.Open(OpenFlags.ReadWrite);
-                store.AddRange(clientChain);
-                store.Close();
-            }
-
-            // make sure we can build chain. There may be some race conditions after certs being added to the store.
-            int retries = 10;
-            int delay = 100;
-            while (retries > 0)
-            {
-                using (var chain = new X509Chain())
-                {
-                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.DisableCertificateDownloads = true;
-                    bool chainStatus = chain.Build(clientCertificate);
-                    if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
-                    {
-                        break;
-                    }
-                }
-
-                Thread.Sleep(delay);
-                delay *= 2;
-                retries--;
-            }
-
-            Assert.NotEqual(0, retries);
-
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
             var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
             serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
@@ -940,16 +850,140 @@ namespace System.Net.Security.Tests
                 streams.Add(server);
             }
 
+            foreach (SslStream s in streams)
+            {
+                s.Dispose();
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.Android, "It is not possible to add the intermediate certificates to the trust store on Android at runtime.")]
+        public async Task SslStream_ClientCertificate_SendsChain()
+        {
+            // macOS ignores CertificateAuthority
+            // https://github.com/dotnet/runtime/issues/48207
+            StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
+            List<SslStream> streams = new List<SslStream>();
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
+
+            using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
+            {
+                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
+                store.Open(OpenFlags.ReadWrite);
+                store.AddRange(clientChain);
+                store.Close();
+            }
+
+            // make sure we can build chain. There may be some race conditions after certs being added to the store.
+            int retries = 10;
+            int delay = 100;
+            while (retries > 0)
+            {
+                using (var chain = new X509Chain())
+                {
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.DisableCertificateDownloads = true;
+                    bool chainStatus = chain.Build(clientCertificate);
+                    if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
+                    {
+                        break;
+                    }
+                }
+
+                Thread.Sleep(delay);
+                delay *= 2;
+                retries--;
+            }
+
+            Assert.NotEqual(0, retries);
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
+
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
             {
                 c.Dispose();
             }
+        }
 
-            foreach (SslStream s in streams)
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_ClientCertificateContext_SendsChain(bool useTrust)
+        {
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+
+            SslCertificateTrust? trust = null;
+            if (useTrust)
             {
-                s.Dispose();
+                // This is simplification. We make all the intermediates trusted,
+                // normally just the root would go here.
+                trust = SslCertificateTrust.CreateForX509Collection(clientChain, false);
+            }
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline:true, trust);
+
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_EphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
+            Assert.Contains("ephemeral", e.Message);
+            server.Dispose();
+            await Assert.ThrowsAsync<IOException>(() => t1);
+            client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
+            {
+                c.Dispose();
             }
         }
 

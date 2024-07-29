@@ -171,18 +171,7 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 redo:
 #endif
 
-#ifdef USE_TKILL_ON_ANDROID
-	{
-		int old_errno = errno;
-
-		result = tkill (info->native_handle, signum);
-
-		if (result < 0) {
-			result = errno;
-			mono_set_errno (old_errno);
-		}
-	}
-#elif defined (HAVE_PTHREAD_KILL)
+#if defined (HAVE_PTHREAD_KILL)
 	result = pthread_kill (mono_thread_info_get_tid (info), signum);
 #else
 	result = -1;
@@ -363,16 +352,6 @@ mono_memory_barrier_process_wide (void)
 
 	status = pthread_mutex_unlock (&memory_barrier_process_wide_mutex);
 	g_assert (status == 0);
-}
-
-gint32
-mono_native_thread_processor_id_get (void)
-{
-#ifdef HAVE_SCHED_GETCPU
-	return sched_getcpu ();
-#else
-	return -1;
-#endif
 }
 
 #endif /* defined(_POSIX_VERSION) */

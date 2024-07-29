@@ -17,21 +17,17 @@
 //    blockPred -- The predecessor block to find in the predecessor list.
 //
 // Return Value:
-//    The flowList edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
+//    The FlowEdge edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
 //    then returns nullptr.
 //
-// Assumptions:
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
-//
-flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
+FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 {
     assert(block);
     assert(blockPred);
-    assert(!fgCheapPredsValid);
 
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        if (blockPred == pred->getBlock())
+        if (blockPred == pred->getSourceBlock())
         {
             return pred;
         }
@@ -51,26 +47,22 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 //    ptrToPred -- Out parameter: set to the address of the pointer that points to the returned predecessor edge.
 //
 // Return Value:
-//    The flowList edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
+//    The FlowEdge edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
 //    then returns nullptr.
 //
-// Assumptions:
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
-//
-flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred)
+FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred)
 {
     assert(block);
     assert(blockPred);
     assert(ptrToPred);
-    assert(!fgCheapPredsValid);
 
-    flowList** predPrevAddr;
-    flowList*  pred;
+    FlowEdge** predPrevAddr;
+    FlowEdge*  pred;
 
     for (predPrevAddr = &block->bbPreds, pred = *predPrevAddr; pred != nullptr;
-         predPrevAddr = &pred->flNext, pred = *predPrevAddr)
+         predPrevAddr = pred->getNextPredEdgeRef(), pred = *predPrevAddr)
     {
-        if (blockPred == pred->getBlock())
+        if (blockPred == pred->getSourceBlock())
         {
             *ptrToPred = predPrevAddr;
             return pred;
@@ -85,18 +77,16 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 // fgAddRefPred: Increment block->bbRefs by one and add "blockPred" to the predecessor list of "block".
 //
 // Arguments:
+//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
+//                         happening.
+//
 //    block     -- A block to operate on.
 //    blockPred -- The predecessor block to add to the predecessor list.
 //    oldEdge   -- Optional (default: nullptr). If non-nullptr, and a new edge is created (and the dup count
 //                 of an existing edge is not just incremented), the edge weights are copied from this edge.
-//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
-//                         happening.
 //
 // Return Value:
 //    The flow edge representing the predecessor.
-//
-// Assumptions:
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
 //
 // Notes:
 //    -- block->bbRefs is incremented by one to account for the increase in incoming edges.
@@ -105,24 +95,14 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 //    -- fgModified is set if a new flow edge is created (but not if an existing flow edge dup count is incremented),
 //       indicating that the flow graph shape has changed.
 //
-flowList* Compiler::fgAddRefPred(BasicBlock* block,
-                                 BasicBlock* blockPred,
-                                 flowList*   oldEdge /* = nullptr */,
-                                 bool        initializingPreds /* = false */)
+template <bool initializingPreds>
+FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge /* = nullptr */)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
+    assert(fgPredsComputed ^ initializingPreds);
 
     block->bbRefs++;
-
-    if (!fgComputePredsDone && !initializingPreds)
-    {
-        // Why is someone trying to update the preds list when the preds haven't been created?
-        // Ignore them! This can happen when fgMorph is called before the preds list is created.
-        return nullptr;
-    }
-
-    assert(!fgCheapPredsValid);
 
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
@@ -134,11 +114,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
     // not bother sorting for debuggable code, or sort in optFindNaturalLoops, or better, make the code in
     // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
-    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a flDupCount
+    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a DupCount
     // count of duplication. This also necessitates walking the flow list for every edge we add.
     //
-    flowList*  flow  = nullptr;
-    flowList** listp = &block->bbPreds;
+    FlowEdge*  flow = nullptr;
+    FlowEdge** listp;
 
     if (initializingPreds)
     {
@@ -146,14 +126,15 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         // increasing blockPred->bbNum order. The only possible
         // dup list entry is the last one.
         //
-        flowList* flowLast = block->bbLastPred;
+        listp              = &block->bbPreds;
+        FlowEdge* flowLast = block->bbLastPred;
         if (flowLast != nullptr)
         {
-            listp = &flowLast->flNext;
+            listp = flowLast->getNextPredEdgeRef();
 
-            assert(flowLast->getBlock()->bbNum <= blockPred->bbNum);
+            assert(flowLast->getSourceBlock()->bbNum <= blockPred->bbNum);
 
-            if (flowLast->getBlock() == blockPred)
+            if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
             }
@@ -163,12 +144,9 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     {
         // References are added randomly, so we have to search.
         //
-        while ((*listp != nullptr) && ((*listp)->getBlock()->bbNum < blockPred->bbNum))
-        {
-            listp = &(*listp)->flNext;
-        }
+        listp = fgGetPredInsertPoint(blockPred, block);
 
-        if ((*listp != nullptr) && ((*listp)->getBlock() == blockPred))
+        if ((*listp != nullptr) && ((*listp)->getSourceBlock() == blockPred))
         {
             flow = *listp;
         }
@@ -177,15 +155,21 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     if (flow != nullptr)
     {
         // The predecessor block already exists in the flow list; simply add to its duplicate count.
-        noway_assert(flow->flDupCount > 0);
-        flow->flDupCount++;
+        //
+        noway_assert(flow->getDupCount());
+        flow->incrementDupCount();
     }
     else
     {
+        // Create a new edge
+        //
+        // We may be disallowing edge creation, except for edges targeting special blocks.
+        //
+        assert(fgSafeFlowEdgeCreation || block->HasFlag(BBF_CAN_ADD_PRED));
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
-        genFlowNodeSize += sizeof(flowList);
+        genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
 
         // Any changes to the flow graph invalidate the dominator sets.
@@ -193,49 +177,19 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
         // Create new edge in the list in the correct ordered location.
         //
-        flow             = new (this, CMK_FlowList) flowList(blockPred, *listp);
-        flow->flDupCount = 1;
-        *listp           = flow;
+        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, block, *listp);
+        flow->incrementDupCount();
+        *listp = flow;
 
         if (initializingPreds)
         {
             block->bbLastPred = flow;
         }
-
-        if (fgHaveValidEdgeWeights)
+        else if (oldEdge != nullptr)
         {
-            // We are creating an edge from blockPred to block
-            // and we have already computed the edge weights, so
-            // we will try to setup this new edge with valid edge weights.
+            // Copy likelihood from old edge.
             //
-            if (oldEdge != nullptr)
-            {
-                // If our caller has given us the old edge weights
-                // then we will use them.
-                //
-                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax(), block);
-            }
-            else
-            {
-                // Set the max edge weight to be the minimum of block's or blockPred's weight
-                //
-                weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
-
-                // If we are inserting a conditional block the minimum weight is zero,
-                // otherwise it is the same as the edge's max weight.
-                if (blockPred->NumSucc() > 1)
-                {
-                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax, block);
-                }
-                else
-                {
-                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax, block);
-                }
-            }
-        }
-        else
-        {
-            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, block);
+            flow->setLikelihood(oldEdge->getLikelihood());
         }
     }
 
@@ -246,71 +200,49 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     return flow;
 }
 
+// Add explicit instantiations.
+template FlowEdge* Compiler::fgAddRefPred<false>(BasicBlock* block,
+                                                 BasicBlock* blockPred,
+                                                 FlowEdge*   oldEdge /* = nullptr */);
+template FlowEdge* Compiler::fgAddRefPred<true>(BasicBlock* block,
+                                                BasicBlock* blockPred,
+                                                FlowEdge*   oldEdge /* = nullptr */);
+
 //------------------------------------------------------------------------
-// fgRemoveRefPred: Decrements the reference count of a predecessor edge from "blockPred" to "block",
-// removing the edge if it is no longer necessary.
+// fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
+// if the reference count is zero.
 //
 // Arguments:
-//    block -- A block to operate on.
-//    blockPred -- The predecessor block to remove from the predecessor list. It must be a predecessor of "block".
-//
-// Return Value:
-//    If the flow edge was removed (the predecessor has a "dup count" of 1),
-//        returns the flow graph edge that was removed. This means "blockPred" is no longer a predecessor of "block".
-//    Otherwise, returns nullptr. This means that "blockPred" is still a predecessor of "block" (because "blockPred"
-//        is a switch with multiple cases jumping to "block", or a BBJ_COND with both conditional and fall-through
-//        paths leading to "block").
-//
-// Assumptions:
-//    -- "blockPred" must be a predecessor block of "block".
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
+//    edge -- The FlowEdge* to decrement the reference count of.
 //
 // Notes:
-//    -- block->bbRefs is decremented by one to account for the reduction in incoming edges.
-//    -- block->bbRefs is adjusted even if preds haven't been computed. If preds haven't been computed,
-//       the preds themselves aren't touched.
-//    -- fgModified is set if a flow edge is removed (but not if an existing flow edge dup count is decremented),
-//       indicating that the flow graph shape has changed.
+//    -- succBlock->bbRefs is decremented by one to account for the reduction in incoming edges.
+//    -- fgModified is set if a flow edge is removed, indicating that the flow graph shape has changed.
 //
-flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
+void Compiler::fgRemoveRefPred(FlowEdge* edge)
 {
-    noway_assert(block != nullptr);
-    noway_assert(blockPred != nullptr);
+    assert(edge != nullptr);
+    assert(fgPredsComputed);
 
-    noway_assert(block->countOfInEdges() > 0);
-    block->bbRefs--;
+    BasicBlock* predBlock = edge->getSourceBlock();
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(predBlock != nullptr);
+    assert(succBlock != nullptr);
 
-    // Do nothing if we haven't calculated the predecessor list yet.
-    // Yes, this does happen.
-    // For example the predecessor lists haven't been created yet when we do fgMorph.
-    // But fgMorph calls fgFoldConditional, which in turn calls fgRemoveRefPred.
-    if (!fgComputePredsDone)
+    succBlock->bbRefs--;
+
+    assert(edge->getDupCount() > 0);
+    edge->decrementDupCount();
+
+    if (edge->getDupCount() == 0)
     {
-        return nullptr;
-    }
-
-    assert(!fgCheapPredsValid);
-
-    flowList** ptrToPred;
-    flowList*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
-    noway_assert(pred != nullptr);
-    noway_assert(pred->flDupCount > 0);
-
-    pred->flDupCount--;
-
-    if (pred->flDupCount == 0)
-    {
-        // Splice out the predecessor edge since it's no longer necessary.
-        *ptrToPred = pred->flNext;
+        // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
+        FlowEdge** ptrToPred;
+        FlowEdge*  pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
+        *ptrToPred      = pred->getNextPredEdge();
 
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
-
-        return pred;
-    }
-    else
-    {
-        return nullptr;
     }
 }
 
@@ -326,29 +258,27 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 //
 // Assumptions:
 //    -- "blockPred" must be a predecessor block of "block".
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
 //
 // Notes:
 //    block->bbRefs is decremented to account for the reduction in incoming edges.
 //
-flowList* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred)
+FlowEdge* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
-    assert(fgComputePredsDone);
-    assert(!fgCheapPredsValid);
+    assert(fgPredsComputed);
     assert(block->countOfInEdges() > 0);
 
-    flowList** ptrToPred;
-    flowList*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
+    FlowEdge** ptrToPred;
+    FlowEdge*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
     assert(pred != nullptr);
-    assert(pred->flDupCount > 0);
+    assert(pred->getDupCount() > 0);
 
-    assert(block->bbRefs >= pred->flDupCount);
-    block->bbRefs -= pred->flDupCount;
+    assert(block->bbRefs >= pred->getDupCount());
+    block->bbRefs -= pred->getDupCount();
 
     // Now splice out the predecessor edge.
-    *ptrToPred = pred->flNext;
+    *ptrToPred = pred->getNextPredEdge();
 
     // Any changes to the flow graph invalidate the dominator sets.
     fgModified = true;
@@ -363,532 +293,241 @@ flowList* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred
 // Arguments:
 //    block -- A block to operate on.
 //
-// Assumptions:
-//    -- This only works on the full predecessor lists, not the cheap preds lists.
-//
 void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
-    assert(!fgCheapPredsValid);
-
     PREFIX_ASSUME(block != nullptr);
 
-    BasicBlock* bNext;
-
-    switch (block->bbJumpKind)
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
-            if (!(block->bbFlags & BBF_RETLESS_CALL))
-            {
-                assert(block->isBBCallAlwaysPair());
-
-                /* The block after the BBJ_CALLFINALLY block is not reachable */
-                bNext = block->bbNext;
-
-                /* bNext is an unreachable BBJ_ALWAYS block */
-                noway_assert(bNext->bbJumpKind == BBJ_ALWAYS);
-
-                while (bNext->countOfInEdges() > 0)
-                {
-                    fgRemoveRefPred(bNext, bNext->bbPreds->getBlock());
-                }
-            }
-
-            FALLTHROUGH;
-
-        case BBJ_COND:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-
-            /* Update the predecessor list for 'block->bbJumpDest' and 'block->bbNext' */
-            fgRemoveRefPred(block->bbJumpDest, block);
-
-            if (block->bbJumpKind != BBJ_COND)
-            {
-                break;
-            }
-
-            /* If BBJ_COND fall through */
-            FALLTHROUGH;
-
-        case BBJ_NONE:
-
-            /* Update the predecessor list for 'block->bbNext' */
-            fgRemoveRefPred(block->bbNext, block);
+        case BBJ_EHFILTERRET:
+            fgRemoveRefPred(block->GetTargetEdge());
             break;
 
-        case BBJ_EHFILTERRET:
-
-            block->bbJumpDest->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
-            fgRemoveRefPred(block->bbJumpDest, block);
+        case BBJ_COND:
+            fgRemoveRefPred(block->GetTrueEdge());
+            fgRemoveRefPred(block->GetFalseEdge());
             break;
 
         case BBJ_EHFINALLYRET:
         {
-            /* Remove block as the predecessor of the bbNext of all
-               BBJ_CALLFINALLY blocks calling this finally. No need
-               to look for BBJ_CALLFINALLY for fault handlers. */
-
-            unsigned  hndIndex = block->getHndIndex();
-            EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-            if (ehDsc->HasFinallyHandler())
+            BBehfDesc* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {
-                BasicBlock* begBlk;
-                BasicBlock* endBlk;
-                ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-                BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
-                {
-                    if ((bcall->bbFlags & BBF_REMOVED) || bcall->bbJumpKind != BBJ_CALLFINALLY ||
-                        bcall->bbJumpDest != finBeg)
-                    {
-                        continue;
-                    }
-
-                    assert(bcall->isBBCallAlwaysPair());
-                    fgRemoveRefPred(bcall->bbNext, block);
-                }
+                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
             }
+            break;
         }
-        break;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             break;
 
         case BBJ_SWITCH:
-            for (BasicBlock* const bTarget : block->SwitchTargets())
+        {
+            BBswtDesc* const swtDesc = block->GetSwitchTargets();
+            for (unsigned i = 0; i < swtDesc->bbsCount; i++)
             {
-                fgRemoveRefPred(bTarget, block);
+                fgRemoveRefPred(swtDesc->bbsDstTab[i]);
             }
             break;
+        }
 
         default:
-            noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            noway_assert(!"Block doesn't have a valid bbKind!!!!");
             break;
     }
 }
 
 //------------------------------------------------------------------------
-// fgComputeCheapPreds: Compute the BasicBlock::bbCheapPreds lists.
+// fgGetPredInsertPoint: Searches newTarget->bbPreds for where to insert an edge from blockPred.
 //
-// No other block data is changed (e.g., bbRefs, bbFlags).
+// Arguments:
+//    blockPred -- The block we want to make a predecessor of newTarget (it could already be one).
+//    newTarget -- The block whose pred list we will search.
 //
-// The cheap preds lists are similar to the normal (bbPreds) predecessor lists, but are cheaper to
-// compute and store, as follows:
-// 1. A flow edge is typed BasicBlockList, which only has a block pointer and 'next' pointer. It doesn't
-//    have weights or a dup count.
-// 2. The preds list for a block is not sorted by block number.
-// 3. The predecessors of the block following a BBJ_CALLFINALLY (the corresponding BBJ_ALWAYS,
-//    for normal, non-retless calls to the finally) are not computed.
-// 4. The cheap preds lists will contain duplicates if a single switch table has multiple branches
-//    to the same block. Thus, we don't spend the time looking for duplicates for every edge we insert.
+// Return Value:
+//    Returns a pointer to the next pointer of an edge in newTarget's pred list.
+//    A new edge from blockPred to newTarget can be inserted here
+//    without disrupting bbPreds' sorting invariant.
 //
-void Compiler::fgComputeCheapPreds()
+FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* newTarget)
 {
-    noway_assert(!fgComputePredsDone); // We can't do this if we've got the full preds.
-    noway_assert(fgFirstBB != nullptr);
+    assert(blockPred != nullptr);
+    assert(newTarget != nullptr);
+    assert(fgPredsComputed);
 
-#ifdef DEBUG
-    if (verbose)
+    FlowEdge** listp = &newTarget->bbPreds;
+
+    // Search pred list for insertion point
+    //
+    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
     {
-        printf("\n*************** In fgComputeCheapPreds()\n");
-        fgDispBasicBlocks();
-        printf("\n");
-    }
-#endif // DEBUG
-
-    // Clear out the cheap preds lists.
-    fgRemovePreds();
-
-    for (BasicBlock* const block : Blocks())
-    {
-        switch (block->bbJumpKind)
-        {
-            case BBJ_COND:
-                fgAddCheapPred(block->bbJumpDest, block);
-                fgAddCheapPred(block->bbNext, block);
-                break;
-
-            case BBJ_CALLFINALLY:
-            case BBJ_LEAVE: // If fgComputeCheapPreds is called before all blocks are imported, BBJ_LEAVE blocks are
-                            // still in the BB list.
-            case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-                fgAddCheapPred(block->bbJumpDest, block);
-                break;
-
-            case BBJ_NONE:
-                fgAddCheapPred(block->bbNext, block);
-                break;
-
-            case BBJ_EHFILTERRET:
-                // Connect end of filter to catch handler.
-                // In a well-formed program, this cannot be null.  Tolerate here, so that we can call
-                // fgComputeCheapPreds before fgImport on an ill-formed program; the problem will be detected in
-                // fgImport.
-                if (block->bbJumpDest != nullptr)
-                {
-                    fgAddCheapPred(block->bbJumpDest, block);
-                }
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    fgAddCheapPred(bTarget, block);
-                }
-                break;
-
-            case BBJ_EHFINALLYRET: // It's expensive to compute the preds for this case, so we don't for the cheap
-                                   // preds.
-            case BBJ_THROW:
-            case BBJ_RETURN:
-                break;
-
-            default:
-                noway_assert(!"Unexpected bbJumpKind");
-                break;
-        }
+        listp = (*listp)->getNextPredEdgeRef();
     }
 
-    fgCheapPredsValid = true;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** After fgComputeCheapPreds()\n");
-        fgDispBasicBlocks();
-        printf("\n");
-    }
-#endif
+    return listp;
 }
 
 //------------------------------------------------------------------------
-// fgAddCheapPred: Add 'blockPred' to the cheap predecessor list of 'block'.
+// fgRedirectTargetEdge: Sets block->bbTargetEdge's target block to newTarget,
+// updating pred lists as necessary.
 //
 // Arguments:
-//    block -- A block to operate on.
-//    blockPred -- The predecessor block to add to the cheap predecessors list. It must be a predecessor of "block".
+//    block -- The block we want to make a predecessor of newTarget.
+//             It could be one already, in which case nothing changes.
+//    newTarget -- The new successor of block.
 //
-// Assumptions:
-//    -- "blockPred" must be a predecessor block of "block".
-//    -- This only works on the cheap predecessor lists.
-//
-void Compiler::fgAddCheapPred(BasicBlock* block, BasicBlock* blockPred)
+void Compiler::fgRedirectTargetEdge(BasicBlock* block, BasicBlock* newTarget)
 {
-    assert(!fgComputePredsDone);
     assert(block != nullptr);
-    assert(blockPred != nullptr);
+    assert(newTarget != nullptr);
 
-    block->bbCheapPreds = new (this, CMK_FlowList) BasicBlockList(blockPred, block->bbCheapPreds);
+    FlowEdge* edge = block->GetTargetEdge();
+    assert(edge->getDupCount() == 1);
 
-#if MEASURE_BLOCK_SIZE
-    genFlowNodeCnt += 1;
-    genFlowNodeSize += sizeof(BasicBlockList);
-#endif // MEASURE_BLOCK_SIZE
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
+    //
+    BasicBlock* oldTarget = edge->getDestinationBlock();
+    fgRemoveAllRefPreds(oldTarget, block);
+
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
+    edge->setNextPredEdge(*predListPtr);
+    edge->setDestinationBlock(newTarget);
+    *predListPtr = edge;
+
+    // Pred list of target should (still) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
+
+    // Edge should still have only one ref
+    assert(edge->getDupCount() == 1);
+    newTarget->bbRefs++;
 }
 
 //------------------------------------------------------------------------
-// fgRemoveCheapPred: Remove 'blockPred' from the cheap predecessor list of 'block'.
-// If there are duplicate edges, only remove one of them.
+// fgRedirectTrueEdge: Sets block->bbTrueEdge's target block to newTarget,
+// updating pred lists as necessary.
 //
 // Arguments:
-//    block     -- A block to operate on.
-//    blockPred -- The predecessor block to remove from the cheap predecessors list. It must be a
-//                 predecessor of "block".
+//    block -- The block we want to make a predecessor of newTarget.
+//             It could be one already, in which case nothing changes.
+//    newTarget -- The new successor of block.
 //
-// Assumptions:
-//    -- "blockPred" must be a predecessor block of "block".
-//    -- This only works on the cheap predecessor lists.
+// Notes:
+//    This assumes block's true and false targets are different.
+//    If setting block's true target to its false target,
+//    fgRedirectTrueEdge increments the false edge's dup count,
+//    and ensures block->bbTrueEdge == block->bbFalseEdge.
+//    We don't update newTarget->bbPreds in this case,
+//    as we don't want to have more than one edge from the same predecessor.
 //
-void Compiler::fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred)
+void Compiler::fgRedirectTrueEdge(BasicBlock* block, BasicBlock* newTarget)
 {
-    assert(!fgComputePredsDone);
-    assert(fgCheapPredsValid);
-
     assert(block != nullptr);
-    assert(blockPred != nullptr);
-    assert(block->bbCheapPreds != nullptr);
+    assert(newTarget != nullptr);
+    assert(block->KindIs(BBJ_COND));
+    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
 
-    /* Is this the first block in the pred list? */
-    if (blockPred == block->bbCheapPreds->block)
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
+    //
+    FlowEdge*   trueEdge  = block->GetTrueEdge();
+    BasicBlock* oldTarget = trueEdge->getDestinationBlock();
+    fgRemoveAllRefPreds(oldTarget, block);
+
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
+    FlowEdge*  predEdge    = *predListPtr;
+
+    if (block->FalseEdgeIs(predEdge))
     {
-        block->bbCheapPreds = block->bbCheapPreds->next;
+        block->SetTrueEdge(predEdge);
+        predEdge->incrementDupCount();
     }
     else
     {
-        BasicBlockList* pred;
-        for (pred = block->bbCheapPreds; pred->next != nullptr; pred = pred->next)
-        {
-            if (blockPred == pred->next->block)
-            {
-                break;
-            }
-        }
-        noway_assert(pred->next != nullptr); // we better have found it!
-        pred->next = pred->next->next;       // splice it out
+        trueEdge->setNextPredEdge(predEdge);
+        trueEdge->setDestinationBlock(newTarget);
+        *predListPtr = trueEdge;
     }
+
+    newTarget->bbRefs++;
+
+    // Pred list of target should (still) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
 }
 
 //------------------------------------------------------------------------
-// fgRemovePreds: Remove all pred information from blocks
+// fgRedirectFalseEdge: Sets block->bbFalseEdge's target block to newTarget,
+// updating pred lists as necessary.
 //
-void Compiler::fgRemovePreds()
-{
-    // bbPreds and bbCheapPreds are at the same place in a union
-    static_assert_no_msg(offsetof(BasicBlock, bbPreds) == offsetof(BasicBlock, bbCheapPreds));
-    // and are the same size. So, this function removes both.
-    static_assert_no_msg(sizeof(((BasicBlock*)nullptr)->bbPreds) == sizeof(((BasicBlock*)nullptr)->bbCheapPreds));
-
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbPreds = nullptr;
-    }
-    fgComputePredsDone = false;
-    fgCheapPredsValid  = false;
-}
-
-//------------------------------------------------------------------------
-// fgComputePreds: Compute the predecessor lists for each block.
+// Arguments:
+//    block -- The block we want to make a predecessor of newTarget.
+//             It could be one already, in which case nothing changes.
+//    newTarget -- The new successor of block.
 //
 // Notes:
-//    -- Resets and then fills in the list of `bbPreds` predecessor lists for each basic block.
-//    -- Sets the `bbRefs` reference count for each block.
-//    -- Uses `bbLastPred` to optimize inserting predecessors in increasing block number order.
-//    -- The first block of the function gets a `bbRefs` count of at least one because it is always
-//       reachable via the prolog.
-//    -- The first block of each EH handler and EH filter gets an artificial addition ref count to ensure they are
-//       considered reachable.
-//    -- `fgModified` is reset to `false` to indicate the flow graph is in an unmodified state.
-//    -- `fgComputePredsDone` is set to `true`.
+//    This assumes block's true and false targets are different.
+//    If setting block's false target to its true target,
+//    fgRedirectFalseEdge increments the true edge's dup count,
+//    and ensures block->bbTrueEdge == block->bbFalseEdge.
+//    We don't update newTarget->bbPreds in this case,
+//    as we don't want to have more than one edge from the same predecessor.
 //
-// Assumptions:
-//    Assumes blocks (via bbNext) are in increasing bbNum order.
-//
-void Compiler::fgComputePreds()
+void Compiler::fgRedirectFalseEdge(BasicBlock* block, BasicBlock* newTarget)
 {
-    noway_assert(fgFirstBB != nullptr);
+    assert(block != nullptr);
+    assert(newTarget != nullptr);
+    assert(block->KindIs(BBJ_COND));
+    assert(!block->TrueEdgeIs(block->GetFalseEdge()));
 
-#ifdef DEBUG
-    // Check that the block numbers are increasing order.
-    unsigned lastBBnum = fgFirstBB->bbNum;
-    for (BasicBlock* const block : Blocks(fgFirstBB->bbNext))
-    {
-        assert(lastBBnum < block->bbNum);
-        lastBBnum = block->bbNum;
-    }
-#endif // DEBUG
-
-    // Reset everything pred related
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbPreds    = nullptr;
-        block->bbLastPred = nullptr;
-        block->bbRefs     = 0;
-    }
-
-    // the first block is always reachable
-    fgFirstBB->bbRefs = 1;
-
-    // Under OSR, we may need to specially protect the original method entry.
+    // Update oldTarget's pred list.
+    // We could call fgRemoveRefPred, but since we're removing the one and only ref from block to oldTarget,
+    // fgRemoveAllRefPreds is slightly more efficient (one fewer branch, doesn't update edge's dup count, etc).
     //
-    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    FlowEdge*   falseEdge = block->GetFalseEdge();
+    BasicBlock* oldTarget = falseEdge->getDestinationBlock();
+    fgRemoveAllRefPreds(oldTarget, block);
+
+    // Splice edge into new target block's pred list
+    //
+    FlowEdge** predListPtr = fgGetPredInsertPoint(block, newTarget);
+    FlowEdge*  predEdge    = *predListPtr;
+
+    if (block->TrueEdgeIs(predEdge))
     {
-        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-        fgEntryBB->bbRefs = 1;
+        block->SetFalseEdge(predEdge);
+        predEdge->incrementDupCount();
+    }
+    else
+    {
+        falseEdge->setNextPredEdge(predEdge);
+        falseEdge->setDestinationBlock(newTarget);
+        *predListPtr = falseEdge;
     }
 
-    for (BasicBlock* const block : Blocks())
-    {
-        switch (block->bbJumpKind)
-        {
-            case BBJ_CALLFINALLY:
-                if (!(block->bbFlags & BBF_RETLESS_CALL))
-                {
-                    assert(block->isBBCallAlwaysPair());
+    newTarget->bbRefs++;
 
-                    /* Mark the next block as being a jump target,
-                       since the call target will return there */
-                    PREFIX_ASSUME(block->bbNext != nullptr);
-                }
-
-                FALLTHROUGH;
-
-            case BBJ_LEAVE: // Sometimes fgComputePreds is called before all blocks are imported, so BBJ_LEAVE
-                            // blocks are still in the BB list.
-            case BBJ_COND:
-            case BBJ_ALWAYS:
-            case BBJ_EHCATCHRET:
-
-                fgAddRefPred(block->bbJumpDest, block, nullptr, true);
-
-                /* Is the next block reachable? */
-
-                if (block->bbJumpKind != BBJ_COND)
-                {
-                    break;
-                }
-
-                noway_assert(block->bbNext);
-
-                /* Fall through, the next block is also reachable */
-                FALLTHROUGH;
-
-            case BBJ_NONE:
-
-                fgAddRefPred(block->bbNext, block, nullptr, true);
-                break;
-
-            case BBJ_EHFILTERRET:
-
-                // Connect end of filter to catch handler.
-                // In a well-formed program, this cannot be null.  Tolerate here, so that we can call
-                // fgComputePreds before fgImport on an ill-formed program; the problem will be detected in fgImport.
-                if (block->bbJumpDest != nullptr)
-                {
-                    fgAddRefPred(block->bbJumpDest, block, nullptr, true);
-                }
-                break;
-
-            case BBJ_EHFINALLYRET:
-            {
-                /* Connect the end of the finally to the successor of
-                  the call to this finally */
-
-                if (!block->hasHndIndex())
-                {
-                    NO_WAY("endfinally outside a finally/fault block.");
-                }
-
-                unsigned  hndIndex = block->getHndIndex();
-                EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-                if (!ehDsc->HasFinallyOrFaultHandler())
-                {
-                    NO_WAY("endfinally outside a finally/fault block.");
-                }
-
-                if (ehDsc->HasFinallyHandler())
-                {
-                    // Find all BBJ_CALLFINALLY that branched to this finally handler.
-                    BasicBlock* begBlk;
-                    BasicBlock* endBlk;
-                    ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-                    BasicBlock* finBeg = ehDsc->ebdHndBeg;
-                    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
-                    {
-                        if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
-                        {
-                            continue;
-                        }
-
-                        noway_assert(bcall->isBBCallAlwaysPair());
-                        fgAddRefPred(bcall->bbNext, block, nullptr, true);
-                    }
-                }
-            }
-            break;
-
-            case BBJ_THROW:
-            case BBJ_RETURN:
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    fgAddRefPred(bTarget, block, nullptr, true);
-                }
-                break;
-
-            default:
-                noway_assert(!"Unexpected bbJumpKind");
-                break;
-        }
-    }
-
-    for (EHblkDsc* const ehDsc : EHClauses(this))
-    {
-        if (ehDsc->HasFilter())
-        {
-            // The first block of a filter has an artificial extra refcount.
-            ehDsc->ebdFilter->bbRefs++;
-        }
-
-        // The first block of a handler has an artificial extra refcount.
-        ehDsc->ebdHndBeg->bbRefs++;
-    }
-
-    fgModified         = false;
-    fgComputePredsDone = true;
-}
-
-unsigned Compiler::fgNSuccsOfFinallyRet(BasicBlock* block)
-{
-    BasicBlock* bb;
-    unsigned    res;
-    fgSuccOfFinallyRetWork(block, ~0, &bb, &res);
-    return res;
-}
-
-BasicBlock* Compiler::fgSuccOfFinallyRet(BasicBlock* block, unsigned i)
-{
-    BasicBlock* bb;
-    unsigned    res;
-    fgSuccOfFinallyRetWork(block, i, &bb, &res);
-    return bb;
-}
-
-void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock** bres, unsigned* nres)
-{
-    assert(block->hasHndIndex()); // Otherwise, endfinally outside a finally/fault block?
-
-    unsigned  hndIndex = block->getHndIndex();
-    EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-    assert(ehDsc->HasFinallyOrFaultHandler()); // Otherwise, endfinally outside a finally/fault block.
-
-    *bres            = nullptr;
-    unsigned succNum = 0;
-
-    if (ehDsc->HasFinallyHandler())
-    {
-        BasicBlock* begBlk;
-        BasicBlock* endBlk;
-        ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-        BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-        for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
-        {
-            if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
-            {
-                continue;
-            }
-
-            assert(bcall->isBBCallAlwaysPair());
-
-            if (succNum == i)
-            {
-                *bres = bcall->bbNext;
-                return;
-            }
-            succNum++;
-        }
-    }
-    assert(i == ~0u || ehDsc->HasFaultHandler()); // Should reach here only for fault blocks.
-    if (i == ~0u)
-    {
-        *nres = succNum;
-    }
+    // Pred list of target should (still) be ordered
+    //
+    assert(newTarget->checkPredListOrder());
 }
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH);
+    assert(switchBlk->KindIs(BBJ_SWITCH));
     BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
     SwitchUniqueSuccSet   res;
     if (switchMap->Lookup(switchBlk, &res))
@@ -905,8 +544,7 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // can create a new epoch, thus invalidating all existing BlockSet objects, such as
         // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
 
-        unsigned     bbNumMax = impInlineRoot()->fgBBNumMax;
-        BitVecTraits blockVecTraits(bbNumMax + 1, this);
+        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {
@@ -915,16 +553,20 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
 
-        BasicBlock** nonDups = new (getAllocator()) BasicBlock*[numNonDups];
+        FlowEdge** nonDups = new (getAllocator()) FlowEdge*[numNonDups];
 
         unsigned nonDupInd = 0;
+
         // At this point, all unique targets are in "uniqueSuccBlocks".  As we encounter each,
         // add to nonDups, remove from "uniqueSuccBlocks".
-        for (BasicBlock* const targ : switchBlk->SwitchTargets())
+        BBswtDesc* const swtDesc = switchBlk->GetSwitchTargets();
+        for (unsigned i = 0; i < swtDesc->bbsCount; i++)
         {
+            FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
+            BasicBlock* const targ     = succEdge->getDestinationBlock();
             if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
-                nonDups[nonDupInd] = targ;
+                nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
                 BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
             }
@@ -936,87 +578,6 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         res.nonDuplicates    = nonDups;
         switchMap->Set(switchBlk, res);
         return res;
-    }
-}
-
-void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
-                                                 BasicBlock*   switchBlk,
-                                                 BasicBlock*   from,
-                                                 BasicBlock*   to)
-{
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH); // Precondition.
-
-    // Is "from" still in the switch table (because it had more than one entry before?)
-    bool fromStillPresent = false;
-    for (BasicBlock* const bTarget : switchBlk->SwitchTargets())
-    {
-        if (bTarget == from)
-        {
-            fromStillPresent = true;
-            break;
-        }
-    }
-
-    // Is "to" already in "this"?
-    bool toAlreadyPresent = false;
-    for (unsigned i = 0; i < numDistinctSuccs; i++)
-    {
-        if (nonDuplicates[i] == to)
-        {
-            toAlreadyPresent = true;
-            break;
-        }
-    }
-
-    // Four cases:
-    //   If "from" is still present, and "to" is already present, do nothing
-    //   If "from" is still present, and "to" is not, must reallocate to add an entry.
-    //   If "from" is not still present, and "to" is not present, write "to" where "from" was.
-    //   If "from" is not still present, but "to" is present, remove "from".
-    if (fromStillPresent && toAlreadyPresent)
-    {
-        return;
-    }
-    else if (fromStillPresent && !toAlreadyPresent)
-    {
-        // reallocate to add an entry
-        BasicBlock** newNonDups = new (alloc) BasicBlock*[numDistinctSuccs + 1];
-        memcpy(newNonDups, nonDuplicates, numDistinctSuccs * sizeof(BasicBlock*));
-        newNonDups[numDistinctSuccs] = to;
-        numDistinctSuccs++;
-        nonDuplicates = newNonDups;
-    }
-    else if (!fromStillPresent && !toAlreadyPresent)
-    {
-        // write "to" where "from" was
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = to;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
-    }
-    else
-    {
-        assert(!fromStillPresent && toAlreadyPresent);
-        // remove "from".
-        INDEBUG(bool foundFrom = false);
-        for (unsigned i = 0; i < numDistinctSuccs; i++)
-        {
-            if (nonDuplicates[i] == from)
-            {
-                nonDuplicates[i] = nonDuplicates[numDistinctSuccs - 1];
-                numDistinctSuccs--;
-                INDEBUG(foundFrom = true);
-                break;
-            }
-        }
-        assert(foundFrom);
     }
 }
 
@@ -1032,22 +593,5 @@ void Compiler::fgInvalidateSwitchDescMapEntry(BasicBlock* block)
     if (m_switchDescMap != nullptr)
     {
         m_switchDescMap->Remove(block);
-    }
-}
-
-void Compiler::UpdateSwitchTableTarget(BasicBlock* switchBlk, BasicBlock* from, BasicBlock* to)
-{
-    if (m_switchDescMap == nullptr)
-    {
-        return; // No mappings, nothing to do.
-    }
-
-    // Otherwise...
-    BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
-    SwitchUniqueSuccSet*  res       = switchMap->LookupPointer(switchBlk);
-    if (res != nullptr)
-    {
-        // If no result, nothing to do. Otherwise, update it.
-        res->UpdateTarget(getAllocator(), switchBlk, from, to);
     }
 }

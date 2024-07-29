@@ -18,6 +18,7 @@ namespace System.Reflection
 
         public bool IsInitOnly => (Attributes & FieldAttributes.InitOnly) != 0;
         public bool IsLiteral => (Attributes & FieldAttributes.Literal) != 0;
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public bool IsNotSerialized => (Attributes & FieldAttributes.NotSerialized) != 0;
         public bool IsPinvokeImpl => (Attributes & FieldAttributes.PinvokeImpl) != 0;
         public bool IsSpecialName => (Attributes & FieldAttributes.SpecialName) != 0;
@@ -73,6 +74,8 @@ namespace System.Reflection
         public virtual object? GetValueDirect(TypedReference obj) { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
 
         public virtual object? GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
+
+        public virtual Type GetModifiedFieldType() => throw new NotSupportedException();
 
         public virtual Type[] GetOptionalCustomModifiers() { throw NotImplemented.ByDesign; }
         public virtual Type[] GetRequiredCustomModifiers() { throw NotImplemented.ByDesign; }

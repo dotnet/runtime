@@ -19,6 +19,7 @@ namespace BasicEventSourceTests
         /// Tests the ETW path.
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_WriteEvent_Manifest_ETW()
         {
             using (var listener = new EtwListener())
@@ -32,6 +33,7 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths.
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_WriteEvent_SelfDescribing_ETW()
         {
             using (var listener = new EtwListener())
@@ -45,6 +47,7 @@ namespace BasicEventSourceTests
         /// Tests the EventListener case
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_WriteEvent_ComplexData_SelfDescribing_ETW()
         {
             using (var listener = new EtwListener())
@@ -59,6 +62,7 @@ namespace BasicEventSourceTests
         /// Tests the EventListener case
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_WriteEvent_ByteArray_Manifest_ETW()
         {
             using (var listener = new EtwListener())
@@ -73,6 +77,7 @@ namespace BasicEventSourceTests
         /// Tests the EventListener case
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_WriteEvent_ByteArray_SelfDescribing_ETW()
         {
             using (var listener = new EtwListener())

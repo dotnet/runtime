@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#nullable disable
+#nullable enable
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	// Copied from https://github.com/dotnet/roslyn/blob/c8ebc8682889b395fcb84c85bf4ff54577377d26/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/FlowAnalysis/LValueFlowCaptureProvider.cs
+	// Adapted from https://github.com/dotnet/roslyn/blob/c8ebc8682889b395fcb84c85bf4ff54577377d26/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/FlowAnalysis/LValueFlowCaptureProvider.cs
 	/// <summary>
 	/// Helper class to detect <see cref="IFlowCaptureOperation"/>s that are l-value captures.
 	/// L-value captures are essentially captures of a symbol's location/address.
@@ -38,6 +38,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	/// </remarks>
 	internal static class LValueFlowCapturesProvider
 	{
+		static bool IsLValueFlowCapture (IFlowCaptureReferenceOperation flowCaptureReference, out IAssignmentOperation? assignment)
+		{
+			assignment = flowCaptureReference.Parent as IAssignmentOperation;
+			if (assignment?.Target == flowCaptureReference)
+				return true;
+
+			assignment = null;
+			return flowCaptureReference.IsInLeftOfDeconstructionAssignment (out _);
+		}
+
 		public static ImmutableDictionary<CaptureId, FlowCaptureKind> CreateLValueFlowCaptures (ControlFlowGraph cfg)
 		{
 			// This method identifies flow capture reference operations that are target of an assignment
@@ -47,15 +57,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// the flow graph. Specifically, for an ICoalesceOperation a flow capture acts
 			// as both an r-value and l-value flow capture.
 
-			ImmutableDictionary<CaptureId, FlowCaptureKind>.Builder lvalueFlowCaptureIdBuilder = null;
+			ImmutableDictionary<CaptureId, FlowCaptureKind>.Builder? lvalueFlowCaptureIdBuilder = null;
 			var rvalueFlowCaptureIds = new HashSet<CaptureId> ();
 
 			foreach (var flowCaptureReference in cfg.DescendantOperations<IFlowCaptureReferenceOperation> (OperationKind.FlowCaptureReference)) {
-				if (flowCaptureReference.Parent is IAssignmentOperation assignment &&
-					assignment.Target == flowCaptureReference ||
-					flowCaptureReference.IsInLeftOfDeconstructionAssignment (out _)) {
+				if (IsLValueFlowCapture (flowCaptureReference, out IAssignmentOperation? assignment)) {
 					lvalueFlowCaptureIdBuilder ??= ImmutableDictionary.CreateBuilder<CaptureId, FlowCaptureKind> ();
-					var captureKind = flowCaptureReference.Parent.IsAnyCompoundAssignment () || rvalueFlowCaptureIds.Contains (flowCaptureReference.Id)
+					var captureKind = assignment?.IsAnyCompoundAssignment () == true || rvalueFlowCaptureIds.Contains (flowCaptureReference.Id)
 						? FlowCaptureKind.LValueAndRValueCapture
 						: FlowCaptureKind.LValueCapture;
 					lvalueFlowCaptureIdBuilder.Add (flowCaptureReference.Id, captureKind);

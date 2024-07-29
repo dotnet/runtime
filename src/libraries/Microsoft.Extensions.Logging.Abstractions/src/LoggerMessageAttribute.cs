@@ -52,6 +52,38 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
+        /// which is used to guide the production of a strongly-typed logging method.
+        /// </summary>
+        /// <param name="level">The log level.</param>
+        /// <param name="message">Format string of the log message.</param>
+        public LoggerMessageAttribute(LogLevel level, string message)
+        {
+            Level = level;
+            Message = message;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
+        /// which is used to guide the production of a strongly-typed logging method.
+        /// </summary>
+        /// <param name="level">The log level.</param>
+        public LoggerMessageAttribute(LogLevel level)
+        {
+            Level = level;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LoggerMessageAttribute"/> class
+        /// which is used to guide the production of a strongly-typed logging method.
+        /// </summary>
+        /// <param name="message">Format string of the log message.</param>
+        public LoggerMessageAttribute(string message)
+        {
+            Message = message;
+        }
+
+        /// <summary>
         /// Gets the logging event id for the logging method.
         /// </summary>
         public int EventId { get; set; } = -1;

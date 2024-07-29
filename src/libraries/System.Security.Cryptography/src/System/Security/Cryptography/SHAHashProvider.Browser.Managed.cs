@@ -1,10 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using Internal.Cryptography;
-
 using static System.Numerics.BitOperations;
 
 namespace System.Security.Cryptography
@@ -14,29 +13,50 @@ namespace System.Security.Cryptography
         private int hashSizeInBytes;
         private SHAManagedImplementationBase impl;
         private MemoryStream? buffer;
+        private readonly string _hashAlgorithmId;
 
         public SHAManagedHashProvider(string hashAlgorithmId)
+        {
+            (impl, hashSizeInBytes) = CreateFromHashAlgorithmId(hashAlgorithmId);
+            _hashAlgorithmId = hashAlgorithmId;
+        }
+
+        private SHAManagedHashProvider(string hashAlgorithmId, MemoryStream buffer)
+        {
+            (impl, hashSizeInBytes) = CreateFromHashAlgorithmId(hashAlgorithmId);
+            _hashAlgorithmId = hashAlgorithmId;
+            this.buffer = buffer;
+        }
+
+        private static (SHAManagedImplementationBase, int) CreateFromHashAlgorithmId(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)
             {
                 case HashAlgorithmNames.SHA1:
-                    impl = new SHA1ManagedImplementation();
-                    hashSizeInBytes = 20;
-                    break;
+                    return (new SHA1ManagedImplementation(), 20);
                 case HashAlgorithmNames.SHA256:
-                    impl = new SHA256ManagedImplementation();
-                    hashSizeInBytes = 32;
-                    break;
+                    return (new SHA256ManagedImplementation(), 32);
                 case HashAlgorithmNames.SHA384:
-                    impl = new SHA384ManagedImplementation();
-                    hashSizeInBytes = 48;
-                    break;
+                    return (new SHA384ManagedImplementation(), 48);
                 case HashAlgorithmNames.SHA512:
-                    impl = new SHA512ManagedImplementation();
-                    hashSizeInBytes = 64;
-                    break;
+                    return (new SHA512ManagedImplementation(), 64);
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
+        }
+
+        public override HashProvider Clone()
+        {
+            if (buffer is null)
+            {
+                return new SHAManagedHashProvider(_hashAlgorithmId);
+            }
+            else
+            {
+                int length = (int)buffer.Length;
+                MemoryStream bufferCopy = new MemoryStream(length);
+                bufferCopy.Write(buffer.GetBuffer(), 0, length);
+                return new SHAManagedHashProvider(_hashAlgorithmId, bufferCopy);
             }
         }
 
@@ -244,7 +264,8 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
-            private static readonly uint[] _K = {
+            private static ReadOnlySpan<uint> _K =>
+            [
                 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
                 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
                 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -261,7 +282,7 @@ namespace System.Security.Cryptography
                 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
                 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
                 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-            };
+            ];
 
             private static unsafe void SHATransform(uint* expandedBuffer, uint* state, byte* block)
             {
@@ -522,7 +543,8 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
-            private static readonly ulong[] _K = {
+            private static ReadOnlySpan<ulong> _K =>
+            [
                 0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
                 0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
                 0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
@@ -543,7 +565,7 @@ namespace System.Security.Cryptography
                 0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,
                 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
-            };
+            ];
 
             private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
             {
@@ -810,7 +832,8 @@ namespace System.Security.Cryptography
                 return hash;
             }
 
-            private static readonly ulong[] _K = {
+            private static ReadOnlySpan<ulong> _K =>
+            [
                 0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
                 0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
                 0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
@@ -831,7 +854,7 @@ namespace System.Security.Cryptography
                 0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,
                 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
-            };
+            ];
 
             private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
             {

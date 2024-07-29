@@ -49,7 +49,7 @@
 #define EEHASH_MEMORY_POOL_GROW_COUNT 128
 
 StringLiteralEntryArray *StringLiteralEntry::s_EntryList = NULL;
-DWORD StringLiteralEntry::s_UsedEntries = NULL;
+DWORD StringLiteralEntry::s_UsedEntries = 0;
 StringLiteralEntry *StringLiteralEntry::s_FreeEntryList = NULL;
 
 StringLiteralMap::StringLiteralMap()
@@ -341,7 +341,7 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
     {
         // We are shutting down, the OS will reclaim the memory from the StringLiteralEntries,
         // m_MemoryPool and m_StringToEntryHashTable.
-        _ASSERTE(g_fProcessDetach);
+        _ASSERTE(IsAtProcessExit());
     }
 }
 
@@ -441,12 +441,18 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    int length = pStringData->GetCharCount();
-    length = min(length, 100);
+    ULONG length = pStringData->GetCharCount();
+    length = min(length, (ULONG)128);
     WCHAR *szString = (WCHAR *)_alloca((length + 1) * sizeof(WCHAR));
     memcpyNoGCRefs((void*)szString, (void*)pStringData->GetStringBuffer(), length * sizeof(WCHAR));
     szString[length] = '\0';
-    LOG((LF_APPDOMAIN, LL_INFO10000, "String literal \"%S\" %s to Global map, size %d bytes\n", szString, action, pStringData->GetCharCount()));
+
+    LPCUTF8 strUtf8 = "<Failed to convert to UTF8>";
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(cvtStr, szString);
+    if (cvtStr != NULL)
+        strUtf8 = cvtStr;
+
+    LOG((LF_APPDOMAIN, LL_INFO10000, "String literal \"%s\" %s to Global map, %u characters\n", strUtf8, action, length));
 }
 #endif
 

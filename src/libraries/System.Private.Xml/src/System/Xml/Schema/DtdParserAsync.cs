@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
-
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -861,17 +860,11 @@ namespace System.Xml
 
                     if (isParamEntity)
                     {
-                        if (!_schemaInfo.ParameterEntities.ContainsKey(entityName))
-                        {
-                            _schemaInfo.ParameterEntities.Add(entityName, entity);
-                        }
+                        _schemaInfo.ParameterEntities.TryAdd(entityName, entity);
                     }
                     else
                     {
-                        if (!_schemaInfo.GeneralEntities.ContainsKey(entityName))
-                        {
-                            _schemaInfo.GeneralEntities.Add(entityName, entity);
-                        }
+                        _schemaInfo.GeneralEntities.TryAdd(entityName, entity);
                     }
                     entity.DeclaredInExternal = !ParsingInternalSubset;
                     entity.ParsingInProgress = true;

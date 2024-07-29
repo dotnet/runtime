@@ -4,16 +4,18 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ArrayWithThread
 {
     public delegate void RngTest(ref int a);
-    internal class Class1
+    public class Class1
     {
         public static int val = 0;
         public static AutoResetEvent myResetEvent1 = new AutoResetEvent(false);
         public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int retVal = 100;
             int testNum = 0;

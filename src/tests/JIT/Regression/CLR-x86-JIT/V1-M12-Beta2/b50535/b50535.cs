@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
     using System.Collections;
 
-    class App
+    public class App
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             "hello".CompareTo(null);
-            return 100;
         }
     }
 }

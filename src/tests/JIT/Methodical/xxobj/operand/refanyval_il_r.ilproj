@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="refanyval_r.il" />
     <Compile Include="refanyval.il" />
   </ItemGroup>
 </Project>

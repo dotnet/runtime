@@ -22,4 +22,6 @@ enum class SpmiResult
     Misses          = 3
 };
 
+extern void SetSuperPmiTargetArchitecture(const char* targetArchitecture);
+
 #endif

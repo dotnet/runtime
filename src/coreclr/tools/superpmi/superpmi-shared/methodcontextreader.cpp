@@ -143,7 +143,7 @@ void MethodContextReader::ReleaseLock()
 
 bool MethodContextReader::atEof()
 {
-    __int64 pos = 0;
+    int64_t pos = 0;
     SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
                      FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
     return pos == this->fileSize;
@@ -163,7 +163,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
-        __int64 pos = totalLen + 2;
+        int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
         AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
                   "SetFilePointerEx failed (Error %X)", GetLastError());
@@ -406,25 +406,66 @@ bool MethodContextReader::isValid()
     return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
 }
 
+// Return a measure of "progress" through the method contexts, as follows:
+// 1. With a given set of indices, this is the current index array position.
+// 2. With a TOC, this is the current method context number.
+// 3. Otherwise, it is the current byte offset in the method context file.
+// Only useful when compared with `TotalWork()`.
+double MethodContextReader::Progress()
+{
+    if (this->hasIndex())
+    {
+        return (double)this->curIndexPos;
+    }
+    else if (this->hasTOC())
+    {
+        return (double)this->curMCIndex;
+    }
+    else
+    {
+        this->AcquireLock();
+        int64_t pos = 0;
+        SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
+        this->ReleaseLock();
+        return (double)pos;
+    }
+}
+
+// Return a measure of the total amount of work to be done, as follows:
+// 1. With a given set of indices, this is the total number of indices to return.
+// 2. With a TOC, this is the number of method contexts in the TOC.
+// 3. Otherwise, it is the size in bytes of the method context file.
+// Only useful when compared with `Progress()`.
+double MethodContextReader::TotalWork()
+{
+    if (this->hasIndex())
+    {
+        return (double)this->IndexCount;
+    }
+    else if (this->hasTOC())
+    {
+        return (double)this->tocFile.GetTocCount();
+    }
+    else
+    {
+        return (double)this->fileSize;
+    }
+}
+
+// Compute a percentage completion value using the previously defined
+// Progress() and TotalWork() functions.
+// Note that this is not useful to the user as a total percentage complete number
+// in the case of small number of methods and a large compile repeat count.
 double MethodContextReader::PercentComplete()
 {
-    if (this->hasIndex() && this->hasTOC())
-    {
-        // Best estimate I can come up with...
-        return 100.0 * (double)this->curIndexPos / (double)this->IndexCount;
-    }
-    this->AcquireLock();
-    __int64 pos = 0;
-    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
-    this->ReleaseLock();
-    return 100.0 * (double)pos / (double)this->fileSize;
+    return 100.0 * Progress() / TotalWork();
 }
 
 // Binary search to get this method number from the index
 // Returns -1 for not found, or -2 for not indexed
 // Interview question alert: hurray for CLR headers incompatibility with STL :-(
 // Note that TOC is 0 based and MC# are 1 based!
-__int64 MethodContextReader::GetOffset(unsigned int methodNumber)
+int64_t MethodContextReader::GetOffset(unsigned int methodNumber)
 {
     if (!this->hasTOC())
         return -2;
@@ -446,7 +487,7 @@ __int64 MethodContextReader::GetOffset(unsigned int methodNumber)
 
 MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
 {
-    __int64 pos = this->GetOffset(methodNumber);
+    int64_t pos = this->GetOffset(methodNumber);
     if (pos < 0)
     {
         return MethodContextBuffer(-3);
@@ -497,7 +538,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
     if (excludeFileHandle != INVALID_HANDLE_VALUE)
     {
-        __int64 excludeFileSizeLong;
+        int64_t excludeFileSizeLong;
         GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
         unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
 
@@ -577,4 +618,17 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
         }
     }
     return false;
+}
+
+void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
+{
+    int64_t pos    = 0;
+    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
+    assert(result);
+    
+    Indexes     = newIndexes;
+    IndexCount  = newIndexCount;
+    curIndexPos = 0;
+    curMCIndex  = 0;
+    curTOCIndex = 0;
 }

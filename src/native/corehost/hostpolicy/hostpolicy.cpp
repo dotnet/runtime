@@ -97,7 +97,7 @@ namespace
     }
 
     int create_hostpolicy_context(
-        hostpolicy_init_t &hostpolicy_init,
+        const hostpolicy_init_t &hostpolicy_init,
         const int argc,
         const pal::char_t *argv[],
         bool breadcrumbs_enabled,
@@ -287,13 +287,8 @@ int HOSTPOLICY_CALLTYPE run_app(const int argc, const pal::char_t *argv[])
 
 void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
 {
-    trace::info(_X("--- Invoked hostpolicy [commit hash: %s] [%s,%s,%s][%s] %s = {"),
-        _STRINGIFY(REPO_COMMIT_HASH),
-        _STRINGIFY(HOST_POLICY_PKG_NAME),
-        _STRINGIFY(HOST_POLICY_PKG_VER),
-        _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_current_arch_name(),
-        entryPointName.c_str());
+    if (trace::is_enabled())
+        trace::info(_X("--- Invoked hostpolicy [version: %s] %s = {"), get_host_version_description().c_str(), entryPointName.c_str());
 }
 
 //
@@ -536,6 +531,18 @@ namespace
                 "System.Private.CoreLib",
                 "Internal.Runtime.InteropServices.ComponentActivator",
                 "GetFunctionPointer",
+                delegate);
+        case coreclr_delegate_type::load_assembly:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "LoadAssembly",
+                delegate);
+        case coreclr_delegate_type::load_assembly_bytes:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "LoadAssemblyBytes",
                 delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
@@ -825,6 +832,50 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_unload()
     return StatusCode::Success;
 }
 
+namespace
+{
+    pal::string_t get_root_deps_file(const hostpolicy_init_t& init)
+    {
+        if (init.is_framework_dependent)
+        {
+            const fx_definition_t& root_fx = get_root_framework(init.fx_definitions);
+            return deps_resolver_t::get_fx_deps(root_fx.get_dir(), root_fx.get_name());
+        }
+
+        // For self-contained, the root deps file is the app's deps file
+        if (!init.deps_file.empty())
+            return init.deps_file;
+
+        const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ true);
+        if (bundle::info_t::is_single_file_bundle())
+        {
+            const bundle::runner_t* app = bundle::runner_t::app();
+            const pal::string_t& app_root = app->base_path();
+
+            return get_deps_from_app_binary(app->base_path(), context->application);
+        }
+
+        return get_deps_from_app_binary(get_directory(context->application), context->application);
+    }
+
+    deps_json_t::rid_resolution_options_t get_component_rid_resolution_options(const hostpolicy_init_t& init)
+    {
+        bool read_fallback_graph = hostpolicy_context_t::should_read_rid_fallback_graph(init);
+        if (read_fallback_graph)
+        {
+            // The RID graph still has to come from the actual root framework, so get the deps file
+            // for the app's root framework and read in the graph.
+            static deps_json_t::rid_fallback_graph_t root_rid_fallback_graph =
+                deps_json_t::get_rid_fallback_graph(get_root_deps_file(init));
+            return { read_fallback_graph, &root_rid_fallback_graph };
+        }
+        else
+        {
+            return { read_fallback_graph, nullptr };
+        }
+    }
+}
+
 SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     const pal::char_t *component_main_assembly_path,
     corehost_resolve_component_dependencies_result_fn result)
@@ -844,20 +895,19 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 
     // IMPORTANT: g_init is static/global and thus potentially accessed from multiple threads
     // We must only use it as read-only here (unlike the run scenarios which own it).
-    // For example the frameworks in g_init.fx_definitions can't be used "as-is" by the resolver
-    // right now as it would try to re-parse the .deps.json and thus modify the objects.
+    const hostpolicy_init_t &init = g_init;
 
     // The assumption is that component dependency resolution will only be called
     // when the coreclr is hosted through this hostpolicy and thus it will
     // have already called corehost_main_init.
-    if (!g_init.host_info.is_valid(g_init.host_mode))
+    if (!init.host_info.is_valid(init.host_mode))
     {
         trace::error(_X("Hostpolicy must be initialized and corehost_main must have been called before calling corehost_resolve_component_dependencies."));
         return StatusCode::CoreHostLibLoadFailure;
     }
 
     // If the current host mode is libhost, use apphost instead.
-    host_mode_t host_mode = g_init.host_mode == host_mode_t::libhost ? host_mode_t::apphost : g_init.host_mode;
+    host_mode_t host_mode = init.host_mode == host_mode_t::libhost ? host_mode_t::apphost : init.host_mode;
 
     // Initialize arguments (basically the structure describing the input app/component to resolve)
     arguments_t args;
@@ -900,15 +950,15 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actual root framework, so take that from the g_init.root_rid_fallback_graph,
-    // which stores the fallback graph for the app's root framework.
+    static deps_json_t::rid_resolution_options_t rid_resolution_options = get_component_rid_resolution_options(init);
+
     deps_resolver_t resolver(
         args,
         component_fx_definitions,
         /* additional_deps_serialized */ nullptr, // Additional deps - don't use those from the app, they're already in the app
-        shared_store::get_paths(g_init.tfm, host_mode, g_init.host_info.host_path),
-        g_init.probe_paths,
-        &g_init.root_rid_fallback_graph,
+        shared_store::get_paths(init.tfm, host_mode, init.host_info.host_path),
+        init.probe_paths,
+        rid_resolution_options,
         true);
 
     pal::string_t resolver_errors;

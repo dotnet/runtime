@@ -1,33 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a node that contains a set of embedded objects. The main function is
     /// to serve as a base class, providing symbol name boundaries and node ordering.
     /// </summary>
-    public abstract class EmbeddedDataContainerNode : ObjectNode
+    public abstract class EmbeddedDataContainerNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _startSymbol;
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        private string _startSymbolMangledName;
+        private string _mangledName;
 
-        public ObjectAndOffsetSymbolNode StartSymbol => _startSymbol;
-        public ObjectAndOffsetSymbolNode EndSymbol => _endSymbol;
-
-        protected EmbeddedDataContainerNode(string startSymbolMangledName, string endSymbolMangledName)
+        protected EmbeddedDataContainerNode(string mangledName)
         {
-            _startSymbolMangledName = startSymbolMangledName;
-            _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName, true);
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName, true);
+            _mangledName = mangledName;
         }
+
+        public int Offset => 0;
 
         public override int ClassCode => -1410622237;
 
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append(_mangledName);
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _startSymbolMangledName.CompareTo(((EmbeddedDataContainerNode)other)._startSymbolMangledName);
+            return _mangledName.CompareTo(((EmbeddedDataContainerNode)other)._mangledName);
         }
     }
 }

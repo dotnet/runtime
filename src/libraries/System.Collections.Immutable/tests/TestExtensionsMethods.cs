@@ -28,10 +28,10 @@ namespace System.Collections.Immutable.Tests
             }
             catch (Exception ex)
             {
-                throw new ThrowsException(typeof(NullReferenceException), ex);
+                throw ThrowsException.ForIncorrectExceptionType(typeof(NullReferenceException), ex);
             }
 
-            throw new ThrowsException(typeof(NullReferenceException));
+            throw ThrowsException.ForNoException(typeof(NullReferenceException));
         }
     }
 }

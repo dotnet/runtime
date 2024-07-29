@@ -31,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Buffers;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
@@ -58,13 +59,13 @@ namespace System.Net
 
         private long _contentLength;
         private bool _clSet;
-        private WebHeaderCollection _headers;
+        private readonly WebHeaderCollection _headers;
         private string? _method;
         private Stream? _inputStream;
-        private HttpListenerContext _context;
+        private readonly HttpListenerContext _context;
         private bool _isChunked;
-
-        private static byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
+        private static readonly SearchValues<char> s_validMethodChars = SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
 
         internal HttpListenerRequest(HttpListenerContext context)
         {
@@ -75,29 +76,24 @@ namespace System.Net
 
         internal void SetRequestLine(string req)
         {
-            string[] parts = req.Split(' ', 3);
-            if (parts.Length != 3)
+            Span<Range> parts = stackalloc Range[3];
+            if (req.AsSpan().Split(parts, ' ') != 3)
             {
                 _context.ErrorMessage = "Invalid request line (parts).";
                 return;
             }
 
-            _method = parts[0];
-            foreach (char c in _method)
+            _method = req[parts[0]];
+            if (_method.AsSpan().ContainsAnyExcept(s_validMethodChars))
             {
-                if (char.IsAsciiLetterUpper(c) ||
-                    (c > 32 && c < 127 && c != '(' && c != ')' && c != '<' &&
-                     c != '<' && c != '>' && c != '@' && c != ',' && c != ';' &&
-                     c != ':' && c != '\\' && c != '"' && c != '/' && c != '[' &&
-                     c != ']' && c != '?' && c != '=' && c != '{' && c != '}'))
-                    continue;
-
                 _context.ErrorMessage = "(Invalid verb)";
                 return;
             }
 
-            _rawUrl = parts[1];
-            if (parts[2].Length != 8 || !parts[2].StartsWith("HTTP/", StringComparison.Ordinal))
+            _rawUrl = req[parts[1]];
+
+            ReadOnlySpan<char> version = req.AsSpan(parts[2]);
+            if (version.Length != 8 || !version.StartsWith("HTTP/", StringComparison.Ordinal))
             {
                 _context.ErrorMessage = "Invalid request line (version).";
                 return;
@@ -105,7 +101,7 @@ namespace System.Net
 
             try
             {
-                _version = new Version(parts[2].Substring(5));
+                _version = Version.Parse(version.Slice("HTTP/".Length));
             }
             catch
             {
@@ -129,45 +125,23 @@ namespace System.Net
         private static bool MaybeUri(string s)
         {
             int p = s.IndexOf(':');
-            if (p == -1)
-                return false;
-
-            if (p >= 10)
-                return false;
-
-            return IsPredefinedScheme(s.Substring(0, p));
-        }
-
-        private static bool IsPredefinedScheme(string scheme)
-        {
-            if (scheme == null || scheme.Length < 3)
-                return false;
-
-            char c = scheme[0];
-            if (c == 'h')
-                return (scheme == UriScheme.Http ||  scheme == UriScheme.Https);
-            if (c == 'f')
-                return (scheme == UriScheme.File || scheme == UriScheme.Ftp);
-
-            if (c == 'n')
-            {
-                c = scheme[1];
-                if (c == 'e')
-                    return (scheme == UriScheme.News || scheme == UriScheme.NetPipe || scheme == UriScheme.NetTcp);
-                if (scheme == UriScheme.Nntp)
-                    return true;
-                return false;
-            }
-            if ((c == 'g' && scheme == UriScheme.Gopher) || (c == 'm' && scheme == UriScheme.Mailto))
-                return true;
-
-            return false;
+            return (uint)p < 10 && s.AsSpan(0, p) is
+                UriScheme.Http or
+                UriScheme.Https or
+                UriScheme.File or
+                UriScheme.Ftp or
+                UriScheme.News or
+                UriScheme.NetPipe or
+                UriScheme.NetTcp or
+                UriScheme.Nntp or
+                UriScheme.Gopher or
+                UriScheme.Mailto;
         }
 
         internal void FinishInitialization()
         {
-            string host = UserHostName;
-            if (_version > HttpVersion.Version10 && (host == null || host.Length == 0))
+            ReadOnlySpan<char> host = UserHostName;
+            if (_version > HttpVersion.Version10 && host.IsEmpty)
             {
                 _context.ErrorMessage = "Invalid host name";
                 return;
@@ -181,7 +155,7 @@ namespace System.Net
             else
                 path = _rawUrl;
 
-            if ((host == null || host.Length == 0))
+            if (host.IsEmpty)
                 host = UserHostAddress;
 
             if (raw_uri != null)
@@ -189,7 +163,7 @@ namespace System.Net
 
             int colon = host.IndexOf(':');
             if (colon >= 0)
-                host = host.Substring(0, colon);
+                host = host.Slice(0, colon);
 
             string base_uri = $"{RequestScheme}://{host}:{LocalEndPoint!.Port}";
 
@@ -229,15 +203,6 @@ namespace System.Net
                 HttpResponseStream output = _context.Connection.GetResponseStream();
                 output.InternalWrite(s_100continue, 0, s_100continue.Length);
             }
-        }
-
-        internal static string Unquote(string str)
-        {
-            int start = str.IndexOf('\"');
-            int end = str.LastIndexOf('\"');
-            if (start >= 0 && end >= 0)
-                str = str.Substring(start + 1, end - 1);
-            return str.Trim();
         }
 
         internal void AddHeader(string header)
@@ -376,7 +341,7 @@ namespace System.Net
 
         public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
-        private IAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
+        private GetClientCertificateAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
         {
             var asyncResult = new GetClientCertificateAsyncResult(this, state, requestCallback);
 

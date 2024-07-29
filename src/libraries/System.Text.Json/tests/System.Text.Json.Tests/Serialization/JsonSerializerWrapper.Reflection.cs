@@ -1,8 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
@@ -13,6 +17,13 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class JsonSerializerWrapper
     {
+        // Ensure that the reflection-based serializer testing abstraction roots KeyValuePair<,>
+        // which is required by many tests in the reflection test suite.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
+        protected JsonSerializerWrapper()
+        {
+        }
+
         public static JsonSerializerWrapper SpanSerializer { get; } = new SpanSerializerWrapper();
         public static JsonSerializerWrapper StringSerializer { get; } = new StringSerializerWrapper();
         public static StreamingJsonSerializerWrapper AsyncStreamSerializer { get; } = new AsyncStreamSerializerWrapper();
@@ -23,9 +34,11 @@ namespace System.Text.Json.Serialization.Tests
         public static JsonSerializerWrapper DocumentSerializer { get; } = new DocumentSerializerWrapper();
         public static JsonSerializerWrapper ElementSerializer { get; } = new ElementSerializerWrapper();
         public static JsonSerializerWrapper NodeSerializer { get; } = new NodeSerializerWrapper();
+        public static JsonSerializerWrapper AsyncPipeSerializer { get; } = new AsyncPipelinesSerializerWrapper();
 
         private class SpanSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true; // a 'null' value is supported via implicit operator.
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -86,6 +99,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class StringSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -144,6 +158,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => true;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -215,6 +230,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceSmallBufferInOptions;
             private readonly bool _forceBomInsertions;
 
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool IsAsyncSerializer => false;
             public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
@@ -293,6 +309,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ReaderWriterSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
@@ -381,6 +398,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class DocumentSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonDocument document = JsonSerializer.SerializeToDocument(value, inputType, options);
@@ -491,6 +509,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ElementSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 JsonElement element = JsonSerializer.SerializeToElement(value, inputType, options);
@@ -564,6 +583,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class NodeSerializerWrapper : JsonSerializerWrapper
         {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
             public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
@@ -863,6 +883,92 @@ namespace System.Text.Json.Serialization.Tests
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
             public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
+        // TODO: Deserialize to use PipeReader overloads once implemented
+        private class AsyncPipelinesSerializerWrapper : JsonSerializerWrapper
+        {
+            public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
+            public override bool SupportsNullValueOnDeserialize => true;
+
+            public override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                return await JsonSerializer.DeserializeAsync<T>(new MemoryStream(Encoding.UTF8.GetBytes(json)), options);
+            }
+            public override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), type, options);
+            }
+
+            public override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), jsonTypeInfo);
+            }
+
+            public override async Task<object> DeserializeWrapper(string value, JsonTypeInfo jsonTypeInfo)
+            {
+                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(value)), jsonTypeInfo);
+            }
+
+            public override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), type, context);
+            }
+
+            public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                Pipe pipe = new Pipe();
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, options);
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
+            }
+
+            public override async Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
+            {
+                Pipe pipe = new Pipe();
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, options);
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
+            }
+
+            public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
+            {
+                Pipe pipe = new Pipe();
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, context);
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
+            }
+
+            public override async Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                Pipe pipe = new Pipe();
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
+            }
+
+            public override async Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo)
+            {
+                Pipe pipe = new Pipe();
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+                return stringResult;
+            }
         }
     }
 }

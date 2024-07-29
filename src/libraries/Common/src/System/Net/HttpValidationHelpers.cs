@@ -22,7 +22,7 @@ namespace System.Net
         }
 
         internal static bool ContainsNonAsciiChars(string token) =>
-            token.AsSpan().IndexOfAnyExceptInRange((char)0x20, (char)0x7e) >= 0;
+            token.AsSpan().ContainsAnyExceptInRange((char)0x20, (char)0x7e);
 
         internal static bool IsValidToken(string token)
         {

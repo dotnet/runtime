@@ -6,10 +6,10 @@ set(SOURCES
 set(EVENT_MANIFEST ${VM_DIR}/ClrEtwAll.man)
 set(TEST_GENERATOR ${CLR_DIR}/scripts/genEventingTests.py)
 
-include(FindPythonInterp)
+include(FindPython)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/clralltestevents.cpp
-  COMMAND ${PYTHON_EXECUTABLE} ${TEST_GENERATOR} --testdir "${CMAKE_CURRENT_BINARY_DIR}" --man "${EVENT_MANIFEST}"
+  COMMAND ${Python_EXECUTABLE} ${TEST_GENERATOR} --testdir "${CMAKE_CURRENT_BINARY_DIR}" --man "${EVENT_MANIFEST}"
   DEPENDS ${EVENT_MANIFEST} ${TEST_GENERATOR}
   COMMENT "Updating clralltestevents.cpp"
 )
@@ -37,7 +37,7 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_LINUX)
 endif(FEATURE_EVENT_TRACE)
 
-target_link_libraries(eventprovidertest  ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
+target_link_libraries(eventprovidertest PUBLIC ${EVENT_PROVIDER_DEPENDENCIES} coreclrpal)
 add_dependencies(eventprovidertest eventing_headers)
 
 install (TARGETS eventprovidertest DESTINATION paltests/eventprovider COMPONENT paltests EXCLUDE_FROM_ALL)

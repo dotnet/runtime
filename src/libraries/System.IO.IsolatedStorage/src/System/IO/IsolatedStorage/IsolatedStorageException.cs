@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.IO.IsolatedStorage
@@ -23,17 +24,19 @@ namespace System.IO.IsolatedStorage
         }
 
         public IsolatedStorageException(string? message)
-            : base(message)
+            : base(message ?? SR.IsolatedStorage_Exception)
         {
             HResult = COR_E_ISOSTORE;
         }
 
         public IsolatedStorageException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.IsolatedStorage_Exception, inner)
         {
             HResult = COR_E_ISOSTORE;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected IsolatedStorageException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

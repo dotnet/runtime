@@ -48,7 +48,7 @@
 
   } // end of class 'CustomException'
 
-  .class auto ansi ZZ
+  .class public auto ansi ZZ
   {
     .method public static int32  Main() il managed
     {

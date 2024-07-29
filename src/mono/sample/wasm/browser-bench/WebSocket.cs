@@ -88,7 +88,7 @@ namespace Sample
             public override int InitialSamples => 1000;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
 
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
                 return 250_000;
             }
@@ -112,7 +112,7 @@ namespace Sample
                     buffer[i] = (byte)(i & 0xff);
                 }
             }
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
                 return 3000;
             }
@@ -137,7 +137,7 @@ namespace Sample
                     buffer[i] = (byte)(i & 0xff);
                 }
             }
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
                 return 100;
             }
@@ -154,9 +154,9 @@ namespace Sample
         {
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1]);
 
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
-                return MaxLength - InitialSamples - 100;
+                return MaxLength - initialSamples - 100;
             }
 
             public override void RunStep()
@@ -177,7 +177,7 @@ namespace Sample
             public override int InitialSamples => 1;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
 
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
                 return 500;
             }
@@ -206,7 +206,7 @@ namespace Sample
             public override int InitialSamples => 1;
             ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[bufferSize]);
 
-            protected override int CalculateSteps(int milliseconds, TimeSpan initTs)
+            protected override int CalculateSteps(int milliseconds, TimeSpan initTs, int initialSamples)
             {
                 return MaxMessages - 1;
             }

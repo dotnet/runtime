@@ -33,7 +33,7 @@ namespace System.Threading
 
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Overlapped.Unpack(nativeOverlapped);
+            ThreadPoolBoundHandleOverlapped overlapped = (ThreadPoolBoundHandleOverlapped)Unpack(nativeOverlapped);
 
             //
             // The Win32 thread pool implementation of ThreadPoolBoundHandle does not permit reuse of NativeOverlapped

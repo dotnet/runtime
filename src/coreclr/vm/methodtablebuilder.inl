@@ -15,7 +15,7 @@
 
 //***************************************************************************************
 inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
-            MethodTableBuilder &mtb) : 
+            MethodTableBuilder &mtb) :
                 m_numDeclaredMethods((int)mtb.NumDeclaredMethods()),
                 m_declaredMethods(mtb.bmtMethod->m_rgDeclaredMethods),
                 m_idx(-1)
@@ -121,7 +121,7 @@ inline BOOL  MethodTableBuilder::DeclaredMethodIterator::IsMethodImpl()
 }
 
 //***************************************************************************************
-inline MethodTableBuilder::METHOD_TYPE MethodTableBuilder::DeclaredMethodIterator::MethodType()
+inline MethodClassification MethodTableBuilder::DeclaredMethodIterator::MethodType()
 {
     LIMITED_METHOD_CONTRACT;
     return GetMDMethod()->GetMethodType();
@@ -135,38 +135,6 @@ MethodTableBuilder::DeclaredMethodIterator::GetMDMethod() const
     _ASSERTE(FitsIn<SLOT_INDEX>(m_idx)); // Review: m_idx should probably _be_ a SLOT_INDEX, but that asserts.
     return m_declaredMethods[m_idx];
 }
-
-//*******************************************************************************
-inline class MethodDesc *
-MethodTableBuilder::DeclaredMethodIterator::GetIntroducingMethodDesc()
-{
-    STANDARD_VM_CONTRACT;
-
-    bmtMDMethod *pCurrentMD = GetMDMethod();
-    DWORD dwSlot = pCurrentMD->GetSlotIndex();
-    MethodDesc *pIntroducingMD  = NULL;
-
-    bmtRTType *pParentType = pCurrentMD->GetOwningType()->GetParentType();
-    bmtRTType *pPrevParentType = NULL;
-
-    // Find this method in the parent.
-    // If it does exist in the parent, it would be at the same vtable slot.
-    while (pParentType != NULL &&
-           dwSlot < pParentType->GetMethodTable()->GetNumVirtuals())
-    {
-        pPrevParentType = pParentType;
-        pParentType = pParentType->GetParentType();
-    }
-
-    if (pPrevParentType != NULL)
-    {
-        pIntroducingMD =
-            pPrevParentType->GetMethodTable()->GetMethodDescForSlot(dwSlot);
-    }
-
-    return pIntroducingMD;
-}
-
 
 //***************************************************************************************
 inline MethodTableBuilder::bmtMDMethod *
@@ -502,24 +470,5 @@ MethodTableBuilder::bmtMDMethod::SetUnboxedSlotIndex(SLOT_INDEX idx)
     CONSISTENCY_CHECK(m_pUnboxedMD == NULL);
     m_unboxedSlotIndex = idx;
 }
-
-//***************************************************************************************
-inline DWORD
-MethodTableBuilder::GetMethodClassification(MethodTableBuilder::METHOD_TYPE type)
-{
-    LIMITED_METHOD_CONTRACT;
-    // Verify that the enums are in sync, so we can do the conversion by simple cast.
-    C_ASSERT((DWORD)METHOD_TYPE_NORMAL       == (DWORD)mcIL);
-    C_ASSERT((DWORD)METHOD_TYPE_FCALL        == (DWORD)mcFCall);
-    C_ASSERT((DWORD)METHOD_TYPE_NDIRECT      == (DWORD)mcNDirect);
-    C_ASSERT((DWORD)METHOD_TYPE_EEIMPL       == (DWORD)mcEEImpl);
-    C_ASSERT((DWORD)METHOD_TYPE_INSTANTIATED == (DWORD)mcInstantiated);
-#ifdef FEATURE_COMINTEROP
-    C_ASSERT((DWORD)METHOD_TYPE_COMINTEROP   == (DWORD)mcComInterop);
-#endif
-
-    return (DWORD)type;
-}
-
 #endif  // _METHODTABLEBUILDER_INL_
 

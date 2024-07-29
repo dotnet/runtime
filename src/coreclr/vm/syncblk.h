@@ -71,10 +71,10 @@ class AwareLock;
 class Thread;
 class AppDomain;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 #include "eventstore.hpp"
 #include "synch.h"
@@ -99,14 +99,14 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
 // if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
-// - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
+// - lower sixteen bits (bits 0 thru 15) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
-// - following six bits (bits 10 thru 15) is recursion level used for the thin locks
+// - following six bits (bits 16 thru 21) is recursion level used for the thin locks
 //   value is zero if lock is not taken or only taken once by the same thread
-#define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
-#define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
-#define SBLK_LOCK_RECLEVEL_INC              0x00000400   // each level is this much higher than the previous one
-#define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
+#define SBLK_MASK_LOCK_THREADID             0x0000FFFF   // special value of 0 + 65535 thread ids
+#define SBLK_MASK_LOCK_RECLEVEL             0x003F0000   // 64 recursion levels
+#define SBLK_LOCK_RECLEVEL_INC              0x00010000   // each level is this much higher than the previous one
+#define SBLK_RECLEVEL_SHIFT                 16           // shift right this much to get recursion level
 
 // add more bits here... (adjusting the following mask to make room)
 
@@ -602,6 +602,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_HoldingThread;
     }
+
+    static int GetOffsetOfHoldingOSThreadId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int)offsetof(AwareLock, m_HoldingOSThreadId);
+    }
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -826,7 +832,7 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
         {
             NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (InterlockedCompareExchangeT((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
             }
@@ -917,7 +923,7 @@ private:
     void* m_externalComObjectContext;
 
     CrstExplicitInit m_managedObjectComWrapperLock;
-    NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
+    ManagedObjectComWrapperByIdMap* m_managedObjectComWrapperMap;
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
@@ -990,10 +996,10 @@ class SyncBlock
     PTR_InteropSyncBlockInfo    m_pInteropInfo;
 
   protected:
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // And if the object has new fields added via EnC, this is a list of them
     PTR_EnCSyncBlockInfo m_pEnCInfo;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // We thread two different lists through this link.  When the SyncBlock is
     // active, we create a list of waiting threads here.  When the SyncBlock is
@@ -1025,9 +1031,9 @@ class SyncBlock
   public:
     SyncBlock(DWORD indx)
         : m_Monitor(indx)
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
         , m_dwHashCode(0)
         , m_BSTRTrailByte(0)
     {
@@ -1125,7 +1131,7 @@ class SyncBlock
     // True if the InteropInfo block was successfully set with the passed in value.
     bool SetInteropInfo(InteropSyncBlockInfo* pInteropInfo);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Get information about fields added to this object by the Debugger's Edit and Continue support
     PTR_EnCSyncBlockInfo GetEnCInfo()
     {
@@ -1135,7 +1141,7 @@ class SyncBlock
 
     // Store information about fields added to this object by the Debugger's Edit and Continue support
     void SetEnCInfo(EnCSyncBlockInfo *pEnCInfo);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     DWORD GetHashCode()
     {
@@ -1309,7 +1315,7 @@ class SyncBlockCache
   private:
     PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
     SLink*      m_FreeBlockList;        // list of free sync blocks
-    Crst        m_CacheLock;            // cache lock
+    CrstStatic  m_CacheLock;            // cache lock
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active
     SyncBlockArray *m_SyncBlocks;       // Array of new SyncBlocks.
@@ -1345,19 +1351,9 @@ class SyncBlockCache
     SPTR_DECL(SyncBlockCache, s_pSyncBlockCache);
     static SyncBlockCache*& GetSyncBlockCache();
 
-    void *operator new(size_t size, void *pInPlace)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pInPlace;
-    }
-
-    void operator delete(void *p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    SyncBlockCache();
-    ~SyncBlockCache();
+    // Note: No constructors/destructors - global instance
+    void Init();
+    void Destroy();
 
     static void Attach();
     static void Detach();

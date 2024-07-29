@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -10,7 +11,7 @@
 .assembly b10666
 {
 }
-.class value sealed Rational extends [mscorlib]System.ValueType
+.class public value sealed Rational extends [mscorlib]System.ValueType
 { .field int32 Numerator
   .field int32 Denominator
 
@@ -72,8 +73,11 @@
     ret
   }
 
-.method static int32 main()
+.method public static int32 main()
 { .entrypoint
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .locals (value class Rational Half)
   ldloca.s Half
   call    instance void Rational::.ctor()

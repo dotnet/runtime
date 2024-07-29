@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="callconv3_r.il" />
+    <Compile Include="callconv3.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\PREFIX\PrimitiveVT\helper.csproj" />
+  </ItemGroup>
+</Project>

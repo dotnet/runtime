@@ -3,20 +3,22 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
     public String str;
 }
 
-class Test_struct6
+public class Test_struct6
 {
-    public static void c(S s1, S s2, S s3, S s4, S s5)
+    private static void c(S s1, S s2, S s3, S s4, S s5)
     {
         Console.WriteLine(s1.str + s2.str + s3.str + s4.str + s5.str);
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         S sM1, sM2, sM3, sM4, sM5;
 
@@ -26,6 +28,5 @@ class Test_struct6
         sM4.str = "test4";
         sM5.str = "test5";
         c(sM1, sM2, sM3, sM4, sM5);
-        return 100;
     }
 }

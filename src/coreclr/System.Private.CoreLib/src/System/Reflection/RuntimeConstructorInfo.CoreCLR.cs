@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -16,20 +15,20 @@ namespace System.Reflection
     internal sealed partial class RuntimeConstructorInfo : ConstructorInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private volatile RuntimeType m_declaringType;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeType m_declaringType;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_toString;
         private ParameterInfo[]? m_parameters; // Created lazily when GetParameters() is called.
-#pragma warning disable CA1823, 414, 169
+#pragma warning disable CA1823, 414, 169, IDE0044
         private object? _empty1; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
         private object? _empty2;
         private object? _empty3;
-#pragma warning restore CA1823, 414, 169
-        private IntPtr m_handle;
-        private MethodAttributes m_methodAttributes;
-        private BindingFlags m_bindingFlags;
+#pragma warning restore CA1823, 414, 169, IDE0044
+        private readonly IntPtr m_handle;
+        private readonly MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private ConstructorInvoker? m_invoker;
+        private MethodBaseInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -37,20 +36,17 @@ namespace System.Reflection
             get
             {
                 InvocationFlags flags = Invoker._invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
-                }
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private ConstructorInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new ConstructorInvoker(this);
+                m_invoker ??= new MethodBaseInvoker(this);
                 return m_invoker;
             }
         }
@@ -184,20 +180,11 @@ namespace System.Reflection
         // This seems to always returns System.Void.
         internal override Type GetReturnType() { return Signature.ReturnType; }
 
-        internal override ParameterInfo[] GetParametersNoCopy() =>
+        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() =>
             m_parameters ??= RuntimeParameterInfo.GetParameters(this, this, Signature);
 
-        public override ParameterInfo[] GetParameters()
-        {
-            ParameterInfo[] parameters = GetParametersNoCopy();
-
-            if (parameters.Length == 0)
-                return parameters;
-
-            ParameterInfo[] ret = new ParameterInfo[parameters.Length];
-            Array.Copy(parameters, ret, parameters.Length);
-            return ret;
-        }
+        public override ParameterInfo[] GetParameters() =>
+            GetParametersAsSpan().ToArray();
 
         public override MethodImplAttributes GetMethodImplementationFlags()
         {

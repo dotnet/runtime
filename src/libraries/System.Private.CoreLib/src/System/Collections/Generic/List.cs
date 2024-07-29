@@ -26,9 +26,9 @@ namespace System.Collections.Generic
         internal int _size; // Do not rename (binary serialization)
         internal int _version; // Do not rename (binary serialization)
 
-#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
+#pragma warning disable CA1825, IDE0300 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
@@ -306,7 +306,7 @@ namespace System.Collections.Generic
             if (_size - index < count)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            return Array.BinarySearch<T>(_items, index, count, item, comparer);
+            return Array.BinarySearch(_items, index, count, item, comparer);
         }
 
         public int BinarySearch(T item)
@@ -426,7 +426,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Ensures that the capacity of this list is at least the specified <paramref name="capacity"/>.
         /// If the current capacity of the list is less than specified <paramref name="capacity"/>,
-        /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
+        /// the capacity is increased to at least <paramref name="capacity"/>.
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
         /// <returns>The new capacity of this list.</returns>
@@ -439,7 +439,6 @@ namespace System.Collections.Generic
             if (_items.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _items.Length;
@@ -450,6 +449,43 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="capacity">The minimum capacity to ensure.</param>
         internal void Grow(int capacity)
+        {
+            Capacity = GetNewCapacity(capacity);
+        }
+
+        /// <summary>
+        /// Enlarge this list so it may contain at least <paramref name="insertionCount"/> more elements
+        /// And copy data to their after-insertion positions.
+        /// This method is specifically for insertion, as it avoids 1 extra array copy.
+        /// You should only call this method when Count + insertionCount > Capacity.
+        /// </summary>
+        /// <param name="indexToInsert">Index of the first insertion.</param>
+        /// <param name="insertionCount">How many elements will be inserted.</param>
+        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
+        {
+            Debug.Assert(insertionCount > 0);
+
+            int requiredCapacity = checked(_size + insertionCount);
+            int newCapacity = GetNewCapacity(requiredCapacity);
+
+            // Inline and adapt logic from set_Capacity
+
+            T[] newItems = new T[newCapacity];
+            if (indexToInsert != 0)
+            {
+                Array.Copy(_items, newItems, length: indexToInsert);
+            }
+
+            if (_size != indexToInsert)
+            {
+                Array.Copy(_items, indexToInsert, newItems, indexToInsert + insertionCount, _size - indexToInsert);
+            }
+
+            _items = newItems;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetNewCapacity(int capacity)
         {
             Debug.Assert(_items.Length < capacity);
 
@@ -463,7 +499,7 @@ namespace System.Collections.Generic
             // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
             if (newCapacity < capacity) newCapacity = capacity;
 
-            Capacity = newCapacity;
+            return newCapacity;
         }
 
         public bool Exists(Predicate<T> match)
@@ -626,14 +662,13 @@ namespace System.Collections.Generic
         // while an enumeration is in progress, the MoveNext and
         // GetObject methods of the enumerator will throw an exception.
         //
-        public Enumerator GetEnumerator()
-            => new Enumerator(this);
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-            => new Enumerator(this);
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-            => new Enumerator(this);
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public List<T> GetRange(int index, int count)
         {
@@ -739,8 +774,11 @@ namespace System.Collections.Generic
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
-            if (_size == _items.Length) Grow(_size + 1);
-            if (index < _size)
+            if (_size == _items.Length)
+            {
+                GrowForInsertion(index, 1);
+            }
+            else if (index < _size)
             {
                 Array.Copy(_items, index, _items, index + 1, _size - index);
             }
@@ -787,9 +825,9 @@ namespace System.Collections.Generic
                 {
                     if (_items.Length - _size < count)
                     {
-                        Grow(checked(_size + count));
+                        GrowForInsertion(index, count);
                     }
-                    if (index < _size)
+                    else if (index < _size)
                     {
                         Array.Copy(_items, index, _items, index + count, _size - index);
                     }
@@ -1076,7 +1114,7 @@ namespace System.Collections.Generic
 
             if (count > 1)
             {
-                Array.Sort<T>(_items, index, count, comparer);
+                Array.Sort(_items, index, count, comparer);
             }
             _version++;
         }
@@ -1146,6 +1184,8 @@ namespace System.Collections.Generic
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
+            internal static IEnumerator<T>? s_emptyEnumerator;
+
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;

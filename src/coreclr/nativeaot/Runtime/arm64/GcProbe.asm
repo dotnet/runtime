@@ -229,7 +229,7 @@ ThrowThreadAbort
     NESTED_ENTRY RhpGcStressProbe
         PUSH_PROBE_FRAME x2, x3, x12
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          RhpStressGc
 
         POP_PROBE_FRAME
         EPILOG_RETURN
@@ -365,8 +365,6 @@ Success
         ret
     LEAF_END RhpSuppressGcStress
 #endif ;; FEATURE_GC_STRESS
-
-    INLINE_GETTHREAD_CONSTANT_POOL
 
     end
 

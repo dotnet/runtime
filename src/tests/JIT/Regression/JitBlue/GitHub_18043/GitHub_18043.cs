@@ -4,10 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 // GitHub18043: ensure dead box optimizations treat Vector<float> as a struct type.
 
-class X
+public class X
 {
     public static int VT()
     {
@@ -17,7 +18,8 @@ class X
         return Array.IndexOf(a, f);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int r1 = VT();
         return (r1 == 5 ? 100 : 0);

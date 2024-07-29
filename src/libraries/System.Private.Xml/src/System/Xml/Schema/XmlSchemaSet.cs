@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections;
-using System.Threading;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Xml.Schema
 {
@@ -106,7 +106,7 @@ namespace System.Xml.Schema
             if (_readerSettings.GetXmlResolver() == null)
             {
                 // The created resolver will be used in the schema validation only
-                _readerSettings.XmlResolver = new XmlUrlResolver();
+                _readerSettings.XmlResolver = XmlReaderSettings.GetDefaultPermissiveResolver();
                 _readerSettings.IsXmlResolverSet = false;
             }
 
@@ -218,7 +218,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? targetNamespace, string schemaUri)
         {
-            if (schemaUri == null || schemaUri.Length == 0)
+            if (string.IsNullOrEmpty(schemaUri))
             {
                 throw new ArgumentNullException(nameof(schemaUri));
             }
@@ -232,7 +232,7 @@ namespace System.Xml.Schema
             lock (InternalSyncObject)
             {
                 //Check if schema from url has already been added
-                XmlResolver tempResolver = _readerSettings.GetXmlResolver() ?? new XmlUrlResolver();
+                XmlResolver tempResolver = _readerSettings.GetXmlResolver() ?? XmlReaderSettings.GetDefaultPermissiveResolver();
                 Uri tempSchemaUri = tempResolver.ResolveUri(null, schemaUri);
                 if (IsSchemaLoaded(tempSchemaUri, targetNamespace, out schema))
                 {
@@ -665,8 +665,9 @@ namespace System.Xml.Schema
         {
             ArgumentNullException.ThrowIfNull(schemas);
 
-            if (index < 0 || index > schemas.Length - 1)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, schemas.Length - 1);
+
             _schemas.Values.CopyTo(schemas, index);
         }
 
@@ -1308,7 +1309,7 @@ namespace System.Xml.Schema
         {
             //Remove From ChameleonSchemas and schemaLocations cache
             List<XmlSchema> reprocessList = new List<XmlSchema>();
-            schema.GetExternalSchemasList(reprocessList, schema);
+            XmlSchema.GetExternalSchemasList(reprocessList, schema);
             for (int i = 0; i < reprocessList.Count; ++i)
             { //Remove schema from schemaLocations & chameleonSchemas tables
                 if (reprocessList[i].BaseUri != null && reprocessList[i].BaseUri!.OriginalString.Length != 0)

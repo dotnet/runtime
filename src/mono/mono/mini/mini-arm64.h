@@ -23,6 +23,8 @@
 
 #if !defined(DISABLE_SIMD)
 #define MONO_ARCH_SIMD_INTRINSICS 1
+#define MONO_ARCH_NEED_SIMD_BANK 1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
@@ -52,7 +54,7 @@
 /* v8..v15 */
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0xff00
 
-#define MONO_ARCH_CALLEE_SAVED_XREGS 0
+#define MONO_ARCH_CALLEE_SAVED_XREGS MONO_ARCH_CALLEE_SAVED_FREGS
 
 #define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 
@@ -96,6 +98,8 @@ struct SeqPointInfo {
 
 #define PARAM_REGS 8
 #define FP_PARAM_REGS 8
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET ARMREG_R20
 
 typedef struct {
 	host_mgreg_t res, res2;
@@ -117,6 +121,7 @@ typedef struct {
 	MonoInst *seq_point_info_var;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
+	MonoInst *swift_error_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -177,16 +182,15 @@ typedef struct {
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
+#define MONO_ARCH_HAVE_INIT_MRGCTX 1
+#define MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n32:64-S128"
-#ifdef TARGET_OSX
-#define MONO_ARCH_FORCE_FLOAT32 1
-#endif
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 
 #define MONO_ARCH_REDZONE_SIZE 128
 
@@ -196,12 +200,16 @@ typedef struct {
 
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 
 #if defined(TARGET_TVOS) || defined(TARGET_WATCHOS)
 #define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
+#endif
+
+#if defined(TARGET_OSX) || defined(TARGET_APPLE_MOBILE)
+#define MONO_ARCH_HAVE_SWIFTCALL 1
 #endif
 
 /* Relocations */
@@ -222,15 +230,24 @@ typedef enum {
 	ArgOnStackR4,
 	/*
 	 * Vtype passed in consecutive int registers.
-	 * ainfo->reg is the firs register,
+	 * ainfo->reg is the first register,
 	 * ainfo->nregs is the number of registers,
 	 * ainfo->size is the size of the structure.
 	 */
 	ArgVtypeInIRegs,
+	/* SIMD arg in NEON register */
+	ArgInSIMDReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,
 	ArgHFA,
+	ArgSwiftError,
+	/* Swift lowered Vtype returned in 
+	 * multiple int and float registers.
+	 * ainfo->nregs is the number of used registers.
+	 * ainfo->offsets offsets of the struct fields.
+	 */
+	ArgSwiftVtypeLoweredRet,
 	ArgNone
 } ArgStorage;
 
@@ -243,9 +260,9 @@ typedef struct {
 	int nregs, size;
 	/* ArgHFA */
 	int esize;
-	/* ArgHFA */
-	/* The offsets of the float values inside the arg */
-	guint16 foffsets [4];
+	/* ArgHFA, ArgSwiftVtypeLoweredRet */
+	/* The offsets of the float and int values inside the arg */
+	guint16 offsets [4];
 	/* ArgOnStack */
 	int slot_size;
 	/* hfa */
@@ -253,6 +270,10 @@ typedef struct {
 	gboolean sign;
 	gboolean gsharedvt;
 	gboolean hfa;
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* ArgSwiftVtypeLoweredRet */
+	ArgStorage struct_storage [4];
+#endif
 } ArgInfo;
 
 struct CallInfo {
@@ -265,8 +286,8 @@ struct CallInfo {
 };
 
 typedef struct {
-	/* General registers + ARMREG_R8 for indirect returns */
-	host_mgreg_t gregs [PARAM_REGS + 1];
+	/* General registers + ARMREG_R8 for indirect returns + context registers  */
+	host_mgreg_t gregs [PARAM_REGS + CTX_REGS + 1];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];
 	/* Stack usage, used for passing params on stack */

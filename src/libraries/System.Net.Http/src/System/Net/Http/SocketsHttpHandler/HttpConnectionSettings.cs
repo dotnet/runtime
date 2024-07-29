@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Security;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Net.Http.Metrics;
+using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -27,6 +30,7 @@ namespace System.Net.Http
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials? _credentials;
+        internal TokenImpersonationLevel _impersonationLevel = HttpHandlerDefaults.DefaultImpersonationLevel;   // this is here to support impersonation on HttpWebRequest
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -35,6 +39,8 @@ namespace System.Net.Http
         internal int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
         internal TimeSpan _maxResponseDrainTime = HttpHandlerDefaults.DefaultResponseDrainTimeout;
         internal int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        internal IMeterFactory? _meterFactory;
+        internal SocketsHttpHandlerMetrics? _metrics;
 
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
@@ -55,6 +61,8 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
+        internal bool _enableMultipleHttp3Connections;
+
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
@@ -62,6 +70,8 @@ namespace System.Net.Http
 
         // Http2 flow control settings:
         internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
+
+        internal ClientCertificateOption _clientCertificateOptions;
 
         public HttpConnectionSettings()
         {
@@ -71,6 +81,8 @@ namespace System.Net.Http
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
+
+            _clientCertificateOptions = ClientCertificateOption.Automatic;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
@@ -97,6 +109,8 @@ namespace System.Net.Http
                 _maxResponseDrainSize = _maxResponseDrainSize,
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
+                _meterFactory = _meterFactory,
+                _metrics = _metrics,
                 _pooledConnectionLifetime = _pooledConnectionLifetime,
                 _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
                 _preAuthenticate = _preAuthenticate,
@@ -111,12 +125,15 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _enableMultipleHttp3Connections = _enableMultipleHttp3Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
+                _clientCertificateOptions = _clientCertificateOptions,
+                _impersonationLevel = _impersonationLevel,
             };
 
             return settings;
@@ -125,6 +142,8 @@ namespace System.Net.Http
         public int MaxResponseHeadersByteLength => (int)Math.Min(int.MaxValue, _maxResponseHeadersLength * 1024L);
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
+
+        public bool EnableMultipleHttp3Connections => _enableMultipleHttp3Connections;
 
         private byte[]? _http3SettingsFrame;
 

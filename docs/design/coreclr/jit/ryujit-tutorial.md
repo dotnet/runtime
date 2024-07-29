@@ -447,6 +447,10 @@ This is the same diagram as before, but with additional links to indicate execut
   - Determine initial value for dependent phis
 - Eliminate checks where the range of the index is within the check range
 
+### Induction Variable Optimization
+- Perform scalar evolution analysis to describe values of IR nodes inside loops
+- Perform IV widening on x64 to avoid unnecessary zero extensions for array/span indexing
+
 ## RyuJIT Back-End
 
 ### Rationalization
@@ -622,12 +626,12 @@ Note that this is not necessarily the approach one would take, because the loop 
 
 ### Getting Dumps
 ```
-set COMPlus_JitDump=Main
-set COMPlus_JitDumpAscii=0
-set COMPlus_JitDumpFg=Main
-set COMPlus_JitDumpFgDot=1
-set COMPlus_JitDumpFgFile=Main
-set COMPlus_JitDumpFgPhase=OPT-CHK
+set DOTNET_JitDump=Main
+set DOTNET_JitDumpAscii=0
+set DOTNET_JitDumpFg=Main
+set DOTNET_JitDumpFgDot=1
+set DOTNET_JitDumpFgFile=Main
+set DOTNET_JitDumpFgPhase=OPT-CHK
 ```
 {BinaryDir}\CoreRun.exe PopCount.exe 1122334455667788 > jitdump.out.0
 
@@ -650,8 +654,8 @@ I added/changed some foundational stuff:
   - unsigned optIsLclVarUpdateTree(GenTreePtr tree, GenTreePtr* otherTree, genTreeOps *updateOper);
 
 Getting Ready
-- Set COMPlus_JitDump=Main
-- Set COMPlus_AltJit=*
+- Set DOTNET_JitDump=Main
+- Set DOTNET_AltJit=*
 - Run and capture jitdump1.out
 - Examine the IR for the loop just prior to optCloneLoops
 
@@ -661,7 +665,7 @@ Recognize "Intrinsic" (SampleStep1 shelveset)
   - instrsxarch.h: encoding
   - codegenxarch.cpp: generate instruction
   - importer.cpp: name recognition
-- set COMPlus_JitDump
+- set DOTNET_JitDump
 - Run & capture jitdump2.out, search for CountBits, then look at disassembly
 
 Add Pattern Recognition (SampleStep2 shelveset):
@@ -678,19 +682,19 @@ Add Pattern Recognition (SampleStep2 shelveset):
 
 ## Backup
 
-### COMPlus Variables
-- COMPlus_JitDump={method-list} – lots of info about what the JIT is doing
-- COMPlus_JitDisasm={method-list} – disassembly listing of each method
-- COMPlus_JitDiffableDasm – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
-- COMPlus_JITGCDump={method-list} – this dumps the GC information.
-- COMPlus_JitUnwindDump={method-list} – dumps the unwind tables.
-- COMPlus_JitEHDump={method-list} – dumps the exception handling tables.
-- COMPlus_JitTimeLogFile – a log file for timing information (dbg or chk builds)
-- COMPlus_JitTimeLogCsv – a log file for timing information in csv form (all builds)
+### Environment Variables
+- DOTNET_JitDump={method-list} – lots of info about what the JIT is doing
+- DOTNET_JitDisasm={method-list} – disassembly listing of each method
+- DOTNET_JitDisasmDiffable – avoid printing pointer values that can change from one invocation to the next, so that the disassembly can be more easily diffed.
+- DOTNET_JITGCDump={method-list} – this dumps the GC information.
+- DOTNET_JitUnwindDump={method-list} – dumps the unwind tables.
+- DOTNET_JitEHDump={method-list} – dumps the exception handling tables.
+- DOTNET_JitTimeLogFile – a log file for timing information (dbg or chk builds)
+- DOTNET_JitTimeLogCsv – a log file for timing information in csv form (all builds)
 - {method-list} can be a space-separated list of method names or * for all methods
 
 ### IR Dump: Front-end
-Here is an example dump in tree order (shown with COMPlus_JitDumpAscii=0)
+Here is an example dump in tree order (shown with DOTNET_JitDumpAscii=0)
 ```
 STMT00000 (IL   ???...  ???)
 [000067] -AC-G-------      ▌  call help void   HELPER.CORINFO_HELP_ARRADDR_ST

@@ -18,6 +18,6 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public struct RuntimeTypeHandle
     {
-        private EETypePtr _pEEType;
+        private IntPtr _value;
     }
 }

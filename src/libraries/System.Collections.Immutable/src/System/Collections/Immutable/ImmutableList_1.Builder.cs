@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableList{T}.AddRange"/> and other bulk change methods
+        /// While <see cref="M:ImmutableList{T}.AddRange"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>
@@ -779,7 +779,7 @@ namespace System.Collections.Immutable
             public void RemoveRange(int index, int count)
             {
                 Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-                Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+                Requires.Range(count >= 0 && index <= this.Count - count, nameof(count));
 
                 int remaining = count;
                 while (remaining-- > 0)

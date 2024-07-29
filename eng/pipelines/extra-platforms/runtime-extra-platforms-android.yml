@@ -22,7 +22,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isAndroidOnlyBuild: ${{ parameters.isAndroidOnlyBuild }}
     platforms:
-      - Android_arm64
+      - android_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -37,16 +37,20 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
+      runtimeVariant: minijit
       buildArgs: -s mono+libs -c $(_BuildConfig)
-      timeoutInMinutes: 240
+      timeoutInMinutes: 480
       # don't run tests on PRs until we can get significantly more devices
       # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
       # ${{ if eq(variables['isRollingBuild'], true) }}:
       #   # extra steps, run tests
-      #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-      #   extraStepsParameters:
-      #     creator: dotnet-bot
-      #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #   postBuildSteps:
+      #     - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      #       parameters:
+      #         creator: dotnet-bot
+      #         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #   extraVariablesTemplates:
+      #     - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Android devices
@@ -59,22 +63,23 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_arm
-    - Android_arm64
+    - android_arm
+    - android_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
-      timeoutInMinutes: 180
+      timeoutInMinutes: 480
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)

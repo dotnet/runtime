@@ -7,7 +7,7 @@
 #ifdef FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_XARCH
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Simple SIMD intrinsics
     // - take Vector128/256<T> parameters
@@ -40,10 +40,8 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #elif defined(TARGET_ARM64)
-
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Most of the Arm64 intrinsic fall into SIMD category:
     // - vector or scalar intrinsics that operate on one-or-many SIMD registers
@@ -69,11 +67,9 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #else
 #error Unsupported platform
 #endif
-
 enum HWIntrinsicFlag : unsigned int
 {
     HW_Flag_NoFlag = 0,
@@ -86,9 +82,8 @@ enum HWIntrinsicFlag : unsigned int
     // - should be transformed in the compiler front-end, cannot reach CodeGen
     HW_Flag_NoCodeGen = 0x2,
 
-    // Multi-instruction
-    // - that one intrinsic can generate multiple instructions
-    HW_Flag_MultiIns = 0x4,
+    // The intrinsic is invalid as the ID of a gtNode
+    HW_Flag_InvalidNodeId = 0x4,
 
     // Select base type using the first argument type
     HW_Flag_BaseTypeFromFirstArg = 0x8,
@@ -158,6 +153,9 @@ enum HWIntrinsicFlag : unsigned int
     // contained
     HW_Flag_MaybeCommutative = 0x80000,
 
+    // The intrinsic has no EVEX compatible form
+    HW_Flag_NoEvexSemantics = 0x100000,
+
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
@@ -172,16 +170,88 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x2000
+    HW_Flag_SupportsContainment = 0x2000,
+
+    // The intrinsic needs consecutive registers
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+
+    // The intrinsic uses scalable registers
+    HW_Flag_Scalable = 0x8000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x10000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_ExplicitMaskedOperation = 0x20000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low register.
+    HW_Flag_LowMaskedOperation = 0x40000,
+
+    // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
+    // the API call
+    HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+
+    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
+    HW_Flag_EmbeddedMaskedOperation = 0x100000,
 
 #else
 #error Unsupported platform
 #endif
+
+    // The intrinsic has some barrier special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Barrier = 0x200000,
+
+    // The intrinsic has some other special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
+
+    HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
+
+    // MaybeNoJmpTable IMM
+    // the imm intrinsic may not need jumptable fallback when it gets non-const argument
+    HW_Flag_MaybeNoJmpTableIMM = 0x800000,
+
+#if defined(TARGET_XARCH)
+    // The intrinsic is an RMW intrinsic
+    HW_Flag_RmwIntrinsic = 0x1000000,
+
+    // The intrinsic is a PermuteVar2x intrinsic
+    HW_Flag_PermuteVar2x = 0x2000000,
+
+    // The intrinsic is an embedded broadcast compatible intrinsic
+    HW_Flag_EmbBroadcastCompatible = 0x4000000,
+
+    // The intrinsic is an embedded rounding compatible intrinsic
+    HW_Flag_EmbRoundingCompatible = 0x8000000,
+
+    // The intrinsic is an embedded masking compatible intrinsic
+    HW_Flag_EmbMaskingCompatible = 0x10000000,
+#elif defined(TARGET_ARM64)
+
+    // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
+    HW_Flag_HasEnumOperand = 0x1000000,
+
+    // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
+    // then the intrinsic should be switched to a scalar only version.
+    HW_Flag_HasScalarInputVariant = 0x2000000,
+
+#endif // TARGET_XARCH
+
+    // The intrinsic is a FusedMultiplyAdd intrinsic
+    HW_Flag_FmaIntrinsic = 0x40000000,
+
+#if defined(TARGET_ARM64)
+    // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
+    HW_Flag_LowVectorOperation = 0x4000000,
+#endif
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
 // This mirrors the System.Runtime.Intrinsics.X86.FloatComparisonMode enumeration
-enum class FloatComparisonMode : unsigned char
+enum class FloatComparisonMode : uint8_t
 {
     // _CMP_EQ_OQ
     OrderedEqualNonSignaling = 0,
@@ -280,7 +350,7 @@ enum class FloatComparisonMode : unsigned char
     UnorderedTrueSignaling = 31,
 };
 
-enum class FloatRoundingMode : unsigned char
+enum class FloatRoundingMode : uint8_t
 {
     // _MM_FROUND_TO_NEAREST_INT
     ToNearestInteger = 0x00,
@@ -303,26 +373,152 @@ enum class FloatRoundingMode : unsigned char
     // _MM_FROUND_NO_EXC
     NoException = 0x08,
 };
+
+enum class IntComparisonMode : uint8_t
+{
+    Equal           = 0,
+    LessThan        = 1,
+    LessThanOrEqual = 2,
+    False           = 3,
+
+    NotEqual           = 4,
+    GreaterThanOrEqual = 5,
+    GreaterThan        = 6,
+    True               = 7,
+
+    NotGreaterThanOrEqual = LessThan,
+    NotGreaterThan        = LessThanOrEqual,
+
+    NotLessThan        = GreaterThanOrEqual,
+    NotLessThanOrEqual = GreaterThan
+};
+
+enum class TernaryLogicUseFlags : uint8_t
+{
+    // Indicates no flags are present
+    None = 0,
+
+    // Indicates the ternary logic uses A
+    A = 1 << 0,
+
+    // Indicates the ternary logic uses B
+    B = 1 << 1,
+
+    // Indicates the ternary logic uses C
+    C = 1 << 2,
+
+    // Indicates the ternary logic uses A and B
+    AB = (A | B),
+
+    // Indicates the ternary logic uses A and C
+    AC = (A | C),
+
+    // Indicates the ternary logic uses B and C
+    BC = (B | C),
+
+    // Indicates the ternary logic uses A, B, and C
+    ABC = (A | B | C),
+};
+
+enum class TernaryLogicOperKind : uint8_t
+{
+    // Indicates no operation is done
+    None = 0,
+
+    // value
+    Select = 1,
+
+    // constant true (1)
+    True = 2,
+
+    // constant false (0)
+    False = 3,
+
+    // ~value
+    Not = 4,
+
+    // left & right
+    And = 5,
+
+    // ~(left & right)
+    Nand = 6,
+
+    // left | right
+    Or = 7,
+
+    // ~(left | right)
+    Nor = 8,
+
+    // left ^ right
+    Xor = 9,
+
+    // ~(left ^ right)
+    Xnor = 10,
+
+    // cond ? left : right
+    Cond = 11,
+
+    // returns 0 if two+ of the three input bits are 0; else 1
+    Major = 12,
+
+    // returns 0 if two+ of the three input bits are 1; else 0
+    Minor = 13,
+};
+
+struct TernaryLogicInfo
+{
+    // We have 256 entries, so we compress as much as possible
+    // This gives us 3-bytes per entry (21-bits)
+
+    TernaryLogicOperKind oper1    : 4;
+    TernaryLogicUseFlags oper1Use : 3;
+
+    TernaryLogicOperKind oper2    : 4;
+    TernaryLogicUseFlags oper2Use : 3;
+
+    TernaryLogicOperKind oper3    : 4;
+    TernaryLogicUseFlags oper3Use : 3;
+
+    static const TernaryLogicInfo& lookup(uint8_t control);
+
+    static uint8_t GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3);
+
+    TernaryLogicUseFlags GetAllUseFlags() const
+    {
+        uint8_t useFlagsBits = 0;
+
+        useFlagsBits |= static_cast<uint8_t>(oper1Use);
+        useFlagsBits |= static_cast<uint8_t>(oper2Use);
+        useFlagsBits |= static_cast<uint8_t>(oper3Use);
+
+        return static_cast<TernaryLogicUseFlags>(useFlagsBits);
+    }
+};
 #endif // TARGET_XARCH
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic         id;
-    const char*            name;
-    CORINFO_InstructionSet isa;
-    int                    simdSize;
-    int                    numArgs;
-    instruction            ins[10];
-    HWIntrinsicCategory    category;
-    HWIntrinsicFlag        flags;
+    // 32-bit: 36-bytes (34+2 trailing padding)
+    // 64-bit: 40-bytes (38+2 trailing padding)
+
+    const char*         name;     // 4 or 8-bytes
+    HWIntrinsicFlag     flags;    // 4-bytes
+    NamedIntrinsic      id;       // 2-bytes
+    uint16_t            ins[10];  // 10 * 2-bytes
+    uint8_t             isa;      // 1-byte
+    int8_t              simdSize; // 1-byte
+    int8_t              numArgs;  // 1-byte
+    HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       enclosingClassName);
+    static NamedIntrinsic         lookupId(Compiler*         comp,
+                                           CORINFO_SIG_INFO* sig,
+                                           const char*       className,
+                                           const char*       methodName,
+                                           const char*       enclosingClassName);
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
@@ -331,7 +527,7 @@ struct HWIntrinsicInfo
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
-        NamedIntrinsic intrinsic, int simdSize, var_types baseType, int* lowerBound, int* upperBound);
+        NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
 #else
 #error Unsupported platform
 #endif
@@ -341,8 +537,12 @@ struct HWIntrinsicInfo
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
-    static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
+    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                              FloatComparisonMode comparison,
+                                                              var_types           simdBaseType,
+                                                              unsigned            simdSize);
 #endif
 
     // Member lookup
@@ -359,213 +559,14 @@ struct HWIntrinsicInfo
 
     static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
     {
-        return lookup(id).isa;
+        uint8_t result = lookup(id).isa;
+        return static_cast<CORINFO_InstructionSet>(result);
     }
 
-#ifdef TARGET_XARCH
-    static int lookupIval(NamedIntrinsic id, bool opportunisticallyDependsOnAVX)
-    {
-        switch (id)
-        {
-            case NI_SSE_CompareEqual:
-            case NI_SSE_CompareScalarEqual:
-            case NI_SSE2_CompareEqual:
-            case NI_SSE2_CompareScalarEqual:
-            case NI_AVX_CompareEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedEqualNonSignaling);
-            }
-
-            case NI_SSE_CompareGreaterThan:
-            case NI_SSE_CompareScalarGreaterThan:
-            case NI_SSE2_CompareGreaterThan:
-            case NI_SSE2_CompareScalarGreaterThan:
-            case NI_AVX_CompareGreaterThan:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanSignaling);
-                }
-
-                // CompareGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareGreaterThan);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
-            }
-
-            case NI_SSE_CompareLessThan:
-            case NI_SSE_CompareScalarLessThan:
-            case NI_SSE2_CompareLessThan:
-            case NI_SSE2_CompareScalarLessThan:
-            case NI_AVX_CompareLessThan:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanSignaling);
-            }
-
-            case NI_SSE_CompareGreaterThanOrEqual:
-            case NI_SSE_CompareScalarGreaterThanOrEqual:
-            case NI_SSE2_CompareGreaterThanOrEqual:
-            case NI_SSE2_CompareScalarGreaterThanOrEqual:
-            case NI_AVX_CompareGreaterThanOrEqual:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::OrderedGreaterThanOrEqualSignaling);
-                }
-
-                // CompareGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareLessThanOrEqual:
-            case NI_SSE_CompareScalarLessThanOrEqual:
-            case NI_SSE2_CompareLessThanOrEqual:
-            case NI_SSE2_CompareScalarLessThanOrEqual:
-            case NI_AVX_CompareLessThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareNotEqual:
-            case NI_SSE_CompareScalarNotEqual:
-            case NI_SSE2_CompareNotEqual:
-            case NI_SSE2_CompareScalarNotEqual:
-            case NI_AVX_CompareNotEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotEqualNonSignaling);
-            }
-
-            case NI_SSE_CompareNotGreaterThan:
-            case NI_SSE_CompareScalarNotGreaterThan:
-            case NI_SSE2_CompareNotGreaterThan:
-            case NI_SSE2_CompareScalarNotGreaterThan:
-            case NI_AVX_CompareNotGreaterThan:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanSignaling);
-                }
-
-                // CompareNotGreaterThan is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareNotGreaterThan);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
-            }
-
-            case NI_SSE_CompareNotLessThan:
-            case NI_SSE_CompareScalarNotLessThan:
-            case NI_SSE2_CompareNotLessThan:
-            case NI_SSE2_CompareScalarNotLessThan:
-            case NI_AVX_CompareNotLessThan:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanSignaling);
-            }
-
-            case NI_SSE_CompareNotGreaterThanOrEqual:
-            case NI_SSE_CompareScalarNotGreaterThanOrEqual:
-            case NI_SSE2_CompareNotGreaterThanOrEqual:
-            case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
-            case NI_AVX_CompareNotGreaterThanOrEqual:
-            {
-                if (opportunisticallyDependsOnAVX)
-                {
-                    return static_cast<int>(FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling);
-                }
-
-                // CompareNotGreaterThanOrEqual is not directly supported in hardware without AVX support.
-                // We will return the inverted case here and lowering will itself swap the ops
-                // to ensure the emitted code remains correct. This simplifies the overall logic
-                // here and for other use cases.
-
-                assert(id != NI_AVX_CompareNotGreaterThanOrEqual);
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareNotLessThanOrEqual:
-            case NI_SSE_CompareScalarNotLessThanOrEqual:
-            case NI_SSE2_CompareNotLessThanOrEqual:
-            case NI_SSE2_CompareScalarNotLessThanOrEqual:
-            case NI_AVX_CompareNotLessThanOrEqual:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling);
-            }
-
-            case NI_SSE_CompareOrdered:
-            case NI_SSE_CompareScalarOrdered:
-            case NI_SSE2_CompareOrdered:
-            case NI_SSE2_CompareScalarOrdered:
-            case NI_AVX_CompareOrdered:
-            {
-                return static_cast<int>(FloatComparisonMode::OrderedNonSignaling);
-            }
-
-            case NI_SSE_CompareUnordered:
-            case NI_SSE_CompareScalarUnordered:
-            case NI_SSE2_CompareUnordered:
-            case NI_SSE2_CompareScalarUnordered:
-            case NI_AVX_CompareUnordered:
-            {
-                return static_cast<int>(FloatComparisonMode::UnorderedNonSignaling);
-            }
-
-            case NI_SSE41_Ceiling:
-            case NI_SSE41_CeilingScalar:
-            case NI_SSE41_RoundToPositiveInfinity:
-            case NI_SSE41_RoundToPositiveInfinityScalar:
-            case NI_AVX_Ceiling:
-            case NI_AVX_RoundToPositiveInfinity:
-            {
-                return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
-            }
-
-            case NI_SSE41_Floor:
-            case NI_SSE41_FloorScalar:
-            case NI_SSE41_RoundToNegativeInfinity:
-            case NI_SSE41_RoundToNegativeInfinityScalar:
-            case NI_AVX_Floor:
-            case NI_AVX_RoundToNegativeInfinity:
-            {
-                return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
-            }
-
-            case NI_SSE41_RoundCurrentDirection:
-            case NI_SSE41_RoundCurrentDirectionScalar:
-            case NI_AVX_RoundCurrentDirection:
-            {
-                return static_cast<int>(FloatRoundingMode::CurrentDirection);
-            }
-
-            case NI_SSE41_RoundToNearestInteger:
-            case NI_SSE41_RoundToNearestIntegerScalar:
-            case NI_AVX_RoundToNearestInteger:
-            {
-                return static_cast<int>(FloatRoundingMode::ToNearestInteger);
-            }
-
-            case NI_SSE41_RoundToZero:
-            case NI_SSE41_RoundToZeroScalar:
-            case NI_AVX_RoundToZero:
-            {
-                return static_cast<int>(FloatRoundingMode::ToZero);
-            }
-
-            default:
-            {
-                return -1;
-            }
-        }
-    }
+#if defined(TARGET_XARCH)
+    static int lookupIval(Compiler* comp, NamedIntrinsic id, var_types simdBaseType);
+#elif defined(TARGET_ARM64)
+    static int lookupIval(NamedIntrinsic id);
 #endif
 
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
@@ -591,7 +592,9 @@ struct HWIntrinsicInfo
             assert(!"Unexpected type");
             return INS_invalid;
         }
-        return lookup(id).ins[type - TYP_BYTE];
+
+        uint16_t result = lookup(id).ins[type - TYP_BYTE];
+        return static_cast<instruction>(result);
     }
 
     static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
@@ -631,6 +634,32 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Commutative) != 0;
     }
 
+#if defined(TARGET_XARCH)
+    static bool IsEmbBroadcastCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
+    }
+
+    static bool IsEmbRoundingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
+
+    static bool IsEmbMaskingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbMaskingCompatible) != 0;
+    }
+#endif // TARGET_XARCH
+
+    static bool CanBenefitFromConstantProp(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CanBenefitFromConstantProp) != 0;
+    }
+
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -646,13 +675,7 @@ struct HWIntrinsicInfo
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_NoCodeGen) == 0;
-    }
-
-    static bool GeneratesMultipleIns(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_MultiIns) != 0;
+        return (flags & (HW_Flag_NoCodeGen | HW_Flag_InvalidNodeId)) == 0;
     }
 
     static bool SupportsContainment(NamedIntrinsic id)
@@ -670,10 +693,8 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
-#elif defined(TARGET_ARM64)
-        unreached();
 #else
 #error Unsupported platform
 #endif
@@ -749,6 +770,14 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
 
+#ifdef TARGET_ARM64
+    static bool NeedsConsecutiveRegisters(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NeedsConsecutiveRegisters) != 0;
+    }
+#endif
+
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -760,11 +789,33 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
+    //------------------------------------------------------------------------
+    // HasEvexSemantics: Checks if the NamedIntrinsic has a lowering to
+    // to an instruction with an EVEX form.
+    //
+    // Return Value:
+    // true if the NamedIntrinsic lowering has an EVEX form.
+    //
+    static bool HasEvexSemantics(NamedIntrinsic id)
+    {
+#if defined(TARGET_XARCH)
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NoEvexSemantics) == 0;
+#else
+        return false;
+#endif
+    }
 
     static bool HasSpecialImport(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_SpecialImport) != 0;
+        return (flags & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) != 0;
+    }
+
+    static bool IsInvalidNodeId(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_InvalidNodeId) != 0;
     }
 
     static bool IsMultiReg(NamedIntrinsic id)
@@ -780,19 +831,67 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #ifdef TARGET_ARM64
-            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_Load2xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+            case NI_AdvSimd_Load2xVector64:
+            case NI_AdvSimd_Arm64_Load2xVector128:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_LoadAndReplicateToVector64x2:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_Sve_Load2xVectorAndUnzip:
                 return 2;
+
+            case NI_AdvSimd_Load3xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+            case NI_AdvSimd_Load3xVector64:
+            case NI_AdvSimd_Arm64_Load3xVector128:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_Sve_Load3xVectorAndUnzip:
+                return 3;
+
+            case NI_AdvSimd_Load4xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+            case NI_AdvSimd_Load4xVector64:
+            case NI_AdvSimd_Arm64_Load4xVector128:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            case NI_AdvSimd_LoadAndReplicateToVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            case NI_Sve_Load4xVectorAndUnzip:
+                return 4;
 #endif
+
+#ifdef TARGET_XARCH
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+                return 2;
+#endif // TARGET_XARCH
 
             default:
                 unreached();
         }
+    }
+
+    static bool HasImmediateOperand(NamedIntrinsic id)
+    {
+#if defined(TARGET_ARM64)
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
+#elif defined(TARGET_XARCH)
+        return lookupCategory(id) == HW_Category_IMM;
+#else
+        return false;
+#endif
     }
 
 #ifdef TARGET_ARM64
@@ -802,10 +901,205 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SIMDScalar) != 0;
     }
 
-    static bool HasImmediateOperand(NamedIntrinsic id)
+    static bool IsScalable(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_HasImmediateOperand) != 0;
+        return (flags & HW_Flag_Scalable) != 0;
+    }
+
+    static bool IsMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return IsLowMaskedOperation(id) || IsOptionalEmbeddedMaskedOperation(id) || IsExplicitMaskedOperation(id);
+    }
+
+    static bool IsLowMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowMaskedOperation) != 0;
+    }
+
+    static bool IsLowVectorOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_LowVectorOperation) != 0;
+    }
+
+    static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_OptionalEmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsEmbeddedMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbeddedMaskedOperation) != 0;
+    }
+
+    static bool IsExplicitMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ExplicitMaskedOperation) != 0;
+    }
+
+    static bool HasEnumOperand(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasEnumOperand) != 0;
+    }
+
+    static bool HasScalarInputVariant(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasScalarInputVariant) != 0;
+    }
+
+    static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
+    {
+        assert(HasScalarInputVariant(id));
+
+        switch (id)
+        {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                return NI_Sve_SaturatingDecrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                return NI_Sve_SaturatingDecrementBy64BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                return NI_Sve_SaturatingIncrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                return NI_Sve_SaturatingIncrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                return NI_Sve_SaturatingIncrementBy64BitElementCountScalar;
+
+            default:
+                unreached();
+        }
+    }
+
+#endif // TARGET_ARM64
+
+    static bool HasSpecialSideEffect(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffectMask) != 0;
+    }
+
+    static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
+
+    static bool MaybeNoJmpTableImm(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeNoJmpTableIMM) != 0;
+    }
+
+    static bool IsFmaIntrinsic(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_FmaIntrinsic) != 0;
+    }
+
+#if defined(TARGET_XARCH)
+    static bool IsRmwIntrinsic(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_RmwIntrinsic) != 0;
+    }
+
+    static bool IsPermuteVar2x(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_PermuteVar2x) != 0;
+    }
+
+    static bool IsTernaryLogic(NamedIntrinsic id)
+    {
+        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
+    }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+    static void GetImmOpsPositions(NamedIntrinsic id, CORINFO_SIG_INFO* sig, int* imm1Pos, int* imm2Pos)
+    {
+        switch (id)
+        {
+            case NI_AdvSimd_Insert:
+            case NI_AdvSimd_InsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalar:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            {
+                assert(sig->numArgs == 4);
+                *imm1Pos = 2;
+                *imm2Pos = 0;
+                break;
+            }
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                *imm2Pos = 0;
+                break;
+            }
+
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            {
+                assert(sig->numArgs == 5);
+                *imm1Pos = 0;
+                *imm2Pos = 1;
+                break;
+            }
+
+            default:
+            {
+                assert(sig->numArgs > 0);
+                *imm1Pos = 0;
+                break;
+            }
+        }
     }
 #endif // TARGET_ARM64
 };
@@ -815,7 +1109,13 @@ struct HWIntrinsicInfo
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
-        : op1(nullptr), op2(nullptr), op3(nullptr), op4(nullptr), numOperands(0), baseType(TYP_UNDEF)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , op4(nullptr)
+        , op5(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
     {
         assert(node != nullptr);
 
@@ -828,11 +1128,11 @@ struct HWIntrinsic final
         InitializeBaseType(node);
     }
 
-    bool IsTableDriven() const
+    bool codeGenIsTableDriven() const
     {
         // TODO-Arm64-Cleanup - make more categories to the table-driven framework
         bool isTableDrivenCategory = category != HW_Category_Helper;
-        bool isTableDrivenFlag = !HWIntrinsicInfo::GeneratesMultipleIns(id) && !HWIntrinsicInfo::HasSpecialCodegen(id);
+        bool isTableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(id);
 
         return isTableDrivenCategory && isTableDrivenFlag;
     }
@@ -843,6 +1143,7 @@ struct HWIntrinsic final
     GenTree*            op2;
     GenTree*            op3;
     GenTree*            op4;
+    GenTree*            op5;
     size_t              numOperands;
     var_types           baseType;
 
@@ -853,6 +1154,9 @@ private:
 
         switch (numOperands)
         {
+            case 5:
+                op5 = node->Op(5);
+                FALLTHROUGH;
             case 4:
                 op4 = node->Op(4);
                 FALLTHROUGH;

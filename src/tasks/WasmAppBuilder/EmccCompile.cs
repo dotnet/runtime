@@ -13,8 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-#nullable enable
-
 namespace Microsoft.WebAssembly.Build.Tasks
 {
     /// <summary>
@@ -35,6 +33,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
+        public string?      MessageToIndicateCompiling { get; set; }
+        public string       CompilerBinaryPath     { get; set; } = "emcc";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -42,6 +42,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
         private string? _tempPath;
         private int _totalFiles;
         private int _numCompiled;
+        private static readonly char[] s_semicolon = new char[] { ';' };
+        private static readonly char[] s_equalTo = new char[] { '=' };
 
         public override bool Execute()
         {
@@ -78,7 +80,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
 
             _totalFiles = SourceFiles.Length;
-            IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
+            Dictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
@@ -90,7 +92,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     string depMetadata = srcItem.GetMetadata("Dependencies");
                     string[] depFiles = string.IsNullOrEmpty(depMetadata)
                                             ? Array.Empty<string>()
-                                            : depMetadata.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                            : depMetadata.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
 
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
@@ -115,6 +117,9 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (_numCompiled > 0)
                     Log.LogMessage(MessageImportance.High, $"[{_numCompiled}/{SourceFiles.Length}] skipped unchanged files");
 
+                if (!string.IsNullOrEmpty(MessageToIndicateCompiling))
+                    Log.LogMessage(MessageImportance.High, MessageToIndicateCompiling);
+
                 Log.LogMessage(MessageImportance.Low, "Using environment variables:");
                 foreach (var kvp in envVarsDict)
                     Log.LogMessage(MessageImportance.Low, $"\t{kvp.Key} = {kvp.Value}");
@@ -126,7 +131,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 Directory.CreateDirectory(_tempPath);
 
                 int allowedParallelism = DisableParallelCompile ? 1 : Math.Min(SourceFiles.Length, Environment.ProcessorCount);
-                if (BuildEngine is IBuildEngine9 be9)
+                IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+                if (be9 is not null)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
 
                 /*
@@ -155,17 +161,24 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                     Instead, we want to use work-stealing so jobs can be run by any partition.
                 */
-                ParallelLoopResult result = Parallel.ForEach(
+                try
+                {
+                    ParallelLoopResult result = Parallel.ForEach(
                                                 Partitioner.Create(filesToCompile, EnumerablePartitionerOptions.NoBuffering),
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
+                    {
+                        if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                            state.Stop();
+                    });
+                    if (!result.IsCompleted && !Log.HasLoggedErrors)
+                        Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
+                }
+                finally
                 {
-                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
-                        state.Stop();
-                });
+                    be9?.ReleaseCores(allowedParallelism);
+                }
 
-                if (!result.IsCompleted && !Log.HasLoggedErrors)
-                    Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
 
                 if (!Log.HasLoggedErrors)
                 {
@@ -188,7 +201,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted
@@ -238,7 +251,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             ITaskItem CreateOutputItemFor(string srcFile, string objFile)
             {
-                ITaskItem newItem = new TaskItem(objFile);
+                TaskItem newItem = new TaskItem(objFile);
                 newItem.SetMetadata("SourceFile", srcFile);
                 return newItem;
             }
@@ -291,7 +304,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private IDictionary<string, string> GetEnvironmentVariablesDict()
+        private Dictionary<string, string> GetEnvironmentVariablesDict()
         {
             Dictionary<string, string> envVarsDict = new();
             if (EnvironmentVariables == null)
@@ -299,7 +312,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
             foreach (var item in EnvironmentVariables)
             {
-                var parts = item.ItemSpec.Split(new char[] {'='}, 2, StringSplitOptions.None);
+                var parts = item.ItemSpec.Split(s_equalTo, 2, StringSplitOptions.None);
                 if (parts.Length == 0)
                     continue;
 

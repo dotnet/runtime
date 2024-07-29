@@ -54,7 +54,7 @@ namespace System.Speech.Synthesis
                     {
                         try
                         {
-                            using (TextReader reader = new StreamReader(stream))
+                            using (var reader = new StreamReader(stream))
                             {
                                 _text = reader.ReadToEnd();
                             }
@@ -148,7 +148,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         private object _synthesizer;
 
-        private static ResourceLoader s_resourceLoader = new();
+        private static readonly ResourceLoader s_resourceLoader = new();
 
         #endregion
     }

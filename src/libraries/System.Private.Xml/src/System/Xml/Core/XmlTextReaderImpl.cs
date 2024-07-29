@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Text;
-using System.Xml.Schema;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -260,7 +260,7 @@ namespace System.Xml
         private long _charactersFromEntities;
 
         // All entities that are currently being processed
-        private Dictionary<IDtdEntityInfo, IDtdEntityInfo>? _currentEntities;
+        private HashSet<IDtdEntityInfo>? _currentEntities;
 
         // DOM helpers
         private bool _disableUndeclaredEntityCheck;
@@ -463,7 +463,7 @@ namespace System.Xml
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
 
-            if (url == null || url.Length == 0)
+            if (string.IsNullOrEmpty(url))
             {
                 InitStreamInput(input, null);
             }
@@ -506,7 +506,7 @@ namespace System.Xml
             : this((context != null && context.NameTable != null) ? context.NameTable : new NameTable())
         {
             Encoding? enc = context?.Encoding;
-            if (context == null || context.BaseURI == null || context.BaseURI.Length == 0)
+            if (context == null || string.IsNullOrEmpty(context.BaseURI))
             {
                 InitStreamInput(xmlFragment, enc);
             }
@@ -1064,10 +1064,8 @@ namespace System.Xml
         // Returns value of an attribute at the specified index (position)
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
 
             return _nodes[_index + i + 1].StringValue;
         }
@@ -1128,10 +1126,8 @@ namespace System.Xml
         // Moves to an attribute at the specified index (position)
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attrCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
 
             if (InAttributeValueIterator)
             {
@@ -2074,10 +2070,7 @@ namespace System.Xml
             {
                 Debug.Assert(_v1Compat, "XmlTextReaderImpl.DtdProcessing property cannot be changed on reader created via XmlReader.Create.");
 
-                if ((uint)value > (uint)DtdProcessing.Parse)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)value, (uint)DtdProcessing.Parse, nameof(value));
 
                 _dtdProcessing = value;
             }
@@ -2539,7 +2532,7 @@ namespace System.Xml
 
         private XmlResolver GetTempResolver()
         {
-            return _xmlResolver ?? new XmlUrlResolver();
+            return _xmlResolver ?? XmlReaderSettings.GetDefaultPermissiveResolver();
         }
 
         internal bool DtdParserProxy_PushEntity(IDtdEntityInfo entity, out int entityId)
@@ -8069,7 +8062,7 @@ namespace System.Xml
             // check entity recursion
             if (_currentEntities != null)
             {
-                if (_currentEntities.ContainsKey(entity))
+                if (_currentEntities.Contains(entity))
                 {
                     Throw(entity.IsParameterEntity ? SR.Xml_RecursiveParEntity : SR.Xml_RecursiveGenEntity, entity.Name,
                         _parsingStatesStack![_parsingStatesStackTop].LineNo, _parsingStatesStack[_parsingStatesStackTop].LinePos);
@@ -8083,9 +8076,9 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
+                _currentEntities ??= new HashSet<IDtdEntityInfo>();
 
-                _currentEntities.Add(entity, entity);
+                _currentEntities.Add(entity);
             }
         }
 

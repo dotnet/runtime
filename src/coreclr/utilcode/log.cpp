@@ -66,7 +66,7 @@ VOID InitLogging()
     LPWSTR fileName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFile);
     if (fileName != 0)
     {
-        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(wcslen(fileName) + 32)))
+        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(u16_strlen(fileName) + 32)))
         {
             wcscpy_s(szLogFileName.Ptr(), szLogFileName.Size(), fileName);
         }
@@ -98,9 +98,9 @@ VOID InitLogging()
             NULL);
 
             // Some other logging may be going on, try again with another file name
-        if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
+        if (LogFileHandle == INVALID_HANDLE_VALUE && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
-            WCHAR* ptr = szLogFileName.Ptr() + wcslen(szLogFileName.Ptr()) + 1;
+            WCHAR* ptr = szLogFileName.Ptr() + u16_strlen(szLogFileName.Ptr()) + 1;
             ptr[-1] = W('.');
             ptr[0] = W('0');
             ptr[1] = 0;
@@ -120,14 +120,14 @@ VOID InitLogging()
                 *ptr = *ptr + 1;
             }
             if (LogFileHandle == INVALID_HANDLE_VALUE) {
-                int ret = WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
+                int ret = WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, NULL, 0, NULL, NULL);
                 const char *msg = "Could not open log file, logging to ";
                 DWORD msgLen = (DWORD)strlen(msg);
                 CQuickSTR buff;
                 if (SUCCEEDED(buff.ReSizeNoThrow(ret + msgLen)))
                 {
                     strcpy_s(buff.Ptr(), buff.Size(), msg);
-                    WszWideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
+                    WideCharToMultiByte(CP_ACP, 0, szLogFileName.Ptr(), -1, buff.Ptr() + msgLen, ret, NULL, NULL);
                     msg = buff.Ptr();
                 }
                 else
@@ -185,7 +185,7 @@ VOID InitializeLogging()
     if (bLoggingInitialized)
         return;
 
-    HANDLE mutex = WszCreateMutex(NULL, FALSE, NULL);
+    HANDLE mutex = CreateMutex(NULL, FALSE, NULL);
     _ASSERTE(mutex != 0);
     if (InterlockedCompareExchangeT(&LogFileMutex, mutex, 0) != 0)
     {
@@ -327,8 +327,8 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     needsPrefix = (fmt[strlen(fmt)-1] == '\n');
 
-    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE-buflen, _TRUNCATE, fmt, args );
-    pBuffer[BUFFERSIZE-1] = 0;
+    int cCountWritten = _vsnprintf_s(&pBuffer[buflen], BUFFERSIZE - buflen - 1, _TRUNCATE, fmt, args );
+    pBuffer[BUFFERSIZE - 1] = 0;
     if (cCountWritten < 0) {
         buflen = BUFFERSIZE - 1;
     } else {

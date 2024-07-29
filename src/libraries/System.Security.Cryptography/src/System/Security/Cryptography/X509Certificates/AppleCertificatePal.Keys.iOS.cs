@@ -20,17 +20,17 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            return ImportPkcs12(new UnixPkcs12Reader.CertAndKey { Cert = this, Key = privateKey });
+            return ImportPkcs12(this, privateKey);
         }
 
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            return ImportPkcs12(new UnixPkcs12Reader.CertAndKey { Cert = this, Key = privateKey });
+            return ImportPkcs12(this, privateKey);
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            return ImportPkcs12(new UnixPkcs12Reader.CertAndKey { Cert = this, Key = privateKey });
+            return ImportPkcs12(this, privateKey);
         }
     }
 }

@@ -28,7 +28,7 @@
 .corflags 0x00000001
 
 
-.class private auto ansi beforefieldinit T
+.class public auto ansi beforefieldinit T
        extends [mscorlib]System.Object
 {
   .field public static int32 size_to_test

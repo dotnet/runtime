@@ -10,6 +10,7 @@
 // Release: Outputs 1
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct S0
 {
@@ -25,7 +26,8 @@ public struct S1
 
 public class Runtime_78310
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S1 lhs = new S1 { S = { F = 1 }, LastField = 2 };
         S1 rhs = new S1 { S = { F = 3 }, LastField = 4 };
@@ -51,7 +53,7 @@ public class Runtime_78310
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Copy(bool small, ref S1 lhs, S1 rhs)
+    internal static void Copy(bool small, ref S1 lhs, S1 rhs)
     {
         if (small)
         {

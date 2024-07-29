@@ -10,13 +10,14 @@
 #include <atomic>
 #include <cassert>
 #include <exception>
+#include <stdexcept>
 #include <list>
 #include <mutex>
 #include <unordered_map>
 
 namespace API
 {
-    // Documentation found at https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
+    // Documentation found at https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
     //64bd43f8-bfee-4ec4-b7eb-2935158dae21
     const GUID IID_IReferenceTrackerTarget = { 0x64bd43f8, 0xbfee, 0x4ec4, { 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21} };
     class DECLSPEC_UUID("64bd43f8-bfee-4ec4-b7eb-2935158dae21") IReferenceTrackerTarget : public IUnknown
@@ -37,8 +38,8 @@ namespace API
         STDMETHOD(ReleaseDisconnectedReferenceSources)() = 0;
         STDMETHOD(NotifyEndOfReferenceTrackingOnThread)() = 0;
         STDMETHOD(GetTrackerTarget)(_In_ IUnknown* obj, _Outptr_ IReferenceTrackerTarget** ppNewReference) = 0;
-        STDMETHOD(AddMemoryPressure)(_In_ UINT64 bytesAllocated) = 0;
-        STDMETHOD(RemoveMemoryPressure)(_In_ UINT64 bytesAllocated) = 0;
+        STDMETHOD(AddMemoryPressure)(_In_ uint64_t bytesAllocated) = 0;
+        STDMETHOD(RemoveMemoryPressure)(_In_ uint64_t bytesAllocated) = 0;
     };
 
     //3cf184b4-7ccb-4dda-8455-7e6ce99a3298
@@ -579,6 +580,25 @@ extern "C" DLL_EXPORT LONG STDMETHODCALLTYPE TrackerTarget_ReleaseFromReferenceT
 {
     assert(target != nullptr);
     return (LONG)target->ReleaseFromReferenceTracker();
+}
+
+namespace
+{
+    using QueryInterface_t = HRESULT(STDMETHODCALLTYPE*)(void*,GUID*,void**);
+    QueryInterface_t _qiToWrap;
+
+    HRESULT STDMETHODCALLTYPE QueryInterfaceWrapper(void* _this, GUID* riid, void** ppvObject)
+    {
+        if (_qiToWrap == nullptr)
+            return E_UNEXPECTED;
+        return _qiToWrap(_this, riid, ppvObject);
+    }
+}
+
+extern "C" DLL_EXPORT void* WrapQueryInterface(QueryInterface_t qiToWrap)
+{
+    _qiToWrap = qiToWrap;
+    return (void*)&QueryInterfaceWrapper;
 }
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE UpdateTestObjectAsIUnknown(IUnknown *obj, int i, IUnknown **out)

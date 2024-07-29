@@ -28,9 +28,6 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_content_write_larger_than_content_length);
                 }
 
-                // Have the connection write the data, skipping the buffer. Importantly, this will
-                // force a flush of anything already in the buffer, i.e. any remaining request headers
-                // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
                 connection.Write(buffer);
@@ -45,12 +42,9 @@ namespace System.Net.Http
                     return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
                 }
 
-                // Have the connection write the data, skipping the buffer. Importantly, this will
-                // force a flush of anything already in the buffer, i.e. any remaining request headers
-                // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
                 Debug.Assert(connection._currentRequest != null);
-                return connection.WriteAsync(buffer, async: true);
+                return connection.WriteAsync(buffer);
             }
 
             public override Task FinishAsync(bool async)

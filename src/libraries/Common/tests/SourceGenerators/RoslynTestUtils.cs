@@ -22,11 +22,25 @@ namespace SourceGenerators.Tests
     internal static class RoslynTestUtils
     {
         /// <summary>
+        /// Creates a canonical Roslyn workspace for testing.
+        /// </summary>
+        public static AdhocWorkspace CreateTestWorkspace()
+        {
+            AdhocWorkspace workspace = new AdhocWorkspace();
+            workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()));
+            return workspace;
+        }
+
+        /// <summary>
         /// Creates a canonical Roslyn project for testing.
         /// </summary>
         /// <param name="references">Assembly references to include in the project.</param>
         /// <param name="includeBaseReferences">Whether to include references to the BCL assemblies.</param>
-        public static Project CreateTestProject(IEnumerable<Assembly>? references, bool includeBaseReferences = true)
+        public static Project CreateTestProject(
+            AdhocWorkspace workspace,
+            IEnumerable<Assembly>? references,
+            bool includeBaseReferences = true,
+            LanguageVersion langVersion = LanguageVersion.Preview)
         {
             string corelib = Assembly.GetAssembly(typeof(object))!.Location;
             string runtimeDir = Path.GetDirectoryName(corelib)!;
@@ -47,11 +61,12 @@ namespace SourceGenerators.Tests
                 }
             }
 
-            return new AdhocWorkspace()
-                .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
+            return workspace
+                .CurrentSolution
                 .AddProject("Test", "test.dll", "C#")
                 .WithMetadataReferences(refs)
-                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable))
+                .WithParseOptions(new CSharpParseOptions(langVersion));
         }
 
         public static Task CommitChanges(this Project proj, params string[] ignorables)
@@ -76,7 +91,7 @@ namespace SourceGenerators.Tests
             }
         }
 
-        private static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
+        public static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
         {
             int count = 0;
             Project result = project;
@@ -149,9 +164,11 @@ namespace SourceGenerators.Tests
             IEnumerable<Assembly>? references,
             IEnumerable<string> sources,
             bool includeBaseReferences = true,
+            LanguageVersion langVersion = LanguageVersion.Preview,
             CancellationToken cancellationToken = default)
         {
-            Project proj = CreateTestProject(references, includeBaseReferences);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references, includeBaseReferences, langVersion);
             proj = proj.WithDocuments(sources);
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
@@ -186,7 +203,8 @@ namespace SourceGenerators.Tests
             IEnumerable<Assembly> references,
             IEnumerable<string> sources)
         {
-            Project proj = CreateTestProject(references);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references);
 
             proj = proj.WithDocuments(sources);
 
@@ -210,7 +228,8 @@ namespace SourceGenerators.Tests
             string? defaultNamespace = null,
             string? extraFile = null)
         {
-            Project proj = CreateTestProject(references);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references);
 
             int count = sources.Count();
             proj = proj.WithDocuments(sources, sourceNames);
@@ -266,7 +285,7 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument(l[i]).GetTextAsync().ConfigureAwait(false);
-                    results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                    results.Add(ReplaceLineEndings(s.ToString()));
                 }
             }
             else
@@ -274,17 +293,41 @@ namespace SourceGenerators.Tests
                 for (int i = 0; i < count; i++)
                 {
                     SourceText s = await proj.FindDocument($"src-{i}.cs").GetTextAsync().ConfigureAwait(false);
-                    results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                    results.Add(ReplaceLineEndings(s.ToString()));
                 }
             }
 
             if (extraFile != null)
             {
                 SourceText s = await proj.FindDocument(extraFile).GetTextAsync().ConfigureAwait(false);
-                results.Add(s.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+                results.Add(ReplaceLineEndings(s.ToString()));
             }
 
             return results;
+        }
+
+        public static bool CompareLines(string[] expectedLines, SourceText sourceText, out string message)
+        {
+            if (expectedLines.Length != sourceText.Lines.Count)
+            {
+                message = string.Format("Line numbers do not match. Expected: {0} lines, but generated {1}",
+                    expectedLines.Length, sourceText.Lines.Count);
+                return false;
+            }
+            int index = 0;
+            foreach (TextLine textLine in sourceText.Lines)
+            {
+                string expectedLine = expectedLines[index];
+                if (!expectedLine.Equals(textLine.ToString(), StringComparison.Ordinal))
+                {
+                    message = string.Format("Line {0} does not match.{1}Expected Line:{1}{2}{1}Actual Line:{1}{3}",
+                        textLine.LineNumber + 1, Environment.NewLine, expectedLine, textLine);
+                    return false;
+                }
+                index++;
+            }
+            message = string.Empty;
+            return true;
         }
 
         private static async Task<Project> RecreateProjectDocumentsAsync(Project project)
@@ -304,5 +347,12 @@ namespace SourceGenerators.Tests
             SourceText newText = await document.GetTextAsync().ConfigureAwait(false);
             return document.WithText(SourceText.From(newText.ToString(), newText.Encoding, newText.ChecksumAlgorithm));
         }
+
+        private static string ReplaceLineEndings(string text) =>
+#if NET
+            text.ReplaceLineEndings("\n");
+#else
+            text.Replace("\r\n", "\n");
+#endif
     }
 }

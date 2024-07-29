@@ -79,28 +79,18 @@ namespace System.IO.Compression
         private static byte[] GetStaticLiteralTreeLength()
         {
             byte[] literalTreeLength = new byte[MaxLiteralTreeElements];
-            for (int i = 0; i <= 143; i++)
-                literalTreeLength[i] = 8;
 
-            for (int i = 144; i <= 255; i++)
-                literalTreeLength[i] = 9;
-
-            for (int i = 256; i <= 279; i++)
-                literalTreeLength[i] = 7;
-
-            for (int i = 280; i <= 287; i++)
-                literalTreeLength[i] = 8;
-
+            literalTreeLength.AsSpan(0, 144).Fill(8);
+            literalTreeLength.AsSpan(144, 112).Fill(9);
+            literalTreeLength.AsSpan(256, 24).Fill(7);
+            literalTreeLength.AsSpan(280, 8).Fill(8);
             return literalTreeLength;
         }
 
         private static byte[] GetStaticDistanceTreeLength()
         {
             byte[] staticDistanceTreeLength = new byte[MaxDistTreeElements];
-            for (int i = 0; i < MaxDistTreeElements; i++)
-            {
-                staticDistanceTreeLength[i] = 5;
-            }
+            Array.Fill(staticDistanceTreeLength, (byte)5);
             return staticDistanceTreeLength;
         }
 
@@ -124,14 +114,16 @@ namespace System.IO.Compression
         // This algorithm is described in standard RFC 1951
         private uint[] CalculateHuffmanCode()
         {
-            uint[] bitLengthCount = new uint[17];
+            Span<uint> bitLengthCount = stackalloc uint[17];
+            bitLengthCount.Clear();
             foreach (int codeLength in _codeLengthArray)
             {
                 bitLengthCount[codeLength]++;
             }
             bitLengthCount[0] = 0;  // clear count for length 0
 
-            uint[] nextCode = new uint[17];
+            Span<uint> nextCode = stackalloc uint[17];
+            nextCode.Clear();
             uint tempCode = 0;
             for (int bits = 1; bits <= 16; bits++)
             {

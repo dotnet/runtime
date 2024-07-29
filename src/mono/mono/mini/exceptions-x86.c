@@ -47,6 +47,7 @@ static void (*restore_stack) (void *);
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
+static MonoW32ExceptionHandler term_handler = NULL;
 
 LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
 gpointer mono_win_vectored_exception_handle;
@@ -260,6 +261,31 @@ void win32_seh_cleanup(void)
 	RemoveVectoredExceptionHandler (mono_win_vectored_exception_handle);
 }
 
+BOOL WINAPI mono_win_ctrl_handler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType) {
+	case CTRL_C_EVENT:
+		if (term_handler != NULL)
+			term_handler(0, NULL, NULL);
+		return TRUE;
+		break;
+	case CTRL_CLOSE_EVENT:
+		return TRUE;
+		break;
+	case CTRL_BREAK_EVENT:
+		return FALSE;
+		break;
+	case CTRL_LOGOFF_EVENT:
+		return FALSE;
+		break;
+	case CTRL_SHUTDOWN_EVENT:
+		return FALSE;
+		break;
+	default:
+		return FALSE;
+	}
+}
+
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 {
 	switch (type) {
@@ -271,6 +297,11 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 		break;
 	case SIGSEGV:
 		segv_handler = handler;
+		break;
+	case SIGTERM:
+		term_handler = handler;
+		if (!SetConsoleCtrlHandler(mono_win_ctrl_handler, TRUE))
+			fprintf(stderr,"Cannot set control handler\n");
 		break;
 	default:
 		break;
@@ -352,7 +383,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	x86_ret (code);
 
 	if (info)
-		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -363,7 +394,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;
@@ -432,7 +463,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	x86_ret (code);
 
 	if (info)
-		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -441,7 +472,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 		g_slist_free (unwind_ops);
 	}
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
@@ -676,7 +707,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
 
 	if (info)
-		*info = mono_tramp_info_create (name, start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (name, start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -685,7 +716,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 		g_slist_free (unwind_ops);
 	}
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;
@@ -935,7 +966,11 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, (MonoObject*)obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	mono_restore_context (&ctx);
 }
@@ -978,7 +1013,7 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
 
 	if (info)
-		*info = mono_tramp_info_create ("x86_signal_exception_trampoline", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("x86_signal_exception_trampoline", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 	else {
 		GSList *l;
 
@@ -989,7 +1024,7 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;

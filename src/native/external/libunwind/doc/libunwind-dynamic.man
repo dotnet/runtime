@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:44 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "LIBUNWIND\-DYNAMIC" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "LIBUNWIND\-DYNAMIC" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 libunwind\-dynamic
 \-\- libunwind\-support for runtime\-generated code 
@@ -84,7 +86,7 @@ once the stack\-pointer is restored, all values saved in the
 deallocated portion of the stack frame become invalid and hence 
 libunwind
 needs to know about it. The portion of the frame 
-state not saved on the stack is assume to remain valid through the end 
+state not saved on the stack is assumed to remain valid through the end 
 of the region. For this reason, there is usually no need to describe 
 instructions which restore the contents of callee\-saved registers. 
 .PP
@@ -98,7 +100,7 @@ contrast, most CISC use variable\-length instruction encodings, so it
 is usually necessary to use a byte\-offset as the index. Given the 
 instruction index, the operation descriptor specifies the effect of 
 the instruction in an abstract manner. For example, it might express 
-that the instruction stores calle\-saved register r1
+that the instruction stores callee\-saved register r1
 at offset 16 
 in the stack frame. 
 .PP
@@ -137,7 +139,7 @@ bytes).
 .TP
 unw_word_t gp
  The global\-pointer value in use 
-for this procedure. The exact meaing of the global\-pointer is 
+for this procedure. The exact meaning of the global\-pointer is 
 architecture\-specific and on some architecture, it is not used at 
 all. 
 .TP
@@ -173,19 +175,18 @@ The format of these sub\-members is described in detail below.
 .SS PROC\-INFO FORMAT
 .PP
 This is the preferred dynamic unwind\-info format and it is generally 
-the one used by full\-blown runtime code\-generators. In this format, 
+the one used by full\-blown runtime code generators. In this format, 
 the details of a procedure are described by a structure of type 
 unw_dyn_proc_info_t\&.
 This structure contains the following 
 members: 
 .PP
-.RE
 .TP
 unw_word_t name_ptr
  The address of a 
 (human\-readable) name of the procedure or 0 if no such name is 
-available. If non\-zero, The string stored at this address must be 
-ASCII NUL terminated. For source languages that use name\-mangling 
+available. If non\-zero, the string stored at this address must be 
+ASCII NUL terminated. For source languages that use name mangling 
 (such as C++ or Java) the string stored at this address should be 
 the \fIdemangled\fP
 version of the name. 
@@ -193,7 +194,7 @@ version of the name.
 .TP
 unw_word_t handler
  The address of the 
-personality\-routine for this procedure. Personality\-routines are 
+personality routine for this procedure. Personality routines are 
 used in conjunction with exception handling. See the C++ ABI draft 
 (http://www.codesourcery.com/cxx\-abi/) for an overview and a 
 description of the personality routine. If the procedure has no 
@@ -209,14 +210,14 @@ set to 0.
 .TP
 unw_dyn_region_info_t *regions
  A NULL\-terminated 
-linked list of region\-descriptors. See section ``Region 
+linked list of region descriptors. See section ``Region 
 descriptors\&'' below for more details. 
 .PP
 .SS TABLE\-INFO FORMAT
 .PP
 This format is generally used when the dynamically generated code was 
 derived from static code and the unwind\-info for the dynamic and the 
-static versions is identical. For example, this format can be useful 
+static versions are identical. For example, this format can be useful 
 when loading statically\-generated code into an address\-space in a 
 non\-standard fashion (i.e., through some means other than 
 dlopen()).
@@ -228,7 +229,7 @@ This structure contains the following members:
 unw_word_t name_ptr
  The address of a 
 (human\-readable) name of the procedure or 0 if no such name is 
-available. If non\-zero, The string stored at this address must be 
+available. If non\-zero, the string stored at this address must be 
 ASCII NUL terminated. For source languages that use name\-mangling 
 (such as C++ or Java) the string stored at this address should be 
 the \fIdemangled\fP
@@ -251,7 +252,7 @@ counted in units of words
 .TP
 unw_word_t table_data
  A pointer to the actual 
-data encoding the unwind\-info. The exact format is 
+data encoding the unwind info. The exact format is 
 architecture\-specific (see architecture\-specific sections below). 
 .PP
 .SS REMOTE TABLE\-INFO FORMAT
@@ -269,14 +270,14 @@ via the address\-space\&'s access_mem()
 call\-back, rather than 
 through a direct memory reference. 
 .PP
-From the point of view of a runtime\-code generator, the remote 
+From the point of view of a runtime code generator, the remote 
 table\-info format offers no advantage and it is expected that such 
 generators will describe their procedures either with the proc\-info 
 format or the normal table\-info format. The main reason that the 
 remote table\-info format exists is to enable the 
 address\-space\-specific find_proc_info()
 callback (see 
-unw_create_addr_space(3))
+unw_create_addr_space(3libunwind))
 to return unwind tables whose 
 data remains in remote memory. This can speed up unwinding (e.g., for 
 a debugger) because it reduces the amount of data that needs to be 
@@ -287,7 +288,7 @@ loaded from remote memory.
 .PP
 A region descriptor is a variable length structure that describes how 
 each instruction in the region affects the frame state. Of course, 
-most instructions in a region usualy do not change the frame state and 
+most instructions in a region usually do not change the frame state and 
 for those, nothing needs to be recorded in the region descriptor. A 
 region descriptor is a structure of type 
 unw_dyn_region_info_t
@@ -381,7 +382,7 @@ values described below.
 int8_t qp
  The qualifying predicate that controls 
 whether or not this directive is active. This is useful for 
-predicated architecturs such as IA\-64 or ARM, where the contents of 
+predicated architectures such as IA\-64 or ARM, where the contents of 
 another (callee\-saved) register determines whether or not an 
 instruction is executed (takes effect). If the directive is always 
 active, this member should be set to the manifest constant 
@@ -429,7 +430,7 @@ sorted, it is recommended that such implementations first check
 whether the list happens to be sorted already and, if not, sort the 
 directives explicitly before the first use. With this approach, the 
 overhead of explicit sorting is only paid when there is a real benefit 
-and if the runtime code\-generator happens to generated sorted lists 
+and if the runtime code\-generator happens to generate sorted lists 
 naturally, the performance penalty is limited to a simple O(N) check. 
 .PP
 .SS OPERATIONS TAGS
@@ -523,9 +524,9 @@ POP_FRAMES otherwise
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-_U_dyn_register(3),
-_U_dyn_cancel(3)
+libunwind(3libunwind),
+_U_dyn_register(3libunwind),
+_U_dyn_cancel(3libunwind)
 .PP
 .SH AUTHOR
 

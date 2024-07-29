@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
@@ -17,17 +18,17 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
-        public int CurrentDepth => _count;
+        public readonly int CurrentDepth => _count;
 
         /// <summary>
-        /// Exposes the stackframe that is currently active.
+        /// Exposes the stack frame that is currently active.
         /// </summary>
         public WriteStackFrame Current;
 
         /// <summary>
-        /// Gets the parent stackframe, if it exists.
+        /// Gets the parent stack frame, if it exists.
         /// </summary>
-        public ref WriteStackFrame Parent
+        public readonly ref WriteStackFrame Parent
         {
             get
             {
@@ -88,16 +89,12 @@ namespace System.Text.Json
         /// </summary>
         public int FlushThreshold;
 
+        public PipeWriter? PipeWriter;
+
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.
         /// </summary>
-        public bool IsContinuation => _continuationCount != 0;
-
-        /// <summary>
-        /// Indicates that the root-level JsonTypeInfo is the result of
-        /// polymorphic dispatch from the internal System.Object converter.
-        /// </summary>
-        public bool IsPolymorphicRootValue;
+        public readonly bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
@@ -123,9 +120,14 @@ namespace System.Text.Json
         public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
+        /// The polymorphic type resolver used by the next converter.
+        /// </summary>
+        public PolymorphicTypeResolver? PolymorphicTypeResolver;
+
+        /// <summary>
         /// Whether the current frame needs to write out any metadata.
         /// </summary>
-        public bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
+        public readonly bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
 
         private void EnsurePushCapacity()
         {
@@ -142,7 +144,6 @@ namespace System.Text.Json
         internal void Initialize(
             JsonTypeInfo jsonTypeInfo,
             object? rootValueBoxed = null,
-            bool isPolymorphicRootValue = false,
             bool supportContinuation = false,
             bool supportAsync = false)
         {
@@ -153,7 +154,6 @@ namespace System.Text.Json
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-            IsPolymorphicRootValue = isPolymorphicRootValue;
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
@@ -175,7 +175,7 @@ namespace System.Text.Json
         /// <summary>
         /// Gets the nested JsonTypeInfo before resolving any polymorphic converters
         /// </summary>
-        public JsonTypeInfo PeekNestedJsonTypeInfo()
+        public readonly JsonTypeInfo PeekNestedJsonTypeInfo()
         {
             Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
             return _count == 0 ? Current.JsonTypeInfo : Current.JsonPropertyInfo!.JsonTypeInfo;
@@ -278,7 +278,7 @@ namespace System.Text.Json
             => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
 
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposeCompletedAsyncDisposables()
+        public readonly async ValueTask DisposeCompletedAsyncDisposables()
         {
             Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
@@ -307,7 +307,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover IDisposables
         /// in the event of an exception on serialization
         /// </summary>
-        public void DisposePendingDisposablesOnException()
+        public readonly void DisposePendingDisposablesOnException()
         {
             Exception? exception = null;
 
@@ -346,7 +346,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover I(Async)Disposables
         /// in the event of an exception on async serialization
         /// </summary>
-        public async ValueTask DisposePendingDisposablesOnExceptionAsync()
+        public readonly async ValueTask DisposePendingDisposablesOnExceptionAsync()
         {
             Exception? exception = null;
 
@@ -427,7 +427,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -443,6 +443,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path = {PropertyPath()} Current = ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

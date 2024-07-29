@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!--
+      This test has dependencies on specific file layouts relative to the executable.
+      It also sets specific loader environment variables.
+    -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>

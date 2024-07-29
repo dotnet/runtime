@@ -4,16 +4,18 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
     [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract partial class Attribute
     {
         protected Attribute() { }
 
+#if !NATIVEAOT
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for equality")]
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -82,6 +84,7 @@ namespace System
 
             return type.GetHashCode();
         }
+#endif
 
         // Compares values of custom-attribute fields.
         private static bool AreFieldValuesEqual(object? thisValue, object? thatValue)
@@ -124,7 +127,7 @@ namespace System
                 // An object of type Attribute will cause a stack overflow.
                 // However, this should never happen because custom attributes cannot contain values other than
                 // constants, single-dimensional arrays and typeof expressions.
-                Debug.Assert(!(thisValue is Attribute));
+                Debug.Assert(thisValue is not Attribute);
                 if (!thisValue.Equals(thatValue))
                     return false;
             }

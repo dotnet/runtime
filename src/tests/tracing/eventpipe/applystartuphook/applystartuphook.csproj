@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Requires explicit Main as it supports command-line arguments for local testing. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ApplyStartupHookValidation.cs" />
+    <Compile Include="Hook.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="hooks/Basic.csproj" Link="hooks\Basic.dll">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

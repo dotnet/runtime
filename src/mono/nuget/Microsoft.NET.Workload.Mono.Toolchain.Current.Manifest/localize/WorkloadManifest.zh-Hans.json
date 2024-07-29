@@ -1,0 +1,5 @@
+﻿{
+  "workloads/wasm-tools/description": ".NET WebAssembly 生成工具",
+  "workloads/wasm-experimental/description": ".NET WebAssembly 实验工具",
+  "workloads/runtimes-windows/description": "Windows 运行时包"
+}

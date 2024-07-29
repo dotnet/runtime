@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly extern System.Runtime.CompilerServices.Unsafe
 {
@@ -19,7 +17,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_41073
+.class public auto ansi beforefieldinit Runtime_41073
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static float32 

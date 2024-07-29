@@ -8,6 +8,7 @@ namespace structinreg
     public class Program
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try
@@ -31,6 +32,12 @@ namespace structinreg
                 }
 
                 ret = Program3.Main1();
+                if (ret != 100)
+                {
+                    return ret;
+                }
+
+                ret = Program4.Main1();
                 if (ret != 100)
                 {
                     return ret;

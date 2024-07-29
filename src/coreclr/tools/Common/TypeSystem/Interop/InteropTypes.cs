@@ -54,7 +54,7 @@ namespace Internal.TypeSystem.Interop
 
         public static MetadataType GetVariant(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling", "ComVariant");
         }
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
@@ -143,6 +143,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemRuntimeIntrinsicsVector256T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector256`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector512T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector512`1");
         }
 
         public static bool IsSystemNumericsVectorT(TypeSystemContext context, TypeDesc type)

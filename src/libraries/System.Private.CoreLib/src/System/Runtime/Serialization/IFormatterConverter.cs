@@ -4,6 +4,7 @@
 namespace System.Runtime.Serialization
 {
     [CLSCompliant(false)]
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface IFormatterConverter
     {
         object Convert(object value, Type type);

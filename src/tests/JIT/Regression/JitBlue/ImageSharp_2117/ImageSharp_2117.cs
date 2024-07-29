@@ -3,10 +3,12 @@
 
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public unsafe class ImageSharp_2117
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Sse.IsSupported)
         {

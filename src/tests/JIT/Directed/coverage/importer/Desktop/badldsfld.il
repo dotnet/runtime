@@ -3,8 +3,8 @@
 
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly 'badldsfld' { }
-.class Test_badldsfld extends [mscorlib]System.Object
+.assembly ASSEMBLY_NAME { }
+.class public Test_badldsfld extends [mscorlib]System.Object
 {
 .field int32 i
 .method static int32 f()

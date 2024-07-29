@@ -57,6 +57,73 @@ namespace System.Numerics
         /// <remarks>This computes <c>cos(x * PI)</c>.</remarks>
         static abstract TSelf CosPi(TSelf x);
 
+        /// <summary>Converts a given value from degrees to radians.</summary>
+        /// <param name="degrees">The value to convert to radians.</param>
+        /// <returns>The value of <paramref name="degrees" /> converted to radians.</returns>
+        static virtual TSelf DegreesToRadians(TSelf degrees)
+        {
+            // We don't want to simplify this to: degrees * (Pi / 180)
+            //
+            // Doing so will change the result and in many cases will
+            // cause a loss of precision. The main exception to this
+            // is when the initial multiplication causes overflow, but
+            // if we decide that should be handled in the future it needs
+            // to be more explicit around how its done.
+            //
+            // Floating-point operations are naturally imprecise due to
+            // rounding required to fit the "infinitely-precise result"
+            // into the limits of the underlying representation. Because
+            // of this, every operation can introduce some amount of rounding
+            // error.
+            //
+            // For integers, the IEEE 754 binary floating-point types can
+            // exactly represent them up to the 2^n, where n is the number
+            // of bits in the significand. This is 10 for Half, 23 for Single,
+            // and 52 for Double. As you approach this limit, the number of
+            // digits available to represent the fractional portion decreases.
+            //
+            // For Half, you get around 3.311 total decimal digits of precision.
+            // For Single, this is around 7.225 and around 15.955 for Double.
+            //
+            // The actual number of digits can be slightly more or less, depending.
+            //
+            // This means that values such as `Pi` are not exactly `Pi`, instead:
+            // * Half:   3.14 0625
+            // * Single: 3.14 1592 741012573 2421875
+            // * Double: 3.14 1592 653589793 115997963468544185161590576171875
+            // * Actual: 3.14 1592 653589793 2384626433832795028841971693993751058209749445923...
+            //
+            // If we were to simplify this to simply multiply by (Pi / 180), we get:
+            // * Half:   0.01745 6054 6875
+            // * Single: 0.01745 3292 384743690 49072265625
+            // * Double: 0.01745 3292 519943295 4743716805978692718781530857086181640625
+            // * Actual: 0.01745 3292 519943295 7692369076848861271344287188854172545609719144...
+            //
+            // Neither of these end up "perfect". There will be some cases where they will trade
+            // in terms of closeness to the "infinitely precise result". Over the entire domain
+            // however, doing the separate multiplications tends to produce overall more accurate
+            // results. It helps ensure the implementation can be trivial for the DIM case, and
+            // covers the vast majority of typical inputs more efficiently largely only pessimizing
+            // the case where the first multiplication results in overflow.
+            //
+            // This is particularly true for `RadiansToDegrees` where 180 is exactly representable
+            // and so allows an exactly representable intermediate value to be computed when overflow
+            // doesn't occur.
+
+            return (degrees * TSelf.Pi) / TSelf.CreateChecked(180);
+        }
+
+        /// <summary>Converts a given value from radians to degrees.</summary>
+        /// <param name="radians">The value to convert to degrees.</param>
+        /// <returns>The value of <paramref name="radians" /> converted to degrees.</returns>
+        static virtual TSelf RadiansToDegrees(TSelf radians)
+        {
+            // We don't want to simplify this to: radians * (180 / Pi)
+            // See DegreesToRadians for a longer explanation as to why
+
+            return (radians * TSelf.CreateChecked(180)) / TSelf.Pi;
+        }
+
         /// <summary>Computes the sine of a value.</summary>
         /// <param name="x">The value, in radians, whose sine is to be computed.</param>
         /// <returns>The sine of <paramref name="x" />.</returns>

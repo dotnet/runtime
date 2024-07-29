@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -13,9 +14,15 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// <summary>
     /// An XML file based <see cref="IConfigurationProvider"/>.
     /// </summary>
+    [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
     public class XmlStreamConfigurationProvider : StreamConfigurationProvider
     {
-        private const string NameAttributeKey = "Name";
+        // work around https://github.com/dotnet/runtime/issues/81864 by splitting this into a separate class.
+        internal static class Consts
+        {
+            internal const string NameAttributeKey = "Name";
+        }
 
         /// <summary>
         /// Constructor.
@@ -227,7 +234,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             while (reader.MoveToNextAttribute())
             {
-                if (string.Equals(reader.LocalName, NameAttributeKey, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(reader.LocalName, Consts.NameAttributeKey, StringComparison.OrdinalIgnoreCase))
                 {
                     // If there is a namespace attached to current attribute
                     if (!string.IsNullOrEmpty(reader.NamespaceURI))
@@ -245,7 +252,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             return name;
         }
 
-        private static IDictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
+        private static Dictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
         {
             Dictionary<string, string?> configuration = new(StringComparer.OrdinalIgnoreCase);
 
@@ -352,7 +359,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 var hasName = !string.IsNullOrEmpty(child.Name);
                 if (hasName)
                 {
-                    prefix.Push(child.Name);
+                    prefix.Push(child.Name!);
                 }
 
                 // Add index to the prefix

@@ -10,8 +10,16 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class HmacMD5Tests : Rfc2202HmacTests
+    public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
+        public sealed class Traits : IHmacTrait
+        {
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
+        }
+
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.MD5;
+
         private static readonly byte[][] s_testKeys2202 =
         {
             null,
@@ -45,6 +53,7 @@ namespace System.Security.Cryptography.Tests
         protected override int MacSize => HMACMD5.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACMD5();
+        protected override HMAC Create(byte[] key) => new HMACMD5(key);
         protected override HashAlgorithm CreateHashAlgorithm() => MD5.Create();
         protected override byte[] HashDataOneShot(byte[] key, byte[] source) =>
             HMACMD5.HashData(key, source);
@@ -217,6 +226,13 @@ namespace System.Security.Cryptography.Tests
                 0,
                 hexKey: "000102030405060708090A0B0C0D0E0F",
                 output: "C91E40247251F39BDFE6A7B72A5857F9");
+        }
+
+        [Fact]
+        public void HmacMD5_HashSizes()
+        {
+            Assert.Equal(128, HMACMD5.HashSizeInBits);
+            Assert.Equal(16, HMACMD5.HashSizeInBytes);
         }
     }
 }

@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly '25param2c' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .namespace Test_25param2c_il
 {

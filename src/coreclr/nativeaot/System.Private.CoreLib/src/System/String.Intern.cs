@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+
 using Internal.TypeSystem;
 
 namespace System
@@ -10,16 +11,14 @@ namespace System
     {
         public static string Intern(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             return InternTable.GetOrCreateValue(str);
         }
 
         public static string IsInterned(string str)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             string canonicalString;
             if (!InternTable.TryGetValue(str, out canonicalString))

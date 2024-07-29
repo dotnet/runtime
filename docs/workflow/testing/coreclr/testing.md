@@ -7,11 +7,13 @@
   * [Building an Individual Test](#building-an-individual-test)
   * [Building a Test Directory](#building-a-test-directory)
   * [Building a Test Subtree](#building-a-test-subtree)
+  * [Test Executors](#test-executors)
+    * [The Standalone Test Runner and Build Time Test Filtering](#the-standalone-test-runner-and-build-time-test-filtering)
+    * [Building all tests with the Standalone Runner](#building-all-tests-with-the-standalone-runner)
   * [Building C++/CLI Native Test Components Against the Live Ref Assemblies](#building-ccli-native-test-components-against-the-live-ref-assemblies)
   * [Test Priorities](#test-priorities)
 * [Running the Tests](#running-the-tests)
   * [Running Individual Tests](#running-individual-tests)
-    * [Tests Without a Main Method](#tests-without-a-main-method)
   * [PAL Tests (macOS and Linux only)](#pal-tests-macos-and-linux-only)
     * [Building PAL Tests](#building-pal-tests)
     * [Running PAL Tests](#running-pal-tests)
@@ -62,7 +64,7 @@ This example assumes you built CoreCLR on _Debug_ mode and the Libraries on _Rel
 
 The following subsections will explain how to segment the test suite according to your needs. There are three main scopes of building tests:
 
-* Individual Test
+* Individual Test Runner
 * Full Directory
 * Entire Subtree
 
@@ -83,19 +85,19 @@ To build an individual test, you have to pass the `-test` flag along with the pa
 On Windows:
 
 ```cmd
-.\src\tests\build.cmd test JIT\Intrinsics\MathRoundDouble_ro.csproj test JIT\Intrinsics\MathFloorDouble_ro.csproj
+.\src\tests\build.cmd test JIT\Methodical\Methodical_d1.csproj test JIT\JIT_ro.csproj
 ```
 
 On macOS and Linux:
 
 ```bash
-./src/tests/build.sh -test:JIT/Intrinsics/MathRoundDouble_ro.csproj -test:JIT/Intrinsics/MathFloorDouble_ro.csproj
+./src/tests/build.sh -test:JIT/Methodical/Methodical_d1.csproj -test:JIT/JIT_ro.csproj
 ```
 
 Alternatively, you can call _build_ directly using the `dotnet.cmd/dotnet.sh` script at the root of the repo and pass all arguments directly yourself:
 
 ```bash
-./dotnet.sh build -c <Your Configuration> src/tests/path/to/test/csproj
+./dotnet.sh build -c <Your Configuration> src/tests/path/to/test.csproj
 ```
 
 ### Building a Test Directory
@@ -105,13 +107,13 @@ To build all the tests contained in an individual directory, you have to pass th
 On Windows:
 
 ```cmd
-.\src\tests\build.cmd dir JIT\Methodical\Arrays\lcs dir JIT\Methodical\cctor\misc\Desktop
+.\src\tests\build.cmd dir JIT dir Loader
 ```
 
 On macOS and Linux:
 
 ```bash
-./src/tests/build.sh -dir:JIT/Methodical/Arrays/lcs -dir:JIT/Methodical/cctor/misc/Desktop
+./src/tests/build.sh -dir:JIT -dir:Loader
 ```
 
 ### Building a Test Subtree
@@ -129,6 +131,24 @@ On macOS and Linux:
 ```bash
 ./src/tests/build.sh -tree:baseservices/exceptions -tree:JIT/Methodical
 ```
+
+### Test Executors
+
+We have multiple different mechanisms of executing tests.
+
+Our test entrypoints are generally what we call "merged test runners", as they provide an executable runner project for multiple different test assemblies. These projects can be identified by the `<Import Project="$(TestSourceDir)MergedTestRunner.targets" />` line in their .csproj file. These projects provide a simple experience for running tests. When executing a merged runner project, it will run each test sequentially and record if it passes or fails in an xunit results file. The merged test runner support runtime test filtering. If specified, the first argument to the test runner is treated as a `dotnet test --filter` argument following the xUnit rules in their documentation. Today, the runner only supports the simple form, a substring of a test's fully-qualified name, in the format `Namespace.ContainingTypeName.TypeName.Method`. If support for further filtering options is desired, please open an issue requesting it.
+
+Some tests need to be run in their own process as they interact with global process state, they have a custom test entrypoint, or they interact poorly with other tests in the same process. These tests are generally marked with `<RequiresProcessIsolation>true</RequiresProcessIsolation>` in their project files. These tests can be run directly, but they can also be invoked through their corresponding merged test runner. The merged test runner will invoke them as a subprocess in the same manner as if they were run individually.
+
+#### The Standalone Test Runner and Build Time Test Filtering
+
+Sometimes you may want to run a test with the least amount of code before actually executing the test. In addition to the merged test runner, we have another runner mode known as the "Standalone" runner. This runner is used by default in tests that require process isolation. This runner consists of a simple `try-catch` around executing each test sequentially, with no test results file or runtime test filtering.
+
+To filter tests on a merged test runner built as standalone, you can set the `TestFilter` property, like so: `./dotnet.sh build -c Checked src/tests/path/to/test.csproj -p:TestFilter=SubstringOfFullyQualifiedTestName`. This mechanism supports the same filtering as the runtime test filtering. Using this mechanism will allow you to skip individual test cases at build time instead of at runtime.
+
+#### Building all tests with the Standalone Runner
+
+If you wish to use the Standalone runner described in the [previous section](#the-standalone-test-runner-and-build-time-test-filtering), you can set the `BuildAllTestsAsStandalone` environment variable to `true` when invoking the `./src/tests/build.sh` or `./src/tests/build.cmd` scripts (for example, `export BuildAllTestsAsStandalone=true` or `set BuildAllTestsAsStandalone=true`). This will build all tests that are not directly in a merged test runner's project as separate executable tests and build only the tests that are compiled into the runner directly. If a runner has no tests that are built directly into the runner, then it will be excluded.
 
 ### Building C++/CLI Native Test Components Against the Live Ref Assemblies
 
@@ -233,9 +253,7 @@ cd path/to/JIT/Intrinsics/MathRoundDouble_ro
 ./MathRoundDouble_ro.sh -coreroot=<repo_root>/artifacts/tests/coreclr/<OS>.<Arch>.<Configuration>/Tests/Core_Root
 ```
 
-#### Tests Without a Main Method
-
-Guide on how to run tests without a `Main()` Method coming soon!
+If you want to run an individual test from a test runner, use the filtering capabilities described in the [Test Executors section](#test-executors).
 
 ### PAL Tests (macOS and Linux only)
 

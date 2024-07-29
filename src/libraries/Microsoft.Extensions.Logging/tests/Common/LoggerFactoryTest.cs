@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -407,6 +408,46 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void BaggageFormattedOutput()
+        {
+            var loggerProvider = new ExternalScopeLoggerWithFormatterProvider();
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .Configure(o => o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.Baggage | ActivityTrackingOptions.Tags)
+                    .AddProvider(loggerProvider);
+            });
+
+            var logger = loggerFactory.CreateLogger("Logger");
+
+            Activity activity = new Activity("ScopeActivity");
+            activity.Start();
+
+            activity.AddTag("Tag1", "1");
+            activity.AddBaggage("Baggage1", "1");
+
+            using (logger.BeginScope("Scope1"))
+            {
+                activity.AddTag("Tag2", "2");
+                activity.AddBaggage("Baggage2", "2");
+                logger.LogInformation("Inside Scope Info!");
+            }
+            activity.Stop();
+
+            string [] loggerOutput = new string[]
+            {
+                $"Inside Scope Info!",
+                $"[TraceId, {activity.GetTraceId()}]",
+                $"[Tag1, 1]",
+                $"[Tag2, 2]",
+                $"[Baggage2, 2]",
+                $"[Baggage1, 1]",
+                $"Scope1",
+            };
+            Assert.Equal(loggerOutput, loggerProvider.LogText);
+        }
+
+        [Fact]
         public void CallsSetScopeProvider_OnSupportedProviders()
         {
             var loggerProvider = new ExternalScopeLoggerProvider();
@@ -572,6 +613,53 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 return true;
             }
+
+            public IDisposable BeginScope<TState>(TState state)
+            {
+                BeginScopeCalledTimes++;
+                return null;
+            }
+        }
+
+        // Support formatting IEnumerable<KeyValuePair<string, object?>> scopes
+        private class ExternalScopeLoggerWithFormatterProvider : ILoggerProvider, ISupportExternalScope, ILogger
+        {
+            public void SetScopeProvider(IExternalScopeProvider scopeProvider)
+            {
+                ScopeProvider = scopeProvider;
+            }
+
+            public IExternalScopeProvider ScopeProvider { get; set; }
+
+            public int BeginScopeCalledTimes { get; set; }
+
+            public List<string> LogText { get; set; } = new List<string>();
+
+            public void Dispose() { }
+
+            public ILogger CreateLogger(string categoryName) => this;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            {
+                LogText.Add(formatter(state, exception));
+
+                ScopeProvider.ForEachScope((scope, builder) =>
+                {
+                    if (scope is IEnumerable<KeyValuePair<string, object>> scopeItems)
+                    {
+                        foreach (KeyValuePair<string, object> item in scopeItems)
+                        {
+                            builder.Add(item.ToString());
+                        }
+                    }
+                    else
+                    {
+                        builder.Add(scope.ToString());
+                    }
+                }, LogText);
+            }
+
+            public bool IsEnabled(LogLevel logLevel) => true;
 
             public IDisposable BeginScope<TState>(TState state)
             {

@@ -1,90 +1,102 @@
-MONO_CONFIG?=Debug
-MONO_ARCH?=x64
-DOTNET := ../../../../dotnet.sh
+.DEFAULT_GOAL := all
+
+TOP=../../../../
+
+BUILD_CONFIG?=Debug
+TARGET_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
+TARGET_OS?=iossimulator
 USE_LLVM=true
-AOT?=false
-TARGET?=iOSSimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
+STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
+HYBRID_GLOBALIZATION?=true
 
-#If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
-#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
-#If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
-#RUNTIME_COMPONENTS=diagnostics_tracing
+#If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
+#If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
+#If @(RuntimeComponents) includes 'diagnostics_tracing', and DIAGNOSTIC_PORTS is disabled, then use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)
 
+REPO_DIR=$(realpath $(TOP))
+TASKS_DIR=$(REPO_DIR)/src/tasks
+DOTNET=$(REPO_DIR)/dotnet.sh
+BUILD_SCRIPT=$(REPO_DIR)/build.sh
+
 all: runtimepack run
 
-TOOLS_DIR=../../../tasks
 appbuilder:
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/MonoTargetsTasks/MonoTargetsTasks.csproj
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/MonoTargetsTasks/MonoTargetsTasks.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
 runtimepack:
-	../../../../build.sh Mono+Libs -os $(TARGET)  -arch $(MONO_ARCH) -c $(MONO_CONFIG)
+	$(BUILD_SCRIPT) mono+libs -os $(TARGET_OS) -arch $(TARGET_ARCH) -c $(BUILD_CONFIG)
+
+build-appbundle: clean appbuilder
+	$(DOTNET) publish \
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=$(TARGET_OS) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
+	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
+	/p:DeployAndRun=false \
+	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
+	/bl
 
 run: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOS \
-	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) \
-	/p:ForceAOT=$(AOT) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=ios \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
+	/bl
 
 run-sim: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOSSimulator \
-	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) \
-	/p:ForceAOT=$(AOT) \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
-
-build-appbundle: clean appbuilder
-	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=$(TARGET) /p:TargetArchitecture=$(MONO_ARCH) \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /bl \
-
-run-catalyst:
-	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=MacCatalyst \
-	/p:TargetArchitecture=$(MONO_ARCH) \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	/p:UseLLVM=False \
-	/p:ForceAOT=True \
-	/p:EnableAppSandbox=$(APP_SANDBOX)
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=iossimulator \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
+	/p:MonoForceInterpreter=false \
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
+	/bl
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOSSimulator \
-	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=$(USE_LLVM) \
-	/p:ForceAOT=$(AOT) \
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=iossimulator \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=true \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
-	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
+	/bl
 
-run-catalyst-interp:
+run-catalyst: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=MacCatalyst \
-	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:UseLLVM=False \
-	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	/p:ForceAOT=True \
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=maccatalyst \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=false \
+	/p:MonoForceInterpreter=false \
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
-	/p:MonoForceInterpreter=true
+	/bl
+
+run-catalyst-interp: clean appbuilder
+	$(DOTNET) publish \
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=maccatalyst \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
+	/p:MonoEnableLLVM=false \
+	/p:MonoForceInterpreter=true \
+	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	/p:EnableAppSandbox=$(APP_SANDBOX) \
+	/bl
 
 clean:
-	rm -rf bin
+	rm -rf obj bin *.binlog

@@ -29,7 +29,7 @@ void SetDefaultPaths()
 
     if (g_DefaultRealJitPath == nullptr)
     {
-        size_t len           = wcslen(g_HomeDirectory) + 1 + wcslen(DEFAULT_REAL_JIT_NAME_W) + 1;
+        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
         g_DefaultRealJitPath = new WCHAR[len];
         wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
         wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);

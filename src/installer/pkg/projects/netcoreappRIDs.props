@@ -10,17 +10,14 @@
       <Platform>arm64</Platform>
     </OfficialBuildRID>
     <!-- Not currently built by CoreFX. -->
-    <!-- <OfficialBuildRID Include="freebsd-x64" /> -->
     <!-- <OfficialBuildRID Include="netbsd-x64" /> -->
     <!-- <OfficialBuildRID Include="illumos-x64" /> -->
     <!-- <OfficialBuildRID Include="solaris-x64" /> -->
+    <!-- <OfficialBuildRID Include="haiku-x64" /> -->
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win-x64"/>
-    <OfficialBuildRID Include="win-arm">
-      <Platform>arm</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
@@ -53,6 +50,7 @@
          built during official builds, however we wish to include them
          in our runtime.json to enable others to provide them.  -->
     <UnofficialBuildRID Include="freebsd-x64" />
+    <UnofficialBuildRID Include="freebsd-arm64" />
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>
@@ -70,6 +68,12 @@
     </UnofficialBuildRID>
     <UnofficialBuildRID Include="linux-musl-ppc64le">
       <Platform>ppc64le</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-riscv64">
+      <Platform>riscv64</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="linux-musl-riscv64">
+      <Platform>riscv64</Platform>
     </UnofficialBuildRID>
   </ItemGroup>
 </Project>

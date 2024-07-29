@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -16,7 +19,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable
+    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -62,7 +65,7 @@ namespace System
 
         public Version(string version)
         {
-            Version v = Version.Parse(version);
+            Version v = Parse(version);
             _Major = v.Major;
             _Minor = v.Minor;
             _Build = v.Build;
@@ -117,13 +120,13 @@ namespace System
                 return CompareTo(v);
             }
 
-            throw new ArgumentException(SR.Arg_MustBeVersion);
+            throw new ArgumentException(SR.Arg_MustBeVersion, nameof(version));
         }
 
         public int CompareTo(Version? value)
         {
             return
-                object.ReferenceEquals(value, this) ? 0 :
+                ReferenceEquals(value, this) ? 0 :
                 value is null ? 1 :
                 _Major != value._Major ? (_Major > value._Major ? 1 : -1) :
                 _Minor != value._Minor ? (_Minor > value._Minor ? 1 : -1) :
@@ -139,8 +142,8 @@ namespace System
 
         public bool Equals([NotNullWhen(true)] Version? obj)
         {
-            return object.ReferenceEquals(obj, this) ||
-                (!(obj is null) &&
+            return ReferenceEquals(obj, this) ||
+                (obj is not null &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&
                 _Build == obj._Build &&
@@ -177,10 +180,30 @@ namespace System
             ToString();
 
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
-            TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
+            TryFormatCore(destination, DefaultFormatFieldCount, out charsWritten);
 
-        public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten)
+        public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten) =>
+            TryFormatCore(destination, fieldCount, out charsWritten);
+
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
+
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
+        /// <param name="fieldCount">The number of components to return. This value ranges from 0 to 4.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, int fieldCount, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, fieldCount, out bytesWritten);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             switch ((uint)fieldCount)
             {
                 case > 4:
@@ -211,7 +234,7 @@ namespace System
                         return false;
                     }
 
-                    destination[0] = '.';
+                    destination[0] = TChar.CastFrom('.');
                     destination = destination.Slice(1);
                     totalCharsWritten++;
                 }
@@ -224,7 +247,12 @@ namespace System
                     _ => _Revision
                 };
 
-                if (!((uint)value).TryFormat(destination, out int valueCharsWritten))
+                int valueCharsWritten;
+                bool formatted = typeof(TChar) == typeof(char) ?
+                    ((uint)value).TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination), out valueCharsWritten) :
+                    ((uint)value).TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
+
+                if (!formatted)
                 {
                     charsWritten = 0;
                     return false;
@@ -240,7 +268,12 @@ namespace System
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are ignored.
-            TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
+            TryFormatCore(destination, DefaultFormatFieldCount, out charsWritten);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are ignored.
+            TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
 
         private int DefaultFormatFieldCount =>
             _Build == -1 ? 2 :
@@ -374,7 +407,7 @@ namespace System
         {
             if (v1 is null)
             {
-                return !(v2 is null);
+                return v2 is not null;
             }
 
             return v1.CompareTo(v2) < 0;

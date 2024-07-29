@@ -12,7 +12,7 @@
 .assembly 'DevDiv_359733' {}
 .assembly extern xunit.core {}
 
-.class private C extends [mscorlib]System.Object
+.class public C extends [mscorlib]System.Object
 {
     .method private static int16 M(bool a0, int16 a1, int16 a2, int32 a3) cil managed noinlining
     {
@@ -39,7 +39,7 @@
         ret
     }
 
-    .method private static int32 Main() cil managed
+    .method public static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

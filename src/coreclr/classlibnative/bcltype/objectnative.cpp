@@ -20,52 +20,6 @@
 #include "eeconfig.h"
 
 
-/********************************************************************/
-/* gets an object's 'value'.  For normal classes, with reference
-   based semantics, this means the object's pointer.  For boxed
-   primitive types, it also means just returning the pointer (because
-   they are immutable), for other value class, it means returning
-   a boxed copy.  */
-
-FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == 0)
-        return(obj);
-
-    MethodTable* pMT = obj->GetMethodTable();
-    // optimize for primitive types since GetVerifierCorElementType is slow.
-    if (pMT->IsTruePrimitive() || TypeHandle(pMT).GetVerifierCorElementType() != ELEMENT_TYPE_VALUETYPE) {
-        return(obj);
-    }
-
-    Object* retVal = NULL;
-    OBJECTREF objRef(obj);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);    // Set up a frame
-
-    // Technically we could return boxed DateTimes and Decimals without
-    // copying them here, but VB realized that this would be a breaking change
-    // for their customers.  So copy them.
-    //
-    // MethodTable::Box is a cleaner way to copy value class, but it is slower than following code.
-    //
-    retVal = OBJECTREFToObject(AllocateObject(pMT));
-    CopyValueClass(retVal->GetData(), objRef->GetData(), pMT);
-    HELPER_METHOD_FRAME_END();
-
-    return(retVal);
-}
-FCIMPLEND
-
-
 NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 {
     DWORD idx = 0;
@@ -128,48 +82,63 @@ FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
 }
 FCIMPLEND
 
-//
-// Compare by ref for normal classes, by value for value types.
-//
-// <TODO>@todo: it would be nice to customize this method based on the
-// defining class rather than doing a runtime check whether it is
-// a value type.</TODO>
-//
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::Equals, Object *pThisRef, Object *pCompareRef)
-{
     CONTRACTL
     {
         FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
     }
     CONTRACTL_END;
 
-    if (pThisRef == pCompareRef)
-        FC_RETURN_BOOL(TRUE);
+    VALIDATEOBJECT(obj);
 
-    // Since we are in FCALL, we must handle NULL specially.
-    if (pThisRef == NULL || pCompareRef == NULL)
-        FC_RETURN_BOOL(FALSE);
+    if (obj == 0)
+        return 0;
+
+    OBJECTREF objRef(obj);
+
+    {
+        DWORD bits = objRef->GetHeader()->GetBits();
+
+        if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+        {
+            if (bits & BIT_SBLK_IS_HASHCODE)
+            {
+                // Common case: the object already has a hash code
+                return  bits & MASK_HASHCODE;
+            }
+            else
+            {
+                // We have a sync block index. There may be a hash code stored within the sync block.
+                SyncBlock *psb = objRef->PassiveGetSyncBlock();
+                if (psb != NULL)
+                {
+                    return psb->GetHashCode();
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+FCIMPLEND
+
+FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCompareRef)
+{
+    FCALL_CONTRACT;
+
+    // Should be ensured by caller
+    _ASSERTE(pThisRef != NULL);
+    _ASSERTE(pCompareRef != NULL);
+    _ASSERTE(pThisRef->GetMethodTable() == pCompareRef->GetMethodTable());
 
     MethodTable *pThisMT = pThisRef->GetMethodTable();
 
-    // If it's not a value class, don't compare by value
-    if (!pThisMT->IsValueType())
-        FC_RETURN_BOOL(FALSE);
-
-    // Make sure they are the same type.
-    if (pThisMT != pCompareRef->GetMethodTable())
-        FC_RETURN_BOOL(FALSE);
-
-    // Compare the contents (size - vtable - sync block index).
-    DWORD dwBaseSize = pThisMT->GetBaseSize();
-    if(pThisMT == g_pStringClass)
-        dwBaseSize -= sizeof(WCHAR);
+    // Compare the contents
     BOOL ret = memcmp(
-        (void *) (pThisRef+1),
-        (void *) (pCompareRef+1),
-        dwBaseSize - sizeof(Object) - sizeof(int)) == 0;
+        pThisRef->GetData(),
+        pCompareRef->GetData(),
+        pThisMT->GetNumInstanceFieldBytes()) == 0;
 
     FC_GC_POLL_RET();
 
@@ -220,87 +189,83 @@ FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    // Delegate error handling to managed side (it will throw NullReferenceException)
-    if (pObjUNSAFE == NULL)
-        return NULL;
+    BEGIN_QCALL;
 
-    OBJECTREF refClone  = ObjectToOBJECTREF(pObjUNSAFE);
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refClone);
-
+    OBJECTREF refClone = objHandle.Get();
+    _ASSERTE(refClone != NULL); // Should be handled at managed side
     MethodTable* pMT = refClone->GetMethodTable();
-
+    
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
-
-    if (pMT->IsArray()) {
-        refClone = DupArrayForCloning((BASEARRAYREF)refClone);
-    } else {
+    
+    if (pMT->IsArray())
+    {
+        objHandle.Set(DupArrayForCloning((BASEARRAYREF)refClone));
+    }
+    else
+    {
         // We don't need to call the <cinit> because we know
         //  that it has been called....(It was called before this was created)
-        refClone = AllocateObject(pMT);
+        objHandle.Set(AllocateObject(pMT));
     }
 
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(refClone);
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, ObjectNative::WaitTimeout, INT32 Timeout, Object* pThisUNSAFE)
+extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     BOOL retVal = FALSE;
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
      // Arguments validated on managed side
-    _ASSERTE(pThis != NULL);
+    _ASSERTE(pThis.Get() != NULL);
     _ASSERTE(Timeout >= INFINITE_TIMEOUT);
 
-    retVal = pThis->Wait(Timeout);
+    retVal = pThis.Get()->Wait(Timeout);
 
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
-FCIMPL1(void, ObjectNative::Pulse, Object* pThisUNSAFE)
+extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    BEGIN_QCALL;
 
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+    GCX_COOP();
 
-    pThis->Pulse();
+    _ASSERTE(pThis.Get() != NULL);
+    pThis.Get()->Pulse();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
-FCIMPL1(void, ObjectNative::PulseAll, Object* pThisUNSAFE)
+extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF pThis = (OBJECTREF) pThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
+    BEGIN_QCALL;
 
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+    GCX_COOP();
 
-    pThis->PulseAll();
+    _ASSERTE(pThis.Get() != NULL);
+    pThis.Get()->PulseAll();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 {
@@ -321,7 +286,7 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 }
 FCIMPLEND
 
-extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount()
+extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount()
 {
     QCALL_CONTRACT;
 

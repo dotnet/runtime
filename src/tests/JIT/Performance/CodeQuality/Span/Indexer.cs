@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Span
 {
@@ -927,7 +928,14 @@ namespace Span
             Console.WriteLine();
         }
 
-        public static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            return Test(Array.Empty<string>());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int Test(string[] args)
         {
             if (args.Length > 0)
             {

@@ -1,0 +1,13 @@
+<Project>
+  <!-- This depends on the root Directory.Build.props imported this file -->
+  <Import Project="$(MSBuildThisFileDirectory)WasiApp.props" />
+  <PropertyGroup>
+    <Platform>AnyCPU</Platform>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>

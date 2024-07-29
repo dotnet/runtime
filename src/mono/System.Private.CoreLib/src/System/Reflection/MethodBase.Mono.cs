@@ -39,7 +39,7 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern MethodBase? GetCurrentMethod();
 
-        internal virtual ParameterInfo[] GetParametersNoCopy()
+        internal virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
         {
             return GetParametersInternal();
         }
@@ -57,17 +57,6 @@ namespace System.Reflection
         internal virtual Type GetParameterType(int pos)
         {
             throw new NotImplementedException();
-        }
-
-        internal virtual Type[] GetParameterTypes()
-        {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
-
-            Type[] parameterTypes = new Type[paramInfo.Length];
-            for (int i = 0; i < paramInfo.Length; i++)
-                parameterTypes[i] = paramInfo[i].ParameterType;
-
-            return parameterTypes;
         }
 
         internal virtual int get_next_table_index(int table, int count)

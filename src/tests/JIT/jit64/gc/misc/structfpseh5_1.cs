@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct Pad
 {
@@ -85,9 +86,9 @@ struct S
     }
 }
 
-class Test_structfpseh5_1
+public class Test_structfpseh5_1
 {
-    public static unsafe void c(int a1, float a2, double a3, S s1, S s2, S s3, S s4, double a4)
+    private static unsafe void c(int a1, float a2, double a3, S s1, S s2, S s3, S s4, double a4)
     {
         int* t = stackalloc int[1];
 
@@ -101,7 +102,8 @@ class Test_structfpseh5_1
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
@@ -116,6 +118,5 @@ class Test_structfpseh5_1
         {
             c(1, 2, 3, sM, sM2, sM3, sM4, 4);
         }
-        return 100;
     }
 }

@@ -41,6 +41,10 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
+
             int spinCount = spinWait ? _spinCount : 0;
 
             // Try to acquire the semaphore or
@@ -94,11 +98,11 @@ namespace System.Threading
             // The PAL's wait subsystem is slower, spin more to compensate for the more expensive wait
             spinCount *= 2;
 #endif
-            int processorCount = Environment.ProcessorCount;
-            int spinIndex = processorCount > 1 ? 0 : SpinSleep0Threshold;
+            bool isSingleProcessor = Environment.IsSingleProcessor;
+            int spinIndex = isSingleProcessor ? SpinSleep0Threshold : 0;
             while (spinIndex < spinCount)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, processorCount);
+                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
                 spinIndex++;
 
                 // Try to acquire the semaphore and unregister as a spinner
@@ -141,6 +145,64 @@ namespace System.Threading
                 }
 
                 counts = countsBeforeUpdate;
+            }
+        }
+
+        private bool WaitForSignal(int timeoutMs)
+        {
+            Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
+
+            _onWait();
+
+            while (true)
+            {
+                int startWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0;
+                if (timeoutMs == 0 || !WaitCore(timeoutMs))
+                {
+                    // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
+                    // not observe a signal to the object being waited upon.
+                    _separated._counts.InterlockedDecrementWaiterCount();
+                    return false;
+                }
+                int endWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0;
+
+                // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
+                Counts counts = _separated._counts;
+                while (true)
+                {
+                    Debug.Assert(counts.WaiterCount != 0);
+                    Counts newCounts = counts;
+                    if (counts.SignalCount != 0)
+                    {
+                        newCounts.DecrementSignalCount();
+                        newCounts.DecrementWaiterCount();
+                    }
+
+                    // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake
+                    if (counts.CountOfWaitersSignaledToWake != 0)
+                    {
+                        newCounts.DecrementCountOfWaitersSignaledToWake();
+                    }
+
+                    Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        if (counts.SignalCount != 0)
+                        {
+                            return true;
+                        }
+                        break;
+                    }
+
+                    counts = countsBeforeUpdate;
+                    if (timeoutMs != -1) {
+                        int waitMs = endWaitTicks - startWaitTicks;
+                        if (waitMs >= 0 && waitMs < timeoutMs)
+                            timeoutMs -= waitMs;
+                        else
+                            timeoutMs = 0;
+                    }
+                }
             }
         }
 
@@ -190,55 +252,6 @@ namespace System.Threading
                 }
 
                 counts = countsBeforeUpdate;
-            }
-        }
-
-        private bool WaitForSignal(int timeoutMs)
-        {
-            Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
-
-            _onWait();
-
-            while (true)
-            {
-                if (!WaitCore(timeoutMs))
-                {
-                    // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
-                    // not observe a signal to the object being waited upon.
-                    _separated._counts.InterlockedDecrementWaiterCount();
-                    return false;
-                }
-
-                // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
-                Counts counts = _separated._counts;
-                while (true)
-                {
-                    Debug.Assert(counts.WaiterCount != 0);
-                    Counts newCounts = counts;
-                    if (counts.SignalCount != 0)
-                    {
-                        newCounts.DecrementSignalCount();
-                        newCounts.DecrementWaiterCount();
-                    }
-
-                    // This waiter has woken up and this needs to be reflected in the count of waiters signaled to wake
-                    if (counts.CountOfWaitersSignaledToWake != 0)
-                    {
-                        newCounts.DecrementCountOfWaitersSignaledToWake();
-                    }
-
-                    Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
-                    if (countsBeforeUpdate == counts)
-                    {
-                        if (counts.SignalCount != 0)
-                        {
-                            return true;
-                        }
-                        break;
-                    }
-
-                    counts = countsBeforeUpdate;
-                }
             }
         }
 

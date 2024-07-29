@@ -406,7 +406,7 @@ namespace System.Net
             ReceiveState state = (ReceiveState)asyncResult.AsyncState!;
             try
             {
-                Stream stream = (Stream)state.Connection;
+                CommandStream stream = state.Connection;
                 int bytesRead = 0;
                 try
                 {

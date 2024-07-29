@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class Program
 {
@@ -16,7 +17,8 @@ public class Program
     // We don't have a good way to tell if the CLR is compiled by clang or VC++, so we simply allow
     // both answers.
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ulong u64 = 0x84595161401484A0UL;
         double f64 = (double)u64;        

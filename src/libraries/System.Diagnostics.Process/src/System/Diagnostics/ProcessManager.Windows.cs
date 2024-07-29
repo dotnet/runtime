@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -375,17 +376,22 @@ namespace System.Diagnostics
 
         public static int[] GetProcessIds()
         {
-            int[] processIds = new int[256];
+            int[] processIds = ArrayPool<int>.Shared.Rent(256);
+
             int needed;
             while (true)
             {
                 int size = processIds.Length * sizeof(int);
                 if (!Interop.Kernel32.EnumProcesses(processIds, size, out needed))
+                {
                     throw new Win32Exception();
+                }
 
                 if (needed == size)
                 {
-                    processIds = new int[processIds.Length * 2];
+                    int newLength = processIds.Length * 2;
+                    ArrayPool<int>.Shared.Return(processIds);
+                    processIds = ArrayPool<int>.Shared.Rent(newLength);
                     continue;
                 }
 
@@ -394,6 +400,8 @@ namespace System.Diagnostics
 
             int[] ids = new int[needed / sizeof(int)];
             Array.Copy(processIds, ids, ids.Length);
+
+            ArrayPool<int>.Shared.Return(processIds);
             return ids;
         }
 
@@ -514,7 +522,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            if (processInfos.ContainsKey(processInfo.ProcessId))
+                            if (!processInfos.TryAdd(processInfo.ProcessId, processInfo))
                             {
                                 // We've found two entries in the perfcounters that claim to be the
                                 // same process.  We throw an exception.  Is this really going to be
@@ -527,7 +535,7 @@ namespace System.Diagnostics
                                 // at the end.  If instanceName ends in ".", ".e", or ".ex" we remove it.
                                 if (instanceName.Length == 15)
                                 {
-                                    if (instanceName.EndsWith(".", StringComparison.Ordinal))
+                                    if (instanceName.EndsWith("."))
                                     {
                                         instanceName = instanceName.Slice(0, 14);
                                     }
@@ -541,7 +549,6 @@ namespace System.Diagnostics
                                     }
                                 }
                                 processInfo.ProcessName = instanceName.ToString();
-                                processInfos.Add(processInfo.ProcessId, processInfo);
                             }
                         }
                     }

@@ -315,6 +315,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only)
+        /// This will find both exact and equivalent matches, but will prefer exact matches.
         /// </summary>
         /// <param name="targetMethod"></param>
         /// <param name="currentType"></param>
@@ -330,24 +331,31 @@ namespace Internal.TypeSystem
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
+            MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
                 if (candidate.Name == name)
                 {
-                    if (candidate.Signature.Equals(sig))
+                    if (candidate.Signature.EquivalentTo(sig))
                     {
                         if (nameSigMatchMethodIsValidCandidate == null || nameSigMatchMethodIsValidCandidate(targetMethod, candidate))
                         {
-                            implMethod = candidate;
+                            implMethodEquivalent = candidate;
+
+                            if (candidate.Signature.Equals(sig))
+                                implMethod = candidate;
 
                             // If reverseMethodSearch is enabled, we want to find the last match on this type, not the first
                             // (reverseMethodSearch is used for most matches except for searches for name/sig method matches for interface methods on the most derived type)
-                            if (!reverseMethodSearch)
+                            if (!reverseMethodSearch && implMethod != null)
                                 return implMethod;
                         }
                     }
                 }
             }
+
+            if (implMethod == null)
+                return implMethodEquivalent;
 
             return implMethod;
         }
@@ -415,13 +423,21 @@ namespace Internal.TypeSystem
             return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
-        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
 
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+        }
+
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodIsPublic = VerifyMethodIsPublic;
+
+        // Return true if the method to verify is public
+        private static bool VerifyMethodIsPublic(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
+        {
+            return methodToVerify.IsPublic;
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)
@@ -495,7 +511,7 @@ namespace Internal.TypeSystem
 
                     if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
                     {
-                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        if (implSlot.Signature.EquivalentWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(declSlot);
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
@@ -516,7 +532,7 @@ namespace Internal.TypeSystem
                         FindBaseUnificationGroup(baseType, addDeclGroup);
                         Debug.Assert(
                             addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
-                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
+                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EquivalentWithCovariantReturnType(declSlot.Signature)));
 
                         foreach (MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
@@ -550,7 +566,7 @@ namespace Internal.TypeSystem
                     }
                     else if (unificationGroup.RequiresSlotUnification(declSlot))
                     {
-                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        if (implSlot.Signature.EquivalentWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
                         {
                             unificationGroup.AddMethodRequiringSlotUnification(implSlot);
                             unificationGroup.SetDefiningMethod(implSlot);
@@ -598,6 +614,8 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
 
+            // This would be a default interface method resolution. The algorithm below would sort of work, but doesn't handle
+            // things like diamond cases and it's better not to let it resolve as such.
             if (currentType.IsInterface)
                 return null;
 
@@ -615,7 +633,7 @@ namespace Internal.TypeSystem
             {
                 MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: false, /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
-                    nameSigMatchMethodIsValidCandidate :null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -653,7 +671,7 @@ namespace Internal.TypeSystem
                 {
                     MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                                             reverseMethodSearch: false, /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
-                                            nameSigMatchMethodIsValidCandidate: null);
+                                            nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                     foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
@@ -729,7 +747,7 @@ namespace Internal.TypeSystem
 
                 MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: true, /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
-                    nameSigMatchMethodIsValidCandidate:null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                 if (nameSigOverride != null)
                 {
@@ -765,7 +783,7 @@ namespace Internal.TypeSystem
                 // If we're asking about an interface, include the interface in the list.
                 consideredInterfaces = new DefType[currentType.RuntimeInterfaces.Length + 1];
                 Array.Copy(currentType.RuntimeInterfaces, consideredInterfaces, currentType.RuntimeInterfaces.Length);
-                consideredInterfaces[consideredInterfaces.Length - 1] = (DefType)currentType.InstantiateAsOpen();
+                consideredInterfaces[consideredInterfaces.Length - 1] = currentType.IsGenericDefinition ? (DefType)currentType.InstantiateAsOpen() : currentType;
             }
 
             foreach (MetadataType runtimeInterface in consideredInterfaces)
@@ -905,6 +923,11 @@ namespace Internal.TypeSystem
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
         public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
+            // This would be a default interface method resolution. The algorithm below would sort of work, but doesn't handle
+            // things like diamond cases and it's better not to let it resolve as such.
+            if (currentType.IsInterface)
+                return null;
+
             // Search for match on a per-level in the type hierarchy
             for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
             {

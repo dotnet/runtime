@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -10,7 +11,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
-        public virtual void runTest()
+        internal virtual void runTest()
         {
             Decimal dcml1;
             dcml1 = (new Decimal(6) - new Decimal(2)) / new Decimal(4);
@@ -21,11 +22,11 @@ namespace DefaultNamespace
 
         }
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Bug b = new Bug();
             b.runTest();
-            return 100;
         }
     }
     ///// EOF

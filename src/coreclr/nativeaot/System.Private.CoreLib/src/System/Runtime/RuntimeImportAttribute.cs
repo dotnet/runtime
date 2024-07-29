@@ -5,7 +5,7 @@ namespace System.Runtime
 {
     // Exposed in Internal.CompilerServices only
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
-    public sealed class RuntimeImportAttribute : Attribute
+    internal sealed class RuntimeImportAttribute : Attribute
     {
         public string DllName { get; }
         public string EntryPoint { get; }

@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
-        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
+        // Suppressed for ILLink by the assembly-level UnconditionalSuppressMessageAttribute
         // https://github.com/dotnet/linker/issues/2648
 #pragma warning disable IL2026
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
@@ -89,7 +89,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object?[] GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             if (xmlMembersMapping.Accessor.IsSoap)
             {
@@ -102,7 +102,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object[] GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
             MemberMapping[] mappings = ((MembersMapping)element.Mapping!).Members!;
@@ -322,7 +322,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private object GenerateEncodedMembersElement(XmlMembersMapping xmlMembersMapping)
+        private object?[] GenerateEncodedMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
             var membersMapping = (MembersMapping)element.Mapping!;
@@ -572,8 +572,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    Type elementType = collectionType.GetElementType()!;
-                    a = Array.CreateInstance(elementType, collectionMember.Count);
+                    a = Array.CreateInstanceFromArrayType(collectionType, collectionMember.Count);
                 }
 
                 for (int i = 0; i < collectionMember.Count; i++)
@@ -636,24 +635,44 @@ namespace System.Xml.Serialization
                     {
                         MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
                         Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
-                        Type memberType;
-                        if (memberInfo is PropertyInfo propInfo)
+
+                        if (type.IsValueType || !RuntimeFeature.IsDynamicCodeSupported)
                         {
-                            memberType = propInfo.PropertyType;
-                        }
-                        else if (memberInfo is FieldInfo fieldInfo)
-                        {
-                            memberType = fieldInfo.FieldType;
+                            if (memberInfo is PropertyInfo propInfo)
+                            {
+                                result = new ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate(propInfo.SetValue);
+                            }
+                            else if (memberInfo is FieldInfo fieldInfo)
+                            {
+                                result = new ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate(fieldInfo.SetValue);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(SR.XmlInternalError);
+                            }
                         }
                         else
                         {
-                            throw new InvalidOperationException(SR.XmlInternalError);
+                            Type memberType;
+                            if (memberInfo is PropertyInfo propInfo)
+                            {
+                                memberType = propInfo.PropertyType;
+                            }
+                            else if (memberInfo is FieldInfo fieldInfo)
+                            {
+                                memberType = fieldInfo.FieldType;
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(SR.XmlInternalError);
+                            }
+
+                            MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
+                            MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
+                            var getSetMemberValueDelegateWithType = getSetMemberValueDelegateWithTypeMi.CreateDelegate<Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>>();
+                            result = getSetMemberValueDelegateWithType(memberInfo);
                         }
 
-                        MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
-                        MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
-                        result = getSetMemberValueDelegateWithType(memberInfo);
                         delegateCacheForType[memberName] = result;
                     }
                 }
@@ -1646,7 +1665,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = mapping;
                                 break;
@@ -2098,46 +2117,31 @@ namespace System.Xml.Serialization
 
         public static SetMemberValueDelegate GetSetMemberValueDelegateWithType<TObj, TParam>(MemberInfo memberInfo)
         {
-            if (typeof(TObj).IsValueType)
+            Debug.Assert(!typeof(TObj).IsValueType);
+            Action<TObj, TParam>? setTypedDelegate = null;
+            if (memberInfo is PropertyInfo propInfo)
             {
-                if (memberInfo is PropertyInfo propInfo)
+                var setMethod = propInfo.GetSetMethod(true);
+                if (setMethod == null)
                 {
                     return propInfo.SetValue;
                 }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    return fieldInfo.SetValue;
-                }
 
-                throw new InvalidOperationException(SR.XmlInternalError);
+                setTypedDelegate = setMethod.CreateDelegate<Action<TObj, TParam>>();
             }
-            else
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                Action<TObj, TParam>? setTypedDelegate = null;
-                if (memberInfo is PropertyInfo propInfo)
-                {
-                    var setMethod = propInfo.GetSetMethod(true);
-                    if (setMethod == null)
-                    {
-                        return propInfo.SetValue;
-                    }
-
-                    setTypedDelegate = (Action<TObj, TParam>)setMethod.CreateDelegate(typeof(Action<TObj, TParam>));
-                }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    var objectParam = Expression.Parameter(typeof(TObj));
-                    var valueParam = Expression.Parameter(typeof(TParam));
-                    var fieldExpr = Expression.Field(objectParam, fieldInfo);
-                    var assignExpr = Expression.Assign(fieldExpr, valueParam);
-                    setTypedDelegate = Expression.Lambda<Action<TObj, TParam>>(assignExpr, objectParam, valueParam).Compile();
-                }
-
-                return delegate (object? o, object? p)
-                {
-                    setTypedDelegate!((TObj)o!, (TParam)p!);
-                };
+                var objectParam = Expression.Parameter(typeof(TObj));
+                var valueParam = Expression.Parameter(typeof(TParam));
+                var fieldExpr = Expression.Field(objectParam, fieldInfo);
+                var assignExpr = Expression.Assign(fieldExpr, valueParam);
+                setTypedDelegate = Expression.Lambda<Action<TObj, TParam>>(assignExpr, objectParam, valueParam).Compile();
             }
+
+            return delegate (object? o, object? p)
+            {
+                setTypedDelegate!((TObj)o!, (TParam)p!);
+            };
         }
     }
 }

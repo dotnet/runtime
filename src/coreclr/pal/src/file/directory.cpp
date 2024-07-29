@@ -75,11 +75,11 @@ CreateDirectoryW(
         goto done;
     }
 
-    if (((mb_dir = (char *)PAL_malloc(mb_size)) == NULL) ||
+    if (((mb_dir = (char *)malloc(mb_size)) == NULL) ||
         (WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, mb_dir, mb_size, NULL,
                               NULL) != mb_size))
     {
-        ASSERT("WideCharToMultiByte or PAL_malloc failure! LastError:%d errno:%d\n",
+        ASSERT("WideCharToMultiByte or malloc failure! LastError:%d errno:%d\n",
               GetLastError(), errno);
         dwLastError = ERROR_INTERNAL_ERROR;
         goto done;
@@ -93,7 +93,7 @@ done:
     }
     if (mb_dir != NULL)
     {
-        PAL_free(mb_dir);
+        free(mb_dir);
     }
     LOGEXIT("CreateDirectoryW returns BOOL %d\n", bRet);
     PERF_EXIT(CreateDirectoryW);
@@ -280,7 +280,7 @@ GetCurrentDirectoryA(PathCharString& lpBuffer)
 
     dwDirLen = strlen( current_dir );
     lpBuffer.Set(current_dir, dwDirLen);
-    PAL_free(current_dir);
+    free(current_dir);
 done:
 
     if ( dwLastError )
@@ -406,10 +406,10 @@ CreateDirectoryA(
         goto done;
     }
 
-    unixPathName = PAL__strdup(lpPathName);
+    unixPathName = strdup(lpPathName);
     if (unixPathName == NULL )
     {
-        ERROR("PAL__strdup() failed\n");
+        ERROR("strdup() failed\n");
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
@@ -486,7 +486,7 @@ done:
     {
         SetLastError( dwLastError );
     }
-    PAL_free( unixPathName );
+    free( unixPathName );
     LOGEXIT("CreateDirectoryA returns BOOL %d\n", bRet);
     PERF_EXIT(CreateDirectoryA);
     return bRet;

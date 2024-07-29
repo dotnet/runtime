@@ -25,10 +25,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual TestRunCharacteristics Characteristics =>
 			TestRunCharacteristics.TargetingNetCore | TestRunCharacteristics.SupportsDefaultInterfaceMethods | TestRunCharacteristics.SupportsStaticInterfaceMethods;
 
+		private static bool IsIgnoredByTrimmer (CustomAttribute attr)
+		{
+			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.Trimmer);
+		}
+
 		public virtual bool IsIgnored (out string reason)
 		{
 			var ignoreAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (IgnoreTestCaseAttribute));
-			if (ignoreAttribute != null) {
+			if (ignoreAttribute != null && IsIgnoredByTrimmer (ignoreAttribute)) {
 				if (ignoreAttribute.ConstructorArguments.Count == 1) {
 					reason = (string) ignoreAttribute.ConstructorArguments.First ().Value;
 					return true;
@@ -70,7 +76,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return "WIN32";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore))
-				yield return "NETCOREAPP";
+				yield return "NET";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.SupportsDefaultInterfaceMethods))
 				yield return "SUPPORTS_DEFAULT_INTERFACE_METHODS";
@@ -142,13 +148,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				yield return Path.Combine (referenceDir, "mscorlib.dll");
 				yield return Path.Combine (referenceDir, "System.Collections.dll");
+				yield return Path.Combine (referenceDir, "System.Collections.Immutable.dll");
 				yield return Path.Combine (referenceDir, "System.ComponentModel.TypeConverter.dll");
 				yield return Path.Combine (referenceDir, "System.Console.dll");
 				yield return Path.Combine (referenceDir, "System.Linq.Expressions.dll");
+				yield return Path.Combine (referenceDir, "System.Memory.dll");
 				yield return Path.Combine (referenceDir, "System.ObjectModel.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.Extensions.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.InteropServices.dll");
+				yield return Path.Combine (referenceDir, "System.Threading.dll");
 			} else {
 				yield return "mscorlib.dll";
 			}
@@ -221,7 +230,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Resources = ResourcesForAttributeArgument (ctorArguments[4]),
-				AdditionalArguments = (string) ctorArguments[5].Value,
+				AdditionalArguments = ((CustomAttributeArgument[]) ctorArguments[5].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
 				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false,

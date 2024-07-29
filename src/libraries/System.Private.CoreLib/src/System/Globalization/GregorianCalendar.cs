@@ -22,11 +22,11 @@ namespace System.Globalization
 
         private GregorianCalendarTypes _type;
 
-        private static readonly int[] DaysToMonth365 = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+        internal static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
 
-        private static readonly int[] DaysToMonth366 = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+        internal static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static volatile Calendar? s_defaultInstance;
+        private static Calendar? s_defaultInstance;
 
         public override DateTime MinSupportedDateTime => DateTime.MinValue;
 
@@ -96,7 +96,7 @@ namespace System.Globalization
         {
             if (year >= 1 && year <= MaxYear && month >= 1 && month <= 12)
             {
-                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+                ReadOnlySpan<int> days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
                 if (day >= 1 && (day <= days[month] - days[month - 1]))
                 {
                     int y = year - 1;
@@ -111,9 +111,9 @@ namespace System.Globalization
         /// Returns the tick count corresponding to the given year, month, and day.
         /// Will check the if the parameters are valid.
         /// </summary>
-        private static long DateToTicks(int year, int month, int day)
+        internal static long DateToTicks(int year, int month, int day)
         {
-            return GetAbsoluteDate(year, month, day) * TicksPerDay;
+            return GetAbsoluteDate(year, month, day) * TimeSpan.TicksPerDay;
         }
 
         /// <summary>
@@ -157,15 +157,15 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             int days = (daysArray[m] - daysArray[m - 1]);
 
             if (d > days)
             {
                 d = days;
             }
-            long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            long ticks = DateToTicks(y, m, d) + time.Ticks % TimeSpan.TicksPerDay;
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
 
             return new DateTime(ticks);
         }
@@ -232,7 +232,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => ADEra;
 
-        public override int[] Eras => new int[] { ADEra };
+        public override int[] Eras => [ADEra];
 
         /// <summary>
         /// Returns the month part of the specified DateTime.
@@ -278,7 +278,7 @@ namespace System.Globalization
                 return false;
             }
 
-            int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             return day <= (days[month] - days[month - 1]);
         }
 

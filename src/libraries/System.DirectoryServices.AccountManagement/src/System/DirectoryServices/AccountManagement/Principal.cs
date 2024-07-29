@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Principal;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [System.Diagnostics.DebuggerDisplay("Name ( {Name} )")]
+    [System.Diagnostics.DebuggerDisplay("Name = {Name}")]
     public abstract class Principal : IDisposable
     {
         //
@@ -892,7 +892,7 @@ namespace System.DirectoryServices.AccountManagement
             if (_isDeleted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "Principal", "CheckDisposedOrDeleted: accessing deleted object");
-                throw new InvalidOperationException(SR.PrincipalDeleted);
+                throw new InvalidOperationException(SR.PrincipalAccessedAfterBeingDeleted);
             }
         }
 

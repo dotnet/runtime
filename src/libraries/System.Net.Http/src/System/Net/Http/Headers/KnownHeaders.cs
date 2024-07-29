@@ -4,6 +4,7 @@
 using System.Net.Http.HPack;
 using System.Net.Http.QPack;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Net.Http.Headers
 {
@@ -107,12 +108,10 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader XUACompatible = new KnownHeader("X-UA-Compatible");
         public static readonly KnownHeader XXssProtection = new KnownHeader("X-XSS-Protection", HttpHeaderType.Custom, null, new string[] { "0", "1", "1; mode=block" });
 
-        private static HttpHeaderParser? GetAltSvcHeaderParser() =>
 #if TARGET_BROWSER
-            // Allow for the AltSvcHeaderParser to be trimmed on Browser since Alt-Svc is only for SocketsHttpHandler, which isn't used on Browser.
-            null;
+        private static HttpHeaderParser? GetAltSvcHeaderParser() => null; // Allow for the AltSvcHeaderParser to be trimmed on Browser since Alt-Svc is only for SocketsHttpHandler, which isn't used on Browser.
 #else
-            AltSvcHeaderParser.Parser;
+        private static AltSvcHeaderParser? GetAltSvcHeaderParser() => AltSvcHeaderParser.Parser;
 #endif
 
         // Helper interface for making GetCandidate generic over strings, utf8, etc
@@ -429,7 +428,7 @@ namespace System.Net.Http.Headers
             fixed (byte* p = &MemoryMarshal.GetReference(name))
             {
                 KnownHeader? candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
-                if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
+                if (candidate != null && Ascii.EqualsIgnoreCase(name, candidate.Name))
                 {
                     return candidate;
                 }

@@ -3,9 +3,11 @@
 //
 
 using System;
-struct AA
+using Xunit;
+public struct AA
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

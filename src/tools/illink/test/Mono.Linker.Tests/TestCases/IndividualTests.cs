@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.TestCases
 			var result = Run (testcase);
 
 			// We can't use the ResultChecker on the output because there will be unresolved types/methods
-			// Let's just make sure that the output assembly exists.  That's enough to verify that the linker didn't throw due to the
+			// Let's just make sure that the output assembly exists.  That's enough to verify that ILLink didn't throw due to the
 			// missing types/methods
 			if (!result.OutputAssemblyPath.Exists ())
 				Assert.Fail ($"The linked assembly is missing.  Should have existed at {result.OutputAssemblyPath}");
@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.TestCases
 
 			var outputPath = result.OutputAssemblyPath.Parent.Combine ("pinvokes.json");
 			if (!outputPath.Exists ())
-				Assert.Fail ($"The json file with the list of all the PInvokes found by the linker is missing. Expected it to exist at {outputPath}");
+				Assert.Fail ($"The json file with the list of all the PInvokes found by ILLink is missing. Expected it to exist at {outputPath}");
 
 			var jsonSerializer = new DataContractJsonSerializer (typeof (List<PInvokeInfo>));
 
@@ -168,7 +168,7 @@ namespace Mono.Linker.Tests.TestCases
 			var testcase = CreateIndividualCase (typeof (CanEnableReducedTracing));
 			var result = Run (testcase);
 
-			// Note: This name needs to match what is setup in the test case arguments to the linker
+			// Note: This name needs to match what is setup in the test case arguments to ILLink
 			const string expectedDependenciesFileName = "linker-dependencies.xml";
 			var outputPath = result.OutputAssemblyPath.Parent.Combine (expectedDependenciesFileName);
 			if (!outputPath.Exists ())
@@ -250,12 +250,12 @@ namespace Mono.Linker.Tests.TestCases
 			return TestDatabase.CreateCollector ().CreateIndividualCase (testCaseType);
 		}
 
-		protected LinkedTestCaseResult Run (TestCase testCase)
+		protected TrimmedTestCaseResult Run (TestCase testCase)
 		{
 			return Run (testCase, out _);
 		}
 
-		protected virtual LinkedTestCaseResult Run (TestCase testCase, out TestRunner runner)
+		protected virtual TrimmedTestCaseResult Run (TestCase testCase, out TestRunner runner)
 		{
 			runner = new TestRunner (new ObjectFactory ());
 			return runner.Run (testCase);

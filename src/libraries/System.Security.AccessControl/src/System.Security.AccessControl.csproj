@@ -1,13 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
@@ -24,6 +28,8 @@
     <Compile Include="System\Security\Principal\Win32.cs" />
     <Compile Include="System\Security\Policy\Evidence.cs" />
     <Compile Include="System\Security\Policy\EvidenceBase.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <!-- PInvoke sources -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -80,6 +86,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx_SafeTokenHandle.cs"
              Link="Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
@@ -91,4 +98,5 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
+
 </Project>

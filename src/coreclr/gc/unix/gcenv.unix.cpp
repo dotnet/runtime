@@ -20,22 +20,19 @@
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "numasupport.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
 #endif
+
+#include <sys/resource.h>
 
 #undef min
 #undef max
 
 #ifndef __has_cpp_attribute
 #define __has_cpp_attribute(x) (0)
-#endif
-
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else
-#define FALLTHROUGH
 #endif
 
 #include <algorithm>
@@ -135,37 +132,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 #endif // __APPLE__
 
-#if HAVE_NUMA_H
-
-#include <numa.h>
-#include <numaif.h>
-#include <dlfcn.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-// List of all functions from the numa library that are used
-#define FOR_ALL_NUMA_FUNCTIONS \
-    PER_FUNCTION_BLOCK(mbind) \
-    PER_FUNCTION_BLOCK(numa_available) \
-    PER_FUNCTION_BLOCK(numa_max_node) \
-    PER_FUNCTION_BLOCK(numa_node_of_cpu)
-
-// Declare pointers to all the used numa functions
-#define PER_FUNCTION_BLOCK(fn) extern decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-// Redefine all calls to numa functions as calls through pointers that are set
-// to the functions of libnuma in the initialization.
-#define mbind(...) mbind_ptr(__VA_ARGS__)
-#define numa_available() numa_available_ptr()
-#define numa_max_node() numa_max_node_ptr()
-#define numa_node_of_cpu(...) numa_node_of_cpu_ptr(__VA_ARGS__)
-
-#endif // HAVE_NUMA_H
-
-#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
@@ -197,6 +164,17 @@ enum membarrier_cmd
 
 bool CanFlushUsingMembarrier()
 {
+
+#ifdef TARGET_ANDROID
+    // Avoid calling membarrier on older Android versions where membarrier
+    // may be barred by seccomp causing the process to be killed.
+    int apiLevel = android_get_device_api_level();
+    if (apiLevel < __ANDROID_API_Q__)
+    {
+        return false;
+    }
+#endif
+
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
 
@@ -233,120 +211,15 @@ uint32_t g_pageSizeUnixInl = 0;
 
 AffinitySet g_processAffinitySet;
 
-// The highest NUMA node available
-int g_highestNumaNode = 0;
-// Is numa available
-bool g_numaAvailable = false;
+extern "C" int g_highestNumaNode;
+extern "C" bool g_numaAvailable;
 
-void* g_numaHandle = nullptr;
+static int64_t g_totalPhysicalMemSize = 0;
 
-#if HAVE_NUMA_H
-#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-#if defined(__linux__)
-static bool ShouldOpenLibNuma()
-{
-    // This is a simple heuristic to determine if libnuma.so should be opened.  There's
-    // no point in linking and resolving everything in this library if we're running on
-    // a system that's not NUMA-capable.
-    int fd = open("/sys/devices/system/node/possible", O_RDONLY | O_CLOEXEC);
-
-    if (fd == -1)
-    {
-        // sysfs might not be mounted, not available, or the interface might have
-        // changed.  Return `true' here so NUMASupportInitialize() can try initializing
-        // NUMA support with libnuma.
-        return true;
-    }
-
-    while (true)
-    {
-        char buffer[32];
-        ssize_t bytesRead = read(fd, buffer, 32);
-
-        if (bytesRead == -1 && errno == EINTR)
-        {
-            continue;
-        }
-
-        close(fd);
-
-        // If an unknown error happened (bytesRead < 0), or the file was empty
-        // (bytesRead = 0), let libnuma handle this.  Otherwise, if there's just
-        // one NUMA node, don't bother linking in libnuma.
-        return (bytesRead <= 0) ? true : strncmp(buffer, "0\n", bytesRead) != 0;
-    }
-}
-#else
-static bool ShouldOpenLibNuma()
-{
-    return true;
-}
-#endif // __linux__
-
-#endif // HAVE_NUMA_H
-
-// Initialize data structures for getting and setting thread affinities to processors and
-// querying NUMA related processor information.
-// On systems with no NUMA support, it behaves as if there was a single NUMA node with
-// a single group of processors.
-void NUMASupportInitialize()
-{
-#if HAVE_NUMA_H
-    if (!ShouldOpenLibNuma())
-    {
-        g_numaAvailable = false;
-        g_highestNumaNode = 0;
-        return;
-    }
-
-    g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
-    if (g_numaHandle == 0)
-    {
-        g_numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
-        if (g_numaHandle == 0)
-        {
-            g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
-        }
-    }
-    if (g_numaHandle != 0)
-    {
-#define PER_FUNCTION_BLOCK(fn) \
-    fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-        if (numa_available() == -1)
-        {
-            dlclose(g_numaHandle);
-        }
-        else
-        {
-            g_numaAvailable = true;
-            g_highestNumaNode = numa_max_node();
-        }
-    }
-#endif // HAVE_NUMA_H
-    if (!g_numaAvailable)
-    {
-        // No NUMA
-        g_highestNumaNode = 0;
-    }
-}
-
-// Cleanup of the NUMA support data structures
-void NUMASupportCleanup()
-{
-#if HAVE_NUMA_H
-    if (g_numaAvailable)
-    {
-        dlclose(g_numaHandle);
-    }
-#endif // HAVE_NUMA_H
-}
+#ifdef TARGET_APPLE
+static int *g_kern_memorystatus_level_mib = NULL;
+static size_t g_kern_memorystatus_level_mib_length = 0;
+#endif
 
 // Initialize the interface implementation
 // Return:
@@ -376,7 +249,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
     else
     {
         assert(g_helperPage == 0);
@@ -408,7 +281,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-#endif // !TARGET_OSX
+#endif // !TARGET_APPLE
 
     InitializeCGroup();
 
@@ -445,6 +318,55 @@ bool GCToOSInterface::Initialize()
 
     NUMASupportInitialize();
 
+#ifdef TARGET_APPLE
+    const char* mem_free_name = "kern.memorystatus_level";
+    int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        return false;
+    }
+
+    g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+    if (g_kern_memorystatus_level_mib == NULL)
+    {
+        return false;
+    }
+
+    rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        free(g_kern_memorystatus_level_mib);
+        g_kern_memorystatus_level_mib = NULL;
+        g_kern_memorystatus_level_mib_length = 0;
+        return false;
+    }
+#endif
+
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages == -1)
+    {
+        return false;
+    }
+
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
+#elif HAVE_SYSCTL
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    size_t length = sizeof(INT64);
+    int rc = sysctl(mib, 2, &g_totalPhysicalMemSize, &length, NULL, 0);
+    if (rc == 0)
+    {
+        return false;
+    }
+#else // HAVE_SYSCTL
+#error "Don't know how to get total physical memory on this platform"
+#endif // HAVE_SYSCTL
+
+    assert(g_totalPhysicalMemSize != 0);
+
     return true;
 }
 
@@ -459,7 +381,6 @@ void GCToOSInterface::Shutdown()
     munmap(g_helperPage, OS_PAGE_SIZE);
 
     CleanupCGroup();
-    NUMASupportCleanup();
 }
 
 // Get numeric id of the current thread if possible on the
@@ -548,7 +469,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -562,9 +483,28 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         // Iterate through each of the threads in the list.
         for (mach_msg_type_number_t i = 0; i < cThreads; i++)
         {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
+            {
+                // Request the threads pointer values to force the thread to emit a memory barrier
+                size_t registers = 128;
+                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            }
+            else
+            {
+                // fallback implementation for older OS versions
+#if defined(HOST_AMD64)
+                x86_thread_state64_t threadState;
+                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+                arm_thread_state64_t threadState;
+                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+                #error Unexpected architecture
+#endif
+            }
+
             if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
@@ -577,7 +517,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -625,12 +565,13 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
+//  size       - size of the virtual memory range
+//  alignment  - requested memory alignment, 0 means no specific alignment requested
+//  flags      - flags to control special settings like write watching
+//  committing - memory will be comitted
 // Return:
 //  Starting virtual address of the reserved range
-static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
+static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag, bool committing)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
     if (alignment < OS_PAGE_SIZE)
@@ -660,8 +601,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 
         pRetVal = pAlignedRetVal;
 #ifdef MADV_DONTDUMP
-        // Do not include reserved memory in coredump.
-        madvise(pRetVal, size, MADV_DONTDUMP);
+        // Do not include reserved uncommitted memory in coredump.
+        if (!committing)
+        {
+            madvise(pRetVal, size, MADV_DONTDUMP);
+        }
 #endif
         return pRetVal;
     }
@@ -679,7 +623,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 //  Starting virtual address of the reserved range
 void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
-    return VirtualReserveInner(size, alignment, flags);
+    return VirtualReserveInner(size, alignment, flags, 0, /* committing */ false);
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -693,6 +637,59 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     int ret = munmap(address, size);
 
     return (ret == 0);
+}
+
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address   - starting virtual address
+//  size      - size of the virtual memory range
+//  newMemory - memory has been newly allocated
+// Return:
+//  true if it has succeeded, false if it has failed
+static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
+{
+    bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+
+#ifdef MADV_DODUMP
+    if (success && !newMemory)
+    {
+        // Include committed memory in coredump. New memory is included by default.
+        madvise(address, size, MADV_DODUMP);
+    }
+#endif
+
+#ifdef TARGET_LINUX
+    if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
+    {
+        if ((int)node <= g_highestNumaNode)
+        {
+            int usedNodeMaskBits = g_highestNumaNode + 1;
+            int nodeMaskLength = usedNodeMaskBits + sizeof(unsigned long) - 1;
+            unsigned long* nodeMask = (unsigned long*)alloca(nodeMaskLength);
+            memset(nodeMask, 0, nodeMaskLength);
+
+            int index = node / sizeof(unsigned long);
+            nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
+
+            int st = BindMemoryPolicy(address, size, nodeMask, usedNodeMaskBits);
+            assert(st == 0);
+            // If the mbind fails, we still return the allocated memory since the node is just a hint
+        }
+    }
+#endif // TARGET_LINUX
+
+    return success;
+}
+
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
+{
+    return VirtualCommitInner(address, size, node, /* newMemory */ false);
 }
 
 // Commit virtual memory range.
@@ -710,54 +707,13 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t n
     uint32_t largePagesFlag = 0;
 #endif
 
-    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, node))
+    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag, true);
+    if (VirtualCommitInner(pRetVal, size, node, /* newMemory */ true))
     {
         return pRetVal;
     }
 
     return nullptr;
-}
-
-// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
-{
-    bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-
-#ifdef MADV_DODUMP
-    if (success)
-    {
-        // Include committed memory in coredump.
-        madvise(address, size, MADV_DODUMP);
-    }
-#endif
-
-#if HAVE_NUMA_H
-    if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
-    {
-        if ((int)node <= g_highestNumaNode)
-        {
-            int usedNodeMaskBits = g_highestNumaNode + 1;
-            int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
-            unsigned long nodeMask[nodeMaskLength];
-            memset(nodeMask, 0, sizeof(nodeMask));
-
-            int index = node / sizeof(unsigned long);
-            nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
-
-            int st = mbind(address, size, MPOL_PREFERRED, nodeMask, usedNodeMaskBits, 0);
-            assert(st == 0);
-            // If the mbind fails, we still return the allocated memory since the node is just a hint
-        }
-    }
-#endif // HAVE_NUMA_H
-
-    return success;
 }
 
 // Decomit virtual memory range.
@@ -796,31 +752,33 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    int st;
-#if HAVE_MADV_FREE
-    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
-    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
-    // occurs.
-    st = madvise(address, size, MADV_FREE);
-    if (st != 0)
-#endif
-    {
-#if HAVE_POSIX_MADVISE
-        // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise(address, size, MADV_DONTNEED);
-#else
-        // If we don't have posix_madvise, report failure
-        st = EINVAL;
-#endif
-    }
+    int st = EINVAL;
+
+#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
-    if (st == 0)
-    {
-        // Do not include reset memory in coredump.
-        madvise(address, size, MADV_DONTDUMP);
-    }
+    // Do not include reset memory in coredump.
+    madviseFlags |= MADV_DONTDUMP;
 #endif
+
+#ifdef HAVE_MADV_FREE
+    // Tell the kernel that the application doesn't need the pages in the range.
+    // Freeing the pages can be delayed until a memory pressure occurs.
+    madviseFlags |= MADV_FREE;
+#endif
+
+    st = madvise(address, size, madviseFlags);
+
+#endif //defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    // DONTNEED is the nearest posix equivalent of FREE.
+    // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
+    st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
+
+#endif //defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
 }
@@ -904,29 +862,30 @@ done:
     return result;
 }
 
-#define UPDATE_CACHE_SIZE_AND_LEVEL(NEW_CACHE_SIZE, NEW_CACHE_LEVEL) if (NEW_CACHE_SIZE > cacheSize) { cacheSize = NEW_CACHE_SIZE; cacheLevel = NEW_CACHE_LEVEL; }
-
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheLevel = 0;
     size_t cacheSize = 0;
-    size_t size;
 
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL1_DCACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 1)
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL2_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 2)
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL3_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 3)
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    size = ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE);
-    UPDATE_CACHE_SIZE_AND_LEVEL(size, 4)
+#if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
+    const int cacheLevelNames[] =
+    {
+        _SC_LEVEL1_DCACHE_SIZE,
+        _SC_LEVEL2_CACHE_SIZE,
+        _SC_LEVEL3_CACHE_SIZE,
+        _SC_LEVEL4_CACHE_SIZE,
+    };
+
+    for (int i = ARRAY_SIZE(cacheLevelNames) - 1; i >= 0; i--)
+    {
+        long size = sysconf(cacheLevelNames[i]);
+        if (size > 0)
+        {
+            cacheSize = (size_t)size;
+            cacheLevel = i + 1;
+            break;
+        }
+    }
 #endif
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
@@ -948,48 +907,19 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
-            {
-                path_to_level_file[index] = (char)(48 + i);
+            uint64_t cache_size_from_sys_file = 0;
 
+            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
+            {
+                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
+
+                path_to_level_file[index] = (char)(48 + i);
                 if (ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
-                    UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
-                }
-                else
-                {
-                    cacheSize = std::max(cacheSize, size);
+                    cacheLevel = level;
                 }
             }
         }
-    }
-#endif
-
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
-    if (cacheSize == 0)
-    {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        //
-        // _SC_LEVEL*_*CACHE_SIZE is not yet present.  Work is in progress to enable this for arm64
-        //
-        // /sys/devices/system/cpu/cpu*/cache/index*/ is also not yet present in most systems.
-        // Arm64 patch is in Linux kernel tip.
-        //
-        // midr_el1 is available in "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1",
-        // but without an exhaustive list of ARM64 processors any decode of midr_el1
-        // Would likely be incomplete
-
-        // Published information on ARM64 architectures is limited.
-        // If we use recent high core count chips as a guide for state of the art, we find
-        // total L3 cache to be 1-2MB/core.  As always, there are exceptions.
-
-        // Estimate cache size based on CPU count
-        // Assume lower core count are lighter weight parts which are likely to have smaller caches
-        // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
-        DWORD logicalCPUs = g_totalCpuCount;
-
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
 #endif
 
@@ -1010,12 +940,12 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (success)
         {
             assert(cacheSizeFromSysctl > 0);
-            cacheSize = ( size_t) cacheSizeFromSysctl;
+            cacheSize = (size_t) cacheSizeFromSysctl;
         }
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
@@ -1025,7 +955,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // 5 ~ 16  :  8 MB
         // 17 ~ 64 : 16 MB
         // 65+     : 32 MB
-        DWORD logicalCPUs = g_totalCpuCount;
+        DWORD logicalCPUs = g_processAffinitySet.Count();
         if (logicalCPUs < 5)
         {
             cacheSize = 4;
@@ -1197,18 +1127,80 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
+#if HAVE_PROCFS_STATM
 // Return the size of the user-mode portion of the virtual address space of this process.
+static size_t GetCurrentVirtualMemorySize()
+{
+    size_t result = (size_t)-1;
+    size_t linelen;
+    char* line = nullptr;
+
+    // process virtual memory size is reported in the first column of the /proc/self/statm
+    FILE* file = fopen("/proc/self/statm", "r");
+    if (file != nullptr && getline(&line, &linelen, file) != -1)
+    {
+        // The first column of the /proc/self/statm contains the virtual memory size
+        char* context = nullptr;
+        char* strTok = strtok_r(line, " ", &context);
+
+        errno = 0;
+        result = strtoull(strTok, nullptr, 0);
+        if (errno == 0)
+        {
+            long pageSize = sysconf(_SC_PAGE_SIZE);
+            if (pageSize != -1)
+            {
+                result = result * pageSize;
+            }
+        }
+        else
+        {
+            assert(!"Failed to parse statm file contents.");
+            result = (size_t)-1;
+        }
+    }
+
+    if (file)
+        fclose(file);
+    free(line);
+
+    return result;
+}
+#endif // HAVE_PROCFS_STATM
+
+// Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
-//  non zero if it has succeeded, (size_t)-1 if not available
+//  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
+    rlimit addressSpaceLimit;
+    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    {
+        return addressSpaceLimit.rlim_cur;
+    }
+
+    // No virtual memory limit
+    return GetVirtualMemoryMaxAddress();
+}
+
+// Return the maximum address of the of the virtual address space of this process.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
+{
 #ifdef HOST_64BIT
+#ifndef TARGET_RISCV64
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
+#else // TARGET_RISCV64
+    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
+    static const uint64_t _256GB = (1ull << 38);
+    return _256GB;
+#endif // TARGET_RISCV64
 #else
     return (size_t)-1;
 #endif
@@ -1226,13 +1218,8 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
-    if (g_RestrictedPhysicalMemoryLimit == 0)
-    {
-        restricted_limit = GetRestrictedPhysicalMemoryLimit();
-        VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
-    }
-    restricted_limit = g_RestrictedPhysicalMemoryLimit;
+    restricted_limit = GetRestrictedPhysicalMemoryLimit();
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
 
     if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
     {
@@ -1241,34 +1228,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return restricted_limit;
     }
 
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1)
-    {
-        return 0;
-    }
-
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    if (pageSize == -1)
-    {
-        return 0;
-    }
-
-    return (uint64_t)pages * (uint64_t)pageSize;
-#elif HAVE_SYSCTL
-    int mib[3];
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    int64_t physical_memory = 0;
-    size_t length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    assert(rc == 0);
-
-    return physical_memory;
-#else // HAVE_SYSCTL
-#error "Don't know how to get total physical memory on this platform"
-#endif // HAVE_SYSCTL
+    return g_totalPhysicalMemSize;
 }
 
 // Get amount of physical memory available for use in the system
@@ -1277,12 +1237,34 @@ uint64_t GetAvailablePhysicalMemory()
     uint64_t available = 0;
 
     // Get the physical memory available.
-#ifndef __APPLE__
+#if defined(__APPLE__)
+    uint32_t mem_free = 0;
+    size_t mem_free_length = sizeof(uint32_t);
+    assert(g_kern_memorystatus_level_mib != NULL);
+    int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+    assert(rc == 0);
+    if (rc == 0)
+    {
+        available = (int64_t)mem_free * g_totalPhysicalMemSize / 100;
+    }
+#elif defined(__FreeBSD__)
+    size_t inactive_count = 0, laundry_count = 0, free_count = 0;
+    size_t sz = sizeof(inactive_count);
+    sysctlbyname("vm.stats.vm.v_inactive_count", &inactive_count, &sz, NULL, 0);
+
+    sz = sizeof(laundry_count);
+    sysctlbyname("vm.stats.vm.v_laundry_count", &laundry_count, &sz, NULL, 0);
+
+    sz = sizeof(free_count);
+    sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
+
+    available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+#else // Linux
     static volatile bool tryReadMemInfo = true;
 
     if (tryReadMemInfo)
     {
-        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GetAvailablePhysicalMemory
         // if we have failed to access the file or the file didn't contain the MemAvailable value.
         tryReadMemInfo = ReadMemAvailable(&available);
     }
@@ -1293,22 +1275,7 @@ uint64_t GetAvailablePhysicalMemory()
         // Fall back to getting the available pages using sysconf.
         available = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
     }
-#else // __APPLE__
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-    {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-        {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
-        }
-    }
-    mach_port_deallocate(mach_task_self(), mach_port);
-#endif // __APPLE__
+#endif
 
     return available;
 }
@@ -1396,34 +1363,56 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
     uint64_t available = 0;
     uint32_t load = 0;
 
-    if (memory_load != nullptr || available_physical != nullptr)
+    size_t used;
+    if (restricted_limit != 0)
     {
-        size_t used;
-        if (restricted_limit != 0)
+        // Get the physical memory in use - from it, we can get the physical memory available.
+        // We do this only when we have the total physical memory available.
+        if (GetPhysicalMemoryUsed(&used))
         {
-            // Get the physical memory in use - from it, we can get the physical memory available.
-            // We do this only when we have the total physical memory available.
-            if (GetPhysicalMemoryUsed(&used))
-            {
-                available = restricted_limit > used ? restricted_limit - used : 0;
-                load = (uint32_t)(((float)used * 100) / (float)restricted_limit);
-            }
+            available = restricted_limit > used ? restricted_limit - used : 0;
+            load = (uint32_t)(((float)used * 100) / (float)restricted_limit);
         }
-        else
+    }
+    else
+    {
+        available = GetAvailablePhysicalMemory();
+
+        if (memory_load != NULL)
         {
-            available = GetAvailablePhysicalMemory();
-
-            if (memory_load != NULL)
+            uint64_t total;
+            if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
             {
-                bool isRestricted;
-                uint64_t total = GetPhysicalMemoryLimit(&isRestricted);
+                total = restricted_limit;
+            }
+            else
+            {
+                total = g_totalPhysicalMemSize;
+            }
 
-                if (total > available)
+            if (total > available)
+            {
+                used = total - available;
+                load = (uint32_t)(((float)used * 100) / (float)total);
+            }
+
+#if HAVE_PROCFS_STATM
+            rlimit addressSpaceLimit;
+            if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+            {
+                // If there is virtual address space limit set, compute virtual memory load and change
+                // the load to this one in case it is higher than the physical memory load
+                size_t used_virtual = GetCurrentVirtualMemorySize();
+                if (used_virtual != (size_t)-1)
                 {
-                    used = total - available;
-                    load = (uint32_t)(((float)used * 100) / (float)total);
+                    uint32_t load_virtual = (uint32_t)(((float)used_virtual * 100) / (float)addressSpaceLimit.rlim_cur);
+                    if (load_virtual > load)
+                    {
+                        load = load_virtual;
+                    }
                 }
             }
+#endif // HAVE_PROCFS_STATM
         }
     }
 
@@ -1552,14 +1541,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#if HAVE_NUMA_H
+#ifdef TARGET_LINUX
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
-                    int result = numa_node_of_cpu(procNumber);
+                    int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // HAVE_NUMA_H
+#endif // TARGET_LINUX
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

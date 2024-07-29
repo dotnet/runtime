@@ -4,6 +4,7 @@
 //Unit test for Null check assertion propagation.
 
 using System;
+using Xunit;
 
 internal class Point
 {
@@ -16,7 +17,7 @@ internal class Point
     public int Distance() { return x * x + y * y; }
 }
 
-internal class Sample5
+public class Sample5
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static int func(Point p1, Point p2, Point p3)
@@ -36,7 +37,8 @@ internal class Sample5
         return h;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

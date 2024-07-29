@@ -18,7 +18,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out object? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -66,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else if (slot.Type == MarshalerType.Array)
             {
-                if(slot.ElementType == MarshalerType.Byte)
+                if (slot.ElementType == MarshalerType.Byte)
                 {
                     ToManaged(out byte[]? val);
                     value = val;
@@ -88,10 +90,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToManaged: " + slot.ElementType+ "[]");
+                    throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.ElementType + "[]"));
                 }
             }
-            else if (slot.Type == MarshalerType.Task)
+            else if (slot.Type == MarshalerType.Task || slot.Type == MarshalerType.TaskResolved || slot.Type == MarshalerType.TaskRejected)
             {
                 ToManaged(out Task<object?>? val, static (ref JSMarshalerArgument arg, out object? value) =>
                 {
@@ -101,7 +103,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                throw new NotImplementedException("ToManaged: " + slot.Type);
+                throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.Type));
             }
         }
 
@@ -110,7 +112,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(object? value)
         {
             if (value == null)
@@ -125,7 +129,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (typeof(long) == type)
                 {
                     // we do it because not all Int64 could fit into Int52 of the JS Number
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
                 else if (typeof(int) == type)
                 {
@@ -169,7 +173,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
             }
             else if (typeof(string) == type)
@@ -192,7 +196,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (typeof(long) == ut)
                 {
                     // we do it because not all Int64 could fit into Int52 of the JS Number
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
                 else if (typeof(int) == ut)
                 {
@@ -246,7 +250,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
             }
             else if (typeof(JSObject).IsAssignableFrom(type))
@@ -259,12 +263,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 Exception? val = value as Exception;
                 ToJS(val);
             }
-            else if (typeof(Task<object>)==type)
+            else if (typeof(Task<object>) == type)
             {
                 Task<object>? val = value as Task<object>;
                 ToJS<object>(val, (ref JSMarshalerArgument arg, object value) =>
                 {
-                    object? valueRef= value;
+                    object? valueRef = value;
                     arg.ToJS(valueRef);
                 });
             }
@@ -277,7 +281,6 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 byte[] val = (byte[])value;
                 ToJS(val);
-                slot.ElementType = MarshalerType.Byte;
             }
             else if (typeof(int[]) == type)
             {
@@ -301,24 +304,25 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else if (type.IsArray)
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (typeof(MulticastDelegate).IsAssignableFrom(type.BaseType))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ArraySegment<>))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Span<>))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else
             {
                 slot.Type = MarshalerType.Object;
-                slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value);
+                var ctx = ToJSContext;
+                slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(value);
             }
         }
 
@@ -327,7 +331,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out object?[]? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -345,7 +351,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg.ToManaged(out val);
                 value[i] = val;
             }
+#if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
+#endif
             Marshal.FreeHGlobal(slot.IntPtrValue);
         }
 
@@ -354,7 +362,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToJS(object?[] value)
         {
             if (value == null)
@@ -363,11 +373,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             slot.Length = value.Length;
-            int bytes = value.Length * Marshal.SizeOf(typeof(JSMarshalerArgument));
+            int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
-            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+#if !ENABLE_JS_INTEROP_BY_VALUE
+            Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);
+#endif
             for (int i = 0; i < slot.Length; i++)
             {
                 ref JSMarshalerArgument arg = ref payload[i];

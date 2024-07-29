@@ -4,6 +4,10 @@
 using System.Diagnostics;
 using System.Security.Cryptography.Pkcs;
 
+#if BUILDING_PKCS
+using Helpers = Internal.Cryptography.PkcsHelpers;
+#endif
+
 namespace System.Security.Cryptography.Asn1.Pkcs12
 {
     internal partial struct PfxAsn
@@ -51,7 +55,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-#if NETCOREAPP
+#if NET
             Debug.Assert(expectedOutputSize <= 64); // SHA512 is the largest digest size we know about
             Span<byte> derived = stackalloc byte[expectedOutputSize];
 #else

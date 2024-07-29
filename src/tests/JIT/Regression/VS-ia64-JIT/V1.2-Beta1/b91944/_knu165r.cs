@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public enum TestEnum
 {
@@ -168,7 +169,8 @@ public struct AA
 
 public class App
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -189,7 +191,6 @@ public class App
         catch (Exception)
         {
         }
-        return 100;
     }
     public static long m_lFwd1;
     public static bool m_bFwd2;

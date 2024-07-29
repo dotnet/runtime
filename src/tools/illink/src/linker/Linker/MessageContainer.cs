@@ -16,8 +16,8 @@ namespace Mono.Linker
 		public static readonly MessageContainer Empty;
 
 		/// <summary>
-		/// Optional data with a filename, line and column that triggered the
-		/// linker to output an error (or warning) message.
+		/// Optional data with a filename, line and column that triggered
+		/// to output an error (or warning) message.
 		/// </summary>
 		public MessageOrigin? Origin { get; }
 
@@ -29,7 +29,7 @@ namespace Mono.Linker
 		public string SubCategory { get; }
 
 		/// <summary>
-		/// Code identifier for errors and warnings reported by the IL linker.
+		/// Code identifier for errors and warnings.
 		/// </summary>
 		public int? Code { get; }
 
@@ -42,7 +42,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
@@ -59,7 +59,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
@@ -76,7 +76,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
 		/// <param name="code">A custom error ID. This code should be greater than or equal to 6001
-		/// to avoid any collisions with existing and future linker errors</param>
+		/// to avoid any collisions with existing and future errors</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename or member where the error is coming from</param>
 		/// <returns>Custom MessageContainer of 'Error' category</returns>
@@ -98,7 +98,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// /// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
@@ -118,7 +118,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
 		/// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option. </param>
@@ -138,7 +138,7 @@ namespace Mono.Linker
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">A custom warning ID. This code should be greater than or equal to 6001
-		/// to avoid any collisions with existing and future linker warnings</param>
+		/// to avoid any collisions with existing and future warnings</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
 		/// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option</param>
@@ -253,6 +253,11 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Info, text, null);
 		}
 
+		internal static MessageContainer CreateInfoMessage (MessageOrigin origin, string text)
+		{
+			return new MessageContainer (MessageCategory.Info, text, null, "", origin);
+		}
+
 		/// <summary>
 		/// Create a diagnostics message.
 		/// </summary>
@@ -289,10 +294,10 @@ namespace Mono.Linker
 			string origin = Origin?.ToString () ?? originApp;
 
 			StringBuilder sb = new StringBuilder ();
-			sb.Append (origin).Append (":");
+			sb.Append (origin).Append (':');
 
 			if (!string.IsNullOrEmpty (SubCategory))
-				sb.Append (" ").Append (SubCategory);
+				sb.Append (' ').Append (SubCategory);
 
 			string cat;
 			switch (Category) {
@@ -309,14 +314,14 @@ namespace Mono.Linker
 			}
 
 			if (!string.IsNullOrEmpty (cat)) {
-				sb.Append (" ")
+				sb.Append (' ')
 					.Append (cat)
 					.Append (" IL")
 					// Warning and error messages always have a code.
 					.Append (Code!.Value.ToString ("D4"))
 					.Append (": ");
 			} else {
-				sb.Append (" ");
+				sb.Append (' ');
 			}
 
 			if (Origin?.Provider != null) {

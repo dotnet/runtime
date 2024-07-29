@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Principal
 {
@@ -49,7 +49,7 @@ namespace System.Security.Principal
 
         public override bool IsInRole(string role)
         {
-            if (role == null || role.Length == 0)
+            if (string.IsNullOrEmpty(role))
                 return false;
 
             NTAccount ntAccount = new NTAccount(role);
@@ -180,6 +180,6 @@ namespace System.Security.Principal
         }
 
         // This is called by AppDomain.GetThreadPrincipal() via reflection.
-        private static IPrincipal GetDefaultInstance() => new WindowsPrincipal(WindowsIdentity.GetCurrent());
+        private static WindowsPrincipal GetDefaultInstance() => new WindowsPrincipal(WindowsIdentity.GetCurrent());
     }
 }

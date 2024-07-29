@@ -15,7 +15,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'jumps1' // as "jumps"
+.assembly ASSEMBLY_NAME // as "jumps"
 {
                         }
 .assembly extern xunit.core {}

@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -82,7 +85,7 @@ namespace System.Collections.Generic
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
-            this(dictionary != null ? dictionary.Count : 0, comparer)
+            this(dictionary?.Count ?? 0, comparer)
         {
             if (dictionary == null)
             {
@@ -105,15 +108,15 @@ namespace System.Collections.Generic
             AddRange(collection);
         }
 
-        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
+            // It is likely that the passed-in enumerable is Dictionary<TKey,TValue>. When this is the case,
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (collection.GetType() == typeof(Dictionary<TKey, TValue>))
+            if (enumerable.GetType() == typeof(Dictionary<TKey, TValue>))
             {
-                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)collection;
+                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)enumerable;
 
                 if (source.Count == 0)
                 {
@@ -149,13 +152,36 @@ namespace System.Collections.Generic
                 return;
             }
 
-            // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
-            foreach (KeyValuePair<TKey, TValue> pair in collection)
+            // We similarly special-case KVP<>[] and List<KVP<>>, as they're commonly used to seed dictionaries, and
+            // we want to avoid the enumerator costs (e.g. allocation) for them as well. Extract a span if possible.
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> span;
+            if (enumerable is KeyValuePair<TKey, TValue>[] array)
+            {
+                span = array;
+            }
+            else if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
+            {
+                span = CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable);
+            }
+            else
+            {
+                // Fallback path for all other enumerables
+                foreach (KeyValuePair<TKey, TValue> pair in enumerable)
+                {
+                    Add(pair.Key, pair.Value);
+                }
+                return;
+            }
+
+            // We got a span. Add the elements to the dictionary.
+            foreach (KeyValuePair<TKey, TValue> pair in span)
             {
                 Add(pair.Key, pair.Value);
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -181,6 +207,11 @@ namespace System.Collections.Generic
         }
 
         public int Count => _count - _freeCount;
+
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _entries?.Length ?? 0;
 
         public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
@@ -339,8 +370,11 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            new Enumerator(this, Enumerator.KeyValuePair);
+            Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
+            GetEnumerator();
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -380,11 +414,10 @@ namespace System.Collections.Generic
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -416,7 +449,6 @@ namespace System.Collections.Generic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
                         // Test in if to drop range check for following array access
                         if ((uint)i >= (uint)entries.Length)
                         {
@@ -500,16 +532,9 @@ namespace System.Collections.Generic
             if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                 comparer == null)
             {
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                while (true)
+                // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
+                while ((uint)i < (uint)entries.Length)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
-                    {
-                        break;
-                    }
-
                     if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
@@ -540,15 +565,8 @@ namespace System.Collections.Generic
             else
             {
                 Debug.Assert(comparer is not null);
-                while (true)
+                while ((uint)i < (uint)entries.Length)
                 {
-                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                    // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
-                    {
-                        break;
-                    }
-
                     if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                     {
                         if (behavior == InsertionBehavior.OverwriteExisting)
@@ -618,13 +636,388 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
-        /// A helper class containing APIs exposed through <see cref="Runtime.InteropServices.CollectionsMarshal"/>.
+        /// Provides a type that may be used to perform operations on a <see cref="Dictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        public readonly struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
+        {
+            /// <summary>Initialize the instance. The dictionary must have already been verified to have a compatible comparer.</summary>
+            internal AlternateLookup(Dictionary<TKey, TValue> dictionary)
+            {
+                Debug.Assert(dictionary is not null);
+                Debug.Assert(IsCompatibleKey(dictionary));
+                Dictionary = dictionary;
+            }
+
+            /// <summary>Gets the <see cref="Dictionary{TKey, TValue}"/> against which this instance performs operations.</summary>
+            public Dictionary<TKey, TValue> Dictionary { get; }
+
+            /// <summary>Gets or sets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get or set.</param>
+            /// <value>
+            /// The value associated with the specified alternate key. If the specified alternate key is not found, a get operation throws
+            /// a <see cref="KeyNotFoundException"/>, and a set operation creates a new element with the specified key.
+            /// </value>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            /// <exception cref="KeyNotFoundException">The property is retrieved and alternate key does not exist in the collection.</exception>
+            public TValue this[TAlternateKey key]
+            {
+                get
+                {
+                    ref TValue value = ref FindValue(key, out _);
+                    if (Unsafe.IsNullRef(ref value))
+                    {
+                        ThrowHelper.ThrowKeyNotFoundException(GetAlternateComparer(Dictionary).Create(key));
+                    }
+
+                    return value;
+                }
+                set => GetValueRefOrAddDefault(key, out _) = value;
+            }
+
+            /// <summary>Checks whether the dictionary has a comparer compatible with <typeparamref name="TAlternateKey"/>.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static bool IsCompatibleKey(Dictionary<TKey, TValue> dictionary)
+            {
+                Debug.Assert(dictionary is not null);
+                return dictionary._comparer is IAlternateEqualityComparer<TAlternateKey, TKey>;
+            }
+
+            /// <summary>Gets the dictionary's alternate comparer. The dictionary must have already been verified as compatible.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal static IAlternateEqualityComparer<TAlternateKey, TKey> GetAlternateComparer(Dictionary<TKey, TValue> dictionary)
+            {
+                Debug.Assert(IsCompatibleKey(dictionary));
+                return Unsafe.As<IAlternateEqualityComparer<TAlternateKey, TKey>>(dictionary._comparer);
+            }
+
+            /// <summary>Gets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get.</param>
+            /// <param name="value">
+            /// When this method returns, contains the value associated with the specified key, if the key is found;
+            /// otherwise, the default value for the type of the value parameter.
+            /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value)
+            {
+                ref TValue valueRef = ref FindValue(key, out _);
+                if (!Unsafe.IsNullRef(ref valueRef))
+                {
+                    value = valueRef;
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
+            /// <summary>Gets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get.</param>
+            /// <param name="actualKey">
+            /// When this method returns, contains the actual key associated with the alternate key, if the key is found;
+            /// otherwise, the default value for the type of the key parameter.
+            /// </param>
+            /// <param name="value">
+            /// When this method returns, contains the value associated with the specified key, if the key is found;
+            /// otherwise, the default value for the type of the value parameter.
+            /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
+            {
+                ref TValue valueRef = ref FindValue(key, out actualKey);
+                if (!Unsafe.IsNullRef(ref valueRef))
+                {
+                    value = valueRef;
+                    Debug.Assert(actualKey is not null);
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
+            /// <summary>Determines whether the <see cref="Dictionary{TKey, TValue}"/> contains the specified alternate key.</summary>
+            /// <param name="key">The alternate key to check.</param>
+            /// <returns><see langword="true"/> if the key is in the dictionary; otherwise, <see langword="false"/>.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool ContainsKey(TAlternateKey key) =>
+                !Unsafe.IsNullRef(ref FindValue(key, out _));
+
+            /// <summary>Finds the entry associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key.</param>
+            /// <param name="actualKey">The actual key, if found.</param>
+            /// <returns>A reference to the value associated with the key, if found; otherwise, a null reference.</returns>
+            internal ref TValue FindValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey)
+            {
+                Dictionary<TKey, TValue> dictionary = Dictionary;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
+
+                ref Entry entry = ref Unsafe.NullRef<Entry>();
+                if (dictionary._buckets != null)
+                {
+                    Debug.Assert(dictionary._entries != null, "expected entries to be != null");
+
+                    uint hashCode = (uint)comparer.GetHashCode(key);
+                    int i = dictionary.GetBucket(hashCode);
+                    Entry[]? entries = dictionary._entries;
+                    uint collisionCount = 0;
+                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+                    do
+                    {
+                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
+                        // Test in if to drop range check for following array access
+                        if ((uint)i >= (uint)entries.Length)
+                        {
+                            goto ReturnNotFound;
+                        }
+
+                        entry = ref entries[i];
+                        if (entry.hashCode == hashCode && comparer.Equals(key, entry.key))
+                        {
+                            goto ReturnFound;
+                        }
+
+                        i = entry.next;
+
+                        collisionCount++;
+                    } while (collisionCount <= (uint)entries.Length);
+
+                    // The chain of entries forms a loop; which means a concurrent update has happened.
+                    // Break out of the loop and throw, rather than looping forever.
+                    goto ConcurrentOperation;
+                }
+
+                goto ReturnNotFound;
+
+            ConcurrentOperation:
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+            ReturnFound:
+                ref TValue value = ref entry.value;
+                actualKey = entry.key;
+            Return:
+                return ref value;
+            ReturnNotFound:
+                value = ref Unsafe.NullRef<TValue>();
+                actualKey = default!;
+                goto Return;
+            }
+
+            /// <summary>Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>.</summary>
+            /// <param name="key">The alternate key of the element to remove.</param>
+            /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool Remove(TAlternateKey key) =>
+                Remove(key, out _, out _);
+
+            /// <summary>
+            /// Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>,
+            /// and copies the element to the value parameter.
+            /// </summary>
+            /// <param name="key">The alternate key of the element to remove.</param>
+            /// <param name="actualKey">The removed key.</param>
+            /// <param name="value">The removed element.</param>
+            /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool Remove(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
+            {
+                Dictionary<TKey, TValue> dictionary = Dictionary;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
+
+                if (dictionary._buckets != null)
+                {
+                    Debug.Assert(dictionary._entries != null, "entries should be non-null");
+                    uint collisionCount = 0;
+
+                    uint hashCode = (uint)comparer.GetHashCode(key);
+
+                    ref int bucket = ref dictionary.GetBucket(hashCode);
+                    Entry[]? entries = dictionary._entries;
+                    int last = -1;
+                    int i = bucket - 1; // Value in buckets is 1-based
+                    while (i >= 0)
+                    {
+                        ref Entry entry = ref entries[i];
+
+                        if (entry.hashCode == hashCode && comparer.Equals(key, entry.key))
+                        {
+                            if (last < 0)
+                            {
+                                bucket = entry.next + 1; // Value in buckets is 1-based
+                            }
+                            else
+                            {
+                                entries[last].next = entry.next;
+                            }
+
+                            actualKey = entry.key;
+                            value = entry.value;
+
+                            Debug.Assert((StartOfFreeList - dictionary._freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                            entry.next = StartOfFreeList - dictionary._freeList;
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                            {
+                                entry.key = default!;
+                            }
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                            {
+                                entry.value = default!;
+                            }
+
+                            dictionary._freeList = i;
+                            dictionary._freeCount++;
+                            return true;
+                        }
+
+                        last = i;
+                        i = entry.next;
+
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                    }
+                }
+
+                actualKey = default;
+                value = default;
+                return false;
+            }
+
+            /// <summary>Attempts to add the specified key and value to the dictionary.</summary>
+            /// <param name="key">The alternate key of the element to add.</param>
+            /// <param name="value">The value of the element to add.</param>
+            /// <returns>true if the key/value pair was added to the dictionary successfully; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryAdd(TAlternateKey key, TValue value)
+            {
+                ref TValue? slot = ref GetValueRefOrAddDefault(key, out bool exists);
+                if (!exists)
+                {
+                    slot = value;
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
+            internal ref TValue? GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
+            {
+                // NOTE: this method is a mirror of GetValueRefOrAddDefault above. Keep it in sync.
+
+                Dictionary<TKey, TValue> dictionary = Dictionary;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
+
+                if (dictionary._buckets == null)
+                {
+                    dictionary.Initialize(0);
+                }
+                Debug.Assert(dictionary._buckets != null);
+
+                Entry[]? entries = dictionary._entries;
+                Debug.Assert(entries != null, "expected entries to be non-null");
+
+                uint hashCode = (uint)comparer.GetHashCode(key);
+
+                uint collisionCount = 0;
+                ref int bucket = ref dictionary.GetBucket(hashCode);
+                int i = bucket - 1; // Value in _buckets is 1-based
+
+                Debug.Assert(comparer is not null);
+                while ((uint)i < (uint)entries.Length)
+                {
+                    if (entries[i].hashCode == hashCode && comparer.Equals(key, entries[i].key))
+                    {
+                        exists = true;
+
+                        return ref entries[i].value!;
+                    }
+
+                    i = entries[i].next;
+
+                    collisionCount++;
+                    if (collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
+
+                TKey actualKey = comparer.Create(key);
+                if (actualKey is null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+                }
+
+                int index;
+                if (dictionary._freeCount > 0)
+                {
+                    index = dictionary._freeList;
+                    Debug.Assert((StartOfFreeList - entries[dictionary._freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                    dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].next;
+                    dictionary._freeCount--;
+                }
+                else
+                {
+                    int count = dictionary._count;
+                    if (count == entries.Length)
+                    {
+                        dictionary.Resize();
+                        bucket = ref dictionary.GetBucket(hashCode);
+                    }
+                    index = count;
+                    dictionary._count = count + 1;
+                    entries = dictionary._entries;
+                }
+
+                ref Entry entry = ref entries![index];
+                entry.hashCode = hashCode;
+                entry.next = bucket - 1; // Value in _buckets is 1-based
+                entry.key = actualKey;
+                entry.value = default!;
+                bucket = index + 1; // Value in _buckets is 1-based
+                dictionary._version++;
+
+                // Value types never rehash
+                if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+                {
+                    // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+                    // i.e. EqualityComparer<string>.Default.
+                    dictionary.Resize(entries.Length, true);
+
+                    exists = false;
+
+                    // At this point the entries array has been resized, so the current reference we have is no longer valid.
+                    // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
+                    // lookup is guaranteed to always find a value though and it will never return a null reference here.
+                    ref TValue? value = ref dictionary.FindValue(actualKey)!;
+
+                    Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
+
+                    return ref value;
+                }
+
+                exists = false;
+
+                return ref entry.value!;
+            }
+        }
+
+        /// <summary>
+        /// A helper class containing APIs exposed through <see cref="CollectionsMarshal"/> or <see cref="CollectionExtensions"/>.
         /// These methods are relatively niche and only used in specific scenarios, so adding them in a separate type avoids
         /// the additional overhead on each <see cref="Dictionary{TKey, TValue}"/> instantiation, especially in AOT scenarios.
         /// </summary>
         internal static class CollectionsMarshalHelper
         {
-            /// <inheritdoc cref="Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
+            /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
             public static ref TValue? GetValueRefOrAddDefault(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists)
             {
                 // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
@@ -655,16 +1048,9 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                    while (true)
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            break;
-                        }
-
                         if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
                         {
                             exists = true;
@@ -686,15 +1072,8 @@ namespace System.Collections.Generic
                 else
                 {
                     Debug.Assert(comparer is not null);
-                    while (true)
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test uint in if rather than loop condition to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            break;
-                        }
-
                         if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
                         {
                             exists = true;
@@ -1100,7 +1479,7 @@ namespace System.Collections.Generic
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
         /// <summary>
         /// Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage
@@ -1151,6 +1530,7 @@ namespace System.Collections.Generic
         /// This method can be used to minimize the memory overhead
         /// once it is known that no new elements will be added.
         /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
             if (capacity < Count)
@@ -1316,7 +1696,7 @@ namespace System.Collections.Generic
 #if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
-            return ref buckets[hashCode % (uint)buckets.Length];
+            return ref buckets[(uint)hashCode % buckets.Length];
 #endif
         }
 
@@ -1513,9 +1893,11 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TKey>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TKey>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -1705,9 +2087,11 @@ namespace System.Collections.Generic
 
             bool ICollection<TValue>.Contains(TValue item) => _dictionary.ContainsValue(item);
 
-            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TValue>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TValue>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {

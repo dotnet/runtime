@@ -92,9 +92,6 @@ ep_thread_release (EventPipeThread *thread);
 void
 ep_thread_init (void);
 
-void
-ep_thread_fini (void);
-
 bool
 ep_thread_register (EventPipeThread *thread);
 
@@ -108,7 +105,7 @@ EventPipeThread *
 ep_thread_get_or_create (void);
 
 void
-ep_thread_get_threads (ep_rt_thread_array_t *threads);
+ep_thread_get_threads (dn_vector_ptr_t *threads);
 
 static
 inline

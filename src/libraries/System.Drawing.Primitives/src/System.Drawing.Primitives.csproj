@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <RootNamespace>System.Drawing</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <RootNamespace>System.Drawing</RootNamespace>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Drawing\KnownColorNames.cs" />
     <Compile Include="System\Drawing\Point.cs" />
@@ -26,6 +30,7 @@
     <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
              Link="System\Drawing\ColorTable.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -34,6 +39,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.Win32SystemColors.cs"
              Link="Common\Interop\Windows\User32\Interop.Win32SystemColors.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />
@@ -43,4 +49,5 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
+
 </Project>

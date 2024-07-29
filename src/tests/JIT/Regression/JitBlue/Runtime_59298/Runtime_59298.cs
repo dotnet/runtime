@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Xunit;
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
@@ -58,7 +59,8 @@ public class Runtime_59298
         return s_s2_16;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Runtime_59298().Method0(out short s);
         return s + 100;

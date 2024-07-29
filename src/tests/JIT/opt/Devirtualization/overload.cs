@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-interface Io<T,U> where T:class where U:class
+public interface Io<T,U> where T:class where U:class
 {
     T FromU(U u);
     T FromS(string s);
@@ -14,7 +15,8 @@ public class Z : Io<string, string>
     string Io<string, string>.FromU(string s) { return "U"; }
     string Io<string, string>.FromS(string s) { return "S"; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string fromU = ((Io<string, string>) new Z()).FromU("u");
         string fromS = ((Io<string, string>) new Z()).FromS("s");

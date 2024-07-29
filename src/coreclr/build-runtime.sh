@@ -20,9 +20,9 @@ export PYTHON
 
 usage_list+=("-pgodatapath: path to profile guided optimization data.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
 usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
+usage_list+=("-subdir: Append a directory with the provided name to the obj and bin paths.")
 
 setup_dirs_local()
 {
@@ -53,6 +53,12 @@ handle_arguments_local() {
             __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
+        
+        subdir|-subdir)
+            __SubDir="$2"
+            __ShiftArgs=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -81,7 +87,6 @@ __Compiler=clang
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
-__DistroRid=""
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=0
@@ -98,6 +103,7 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
+__SubDir=""
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -107,6 +113,9 @@ source "$__ProjectRoot"/_build-commons.sh
 __LogsDir="$__RootBinDir/log/$__BuildType"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 __ConfigTriplet="$__TargetOS.$__TargetArch.$__BuildType"
+if [[ "$__TargetOS" == "linux-bionic" ]]; then
+    __ConfigTriplet="linux.$__TargetArch.$__BuildType"
+fi
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
 __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
@@ -114,9 +123,14 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-if [[ "$__TargetArch" != "$__HostArch" ]]; then
+if [[ "$__ExplicitHostArch" == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
+fi
+
+if [[ -n "$__SubDir" ]]; then
+    __IntermediatesDir="$__IntermediatesDir/$__SubDir"
+    __BinDir="$__BinDir/$__SubDir"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
@@ -146,7 +160,7 @@ export MSBUILDDEBUGPATH
 check_prereqs
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
@@ -171,7 +185,7 @@ fi
 
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
-build_native "$__TargetOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
+build_native "$__HostOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
 # Build complete
 

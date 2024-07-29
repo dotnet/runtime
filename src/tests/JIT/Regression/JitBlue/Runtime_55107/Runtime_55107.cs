@@ -4,16 +4,18 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_55107
 {
-    class Program
+    public class Program
     {
         class G
         {
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             G g = new G();
 

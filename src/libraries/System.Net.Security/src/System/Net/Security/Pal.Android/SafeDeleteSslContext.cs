@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32.SafeHandles;
 
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
@@ -34,14 +32,19 @@ namespace System.Net
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
+        public SslStream.JavaProxy SslStreamProxy { get; }
+
         public SafeSslHandle SslContext => _sslContext;
 
         public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
+            SslStreamProxy = authOptions.SslStreamProxy
+                ?? throw new ArgumentNullException(nameof(authOptions.SslStreamProxy));
+
             try
             {
-                _sslContext = CreateSslContext(authOptions);
+                _sslContext = CreateSslContext(SslStreamProxy, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -58,8 +61,7 @@ namespace System.Net
         {
             if (disposing)
             {
-                SafeSslHandle sslContext = _sslContext;
-                if (sslContext != null)
+                if (_sslContext is SafeSslHandle sslContext)
                 {
                     _inputBuffer.Dispose();
                     _outputBuffer.Dispose();
@@ -117,17 +119,17 @@ namespace System.Net
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        internal byte[]? ReadPendingWrites()
+        internal void ReadPendingWrites(ref ProtocolToken token)
         {
             if (_outputBuffer.ActiveLength == 0)
             {
-                return null;
+                token.Size = 0;
+                token.Payload = null;
+                return;
             }
 
-            byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+            token.SetPayload(_outputBuffer.ActiveSpan);
             _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-            return buffer;
         }
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
@@ -145,16 +147,21 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate();
+                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
-            X509Certificate2 cert = context.Certificate;
-            Debug.Assert(context.Certificate.HasPrivateKey);
+            X509Certificate2 cert = context.TargetCertificate;
+            Debug.Assert(context.TargetCertificate.HasPrivateKey);
+
+            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+            {
+                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, cert.Handle);
+            }
 
             PAL_KeyAlgorithm algorithm;
             byte[] keyBytes;
@@ -162,14 +169,14 @@ namespace System.Net
             {
                 keyBytes = key.ExportPkcs8PrivateKey();
             }
-            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Length + 1];
+            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
             ptrs[0] = cert.Handle;
-            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
+            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
@@ -248,7 +255,7 @@ namespace System.Net
                 Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
             }
 
-            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !TargetHostNameHelper.IsValidAddress(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
@@ -12,7 +13,8 @@ namespace DefaultNamespace
             return UInt16.MaxValue;
         }
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Object v = ((UInt16)65535);
             Console.WriteLine("v.ToUInt16: " + v);
@@ -27,7 +29,6 @@ namespace DefaultNamespace
             if (((UInt16)v) != UInt16.MaxValue)
                 throw new Exception("UInt16.MaxValue from Object as UInt16 wasn't right!  " + (UInt16)v);
             Console.WriteLine("pass");
-            return 100;
         }
     }
 }

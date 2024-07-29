@@ -8,19 +8,31 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 
 		[Fact]
+		public Task ExponentialDataFlow ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task GenericParameterDataFlowMarking ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task MethodByRefParameterDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
-		public Task MethodOutParameterDataFlow ()
+		public Task StaticInterfaceMethodDataflow ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
-		public Task StaticInterfaceMethodDataflow ()
+		public Task TypeInfoIntrinsics ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

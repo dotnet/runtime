@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <!-- This test provides no interesting scenarios for GCStress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <!-- This is a separate app launched by the actual test in TestConfigTester.csproj -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestConfig.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

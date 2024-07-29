@@ -11,8 +11,7 @@ schedules:
   branches:
     include:
     - main
-    - release/6.0
-    - release/7.0
+    - release/8.0
 
 variables:
   - template: ../variables.yml
@@ -35,8 +34,8 @@ extends:
         displayName: Docker Linux
         timeoutInMinutes: 120
         pool:
-          name: NetCore-Public
-          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+          name: $(DncEngPublicBuildPool)
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         steps:
         - checkout: self
@@ -60,9 +59,14 @@ extends:
         displayName: Docker NanoServer
         timeoutInMinutes: 120
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
-
+        variables:
+          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
+          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
+          # This is worked around by handpicking the V2 executable.
+          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
+          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
         steps:
         - checkout: self
           clean: true
@@ -70,6 +74,9 @@ extends:
           lfs: false
 
         - powershell: |
+            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
+            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
+
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
           displayName: Build CLR and Libraries
 
@@ -79,5 +86,5 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
-            docker-compose up --abort-on-container-exit --no-color
+            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run SslStress

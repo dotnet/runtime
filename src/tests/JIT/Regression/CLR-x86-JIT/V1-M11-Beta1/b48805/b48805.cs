@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             bool[] ab = new bool[2];
             try
@@ -20,7 +22,6 @@ namespace Test
             }
             catch (IndexOutOfRangeException) { }
             catch (Exception) { }
-            return 100;
         }
     }
 }

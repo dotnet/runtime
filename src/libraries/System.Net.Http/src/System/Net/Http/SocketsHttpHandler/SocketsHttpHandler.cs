@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -133,10 +135,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxAutomaticRedirections = value;
@@ -148,10 +147,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;
@@ -362,9 +358,11 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server
-        /// when the maximum of concurrent streams is reached on all existing connections.
+        /// Gets or sets a value that indicates whether additional HTTP/2 connections can be established to the same server.
         /// </summary>
+        /// <remarks>
+        /// Enabling multiple connections to the same server explicitly goes against <see href="https://www.rfc-editor.org/rfc/rfc9113.html#section-9.1-2">RFC 9113 - HTTP/2</see>.
+        /// </remarks>
         public bool EnableMultipleHttp2Connections
         {
             get => _settings._enableMultipleHttp2Connections;
@@ -373,6 +371,23 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
 
                 _settings._enableMultipleHttp2Connections = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether additional HTTP/3 connections can be established to the same server.
+        /// </summary>
+        /// <remarks>
+        /// Enabling multiple connections to the same server explicitly goes against <see href="https://www.rfc-editor.org/rfc/rfc9114.html#section-3.3-4">RFC 9114 - HTTP/3</see>.
+        /// </remarks>
+        public bool EnableMultipleHttp3Connections
+        {
+            get => _settings._enableMultipleHttp3Connections;
+            set
+            {
+                CheckDisposedOrStarted();
+
+                _settings._enableMultipleHttp3Connections = value;
             }
         }
 
@@ -456,6 +471,34 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="SocketsHttpHandler"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics emitted by the <see cref="SocketsHttpHandler"/> instance
+        /// will be recorded using the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
+        /// </remarks>
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
+        {
+            get => _settings._meterFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._meterFactory = value;
+            }
+        }
+
+        internal ClientCertificateOption ClientCertificateOptions
+        {
+            get => _settings._clientCertificateOptions;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._clientCertificateOptions = value;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -485,6 +528,11 @@ namespace System.Net.Http
             {
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
             }
+
+            // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+            // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
             if (DiagnosticsHandler.IsGloballyEnabled() && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
@@ -569,7 +617,7 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
@@ -582,7 +630,7 @@ namespace System.Net.Http
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
-            if (request.Version.Major == 0)
+            if (request.Version != HttpVersion.Version10 && request.Version != HttpVersion.Version11 && request.Version != HttpVersion.Version20 && request.Version != HttpVersion.Version30)
             {
                 return new NotSupportedException(SR.net_http_unsupported_version);
             }

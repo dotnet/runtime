@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -31,10 +31,12 @@ namespace System
             private const int MaxBits = BitsForLongestBinaryMantissa + BitsForLongestDigitSequence + BitsPerBlock;
 
             private const int BitsPerBlock = sizeof(int) * 8;
-            private const int MaxBlockCount = (MaxBits + (BitsPerBlock - 1)) / BitsPerBlock;
 
-            private static readonly uint[] s_Pow10UInt32Table = new uint[]
-            {
+            // We need one extra block to make our shift left algorithm significantly simpler
+            private const int MaxBlockCount = ((MaxBits + (BitsPerBlock - 1)) / BitsPerBlock) + 1;
+
+            private static ReadOnlySpan<uint> Pow10UInt32Table =>
+            [
                 1,          // 10^0
                 10,         // 10^1
                 100,        // 10^2
@@ -46,10 +48,10 @@ namespace System
                 // These last two are accessed only by MultiplyPow10.
                 100000000,  // 10^8
                 1000000000  // 10^9
-            };
+            ];
 
-            private static readonly int[] s_Pow10BigNumTableIndices = new int[]
-            {
+            private static ReadOnlySpan<int> Pow10BigNumTableIndices =>
+            [
                 0,          // 10^8
                 2,          // 10^16
                 5,          // 10^32
@@ -58,10 +60,10 @@ namespace System
                 33,         // 10^256
                 61,         // 10^512
                 116,        // 10^1024
-            };
+            ];
 
-            private static readonly uint[] s_Pow10BigNumTable = new uint[]
-            {
+            private static ReadOnlySpan<uint> Pow10BigNumTable =>
+            [
                 // 10^8
                 1,          // _length
                 100000000,  // _blocks
@@ -302,7 +304,7 @@ namespace System
                 0xD9D61A05,
                 0x00000325,
 
-                // 9 Trailing blocks to ensure MaxBlockCount
+                // 10 Trailing blocks to ensure MaxBlockCount
                 0x00000000,
                 0x00000000,
                 0x00000000,
@@ -312,7 +314,8 @@ namespace System
                 0x00000000,
                 0x00000000,
                 0x00000000,
-            };
+                0x00000000,
+            ];
 
             private int _length;
             private fixed uint _blocks[MaxBlockCount];
@@ -358,11 +361,24 @@ namespace System
                     resultIndex++;
                 }
 
+                int resultLength = largeLength;
+
                 // If there's still a carry, append a new block
                 if (carry != 0)
                 {
                     Debug.Assert(carry == 1);
-                    Debug.Assert((resultIndex == largeLength) && (largeLength < MaxBlockCount));
+                    Debug.Assert(resultIndex == resultLength);
+                    Debug.Assert(unchecked((uint)(resultLength)) < MaxBlockCount);
+
+                    if (unchecked((uint)(resultLength)) >= MaxBlockCount)
+                    {
+                        // We shouldn't reach here, and the above assert will help flag this
+                        // during testing, but we'll ensure that we return a safe value of
+                        // zero in the case we end up overflowing in any way.
+
+                        SetZero(out result);
+                        return;
+                    }
 
                     result._blocks[resultIndex] = 1;
                     result._length++;
@@ -733,16 +749,27 @@ namespace System
                     index++;
                 }
 
+                int resultLength = lhsLength;
+
                 if (carry != 0)
                 {
-                    Debug.Assert(unchecked((uint)(lhsLength)) + 1 <= MaxBlockCount);
+                    Debug.Assert(unchecked((uint)(resultLength)) < MaxBlockCount);
+
+                    if (unchecked((uint)(resultLength)) >= MaxBlockCount)
+                    {
+                        // We shouldn't reach here, and the above assert will help flag this
+                        // during testing, but we'll ensure that we return a safe value of
+                        // zero in the case we end up overflowing in any way.
+
+                        SetZero(out result);
+                        return;
+                    }
+
                     result._blocks[index] = carry;
-                    result._length = (lhsLength + 1);
+                    resultLength += 1;
                 }
-                else
-                {
-                    result._length = lhsLength;
-                }
+
+                 result._length = resultLength;
             }
 
             public static void Multiply(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger result)
@@ -776,6 +803,16 @@ namespace System
 
                 int maxResultLength = smallLength + largeLength;
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
+
+                if (unchecked((uint)(maxResultLength)) > MaxBlockCount)
+                {
+                    // We shouldn't reach here, and the above assert will help flag this
+                    // during testing, but we'll ensure that we return a safe value of
+                    // zero in the case we end up overflowing in any way.
+
+                    SetZero(out result);
+                    return;
+                }
 
                 // Zero out result internal blocks.
                 result._length = maxResultLength;
@@ -822,7 +859,19 @@ namespace System
             {
                 uint blocksToShift = DivRem32(exponent, out uint remainingBitsToShift);
                 result._length = (int)blocksToShift + 1;
+
                 Debug.Assert(unchecked((uint)result._length) <= MaxBlockCount);
+
+                if (unchecked((uint)result._length) > MaxBlockCount)
+                {
+                    // We shouldn't reach here, and the above assert will help flag this
+                    // during testing, but we'll ensure that we return a safe value of
+                    // zero in the case we end up overflowing in any way.
+
+                    SetZero(out result);
+                    return;
+                }
+
                 if (blocksToShift > 0)
                 {
                     result.Clear(blocksToShift);
@@ -832,37 +881,37 @@ namespace System
 
             public static void Pow10(uint exponent, out BigInteger result)
             {
-                // We leverage two arrays - s_Pow10UInt32Table and s_Pow10BigNumTable to speed up the Pow10 calculation.
+                // We leverage two arrays - Pow10UInt32Table and Pow10BigNumTable to speed up the Pow10 calculation.
                 //
-                // s_Pow10UInt32Table stores the results of 10^0 to 10^7.
-                // s_Pow10BigNumTable stores the results of 10^8, 10^16, 10^32, 10^64, 10^128, 10^256, and 10^512
+                // Pow10UInt32Table stores the results of 10^0 to 10^7.
+                // Pow10BigNumTable stores the results of 10^8, 10^16, 10^32, 10^64, 10^128, 10^256, and 10^512
                 //
                 // For example, let's say exp = 0b111111. We can split the exp to two parts, one is small exp,
                 // which 10^smallExp can be represented as uint, another part is 10^bigExp, which must be represented as BigNum.
                 // So the result should be 10^smallExp * 10^bigExp.
                 //
-                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from s_Pow10UInt32Table.
+                // Calculating 10^smallExp is simple, we just lookup the 10^smallExp from Pow10UInt32Table.
                 // But here's a bad news: although uint can represent 10^9, exp 9's binary representation is 1001.
                 // That means 10^(1011), 10^(1101), 10^(1111) all cannot be stored as uint, we cannot easily say something like:
-                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to s_Pow10UInt32Table,
-                // consider 10^8 and 10^9 as a bigNum, so they fall into s_Pow10BigNumTable. Now we can have a simple rule:
+                // "Any bits <= 3 is small exp, any bits > 3 is big exp". So instead of involving 10^8, 10^9 to Pow10UInt32Table,
+                // consider 10^8 and 10^9 as a bigNum, so they fall into Pow10BigNumTable. Now we can have a simple rule:
                 // "Any bits <= 3 is small exp, any bits > 3 is big exp".
                 //
                 // For 0b111111, we first calculate 10^(smallExp), which is 10^(7), now we can shift right 3 bits, prepare to calculate the bigExp part,
                 // the exp now becomes 0b000111.
                 //
-                // Apparently the lowest bit of bigExp should represent 10^8 because we have already shifted 3 bits for smallExp, so s_Pow10BigNumTable[0] = 10^8.
+                // Apparently the lowest bit of bigExp should represent 10^8 because we have already shifted 3 bits for smallExp, so Pow10BigNumTable[0] = 10^8.
                 // Now let's shift exp right 1 bit, the lowest bit should represent 10^(8 * 2) = 10^16, and so on...
                 //
-                // That's why we just need the values of s_Pow10BigNumTable be power of 2.
+                // That's why we just need the values of Pow10BigNumTable be power of 2.
                 //
                 // More details of this implementation can be found at: https://github.com/dotnet/coreclr/pull/12894#discussion_r128890596
 
-                // Validate that `s_Pow10BigNumTable` has exactly enough trailing elements to fill a BigInteger (which contains MaxBlockCount + 1 elements)
+                // Validate that `Pow10BigNumTable` has exactly enough trailing elements to fill a BigInteger (which contains MaxBlockCount + 1 elements)
                 // We validate here, since this is the only current consumer of the array
-                Debug.Assert((s_Pow10BigNumTableIndices[^1] + MaxBlockCount + 2) == s_Pow10BigNumTable.Length);
+                Debug.Assert((Pow10BigNumTableIndices[^1] + MaxBlockCount + 2) == Pow10BigNumTable.Length);
 
-                SetUInt32(out BigInteger temp1, s_Pow10UInt32Table[exponent & 0x7]);
+                SetUInt32(out BigInteger temp1, Pow10UInt32Table[(int)(exponent & 0x7)]);
                 ref BigInteger lhs = ref temp1;
 
                 SetZero(out BigInteger temp2);
@@ -877,7 +926,7 @@ namespace System
                     if ((exponent & 1) != 0)
                     {
                         // Multiply into the next temporary
-                        fixed (uint* pBigNumEntry = &s_Pow10BigNumTable[s_Pow10BigNumTableIndices[index]])
+                        fixed (uint* pBigNumEntry = &Pow10BigNumTable[Pow10BigNumTableIndices[(int)index]])
                         {
                             ref BigInteger rhs = ref *(BigInteger*)(pBigNumEntry);
                             Multiply(ref lhs, ref rhs, out product);
@@ -1012,7 +1061,18 @@ namespace System
                     }
                 }
 
-                Debug.Assert(unchecked((uint)(length)) + 1 <= MaxBlockCount);
+                Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
+
+                if (unchecked((uint)(length)) >= MaxBlockCount)
+                {
+                    // We shouldn't reach here, and the above assert will help flag this
+                    // during testing, but we'll ensure that we return a safe value of
+                    // zero in the case we end up overflowing in any way.
+
+                    SetZero(out this);
+                    return;
+                }
+
                 _blocks[length] = 1;
                 _length = length + 1;
             }
@@ -1074,9 +1134,20 @@ namespace System
 
                 if (carry != 0)
                 {
-                    Debug.Assert(unchecked((uint)(_length)) + 1 <= MaxBlockCount);
+                    Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
+
+                    if (unchecked((uint)(length)) >= MaxBlockCount)
+                    {
+                        // We shouldn't reach here, and the above assert will help flag this
+                        // during testing, but we'll ensure that we return a safe value of
+                        // zero in the case we end up overflowing in any way.
+
+                        SetZero(out this);
+                        return;
+                    }
+
                     _blocks[index] = (uint)carry;
-                    _length++;
+                    _length = length + 1;
                 }
             }
 
@@ -1084,7 +1155,7 @@ namespace System
             {
                 if (exponent <= 9)
                 {
-                    Multiply(s_Pow10UInt32Table[exponent]);
+                    Multiply(Pow10UInt32Table[(int)exponent]);
                 }
                 else if (!IsZero())
                 {
@@ -1152,7 +1223,17 @@ namespace System
                 // Check if the shift is block aligned
                 if (remainingBitsToShift == 0)
                 {
-                    Debug.Assert(writeIndex < MaxBlockCount);
+                    Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
+
+                    if (unchecked((uint)(length)) >= MaxBlockCount)
+                    {
+                        // We shouldn't reach here, and the above assert will help flag this
+                        // during testing, but we'll ensure that we return a safe value of
+                        // zero in the case we end up overflowing in any way.
+
+                        SetZero(out this);
+                        return;
+                    }
 
                     while (readIndex >= 0)
                     {
@@ -1169,8 +1250,19 @@ namespace System
                 else
                 {
                     // We need an extra block for the partial shift
+
                     writeIndex++;
-                    Debug.Assert(writeIndex < MaxBlockCount);
+                    Debug.Assert(unchecked((uint)(length)) < MaxBlockCount);
+
+                    if (unchecked((uint)(length)) >= MaxBlockCount)
+                    {
+                        // We shouldn't reach here, and the above assert will help flag this
+                        // during testing, but we'll ensure that we return a safe value of
+                        // zero in the case we end up overflowing in any way.
+
+                        SetZero(out this);
+                        return;
+                    }
 
                     // Set the length to hold the shifted blocks
                     _length = writeIndex + 1;

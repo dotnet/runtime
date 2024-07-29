@@ -1,43 +1,47 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+  <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
-    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
-    <Scenario>WasmTestOnBrowser</Scenario>
+    <Scenario>WasmTestOnChrome</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
+    <DefineConstants>$(DefineConstants);TARGETS_ANDROID</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
 
-    <NodeNpmModule Include="ws" Alias="WebSocket" />
+    <NodeNpmModule Include="ws" />
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
 
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'Browser'" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,8 +51,6 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="System\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" Condition="'$(TargetPlatformIdentifier)' != 'windows'"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs"
@@ -67,8 +69,6 @@
              Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
-             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs"
@@ -77,6 +77,8 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"
@@ -115,6 +117,8 @@
              Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
              Link="Common\System\Net\Http\TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
              Link="Common\System\Threading\TrackingSynchronizationContext.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\GetStateMachineData.cs"
@@ -152,9 +156,11 @@
              Link="Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="HttpClientHandlerTest.General.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
     <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http1KeepAlive.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http2ExtendedConnect.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePing.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />
@@ -178,7 +184,7 @@
     <Compile Include="HttpClientHandlerTestBase.SocketsHttpHandler.cs" />
     <Compile Include="DiagnosticsTests.cs" />
     <Compile Include="HttpClientTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'"
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientEKUTest.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'"
              Link="Common\System\Net\Http\HttpClientEKUTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClient.SelectedSitesTest.cs"
              Link="Common\System\Net\Http\HttpClient.SelectedSitesTest.cs" />
@@ -193,6 +199,7 @@
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
+    <Compile Include="MetricsTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"
@@ -230,20 +237,37 @@
     <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'OSX' ">
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'osx' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Android specific files -->
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'android' ">
+    <Compile Include="AndroidKeyStoreHelper.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomContent.netcore.cs" />
     <Compile Include="HPackTest.cs" />
     <Compile Include="HttpClientHandlerTest.Http1.cs" />
     <Compile Include="HttpClientHandlerTest.Http2.cs" />
+    <Compile Include="HttpClientHandlerTest.BasicAuth.cs" />
     <Compile Include="HttpClientHandlerTest.Url.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs"
              Link="Common\System\Net\Http\HttpClientHandlerTest.AcceptAllCerts.cs" />
@@ -301,5 +325,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
   </ItemGroup>
 </Project>

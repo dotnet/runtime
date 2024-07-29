@@ -470,7 +470,7 @@ namespace System.Collections.Generic
 
             if (_size == 0)
             {
-                // build using Heapify() if the queue is empty.
+                // If the queue is empty just append the elements since they all have the same priority.
 
                 int i = 0;
                 (TElement, TPriority)[] nodes = _nodes;
@@ -487,11 +487,6 @@ namespace System.Collections.Generic
 
                 _size = i;
                 _version++;
-
-                if (i > 1)
-                {
-                    Heapify();
-                }
             }
             else
             {
@@ -500,6 +495,59 @@ namespace System.Collections.Generic
                     Enqueue(element, priority);
                 }
             }
+        }
+
+        /// <summary>
+        /// Removes the first occurrence that equals the specified parameter.
+        /// </summary>
+        /// <param name="element">The element to try to remove.</param>
+        /// <param name="removedElement">The actual element that got removed from the queue.</param>
+        /// <param name="priority">The priority value associated with the removed element.</param>
+        /// <param name="equalityComparer">The equality comparer governing element equality.</param>
+        /// <returns><see langword="true"/> if matching entry was found and removed, <see langword="false"/> otherwise.</returns>
+        /// <remarks>
+        /// The method performs a linear-time scan of every element in the heap, removing the first value found to match the <paramref name="element"/> parameter.
+        /// In case of duplicate entries, what entry does get removed is non-deterministic and does not take priority into account.
+        ///
+        /// If no <paramref name="equalityComparer"/> is specified, <see cref="EqualityComparer{TElement}.Default"/> will be used instead.
+        /// </remarks>
+        public bool Remove(
+            TElement element,
+            [MaybeNullWhen(false)] out TElement removedElement,
+            [MaybeNullWhen(false)] out TPriority priority,
+            IEqualityComparer<TElement>? equalityComparer = null)
+        {
+            int index = FindIndex(element, equalityComparer);
+            if (index < 0)
+            {
+                removedElement = default;
+                priority = default;
+                return false;
+            }
+
+            (TElement Element, TPriority Priority)[] nodes = _nodes;
+            (removedElement, priority) = nodes[index];
+            int newSize = --_size;
+
+            if (index < newSize)
+            {
+                // We're removing an element from the middle of the heap.
+                // Pop the last element in the collection and sift downward from the removed index.
+                (TElement Element, TPriority Priority) lastNode = nodes[newSize];
+
+                if (_comparer == null)
+                {
+                    MoveDownDefaultComparer(lastNode, index);
+                }
+                else
+                {
+                    MoveDownCustomComparer(lastNode, index);
+                }
+            }
+
+            nodes[newSize] = default;
+            _version++;
+            return true;
         }
 
         /// <summary>
@@ -810,6 +858,41 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Scans the heap for the first index containing an element equal to the specified parameter.
+        /// </summary>
+        private int FindIndex(TElement element, IEqualityComparer<TElement>? equalityComparer)
+        {
+            equalityComparer ??= EqualityComparer<TElement>.Default;
+            ReadOnlySpan<(TElement Element, TPriority Priority)> nodes = _nodes.AsSpan(0, _size);
+
+            // Currently the JIT doesn't optimize direct EqualityComparer<T>.Default.Equals
+            // calls for reference types, so we want to cache the comparer instance instead.
+            // TODO https://github.com/dotnet/runtime/issues/10050: Update if this changes in the future.
+            if (typeof(TElement).IsValueType && equalityComparer == EqualityComparer<TElement>.Default)
+            {
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    if (EqualityComparer<TElement>.Default.Equals(element, nodes[i].Element))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    if (equalityComparer.Equals(element, nodes[i].Element))
+                    {
+                        return i;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Initializes the custom comparer to be used internally by the heap.
         /// </summary>
         private static IComparer<TPriority>? InitializeComparer(IComparer<TPriority>? comparer)
@@ -961,9 +1044,11 @@ namespace System.Collections.Generic
             /// <returns>An <see cref="Enumerator"/> for the <see cref="UnorderedItems"/>.</returns>
             public Enumerator GetEnumerator() => new Enumerator(_queue);
 
-            IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() => GetEnumerator();
+            IEnumerator<(TElement Element, TPriority Priority)> IEnumerable<(TElement Element, TPriority Priority)>.GetEnumerator() =>
+                _queue.Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<(TElement Element, TPriority Priority)>() :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<(TElement Element, TPriority Priority)>)this).GetEnumerator();
         }
     }
 }

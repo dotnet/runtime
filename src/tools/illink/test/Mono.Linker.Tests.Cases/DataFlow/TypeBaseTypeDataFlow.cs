@@ -2,12 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -62,16 +58,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class AllPropagatedWithDerivedClass
 		{
-			// https://github.com/dotnet/linker/issues/2673
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (TestSystemTypeBase.BaseType) + ".get",
-				ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (TestSystemTypeBase.BaseType) + ".get", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2673")]
 			static void TestAllPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] TestSystemTypeBase derivedType)
 			{
 				derivedType.BaseType.RequiresAll ();
 			}
 
 			// This is a very special case - normally there's basically no way to "new up" a Type instance via the "new" operator.
-			// The linker and analyzer see an unknown value and thus warns that it doesn't fulfill the All annotation.
+			// The trimming tools and analyzer see an unknown value and thus warns that it doesn't fulfill the All annotation.
 			[ExpectedWarning ("IL2062", nameof (TestAllPropagated))]
 			public static void Test ()
 			{
@@ -288,7 +282,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2070")]
-			[ExpectedWarning ("IL2075", ProducedBy = ProducedBy.Analyzer)] // Linker doesn't implement backward branches data flow yet
+			[ExpectedWarning ("IL2075", Tool.Analyzer, "")] // ILLink doesn't implement backward branches data flow yet
 			static void EnumerateInterfacesOnBaseTypes_Unannotated (Type type)
 			{
 				Type? t = type;

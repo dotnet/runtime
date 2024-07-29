@@ -75,5 +75,19 @@ namespace System.Reflection.Runtime.General
                 return (_reader != null) && Reader is global::Internal.Metadata.NativeFormat.MetadataReader;
             }
         }
+
+        public bool IsTypeDefinition
+        {
+            get
+            {
+                return _handle.AsHandle().HandleType == HandleType.TypeDefinition;
+            }
+        }
+
+        public QTypeDefinition ToTypeDefinition()
+        {
+            var reader = (MetadataReader)_reader;
+            return new QTypeDefinition(reader, _handle.AsHandle().ToTypeDefinitionHandle(reader));
+        }
     }
 }

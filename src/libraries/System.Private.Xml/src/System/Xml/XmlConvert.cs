@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Globalization;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.Collections;
-using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -33,7 +33,7 @@ namespace System.Xml
     /// </devdoc>
     public partial class XmlConvert
     {
-        internal static char[] crt = new char[] { '\n', '\r', '\t' };
+        private const string Crt = "\t\n\r";
 
         /// <devdoc>
         ///    <para>
@@ -311,12 +311,7 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // parse name
             int endPos = ValidateNames.ParseNameNoNamespaces(name, 0);
@@ -374,12 +369,7 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             int end = ValidateNames.ParseNCName(name, 0);
 
@@ -418,7 +408,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
@@ -435,7 +425,7 @@ namespace System.Xml
 
             if (token.StartsWith(' ') ||
                 token.EndsWith(' ') ||
-                token.IndexOfAny(crt) >= 0 ||
+                token.AsSpan().ContainsAny(Crt) ||
                 token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
@@ -474,7 +464,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNMTOKEN(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 return new XmlException(SR.Xml_EmptyName, string.Empty);
             }
@@ -490,7 +480,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNormalizedString(string str)
         {
-            if (str.IndexOfAny(crt) != -1)
+            if (str.AsSpan().ContainsAny(Crt))
             {
                 return new XmlSchemaException(SR.Sch_NotNormalizedString, str);
             }
@@ -1319,7 +1309,7 @@ namespace System.Xml
             {
                 // string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1341,7 +1331,7 @@ namespace System.Xml
             if (s != null && s.Length > 0)
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
-                if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (s.Length == 0 || s.Contains("##"))
                 {
                     return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
                 }
@@ -1403,7 +1393,7 @@ namespace System.Xml
 
         internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-            if (data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(data))
             {
                 return;
             }
@@ -1644,6 +1634,174 @@ namespace System.Xml
         internal static Exception CreateInvalidNameCharException(string name, int index, ExceptionType exceptionType)
         {
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
+        }
+
+        internal static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
+        {
+            string valueAsString = value ? "true" : "false";
+
+            charsWritten = valueAsString.Length;
+            return valueAsString.TryCopyTo(destination);
+        }
+
+        internal static bool TryFormat(char value, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 1;
+            if (destination.Length < 1) return false;
+
+            destination[0] = value;
+            return true;
+        }
+
+        internal static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, NumberFormatInfo.InvariantInfo);
+        }
+
+        internal static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(short value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(int value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(long value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(byte value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(ushort value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(uint value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(ulong value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        internal static bool TryFormat(float value, Span<char> destination, out int charsWritten)
+        {
+            ReadOnlySpan<char> valueSpan;
+
+            if (!float.IsFinite(value))
+            {
+                if (float.IsNaN(value))
+                    valueSpan = "NaN";
+                else
+                    valueSpan = float.IsNegative(value) ? "-INF" : "INF";
+            }
+            else if (IsNegativeZero((double)value))
+            {
+                valueSpan = "-0";
+            }
+            else
+            {
+                return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            }
+
+            charsWritten = valueSpan.Length;
+            return valueSpan.TryCopyTo(destination);
+        }
+
+        internal static bool TryFormat(double value, Span<char> destination, out int charsWritten)
+        {
+            ReadOnlySpan<char> valueSpan;
+
+            if (!double.IsFinite(value))
+            {
+                if (double.IsNaN(value))
+                    valueSpan = "NaN";
+                else
+                    valueSpan = double.IsNegative(value) ? "-INF" : "INF";
+            }
+            else if (IsNegativeZero(value))
+            {
+                valueSpan = "-0";
+            }
+            else
+            {
+                return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            }
+
+            charsWritten = valueSpan.Length;
+            return valueSpan.TryCopyTo(destination);
+        }
+
+        internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
+        {
+            return new XsdDuration(value).TryFormat(destination, out charsWritten);
+        }
+
+        internal static bool TryFormat(DateTime value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, format, DateTimeFormatInfo.InvariantInfo);
+        }
+
+        internal static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
+        }
+
+        internal static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten)
+        {
+            switch (dateTimeOption)
+            {
+                case XmlDateTimeSerializationMode.Local:
+                    value = SwitchToLocalTime(value);
+                    break;
+
+                case XmlDateTimeSerializationMode.Utc:
+                    value = SwitchToUtcTime(value);
+                    break;
+
+                case XmlDateTimeSerializationMode.Unspecified:
+                    value = new DateTime(value.Ticks, DateTimeKind.Unspecified);
+                    break;
+
+                case XmlDateTimeSerializationMode.RoundtripKind:
+                    break;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
+            }
+
+            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
+            return xsdDateTime.TryFormat(destination, out charsWritten);
+        }
+
+        internal static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten)
+        {
+            XsdDateTime xsdDateTime = new XsdDateTime(value);
+            return xsdDateTime.TryFormat(destination, out charsWritten);
+        }
+
+        internal static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, format, DateTimeFormatInfo.InvariantInfo);
+        }
+
+        internal static bool TryFormat(Guid value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten);
         }
     }
 }

@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
 unicode.cpp
 
 Abstract:
-
 Implementation of all functions related to Unicode support
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/thread.hpp"
@@ -24,10 +14,9 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
-#include "pal/utf8.h"
+#include <minipal/utf8.h>
 #include "pal/cruntime.h"
 #include "pal/stackstring.hpp"
-#include "pal/unicodedata.h"
 
 #include <pthread.h>
 #include <locale.h>
@@ -38,138 +27,6 @@ Revision History:
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(UNICODE);
-
-/*++
-Function:
-UnicodeDataComp
-This is the comparison function used by the bsearch function to search
-for unicode characters in the UnicodeData array.
-
-Parameter:
-pnKey
-The unicode character value to search for.
-elem
-A pointer to a UnicodeDataRec.
-
-Return value:
-<0 if pnKey < elem->nUnicodeValue
-0 if pnKey == elem->nUnicodeValue
->0 if pnKey > elem->nUnicodeValue
---*/
-static int UnicodeDataComp(const void *pnKey, const void *elem)
-{
-    WCHAR uValue = ((UnicodeDataRec*)elem)->nUnicodeValue;
-
-    if (*((INT*)pnKey) < uValue)
-    {
-        return -1;
-    }
-    else if (*((INT*)pnKey) > uValue)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-/*++
-Function:
-GetUnicodeData
-This function is used to get information about a Unicode character.
-
-Parameters:
-nUnicodeValue
-The numeric value of the Unicode character to get information about.
-pDataRec
-The UnicodeDataRec to fill in with the data for the Unicode character.
-
-Return value:
-TRUE if the Unicode character was found.
-
---*/
-BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
-{
-    BOOL bRet;
-
-    UnicodeDataRec *dataRec;
-    INT nNumOfChars = UNICODE_DATA_SIZE;
-    dataRec = (UnicodeDataRec *) bsearch(&nUnicodeValue, UnicodeData, nNumOfChars,
-                   sizeof(UnicodeDataRec), UnicodeDataComp);
-    if (dataRec == NULL)
-    {
-        bRet = FALSE;
-    }
-    else
-    {
-        bRet = TRUE;
-        *pDataRec = *dataRec;
-    }
-    return bRet;
-}
-
-wchar_16
-__cdecl
-PAL_ToUpperInvariant( wchar_16 c )
-{
-    UnicodeDataRec dataRec;
-
-    PERF_ENTRY(PAL_ToUpperInvariant);
-    ENTRY("PAL_ToUpperInvariant (c=%d)\n", c);
-
-    if (!GetUnicodeData(c, &dataRec))
-    {
-        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return c;
-    }
-
-    if ( dataRec.nFlag != LOWER_CASE )
-    {
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return c;
-    }
-    else
-    {
-        LOGEXIT("PAL_ToUpperInvariant returns int %d\n", dataRec.nOpposingCase );
-        PERF_EXIT(PAL_ToUpperInvariant);
-        return dataRec.nOpposingCase;
-    }
-}
-
-wchar_16
-__cdecl
-PAL_ToLowerInvariant( wchar_16 c )
-{
-    UnicodeDataRec dataRec;
-
-    PERF_ENTRY(PAL_ToLowerInvariant);
-    ENTRY("PAL_ToLowerInvariant (c=%d)\n", c);
-
-    if (!GetUnicodeData(c, &dataRec))
-    {
-        TRACE( "Unable to retrieve unicode data for the character %c.\n", c );
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return c;
-    }
-
-    if ( dataRec.nFlag != UPPER_CASE )
-    {
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", c );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return c;
-    }
-    else
-    {
-        LOGEXIT("PAL_ToLowerInvariant returns int %d\n", dataRec.nOpposingCase );
-        PERF_EXIT(PAL_ToLowerInvariant);
-        return dataRec.nOpposingCase;
-    }
-}
 
 /*++
 Function:
@@ -253,16 +110,20 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use UTF8ToUnicode on all systems, since it replaces
-    // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cbMultiByte <= -1)
+        if (cbMultiByte < 0)
+            cbMultiByte = strlen(lpMultiByteStr) + 1;
+
+        if (!lpWideCharStr || cchWideChar == 0)
+            retval = minipal_get_length_utf8_to_utf16(lpMultiByteStr, cbMultiByte, dwFlags);
+
+        if (lpWideCharStr)
         {
-        cbMultiByte = strlen(lpMultiByteStr) + 1;
+            if (cchWideChar == 0) cchWideChar = retval;
+            retval = minipal_convert_utf8_to_utf16(lpMultiByteStr, cbMultiByte, (CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
         }
 
-        retval = UTF8ToUnicode(lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar, dwFlags);
         goto EXIT;
     }
 
@@ -338,15 +199,20 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use UnicodeToUTF8 on all systems because we use
-    // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        if (cchWideChar == -1)
-        {
+        if (cchWideChar < 0)
             cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
+
+        if (!lpMultiByteStr || cbMultiByte == 0)
+            retval = minipal_get_length_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, dwFlags);
+
+        if (lpMultiByteStr)
+        {
+            if (cbMultiByte == 0) cbMultiByte = retval;
+            retval = minipal_convert_utf16_to_utf8((CHAR16_T*)lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, dwFlags);
         }
-        retval = UnicodeToUTF8(lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte);
+
         goto EXIT;
     }
 

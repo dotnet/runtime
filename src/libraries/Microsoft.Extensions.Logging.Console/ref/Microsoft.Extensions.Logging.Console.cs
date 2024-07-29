@@ -9,6 +9,30 @@ namespace Microsoft.Extensions.Logging
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public static partial class ConsoleLoggerExtensions
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel, bool includeScopes) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, bool includeScopes) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> configure) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Binding TOptions to configuration values may require generating dynamic code at runtime.")]
@@ -27,6 +51,16 @@ namespace Microsoft.Extensions.Logging
 }
 namespace Microsoft.Extensions.Logging.Console
 {
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.")]
+    public partial class ConfigurationConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
+    {
+        public ConfigurationConsoleLoggerSettings(Microsoft.Extensions.Configuration.IConfiguration configuration) { }
+        public Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get { throw null; } }
+        public bool IncludeScopes { get { throw null; } }
+        public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
+        public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
+    }
     public abstract partial class ConsoleFormatter
     {
         protected ConsoleFormatter(string name) { }
@@ -85,6 +119,27 @@ namespace Microsoft.Extensions.Logging.Console
     {
         Wait = 0,
         DropWrite = 1,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
+    public partial class ConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
+    {
+        public ConsoleLoggerSettings() { }
+        public Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get { throw null; } set { } }
+        public bool DisableColors { get { throw null; } set { } }
+        public bool IncludeScopes { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<string, Microsoft.Extensions.Logging.LogLevel> Switches { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
+        public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ObsoleteAttribute("This type is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.", error: true)]
+    public partial interface IConsoleLoggerSettings
+    {
+        Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get; }
+        bool IncludeScopes { get; }
+        Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload();
+        bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level);
     }
     public partial class JsonConsoleFormatterOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions
     {

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -40,9 +41,13 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
+            if (delayCertificate && OperatingSystem.IsAndroid())
+            {
+                throw new SkipTestException("Android does not support delayed certificate selection.");
+            }
+
             X509Certificate? remoteCertificate = null;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
@@ -105,10 +110,18 @@ namespace System.Net.Security.Tests
             }
         }
 
+        public enum ClientCertSource
+        {
+            ClientCertificate,
+            SelectionCallback,
+            CertificateContext
+        }
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
+        [InlineData(ClientCertSource.ClientCertificate)]
+        [InlineData(ClientCertSource.SelectionCallback)]
+        [InlineData(ClientCertSource.CertificateContext)]
+        public async Task CertificateValidationClientServer_EndToEnd_Ok(ClientCertSource clientCertSource)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
             var server = new TcpListener(endPoint);
@@ -117,7 +130,7 @@ namespace System.Net.Security.Tests
             _clientCertificateRemovedByFilter = false;
 
             if (PlatformDetection.IsWindows7 &&
-                !useClientSelectionCallback &&
+                clientCertSource == ClientCertSource.ClientCertificate &&
                 !Capability.IsTrustedRootCertificateInstalled())
             {
                 // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
@@ -127,6 +140,7 @@ namespace System.Net.Security.Tests
                 // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
                 // by the server using certificates from the Trusted Root Authorities certificate store.
                 // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+                // This filtering happens only when using the ClientCertificates collection
                 _clientCertificateRemovedByFilter = true;
             }
 
@@ -141,7 +155,7 @@ namespace System.Net.Security.Tests
 
                 LocalCertificateSelectionCallback clientCertCallback = null;
 
-                if (useClientSelectionCallback)
+                if (clientCertSource == ClientCertSource.SelectionCallback)
                 {
                     clientCertCallback = ClientCertSelectionCallback;
                 }
@@ -160,7 +174,7 @@ namespace System.Net.Security.Tests
                     string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
                     var clientCerts = new X509CertificateCollection();
 
-                    if (!useClientSelectionCallback)
+                    if (clientCertSource == ClientCertSource.ClientCertificate)
                     {
                         clientCerts.Add(_clientCertificate);
                     }
@@ -173,6 +187,12 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = SslProtocolSupport.DefaultSslProtocols,
                         CertificateChainPolicy = new X509ChainPolicy(),
                     };
+
+                    if (clientCertSource == ClientCertSource.CertificateContext)
+                    {
+                        options.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
+                    }
+
                     options.CertificateChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
                     Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(options, default);
 

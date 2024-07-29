@@ -32,6 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.PropertyPublicParameterlessConstructorWithExplicitAccessors = null;
 			instance.PropertyPublicConstructorsWithExplicitAccessors = null;
 			instance.PropertyNonPublicConstructorsWithExplicitAccessors = null;
+			_ = PropertyWithUnsupportedType;
 
 			TestAutomaticPropagation ();
 
@@ -204,18 +205,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			// This test creates a property and field which linker will recognized as a compiler generated backing field for the property
-			// The purpose of the test is to verify, that linker flows the annotation to the backing field and since there's
+			// This test creates a property and field which trimming tools will recognize as a compiler generated backing field for the property
+			// The purpose of the test is to verify, that trimming tools flow the annotation to the backing field and since there's
 			// no good way to reference actual compiler generated backing field, we "Fake" it here as compiler generated.
 			// But this doesn't fool the analyzer - since it's seen as yet another user declared field, so it doesn't propagate the
 			// annotation.
 			// This discrepancy is currently by design and not worth the trouble to implement logic for it in the analyzer.
 			// Producing fields which are annotated with CompilerGeneratedAttribute and making them look like backing fields
-			// is highly unlikely to be done by anybody. If it happens, the analyzer will produce warnings which the linker will not
+			// is highly unlikely to be done by anybody. If it happens, the analyzer will produce warnings which the trimming tools will not
 			// but those warnings are not really wrong, so it's better if the developer fixes them anyway.
 			[ExpectedWarning ("IL2077", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
-				nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field),
-				ProducedBy = ProducedBy.Analyzer)]
+				nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field), Tool.Analyzer, "")]
 			public void TestPropertyWhichLooksLikeCompilerGenerated ()
 			{
 				// If the property was correctly recognized both the property getter and the backing field should get the annotation.
@@ -230,8 +230,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static Type PropertyWhichLooksLikeCompilerGenerated {
 				// See above comment about fake compiler generated backing fields - this warning is expected from the analyzer
 				[ExpectedWarning ("IL2078", nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated) + ".get",
-					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field),
-					ProducedBy = ProducedBy.Analyzer)]
+					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWhichLooksLikeCompilerGenerated_Field), Tool.Analyzer, "")]
 				get {
 					return PropertyWhichLooksLikeCompilerGenerated_Field;
 				}
@@ -271,17 +270,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
 			[ExpectedWarning ("IL2042",
-				"Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields",
-				ProducedBy = ProducedBy.Trimmer)]
+				"Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithDifferentBackingFields", Tool.Trimmer | Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2078",
 				nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithDifferentBackingFields) + ".get",
-				"Type",
-				ProducedBy = ProducedBy.Analyzer)]
+				"Type", Tool.Analyzer, "")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithDifferentBackingFields {
 				[ExpectedWarning ("IL2078",
-					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithDifferentBackingFields) + ".get",
-					ProducedBy = ProducedBy.Trimmer)]
+					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithDifferentBackingFields) + ".get", Tool.Trimmer | Tool.NativeAot, "")]
 				get {
 					return PropertyWithDifferentBackingFields_GetterField;
 				}
@@ -298,25 +294,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2056", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes_Field",
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2056", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes_Field", Tool.Trimmer | Tool.NativeAot, "")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			[CompilerGenerated]
 			Type PropertyWithExistingAttributes_Field;
 
-			[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2043", ["PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get"], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2043", [ "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set"], Tool.Analyzer, "")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithExistingAttributes {
-				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get",
-					ProducedBy = ProducedBy.Trimmer)]
+				// On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				get { return PropertyWithExistingAttributes_Field; }
 
-				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set",
-					ProducedBy = ProducedBy.Trimmer)]
+				// On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+				[ExpectedWarning ("IL2043", "PropertyWithExistingAttributes", "PropertyWithExistingAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
 				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				set { PropertyWithExistingAttributes_Field = value; }
 			}
@@ -336,25 +329,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Analyzer doesn't try to detect backing fields of properties: https://github.com/dotnet/linker/issues/2273
-			[ExpectedWarning ("IL2056", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes_Field",
-				ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2056", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes_Field", Tool.Trimmer | Tool.NativeAot, "")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			[CompilerGenerated]
 			Type PropertyWithConflictingAttributes_Field;
 
-			[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2043", ["PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get"], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2043", ["PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set"], Tool.Analyzer, "")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 			Type PropertyWithConflictingAttributes {
-				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get",
-					ProducedBy = ProducedBy.Trimmer)]
+				// On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.get", Tool.Trimmer | Tool.NativeAot, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 				get { return PropertyWithConflictingAttributes_Field; }
 
-				// On property/accessor mismatch, linker warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
-				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set",
-					ProducedBy = ProducedBy.Trimmer)]
+				// On property/accessor mismatch, ILLink warns on accessor and analyzer warns on property https://github.com/dotnet/linker/issues/2654
+				[ExpectedWarning ("IL2043", "PropertyWithConflictingAttributes", "PropertyWithConflictingAttributes.set", Tool.Trimmer | Tool.NativeAot, "")]
 				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 				set { PropertyWithConflictingAttributes_Field = value; }
 			}
@@ -381,8 +371,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type PropertyWithConflictingNoneAttributes {
 				// See above comment about fake compiler generated backing fields - this warning is expected from analyzer
 				[ExpectedWarning ("IL2078", nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithConflictingNoneAttributes) + ".get",
-					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithConflictingNoneAttributes_Field),
-					ProducedBy = ProducedBy.Analyzer)]
+					nameof (TestAutomaticPropagationType) + "." + nameof (PropertyWithConflictingNoneAttributes_Field), Tool.Analyzer, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.None)]
 				get { return PropertyWithConflictingNoneAttributes_Field; }
 
@@ -398,8 +387,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Trimmer and analyzer handle formatting of indexers differently.
-			[ExpectedWarning ("IL2067", nameof (PropertyWithIndexer) + ".Item.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2067", nameof (PropertyWithIndexer) + ".this[Int32].set", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2067", nameof (PropertyWithIndexer) + ".Item.set", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2067", nameof (PropertyWithIndexer) + ".this[Int32].set", Tool.Analyzer, "")]
 			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)")]
 			[LogDoesNotContain ("'Value passed to parameter 'index' of method 'Mono.Linker.Tests.Cases.DataFlow.PropertyDataFlow.TestAutomaticPropagationType.PropertyWithIndexer.Item.set'")]
 			public void TestPropertyWithIndexerWithoutMatchingAnnotations (Type myType)
@@ -417,8 +406,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 				public Type this[int index] {
 					// Trimmer and analyzer handle formatting of indexers differently.
-					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".Item.get", ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".this[Int32].get", ProducedBy = ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".Item.get", Tool.Trimmer | Tool.NativeAot, "")]
+					[ExpectedWarning ("IL2063", nameof (PropertyWithIndexer) + ".this[Int32].get", Tool.Analyzer, "")]
 					get => Property_Field[index];
 					set => Property_Field[index] = value;
 				}
@@ -443,8 +432,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				// https://github.com/dotnet/linker/issues/2196
-				// TestPropertyWithAttributeMarkingSelfType.TestProperty = true;
+				TestPropertyWithAttributeMarkingSelfType.TestProperty = true;
 			}
 		}
 
@@ -480,9 +468,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			public Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
-			[ExpectedWarning ("IL2074", nameof (WriteToGetOnlyProperty), nameof (GetUnknownType),
-				ProducedBy = ProducedBy.Trimmer)]
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
+			[ExpectedWarning ("IL2074", nameof (WriteToGetOnlyProperty), nameof (GetUnknownType), Tool.Trimmer | Tool.NativeAot, "")]
 			public WriteToGetOnlyProperty ()
 			{
 				GetOnlyProperty = GetUnknownType ();
@@ -504,6 +491,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static void TestNullCoalesce ()
 			{
 				Property = GetUnknownType () ?? GetTypeWithPublicConstructors ();
+			}
+
+			static int? IntProperty { get; set; }
+
+			static int? GetMaybeNullInt () => null;
+
+			static int GetInt () => 1;
+
+			static void TestCompoundAssignmentNullCoalesce ()
+			{
+				IntProperty += (GetMaybeNullInt () ?? GetInt ());
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (Property))]
@@ -537,6 +535,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				TestNullCoalesce ();
+				TestCompoundAssignmentNullCoalesce ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
 				new WriteCapturedProperty ().TestNestedNullCoalescingAssignment ();
@@ -548,11 +547,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
-			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetUnknownType),
-				ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetTypeWithPublicConstructors),
-				ProducedBy = ProducedBy.Trimmer)]
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
+			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetUnknownType), Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetTypeWithPublicConstructors), Tool.Trimmer | Tool.NativeAot, "")]
 			public WriteCapturedGetOnlyProperty ()
 			{
 				GetOnlyProperty = GetUnknownType () ?? GetTypeWithPublicConstructors ();
@@ -664,15 +661,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set => throw new NotImplementedException ();
 			}
 
-			[ExpectedWarning ("IL2072", "this[Index].get", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2072", "Item.get", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", ["this[Index].get", nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2072", ["Item.get", nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestRead (ExplicitIndexerAccess instance = null)
 			{
 				instance[new Index (1)].RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "this[Index].set", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "Item.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), "this[Index].set"], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestWrite (ExplicitIndexerAccess instance = null)
 			{
 				instance[^1] = GetTypeWithPublicConstructors ();
@@ -695,22 +692,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			int Length => throw new NotImplementedException ();
 
-			[ExpectedWarning ("IL2072", "this[Int32].get", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2072", "Item.get", nameof (DataFlowTypeExtensions.RequiresAll), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", ["this[Int32].get", nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2072", ["Item.get", nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestRead (ImplicitIndexerAccess instance = null)
 			{
 				instance[new Index (1)].RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "this[Int32].set", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), "Item.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), "this[Int32].set"], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestWrite (ImplicitIndexerAccess instance = null)
 			{
 				instance[^1] = GetTypeWithPublicConstructors ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "this[Int32].set", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "Item.set", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", [nameof (GetUnknownType), "this[Int32].set"], Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2072", [nameof (GetUnknownType), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
 			static void TestNullCoalescingAssignment (ImplicitIndexerAccess instance = null)
 			{
 				instance[new Index (1)] ??= GetUnknownType ();
@@ -734,8 +731,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						get => throw new NotImplementedException ();
 					}
 
-					[ExpectedWarning ("IL2067", "this[Type].get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL2067", "Item.get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2067", ["this[Type].get", nameof (ParamDoesNotMeetRequirements)], Tool.Analyzer, "")]
+					[ExpectedWarning ("IL2067", ["Item.get", nameof (ParamDoesNotMeetRequirements)], Tool.Trimmer | Tool.NativeAot, "")]
 					static void ParamDoesNotMeetRequirements (Type t)
 					{
 						var x = new IndexWithTypeWithDam ();
@@ -748,8 +745,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 						_ = x[t];
 					}
 
-					[ExpectedWarning ("IL2087", "this[Type].get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
-					[ExpectedWarning ("IL2087", "Item.get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2087", ["this[Type].get", nameof (TypeParamDoesNotMeetRequirements)], Tool.Analyzer, "")]
+					[ExpectedWarning ("IL2087", ["Item.get", nameof (TypeParamDoesNotMeetRequirements)], Tool.Trimmer | Tool.NativeAot, "")]
 					static void TypeParamDoesNotMeetRequirements<T> ()
 					{
 						var x = new IndexWithTypeWithDam ();
@@ -789,8 +786,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				static Type fieldWithMethods;
 
-				[ExpectedWarning ("IL2067", "this[Type].get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2067", "Item.get", nameof (ParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2067", ["this[Type].get", nameof (ParamDoesNotMeetRequirements)], Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2067", ["Item.get", nameof (ParamDoesNotMeetRequirements)], Tool.Trimmer | Tool.NativeAot, "")]
 				static void ParamDoesNotMeetRequirements (Type t)
 				{
 					var x = new IndexWithTypeWithDam ();
@@ -803,8 +800,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					fieldWithMethods = x[t];
 				}
 
-				[ExpectedWarning ("IL2087", "this[Type].get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2087", "Item.get", nameof (TypeParamDoesNotMeetRequirements), ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2087", ["this[Type].get", nameof (TypeParamDoesNotMeetRequirements)], Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2087", ["Item.get", nameof (TypeParamDoesNotMeetRequirements)], Tool.Trimmer | Tool.NativeAot, "")]
 				static void TypeParamDoesNotMeetRequirements<T> ()
 				{
 					var x = new IndexWithTypeWithDam ();
@@ -826,16 +823,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					fieldWithMethods = x[t];
 				}
 
-				[ExpectedWarning ("IL2067", "this[Type].set", nameof (t), "idx", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2067", "Item.set", nameof (t), "idx", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2067", ["this[Type].set", nameof (t), "idx"], Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2067", ["Item.set", nameof (t), "idx"], Tool.Trimmer | Tool.NativeAot, "")]
 				static void ValueMeetsRequirementsIndexDoesNot (Type t)
 				{
 					var x = new IndexWithTypeWithDam ();
 					x[t] = fieldWithMethods;
 				}
 
-				[ExpectedWarning ("IL2067", "this[Type].set", nameof (tUnannotated), "value", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL2067", "Item.set", nameof (tUnannotated), "value", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2067", ["this[Type].set", nameof (tUnannotated), "value"], Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2067", ["Item.set", nameof (tUnannotated), "value"], Tool.Trimmer | Tool.NativeAot, "")]
 				static void ValueDoesNotMeetRequirementsIndexDoes ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t, Type tUnannotated)
 				{
 					var x = new IndexWithTypeWithDam ();

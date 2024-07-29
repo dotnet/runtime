@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
@@ -26,6 +29,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddLogging();
             services.AddOptions();
+#if NET8_0_OR_GREATER
+            services.AddMetrics();
+#endif
 
             //
             // Core abstractions
@@ -45,16 +51,37 @@ namespace Microsoft.Extensions.DependencyInjection
             // Misc infrastructure
             //
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, LoggingHttpMessageHandlerBuilderFilter>());
+#if NET8_0_OR_GREATER
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, MetricsFactoryHttpMessageHandlerFilter>());
+#endif
 
             // This is used to track state and report errors **DURING** service registration. This has to be an instance
             // because we access it by reaching into the service collection.
             services.TryAddSingleton(new HttpClientMappingRegistry());
 
+            // This is used to store configuration for the default builder.
+            services.TryAddSingleton(new DefaultHttpClientConfigurationTracker());
+
             // Register default client as HttpClient
-            services.TryAddTransient(s =>
-            {
-                return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
-            });
+            TryAddEmptyNameHttpClient(services);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds a delegate that will be used to configure all <see cref="HttpClient"/> instances.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/>.</param>
+        /// <param name="configure">A delegate that is used to configure an <see cref="IHttpClientBuilder"/>.</param>
+        /// <returns>The <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection ConfigureHttpClientDefaults(this IServiceCollection services, Action<IHttpClientBuilder> configure)
+        {
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configure);
+
+            AddHttpClient(services);
+
+            configure(new DefaultHttpClientBuilder(services, name: null!));
 
             return services;
         }
@@ -803,6 +830,35 @@ namespace Microsoft.Extensions.DependencyInjection
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClient<TClient>(factory);
             return builder;
+        }
+
+        internal static HttpClientMappingRegistry GetMappingRegistry(IServiceCollection services)
+        {
+            var registry = (HttpClientMappingRegistry?)services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
+            Debug.Assert(registry != null);
+            return registry;
+        }
+
+        private static void TryAddEmptyNameHttpClient(IServiceCollection services)
+        {
+            HttpClientMappingRegistry mappingRegistry = GetMappingRegistry(services);
+
+            if (mappingRegistry.EmptyNameHttpClientDescriptor is not null)
+            {
+                return;
+            }
+
+            if (services.Any(sd => sd.ServiceType == typeof(HttpClient) && sd.ServiceKey is null))
+            {
+                return;
+            }
+
+            mappingRegistry.EmptyNameHttpClientDescriptor = ServiceDescriptor.Transient(s =>
+            {
+                return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
+            });
+
+            services.Add(mappingRegistry.EmptyNameHttpClientDescriptor);
         }
     }
 }

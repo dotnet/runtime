@@ -4,12 +4,10 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
-
-using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
 using CFIndex = System.IntPtr;
+using CFStringRef = System.IntPtr;
 
 internal static partial class Interop
 {
@@ -156,7 +154,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="values">The values to put in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static unsafe SafeCreateHandle CFArrayCreate(Span<IntPtr> values)
+        internal static unsafe SafeCreateHandle CFArrayCreate(ReadOnlySpan<IntPtr> values)
         {
             fixed (IntPtr* pValues = &MemoryMarshal.GetReference(values))
             {

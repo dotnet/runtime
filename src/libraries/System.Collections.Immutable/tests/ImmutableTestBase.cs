@@ -28,14 +28,16 @@ namespace System.Collections.Immutable.Tests
             }
             else
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)expected, (object)actual); //, message, formattingArgs);
+#pragma warning restore xUnit2005
             }
         }
 
         internal static void CollectionAssertAreEquivalent<T>(ICollection<T> expected, ICollection<T> actual)
         {
             Assert.Equal(expected.Count, actual.Count);
-            foreach (var value in expected)
+            foreach (T value in expected)
             {
                 Assert.Contains(value, actual);
             }

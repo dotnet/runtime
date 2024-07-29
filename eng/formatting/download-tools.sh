@@ -15,14 +15,28 @@ done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 function DownloadClangTool {
-    targetPlatform=$(dotnet --info |grep RID:)
-    targetPlatform=${targetPlatform##*RID:* }
 
-    toolUrl=https://clrjit.blob.core.windows.net/clang-tools/${targetPlatform}/$1
+    clangVersion="17.0.6"
+    clangToolsRootUrl="https://clrjit2.blob.core.windows.net/clang-tools"
+
+    clangPlatform="$(dotnet --info | grep 'RID:')"
+    clangPlatform="${clangPlatform##*RID:* }"
+    echo "dotnet RID: ${clangPlatform}"
+
+    # override common RIDs with compatible version so we don't need to upload binaries for each RID
+    case $clangPlatform in
+        ubuntu.*-x64)
+        clangPlatform=linux-x64
+        ;;
+    esac
+
+    toolUrl="${clangToolsRootUrl}/${clangVersion}/${clangPlatform}/$1"
     toolOutput=$2/$1
 
+    echo "Downloading $1 from ${toolUrl} to ${toolOutput}"
+
     if [[ ! -x "$toolOutput" ]]; then
-        curl --retry 5 -o "${toolOutput}" "$toolUrl"
+        curl --silent --retry 5 --fail -o "${toolOutput}" "$toolUrl"
         chmod 751 $toolOutput
     fi
 

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.DirectoryServices;
-using System.Text;
+using System.Globalization;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -780,7 +780,7 @@ namespace System.DirectoryServices.AccountManagement
         internal static string ConstructDnsDomainNameFromDn(string dn)
         {
             // Split the DN into its RDNs
-            string[] ncComponents = dn.Split(new char[] { ',' });
+            string[] ncComponents = dn.Split(ADStoreCtx.s_comma);
 
             StringBuilder sb = new StringBuilder();
 

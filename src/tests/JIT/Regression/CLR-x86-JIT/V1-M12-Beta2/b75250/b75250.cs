@@ -3,7 +3,8 @@
 //
 
 using System;
-class testout1
+using Xunit;
+public class testout1
 {
 
     public struct VT
@@ -38,7 +39,8 @@ class testout1
         return retval;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 5;
@@ -50,7 +52,6 @@ class testout1
         vt.a7 = 6L;
         CL cl = new CL();
         long val = Func(cl, vt);
-        return 100;
     }
 
 }

@@ -36,7 +36,7 @@ HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
-    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo11), reinterpret_cast<void **>(&this->pCorProfilerInfo));
+    HRESULT queryInterfaceResult = pICorProfilerInfoUnk->QueryInterface(__uuidof(ICorProfilerInfo15), reinterpret_cast<void **>(&this->pCorProfilerInfo));
     if (FAILED(queryInterfaceResult))
     {
         printf("Profiler.dll!Profiler::Initialize failed to QI for ICorProfilerInfo.\n");
@@ -592,12 +592,12 @@ String Profiler::GetFunctionIDName(FunctionID funcId)
 
     String name;
 
-    ClassID classId = NULL;
-    ModuleID moduleId = NULL;
-    mdToken token = NULL;
-    ULONG32 nTypeArgs = NULL;
+    ClassID classId = 0;
+    ModuleID moduleId = 0;
+    mdToken token = 0;
+    ULONG32 nTypeArgs = 0;
     ClassID typeArgs[SHORT_LENGTH];
-    COR_PRF_FRAME_INFO frameInfo = NULL;
+    COR_PRF_FRAME_INFO frameInfo = 0;
 
     HRESULT hr = S_OK;
     hr = pCorProfilerInfo->GetFunctionInfo2(funcId,
@@ -625,11 +625,11 @@ String Profiler::GetFunctionIDName(FunctionID funcId)
         return WCHAR("FuncNameLookupFailed");
     }
 
-    WCHAR funcName[STRING_LENGTH];
+    WCHAR funcName[STR_LENGTH];
     hr = pIMDImport->GetMethodProps(token,
                                     NULL,
                                     funcName,
-                                    STRING_LENGTH,
+                                    STR_LENGTH,
                                     0,
                                     0,
                                     NULL,
@@ -671,7 +671,7 @@ String Profiler::GetClassIDName(ClassID classId)
     ClassID typeArgs[SHORT_LENGTH];
     HRESULT hr = S_OK;
 
-    if (classId == NULL)
+    if (classId == 0)
     {
         printf("FAIL: Null ClassID passed in\n");
         return WCHAR("");
@@ -753,11 +753,11 @@ String Profiler::GetClassIDName(ClassID classId)
 
 String Profiler::GetModuleIDName(ModuleID modId)
 {
-    WCHAR moduleName[STRING_LENGTH];
+    WCHAR moduleName[STR_LENGTH];
     ULONG nameLength = 0;
     AssemblyID assemID;
 
-    if (modId == NULL)
+    if (modId == 0)
     {
         printf("FAIL: Null ModuleID\n");
         return WCHAR("NullModuleIDPassedIn");
@@ -765,7 +765,7 @@ String Profiler::GetModuleIDName(ModuleID modId)
 
     HRESULT hr = pCorProfilerInfo->GetModuleInfo(modId,
                                                  NULL,
-                                                 STRING_LENGTH,
+                                                 STR_LENGTH,
                                                  &nameLength,
                                                  moduleName,
                                                  &assemID);
@@ -785,7 +785,7 @@ void Profiler::SetCallback(ProfilerCallback cb)
     s_callbackSet.Signal();
 }
 
-void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo)
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo15  *pCorProfilerInfo)
 {
     s_callbackSet.Wait();
 
@@ -795,7 +795,7 @@ void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo
         // some crst order asserts if we call back in to managed code. Spin up
         // a new thread to avoid that.
         pCorProfilerInfo->InitializeCurrentThread();
-        s_callback();
+        s_callback(); 
     });
 
     callbackThread.join();

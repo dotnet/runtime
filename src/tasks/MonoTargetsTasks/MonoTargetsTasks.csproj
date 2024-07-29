@@ -1,22 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETFrameworkTasks)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <!-- On .NET Framework, make sure we don't include a copy of the MSBuild assemblies with the task. The NETCore version doesn't do it already. -->
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" IncludeAssets="compile" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" IncludeAssets="compile" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
     <!-- These versions should not be newer than what Visual Studio MSBuild uses -->
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" PrivateAssets="All" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,12 +24,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Templates\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="EmitBundleTask\*.cs" />
     <Compile Include="ILStrip\ILStrip.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />
     <Compile Include="JsonToItemsTaskFactory\JsonToItemsTaskFactory.cs" />
     <Compile Include="NetTraceToMibcConverterTask\NetTraceToMibcConverter.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="MarshalingPInvokeScanner\MinimalMarshalingTypeCompatibilityProvider.cs" />
+    <Compile Include="MarshalingPInvokeScanner\MarshalingPInvokeScanner.cs" />
     <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 

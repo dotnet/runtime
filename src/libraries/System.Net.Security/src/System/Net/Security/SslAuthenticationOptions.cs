@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Authentication;
@@ -10,6 +11,7 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -40,17 +42,15 @@ namespace System.Net.Security
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslClientAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
-            // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-            if (sslClientAuthenticationOptions.TargetHost != null)
-            {
-                TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
-            }
+            CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
+            TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -103,6 +103,7 @@ namespace System.Net.Security
 
             IsServer = true;
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslServerAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
@@ -119,8 +120,10 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
+                    bool ocspFetch = false;
+                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: !ocspFetch);
                 }
                 else
                 {
@@ -149,7 +152,7 @@ namespace System.Net.Security
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
         {
-            if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
+            if ((protocols & (SslProtocols.Tls12 | SslProtocols.Tls13)) != SslProtocols.None)
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
@@ -181,5 +184,10 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+        internal bool AllowTlsResume { get; set; }
+
+#if TARGET_ANDROID
+        internal SslStream.JavaProxy? SslStreamProxy { get; set; }
+#endif
     }
 }

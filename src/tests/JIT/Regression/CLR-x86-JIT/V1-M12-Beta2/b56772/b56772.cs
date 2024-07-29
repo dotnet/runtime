@@ -3,10 +3,12 @@
 
 using System;
 using System.Text;
+using Xunit;
 
 public class InternTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         StringBuilder sb = new StringBuilder().Append('A').Append('B').Append('C');
 

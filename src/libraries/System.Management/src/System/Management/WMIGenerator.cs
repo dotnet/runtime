@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CSharp;
-using Microsoft.VisualBasic;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections;
@@ -10,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Versioning;
+using Microsoft.CSharp;
+using Microsoft.VisualBasic;
 
 namespace System.Management
 {
@@ -64,7 +64,7 @@ namespace System.Management
 
         private ManagementClass classobj;
         private CodeDomProvider cp;
-        private TextWriter tw;
+        private StreamWriter tw;
         private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
@@ -926,7 +926,7 @@ namespace System.Management
         /// <param name="isLiteral"></param>
         /// <param name="isBrowsable"></param>
         /// <param name="Comment"></param>
-        private void GeneratePublicReadOnlyProperty(string propName, string propType, object propValue, bool isLiteral, bool isBrowsable, string Comment)
+        private void GeneratePublicReadOnlyProperty(string propName, string propType, string propValue, bool isLiteral, bool isBrowsable, string Comment)
         {
             cmp = new CodeMemberProperty();
             cmp.Name = propName;
@@ -950,14 +950,14 @@ namespace System.Management
 
             if (isLiteral)
             {
-                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue.ToString())));
+                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue)));
             }
             else
             {
                 cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(propValue)));
             }
             cc.Members.Add(cmp);
-            if (Comment != null && Comment.Length != 0)
+            if (!string.IsNullOrEmpty(Comment))
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -1001,7 +1001,7 @@ namespace System.Management
                 new CodeSnippetExpression("value")));
             cc.Members.Add(cmp);
 
-            if (Comment != null && Comment.Length != 0)
+            if (!string.IsNullOrEmpty(Comment))
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -3710,7 +3710,7 @@ namespace System.Management
             }
             cc.Members.Add(cf);
 
-            if (Comment != null && Comment.Length != 0)
+            if (!string.IsNullOrEmpty(Comment))
             {
                 cf.Comments.Add(new CodeCommentStatement(Comment));
             }

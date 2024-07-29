@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 public enum TestEnum
 {
     red = 1,
@@ -35,7 +36,8 @@ public class AA
 
 public class App
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -48,7 +50,6 @@ public class App
         }
 
         Console.WriteLine("Passed.");
-        return 100;
     }
 
 }

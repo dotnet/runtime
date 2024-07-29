@@ -1,13 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Suppress CA2249: Consider using String.Contains instead of String.IndexOf to avoid ifdefs. -->
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
-    <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
-    <NoWarn>$(NoWarn);CA1845</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
@@ -39,6 +41,8 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Semaphore.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.Semaphore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject.cs"
@@ -133,6 +137,8 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -149,4 +155,5 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\src\System.Diagnostics.PerformanceCounter.csproj" />
   </ItemGroup>
+
 </Project>

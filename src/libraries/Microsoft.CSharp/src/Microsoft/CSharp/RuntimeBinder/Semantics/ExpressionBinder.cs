@@ -1151,7 +1151,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             CType arrayType = (ArrayType)TypeManager.SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
 
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, new[] { 0 });
+                            ExprArrayInit arrayInit = ExprFactory.CreateArrayInit(arrayType, null, null, s_zero);
                             arrayInit.GeneratedForParamArray = true;
                             arrayInit.OptionalArguments = named.Value;
 
@@ -1229,7 +1229,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType elementType = subArr.ElementType;
 
             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, new[] { 0 });
+            ExprArrayInit exprArrayInit = ExprFactory.CreateArrayInit(substitutedArrayType, null, null, s_zero);
             exprArrayInit.GeneratedForParamArray = true;
 
             if (it.AtEnd())
@@ -1275,19 +1275,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private static readonly PredefinedType[] s_rgptIntOp =
-        {
+        private static ReadOnlySpan<PredefinedType> RgptIntOp =>
+        [
             PredefinedType.PT_INT,
             PredefinedType.PT_UINT,
             PredefinedType.PT_LONG,
             PredefinedType.PT_ULONG
-        };
+        ];
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal CType ChooseArrayIndexType(Expr args)
         {
             // first, select the allowable types
-            foreach (PredefinedType predef in s_rgptIntOp)
+            foreach (PredefinedType predef in RgptIntOp)
             {
                 CType type = GetPredefindType(predef);
                 foreach (Expr arg in args.ToEnumerable())
@@ -1572,8 +1572,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private static readonly PredefinedName[] s_EK2NAME =
-        {
+        private static ReadOnlySpan<PredefinedName> EK2NAME =>
+        [
             PredefinedName.PN_OPEQUALS,
             PredefinedName.PN_OPCOMPARE,
             PredefinedName.PN_OPTRUE,
@@ -1600,12 +1600,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedName.PN_OPCOMPLEMENT,
             PredefinedName.PN_OPLEFTSHIFT,
             PredefinedName.PN_OPRIGHTSHIFT,
-        };
+        ];
 
         private static Name ExpressionKindName(ExpressionKind ek)
         {
-            Debug.Assert(ek >= ExpressionKind.FirstOp && (ek - ExpressionKind.FirstOp) < (int)s_EK2NAME.Length);
-            return NameManager.GetPredefinedName(s_EK2NAME[ek - ExpressionKind.FirstOp]);
+            Debug.Assert(ek >= ExpressionKind.FirstOp && (ek - ExpressionKind.FirstOp) < (int)EK2NAME.Length);
+            return NameManager.GetPredefinedName(EK2NAME[ek - ExpressionKind.FirstOp]);
         }
 
         private static void CheckUnsafe(CType type)
@@ -1617,6 +1617,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         private AggregateSymbol ContextForMemberLookup => Context.ContextForMemberLookup;
+
+        private static readonly int[] s_zero = new[] { 0 };
 
         private static ExprWrap WrapShortLivedExpression(Expr expr) => ExprFactory.CreateWrap(expr);
 

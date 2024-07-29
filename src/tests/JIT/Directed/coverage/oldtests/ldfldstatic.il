@@ -8,8 +8,8 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly 'ldfldstatic' {}
-.class private auto ansi beforefieldinit ldfldstatic
+.assembly ASSEMBLY_NAME {}
+.class public auto ansi beforefieldinit ldfldstatic
        extends [mscorlib]System.Object
 {
   .field public static char Achar

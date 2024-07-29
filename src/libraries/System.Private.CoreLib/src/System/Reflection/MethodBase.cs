@@ -12,6 +12,8 @@ namespace System.Reflection
 {
     public abstract partial class MethodBase : MemberInfo
     {
+        internal const int MaxStackAllocArgCount = 4;
+
         protected MethodBase() { }
 
         public abstract ParameterInfo[] GetParameters();
@@ -121,176 +123,110 @@ namespace System.Reflection
             }
         }
 
+        internal virtual Type[] GetParameterTypes()
+        {
+            ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
+            if (paramInfo.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[paramInfo.Length];
+            for (int i = 0; i < paramInfo.Length; i++)
+                parameterTypes[i] = paramInfo[i].ParameterType;
+
+            return parameterTypes;
+        }
+
 #if !NATIVEAOT
-        private protected void ValidateInvokeTarget(object? target)
+        internal static object? HandleTypeMissing(ParameterInfo paramInfo, RuntimeType sigType)
         {
-            // Confirm member invocation has an instance and is of the correct type
-            if (!IsStatic)
+            if (paramInfo.DefaultValue == DBNull.Value)
             {
-                if (target == null)
-                {
-                    throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
-                }
+                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+            }
 
-                if (!DeclaringType!.IsInstanceOfType(target))
+            object? arg = paramInfo.DefaultValue;
+
+            if (sigType.IsNullableOfT)
+            {
+                if (arg is not null)
                 {
-                    throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                    // For nullable Enum types, the ParameterInfo.DefaultValue returns a raw value which
+                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                    Type argumentType = sigType.GetGenericArguments()[0];
+                    if (argumentType.IsEnum)
+                    {
+                        arg = Enum.ToObject(argumentType, arg);
+                    }
                 }
             }
+
+            return arg;
         }
 
-        private protected unsafe void CheckArguments(
-            Span<object?> copyOfParameters,
-            IntPtr* byrefParameters,
-            Span<ParameterCopyBackAction> shouldCopyBack,
-            ReadOnlySpan<object?> parameters,
-            RuntimeType[] sigTypes,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr
-        )
+        [Flags]
+        internal enum InvokerStrategy : int
         {
-            Debug.Assert(parameters.Length > 0);
+            HasBeenInvoked_ObjSpanArgs = 0x1,
+            StrategyDetermined_ObjSpanArgs = 0x2,
 
-            ParameterInfo[]? paramInfos = null;
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                ParameterCopyBackAction copyBackArg = default;
-                bool isValueType = false;
-                object? arg = parameters[i];
-                RuntimeType sigType = sigTypes[i];
+            HasBeenInvoked_Obj4Args = 0x4,
+            StrategyDetermined_Obj4Args = 0x8,
 
-                // Convert a Type.Missing to the default value.
-                if (ReferenceEquals(arg, Type.Missing))
-                {
-                    paramInfos ??= GetParametersNoCopy();
-                    ParameterInfo paramInfo = paramInfos[i];
-
-                    if (paramInfo.DefaultValue == DBNull.Value)
-                    {
-                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                    }
-
-                    arg = paramInfo.DefaultValue;
-
-                    if (sigType.IsNullableOfT)
-                    {
-                        copyBackArg = ParameterCopyBackAction.CopyNullable;
-
-                        if (arg is not null)
-                        {
-                            // For nullable Enum types, the ParameterInfo.DefaultValue returns a raw value which
-                            // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
-                            Type argumentType = sigType.GetGenericArguments()[0];
-                            if (argumentType.IsEnum)
-                            {
-                                arg = Enum.ToObject(argumentType, arg);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        copyBackArg = ParameterCopyBackAction.Copy;
-                    }
-                }
-
-                if (arg is null)
-                {
-                    // Fast path for null reference types.
-                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
-                    if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
-                    {
-                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                    }
-                }
-                else
-                {
-                    RuntimeType argType = (RuntimeType)arg.GetType();
-
-                    if (ReferenceEquals(argType, sigType))
-                    {
-                        // Fast path when the value's type matches the signature type.
-                        isValueType = RuntimeTypeHandle.IsValueType(argType);
-                    }
-                    else if (sigType.TryByRefFastPath(ref arg, ref isValueType))
-                    {
-                        // Fast path when the value's type matches the signature type of a byref parameter.
-                        copyBackArg = ParameterCopyBackAction.Copy;
-                    }
-                    else
-                    {
-                        // Slow path that supports type conversions.
-                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
-                    }
-                }
-
-                // We need to perform type safety validation against the incoming arguments, but we also need
-                // to be resilient against the possibility that some other thread (or even the binder itself!)
-                // may mutate the array after we've validated the arguments but before we've properly invoked
-                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
-                // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
-                // considered user-visible to threads which may still be holding on to returned instances.
-                // This separate array is also used to hold default values when 'null' is specified for value
-                // types, and also used to hold the results from conversions such as from Int16 to Int32. For
-                // compat, these default values and conversions are not be applied to the incoming arguments.
-                shouldCopyBack[i] = copyBackArg;
-                copyOfParameters[i] = arg;
-
-#pragma warning disable 8500
-                if (isValueType)
-                {
-                    Debug.Assert(arg != null);
-                    Debug.Assert(
-                        arg.GetType() == sigType ||
-                        (sigType.IsPointer && (arg.GetType() == typeof(IntPtr) || arg.GetType() == typeof(UIntPtr))) ||
-                        (sigType.IsByRef && arg.GetType() == RuntimeTypeHandle.GetElementType(sigType)) ||
-                        ((sigType.IsEnum || arg.GetType().IsEnum) && RuntimeType.GetUnderlyingType((RuntimeType)arg.GetType()) == RuntimeType.GetUnderlyingType(sigType)));
-                    ByReference valueTypeRef = ByReference.Create(ref copyOfParameters[i]!.GetRawData());
-                    *(ByReference*)(byrefParameters + i) = valueTypeRef;
-                }
-                else
-                {
-                    ByReference objRef = ByReference.Create(ref copyOfParameters[i]);
-                    *(ByReference*)(byrefParameters + i) = objRef;
-                }
-#pragma warning restore 8500
-            }
+            HasBeenInvoked_RefArgs = 0x10,
+            StrategyDetermined_RefArgs = 0x20,
         }
 
-        internal const int MaxStackAllocArgCount = 4;
+        [Flags]
+        internal enum InvokerArgFlags : int
+        {
+            IsValueType = 0x1,
+            IsValueType_ByRef_Or_Pointer = 0x2,
+            IsNullableOfT = 0x4,
+        }
+
+        [InlineArray(MaxStackAllocArgCount)]
+        internal struct ArgumentData<T>
+        {
+            private T _arg0;
+        }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
-        // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
-        // and pass it to CheckArguments().
+        // When argument count <= MaxStackAllocArgCount, define a local of these helper structs.
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
         [StructLayout(LayoutKind.Sequential)]
-        private protected ref struct StackAllocedArguments
+        internal ref struct StackAllocatedArguments
         {
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
-            internal ParameterCopyBackAction _copyBack0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ParameterCopyBackAction _copyBack1;
-            private ParameterCopyBackAction _copyBack2;
-            private ParameterCopyBackAction _copyBack3;
-#pragma warning restore CA1823, CS0169, IDE0051
+            public StackAllocatedArguments(object? obj1, object? obj2, object? obj3, object? obj4)
+            {
+                _args[0] = obj1;
+                _args[1] = obj2;
+                _args[2] = obj3;
+                _args[3] = obj4;
+            }
+
+            internal ArgumentData<object?> _args;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal ref struct StackAllocatedArgumentsWithCopyBack
+        {
+            internal ArgumentData<object?> _args;
+            internal ArgumentData<bool> _shouldCopyBack;
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
-        private protected ref struct StackAllocatedByRefs
+        [InlineArray(MaxStackAllocArgCount)]
+        internal ref struct StackAllocatedByRefs
         {
+            // We're intentionally taking advantage of the runtime functionality, even if the language functionality won't work
+            // CS9184: 'Inline arrays' language feature is not supported for inline array types with element field which is either a 'ref' field, or has type that is not valid as a type argument.
+
+#pragma warning disable CS9184
             internal ref byte _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
+#pragma warning restore CS9184
         }
 #endif
     }

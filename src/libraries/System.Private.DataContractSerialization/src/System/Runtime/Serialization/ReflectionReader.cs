@@ -50,10 +50,12 @@ namespace System.Runtime.Serialization
                 ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             }
 
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
             if (obj is IObjectReference objectReference)
             {
                 obj = context.GetRealObject(objectReference, context.GetObjectId());
             }
+#pragma warning restore SYSLIB0050
 
             obj = ResolveAdapterObject(obj);
             InvokeDeserializationCallback(obj);
@@ -206,7 +208,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
+        protected static int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
             int memberCount = (classContract.BaseClassContract == null) ? 0 : ReflectionGetMembers(classContract.BaseClassContract, members);
             int childElementIndex = memberCount;
@@ -393,7 +395,7 @@ namespace System.Runtime.Serialization
             return context.InternalDeserialize(xmlReader, DataContract.GetId(type.TypeHandle), type.TypeHandle, name, ns);
         }
 
-        private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
+        private static void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserializing(context, classContract.BaseClassContract, obj);
@@ -404,7 +406,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
+        private static void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnDeserialized(context, classContract.BaseClassContract, obj);
@@ -603,7 +605,7 @@ namespace System.Runtime.Serialization
                     MethodInfo? addMethod = collectionContract.AddMethod;
                     if (addMethod == null)
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
+                        throw new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType)));
                     }
 
                     return (resultCollection, collectionItem, index) =>

@@ -112,7 +112,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
         nb[tokLen] = 0;
     }
     return nb;
@@ -129,7 +129,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -153,7 +153,7 @@ unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppR
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
-    *ppRes = new double(wcstod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
+    *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
     return ((unsigned)(pdummy - dbuff));
 }
 /*--------------------------------------------------------------------------*/
@@ -200,7 +200,7 @@ char* yygetline(int Line)
 
 void yyerror(_In_ __nullterminated const char* str) {
     char tokBuff[64];
-    WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
+    const char* szfile = PENV->in->name();
     int iline = PENV->curLine;
 
     size_t len = PENV->curPos - PENV->curTok;
@@ -210,15 +210,23 @@ void yyerror(_In_ __nullterminated const char* str) {
     tokBuff[len+1] = 0;
     if(PENV->bExternSource)
     {
-        wzfile = PASM->m_wzSourceFileName;
+        szfile = PASM->m_szSourceFileName;
         iline = PENV->nExtLine;
     }
+
+    const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
-        fprintf(stderr, "%S(%d) : error : %s at token '%S' in: %S\n",
-                wzfile, iline, str, (WCHAR*)tokBuff, (WCHAR*)yygetline(PENV->curLine));
+    {
+        MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
+        MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuffUtf8, curLineUtf8);
+    }
     else
-        fprintf(stderr, "%S(%d) : error : %s at token '%s' in: %s\n",
-                wzfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    {
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    }
     parser->success = false;
 }
 
@@ -331,9 +339,9 @@ void Init_str2uint64()
     for(i='A'; i <= 'Z'; i++) digits[i] = i + 10 - 'A';
     for(i='a'; i <= 'z'; i++) digits[i] = i + 10 - 'a';
 }
-static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigned radix)
+static uint64_t str2uint64(const char* str, const char** endStr, unsigned radix)
 {
-    unsigned __int64 ret = 0;
+    uint64_t ret = 0;
     unsigned digit,ix;
     _ASSERTE(radix <= 36);
     for(;;str = nextchar((char*)str))
@@ -665,7 +673,6 @@ int ProcessEOF()
     PARSING_ENVIRONMENT* prev_penv = parser->PEStack.POP();
     if(prev_penv != NULL)
     {
-        //delete [] (WCHAR*)(PENV->in->namew());
         delete PENV->in;
         delete PENV;
         parser->penv = prev_penv;
@@ -964,16 +971,16 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = WszMultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
                                     wzFile[tokLen] = 0;
                                 }
                             }
                             if(wzFile != NULL)
                             {
                                 if((parser->wzIncludePath != NULL)
-                                 &&(wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
+                                 &&(u16_strchr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
 #ifdef TARGET_WINDOWS
-                                 &&(wcschr(wzFile,':')==NULL)
+                                 &&(u16_strchr(wzFile,':')==NULL)
 #endif
                                 )
                                 {
@@ -991,12 +998,16 @@ Its_An_Id:
 
                                 }
                                 if(PASM->m_fReportProgress)
-                                    parser->msg("\nIncluding '%S'\n",wzFile);
+                                {
+                                    MAKE_UTF8PTR_FROMWIDE(fileUtf8, wzFile);
+                                    parser->msg("\nIncluding '%s'\n",fileUtf8);
+                                }
                                 MappedFileStream *pIn = new MappedFileStream(wzFile);
                                 if((pIn != NULL)&&pIn->IsValid())
                                 {
                                     parser->PEStack.PUSH(PENV);
                                     PASM->SetSourceFileName(FullFileName(wzFile,CP_UTF8)); // deletes the argument!
+                                    delete [] wzFile;
                                     parser->CreateEnvironment(pIn);
                                     NEXT_TOKEN;
                                 }
@@ -1192,19 +1203,19 @@ Its_An_Id:
         }
         begNum = curPos;
         {
-            unsigned __int64 i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
-            unsigned __int64 mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
-            unsigned __int64 largestNegVal32 = UI64(0x0000000080000000);
+            uint64_t i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
+            uint64_t mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
+            uint64_t largestNegVal32 = UI64(0x0000000080000000);
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
-                yylval.int64 = new __int64(i64);
-                tok = INT64;
+                yylval.int64 = new int64_t(i64);
+                tok = INT64_V;
                 if (neg) *yylval.int64 = -*yylval.int64;
             }
             else
             {
-                yylval.int32 = (__int32)i64;
-                tok = INT32;
+                yylval.int32 = (int32_t)i64;
+                tok = INT32_V;
                 if(neg) yylval.int32 = -yylval.int32;
             }
         }
@@ -1269,7 +1280,7 @@ Just_A_Character:
     }
     dbprintf(("    Line %d token %d (%c) val = %s\n", PENV->curLine, tok,
             (tok < 128 && isprint(tok)) ? tok : ' ',
-            (tok > 255 && tok != INT32 && tok != INT64 && tok!= FLOAT64) ? yylval.string : ""));
+            (tok > 255 && tok != INT32_V && tok != INT64_V && tok!= FLOAT64) ? yylval.string : ""));
 
     PENV->curPos = curPos;
     PENV->curTok = curTok;
@@ -1322,7 +1333,7 @@ static void corEmitInt(BinStr* buff, unsigned data)
 /**************************************************************************/
 /* move 'ptr past the exactly one type description */
 
-unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType)
+uint8_t* skipType(uint8_t* ptr, BOOL fFixupType)
 {
     mdToken  tk;
 AGAIN:
@@ -1401,7 +1412,7 @@ AGAIN:
                 if(fFixupType)
                 {
                     BYTE* pb = ptr-1; // ptr incremented in switch
-                    unsigned __int8* ptr_save = ptr;
+                    uint8_t* ptr_save = ptr;
                     int n = CorSigUncompressData((PCCOR_SIGNATURE&) ptr);  // fixup #
                     int compressed_size_n = (int)(ptr - ptr_save);  // ptr was updated by CorSigUncompressData()
                     int m = -1;
@@ -1461,7 +1472,7 @@ AGAIN:
                         if ((compressed_size_m == 1) &&
                             (compressed_size_n == 2))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
+                            uint8_t m1 = *(pb + 1);
                             _ASSERTE(m1 < 0x80);
                             *(pb + 1) = 0x80;
                             *(pb + 2) = m1;
@@ -1470,7 +1481,7 @@ AGAIN:
                         if ((compressed_size_m == 1) &&
                             (compressed_size_n == 4))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
+                            uint8_t m1 = *(pb + 1);
                             _ASSERTE(m1 < 0x80);
                             *(pb + 1) = 0xC0;
                             *(pb + 2) = 0x00;
@@ -1481,8 +1492,8 @@ AGAIN:
                         if ((compressed_size_m == 2) &&
                             (compressed_size_n == 4))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
-                            unsigned __int8 m2 = *(pb + 2);
+                            uint8_t m1 = *(pb + 1);
+                            uint8_t m2 = *(pb + 2);
                             _ASSERTE(m1 >= 0x80);
                             m1 &= 0x7f; // strip the bit indicating it's a 2-byte thing
                             *(pb + 1) = 0xC0;
@@ -1548,8 +1559,8 @@ void FixupTyPars(BinStr* pbstype)
 /**************************************************************************/
 static unsigned corCountArgs(BinStr* args)
 {
-    unsigned __int8* ptr = args->ptr();
-    unsigned __int8* end = &args->ptr()[args->length()];
+    uint8_t* ptr = args->ptr();
+    uint8_t* end = &args->ptr()[args->length()];
     unsigned ret = 0;
     while(ptr < end)
     {
@@ -1770,10 +1781,10 @@ void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
         if(g_uCodePage != CP_ACP)
         {
                 memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
+                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
 
                 memset(sz,0,dwUniBuf);
-                WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
+                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
         }
         fprintf(pF,"%s",sz);
 }
@@ -1787,7 +1798,7 @@ void AsmParse::error(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
@@ -1802,7 +1813,7 @@ void AsmParse::warn(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "warning : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);

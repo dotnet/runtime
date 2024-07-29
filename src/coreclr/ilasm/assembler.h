@@ -538,7 +538,7 @@ private:
                 *pBlob++ = pVal[1];
                 break;
             case SERIALIZATION_TYPE_I4:
-                *(__int32*)pBlob = *(__int32*)&pVal[1];
+                *(int32_t*)pBlob = *(int32_t*)&pVal[1];
                 pBlob += 4;
                 break;
             case SERIALIZATION_TYPE_STRING:
@@ -552,15 +552,15 @@ private:
                 // We can have enums with base type of I1, I2 and I4.
                 switch (pVal[1 + length + 1]) {
                 case 1:
-                    *(__int8*)pBlob = *(__int8*)&pVal[1 + length + 2];
+                    *(int8_t*)pBlob = *(int8_t*)&pVal[1 + length + 2];
                     pBlob += 1;
                     break;
                 case 2:
-                    *(__int16*)pBlob = *(__int16*)&pVal[1 + length + 2];
+                    *(int16_t*)pBlob = *(int16_t*)&pVal[1 + length + 2];
                     pBlob += 2;
                     break;
                 case 4:
-                    *(__int32*)pBlob = *(__int32*)&pVal[1 + length + 2];
+                    *(int32_t*)pBlob = *(int32_t*)&pVal[1 + length + 2];
                     pBlob += 4;
                     break;
                 default:
@@ -901,7 +901,7 @@ public:
     void EmitInstrVar(Instr* instr, int var);
     void EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label);
     void EmitInstrI(Instr* instr, int val);
-    void EmitInstrI8(Instr* instr, __int64* val);
+    void EmitInstrI8(Instr* instr, int64_t* val);
     void EmitInstrR(Instr* instr, double* val);
     void EmitInstrBrOffset(Instr* instr, int offset);
     void EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* label);
@@ -1026,7 +1026,6 @@ public:
     BOOL  m_fGeneratePDB;
     char m_szSourceFileName[MAX_FILENAME_LENGTH*3+1];
     WCHAR m_wzOutputFileName[MAX_FILENAME_LENGTH];
-    WCHAR m_wzSourceFileName[MAX_FILENAME_LENGTH];
 	GUID	m_guidLang;
 	GUID	m_guidLangVendor;
 	GUID	m_guidDoc;

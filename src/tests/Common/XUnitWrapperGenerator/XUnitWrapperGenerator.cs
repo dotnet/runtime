@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,22 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace XUnitWrapperGenerator;
+
+internal struct CompData
+{
+    internal CompData(string assemblyName, IMethodSymbol? entryPoint, IEnumerable<IMethodSymbol> possibleEntryPoints, OutputKind outputKind)
+    {
+        AssemblyName = assemblyName;
+        EntryPoint = entryPoint;
+        PossibleEntryPoints = possibleEntryPoints;
+        OutputKind = outputKind;
+    }
+
+    public string AssemblyName { get; private set; }
+    public IMethodSymbol? EntryPoint { get; private set; }
+    public IEnumerable<IMethodSymbol> PossibleEntryPoints { get; private set; }
+    public OutputKind OutputKind { get; private set; }
+}
 
 [Generator]
 public sealed class XUnitWrapperGenerator : IIncrementalGenerator
@@ -25,7 +42,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     node.IsKind(SyntaxKind.MethodDeclaration)
                         && node is MethodDeclarationSyntax method
                         && method.AttributeLists.Count > 0,
-                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
+                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!);
 
         var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
         {
@@ -39,7 +56,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 string? testDisplayName = fileOptions.TestDisplayName();
                 if (assemblyPath is not null && testDisplayName is not null)
                 {
-                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath));
+                    return ImmutableArray.Create<ITestInfo>(new OutOfProcessTest(testDisplayName, assemblyPath, fileOptions.TestBuildMode()));
                 }
             }
 
@@ -58,9 +75,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return aliasMap.ToImmutable();
         }).WithComparer(new ImmutableDictionaryValueComparer<string, string>(EqualityComparer<string>.Default));
 
-        var assemblyName = context.CompilationProvider.Select((comp, ct) => comp.Assembly.MetadataName);
-
-        var alwaysWriteEntryPoint = context.CompilationProvider.Select((comp, ct) => comp.Options.OutputKind == OutputKind.ConsoleApplication && comp.GetEntryPoint(ct) is null);
+        var compData = context.CompilationProvider.Select((comp, ct) => new CompData(
+            assemblyName: comp.Assembly.MetadataName,
+            entryPoint: comp.GetEntryPoint(ct),
+            possibleEntryPoints: RoslynUtils.GetPossibleEntryPoints(comp, ct),
+            outputKind: comp.Options.OutputKind));
 
         var testsInSource =
             methodsInSource
@@ -100,6 +119,96 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         var allTests = testsInSource.Collect().Combine(testsInReferencedAssemblies.Collect()).Combine(outOfProcessTests.Collect()).SelectMany((tests, ct) => tests.Left.Left.AddRange(tests.Left.Right).AddRange(tests.Right));
 
         context.RegisterImplementationSourceOutput(
+            methodsInSource
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
+            {
+                var (_, configOptions) = data;
+                return configOptions.GlobalOptions.InMergedTestDirectory();
+            }),
+            static (context, data) =>
+            {
+                var (method, _) = data;
+
+                // Only check test methods
+                bool found = false;
+                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
+                {
+                    switch (attr.AttributeClass?.ToDisplayString())
+                    {
+                        case "Xunit.ConditionalFactAttribute":
+                        case "Xunit.FactAttribute":
+                        case "Xunit.ConditionalTheoryAttribute":
+                        case "Xunit.TheoryAttribute":
+                            found = true;
+                            break;
+                    }
+                }
+                if (!found) return;
+
+                // Find methods where all returns are the literal 100 (and there is at least one return)
+                if (method.DeclaringSyntaxReferences.IsEmpty) return;
+
+                found = false;
+                foreach (SyntaxReference node in method.DeclaringSyntaxReferences.Where(n => n != null))
+                {
+                    foreach (ReturnStatementSyntax rs in node.GetSyntax(context.CancellationToken).DescendantNodes().OfType<ReturnStatementSyntax>())
+                    {
+                        if (rs.Expression == null) continue;
+                        found = true;
+                        if (rs.Expression is LiteralExpressionSyntax les && les.Token.Value is int i && i == 100) continue;
+                        return;
+                    }
+                }
+
+                if (!found) return;
+                context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1002, method.Locations[0]));
+            });
+
+        context.RegisterImplementationSourceOutput(
+            methodsInSource
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
+            {
+                var (_, configOptions) = data;
+                return configOptions.GlobalOptions.InMergedTestDirectory();
+            }),
+            static (context, data) =>
+            {
+                var (method, _) = data;
+
+                bool found = false;
+                foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
+                {
+                    switch (attr.AttributeClass?.ToDisplayString())
+                    {
+                        case "Xunit.ConditionalFactAttribute":
+                        case "Xunit.FactAttribute":
+                        case "Xunit.ConditionalTheoryAttribute":
+                        case "Xunit.TheoryAttribute":
+                            found = true;
+                            break;
+                    }
+                }
+                if (!found) return;
+
+                if (method.DeclaredAccessibility != Accessibility.Public)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1003, method.Locations[0]));
+                }
+
+                INamedTypeSymbol containingType = method.ContainingType;
+                while (containingType != null)
+                {
+                    if (containingType.DeclaredAccessibility != Accessibility.Public)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1004, method.Locations[0]));
+                    }
+                    containingType = containingType.ContainingType;
+                }
+            });
+
+        context.RegisterImplementationSourceOutput(
             allTests
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Where(data =>
@@ -112,164 +221,380 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Collect()
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
-            .Combine(assemblyName)
-            .Combine(alwaysWriteEntryPoint),
+            .Combine(compData),
             static (context, data) =>
             {
-                var ((((methods, configOptions), aliasMap), assemblyName), alwaysWriteEntryPoint) = data;
+                var (((methods, configOptions), aliasMap), compData) = data;
 
-                if (methods.Length == 0 && !alwaysWriteEntryPoint)
+                bool inMergedTestDirectory = configOptions.GlobalOptions.InMergedTestDirectory();
+                if (inMergedTestDirectory)
+                {
+                    CheckNoEntryPoint(context, compData);
+                }
+
+                if (compData.OutputKind != OutputKind.ConsoleApplication)
+                {
+                    return;
+                }
+
+                bool alwaysWriteEntryPoint = (compData.EntryPoint is null);
+                if (methods.IsEmpty && !alwaysWriteEntryPoint)
                 {
                     // If we have no test methods, assume that this project is not migrated to the new system yet
                     // and that we shouldn't generate a no-op Main method.
                     return;
                 }
 
-                bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
-                configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
-
-                if (isMergedTestRunnerAssembly)
-                {
-                    if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
-                    {
-                        context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
-                    }
-                    else
-                    {
-                        context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
-                    }
-                }
-                else
-                {
-                    string consoleType = "System.Console";
-                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap, consoleType));
-                }
+                AddRunnerSource(context, methods, configOptions, aliasMap, compData);
             });
+    }
+
+    private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
+    {
+        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        string assemblyName = compData.AssemblyName;
+
+        if (isMergedTestRunnerAssembly)
+        {
+            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            {
+                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+            }
+            else
+            {
+                context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+            }
+        }
+        else
+        {
+            context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
+        }
+    }
+
+    private static void CheckNoEntryPoint(SourceProductionContext context, CompData compData)
+    {
+        foreach (IMethodSymbol entryPoint in compData.PossibleEntryPoints)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Descriptors.XUWG1001, entryPoint.Locations[0]));
+        }
+    }
+
+    private static void AppendAliasMap(CodeBuilder builder, ImmutableDictionary<string, string> aliasMap)
+    {
+        bool didOutput = false;
+        foreach (string alias in aliasMap.Values.Where(alias => alias != "global").OrderBy(a => a))
+        {
+            builder.AppendLine($"extern alias {alias};");
+            didOutput = true;
+        }
+        if (didOutput)
+        {
+            builder.AppendLine();
+        }
     }
 
     private static string GenerateFullTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
-        StringBuilder builder = new();
-        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
-        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        CodeBuilder builder = new();
+        AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
-        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-        builder.AppendLine("System.Console.SetOut(outputRecorder);");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter;");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
+        builder.AppendLine();
 
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+        builder.AppendLine("void Initialize()");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
+                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
+            builder.AppendLine();
 
-        StringBuilder testExecutorBuilder = new();
-        int testsLeftInCurrentTestExecutor = 0;
-        int currentTestExecutor = 0;
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+            }
+
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            }
+            builder.AppendLine();
+
+            builder.AppendLine("filter = new (args, testExclusionTable);");
+            builder.AppendLine("summary = new();");
+            builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
+            builder.AppendLine("outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
+        }
+        builder.AppendLine();
+
+        builder.AppendLine("Initialize();");
+
+        // Open the stream writer for the temp log.
+        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+        CodeBuilder testExecutorBuilder = new();
         int totalTestsEmitted = 0;
 
-        if (testInfos.Length > 0)
+        using (builder.NewBracesScope())
         {
-            // Break tests into groups of 50 so that we don't create an unreasonably large main method
-            // Excessively large methods are known to take a long time to compile, and use excessive stack
-            // leading to test failures.
-            foreach (ITestInfo test in testInfos)
+            builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+            // CAUTION NOTE: If this ever changes and the 'assembly' tag is no longer
+            // the topmost one in the temp log, XUnitLogChecker must be updated accordingly.
+            // Otherwise, it's going to fail when attempting to find dumps.
+            builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
+
+            ITestReporterWrapper reporter =
+                new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+            int testsLeftInCurrentTestExecutor = 0;
+            int currentTestExecutor = 0;
+
+            if (testInfos.Length > 0)
             {
-                if (testsLeftInCurrentTestExecutor == 0)
+                // This code breaks the tests into groups called by helper methods.
+                //
+                // Reasonably large methods are known to take a long time to compile, and use excessive stack
+                // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+                //
+                // However, large methods also appear to causes problems when the tests are run in gcstress
+                // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+                // experimentally has improved gcstress testing.
+                foreach (ITestInfo test in testInfos)
                 {
-                    if (currentTestExecutor != 0)
-                        testExecutorBuilder.AppendLine("}");
-                    currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
-                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
+                    if (testsLeftInCurrentTestExecutor == 0)
+                    {
+                        if (currentTestExecutor != 0)
+                        {
+                            testExecutorBuilder.PopIndent();
+                            testExecutorBuilder.AppendLine("}");
+                            testExecutorBuilder.AppendLine();
+                        }
+
+                        currentTestExecutor++;
+                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                                                       + "System.IO.StreamWriter tempLogSw, "
+                                                       + "System.IO.StreamWriter statsCsvSw)");
+                        testExecutorBuilder.AppendLine("{");
+                        testExecutorBuilder.PushIndent();
+
+                        builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
+                        testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
+                    }
+                    else
+                    {
+                        testExecutorBuilder.AppendLine();
+                    }
+
+                    testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
+                    totalTestsEmitted++;
+                    testsLeftInCurrentTestExecutor--;
                 }
-                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
-                totalTestsEmitted++;
-                testsLeftInCurrentTestExecutor--;
+
+                testExecutorBuilder.PopIndent();
+                testExecutorBuilder.AppendLine("}");
+                testExecutorBuilder.AppendLine();
             }
-            testExecutorBuilder.AppendLine("}");
+
+            builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
+        }
+        builder.AppendLine();
+
+        builder.AppendLine("void Finish()");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+            builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+            builder.AppendLine($@"if (workitemUploadRoot != null)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+            }
+            builder.AppendLine();
+
+            builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
         }
 
-        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
-        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
-        builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+        builder.AppendLine();
+        builder.AppendLine("Finish();");
         builder.AppendLine("return 100;");
+        builder.AppendLine();
 
         builder.Append(testExecutorBuilder);
-
         builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
-        return builder.ToString();
+        return builder.GetCode();
     }
 
     private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
-        StringBuilder builder = new();
-        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
-        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+        CodeBuilder builder = new();
+        AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("try {");
-        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
-        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
+        builder.AppendLine();
 
-        builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
-        builder.AppendLine("{");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
-        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
-        builder.AppendLine("System.Console.SetOut(outputRecorder);");
+        builder.AppendLine("try");
 
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
-
-        StringBuilder testExecutorBuilder = new();
-        int testsLeftInCurrentTestExecutor = 0;
-        int currentTestExecutor = 0;
-
-        if (testInfos.Length > 0)
+        using (builder.NewBracesScope())
         {
-            // Break tests into groups of 50 so that we don't create an unreasonably large main method
-            // Excessively large methods are known to take a long time to compile, and use excessive stack
-            // leading to test failures.
-            foreach (ITestInfo test in testInfos)
-            {
-                if (testsLeftInCurrentTestExecutor == 0)
-                {
-                    if (currentTestExecutor != 0)
-                        testExecutorBuilder.AppendLine("}");
-                    currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
-                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
-                }
-                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
-                testsLeftInCurrentTestExecutor--;
-            }
-            testExecutorBuilder.AppendLine("}");
+            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
+                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
+
+            builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests,"
+                               + $@" ""{assemblyName}"","
+                               + $@" args.Length != 0 ? args[0] : null,"
+                               + $@" testExclusionTable);");
         }
 
-        builder.AppendLine("return summary;");
-        builder.AppendLine("}");
+        builder.AppendLine("catch (System.Exception ex)");
 
-        builder.Append(testExecutorBuilder);
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("System.Console.WriteLine(ex.ToString());");
+            builder.AppendLine("return 101;");
+        }
+        builder.AppendLine();
 
-        return builder.ToString();
+        builder.AppendLine("void Initialize()");
+
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+            }
+
+            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+            }
+            builder.AppendLine();
+
+            builder.AppendLine("summary = new();");
+            builder.AppendLine("stopwatch = new();");
+            builder.AppendLine("outputRecorder = new(System.Console.Out);");
+            builder.AppendLine("System.Console.SetOut(outputRecorder);");
+        }
+        builder.AppendLine();
+
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("Initialize();");
+
+            // Open the stream writer for the temp log.
+            builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
+            builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+            CodeBuilder testExecutorBuilder = new();
+
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
+
+                ITestReporterWrapper reporter =
+                    new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+                int testsLeftInCurrentTestExecutor = 0;
+                int currentTestExecutor = 0;
+
+                if (testInfos.Length > 0)
+                {
+                    // This code breaks the tests into groups called by helper methods.
+                    //
+                    // Reasonably large methods are known to take a long time to compile, and use excessive stack
+                    // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+                    //
+                    // However, large methods also appear to causes problems when the tests are run in gcstress
+                    // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+                    // experimentally has improved gcstress testing.
+                    foreach (ITestInfo test in testInfos)
+                    {
+                        if (testsLeftInCurrentTestExecutor == 0)
+                        {
+                            if (currentTestExecutor != 0)
+                            {
+                                testExecutorBuilder.PopIndent();
+                                testExecutorBuilder.AppendLine("}");
+                                testExecutorBuilder.AppendLine();
+                            }
+
+                            currentTestExecutor++;
+                            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                                                           + "XUnitWrapperLibrary.TestFilter filter, "
+                                                           + "System.IO.StreamWriter tempLogSw, "
+                                                           + "System.IO.StreamWriter statsCsvSw)");
+                            testExecutorBuilder.AppendLine("{");
+                            testExecutorBuilder.PushIndent();
+
+                            builder.AppendLine($"TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
+                            testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
+                        }
+                        else
+                        {
+                            testExecutorBuilder.AppendLine();
+                        }
+
+                        testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
+                        testsLeftInCurrentTestExecutor--;
+                    }
+
+                    testExecutorBuilder.PopIndent();
+                    testExecutorBuilder.AppendLine("}");
+                    testExecutorBuilder.AppendLine();
+                }
+            }
+            builder.AppendLine("return summary;");
+
+            builder.Append(testExecutorBuilder);
+        }
+
+        return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
+    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
     {
-        // For simplicity, we'll use top-level statements for the generated Main method.
         ITestReporterWrapper reporter = new NoTestReporting();
-        StringBuilder builder = new();
-        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
-        builder.AppendLine("try {");
-        builder.AppendLine(string.Join("\n", testInfos.Select(m => m.GenerateTestExecution(reporter))));
-        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
-        builder.AppendLine("return 100;");
-        return builder.ToString();
+        CodeBuilder builder = new();
+        AppendAliasMap(builder, aliasMap);
+        builder.AppendLine("class __GeneratedMainWrapper");
+        using (builder.NewBracesScope())
+        {
+            builder.AppendLine("public static int Main()");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine("try");
+                using (builder.NewBracesScope())
+                {
+                    foreach (ITestInfo testInfo in testInfos)
+                    {
+                        builder.Append(testInfo.GenerateTestExecution(reporter));
+                    }
+                }
+                builder.AppendLine("catch (System.Exception ex)");
+                using (builder.NewBracesScope())
+                {
+                    builder.AppendLine("System.Console.WriteLine(ex.ToString());");
+                    builder.AppendLine("return 101;");
+                }
+                builder.AppendLine("return 100;");
+            }
+        }
+        return builder.GetCode();
     }
 
-    private class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
+    private sealed class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
     {
         public override IEnumerable<IMethodSymbol>? VisitAssembly(IAssemblySymbol symbol)
         {
@@ -325,26 +650,40 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         List<AttributeData> filterAttributes = new();
         foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
         {
+            var hasSkip = attr.NamedArguments.Any(x => x.Key == "Skip");
+
             switch (attr.AttributeClass?.ToDisplayString())
             {
                 case "Xunit.ConditionalFactAttribute":
-                    filterAttributes.Add(attr);
-                    factAttribute = true;
+                    if (!hasSkip)
+                    {
+                        filterAttributes.Add(attr);
+                        factAttribute = true;
+                    }
                     break;
                 case "Xunit.FactAttribute":
-                    factAttribute = true;
+                    if (!hasSkip)
+                    {
+                        factAttribute = true;
+                    }
                     break;
                 case "Xunit.ConditionalTheoryAttribute":
-                    filterAttributes.Add(attr);
-                    theoryAttribute = true;
+                    if (!hasSkip)
+                    {
+                        filterAttributes.Add(attr);
+                        theoryAttribute = true;
+                    }
                     break;
                 case "Xunit.TheoryAttribute":
-                    theoryAttribute = true;
+                    if (!hasSkip)
+                    {
+                        theoryAttribute = true;
+                    }
                     break;
                 case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
                 case "Xunit.ActiveIssueAttribute":
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                 case "Xunit.PlatformSpecificAttribute":
                 case "Xunit.SkipOnMonoAttribute":
                 case "Xunit.SkipOnTargetFrameworkAttribute":
@@ -410,10 +749,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
-                case "Xunit.OuterloopAttribute":
+                case "Xunit.OuterLoopAttribute":
                     if (options.GlobalOptions.Priority() == 0)
                     {
-                        // If we aren't building the outerloop/Pri 1 test suite, then this attribute acts like an
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
+                        {
+                            // If this test is always outerloop, then we can just skip it.
+                            return ImmutableArray<ITestInfo>.Empty;
+                        }
+                        // The remaining constructors for the attribute can share handling with the
                         // [ActiveIssue] attribute (it has the same shape).
                         goto case "Xunit.ActiveIssueAttribute";
                     }
@@ -462,6 +806,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
                     }
+                    if (filterAttribute.ConstructorArguments.Length <= 1)
+                    {
+                        return ImmutableArray<ITestInfo>.Empty;
+                    }
                     testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                     break;
                 case "Xunit.SkipOnPlatformAttribute":
@@ -484,15 +832,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     Xunit.RuntimeConfiguration skippedConfigurations = 0;
                     Xunit.RuntimeTestModes skippedTestModes = 0;
 
-                    for (int i = 1; i < filterAttribute.AttributeConstructor!.Parameters.Length; i++)
+                    for (int i = 1; i < filterAttribute.ConstructorArguments.Length; i++)
                     {
-                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute, i);
+                        ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(filterAttribute.ConstructorArguments[i]);
                     }
 
-                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(AttributeData filterAttribute, int argumentIndex)
+                    void ReadSkippedInformationFromSkipOnCoreClrAttributeArgument(TypedConstant argument)
                     {
-                        int argumentValue = (int)filterAttribute.ConstructorArguments[argumentIndex].Value!;
-                        switch (filterAttribute.AttributeConstructor!.Parameters[argumentIndex].Type.ToDisplayString())
+                        int argumentValue = (int)argument.Value!;
+                        switch (argument.Type!.ToDisplayString())
                         {
                             case "Xunit.TestPlatforms":
                                 skippedTestPlatforms = (Xunit.TestPlatforms)argumentValue;
@@ -548,6 +896,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"{ConditionClass}.IsStressTest");
         }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.DisableR2R))
+        {
+            conditions.Add($"!{ConditionClass}.IsDisableR2R");
+        }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.JitStress))
         {
             conditions.Add($"!{ConditionClass}.IsJitStress");
@@ -564,9 +916,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             conditions.Add($"!{ConditionClass}.IsTailcallStress");
         }
-        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.ZapDisable))
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {
-            conditions.Add($"!{ConditionClass}.IsZapDisable");
+            conditions.Add($"!{ConditionClass}.IsTieredCompilation");
+        }
+        if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.HeapVerify))
+        {
+            conditions.Add($"!{ConditionClass}.IsHeapVerify");
         }
 
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.AnyGCStress))
@@ -609,12 +965,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.InlineDataAttribute":
                     {
                         var args = attr.ConstructorArguments[0].Values;
+                        if (args == null)
+                        {
+                            // This can happen with something like InlineData(default(MyStruct)).
+                            // csc will already report an error, but we should not crash.
+                            continue;
+                        }
                         if (method.Parameters.Length != args.Length)
                         {
                             // Emit diagnostic
                             continue;
                         }
-                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString()));
+                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString() + (a.Type!.SpecialType == SpecialType.System_Single ? "F" : "")));
                         testCasesBuilder.Add(new BasicTestMethod(method, alias, arguments: argsAsCode));
                         break;
                     }

@@ -13,7 +13,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_MediaTypeNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("mediaType", () => { new MediaTypeHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("mediaType", () => { new MediaTypeHeaderValue(null); });
         }
 
         [Fact]

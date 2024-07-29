@@ -15,6 +15,8 @@ namespace System.Net
     public partial class WebProxy : System.Net.IWebProxy, System.Runtime.Serialization.ISerializable
     {
         public WebProxy() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WebProxy(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public WebProxy(string? Address) { }
         public WebProxy(string? Address, bool BypassOnLocal) { }

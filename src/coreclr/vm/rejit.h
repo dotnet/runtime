@@ -68,30 +68,6 @@ protected:
 
 #endif  // FEATURE_REJIT
 
-#ifndef DACCESS_COMPILE
-// Used to walk the NGEN/R2R inlining data
-class NativeImageInliningIterator
-{
-public:
-    NativeImageInliningIterator();
-
-    HRESULT Reset(Module* pInlinerModule, MethodInModule inlinee);
-    BOOL Next();
-    MethodInModule GetMethod();
-
-private:
-    Module *m_pModule;
-    MethodInModule m_inlinee;
-    NewArrayHolder<MethodInModule> m_dynamicBuffer;
-    COUNT_T m_dynamicBufferSize;
-    COUNT_T m_dynamicAvailable;
-    COUNT_T m_currentPos;
-
-    const COUNT_T s_bufferSize = 10;
-    const COUNT_T s_failurePos = -2;
-};
-#endif // DACCESS_COMPILE
-
 //---------------------------------------------------------------------------------------
 // The big honcho.  One of these per AppDomain, plus one for the
 // SharedDomain.  Contains the hash table of ReJitInfo structures to manage

@@ -9,9 +9,7 @@
 #include "holder.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "varint.h"
 #include "rhbinder.h"
 #include "regdisplay.h"
@@ -31,9 +29,12 @@ TypeManager * TypeManager::Create(HANDLE osModule, void * pModuleHeader, void** 
     if (pReadyToRunHeader->Signature != ReadyToRunHeaderConstants::Signature)
         return nullptr;
 
-    // Only the current major version is supported currently
-    ASSERT(pReadyToRunHeader->MajorVersion == ReadyToRunHeaderConstants::CurrentMajorVersion);
-    if (pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion)
+    // Only the current version is supported currently
+    ASSERT((pReadyToRunHeader->MajorVersion == ReadyToRunHeaderConstants::CurrentMajorVersion) &&
+           (pReadyToRunHeader->MinorVersion == ReadyToRunHeaderConstants::CurrentMinorVersion));
+
+    if ((pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion) ||
+        (pReadyToRunHeader->MinorVersion != ReadyToRunHeaderConstants::CurrentMinorVersion))
         return nullptr;
 
     return new (nothrow) TypeManager(osModule, pReadyToRunHeader, pClasslibFunctions, nClasslibFunctions);
@@ -46,7 +47,6 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pCl
     int length;
     m_pStaticsGCDataSection = (uint8_t*)GetModuleSection(ReadyToRunSectionType::GCStaticRegion, &length);
     m_pThreadStaticsDataSection = (uint8_t*)GetModuleSection(ReadyToRunSectionType::ThreadStaticRegion, &length);
-    m_pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)

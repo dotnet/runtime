@@ -4,6 +4,7 @@
 namespace ComWrappersTests.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Runtime.InteropServices;
 
@@ -19,17 +20,25 @@ namespace ComWrappersTests.Common
 
     class Test : ITest, ICustomQueryInterface
     {
+        public static Test Resurrected;
         public static int InstanceCount = 0;
 
         private int id;
         private int value = -1;
         public Test() { id = Interlocked.Increment(ref InstanceCount); }
-        ~Test() { Interlocked.Decrement(ref InstanceCount); id = -1; }
+        ~Test()
+        {
+            Interlocked.Decrement(ref InstanceCount);
+            id = -1;
+            if (EnableResurrection)
+                Resurrected = this;
+        }
 
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;
 
         public bool EnableICustomQueryInterface { get; set; } = false;
+        public bool EnableResurrection { get; set; } = false;
         public Guid ICustomQueryInterface_GetInterfaceIID { get; set; }
         public IntPtr ICustomQueryInterface_GetInterfaceResult { get; set; }
 
@@ -53,6 +62,8 @@ namespace ComWrappersTests.Common
 
     public struct IUnknownVtbl
     {
+        public static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+
         public IntPtr QueryInterface;
         public IntPtr AddRef;
         public IntPtr Release;
@@ -83,6 +94,40 @@ namespace ComWrappersTests.Common
         }
     }
 
+    public class ITestObjectWrapper : ITest
+    {
+        private readonly ITestVtbl._SetValue _setValue;
+        private readonly IntPtr _ptr;
+        private bool _released;
+
+        public ITestObjectWrapper(IntPtr ptr)
+        {
+            _ptr = ptr;
+            VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
+            ITestVtbl _vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
+            _setValue = Marshal.GetDelegateForFunctionPointer<ITestVtbl._SetValue>(_vtbl.SetValue);
+            _released = false;
+        }
+
+        public int FinalRelease()
+        {
+            Debug.Assert(!_released);
+            int count = Marshal.Release(_ptr);
+            _released = true;
+            return count;
+        }
+
+        ~ITestObjectWrapper()
+        {
+            if (_ptr != IntPtr.Zero && !_released)
+            {
+                Marshal.Release(_ptr);
+            }
+        }
+
+        public void SetValue(int i) => _setValue(_ptr, i);
+    }
+
     //
     // Native interface definition with managed wrapper for tracker object
     //
@@ -92,7 +137,12 @@ namespace ComWrappersTests.Common
 
         public static IntPtr CreateTrackerObject()
         {
-            return CreateTrackerObject(IntPtr.Zero, out IntPtr _);
+            IntPtr result = CreateTrackerObject(IntPtr.Zero, out IntPtr inner);
+            if (inner != IntPtr.Zero)
+            {
+                Marshal.Release(inner);
+            }
+            return result;
         }
 
         public static IntPtr CreateTrackerObject(IntPtr outer, out IntPtr inner)
@@ -162,6 +212,12 @@ namespace ComWrappersTests.Common
         [SuppressGCTransition]
         [DllImport(nameof(MockReferenceTrackerRuntime))]
         extern public static byte IsTrackerObjectConnected(IntPtr instance);
+
+        // API used to wrap a QueryInterface(). This is used for testing
+        // scenarios where triggering off of the QueryInterface() slot is
+        // done by the runtime.
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static IntPtr WrapQueryInterface(IntPtr queryInterface);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
@@ -269,7 +325,7 @@ namespace ComWrappersTests.Common
             const int S_OK = 0;
             const int E_NOINTERFACE = unchecked((int)0x80004002);
 
-            int hr = Marshal.QueryInterface(this.classNative.Inner, ref iid, out ppv);
+            int hr = Marshal.QueryInterface(this.classNative.Inner, iid, out ppv);
             if (hr == S_OK)
             {
                 return CustomQueryInterfaceResult.Handled;
@@ -346,7 +402,7 @@ namespace ComWrappersTests.Common
                 // it should answer immediately without going through the outer. Either way
                 // the reference count will go to the new instance.
                 IntPtr queryForTracker = isAggregation ? classNative.Inner : classNative.Instance;
-                int hr = Marshal.QueryInterface(queryForTracker, ref IID_IReferenceTracker, out classNative.ReferenceTracker);
+                int hr = Marshal.QueryInterface(queryForTracker, IID_IReferenceTracker, out classNative.ReferenceTracker);
                 if (hr != 0)
                 {
                     classNative.ReferenceTracker = default;

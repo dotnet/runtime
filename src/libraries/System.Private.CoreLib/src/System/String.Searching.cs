@@ -13,6 +13,12 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
 
+            if (RuntimeHelpers.IsKnownConstant(value) && value.Length == 1)
+            {
+                // Call the char overload, e.g. Contains("X") -> Contains('X')
+                return Contains(value[0]);
+            }
+
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
@@ -32,7 +38,9 @@ namespace System
 
         public bool Contains(char value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) != -1;
+#pragma warning restore CA2249
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.
@@ -46,39 +54,30 @@ namespace System
 
         public int IndexOf(char value, StringComparison comparisonType)
         {
-            switch (comparisonType)
+            return comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.Ordinal:
-                    return IndexOf(value);
-
-                case StringComparison.OrdinalIgnoreCase:
-                    return IndexOfCharOrdinalIgnoreCase(value);
-
-                default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.IndexOf(this, value, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal => IndexOf(value),
+                StringComparison.OrdinalIgnoreCase => IndexOfCharOrdinalIgnoreCase(value),
+                _ => throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType)),
+            };
         }
 
         private int IndexOfCharOrdinalIgnoreCase(char value)
         {
             if (!char.IsAscii(value))
             {
-                return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                return Ordinal.IndexOfOrdinalIgnoreCase(this, new ReadOnlySpan<char>(in value));
             }
 
             if (char.IsAsciiLetter(value))
             {
-                char valueUc = (char)(value | 0x20);
-                char valueLc = (char)(value & ~0x20);
-                return SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
+                char valueLc = (char)(value | 0x20);
+                char valueUc = (char)(value & ~0x20);
+                return PackedSpanHelpers.PackedIndexOfIsSupported
+                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref _firstChar, valueLc, Length)
+                    : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 
             return SpanHelpers.IndexOfChar(ref _firstChar, value, Length);
@@ -254,26 +253,13 @@ namespace System
         public int IndexOf(string value, int startIndex, int count, StringComparison comparisonType)
         {
             // Parameter checking will be done by CompareInfo.IndexOf.
-
-            switch (comparisonType)
+            return comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.Ordinal:
-                case StringComparison.OrdinalIgnoreCase:
-                    return Ordinal.IndexOf(this, value, startIndex, count, comparisonType == StringComparison.OrdinalIgnoreCase);
-
-                default:
-                    throw (value is null)
-                        ? new ArgumentNullException(nameof(value))
-                        : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase => Ordinal.IndexOf(this, value, startIndex, count, comparisonType == StringComparison.OrdinalIgnoreCase),
+                _ => throw (value is null ? new ArgumentNullException(nameof(value)) : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType))),
+            };
         }
 
         // Returns the index of the last occurrence of a specified character in the current instance.
@@ -392,26 +378,13 @@ namespace System
         public int LastIndexOf(string value, int startIndex, int count, StringComparison comparisonType)
         {
             // Parameter checking will be done by CompareInfo.LastIndexOf.
-
-            switch (comparisonType)
+            return comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.InvariantCulture:
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
-
-                case StringComparison.Ordinal:
-                case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCompareOptionsFromOrdinalStringComparison(comparisonType));
-
-                default:
-                    throw (value is null)
-                        ? new ArgumentNullException(nameof(value))
-                        : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
+                StringComparison.CurrentCulture or StringComparison.CurrentCultureIgnoreCase => CultureInfo.CurrentCulture.CompareInfo.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.InvariantCulture or StringComparison.InvariantCultureIgnoreCase => CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType)),
+                StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase => CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCompareOptionsFromOrdinalStringComparison(comparisonType)),
+                _ => throw (value is null ? new ArgumentNullException(nameof(value)) : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType))),
+            };
         }
     }
 }

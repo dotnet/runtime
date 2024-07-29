@@ -83,7 +83,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Rewind(1);
-                Assert.True(false, "no exception thrown");
+                Assert.Fail("no exception thrown");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -95,7 +95,7 @@ namespace System.Memory.Tests.SequenceReader
             try
             {
                 reader.Rewind(2);
-                Assert.True(false, "no exception thrown");
+                Assert.Fail("no exception thrown");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -119,6 +119,21 @@ namespace System.Memory.Tests.SequenceReader
             Assert.True(reader.IsNext(4));
             reader.Rewind(2);
             Assert.Equal(new byte[] { 1, 2 }, reader.CurrentSpan.ToArray());
+        }
+
+        [Fact]
+        public void RewindZero_DoesNothing()
+        {
+            var emptySeq = ReadOnlySequence<byte>.Empty;
+            var reader = new SequenceReader<byte>(emptySeq);
+
+            Assert.True(reader.End);
+            Assert.False(reader.TryRead(out byte _));
+
+            reader.Rewind(0);
+
+            Assert.True(reader.End);
+            Assert.False(reader.TryRead(out byte _));
         }
     }
 }

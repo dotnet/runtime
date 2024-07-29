@@ -39,7 +39,7 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             Assembly containingAssembly = this;
             string location = containingAssembly.Location;
-            if (location == null || location.Length == 0)
+            if (string.IsNullOrEmpty(location))
                 return null;
             string? directoryPath = Path.GetDirectoryName(location);
             string modulePath = Path.Combine(directoryPath!, moduleName);

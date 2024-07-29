@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32;
 using System;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.Win32;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class WindowsSpecificBehavior : IClassFixture<WindowsSpecificBehavior.SharedTestState>
     {
         private SharedTestState sharedTestState;
@@ -18,12 +20,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Manifests are only supported on Windows OSes.
-        public void MuxerRunsPortableAppWithoutWindowsOsShims()
+        public void DotNet_NoCompatShims()
         {
-            TestProjectFixture portableAppFixture = sharedTestState.TestWindowsOsShimsAppFixture.Copy();
-
-            portableAppFixture.BuiltDotnet.Exec(portableAppFixture.TestProject.AppDll)
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "compat_shims")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -32,66 +31,54 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void FrameworkDependent_DLL_LongPath_Succeeds()
+        public void AppHost_NoManifest_HasCompatShims()
         {
-            // Long paths must also be enabled via a machine-wide setting. Only run the test if it is enabled.
+            Command.Create(sharedTestState.App.AppExe, "compat_shims")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Reported OS version is lower than the true OS version - shims in use.");
+        }
+
+        // Long paths must also be enabled via a machine-wide setting. Only run the test if it is enabled.
+        private static bool LongPathsEnabled()
+        {
             using (RegistryKey key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\FileSystem"))
             {
                 if (key == null)
-                {
-                    return;
-                }
+                    return false;
 
                 object longPathsSetting = key.GetValue("LongPathsEnabled", null);
-                if (longPathsSetting == null || !(longPathsSetting is int) || (int)longPathsSetting == 0)
-                {
-                    return;
-                }
+                return longPathsSetting != null && longPathsSetting is int && (int)longPathsSetting != 0;
             }
+        }
 
-            var fixture = sharedTestState.PortableAppWithLongPathFixture
-                .Copy();
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec(appDll, fixture.TestProject.Location)
+        [ConditionalFact(nameof(LongPathsEnabled))]
+        public void DotNet_LongPath_Succeeds()
+        {
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "long_path", sharedTestState.App.Location)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdOutContaining("CreateDirectoryW with long path succeeded");
         }
 
-        // Testing the standalone version (apphost) would require to make a copy of the entire SDK
-        // and overwrite the apphost.exe in it. Currently this is just too expensive for one test (160MB of data).
-
         public class SharedTestState : IDisposable
         {
-            private static RepoDirectoriesProvider RepoDirectories { get; set; }
-
-            public TestProjectFixture PortableAppWithLongPathFixture { get; }
-            public TestProjectFixture TestWindowsOsShimsAppFixture { get; }
+            public TestApp App { get; }
 
             public SharedTestState()
             {
-                RepoDirectories = new RepoDirectoriesProvider();
-
-                PortableAppWithLongPathFixture = new TestProjectFixture("PortableAppWithLongPath", RepoDirectories)
-                    .EnsureRestored()
-                    .BuildProject();
-
-                TestWindowsOsShimsAppFixture = new TestProjectFixture("TestWindowsOsShimsApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
+                App = TestApp.CreateFromBuiltAssets("WindowsSpecific");
+                App.CreateAppHost();
             }
 
             public void Dispose()
             {
-                PortableAppWithLongPathFixture.Dispose();
-                TestWindowsOsShimsAppFixture.Dispose();
+                App?.Dispose();
             }
         }
     }

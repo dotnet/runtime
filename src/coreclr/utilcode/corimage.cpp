@@ -255,5 +255,5 @@ EXTERN_C DWORD Cor_RtlImageRvaToOffset(PTR_IMAGE_NT_HEADERS NtHeaders,
         return ((Rva - VAL32(NtSection->VirtualAddress)) +
                 VAL32(NtSection->PointerToRawData));
     else
-        return NULL;
+        return 0;
 }

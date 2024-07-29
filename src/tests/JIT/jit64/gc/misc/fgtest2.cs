@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
-class T
+public class T
 {
     public static int x = 4;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int exitcode = 94;
 

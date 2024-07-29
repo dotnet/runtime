@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_AsgAnd1
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_AsgAnd1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int AsgAnd1(int x) { x &= 3; return x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (AsgAnd1(0xf) == 3) return Pass;
         else return Fail;

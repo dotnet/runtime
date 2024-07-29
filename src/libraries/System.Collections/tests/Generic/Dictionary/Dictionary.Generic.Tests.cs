@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Common.System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -15,6 +14,10 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract class Dictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+
         protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert;
 
         protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
@@ -80,8 +83,36 @@ namespace System.Collections.Tests
             Assert.Equal(comparer, dictionary.Comparer);
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Dictionary_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
+        {
+            Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>(capacity);
+            Assert.True(capacity <= dict.Capacity);
+        }
+
         #endregion
 
+        #region Properties
+
+        public void DictResized_CapacityChanged()
+        {
+            var dict = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(1);
+            int initialCapacity = dict.Capacity;
+
+            int seed = 85877;
+            for (int i = 0; i < dict.Capacity; i++)
+            {
+                dict.Add(CreateTKey(seed++), CreateTValue(seed++));
+            }
+
+            int afterCapacity = dict.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
+        }
+
+        #endregion
         #region ContainsValue
 
         [Theory]

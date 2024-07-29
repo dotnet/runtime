@@ -708,7 +708,7 @@ namespace System.ComponentModel.Composition.Hosting
             return GetExportedValuesCore<T>(contractName);
         }
 
-        private IEnumerable<T> GetExportedValuesCore<T>(string? contractName)
+        private Collection<T> GetExportedValuesCore<T>(string? contractName)
         {
             IEnumerable<Export> exports = GetExportsCore(typeof(T), (Type?)null, contractName, ImportCardinality.ZeroOrMore);
 
@@ -732,7 +732,7 @@ namespace System.ComponentModel.Composition.Hosting
             return (export != null) ? ExportServices.GetCastedExportedValue<T>(export) : default;
         }
 
-        private IEnumerable<Lazy<T>> GetExportsCore<T>(string? contractName)
+        private Collection<Lazy<T>> GetExportsCore<T>(string? contractName)
         {
             IEnumerable<Export> exports = GetExportsCore(typeof(T), (Type?)null, contractName, ImportCardinality.ZeroOrMore);
 
@@ -744,7 +744,7 @@ namespace System.ComponentModel.Composition.Hosting
             return result;
         }
 
-        private IEnumerable<Lazy<T, TMetadataView>> GetExportsCore<T, TMetadataView>(string? contractName)
+        private Collection<Lazy<T, TMetadataView>> GetExportsCore<T, TMetadataView>(string? contractName)
         {
             IEnumerable<Export> exports = GetExportsCore(typeof(T), typeof(TMetadataView), contractName, ImportCardinality.ZeroOrMore);
 
@@ -787,11 +787,11 @@ namespace System.ComponentModel.Composition.Hosting
                 throw new InvalidOperationException(SR.Format(SR.InvalidMetadataView, metadataViewType.Name));
             }
 
-            ImportDefinition importDefinition = BuildImportDefinition(type, metadataViewType, contractName, cardinality);
+            ContractBasedImportDefinition importDefinition = BuildImportDefinition(type, metadataViewType, contractName, cardinality);
             return GetExports(importDefinition, null);
         }
 
-        private static ImportDefinition BuildImportDefinition(Type type, Type metadataViewType, string contractName, ImportCardinality cardinality)
+        private static ContractBasedImportDefinition BuildImportDefinition(Type type, Type metadataViewType, string contractName, ImportCardinality cardinality)
         {
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(metadataViewType);

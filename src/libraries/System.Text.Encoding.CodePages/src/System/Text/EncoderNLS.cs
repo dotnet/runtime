@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.Text
 {
@@ -85,17 +86,11 @@ namespace System.Text
             if (chars.Length - index < count)
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
-            // Avoid empty input problem
-            if (chars.Length == 0)
-                chars = new char[1];
-
             // Just call the pointer version
-            int result = -1;
-            fixed (char* pChars = &chars[0])
+            fixed (char* pChars = &CodePagesEncodingProvider.GetNonNullPinnableReference(chars))
             {
-                result = GetByteCount(pChars + index, count, flush);
+                return GetByteCount(pChars + index, count, flush);
             }
-            return result;
         }
 
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
@@ -129,18 +124,15 @@ namespace System.Text
             if (byteIndex < 0 || byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
-            if (chars.Length == 0)
-                chars = new char[1];
-
             int byteCount = bytes.Length - byteIndex;
-            if (bytes.Length == 0)
-                bytes = new byte[1];
 
             // Just call pointer version
-            fixed (char* pChars = &chars[0])
-            fixed (byte* pBytes = &bytes[0])
+            fixed (char* pChars = &CodePagesEncodingProvider.GetNonNullPinnableReference(chars))
+            fixed (byte* pBytes = &CodePagesEncodingProvider.GetNonNullPinnableReference(bytes))
+            {
                 // Remember that charCount is # to decode, not size of array.
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, flush);
+            }
         }
 
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
@@ -183,20 +175,12 @@ namespace System.Text
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
-            // Avoid empty input problem
-            if (chars.Length == 0)
-                chars = new char[1];
-            if (bytes.Length == 0)
-                bytes = new byte[1];
-
             // Just call the pointer version (can't do this for non-msft encoders)
-            fixed (char* pChars = &chars[0])
+            fixed (char* pChars = &CodePagesEncodingProvider.GetNonNullPinnableReference(chars))
+            fixed (byte* pBytes = &CodePagesEncodingProvider.GetNonNullPinnableReference(bytes))
             {
-                fixed (byte* pBytes = &bytes[0])
-                {
-                    Convert(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, flush,
-                        out charsUsed, out bytesUsed, out completed);
-                }
+                Convert(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, flush,
+                    out charsUsed, out bytesUsed, out completed);
             }
         }
 

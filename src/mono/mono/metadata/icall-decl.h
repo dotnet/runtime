@@ -59,6 +59,7 @@ typedef enum {
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
+ICALL_EXPORT void ves_icall_System_Reflection_AssemblyName_FreeAssemblyName(MonoAssemblyName* aname, MonoBoolean free_struct);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
@@ -79,7 +80,6 @@ ICALL_EXPORT double ves_icall_System_Math_Ceiling (double);
 ICALL_EXPORT double ves_icall_System_Math_Cos (double);
 ICALL_EXPORT double ves_icall_System_Math_Cosh (double);
 ICALL_EXPORT double ves_icall_System_Math_Exp (double);
-ICALL_EXPORT double ves_icall_System_Math_FMod (double, double);
 ICALL_EXPORT double ves_icall_System_Math_Floor (double);
 ICALL_EXPORT double ves_icall_System_Math_Log (double);
 ICALL_EXPORT double ves_icall_System_Math_Log10 (double);
@@ -103,7 +103,6 @@ ICALL_EXPORT float ves_icall_System_MathF_Ceiling (float);
 ICALL_EXPORT float ves_icall_System_MathF_Cos (float);
 ICALL_EXPORT float ves_icall_System_MathF_Cosh (float);
 ICALL_EXPORT float ves_icall_System_MathF_Exp (float);
-ICALL_EXPORT float ves_icall_System_MathF_FMod (float, float);
 ICALL_EXPORT float ves_icall_System_MathF_Floor (float);
 ICALL_EXPORT float ves_icall_System_MathF_Log (float);
 ICALL_EXPORT float ves_icall_System_MathF_Log10 (float);
@@ -131,7 +130,9 @@ ICALL_EXPORT void ves_icall_System_Array_SetGenericValue_icall (MonoObjectHandle
 
 ICALL_EXPORT void ves_icall_System_Environment_Exit (int);
 ICALL_EXPORT void ves_icall_System_GC_InternalCollect (int generation);
-ICALL_EXPORT void ves_icall_System_GC_RecordPressure (gint64);
+ICALL_EXPORT void ves_icall_System_GC_AddPressure (guint64);
+ICALL_EXPORT void ves_icall_System_GC_RemovePressure (guint64);
+
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*, gint64*);
 
@@ -170,9 +171,13 @@ ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (uint16_t min_worker_threads, uint16_t max_worker_threads, uint16_t min_io_completion_threads, uint16_t max_io_completion_threads, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint16_t count, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (intptr_t native_overlapped, intptr_t overlapped, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionLockCreated (intptr_t lock_id, intptr_t associated_object_id, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStart (uint8_t contention_flags, uint16_t clr_instance_id, intptr_t lock_id, intptr_t associated_object_id, uint64_t lock_owner_thread_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogContentionStop (uint8_t contention_flags, uint16_t clr_instance_id, double duration_ns);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStart (uint8_t wait_source, intptr_t associated_object_id, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogWaitHandleWaitStop (uint16_t clr_instance_id);
 
 ICALL_EXPORT void ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array);
-ICALL_EXPORT void ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct);
 ICALL_EXPORT void ves_icall_Mono_SafeStringMarshal_GFree (void *c_str);
 ICALL_EXPORT char* ves_icall_Mono_SafeStringMarshal_StringToUtf8 (MonoString *volatile* s);
 ICALL_EXPORT MonoType* ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass);
@@ -200,6 +205,10 @@ ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (Mo
 
 ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
 
+ICALL_EXPORT gint8 ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal (MonoQCallTypeHandle type_handle);
+
 ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
 
 ICALL_EXPORT gint32 ves_icall_System_Array_GetCorElementTypeOfElementTypeInternal (MonoObjectHandleOnStack arr_handle);
@@ -209,5 +218,12 @@ ICALL_EXPORT MonoBoolean ves_icall_System_Array_IsValueOfElementTypeInternal (Mo
 ICALL_EXPORT MonoBoolean ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int source_idx, MonoObjectHandleOnStack dest_handle, int dest_idx, int length);
 
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native);
+
+ICALL_EXPORT void ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_StackFrame_GetFrameInfo (gint32 skip, MonoBoolean need_file_info,
+																			   MonoObjectHandleOnStack out_method, MonoObjectHandleOnStack file,
+																			   gint32 *iloffset, gint32 *native_offset,
+																			   gint32 *line, gint32 *column);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

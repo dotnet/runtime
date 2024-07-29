@@ -5,10 +5,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
-    // The generic IEqualityComparer interface implements methods to if check two objects are equal
+    // The generic IEqualityComparer interface implements methods to check if two objects are equal
     // and generate Hashcode for an object.
     // It is used in Dictionary class.
-    public interface IEqualityComparer<in T>
+    public interface IEqualityComparer<in T> where T : allows ref struct
     {
         bool Equals(T? x, T? y);
         int GetHashCode([DisallowNull] T obj);

@@ -12,9 +12,12 @@ function print_usage {
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
     echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
-    echo '  Android                          : Set build OS to Android.'
+    echo '  <build configuration>            : One of debug, checked, release. Defaults to debug.'
+    echo '  android                          : Set build OS to Android.'
+    echo '  wasi                             : Set build OS to WASI.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
+    echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
@@ -32,8 +35,9 @@ function print_usage {
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --useServerGC                    : Enable server GC for this test run'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
-    echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
+    echo '  --link=<ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
+    echo '  --logsDir=<path>                 : Specify the logs directory (default: artifacts/log)'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
@@ -47,21 +51,19 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
 repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
-source "$repoRootDir/eng/native/init-os-and-arch.sh"
+source "$repoRootDir/eng/common/native/init-os-and-arch.sh"
 
 # Argument variables
 buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
 testRootDir=
+coreRootDir=
+logsDir=
 testEnv=
 gcsimulator=
 longgc=
 limitedCoreDumps=
-((disableEventLogging = 0))
-((serverGC = 0))
-
-# Handle arguments
 verbose=0
 ilasmroundtrip=
 printLastResultsOnly=
@@ -95,11 +97,17 @@ do
         loongarch64)
             buildArch="loongarch64"
             ;;
+        riscv64)
+            buildArch="riscv64"
+            ;;
         wasm)
             buildArch="wasm"
             ;;
-        Android)
-            buildOS="Android"
+        android)
+            buildOS="android"
+            ;;
+        wasi)
+            buildOS="wasi"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -135,8 +143,14 @@ do
         --testRootDir=*)
             testRootDir=${i#*=}
             ;;
+        --coreRootDir=*)
+            coreRootDir=${i#*=}
+            ;;
+        --logsDir=*)
+            logsDir=${i#*=}
+            ;;
         --enableEventLogging)
-            ((eventLogging = 1))
+            export DOTNET_EnableEventLog=1
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
@@ -148,7 +162,7 @@ do
             runSequential=1
             ;;
         --useServerGC)
-            ((serverGC = 1))
+            export DOTNET_gcServer=1
             ;;
         --long-gc)
             ((longgc = 1))
@@ -186,19 +200,6 @@ do
 done
 
 ################################################################################
-# Set environment variables affecting tests.
-# (These should be run.py arguments.)
-################################################################################
-
-if ((eventLogging == 1)); then
-    export DOTNET_EnableEventLog=1
-fi
-
-if ((serverGC != 0)); then
-    export DOTNET_gcServer="$serverGC"
-fi
-
-################################################################################
 # Call run.py to run tests.
 ################################################################################
 
@@ -207,17 +208,31 @@ runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}"
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
-if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "Browser")
+if [ "$buildArch" = "wasm" -a -z "$buildOS" ]; then
+    buildOS="browser"
 fi
 
-if [ "$buildOS" = "Android" ]; then
-    runtestPyArguments+=("-os" "Android")
+if [ -n "$buildOS" ]; then
+    runtestPyArguments+=("-os" "$buildOS")
+fi
+
+if [ "$buildOS" = "android" ]; then
+    runtestPyArguments+=("-os" "android")
 fi
 
 if [[ -n "$testRootDir" ]]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
     echo "Test Location                 : ${testRootDir}"
+fi
+
+if [[ -n "$coreRootDir" ]]; then
+    runtestPyArguments+=("-core_root" "$coreRootDir")
+    echo "CORE_ROOT                     : ${coreRootDir}"
+fi
+
+if [[ -n "$logsDir" ]]; then
+    runtestPyArguments+=("-logs_dir" "$logsDir")
+    echo "Logs directory                : ${logsDir}"
 fi
 
 if [[ -n "${testEnv}" ]]; then
@@ -274,17 +289,17 @@ fi
 
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
-   runtestPyArguments+=("--tieringtest")
+    runtestPyArguments+=("--tieringtest")
 fi
 
 if [[ "$nativeaottest" -ne 0 ]]; then
     echo "Running NativeAOT compiled tests"
-   runtestPyArguments+=("--run_nativeaot_tests")
+    runtestPyArguments+=("--run_nativeaot_tests")
 fi
 
 # Default to python3 if it is installed
 __Python=python
- if command -v python3 &>/dev/null; then
+if command -v python3 &>/dev/null; then
     __Python=python3
 fi
 

@@ -1,75 +1,14 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputPath>$(RuntimeBinDir)crossgen2</OutputPath>
-    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
-    <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
-    <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(_IsPublishing)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
-    <SelfContained>false</SelfContained>
-    <SelfContained Condition="'$(_IsPublishing)' == 'true'">true</SelfContained>
+    <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
+    <UseAppHost>false</UseAppHost>
+    <!--
+      When building crossgen2, we don't have the live ref and runtime packs.
+      So even though we'll run against the live-built runtime,
+      we need to compile against the "Tool Current" runtime, which is the latest
+      that ships with the SDK that we build with.
+    -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
-
   <Import Project="crossgen2.props" />
-
-  <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-  </PropertyGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
-  <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
-    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
-  </PropertyGroup>
-
-  <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true'" />
-
-  <Target Name="RewriteRuntimePackDir"
-          Condition="'$(_IsPublishing)' == 'true'"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
-          BeforeTargets="ResolveRuntimePackAssets">
-      <ItemGroup>
-        <!-- Remove AspNetCore runtime pack since we don't build it locally -->
-        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.$(RuntimeIdentifier)" />
-
-        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
-          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
-        </ResolvedRuntimePack>
-      </ItemGroup>
-  </Target>
-
-  <Target Name="LocateNativeCompiler"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true' and '$(HostOS)' != 'windows'"
-          BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      </PropertyGroup>
-
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="true"
-            ConsoleToMsBuild="true"
-            StandardOutputImportance="Low">
-        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
-      </Exec>
-  </Target>
-
 </Project>

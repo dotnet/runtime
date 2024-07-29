@@ -61,6 +61,49 @@ There are actually three boolean types to keep in mind:
 * `MonoBoolean` used as an interop type with C# bool in internal calls
 * `mono_bool` used by the public C API - generally new code shouldn't use it except when adding a new public API function.
 
+## Newer features of C11 and later
+
+Mono is currently (2023) written in C11.
+
+### Static asserts
+
+Use `static_assert` liberally.  Include `<assert.h>`.  If you cannot include `<assert.h>` (for
+example because it introduces conflicting symbols or macros), use `g_static_assert`.  Do not use
+`_Static_assert` directly (see how `g_static_assert` is defined). Rationale: C23 deprecates
+`_Static_assert`.
+
+### Threads, locks, `call_once`
+
+Due to mono's threading model and cooperative GC, using C threading and locking primitives directly
+is not ok.  Prefer `MonoCoopMutex`, `MonoCoopCond` that have GC-aware locking/waiting operations.
+If you need them, use `mono_mutex_t`, `mono_cond_t`, etc for cases where GC transitions are
+prohibitively costly and you can guarantee that the lock will never be taken by a GC initiator or by
+a mix of threads in GC cooperative and GC preemptive mode.
+
+Using standard C threads and `call_once` in native library PInvokes outside the runtime is okay.
+
+Using standard C mutexes and condition variables in native library PInvokes outside the runtime is
+okay if the locks are not shared with the runtime internals.
+
+### Thread locals
+
+FIXME: no guidance yet
+
+### Atomics
+
+The C standard atomics are not guaranteed to be lock-free.  Use the mono `mono_atomic_` functions
+(some of which may be implemented in terms of standard C atomics on some platforms).  We do not in
+general want locking because it would not be GC aware and may deadlock the cooperative GC.
+
+Uses of `_Atomic` are a code smell in Mono.
+
+Using standard C atomics in native library PInvokes outside the runtime is okay provided the atomics
+aren't also accessed inside the runtime internals.
+
+### Generic operations
+
+FIXME: no guidance for `_Generic` yet.
+
 ## Utility and platform abstraction functions
 
 Mono generally tries to fill in POSIX-like abstractions on platforms that lack them (for example, Windows).
@@ -251,3 +294,4 @@ calling Mono internals.
 
 In general new code should not do this.  When modifying existing code, mysterious WASM failures may
 be attributed to symbol signature mismatches between WASM and the Mono runtime.
+

@@ -20,7 +20,7 @@
 // Image base: 0x03280000
 .namespace QSortTest
 {
-  .class private auto ansi Sorter
+  .class public auto ansi Sorter
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -32,7 +32,7 @@
       ret }
      // end of method Sorter::Sort
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

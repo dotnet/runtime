@@ -10,7 +10,7 @@ public class KeepAliveBoxFieldsTest
     private static string _failedFieldName;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestLocalsOneBlock();
         Reset();
@@ -24,8 +24,6 @@ public class KeepAliveBoxFieldsTest
         Reset();
         TestThrowCatchFinallyLocals();
         Reset();
-
-        return 100;
     }
 
     public static void TestLocalsOneBlock()

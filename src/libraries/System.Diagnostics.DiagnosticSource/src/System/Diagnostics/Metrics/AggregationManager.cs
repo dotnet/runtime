@@ -21,23 +21,23 @@ namespace System.Diagnostics.Metrics
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
         private readonly List<Predicate<Instrument>> _instrumentConfigFuncs = new();
-        private TimeSpan _collectionPeriod;
+        public TimeSpan CollectionPeriod { get; private set; }
 
+        public int MaxTimeSeries { get; }
+        public int MaxHistograms { get; }
+        private Dictionary<Instrument, bool> _instruments = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
-
-        private readonly int _maxTimeSeries;
-        private readonly int _maxHistograms;
-        private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
+        private readonly Action<Instrument, LabeledAggregationStatistics, InstrumentState?> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
-        private readonly Action<Instrument> _beginInstrumentMeasurements;
-        private readonly Action<Instrument> _endInstrumentMeasurements;
-        private readonly Action<Instrument> _instrumentPublished;
+        private readonly Action<Instrument, InstrumentState> _beginInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState> _endInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState?> _instrumentPublished;
         private readonly Action _initialInstrumentEnumerationComplete;
         private readonly Action<Exception> _collectionError;
         private readonly Action _timeSeriesLimitReached;
@@ -47,20 +47,20 @@ namespace System.Diagnostics.Metrics
         public AggregationManager(
             int maxTimeSeries,
             int maxHistograms,
-            Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
+            Action<Instrument, LabeledAggregationStatistics, InstrumentState?> collectMeasurement,
             Action<DateTime, DateTime> beginCollection,
             Action<DateTime, DateTime> endCollection,
-            Action<Instrument> beginInstrumentMeasurements,
-            Action<Instrument> endInstrumentMeasurements,
-            Action<Instrument> instrumentPublished,
+            Action<Instrument, InstrumentState> beginInstrumentMeasurements,
+            Action<Instrument, InstrumentState> endInstrumentMeasurements,
+            Action<Instrument, InstrumentState?> instrumentPublished,
             Action initialInstrumentEnumerationComplete,
             Action<Exception> collectionError,
             Action timeSeriesLimitReached,
             Action histogramLimitReached,
             Action<Exception> observableInstrumentCallbackError)
         {
-            _maxTimeSeries = maxTimeSeries;
-            _maxHistograms = maxHistograms;
+            MaxTimeSeries = maxTimeSeries;
+            MaxHistograms = maxHistograms;
             _collectMeasurement = collectMeasurement;
             _beginCollection = beginCollection;
             _endCollection = endCollection;
@@ -73,24 +73,10 @@ namespace System.Diagnostics.Metrics
             _histogramLimitReached = histogramLimitReached;
             _observableInstrumentCallbackError = observableInstrumentCallbackError;
 
-            _listener = new MeterListener()
-            {
-                InstrumentPublished = (instrument, listener) =>
-                {
-                    _instrumentPublished(instrument);
-                    InstrumentState? state = GetInstrumentState(instrument);
-                    if (state != null)
-                    {
-                        _beginInstrumentMeasurements(instrument);
-                        listener.EnableMeasurementEvents(instrument, state);
-                    }
-                },
-                MeasurementsCompleted = (instrument, cookie) =>
-                {
-                    _endInstrumentMeasurements(instrument);
-                    RemoveInstrumentState(instrument);
-                }
-            };
+            _listener = new MeterListener();
+            _listener.InstrumentPublished += PublishedInstrument;
+            _listener.MeasurementsCompleted += CompletedMeasurements;
+
             _listener.SetMeasurementEventCallback<double>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<float>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
             _listener.SetMeasurementEventCallback<long>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
@@ -124,16 +110,44 @@ namespace System.Diagnostics.Metrics
             Debug.Assert(collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
             lock (this)
             {
-                _collectionPeriod = collectionPeriod;
+                CollectionPeriod = collectionPeriod;
             }
             return this;
+        }
+
+        private void CompletedMeasurements(Instrument instrument, object? cookie)
+        {
+            _instruments.Remove(instrument);
+            Debug.Assert(cookie is not null);
+            _endInstrumentMeasurements(instrument, (InstrumentState)cookie);
+            RemoveInstrumentState(instrument);
+        }
+
+        private void PublishedInstrument(Instrument instrument, MeterListener _)
+        {
+            InstrumentState? state = GetInstrumentState(instrument);
+            _instrumentPublished(instrument, state);
+            if (state != null)
+            {
+                _beginInstrumentMeasurements(instrument, state);
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
+                if (!_instruments.ContainsKey(instrument))
+#pragma warning restore CA1864
+                {
+                    // This has side effects that prompt MeasurementsCompleted
+                    // to be called if this is called multiple times on an
+                    // instrument in a shared MetricsEventSource.
+                    _listener.EnableMeasurementEvents(instrument, state);
+                    _instruments.Add(instrument, true);
+                }
+            }
         }
 
         public void Start()
         {
             // if already started or already stopped we can't be started again
             Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
-            Debug.Assert(_collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
+            Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
             // This explicitly uses a Thread and not a Task so that metrics still work
             // even when an app is experiencing thread-pool starvation. Although we
@@ -148,6 +162,20 @@ namespace System.Diagnostics.Metrics
             _initialInstrumentEnumerationComplete();
         }
 
+        public void Update()
+        {
+            // Creating (and destroying) a MeterListener to leverage the existing
+            // mechanisms for enumerating and publishing instruments.
+            using (MeterListener tempListener = new MeterListener())
+            {
+                tempListener.InstrumentPublished += PublishedInstrument;
+                tempListener.MeasurementsCompleted += CompletedMeasurements;
+                tempListener.Start();
+            }
+
+            _initialInstrumentEnumerationComplete();
+        }
+
         private void CollectWorker(CancellationToken cancelToken)
         {
             try
@@ -155,7 +183,7 @@ namespace System.Diagnostics.Metrics
                 double collectionIntervalSecs = -1;
                 lock (this)
                 {
-                    collectionIntervalSecs = _collectionPeriod.TotalSeconds;
+                    collectionIntervalSecs = CollectionPeriod.TotalSeconds;
                 }
                 Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
 
@@ -275,7 +303,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -285,11 +313,11 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
-            else if (genericDefType == typeof(ObservableGauge<>))
+            else if (genericDefType == typeof(ObservableGauge<>) || genericDefType == typeof(Gauge<>))
             {
                 return () =>
                 {
@@ -312,6 +340,26 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
+            else if (genericDefType == typeof(UpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(ObservableUpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
             else
             {
                 return null;
@@ -320,12 +368,12 @@ namespace System.Diagnostics.Metrics
 
         private bool CheckTimeSeriesAllowed()
         {
-            if (_currentTimeSeries < _maxTimeSeries)
+            if (_currentTimeSeries < MaxTimeSeries)
             {
                 _currentTimeSeries++;
                 return true;
             }
-            else if (_currentTimeSeries == _maxTimeSeries)
+            else if (_currentTimeSeries == MaxTimeSeries)
             {
                 _currentTimeSeries++;
                 _timeSeriesLimitReached();
@@ -339,12 +387,12 @@ namespace System.Diagnostics.Metrics
 
         private bool CheckHistogramAllowed()
         {
-            if (_currentHistograms < _maxHistograms)
+            if (_currentHistograms < MaxHistograms)
             {
                 _currentHistograms++;
                 return true;
             }
-            else if (_currentHistograms == _maxHistograms)
+            else if (_currentHistograms == MaxHistograms)
             {
                 _currentHistograms++;
                 _histogramLimitReached();
@@ -371,7 +419,7 @@ namespace System.Diagnostics.Metrics
             {
                 kv.Value.Collect(kv.Key, (LabeledAggregationStatistics labeledAggStats) =>
                 {
-                    _collectMeasurement(kv.Key, labeledAggStats);
+                    _collectMeasurement(kv.Key, labeledAggStats, kv.Value);
                 });
             }
         }

@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct Rfc3161TstInfo
     {
-        private static ReadOnlySpan<byte> DefaultOrdering => new byte[] { 0x01, 0x01, 0x00 };
+        private static ReadOnlySpan<byte> DefaultOrdering => [0x01, 0x01, 0x00];
 
         internal int Version;
         internal string Policy;
@@ -37,12 +37,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 
@@ -67,7 +67,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             // DEFAULT value handler for Ordering.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(Ordering);
 
                 if (!tmp.EncodedValueEquals(DefaultOrdering))

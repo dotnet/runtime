@@ -95,13 +95,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (choice.Certificate.HasValue)
                     {
-                        coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NETCOREAPP
-                            .Span
-#else
-                            .ToArray()
-#endif
-                            ));
+                        coll.Add(X509CertificateLoader.LoadCertificate(choice.Certificate.Value.Span));
                     }
                 }
 
@@ -686,7 +680,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate is not null && cert.Certificate.Value.Span.SequenceEqual(rawData))
                     {
                         throw new CryptographicException(SR.Cryptography_Cms_CertificateAlreadyInCollection);
                     }
@@ -721,7 +715,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 foreach (CertificateChoiceAsn cert in _signedData.CertificateSet!)
                 {
-                    if (cert.Certificate!.Value.Span.SequenceEqual(rawData))
+                    if (cert.Certificate is not null && cert.Certificate.Value.Span.SequenceEqual(rawData))
                     {
                         PkcsHelpers.RemoveAt(ref _signedData.CertificateSet, idx);
                         Reencode();

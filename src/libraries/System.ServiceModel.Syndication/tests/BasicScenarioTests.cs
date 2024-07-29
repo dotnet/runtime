@@ -44,7 +44,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77526", TestPlatforms.Browser)]
         public static void SyndicationFeed_Load_Write_RSS_Feed()
         {
             string path = Path.GetTempFileName();
@@ -178,7 +177,6 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
             string RssPath = Path.GetTempFileName();
@@ -358,7 +356,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     toDeletedFile = false;
                     string errorMessage = $"The generated file was different from the baseline file:{Environment.NewLine}Baseline: {file}{Environment.NewLine}Actual: {serializeFilePath}{Environment.NewLine}Different Nodes:{Environment.NewLine}{diffNode}";
-                    Assert.True(false, errorMessage);
+                    Assert.Fail(errorMessage);
                 }
             }
             finally
@@ -482,7 +480,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     toDeletedFile = false;
                     string errorMessage = $"The generated file was different from the baseline file:{Environment.NewLine}Baseline: {file}{Environment.NewLine}Actual: {serializeFilePath}{Environment.NewLine}Different Nodes:{Environment.NewLine}{diffNode}";
-                    Assert.True(false, errorMessage);
+                    Assert.Fail(errorMessage);
                 }
             }
             catch (Exception e)
@@ -539,7 +537,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     toDeletedFile = false;
                     string errorMessage = $"The generated file was different from the baseline file:{Environment.NewLine}Baseline: {file}{Environment.NewLine}Actual: {serializeFilePath}{Environment.NewLine}Different Nodes:{Environment.NewLine}{diffNode}";
-                    Assert.True(false, errorMessage);
+                    Assert.Fail(errorMessage);
                 }
             }
             catch (Exception e)

@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'dup'{
 }
 
+.namespace dup_
+{
 .class public _dup {
 
 
@@ -33,16 +36,19 @@
 	ret	
 }
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
         ldc.i4          0xFAFAFAFA
-        call    int32 _dup::_dup(int32)
+        call    int32 dup_._dup::_dup(int32)
         brfalse         FAIL
         ldc.i8          0xFAFAFAFA
-        call    int32 _dup::_dup(int64)
+        call    int32 dup_._dup::_dup(int64)
         brfalse         FAIL
-        ldsflda		int32 _dup::PTR
-	call	int32 _dup::_dup(int32*)
+        ldsflda		int32 dup_._dup::PTR
+	call	int32 dup_._dup::_dup(int32*)
 	brfalse		FAIL
 
 PASS:
@@ -51,5 +57,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

@@ -63,10 +63,22 @@ public interface TestType_IOneWay
     void OneWay();
 }
 
+// Demonstrates proxies can be made for static virtual methods.
+public interface TestType_IStaticVirtualMethodService
+{
+    static virtual void TestMethod() { }
+}
+
 // Demonstrates proxies can be made for properties.
 public interface TestType_IPropertyService
 {
     string ReadWrite { get; set; }
+}
+
+// Demonstrates proxies can be made for static virtual properties.
+public interface TestType_IStaticVirtualPropertyService
+{
+    static virtual string TestProperty { get; set; }
 }
 
 // Demonstrates proxies can be made for events.

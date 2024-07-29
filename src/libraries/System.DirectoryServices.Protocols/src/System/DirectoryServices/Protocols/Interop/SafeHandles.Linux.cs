@@ -10,14 +10,14 @@ namespace System.DirectoryServices.Protocols
         internal bool _needDispose;
 
         public ConnectionHandle()
-            :base(true)
+            : base(true)
         {
             Interop.Ldap.ldap_initialize(out handle, null);
             _needDispose = true;
         }
 
         internal ConnectionHandle(string uri)
-            :base(true)
+            : base(true)
         {
             Interop.Ldap.ldap_initialize(out handle, uri);
             _needDispose = true;

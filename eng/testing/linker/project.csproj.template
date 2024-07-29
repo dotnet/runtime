@@ -1,6 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Needed for PublishTrimmed -->
+    <NetCoreAppToolCurrent>{NetCoreAppToolCurrent}</NetCoreAppToolCurrent>
+    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
+  </PropertyGroup>
+
+  <!-- Use live illink bits. It is necessary to both import the package props and override
+       the tasks assembly, because the live package props in the build output do not use
+       the same layout as the NuGet package. -->
+  <!-- This must be done after the usual nuget props imports, to override the implicitly referenced
+       Microsoft.NET.ILLink.Tasks.props from the SDK. -->
+  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+
+  <PropertyGroup>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
@@ -9,10 +28,14 @@
     <PublishAot>{PublishAot}</PublishAot>
     <AppHostSourcePath>{AppHostSourcePath}</AppHostSourcePath>
     <SingleFileHostSourcePath>{SingleFileHostSourcePath}</SingleFileHostSourcePath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <BrowserProjectRoot>{BrowserProjectRoot}</BrowserProjectRoot>
+    <WasmProjectRoot>{WasmProjectRoot}</WasmProjectRoot>
+    <WasiProjectRoot>{WasiProjectRoot}</WasiProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
@@ -36,8 +59,13 @@
     <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
     <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
     <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</SysRoot>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(ROOTFS_DIR)' != ''" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+  </ItemGroup>
 
   <ItemGroup>
     {RuntimeHostConfigurationOptions}
@@ -47,13 +75,37 @@
     {AdditionalProjectReferences}
   </ItemGroup>
 
-  <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
-  we use in dotnet/runtime repo -->
+  <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetArchitecture)' == 'wasm'">
+    <ItemGroup>
+      <_PropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
+          BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    </PropertyGroup>
+
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
+    </Exec>
+
+    <PropertyGroup>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
+    </PropertyGroup>
+  </Target>
+
+  <Import Project="{NativeSanitizersTargets}" />
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
-                      Version="{MicrosoftNETILLinkTasksVersion}"
-                      PrivateAssets="all"
-                      IsImplicitlyDefined="true" />
+    <Content Include="@(SanitizerRuntimeToCopy->'{SanitizerRuntimeFolder}/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

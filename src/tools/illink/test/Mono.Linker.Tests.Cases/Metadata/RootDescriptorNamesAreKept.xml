@@ -1,0 +1,6 @@
+<linker>
+    <assembly fullname="test">
+        <type fullname="Mono.Linker.Tests.Cases.Metadata.RootDescriptorNamesAreKept/RootedType" />
+        <type fullname="Mono.Linker.Tests.Cases.Metadata.RootDescriptorNamesAreKept/TypeWithPreserveMethods" preserve="methods" />
+    </assembly>
+</linker>

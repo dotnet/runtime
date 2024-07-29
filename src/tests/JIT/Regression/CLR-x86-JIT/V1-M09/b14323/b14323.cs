@@ -3,18 +3,19 @@
 
 
 using System;
+using Xunit;
 
 
 namespace DefaultNamespace
 {
-    internal class AppStarter
+    public class AppStarter
     {
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int[] foo = new int[1];
             long j = 0;
             foo[(int)j] = 1;
-            return 100;
         }
     };
 }

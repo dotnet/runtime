@@ -3,15 +3,16 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
     public String str;
 }
 
-class Test_struct8
+public class Test_struct8
 {
-    public static void c(ref S s1, ref int i)
+    private static void c(ref S s1, ref int i)
     {
         if (i < 10)
         {
@@ -21,13 +22,13 @@ class Test_struct8
         Console.WriteLine(s1.str);
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         S sM;
         int i = 0;
 
         sM.str = "test";
         c(ref sM, ref i);
-        return 100;
     }
 }

@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableOptRepeat" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitOptRepeat" Value="LeafMethod6" />
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Inlining
 {
@@ -49,7 +50,8 @@ public static class NoThrowInline
         return a.Length + b.Length + c.Length + d.Length;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (Bench("a", "bc", "def", "ghij") == 10) ? 100 : -1;
     }

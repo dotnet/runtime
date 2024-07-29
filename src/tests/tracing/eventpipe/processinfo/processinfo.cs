@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -88,7 +89,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             Process currentProcess = Process.GetCurrentProcess();
@@ -142,16 +144,19 @@ namespace Tracing.Tests.ProcessInfoValidation
             string commandLine = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
             Logger.logger.Log($"commandLine: \"{commandLine}\"");
 
-            // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
-            // /path/to/corerun /path/to/processinfo.dll
-            // or
-            // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
-            string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
-            string receivedCommandLine = NormalizeCommandLine(commandLine);
-
             // ActiveIssue https://github.com/dotnet/runtime/issues/62729
-            if (!OperatingSystem.IsAndroid())
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
+            {
+                // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
+                // /path/to/corerun /path/to/processinfo.dll
+                // or
+                // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
+                string currentProcessCommandLine = TestLibrary.Utilities.IsSingleFile
+                    ? currentProcess.MainModule.FileName
+                    : $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
+                string receivedCommandLine = NormalizeCommandLine(commandLine);
                 Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
+            }
 
             // VALIDATE OS
             start = end;
@@ -184,6 +189,14 @@ namespace Tracing.Tests.ProcessInfoValidation
             {
                 expectedOSValue = "Android";
             }
+            else if (OperatingSystem.IsIOS())
+            {
+                expectedOSValue = "iOS";
+            }
+            else if (OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "tvOS";
+            }
             else
             {
                 expectedOSValue = "Unknown";
@@ -207,20 +220,16 @@ namespace Tracing.Tests.ProcessInfoValidation
             // see eventpipeeventsource.cpp for these values
             string expectedArchValue = RuntimeInformation.ProcessArchitecture switch
             {
-                Architecture.X86 => "x86",
-                Architecture.X64 => "x64",
                 Architecture.Arm => "arm32",
-                Architecture.Arm64 => "arm64",
-                _ => "Unknown"
+                // All other architectures match the enum member name
+                _ => RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()
             };
 
-            Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
+            Utils.Assert(expectedArchValue.Equals(arch), $"Arch must match current Architecture. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
             Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch}\n}}");
-
-            return 100;
         }
     }
 }

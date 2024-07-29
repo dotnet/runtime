@@ -1,8 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.props" />
-
-  <PropertyGroup>
-    <ContractProject>$(MSBuildThisFileDirectory)..\ref\$(MSBuildProjectName).csproj</ContractProject>
-    <IsRuntimeAndReferenceAssembly Condition="!Exists('$(ContractProject)')">true</IsRuntimeAndReferenceAssembly>
-  </PropertyGroup>
-</Project>

@@ -209,7 +209,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.True(IPAddress.IsLoopback(ip));
 
             ip = new IPAddress(IPAddress.Loopback.MapToIPv6().GetAddressBytes()); // IPv4 loopback mapped to IPv6
-            Assert.Equal(!PlatformDetection.IsNetFramework, IPAddress.IsLoopback(ip)); // https://github.com/dotnet/runtime/issues/28740
+            Assert.True(IPAddress.IsLoopback(ip)); // https://github.com/dotnet/runtime/issues/28740
         }
 
         [Fact]
@@ -304,8 +304,8 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static IEnumerable<object[]> GetValidIPAddresses()
         {
-            return IPAddressParsing.ValidIpv4Addresses
-                .Concat(IPAddressParsing.ValidIpv6Addresses)
+            return IPAddressParsingFormatting.ValidIpv4Addresses
+                .Concat(IPAddressParsingFormatting.ValidIpv6Addresses)
                 .Select(array => new object[] {IPAddress.Parse((string)array[0])});
         }
 

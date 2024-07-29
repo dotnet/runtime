@@ -8,7 +8,7 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	static class Intrinsics
+	internal static class Intrinsics
 	{
 		public static IntrinsicId GetIntrinsicIdForMethod (MethodProxy calledMethod)
 		{
@@ -37,6 +37,11 @@ namespace ILLink.Shared.TrimAnalysis
 
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System.Type") => IntrinsicId.Type_MakeGenericType,
+
+				// static System.Reflection.RuntimeReflectionExtensions.GetMethodInfo (this Delegate del)
+				"GetMethodInfo" when calledMethod.IsDeclaredOnType ("System.Reflection.RuntimeReflectionExtensions")
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.Delegate")
+					=> IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo,
 
 				// static System.Reflection.RuntimeReflectionExtensions.GetRuntimeEvent (this Type type, string name)
 				"GetRuntimeEvent" when calledMethod.IsDeclaredOnType ("System.Reflection.RuntimeReflectionExtensions")
@@ -288,6 +293,12 @@ namespace ILLink.Shared.TrimAnalysis
 				"Empty" when calledMethod.IsDeclaredOnType ("System.Array")
 					=> IntrinsicId.Array_Empty,
 
+				// static System.Array.CreateInstance (System.Type type, int length)
+				"CreateInstance" when calledMethod.IsDeclaredOnType ("System.Array")
+					&& calledMethod.HasMetadataParametersCount (2)
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Int32")
+					=> IntrinsicId.Array_CreateInstance,
+
 				// static System.Activator.CreateInstance (System.Type type)
 				// static System.Activator.CreateInstance (System.Type type, bool nonPublic)
 				// static System.Activator.CreateInstance (System.Type type, params object?[]? args)
@@ -356,6 +367,29 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.String")
 					=> IntrinsicId.Assembly_CreateInstance,
 
+				// System.Reflection.Assembly.Location getter
+				"get_Location" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					=> IntrinsicId.Assembly_get_Location,
+
+				// System.Reflection.Assembly.GetFile (string)
+				"GetFile" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.String")
+					=> IntrinsicId.Assembly_GetFile,
+
+				// System.Reflection.Assembly.GetFiles ()
+				// System.Reflection.Assembly.GetFiles (bool)
+				"GetFiles" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					&& (calledMethod.HasMetadataParametersCount (0) || calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Boolean"))
+					=> IntrinsicId.Assembly_GetFiles,
+
+				// System.Reflection.AssemblyName.CodeBase getter
+				"get_CodeBase" when calledMethod.IsDeclaredOnType ("System.Reflection.AssemblyName")
+					=> IntrinsicId.AssemblyName_get_CodeBase,
+
+				// System.Reflection.AssemblyName.EscapedCodeBase getter
+				"get_EscapedCodeBase" when calledMethod.IsDeclaredOnType ("System.Reflection.AssemblyName")
+					=> IntrinsicId.AssemblyName_get_EscapedCodeBase,
+
 				// System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor (RuntimeTypeHandle type)
 				"RunClassConstructor" when calledMethod.IsDeclaredOnType ("System.Runtime.CompilerServices.RuntimeHelpers")
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.RuntimeTypeHandle")
@@ -372,6 +406,12 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.IsStatic ()
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.Type")
 					=> IntrinsicId.Nullable_GetUnderlyingType,
+
+				// static System.Delegate.Method getter
+				"get_Method" when calledMethod.IsDeclaredOnType ("System.Delegate")
+					&& calledMethod.HasImplicitThis ()
+					&& calledMethod.HasMetadataParametersCount (0)
+					=> IntrinsicId.Delegate_get_Method,
 
 				_ => IntrinsicId.None,
 			};

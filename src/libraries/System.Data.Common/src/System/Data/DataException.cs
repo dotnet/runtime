@@ -12,6 +12,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DataException : SystemException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -21,18 +23,20 @@ namespace System.Data
             HResult = HResults.Data;
         }
 
-        public DataException(string? s) : base(s)
+        public DataException(string? s) : base(s ?? SR.DataSet_DefaultDataException)
         {
             HResult = HResults.Data;
         }
 
-        public DataException(string? s, Exception? innerException) : base(s, innerException) { }
+        public DataException(string? s, Exception? innerException) : base(s ?? SR.DataSet_DefaultDataException, innerException) { }
     };
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ConstraintException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ConstraintException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -42,12 +46,12 @@ namespace System.Data
             HResult = HResults.DataConstraint;
         }
 
-        public ConstraintException(string? s) : base(s)
+        public ConstraintException(string? s) : base(s ?? SR.DataSet_DefaultConstraintException)
         {
             HResult = HResults.DataConstraint;
         }
 
-        public ConstraintException(string? message, Exception? innerException) : base(message, innerException)
+        public ConstraintException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultConstraintException, innerException)
         {
             HResult = HResults.DataConstraint;
         }
@@ -57,6 +61,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DeletedRowInaccessibleException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DeletedRowInaccessibleException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -72,12 +78,12 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DeletedRowInaccessibleException'/> class with the specified string.
         /// </summary>
-        public DeletedRowInaccessibleException(string? s) : base(s)
+        public DeletedRowInaccessibleException(string? s) : base(s ?? SR.DataSet_DefaultDeletedRowInaccessibleException)
         {
             HResult = HResults.DataDeletedRowInaccessible;
         }
 
-        public DeletedRowInaccessibleException(string? message, Exception? innerException) : base(message, innerException)
+        public DeletedRowInaccessibleException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultDeletedRowInaccessibleException, innerException)
         {
             HResult = HResults.DataDeletedRowInaccessible;
         }
@@ -87,6 +93,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DuplicateNameException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DuplicateNameException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -96,12 +104,12 @@ namespace System.Data
             HResult = HResults.DataDuplicateName;
         }
 
-        public DuplicateNameException(string? s) : base(s)
+        public DuplicateNameException(string? s) : base(s ?? SR.DataSet_DefaultDuplicateNameException)
         {
             HResult = HResults.DataDuplicateName;
         }
 
-        public DuplicateNameException(string? message, Exception? innerException) : base(message, innerException)
+        public DuplicateNameException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultDuplicateNameException, innerException)
         {
             HResult = HResults.DataDuplicateName;
         }
@@ -111,6 +119,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InRowChangingEventException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InRowChangingEventException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -120,12 +130,12 @@ namespace System.Data
             HResult = HResults.DataInRowChangingEvent;
         }
 
-        public InRowChangingEventException(string? s) : base(s)
+        public InRowChangingEventException(string? s) : base(s ?? SR.DataSet_DefaultInRowChangingEventException)
         {
             HResult = HResults.DataInRowChangingEvent;
         }
 
-        public InRowChangingEventException(string? message, Exception? innerException) : base(message, innerException)
+        public InRowChangingEventException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultInRowChangingEventException, innerException)
         {
             HResult = HResults.DataInRowChangingEvent;
         }
@@ -135,6 +145,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class InvalidConstraintException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InvalidConstraintException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -144,12 +156,12 @@ namespace System.Data
             HResult = HResults.DataInvalidConstraint;
         }
 
-        public InvalidConstraintException(string? s) : base(s)
+        public InvalidConstraintException(string? s) : base(s ?? SR.DataSet_DefaultInvalidConstraintException)
         {
             HResult = HResults.DataInvalidConstraint;
         }
 
-        public InvalidConstraintException(string? message, Exception? innerException) : base(message, innerException)
+        public InvalidConstraintException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultInvalidConstraintException, innerException)
         {
             HResult = HResults.DataInvalidConstraint;
         }
@@ -159,6 +171,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingPrimaryKeyException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MissingPrimaryKeyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -168,12 +182,12 @@ namespace System.Data
             HResult = HResults.DataMissingPrimaryKey;
         }
 
-        public MissingPrimaryKeyException(string? s) : base(s)
+        public MissingPrimaryKeyException(string? s) : base(s ?? SR.DataSet_DefaultMissingPrimaryKeyException)
         {
             HResult = HResults.DataMissingPrimaryKey;
         }
 
-        public MissingPrimaryKeyException(string? message, Exception? innerException) : base(message, innerException)
+        public MissingPrimaryKeyException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultMissingPrimaryKeyException, innerException)
         {
             HResult = HResults.DataMissingPrimaryKey;
         }
@@ -183,6 +197,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NoNullAllowedException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NoNullAllowedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -192,12 +208,12 @@ namespace System.Data
             HResult = HResults.DataNoNullAllowed;
         }
 
-        public NoNullAllowedException(string? s) : base(s)
+        public NoNullAllowedException(string? s) : base(s ?? SR.DataSet_DefaultNoNullAllowedException)
         {
             HResult = HResults.DataNoNullAllowed;
         }
 
-        public NoNullAllowedException(string? message, Exception? innerException) : base(message, innerException)
+        public NoNullAllowedException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultNoNullAllowedException, innerException)
         {
             HResult = HResults.DataNoNullAllowed;
         }
@@ -207,6 +223,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ReadOnlyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -216,12 +234,12 @@ namespace System.Data
             HResult = HResults.DataReadOnly;
         }
 
-        public ReadOnlyException(string? s) : base(s)
+        public ReadOnlyException(string? s) : base(s ?? SR.DataSet_DefaultReadOnlyException)
         {
             HResult = HResults.DataReadOnly;
         }
 
-        public ReadOnlyException(string? message, Exception? innerException) : base(message, innerException)
+        public ReadOnlyException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultReadOnlyException, innerException)
         {
             HResult = HResults.DataReadOnly;
         }
@@ -231,6 +249,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class RowNotInTableException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected RowNotInTableException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -240,12 +260,12 @@ namespace System.Data
             HResult = HResults.DataRowNotInTable;
         }
 
-        public RowNotInTableException(string? s) : base(s)
+        public RowNotInTableException(string? s) : base(s ?? SR.DataSet_DefaultRowNotInTableException)
         {
             HResult = HResults.DataRowNotInTable;
         }
 
-        public RowNotInTableException(string? message, Exception? innerException) : base(message, innerException)
+        public RowNotInTableException(string? message, Exception? innerException) : base(message ?? SR.DataSet_DefaultRowNotInTableException, innerException)
         {
             HResult = HResults.DataRowNotInTable;
         }
@@ -255,6 +275,8 @@ namespace System.Data
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class VersionNotFoundException : DataException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected VersionNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -264,12 +286,12 @@ namespace System.Data
             HResult = HResults.DataVersionNotFound;
         }
 
-        public VersionNotFoundException(string? s) : base(s)
+        public VersionNotFoundException(string? s) : base(s ?? (SR.DataSet_DefaultVersionNotFoundException))
         {
             HResult = HResults.DataVersionNotFound;
         }
 
-        public VersionNotFoundException(string? message, Exception? innerException) : base(message, innerException)
+        public VersionNotFoundException(string? message, Exception? innerException) : base(message ?? (SR.DataSet_DefaultVersionNotFoundException), innerException)
         {
             HResult = HResults.DataVersionNotFound;
         }

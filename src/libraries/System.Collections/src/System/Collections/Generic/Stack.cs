@@ -54,15 +54,16 @@ namespace System.Collections.Generic
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _array.Length;
+
+        /// <inheritdoc cref="ICollection{T}"/>
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
 
@@ -152,21 +153,14 @@ namespace System.Collections.Generic
         }
 
         // Returns an IEnumerator for this Stack.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<T>() :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public void TrimExcess()
         {
@@ -174,8 +168,23 @@ namespace System.Collections.Generic
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
-                _version++;
             }
+        }
+
+        /// <summary>
+        /// Sets the capacity of a <see cref="Stack{T}"/> object to a specified number of entries.
+        /// </summary>
+        /// <param name="capacity">The new capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than 0 or entries count.</exception>
+        public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _array.Length)
+                return;
+
+            Array.Resize(ref _array, capacity);
         }
 
         // Returns the top object on the stack without removing it.  If the stack
@@ -296,7 +305,6 @@ namespace System.Collections.Generic
             if (_array.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _array.Length;

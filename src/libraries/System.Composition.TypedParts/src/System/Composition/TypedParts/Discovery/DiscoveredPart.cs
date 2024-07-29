@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Composition.Convention;
+using System.Composition.Debugging;
+using System.Composition.Hosting;
+using System.Composition.Hosting.Core;
+using System.Composition.TypedParts.ActivationFeatures;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics.Hashing;
 using System.Reflection;
-using System.Linq.Expressions;
-using System.Diagnostics;
-using System.Composition.Debugging;
-using System.Composition.TypedParts.ActivationFeatures;
-using System.Composition.Hosting.Core;
-using System.Composition.Convention;
-using System.Composition.Hosting;
 
 namespace System.Composition.TypedParts.Discovery
 {
@@ -21,13 +21,13 @@ namespace System.Composition.TypedParts.Discovery
     {
         private readonly TypeInfo _partType;
         private readonly AttributedModelProvider _attributeContext;
-        private readonly ICollection<DiscoveredExport> _exports = new List<DiscoveredExport>();
+        private readonly List<DiscoveredExport> _exports = new List<DiscoveredExport>();
         private readonly ActivationFeature[] _activationFeatures;
         private readonly Lazy<IDictionary<string, object>> _partMetadata;
 
         // This is unbounded so potentially a source of memory consumption,
         // but in reality unlikely to be a problem.
-        private readonly IList<Type[]> _appliedArguments = new List<Type[]>();
+        private readonly List<Type[]> _appliedArguments = new List<Type[]>();
 
         // Lazily initialised among potentially many exports
         private ConstructorInfo _constructor;
@@ -103,7 +103,7 @@ namespace System.Composition.TypedParts.Discovery
                     _constructor = GetConstructorInfoFromGenericType(_partType);
                 }
 
-                _constructor ??= _partType.DeclaredConstructors.FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
+                _constructor ??= _partType.DeclaredConstructors.FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Length != 0));
 
                 if (_constructor == null)
                 {

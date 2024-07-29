@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.XPath;
-using System.Globalization;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml.Schema;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml.Schema
 {
@@ -3122,7 +3122,7 @@ namespace System.Xml.Schema
         /// Create an InvalidCastException for cases where either "destinationType" or "sourceType" is not a supported CLR representation
         /// for this Xml type.
         /// </summary>
-        private new Exception CreateInvalidClrMappingException(Type sourceType, Type destinationType)
+        private new InvalidCastException CreateInvalidClrMappingException(Type sourceType, Type destinationType)
         {
             if (sourceType == destinationType)
                 return new InvalidCastException(SR.Format(SR.XmlConvert_TypeListBadMapping, XmlTypeName, sourceType.Name));

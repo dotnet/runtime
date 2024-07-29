@@ -175,9 +175,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public class RootClass
         {
-            public ChildClass Child { get; }
+            public ChildClass? Child { get; }
 
-            public RootClass(ChildClass child)
+            public RootClass(ChildClass? child)
             {
                 Child = child;
             }
@@ -186,9 +186,9 @@ namespace System.Text.Json.Serialization.Tests
         public class ChildClass
         {
             public int MyInt { get; set; }
-            public int[] MyIntArray { get; set; }
-            public Dictionary<string, ChildClass> MyDictionary { get; set; }
-            public ChildClass[] Children { get; set; }
+            public int[]? MyIntArray { get; set; }
+            public Dictionary<string, ChildClass>? MyDictionary { get; set; }
+            public ChildClass[]? Children { get; set; }
         }
 
         private const string PathForChildListFails_Json = @"{""Child"":{""MyIntArray"":[1, bad]}";
@@ -314,9 +314,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Multi-dim arrays not supported.")]
-#endif
         public async Task ClassWithUnsupportedCollectionTypes()
         {
             Exception e;
@@ -327,12 +324,12 @@ namespace System.Text.Json.Serialization.Tests
             // since the verification occurs later and is no longer bound to the parent type.
             Assert.DoesNotContain("ClassWithInvalidArray.UnsupportedArray", e.ToString());
 
-            e = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{}}"));
+            e = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{""key"":[[1,2,3]]}}"));
             Assert.Contains("System.Int32[,]", e.ToString());
             Assert.DoesNotContain("ClassWithInvalidDictionary.UnsupportedDictionary", e.ToString());
         }
 
-        private class ClassWithInvalidArray
+        public class ClassWithInvalidArray
         {
             public int[,] UnsupportedArray { get; set; }
 
@@ -342,7 +339,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class ClassWithInvalidDictionary
+        public class ClassWithInvalidDictionary
         {
             public Dictionary<string, int[,]> UnsupportedDictionary { get; set; }
 

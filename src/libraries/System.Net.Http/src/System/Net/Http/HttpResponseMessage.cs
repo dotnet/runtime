@@ -67,10 +67,8 @@ namespace System.Net.Http
             get { return _statusCode; }
             set
             {
-                if (((int)value < 0) || ((int)value > 999))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative((int)value, nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan((int)value, 999, nameof(value));
                 CheckDisposed();
 
                 _statusCode = value;
@@ -153,10 +151,8 @@ namespace System.Net.Http
 
         public HttpResponseMessage(HttpStatusCode statusCode)
         {
-            if (((int)statusCode < 0) || ((int)statusCode > 999))
-            {
-                throw new ArgumentOutOfRangeException(nameof(statusCode));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative((int)statusCode, nameof(statusCode));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)statusCode, 999, nameof(statusCode));
 
             _statusCode = statusCode;
             _version = DefaultResponseVersion;

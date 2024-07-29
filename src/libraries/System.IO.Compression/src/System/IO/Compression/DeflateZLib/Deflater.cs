@@ -64,20 +64,16 @@ namespace System.IO.Compression
 
             ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
 
-            ZLibNative.ZLibStreamHandle? zlibStream = null;
             ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out zlibStream, zlibCompressionLevel,
+                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
                                                              windowBits, memLevel, strategy);
             }
             catch (Exception cause)
             {
-                zlibStream?.Dispose();
                 throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
             }
-
-            _zlibStream = zlibStream;
 
             switch (errC)
             {
@@ -126,10 +122,7 @@ namespace System.IO.Compression
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            if (0 == inputBuffer.Length)
-            {
-                return;
-            }
+            Debug.Assert(!inputBuffer.IsEmpty);
 
             lock (SyncLock)
             {
@@ -144,11 +137,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
-
-            if (count == 0)
-            {
-                return;
-            }
+            Debug.Assert(count > 0);
 
             lock (SyncLock)
             {

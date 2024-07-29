@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.AccessControl;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 /*
   Note on ACL support:
@@ -66,8 +66,8 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle _hkey;
-        private volatile string _keyName;
+        private SafeRegistryHandle _hkey;
+        private string _keyName;
         private readonly bool _remoteKey;
         private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck _checkMode;
@@ -334,65 +334,36 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
+            // If the key has values, it must be opened with KEY_SET_VALUE,
+            // or RegDeleteTree will fail with ERROR_ACCESS_DENIED.
+
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
                 {
-                    if (key.SubKeyCount > 0)
+                    int ret = Interop.Advapi32.RegDeleteTree(key._hkey, string.Empty);
+                    if (ret != 0)
                     {
-                        string[] keys = key.GetSubKeyNames();
+                        Win32Error(ret, null);
+                    }
 
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
+                    // RegDeleteTree doesn't self-delete when lpSubKey is empty.
+                    // Manually delete the key to restore old behavior.
+
+                    ret = Interop.Advapi32.RegDeleteKeyEx(key._hkey, string.Empty, (int)_regView, 0);
+                    if (ret != 0)
+                    {
+                        Win32Error(ret, null);
                     }
                 }
-
-                DeleteSubKeyTreeCore(subkey);
-            }
-            else if (throwOnMissingSubKey)
-            {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        /// <summary>
-        /// An internal version which does no security checks or argument checking.  Skipping the
-        /// security checks should give us a slight perf gain on large trees.
-        /// </summary>
-        private void DeleteSubKeyTreeInternal(string subkey)
-        {
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
-            {
-                using (key)
-                {
-                    if (key.SubKeyCount > 0)
-                    {
-                        string[] keys = key.GetSubKeyNames();
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-
-                DeleteSubKeyTreeCore(subkey);
             }
             else
             {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        private void DeleteSubKeyTreeCore(string subkey)
-        {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-            if (ret != 0)
-            {
-                Win32Error(ret, null);
+                if (throwOnMissingSubKey)
+                {
+                    throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
+                }
             }
         }
 
@@ -675,58 +646,55 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return IsSystemKey() ? SystemKeyHandle : _hkey;
+                return IsSystemKey() ? GetSystemKeyHandle() : _hkey;
             }
         }
 
-        private SafeRegistryHandle SystemKeyHandle
+        private SafeRegistryHandle GetSystemKeyHandle()
         {
-            get
+            Debug.Assert(IsSystemKey());
+
+            int ret = Interop.Errors.ERROR_INVALID_HANDLE;
+            IntPtr baseKey = 0;
+            switch (_keyName)
             {
-                Debug.Assert(IsSystemKey());
-
-                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
-                IntPtr baseKey = 0;
-                switch (_keyName)
-                {
-                    case "HKEY_CLASSES_ROOT":
-                        baseKey = HKEY_CLASSES_ROOT;
-                        break;
-                    case "HKEY_CURRENT_USER":
-                        baseKey = HKEY_CURRENT_USER;
-                        break;
-                    case "HKEY_LOCAL_MACHINE":
-                        baseKey = HKEY_LOCAL_MACHINE;
-                        break;
-                    case "HKEY_USERS":
-                        baseKey = HKEY_USERS;
-                        break;
-                    case "HKEY_PERFORMANCE_DATA":
-                        baseKey = HKEY_PERFORMANCE_DATA;
-                        break;
-                    case "HKEY_CURRENT_CONFIG":
-                        baseKey = HKEY_CURRENT_CONFIG;
-                        break;
-                    default:
-                        Win32Error(ret, null);
-                        break;
-                }
-
-                // open the base key so that RegistryKey.Handle will return a valid handle
-                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
-                    null,
-                    0,
-                    GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out SafeRegistryHandle result);
-
-                if (ret != 0 || result.IsInvalid)
-                {
-                    result.Dispose();
+                case "HKEY_CLASSES_ROOT":
+                    baseKey = HKEY_CLASSES_ROOT;
+                    break;
+                case "HKEY_CURRENT_USER":
+                    baseKey = HKEY_CURRENT_USER;
+                    break;
+                case "HKEY_LOCAL_MACHINE":
+                    baseKey = HKEY_LOCAL_MACHINE;
+                    break;
+                case "HKEY_USERS":
+                    baseKey = HKEY_USERS;
+                    break;
+                case "HKEY_PERFORMANCE_DATA":
+                    baseKey = HKEY_PERFORMANCE_DATA;
+                    break;
+                case "HKEY_CURRENT_CONFIG":
+                    baseKey = HKEY_CURRENT_CONFIG;
+                    break;
+                default:
                     Win32Error(ret, null);
-                }
-
-                return result;
+                    break;
             }
+
+            // open the base key so that RegistryKey.Handle will return a valid handle
+            ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
+                null,
+                0,
+                GetRegistryKeyAccess(IsWritable()) | (int)_regView,
+                out SafeRegistryHandle result);
+
+            if (ret != 0 || result.IsInvalid)
+            {
+                result.Dispose();
+                Win32Error(ret, null);
+            }
+
+            return result;
         }
 
         private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)
@@ -877,7 +845,7 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            var names = new List<string>(values);
+            string[] names = new string[values];
 
             // Names in the registry aren't usually very long, although they can go to as large
             // as 16383 characters (MaxValueLength).
@@ -888,6 +856,7 @@ namespace Microsoft.Win32
             // only if needed.
 
             char[]? name = ArrayPool<char>.Shared.Rent(100);
+            int cpt = 0;
 
             try
             {
@@ -896,7 +865,7 @@ namespace Microsoft.Win32
 
                 while ((result = Interop.Advapi32.RegEnumValue(
                     _hkey,
-                    names.Count,
+                    cpt,
                     name,
                     ref nameLength,
                     0,
@@ -909,7 +878,12 @@ namespace Microsoft.Win32
                         // The size is only ever reported back correctly in the case
                         // of ERROR_SUCCESS. It will almost always be changed, however.
                         case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
+                            if (cpt >= names.Length) // possible new item during loop
+                            {
+                                Array.Resize(ref names, names.Length * 2);
+                            }
+
+                            names[cpt++] = new string(name, 0, nameLength);
                             break;
                         case Interop.Errors.ERROR_MORE_DATA:
                             if (IsPerfDataKey())
@@ -919,9 +893,15 @@ namespace Microsoft.Win32
                                 // to be big enough however. 8 characters is the largest
                                 // known name. The size isn't returned, but the string is
                                 // null terminated.
+
+                                if (cpt >= names.Length) // possible new item during loop
+                                {
+                                    Array.Resize(ref names, names.Length * 2);
+                                }
+
                                 fixed (char* c = &name[0])
                                 {
-                                    names.Add(new string(c));
+                                    names[cpt++] = new string(c);
                                 }
                             }
                             else
@@ -949,7 +929,13 @@ namespace Microsoft.Win32
                     ArrayPool<char>.Shared.Return(name);
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>

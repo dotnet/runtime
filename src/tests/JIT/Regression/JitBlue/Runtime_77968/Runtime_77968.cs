@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
-class Runtime_77968
+public class Runtime_77968
 {
     private static readonly object o = new ();
 
@@ -17,7 +18,8 @@ class Runtime_77968
         return ((int[])o).Length;
     }
 
-    private static int Main(string[] args)
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -31,6 +33,5 @@ class Runtime_77968
             }
             Thread.Sleep(15);
         }
-        return 100;
     }
 }

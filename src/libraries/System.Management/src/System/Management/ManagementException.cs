@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -608,7 +609,7 @@ namespace System.Management
                 {
                     msg = (string)errObj["Description"];
                 }
-                catch {}
+                catch { }
 
             throw new ManagementException(errorCode, msg, errObj);
         }
@@ -631,19 +632,19 @@ namespace System.Management
                 {
                     msg = (string)errObj["Description"];
                 }
-                catch {}
+                catch { }
 
             throw new ManagementException(e, msg, errObj);
         }
 
 
-        internal ManagementException(ManagementStatus errorCode, string msg, ManagementBaseObject errObj) : base (msg)
+        internal ManagementException(ManagementStatus errorCode, string msg, ManagementBaseObject errObj) : base(msg)
         {
             this.errorCode = errorCode;
             this.errorObject = errObj;
         }
 
-        internal ManagementException(Exception e, string msg, ManagementBaseObject errObj) : base (msg, e)
+        internal ManagementException(Exception e, string msg, ManagementBaseObject errObj) : base(msg, e)
         {
             try
             {
@@ -663,7 +664,7 @@ namespace System.Management
                 else
                     errorCode = (ManagementStatus)this.HResult;
             }
-            catch {}
+            catch { }
         }
 
         /// <summary>
@@ -671,6 +672,10 @@ namespace System.Management
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
         /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ManagementException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             errorCode = (ManagementStatus)info.GetValue("errorCode", typeof(ManagementStatus));
@@ -678,7 +683,7 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementException'/> class</para>
         /// </summary>
-        public ManagementException():this(ManagementStatus.Failed, "", null)
+        public ManagementException() : this(ManagementStatus.Failed, "", null)
         {
 
         }
@@ -689,7 +694,7 @@ namespace System.Management
         /// class with a specified error message.</para>
         /// </summary>
         /// <param name='message'>The message that describes the error.</param>
-        public ManagementException(string message):this(ManagementStatus.Failed, message, null)
+        public ManagementException(string message) : this(ManagementStatus.Failed, message, null)
         {
 
         }
@@ -701,7 +706,7 @@ namespace System.Management
         /// <param name='innerException'>The exception that is the cause of the current exception. If the innerException
         /// parameter is not a null reference (Nothing in Visual Basic), the current exception is raised in a catch
         /// block that handles the inner exception.</param>
-        public ManagementException(string message, Exception innerException):this(innerException, message, null)
+        public ManagementException(string message, Exception innerException) : this(innerException, message, null)
         {
             // if the exception passed is not a ManagementException, then initialize the ErrorCode to Failed
             if (!(innerException is ManagementException))
@@ -715,7 +720,10 @@ namespace System.Management
         /// </summary>
         /// <param name='info'>The <see cref='System.Runtime.Serialization.SerializationInfo'/> to populate with data.</param>
         /// <param name='context'>The destination (see <see cref='System.Runtime.Serialization.StreamingContext'/> ) for this serialization.</param>
-
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -733,7 +741,7 @@ namespace System.Management
             {
                 // Try and get WMI error message. If not use the one in
                 // the exception
-                msg = GetMessage ((ManagementStatus)((COMException)e).ErrorCode);
+                msg = GetMessage((ManagementStatus)((COMException)e).ErrorCode);
             }
 
             if (null == msg)
@@ -748,10 +756,11 @@ namespace System.Management
             IWbemStatusCodeText statusCode = null;
             int hr;
 
-            statusCode = (IWbemStatusCodeText) new WbemStatusCodeText();
+            statusCode = (IWbemStatusCodeText)new WbemStatusCodeText();
             if (statusCode != null)
             {
-                try {
+                try
+                {
                     hr = statusCode.GetErrorCodeText_((int)errorCode, 0, 1, out msg);
 
                     // Just in case it didn't like the flag=1, try it again
@@ -759,7 +768,7 @@ namespace System.Management
                     if (hr != 0)
                         hr = statusCode.GetErrorCodeText_((int)errorCode, 0, 0, out msg);
                 }
-                catch {}
+                catch { }
             }
 
             return msg;

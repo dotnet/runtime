@@ -11,14 +11,16 @@ namespace System.Reflection
     /// Provides APIs for populating nullability information/context from reflection members:
     /// <see cref="ParameterInfo"/>, <see cref="FieldInfo"/>, <see cref="PropertyInfo"/> and <see cref="EventInfo"/>.
     /// </summary>
-    public sealed class NullabilityInfoContext
+#if NET
+    public
+#else
+    internal
+#endif
+    sealed class NullabilityInfoContext
     {
         private const string CompilerServicesNameSpace = "System.Runtime.CompilerServices";
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
-
-        internal static bool IsSupported { get; } =
-            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
 
         [Flags]
         private enum NotAnnotatedStatus
@@ -65,10 +67,11 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(parameterInfo);
-
-            EnsureIsSupported();
-
+#else
+            NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
+#endif
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
                 ? NullableAttributeStateParser.Unknown
@@ -86,35 +89,47 @@ namespace System.Reflection
 
         private void CheckParameterMetadataType(ParameterInfo parameter, NullabilityInfo nullability)
         {
-            if (parameter.Member is MethodInfo method)
-            {
-                MethodInfo metaMethod = GetMethodMetadataDefinition(method);
-                ParameterInfo? metaParameter = null;
-                if (string.IsNullOrEmpty(parameter.Name))
-                {
-                    metaParameter = metaMethod.ReturnParameter;
-                }
-                else
-                {
-                    ParameterInfo[] parameters = metaMethod.GetParameters();
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        if (parameter.Position == i &&
-                            parameter.Name == parameters[i].Name)
-                        {
-                            metaParameter = parameters[i];
-                            break;
-                        }
-                    }
-                }
+            ParameterInfo? metaParameter;
+            MemberInfo metaMember;
 
-                if (metaParameter != null)
-                {
-                    CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType, parameter.Member.ReflectedType);
-                }
+            switch (parameter.Member)
+            {
+                case ConstructorInfo ctor:
+                    var metaCtor = (ConstructorInfo)GetMemberMetadataDefinition(ctor);
+                    metaMember = metaCtor;
+                    metaParameter = GetMetaParameter(metaCtor, parameter);
+                    break;
+
+                case MethodInfo method:
+                    MethodInfo metaMethod = GetMethodMetadataDefinition(method);
+                    metaMember = metaMethod;
+                    metaParameter = string.IsNullOrEmpty(parameter.Name) ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
+                    break;
+
+                default:
+                    return;
+            }
+
+            if (metaParameter != null)
+            {
+                CheckGenericParameters(nullability, metaMember, metaParameter.ParameterType, parameter.Member.ReflectedType);
             }
         }
 
+        private static ParameterInfo? GetMetaParameter(MethodBase metaMethod, ParameterInfo parameter)
+        {
+            ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameter.Position == i &&
+                    parameter.Name == parameters[i].Name)
+                {
+                    return parameters[i];
+                }
+            }
+
+            return null;
+        }
         private static MethodInfo GetMethodMetadataDefinition(MethodInfo method)
         {
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
@@ -178,10 +193,11 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(propertyInfo);
-
-            EnsureIsSupported();
-
+#else
+            NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
+#endif
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
             MethodInfo? setter = propertyInfo.GetSetMethod(true);
             bool annotationsDisabled = (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
@@ -200,7 +216,9 @@ namespace System.Reflection
 
             if (setter != null)
             {
-                CheckNullabilityAttributes(nullability, setter.GetParameters()[^1].GetCustomAttributesData());
+                ReadOnlySpan<ParameterInfo> parameters = setter.GetParametersAsSpan();
+                ParameterInfo parameter = parameters[parameters.Length - 1];
+                CheckNullabilityAttributes(nullability, parameter.GetCustomAttributesData());
             }
             else
             {
@@ -231,10 +249,11 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(EventInfo eventInfo)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(eventInfo);
-
-            EnsureIsSupported();
-
+#else
+            NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
+#endif
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
         }
 
@@ -248,23 +267,16 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(fieldInfo);
-
-            EnsureIsSupported();
-
+#else
+            NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
+#endif
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
-        }
-
-        private static void EnsureIsSupported()
-        {
-            if (!IsSupported)
-            {
-                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
-            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)
@@ -444,7 +456,7 @@ namespace System.Reflection
                 return method.ReturnType;
             }
 
-            return property.GetSetMethod(true)!.GetParameters()[0].ParameterType;
+            return property.GetSetMethod(true)!.GetParametersAsSpan()[0].ParameterType;
         }
 
         private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType, Type? reflectedType)
@@ -485,7 +497,11 @@ namespace System.Reflection
             Debug.Assert(genericParameter.IsGenericParameter);
 
             if (reflectedType is not null
+#if NET
                 && !genericParameter.IsGenericMethodParameter
+#else
+                && !genericParameter.IsGenericMethodParameter()
+#endif
                 && TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, reflectedType, reflectedType))
             {
                 return true;
@@ -516,7 +532,12 @@ namespace System.Reflection
 
         private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
         {
-            Debug.Assert(genericParameter.IsGenericParameter && !genericParameter.IsGenericMethodParameter);
+            Debug.Assert(genericParameter.IsGenericParameter &&
+#if NET
+                !genericParameter.IsGenericMethodParameter);
+#else
+                !genericParameter.IsGenericMethodParameter());
+#endif
 
             Type contextTypeDefinition = context.IsGenericType && !context.IsGenericTypeDefinition ? context.GetGenericTypeDefinition() : context;
             if (genericParameter.DeclaringType == contextTypeDefinition)
@@ -573,7 +594,7 @@ namespace System.Reflection
             }
         }
 
-        private bool TryPopulateNullabilityInfo(NullabilityInfo nullability, NullableAttributeStateParser parser, ref int index)
+        private static bool TryPopulateNullabilityInfo(NullabilityInfo nullability, NullableAttributeStateParser parser, ref int index)
         {
             bool isValueType = IsValueTypeOrValueTypeByRef(nullability.Type);
             if (!isValueType)
@@ -654,4 +675,54 @@ namespace System.Reflection
             }
         }
     }
+
+#if !NET
+    internal static class NetstandardHelpers
+    {
+        public static void ThrowIfNull(object? argument, string paramName)
+        {
+            if (argument is null)
+            {
+                Throw(paramName);
+                static void Throw(string paramName) => throw new ArgumentNullException(paramName);
+            }
+        }
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "This is finding the MemberInfo with the same MetadataToken as specified MemberInfo. If the specified MemberInfo " +
+                            "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
+        public static MemberInfo GetMemberWithSameMetadataDefinitionAs(this Type type, MemberInfo member)
+        {
+            ThrowIfNull(member, nameof(member));
+
+            const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+            foreach (MemberInfo myMemberInfo in type.GetMembers(all))
+            {
+                if (myMemberInfo.HasSameMetadataDefinitionAs(member))
+                {
+                    return myMemberInfo;
+                }
+            }
+
+            throw new MissingMemberException(type.FullName, member.Name);
+        }
+
+        private static bool HasSameMetadataDefinitionAs(this MemberInfo info, MemberInfo other)
+        {
+            if (info.MetadataToken != other.MetadataToken)
+                return false;
+
+            if (!info.Module.Equals(other.Module))
+                return false;
+
+            return true;
+        }
+
+        public static bool IsGenericMethodParameter(this Type type)
+            => type.IsGenericParameter && type.DeclaringMethod is not null;
+
+        public static ReadOnlySpan<ParameterInfo> GetParametersAsSpan(this MethodBase metaMethod)
+            => metaMethod.GetParameters();
+    }
+#endif
 }

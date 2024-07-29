@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
@@ -10,10 +13,14 @@
     <Compile Include="System\Security\Claims\ClaimValueTypes.cs" />
     <Compile Include="System\Security\Claims\GenericIdentity.cs" />
     <Compile Include="System\Security\Claims\GenericPrincipal.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
+
 </Project>

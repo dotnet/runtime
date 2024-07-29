@@ -18,13 +18,14 @@ void ReclaimUnusedInterfaceDispatchCaches();
 struct InterfaceDispatchCacheEntry
 {
     MethodTable *    m_pInstanceType;    // Potential type of the object instance being dispatched on
-    void *      m_pTargetCode;      // Method to dispatch to if the actual instance type matches the above
+    PCODE            m_pTargetCode;      // Method to dispatch to if the actual instance type matches the above
 };
 
 // The interface dispatch cache itself. As well as the entries we include the cache size (since logic such as
 // cache miss processing needs to determine this value in a synchronized manner, so it can't be contained in
 // the owning interface dispatch indirection cell) and a list entry used to link the caches in one of a couple
 // of lists related to cache reclamation.
+
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 struct InterfaceDispatchCell;
@@ -34,8 +35,10 @@ struct InterfaceDispatchCache
     union
     {
         InterfaceDispatchCache *    m_pNextFree;    // next in free list
-#ifndef HOST_AMD64
-        InterfaceDispatchCell  *    m_pCell;        // pointer back to interface dispatch cell - not used for AMD64
+#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
+        // On ARM and x86 the slow path in the stubs needs to reload the cell pointer from the cache due to the lack
+        // of available (volatile non-argument) registers.
+        InterfaceDispatchCell  *    m_pCell;        // pointer back to interface dispatch cell
 #endif
     };
     uint32_t                      m_cEntries;

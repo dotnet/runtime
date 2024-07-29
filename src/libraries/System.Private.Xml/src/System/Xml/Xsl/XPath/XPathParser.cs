@@ -355,8 +355,8 @@ namespace System.Xml.Xsl.XPath
             XPathOperator op;
             Node opnd;
 
-            ReadOnlySpan<byte> xpathOperatorPrecedence = new byte[]
-            {
+            ReadOnlySpan<byte> xpathOperatorPrecedence =
+            [
                 /*Unknown    */ 0,
                 /*Or         */ 1,
                 /*And        */ 2,
@@ -373,7 +373,7 @@ namespace System.Xml.Xsl.XPath
                 /*Modulo     */ 6,
                 /*UnaryMinus */ 7,
                 /*Union      */ 8,  // Not used
-            };
+            ];
 
             // Check for unary operators
             if (_scanner!.Kind == LexKind.Minus)

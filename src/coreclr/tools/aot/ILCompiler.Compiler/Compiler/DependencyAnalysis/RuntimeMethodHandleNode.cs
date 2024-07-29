@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-              .Append("__RuntimeMethodHandle_")
+              .Append("__RuntimeMethodHandle_"u8)
               .Append(nameMangler.GetMangledMethodName(_targetMethod));
         }
         public int Offset => 0;
@@ -52,7 +52,13 @@ namespace ILCompiler.DependencyAnalysis
                 && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.GVMDependencies(_targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM dependencies for runtime method handle");
+                MethodDesc canonMethod = _targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies for runtime method handle");
+
+                // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
+                // into the system. Ensure reflection analysis can still see this.
+                if (_targetMethod.IsAbstract)
+                    factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, canonMethod, methodIL: null);
             }
 
             factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
@@ -60,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
+        private static readonly Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {

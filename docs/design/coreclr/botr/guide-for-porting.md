@@ -76,7 +76,7 @@ The process follows the following strategy
     getting some code to work is a prerequisite for handling more complex
     scenarios. When doing initial bringup, configuring the Gen0 budget of the GC
     to be a large number so that the GC does not attempt to run during most
-    tests is very useful. (Set `COMPlus_GCgen0size=99999999`)
+    tests is very useful. (Set `DOTNET_GCgen0size=99999999`)
 
 -   Once basic code is executing, the focus shifts to enabling the GC to work.
     In this initial phase, the correct choice is to enable conservative GC
@@ -137,7 +137,7 @@ Stage 4 Focus on stress
     really works.
 
 -   See the various test passes done in CI, but most critically GCStress testing
-    is needed. See documentation around use of the ComPlus_GCStress environment
+    is needed. See documentation around use of the DOTNET_GCStress environment
     variable.
 
 Stage 5 productization
@@ -181,7 +181,7 @@ both the JIT and VM.
 
 2.  Architecture specific relocation information (to represent generation of
     relocations for use by load, store, jmp and call instructions) See
-    <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#coff-relocations-object-only>
+    <https://learn.microsoft.com/windows/win32/debug/pe-format#coff-relocations-object-only>
     for the sort of details that need to be defined.
 
 3.  Behavior and accessibility of processor single step features from within a
@@ -412,12 +412,6 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         pinvokes. It is expected that C\# 8.0 will increase use of this feature.
         Today use of this feature on Unix requires hand-written IL. On Windows
         this feature is commonly used by C++/CLI
-
-3.  EH Correctness. Some helpers are written in assembly to provide well known
-    locations for NullReferenceExceptions to be generated out of a SIGSEGV
-    signal.
-
-    1.  `JIT_MemSet`, and `JIT_MemCpy` have this requirement
 
 #### cgencpu.h
 

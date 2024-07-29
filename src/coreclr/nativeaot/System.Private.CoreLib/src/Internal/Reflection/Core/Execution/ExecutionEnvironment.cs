@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Numerics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
+
 using Internal.Metadata.NativeFormat;
 
 using OpenMethodInvoker = System.Reflection.Runtime.MethodInfos.OpenMethodInvoker;
-using System.Reflection.Runtime.MethodInfos;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -21,61 +22,38 @@ namespace Internal.Reflection.Core.Execution
     // This class abstracts the underlying Redhawk (or whatever execution engine) runtime and exposes the services
     // that I.R.Core.Execution needs.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class ExecutionEnvironment
     {
         //==============================================================================================
-        // Access to the underlying execution engine's object allocation routines.
-        //==============================================================================================
-        public abstract object NewObject(RuntimeTypeHandle typeHandle);
-        public abstract Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count);
-        public abstract Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds);
-
-        //==============================================================================================
         // Execution engine policies.
         //==============================================================================================
 
-        //
-        // This returns a generic type with one generic parameter (representing the array element type)
-        // whose base type and interface list determines what TypeInfo.BaseType and TypeInfo.ImplementedInterfaces
-        // return for types that return true for IsArray.
-        //
-        public abstract RuntimeTypeHandle ProjectionTypeForArrays { get; }
-        public abstract bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType);
-        public abstract bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle);
-        public abstract IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle);
-        public abstract void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle);
         public abstract void GetInterfaceMap(Type instanceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
-        public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
-        public abstract string GetLastResortString(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
         // Reflection Mapping Tables
         //==============================================================================================
-        public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition);
+        public abstract QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
 
-        public abstract bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle);
-        public abstract bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle);
-
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle);
 
         public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
 
+        public abstract bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle);
+
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
-        public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
         public abstract bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle);
-        public abstract bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle);
 
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
+        public abstract bool TryGetConstructedGenericTypeForComponentsNoConstraintCheck(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
 
         //==============================================================================================
         // Invoke and field access support.
         //==============================================================================================
-        public abstract MethodInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
+        public abstract MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles);
         public abstract FieldAccessor TryGetFieldAccessor(MetadataReader reader, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle, FieldHandle fieldHandle);
 
         //==============================================================================================
@@ -98,15 +76,20 @@ namespace Internal.Reflection.Core.Execution
         // Other
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
-        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeTypeHandle typeHandle)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
+        public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
+        public abstract IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker);
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+        public abstract IntPtr GetStaticClassConstructionContext(RuntimeTypeHandle typeHandle);
 
-        public abstract IntPtr GetDynamicInvokeThunk(MethodInvoker invoker);
+        public abstract AssemblyBinder AssemblyBinder { get; }
+        public abstract Exception CreateMissingMetadataException(Type pertainant);
+        public abstract Exception CreateNonInvokabilityException(MemberInfo pertainant);
 
         //==============================================================================================
         // Non-public methods
         //==============================================================================================
-        internal MethodInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, out Exception exception)
+        internal MethodBaseInvoker GetMethodInvoker(RuntimeTypeInfo declaringType, QMethodDefinition methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant, out Exception exception)
         {
             exception = null;
 
@@ -125,13 +108,13 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericMethodTypeArgumentHandles[i] = genericMethodTypeArguments[i].TypeHandle;
             }
-            MethodInvoker methodInvoker = TryGetMethodInvoker(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
+            MethodBaseInvoker methodInvoker = TryGetMethodInvoker(typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
-                exception = ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(exceptionPertainant);
+                exception = ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;
         }
 
-        protected MethodInvoker GetMethodInvoker(MethodInfo methodInfo)
+        protected MethodBaseInvoker GetMethodInvoker(MethodInfo methodInfo)
         {
             return ((RuntimeMethodInfo)methodInfo).MethodInvoker;
         }

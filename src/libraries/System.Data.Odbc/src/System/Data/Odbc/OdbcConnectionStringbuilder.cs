@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
@@ -194,7 +194,7 @@ namespace System.Data.Odbc
             return DbConnectionStringBuilderUtil.ConvertToString(value);
         }
 
-        private object GetAt(Keywords index)
+        private string GetAt(Keywords index)
         {
             switch (index)
             {

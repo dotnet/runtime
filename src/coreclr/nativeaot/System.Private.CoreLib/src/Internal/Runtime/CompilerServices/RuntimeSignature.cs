@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime;
 using System.Diagnostics;
+using System.Runtime;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
@@ -43,29 +44,6 @@ namespace Internal.Runtime.CompilerServices
                 _moduleHandle = moduleHandle.GetIntPtrUNSAFE(),
                 _tokenOrOffset = token,
                 _isNativeLayoutSignature = false,
-            };
-        }
-
-        public static RuntimeSignature CreateFromMethodHandle(IntPtr moduleHandle, int token)
-        {
-            return new RuntimeSignature
-            {
-                _moduleHandle = moduleHandle,
-                _tokenOrOffset = token,
-                _isNativeLayoutSignature = false,
-            };
-        }
-
-        [CLSCompliant(false)]
-        public static RuntimeSignature CreateFromNativeLayoutSignatureForDebugger(uint nativeLayoutOffset)
-        {
-            // This is a RuntimeSignature object used by the debugger only,
-            // the fact that the _moduleHandle is NULL signify that information.
-            return new RuntimeSignature
-            {
-                _moduleHandle = IntPtr.Zero,
-                _tokenOrOffset = (int)nativeLayoutOffset,
-                _isNativeLayoutSignature = true,
             };
         }
 

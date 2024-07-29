@@ -32,7 +32,8 @@ namespace System
           ISerializable,
           IBinaryInteger<nint>,
           IMinMaxValue<nint>,
-          ISignedNumber<nint>
+          ISignedNumber<nint>,
+          IUtf8SpanFormattable
     {
         private readonly nint _value;
 
@@ -210,6 +211,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            ((nint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
+
         public static nint Parse(string s) => (nint)nint_t.Parse(s);
         public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
         public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
@@ -240,6 +245,16 @@ namespace System
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
+        }
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, out Unsafe.As<nint, nint_t>(ref result));
         }
 
         /// <summary>Tries to parse a string into a value.</summary>
@@ -284,18 +299,23 @@ namespace System
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -324,7 +344,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[..^sizeof(nint_t)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(nint_t)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -406,7 +426,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[sizeof(nint_t)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(nint_t)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -540,6 +560,8 @@ namespace System
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Log2(nint value)
         {
             if (value < 0)
@@ -896,6 +918,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static nint INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static nint INumberBase<nint>.MultiplyAddEstimate(nint left, nint right, nint addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1375,5 +1400,29 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static nint Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nint)nint_t.Parse(utf8Text, style, provider);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static nint Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => (nint)nint_t.Parse(utf8Text, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, provider, out Unsafe.As<nint, nint_t>(ref result));
+        }
     }
 }

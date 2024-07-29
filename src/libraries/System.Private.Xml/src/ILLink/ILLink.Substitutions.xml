@@ -1,0 +1,8 @@
+﻿<linker>
+  <assembly fullname="System.Private.Xml">
+    <type fullname="System.Xml.LocalAppContextSwitches">
+      <method signature="System.Boolean get_IsNetworkingEnabledByDefault()" body="stub" value="false"
+              feature="System.Xml.XmlResolver.IsNetworkingEnabledByDefault" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>

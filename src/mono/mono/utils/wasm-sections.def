@@ -1,0 +1,21 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef WASM_MODULE_SECTION
+#error "define WASM_MODULE_SECTION(ident,str) before including this header"
+#endif
+
+// order matters and must match the section codes from the WebAssembly spec
+WASM_MODULE_SECTION(CUSTOM, "custom")
+WASM_MODULE_SECTION(TYPE, "type")
+WASM_MODULE_SECTION(IMPORT, "import")
+WASM_MODULE_SECTION(FUNCTION, "function")
+WASM_MODULE_SECTION(TABLE, "table")
+WASM_MODULE_SECTION(MEMORY, "memory")
+WASM_MODULE_SECTION(GLOBAL, "global")
+WASM_MODULE_SECTION(EXPORT, "export")
+WASM_MODULE_SECTION(START, "start")
+WASM_MODULE_SECTION(ELEMENT, "element")
+WASM_MODULE_SECTION(CODE, "code")
+WASM_MODULE_SECTION(DATA, "data")
+WASM_MODULE_SECTION(DATACOUNT, "data count")

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ret_r4
+{
 .class public		_ret {
 
 
@@ -20,58 +23,61 @@
 }
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		12
 	ldc.r4	float32(0x7FC00000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x7F800000)
 	cgt.un
 	brfalse		FAIL
 
 	ldc.r4	float32(0x7F800000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x7F800000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0x7F7FFFFF)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x7F7FFFFF)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0x3F800000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x3F800000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0x00000000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x00000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0x80000000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0x80000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0xBF800000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0xBF800000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0xFF7FFFFF)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0xFF7FFFFF)
 	ceq
 	brfalse		FAIL
 
 	ldc.r4	float32(0xFF800000)
-	call	float32 _ret::ret_test(float32)
+	call	float32 ret_r4._ret::ret_test(float32)
 	ldc.r4	float32(0xFF800000)
 	ceq
 	brfalse		FAIL
@@ -90,3 +96,4 @@ END:
 }
 
 .assembly ret_r4{}
+}

@@ -123,6 +123,12 @@
   <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
     <value>The destination is too small to hold the encoded value.</value>
   </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
   <data name="ContentWasDetached" xml:space="preserve">
     <value>Content was not included in the message (detached message), provide a content to verify.</value>
   </data>
@@ -155,6 +161,9 @@
   </data>
   <data name="CriticalHeadersMustBeArrayOfAtLeastOne" xml:space="preserve">
     <value>Critical Headers must be a CBOR array of at least one element.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
   </data>
   <data name="DecodeCoseSignatureMustBeArrayOfThree" xml:space="preserve">
     <value>COSE Signature must be an array of three elements.</value>

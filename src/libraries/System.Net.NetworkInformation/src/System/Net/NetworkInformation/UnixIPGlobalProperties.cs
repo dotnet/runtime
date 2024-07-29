@@ -8,8 +8,6 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-#pragma warning disable 8500 // taking address of managed types
-
 namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
@@ -43,12 +41,12 @@ namespace System.Net.NetworkInformation
         public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback? callback, object? state)
         {
             Task<UnicastIPAddressInformationCollection> t = GetUnicastAddressesAsync();
-            return TaskToApm.Begin(t, callback, state);
+            return TaskToAsyncResult.Begin(t, callback, state);
         }
 
         public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
         {
-            return TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
+            return TaskToAsyncResult.End<UnicastIPAddressInformationCollection>(asyncResult);
         }
 
         public sealed override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()

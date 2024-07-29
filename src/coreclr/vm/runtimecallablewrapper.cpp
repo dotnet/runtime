@@ -1103,13 +1103,7 @@ VOID RCWCleanupList::CleanupAllWrappers()
 
 VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualCleanupRequested, BOOL bIgnoreComObjectEagerCleanupSetting)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     if (!m_doCleanupInContexts && !fManualCleanupRequested)
         return;
@@ -1233,16 +1227,6 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
 
     LPVOID pCurrCtxCookie = GetCurrentCtxCookie();
 
-    // If we are releasing our IP's as a result of shutdown, we MUST not transition
-    // into cooperative GC mode. This "fix" will prevent us from doing so.
-    if (g_fEEShutDown & ShutDown_Finalize2)
-    {
-        Thread *pThread = GetThreadNULLOk();
-        if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
-            pThread->SetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
-    }
-
-
     // Make sure we're in the right context / apartment.
     // Also - if we've already transitioned once, we don't want to do so again.
     //  If the cookie exists in multiple MTA apartments, and the STA has gone away
@@ -1272,14 +1256,6 @@ HRESULT RCWCleanupList::ReleaseRCWListInCorrectCtx(LPVOID pData)
             // The only option we have left is to try and clean up the RCW's from the current context.
             ReleaseRCWListRaw(pHead);
         }
-    }
-
-    // Reset the bit indicating we cannot transition into cooperative GC mode.
-    if (g_fEEShutDown & ShutDown_Finalize2)
-    {
-        Thread *pThread = GetThreadNULLOk();
-        if (pThread && !FinalizerThread::IsCurrentThreadFinalizer())
-            pThread->ResetThreadStateNC(Thread::TSNC_UnsafeSkipEnterCooperative);
     }
 
     return S_OK;
@@ -1565,7 +1541,6 @@ void RCW::RemoveMemoryPressure()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0);
     }
     CONTRACTL_END;
 
@@ -1734,7 +1709,7 @@ void RCW::MinorCleanup()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && g_fProcessDetach ));
+        PRECONDITION(GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ));
     }
     CONTRACTL_END;
 
@@ -1777,7 +1752,6 @@ void RCW::Cleanup()
     // if the wrapper is still in the cache.  Also, if we can't switch to coop mode,
     // we're guaranteed to have already decoupled the RCW from its object.
 #ifdef _DEBUG
-    if (!(GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative))
     {
         GCX_COOP();
 
@@ -1795,9 +1769,7 @@ void RCW::Cleanup()
         ReleaseAllInterfacesCallBack(this);
 
         // Remove the memory pressure caused by this RCW (if present)
-        // If we're in a shutdown situation, we can ignore the memory pressure.
-        if ((GetThread()->m_StateNC & Thread::TSNC_UnsafeSkipEnterCooperative) == 0 && !g_fForbidEnterEE)
-            RemoveMemoryPressure();
+        RemoveMemoryPressure();
     }
 
 #ifdef _DEBUG

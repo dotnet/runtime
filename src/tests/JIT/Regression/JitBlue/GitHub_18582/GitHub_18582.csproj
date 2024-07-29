@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>

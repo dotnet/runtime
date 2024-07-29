@@ -7,15 +7,17 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial struct JSMarshalerArgument
     {
-        private const long I52_MAX_VALUE =((1L << 53) - 1);
-        private const long I52_MIN_VALUE =-I52_MAX_VALUE;
+        private const long I52_MAX_VALUE = ((1L << 53) - 1);
+        private const long I52_MIN_VALUE = -I52_MAX_VALUE;
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out long value)
         {
             if (slot.Type == MarshalerType.None)
@@ -31,12 +33,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(long value)
         {
             if (value < I52_MIN_VALUE || value > I52_MAX_VALUE)
             {
-                throw new OverflowException($"Overflow: value ${value} is out of ${I52_MIN_VALUE} ${I52_MAX_VALUE} range");
+                throw new OverflowException(SR.Format(SR.ValueOutOf52BitRange, value, I52_MIN_VALUE, I52_MAX_VALUE));
             }
 
             slot.Type = MarshalerType.Int52;
@@ -48,7 +52,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out long? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -64,14 +70,16 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(long? value)
         {
             if (value.HasValue)
             {
                 if (value.Value < I52_MIN_VALUE || value.Value > I52_MAX_VALUE)
                 {
-                    throw new OverflowException($"Overflow: value ${value} is out of ${I52_MIN_VALUE} ${I52_MAX_VALUE} range");
+                    throw new OverflowException(SR.Format(SR.ValueOutOf52BitRange, value, I52_MIN_VALUE, I52_MAX_VALUE));
                 }
                 slot.Type = MarshalerType.Int52;
                 slot.DoubleValue = value.Value;

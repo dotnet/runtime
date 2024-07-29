@@ -6,6 +6,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Opt_Error
 {
@@ -64,9 +65,11 @@ namespace Opt_Error
         }
     }
 
-    class Program
+    public class Program
     {
-        static void TestClass(int initVal)
+        [Theory]
+        [InlineData(2)]
+        public static void TestClass(int initVal)
         {
             FourByteClass fb = new FourByteClass(initVal);
             fb.fval = 0;
@@ -92,7 +95,9 @@ namespace Opt_Error
             Debug.Assert(cse_val_2 == 52);
         }
 
-        static void TestStruct(int initVal)
+        [Theory]
+        [InlineData(2)]
+        public static void TestStruct(int initVal)
         {
             FourByteStruct fb = new FourByteStruct(initVal);
             fb.fval = 0;
@@ -116,13 +121,6 @@ namespace Opt_Error
             Debug.Assert(cseb0_2 == 23);
             Debug.Assert(cse_uval_2 == 7);
             Debug.Assert(cse_val_2 == 52);
-        }
-
-        static int Main()
-        {
-            TestClass(2);
-            TestStruct(2);
-            return 100;
         }
     }
 }

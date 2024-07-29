@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Xml.Xsl
 {
     [DebuggerDisplay("({Line},{Pos})")]
-    internal struct Location
+    internal readonly struct Location
     {
         private readonly ulong _value;
 
@@ -27,9 +27,9 @@ namespace System.Xml.Xsl
     [DebuggerDisplay("{Uri} [{StartLine},{StartPos} -- {EndLine},{EndPos}]")]
     internal sealed class SourceLineInfo : ISourceLineInfo
     {
-        private string? uriString;
-        private Location start;
-        private Location end;
+        private readonly string? uriString;
+        private readonly Location start;
+        private readonly Location end;
 
         public SourceLineInfo(string? uriString, int startLine, int startPos, int endLine, int endPos)
             : this(uriString, new Location(startLine, startPos), new Location(endLine, endPos))
@@ -55,7 +55,7 @@ namespace System.Xml.Xsl
         /// </summary>
         private const int NoSourceMagicNumber = 0xfeefee;
 
-        public static SourceLineInfo NoSource = new SourceLineInfo(string.Empty, NoSourceMagicNumber, 0, NoSourceMagicNumber, 0);
+        public static readonly SourceLineInfo NoSource = new SourceLineInfo(string.Empty, NoSourceMagicNumber, 0, NoSourceMagicNumber, 0);
 
         public bool IsNoSource
         {

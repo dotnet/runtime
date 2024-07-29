@@ -13,7 +13,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <DebugType>Portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
 
     <OutputPath Condition="$(MSBuildProjectName.StartsWith('System.Private.'))">$(RuntimeBinDir)/aotsdk/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
@@ -21,18 +20,21 @@
 
     <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830</NoWarn>
+     <!-- Override InformationalVersion during servicing as it's returned via public api. --> 
+    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion> 
+    <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion> 
+    <NoWarn>$(NoWarn),0419,0649</NoWarn>
 
     <!-- Disable nullability-related warnings -->
     <NoWarn>$(NoWarn);CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765</NoWarn>
 
-    <!-- we should just fix -->
-    <NoWarn>$(NoWarn);CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517;IDE0065</NoWarn>
+    <!-- Disable sealing classes, NativeAOT does that automatically -->
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
 
     <!-- Arrays as attribute arguments is not CLS-compliant -->
     <NoWarn>$(NoWarn);CS3016</NoWarn>
@@ -56,34 +58,39 @@
     <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeatureComWrappers>false</FeatureComWrappers>
-    <FeatureComWrappers Condition="'$(TargetsWindows)' == 'true'">true</FeatureComWrappers>
+    <FeatureComWrappers>true</FeatureComWrappers>
+    <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">FEATURE_COMWRAPPERS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureObjCMarshal>false</FeatureObjCMarshal>
-    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true'">true</FeatureObjCMarshal>
+    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true'or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
     <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
     <DefineConstants>TARGET_32BIT;TARGET_X86;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
+    <DefineConstants>TARGET_64BIT;TARGET_LOONGARCH64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

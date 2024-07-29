@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -80,7 +78,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		static void TestFromStringContantWithAnnotation ()
 		{
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithAnnotationTestType");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithAnnotationTestType, test");
 		}
 
 		[Kept]
@@ -144,7 +142,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		class FromStringConstantWithGenericInnerInner
 		{
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public void Method ()
 			{
 			}
@@ -155,7 +153,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 		T>
 		{
 		}
@@ -186,12 +184,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+		[UnconditionalSuppressMessage("test", "IL3050", Justification = "The test applies DAM on System.Array, which contains CreateInstance method which has RDC on it.")]
 		static void TestFromStringConstantWithGeneric ()
 		{
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner]]");
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericTwoParameters`2[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerOne`1[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerInner],Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerTwo]");
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWitGenericInnerMultiDimArray[,]]]");
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithMultiDimArray[,]");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1["
+					+ "[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner, test]"
+				+ "], test");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericTwoParameters`2["
+					+ "[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerOne`1["
+						+ "[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerInner, test]"
+					+ "], test],"
+					+ "[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInnerTwo, test]"
+				+ "], test");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1["
+					+ "[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWitGenericInnerMultiDimArray[,], test]"
+				+ "], test");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithMultiDimArray[,], test");
 		}
 
 		[Kept]
@@ -205,7 +214,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[Kept]
 		static void TestFromStringConstantWithGenericAndAssemblyQualified ()
 		{
-			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericAndAssemblyQualified`1[[Mono.Linker.Tests.Cases.Expectations.Assertions.KeptAttribute,Mono.Linker.Tests.Cases.Expectations]]");
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericAndAssemblyQualified`1["
+					+ "[Mono.Linker.Tests.Cases.Expectations.Assertions.KeptAttribute, Mono.Linker.Tests.Cases.Expectations]"
+				+ "], test");
 		}
 
 		class InvalidAssemblyNameType

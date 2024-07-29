@@ -61,7 +61,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// A type is permitted to be ByRefLike.
         /// </summary>
-        AcceptByRefLike = 0x20,
+        AllowByRefLike = 0x20,
     }
 
     public abstract partial class GenericParameterDesc : TypeDesc
@@ -86,6 +86,11 @@ namespace Internal.TypeSystem
         /// Gets the zero based index of the generic parameter within the declaring type or method.
         /// </summary>
         public abstract int Index { get; }
+
+        /// <summary>
+        /// The associated type or method which defines this Generic Parameter
+        /// </summary>
+        public abstract TypeSystemEntity AssociatedTypeOrMethod { get; }
 
         /// <summary>
         /// Gets a value indicating the variance of this generic parameter.
@@ -120,6 +125,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the NotNullableValueType constraint flag
+        /// </summary>
         public bool HasNotNullableValueTypeConstraint
         {
             get
@@ -128,6 +136,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the ReferenceType constraint flag
+        /// </summary>
         public bool HasReferenceTypeConstraint
         {
             get
@@ -136,6 +147,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the DefaultConstructor constraint flag
+        /// </summary>
         public bool HasDefaultConstructorConstraint
         {
             get
@@ -144,6 +158,20 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Does this generic parameter have the AllowByRefLike flag
+        /// </summary>
+        public bool HasAllowByRefLikeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.AllowByRefLike) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Is this generic parameter Covariant
+        /// </summary>
         public bool IsCovariant
         {
             get
@@ -152,6 +180,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Is this generic parameter Contravariant
+        /// </summary>
         public bool IsContravariant
         {
             get

@@ -12,29 +12,33 @@ parameters:
   helixSource: ''
   helixQueues: ''
   helixType: ''
+  msbuildParallelism: '/maxcpucount'
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   runCrossGen2: ''
-  runPALTestsDir: ''
   compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
+  hotColdSplitting: ''
+  nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
   runtimeFlavor: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
   SuperPmiCollect: ''
+  SuperPmiDiffType: ''
+  SuperPmiBaseJitOptions: ''
+  SuperPmiDiffJitOptions: ''
 
 
 steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
-    sendParams: ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
+    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
@@ -50,15 +54,19 @@ steps:
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _TieringTest: ${{ parameters.tieringTest }}
+      _HotColdSplitting: ${{ parameters.hotColdSplitting }}
+      _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
-      _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiDiffType: ${{ parameters.SuperPmiDiffType }}
+      _SuperPmiBaseJitOptions: ${{ parameters.SuperPmiBaseJitOptions }}
+      _SuperPmiDiffJitOptions: ${{ parameters.SuperPmiDiffJitOptions }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

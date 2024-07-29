@@ -15,14 +15,25 @@
 #include "ep-session.h"
 #include "ep-sample-profiler.h"
 
+//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
+//! The keywords below seems to correspond to:
+//!  GCKeyword                          (0x00000001)
+//!  LoaderKeyword                      (0x00000008)
+//!  JitKeyword                         (0x00000010)
+//!  NgenKeyword                        (0x00000020)
+//!  unused_keyword                     (0x00000100)
+//!  JittedMethodILToNativeMapKeyword   (0x00020000)
+//!  ThreadTransferKeyword              (0x80000000)
+uint64_t ep_default_rundown_keyword = 0x80020139;
+
 static bool _ep_can_start_threads = false;
 
-static ep_rt_session_id_array_t _ep_deferred_enable_session_ids = { 0 };
-static ep_rt_session_id_array_t _ep_deferred_disable_session_ids = { 0 };
+static dn_vector_t *_ep_deferred_enable_session_ids = NULL;
+static dn_vector_t *_ep_deferred_disable_session_ids = NULL;
 
 static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
 
-static ep_rt_execution_checkpoint_array_t _ep_rundown_execution_checkpoints = { 0 };
+static dn_vector_ptr_t *_ep_rundown_execution_checkpoints = NULL;
 
 /*
  * Forward declares of all static functions.
@@ -47,17 +58,8 @@ is_session_id_in_collection (EventPipeSessionID id);
 static
 EventPipeSessionID
 enable (
-	const ep_char8_t *output_path,
-	uint32_t circular_buffer_size_in_mb,
-	const EventPipeProviderConfiguration *providers,
-	uint32_t providers_len,
-	EventPipeSessionType session_type,
-	EventPipeSerializationFormat format,
-	bool rundown_requested,
-	IpcStream *stream,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
-	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	const EventPipeSessionOptions *options,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
 static
 void
@@ -120,6 +122,10 @@ session_requested_sampling (EventPipeSession *session);
 static
 bool
 ipc_stream_factory_any_suspended_ports (void);
+
+static
+bool
+check_options_valid (const EventPipeSessionOptions *options);
 
 /*
  * Global volatile variables, only to be accessed through inlined volatile access functions.
@@ -195,15 +201,16 @@ EventPipeProviderCallbackDataQueue *
 ep_provider_callback_data_queue_init (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
-	ep_rt_provider_callback_data_queue_alloc (&provider_callback_data_queue->queue);
-	return ep_rt_provider_callback_data_queue_is_valid (&provider_callback_data_queue->queue) ? provider_callback_data_queue : NULL;
+	provider_callback_data_queue->queue = dn_queue_alloc ();
+	return provider_callback_data_queue->queue ? provider_callback_data_queue : NULL;
 }
 
 void
 ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_return_void_if_nok (provider_callback_data_queue != NULL);
-	ep_rt_provider_callback_data_queue_free (&provider_callback_data_queue->queue);
+	dn_queue_free (provider_callback_data_queue->queue);
+	provider_callback_data_queue->queue = NULL;
 }
 
 /*
@@ -217,7 +224,8 @@ ep_provider_callback_data_alloc (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
@@ -229,7 +237,8 @@ ep_provider_callback_data_alloc (
 		callback_data,
 		keywords,
 		provider_level,
-		enabled) != NULL);
+		enabled,
+		session_id) != NULL);
 
 ep_on_exit:
 	return instance;
@@ -288,7 +297,8 @@ ep_provider_callback_data_init (
 	void *callback_data,
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
-	bool enabled)
+	bool enabled,
+	EventPipeSessionID session_id)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
@@ -298,6 +308,7 @@ ep_provider_callback_data_init (
 	provider_callback_data->keywords = keywords;
 	provider_callback_data->provider_level = provider_level;
 	provider_callback_data->enabled = enabled;
+	provider_callback_data->session_id = session_id;
 
 	return provider_callback_data;
 }
@@ -450,26 +461,34 @@ is_session_id_in_collection (EventPipeSessionID session_id)
 	return false;
 }
 
+static bool check_options_valid (const EventPipeSessionOptions *options)
+{
+	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
+		return false;
+	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+		return false;
+	if (options->providers == NULL || options->providers_len <= 0)
+		return false;
+	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
+		return false;
+	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
+		return false;
+
+	return true;
+}
+
 static
 EventPipeSessionID
 enable (
-	const ep_char8_t *output_path,
-	uint32_t circular_buffer_size_in_mb,
-	const EventPipeProviderConfiguration *providers,
-	uint32_t providers_len,
-	EventPipeSessionType session_type,
-	EventPipeSerializationFormat format,
-	bool rundown_requested,
-	IpcStream *stream,
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
-	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data)
+	const EventPipeSessionOptions *options,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
-	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
-	EP_ASSERT (providers_len > 0 && providers != NULL);
-
 	ep_requires_lock_held ();
+
+	EP_ASSERT (options != NULL);
+	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
+	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
 	EventPipeSessionID session_id = 0;
@@ -482,16 +501,17 @@ enable (
 
 	session = ep_session_alloc (
 		session_index,
-		output_path,
-		stream,
-		session_type,
-		format,
-		rundown_requested,
-		circular_buffer_size_in_mb,
-		providers,
-		providers_len,
-		sync_callback,
-		callback_additional_data);
+		options->output_path,
+		options->stream,
+		options->session_type,
+		options->format,
+		options->rundown_keyword,
+		options->stackwalk_requested,
+		options->circular_buffer_size_in_mb,
+		options->providers,
+		options->providers_len,
+		options->sync_callback,
+		options->callback_additional_data);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -580,7 +600,7 @@ disable_holding_lock (
 		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
-		if (ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
+		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
 			ep_session_enable_rundown (session); // Set Rundown provider.
 			EventPipeThread *const thread = ep_thread_get_or_create ();
 			if (thread != NULL) {
@@ -588,7 +608,7 @@ disable_holding_lock (
 				{
 					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
 					{
-						ep_session_execute_rundown (session, &_ep_rundown_execution_checkpoints);
+						ep_session_execute_rundown (session, _ep_rundown_execution_checkpoints);
 					}
 					config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
 				}
@@ -660,7 +680,7 @@ disable_helper (EventPipeSessionID id)
 		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 
 #ifdef EP_CHECKED_BUILD
-		if (ep_volatile_load_number_of_sessions () == 0)
+		if (ep_volatile_load_number_of_sessions () == 0 && ep_volatile_load_eventpipe_state () != EP_STATE_SHUTTING_DOWN)
 			EP_ASSERT (ep_rt_providers_validate_all_disabled ());
 #endif
 
@@ -899,7 +919,7 @@ enable_default_session_via_env_variables (void)
 			ep_config,
 			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			true,
+			ep_default_rundown_keyword,
 			NULL,
 			NULL,
 			NULL);
@@ -918,7 +938,7 @@ bool
 session_requested_sampling (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	return ep_rt_session_provider_list_find_by_name (ep_session_provider_list_get_providers_cref (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
+	return ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (ep_session_get_providers (session)), ep_config_get_sample_profiler_provider_name_utf8 ());
 }
 
 static
@@ -950,57 +970,33 @@ ep_enable (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
 {
-	ep_return_zero_if_nok (format < EP_SERIALIZATION_FORMAT_COUNT);
-	ep_return_zero_if_nok (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
-	ep_return_zero_if_nok (providers_len > 0 && providers != NULL);
+	EventPipeSessionID sessionId = 0;
 
-	ep_requires_lock_not_held ();
+	EventPipeSessionOptions options;
+	ep_session_options_init(
+		&options,
+		output_path,
+		circular_buffer_size_in_mb,
+		providers,
+		providers_len,
+		session_type,
+		format,
+		rundown_keyword,
+		true, // stackwalk_requested
+		stream,
+		sync_callback,
+		callback_additional_data);
 
-	// If the state or arguments are invalid, bail here.
-	if ((session_type == EP_SESSION_TYPE_FILE || session_type == EP_SESSION_TYPE_FILESTREAM) && output_path == NULL)
-		return 0;
-	if (session_type == EP_SESSION_TYPE_IPCSTREAM && stream == NULL)
-		return 0;
+	sessionId = ep_enable_3(&options);
 
-	EventPipeSessionID session_id = 0;
-	EventPipeProviderCallbackDataQueue callback_data_queue;
-	EventPipeProviderCallbackData provider_callback_data;
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+	ep_session_options_fini(&options);
 
-	EP_LOCK_ENTER (section1)
-		session_id = enable (
-			output_path,
-			circular_buffer_size_in_mb,
-			providers,
-			providers_len,
-			session_type,
-			format,
-			rundown_requested,
-			stream,
-			provider_callback_data_queue,
-			sync_callback,
-			callback_additional_data);
-	EP_LOCK_EXIT (section1)
-
-	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
-		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
-		provider_invoke_callback (&provider_callback_data);
-		ep_provider_callback_data_fini (&provider_callback_data);
-	}
-
-ep_on_exit:
-	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
-	ep_requires_lock_not_held ();
-	return session_id;
-
-ep_on_error:
-	session_id = 0;
-	ep_exit_error_handler ();
+	return sessionId;
 }
 
 EventPipeSessionID
@@ -1010,7 +1006,7 @@ ep_enable_2 (
 	const ep_char8_t *providers_config,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -1088,7 +1084,7 @@ ep_enable_2 (
 		providers_len,
 		session_type,
 		format,
-		rundown_requested,
+		rundown_keyword,
 		stream,
 		sync_callback,
 		callback_additional_data);
@@ -1112,6 +1108,72 @@ ep_on_error:
 }
 
 void
+ep_session_options_init (
+	EventPipeSessionOptions* options,
+	const ep_char8_t* output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const EventPipeProviderConfiguration* providers,
+	uint32_t providers_len,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	uint64_t rundown_keyword,
+	bool stackwalk_requested,
+	IpcStream* stream,
+	EventPipeSessionSynchronousCallback sync_callback,
+	void* callback_additional_data)
+{
+	EP_ASSERT (options != NULL);
+
+	options->output_path = output_path;
+	options->circular_buffer_size_in_mb = circular_buffer_size_in_mb;
+	options->providers = providers;
+	options->providers_len = providers_len;
+	options->session_type = session_type;
+	options->format = format;
+	options->rundown_keyword = rundown_keyword;
+	options->stackwalk_requested = stackwalk_requested;
+	options->stream = stream;
+	options->sync_callback = sync_callback;
+	options->callback_additional_data = callback_additional_data;
+}
+
+void
+ep_session_options_fini (EventPipeSessionOptions* options)
+{}
+
+EventPipeSessionID
+ep_enable_3 (const EventPipeSessionOptions *options)
+{
+	ep_return_zero_if_nok (check_options_valid (options));
+
+	ep_requires_lock_not_held ();
+
+	EventPipeSessionID session_id = 0;
+	EventPipeProviderCallbackDataQueue callback_data_queue;
+	EventPipeProviderCallbackData provider_callback_data;
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+
+	EP_LOCK_ENTER (section1)
+		session_id = enable (options, provider_callback_data_queue);
+	EP_LOCK_EXIT (section1)
+
+	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
+		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+		provider_invoke_callback (&provider_callback_data);
+		ep_provider_callback_data_fini (&provider_callback_data);
+	}
+
+ep_on_exit:
+	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
+	ep_requires_lock_not_held ();
+	return session_id;
+
+ep_on_error:
+	session_id = 0;
+	ep_exit_error_handler ();
+}
+
+void
 ep_disable (EventPipeSessionID id)
 {
 	ep_requires_lock_not_held ();
@@ -1126,7 +1188,7 @@ ep_disable (EventPipeSessionID id)
 	EP_LOCK_ENTER (section1)
 		if (!_ep_can_start_threads && !ipc_stream_factory_any_suspended_ports ())
 		{
-			ep_rt_session_id_array_append (&_ep_deferred_disable_session_ids, id);
+			dn_vector_push_back (_ep_deferred_disable_session_ids, id);
 			ep_raise_error_holding_lock (section1);
 		}
 	EP_LOCK_EXIT (section1)
@@ -1183,7 +1245,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 		if (_ep_can_start_threads)
 			ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
 		else
-			ep_rt_session_id_array_append (&_ep_deferred_enable_session_ids, session_id);
+			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -1205,7 +1267,6 @@ EventPipeProvider *
 ep_create_provider (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	ep_return_null_if_nok (provider_name != NULL);
@@ -1218,7 +1279,7 @@ ep_create_provider (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&data_queue);
 
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -1347,10 +1408,13 @@ ep_init (void)
 	const uint32_t default_profiler_sample_rate_in_nanoseconds = 1000000; // 1 msec.
 	ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
-	ep_rt_session_id_array_alloc (&_ep_deferred_enable_session_ids);
-	ep_rt_session_id_array_alloc (&_ep_deferred_disable_session_ids);
+	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
+	_ep_deferred_disable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
 
-	ep_rt_execution_checkpoint_array_alloc (&_ep_rundown_execution_checkpoints);
+	ep_raise_error_if_nok (_ep_deferred_enable_session_ids && _ep_deferred_disable_session_ids);
+
+	_ep_rundown_execution_checkpoints = dn_vector_ptr_alloc ();
+	ep_raise_error_if_nok (_ep_rundown_execution_checkpoints);
 
 	EP_LOCK_ENTER (section1)
 		ep_volatile_store_eventpipe_state (EP_STATE_INITIALIZED);
@@ -1377,14 +1441,13 @@ ep_finish_init (void)
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
 		if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
-			ep_rt_session_id_array_iterator_t deferred_session_ids_iterator = ep_rt_session_id_array_iterator_begin (&_ep_deferred_enable_session_ids);
-			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator)) {
-				EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
-				if (is_session_id_in_collection (session_id))
-					ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
-				ep_rt_session_id_array_iterator_next (&deferred_session_ids_iterator);
+			if (_ep_deferred_enable_session_ids) {
+				DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_enable_session_ids) {
+					if (is_session_id_in_collection (session_id))
+						ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
+				} DN_VECTOR_FOREACH_END;
+				dn_vector_clear (_ep_deferred_enable_session_ids);
 			}
-			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids);
 		}
 
 		ep_sample_profiler_can_start_sampling ();
@@ -1395,13 +1458,12 @@ ep_finish_init (void)
 	// lock since we've set _ep_can_start_threads to true inside the lock. Anyone
 	// who was waiting on that lock will see that state and not mutate the defer list
 	if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
-		ep_rt_session_id_array_iterator_t deferred_disable_session_ids_iterator = ep_rt_session_id_array_iterator_begin (&_ep_deferred_disable_session_ids);
-		while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_disable_session_ids, &deferred_disable_session_ids_iterator)) {
-			EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_disable_session_ids_iterator);
-			disable_helper (session_id);
-			ep_rt_session_id_array_iterator_next (&deferred_disable_session_ids_iterator);
+		if (_ep_deferred_disable_session_ids) {
+			DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_disable_session_ids) {
+				disable_helper (session_id);
+			} DN_VECTOR_FOREACH_END;
+			dn_vector_clear (_ep_deferred_disable_session_ids);
 		}
-		ep_rt_session_id_array_clear (&_ep_deferred_disable_session_ids);
 	}
 
 ep_on_exit:
@@ -1427,38 +1489,26 @@ ep_shutdown (void)
 
 	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 		EventPipeSession *session = ep_volatile_load_session (i);
-		if (session)
+		// Do not shut down listener sessions on shutdown, the processing thread will
+		// still be trying to process events in the background until the process is torn down
+		if (session && session->session_type != EP_SESSION_TYPE_LISTENER)
 			ep_disable ((EventPipeSessionID)session);
 	}
 
-	ep_rt_execution_checkpoint_array_iterator_t checkpoint_iterator;
-	EventPipeExecutionCheckpoint *checkpoint;
-	checkpoint_iterator = ep_rt_execution_checkpoint_array_iterator_begin (&_ep_rundown_execution_checkpoints);
-	while (!ep_rt_execution_checkpoint_array_iterator_end (&_ep_rundown_execution_checkpoints, &checkpoint_iterator)) {
-		checkpoint = ep_rt_execution_checkpoint_array_iterator_value (&checkpoint_iterator);
-		if (checkpoint)
-			ep_rt_utf8_string_free (checkpoint->name);
-		ep_rt_execution_checkpoint_array_iterator_next (&checkpoint_iterator);
+	if (_ep_rundown_execution_checkpoints) {
+		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeExecutionCheckpoint *, checkpoint, _ep_rundown_execution_checkpoints) {
+			if (checkpoint)
+				ep_rt_utf8_string_free (checkpoint->name);
+		} DN_VECTOR_PTR_FOREACH_END;
+		dn_vector_ptr_free (_ep_rundown_execution_checkpoints);
+		_ep_rundown_execution_checkpoints = NULL;
 	}
-	ep_rt_execution_checkpoint_array_free (&_ep_rundown_execution_checkpoints);
 
-	ep_rt_session_id_array_free (&_ep_deferred_enable_session_ids);
-	ep_rt_session_id_array_free (&_ep_deferred_disable_session_ids);
+	dn_vector_free (_ep_deferred_enable_session_ids);
+	_ep_deferred_enable_session_ids = NULL;
 
-	ep_thread_fini ();
-
-	// dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
-	// Deallocating providers/events here might cause AV if a WriteEvent
-	// was to occur. Thus, we are not doing this cleanup.
-
-	/*EP_LOCK_ENTER (section1)
-		ep_sample_profiler_shutdown ();
-	EP_LOCK_EXIT (section1)*/
-
-	// // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
-	// // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
-	// ep_event_source_fini (ep_event_source_get ());
-	// ep_config_shutdown (ep_config_get ());
+	dn_vector_free (_ep_deferred_disable_session_ids);
+	_ep_deferred_disable_session_ids = NULL;
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1571,7 +1621,7 @@ ep_add_rundown_execution_checkpoint (
 	ep_raise_error_if_nok (exec_checkpoint != NULL);
 
 	EP_LOCK_ENTER (section1)
-		ep_raise_error_if_nok_holding_lock (ep_rt_execution_checkpoint_array_append (&_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
+		ep_raise_error_if_nok_holding_lock (dn_vector_ptr_push_back (_ep_rundown_execution_checkpoints, exec_checkpoint), section1);
 		exec_checkpoint = NULL;
 	EP_LOCK_EXIT (section1)
 
@@ -1599,7 +1649,7 @@ ep_provider_callback_data_queue_enqueue (
 	EP_ASSERT (provider_callback_data_queue != NULL);
 	EventPipeProviderCallbackData *provider_callback_data_move = ep_provider_callback_data_alloc_move (provider_callback_data);
 	ep_raise_error_if_nok (provider_callback_data_move != NULL);
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_push_tail (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), provider_callback_data_move));
+	ep_raise_error_if_nok (dn_queue_push (ep_provider_callback_data_queue_get_queue (provider_callback_data_queue), provider_callback_data_move));
 
 	return true;
 
@@ -1615,10 +1665,13 @@ ep_provider_callback_data_queue_try_dequeue (
 {
 	EP_ASSERT (provider_callback_data_queue != NULL);
 
-	ep_return_false_if_nok (!ep_rt_provider_callback_data_queue_is_empty (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue)));
+	dn_queue_t *queue = ep_provider_callback_data_queue_get_queue (provider_callback_data_queue);
+	ep_return_false_if_nok (!dn_queue_empty (queue));
 
-	EventPipeProviderCallbackData *value = NULL;
-	ep_raise_error_if_nok (ep_rt_provider_callback_data_queue_pop_head (ep_provider_callback_data_queue_get_queue_ref (provider_callback_data_queue), &value));
+	EventPipeProviderCallbackData *value = *dn_queue_front_t (queue, EventPipeProviderCallbackData *);
+	dn_queue_pop (queue);
+
+	ep_raise_error_if_nok (value != NULL);
 	ep_provider_callback_data_init_move (provider_callback_data, value);
 	ep_provider_callback_data_free (value);
 

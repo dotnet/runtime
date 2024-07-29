@@ -5,12 +5,8 @@
 
 #ifdef DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
-// enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
-// works even if the jiterpreter is otherwise disabled.
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
 #else
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
 #endif // DISABLE_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
@@ -20,8 +16,83 @@
 // NOT_JITTED indicates that the trace was not jitted and it should be turned into a NOP
 #define JITERPRETER_NOT_JITTED 1
 
-typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
-typedef void (*WasmJitCallThunk) (void *extra_arg, void *ret_sp, void *sp, gboolean *thrown);
+#define JITERPRETER_OPCODE_SIZE 4
+
+typedef struct {
+	gint32 backward_branch_taken;
+	gint32 bailout_opcode_count;
+} JiterpreterCallInfo;
+
+#if defined(_MSC_VER)
+#pragma pack(push)
+#pragma pack(2)
+#endif
+
+typedef struct
+#if defined(__GNUC__)
+__attribute__ ((__packed__, __aligned__(2)))
+#endif
+{
+	guint16 opcode;
+	guint16 relative_fn_ptr;
+	guint32 trace_index;
+} JiterpreterOpcode;
+
+#if defined(_MSC_VER)
+#pragma pack(pop)
+#endif
+
+// Keep in sync with JiterpreterTable in jiterpreter-enums.ts
+enum {
+	JITERPRETER_TABLE_TRACE = 0,
+	JITERPRETER_TABLE_JIT_CALL = 1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_0 = 2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_STATIC_RET_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_8,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_0,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_1,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_2,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_3,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_4,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_5,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_6,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_7,
+	JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_8,
+	JITERPRETER_TABLE_LAST = JITERPRETER_TABLE_INTERP_ENTRY_INSTANCE_RET_8,
+};
+
+typedef struct {
+	gint32 first_index, last_index, next_index;
+} JiterpreterTableInfo;
+
+extern int mono_jiterp_first_trace_fn_ptr;
+
+typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
+typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
 // Parses a single jiterpreter runtime option. This is used both by driver.c and our typescript
@@ -34,7 +105,7 @@ jiterp_preserve_module ();
 
 // HACK: Pass void* so that this header can include safely in files without definition for TransformData
 void
-jiterp_insert_entry_points (void *td);
+jiterp_insert_entry_points (void *imethod, void *td);
 
 // used by the typescript JIT implementation to notify the runtime that it has finished jitting a thunk
 //  for a specific callsite, since it can take a while before it happens
@@ -49,22 +120,29 @@ mono_interp_record_interp_entry (void *fn_ptr);
 extern gpointer
 mono_interp_jit_wasm_entry_trampoline (
 	void *imethod, MonoMethod *method, int argument_count, MonoType *param_types,
-	int unbox, int has_this, int has_return, const char *name, void *default_implementation
+	int unbox, int has_this, int has_return, void *default_implementation
+);
+
+// Fast-path implemented in C
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *_frame, const guint16 *ip
 );
 
 // HACK: Pass void* so that this header can include safely in files without definition for InterpFrame
+// Slow-path implemented in TypeScript, actually performs JIT
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
-	void *frame, MonoMethod *method, const guint16 *ip,
-	const guint16 *start_of_body, int size_of_body
+	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
+	const guint16 *start_of_body, int size_of_body, int is_verbose,
+	int preset_function_pointer
 );
 
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod,
 //  or JitCallInfo
 extern void
 mono_interp_jit_wasm_jit_call_trampoline (
-	void *rmethod, void *cinfo, void *func,
-	gboolean has_this, int param_count,
+	MonoMethod *method, void *rmethod, void *cinfo,
 	guint32 *arg_offsets, gboolean catch_exceptions
 );
 
@@ -77,22 +155,24 @@ mono_interp_flush_jitcall_queue ();
 //  disabled or because the current runtime environment does not support it
 extern void
 mono_interp_invoke_wasm_jit_call_trampoline (
-	WasmJitCallThunk thunk, void *extra_arg,
-	void *ret_sp, void *sp, gboolean *thrown
-);
-
-extern void
-mono_jiterp_do_jit_call_indirect (
-	gpointer cb, gpointer arg, gboolean *out_thrown
+	WasmJitCallThunk thunk,
+	void *ret_sp, void *sp,
+	void *ftndesc, gboolean *thrown
 );
 
 #ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
+
+extern void
+mono_jiterp_free_method_data_js (
+	MonoMethod *method, InterpMethod *imethod, int trace_index
+);
 
 typedef struct {
 	InterpMethod *rmethod;
 	ThreadContext *context;
 	gpointer orig_domain;
 	gpointer attach_cookie;
+	int params_count;
 } JiterpEntryDataHeader;
 
 // we optimize delegate calls by attempting to cache the delegate invoke
@@ -116,13 +196,50 @@ typedef struct {
 	JiterpEntryDataCache cache;
 } JiterpEntryData;
 
+volatile size_t *
+mono_jiterp_get_polling_required_address (void);
+
 void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
+
+void
+mono_jiterp_interp_entry (JiterpEntryData *_data, void *res);
+
+gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
+
+void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals);
+
+int
+mono_jiterp_increment_counter (volatile int *counter);
+
+gboolean
+mono_jiterp_patch_opcode (volatile JiterpreterOpcode *ip, guint16 old_opcode, guint16 new_opcode);
+
+int
+mono_jiterp_placeholder_trace (void *frame, void *pLocals, JiterpreterCallInfo *cinfo, const guint16 *ip);
+
+void
+mono_jiterp_placeholder_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
+
+void
+mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod);
+
+void *
+mono_jiterp_get_interp_entry_func (int table);
+
+void
+mono_jiterp_tlqueue_purge_all (gpointer item);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 
-extern WasmDoJitCall jiterpreter_do_jit_call;
-
 #endif // HOST_BROWSER
+
+int
+mono_jiterp_is_enabled (void);
 
 #endif // __MONO_MINI_JITERPRETER_H__

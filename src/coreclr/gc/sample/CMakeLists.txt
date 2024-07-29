@@ -53,6 +53,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)
     add_definitions(-DUNICODE)
+    add_compile_definitions(NOMINMAX)
 else()
     list(APPEND SOURCES
         ../gcenv.unix.cpp)
@@ -63,5 +64,5 @@ add_executable_clr(gcsample
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(gcsample ${GC_LINK_LIBRARIES})
+    target_link_libraries(gcsample PRIVATE ${GC_LINK_LIBRARIES})
 endif()

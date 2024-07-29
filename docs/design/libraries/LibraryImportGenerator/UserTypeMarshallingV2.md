@@ -704,9 +704,9 @@ The non-static `GetPinnableReference` method on stateful shapes is provided to e
 
 The static GetPinnableReference method provides a mechanism to pin a managed value and pass down the pinned value directly to native code. This allows us to provide massive performance benefits and to match built-in interop semantics. Unlike the previous design that used the `GetPinnableReference` method on the managed type in some scenarios, this design allows the "interop" pinning rules to not match the easier-to-use `GetPinnableReference` instance method, which may have differing semantics (`Span<T>` and arrays being a prime example here). As many types aren't marshallable via only pinning, the generator does not require this method on every marshaller.
 
-### `-Generated` method variants
+### `-Finally` method variants
 
-These method variants provide a mechanism for a marshaller to state that it needs to be called during the "Generated Unmarshal" phase in the `finally` block to ensure that resources are not leaked. This feature is required only by the SafeHandle marshaller, so it is an optional extension to the model instead of being a required feature.
+These method variants provide a mechanism for a marshaller to state that it needs to be called during the "Guaranteed Unmarshal" phase in the `finally` block to ensure that resources are not leaked. This feature is required only by the SafeHandle marshaller, so it is an optional extension to the model instead of being a required feature.
 
 ## Blittability
 

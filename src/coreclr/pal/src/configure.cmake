@@ -30,7 +30,6 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(ieeefp.h HAVE_IEEEFP_H)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
 check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
 check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
@@ -46,9 +45,9 @@ check_include_files(lwp.h HAVE_LWP_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
+check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
@@ -80,7 +79,12 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
-check_function_exists(kqueue HAVE_KQUEUE)
+if(CLR_CMAKE_TARGET_HAIKU)
+  # kqueue is broken on Haiku and does not provide the required information in the data field.
+  set(HAVE_KQUEUE 0)
+else()
+  check_function_exists(kqueue HAVE_KQUEUE)
+endif()
 
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
@@ -93,35 +97,21 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_suspend "" HAVE_PTHREAD_SUSPEND)
-check_library_exists(${PTHREAD_LIBRARY} pthread_suspend_np "" HAVE_PTHREAD_SUSPEND_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_continue "" HAVE_PTHREAD_CONTINUE)
-check_library_exists(${PTHREAD_LIBRARY} pthread_continue_np "" HAVE_PTHREAD_CONTINUE_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_resume_np "" HAVE_PTHREAD_RESUME_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-check_library_exists(${PTHREAD_LIBRARY} pthread_sigqueue "" HAVE_PTHREAD_SIGQUEUE)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
 
-check_function_exists(sigreturn HAVE_SIGRETURN)
-check_function_exists(_thread_sys_sigreturn HAVE__THREAD_SYS_SIGRETURN)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_function_exists(copysign HAVE_COPYSIGN)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
-check_function_exists(utimes HAVE_UTIMES)
 if(CLR_CMAKE_TARGET_LINUX)
   # sysctl is deprecated on Linux
   set(HAVE_SYSCTL 0)
 else()
   check_function_exists(sysctl HAVE_SYSCTL)
 endif()
-check_function_exists(sysinfo HAVE_SYSINFO)
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
-check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(poll HAVE_POLL)
 check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
@@ -135,6 +125,7 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
+check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -147,12 +138,9 @@ int main(int argc, char **argv) {
 check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
 check_struct_has_member ("struct stat" st_atim "sys/types.h;sys/stat.h" HAVE_STAT_TIM)
 check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
-check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
-check_struct_has_member ("struct sysinfo" mem_unit "sys/sysinfo.h" HAVE_SYSINFO_WITH_MEM_UNIT)
-check_struct_has_member ("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 check_struct_has_member ("struct _fpchip_state" cw sys/ucontext.h HAVE_FPREGS_WITH_CW)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
@@ -161,9 +149,11 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES asm/ptrace.h)
 check_type_size("struct pt_regs" PT_REGS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+if(HAVE_UCONTEXT_H)
+  set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
+else()
+  set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
+endif()
 check_type_size(ucontext_t UCONTEXT_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
@@ -176,11 +166,9 @@ check_type_size(off_t SIZEOF_OFF_T)
 
 check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
-check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
-check_cxx_symbol_exists(swapctl sys/swap.h HAVE_SWAPCTL)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -201,42 +189,6 @@ int main(void) {
   }
   exit(0);
 }" REALPATH_SUPPORTS_NONEXISTENT_FILES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-int main(void)
-{
-  long long n = 0;
-  sscanf(\"5000000000\", \"%qu\", &n);
-  exit (n != 5000000000);
-  }" SSCANF_SUPPORT_ll)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-
-int main()
-{
-  int ret;
-  float f = 0;
-  char * strin = \"12.34e\";
-
-  ret = sscanf (strin, \"%e\", &f);
-  if (ret <= 0)
-    exit (0);
-  exit(1);
-}" SSCANF_CANNOT_HANDLE_MISSING_EXPONENT)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(void) {
-  char buf[256] = { 0 };
-  snprintf(buf, 0x7fffffff, \"%#x\", 0x12345678);
-  if (buf[0] == 0x0) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_LARGE_SNPRINTF_SUPPORT)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
@@ -372,20 +324,6 @@ int main(void)
 
   exit(-1 == max_priority || -1 == min_priority);
 }" HAVE_SCHED_GET_PRIORITY)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sched.h>
-
-int main(void)
-{
-  if (sched_getcpu() >= 0)
-  {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_SCHED_GETCPU)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <stdlib.h>
 #include <time.h>
@@ -460,22 +398,6 @@ int main()
   ret = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
   exit((ret == 0) ? 1 : 0);
 }" HAVE_CLOCK_GETTIME_NSEC_NP)
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_THREAD_CPUTIME)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_cxx_source_runs("
 #include <sys/types.h>
@@ -658,30 +580,6 @@ int main(void) {
   char path[1024];
 #endif
 
-  sprintf(path, \"/proc/%u/maps\", getpid());
-  fd = open(path, O_RDONLY);
-  if (fd == -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_PROCFS_MAPS)
-set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void) {
-  int fd;
-#ifdef PATH_MAX
-  char path[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char path[MAXPATHLEN];
-#else
-  char path[1024];
-#endif
-
   sprintf(path, \"/proc/%u/stat\", getpid());
   fd = open(path, O_RDONLY);
   if (fd == -1) {
@@ -690,263 +588,6 @@ int main(void) {
   exit(0);
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-
-int main(void) {
-  int fd;
-#ifdef PATH_MAX
-  char path[PATH_MAX];
-#elif defined(MAXPATHLEN)
-  char path[MAXPATHLEN];
-#else
-  char path[1024];
-#endif
-
-  sprintf(path, \"/proc/%u/status\", getpid());
-  fd = open(path, O_RDONLY);
-  if (fd == -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_PROCFS_STATUS)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double x = 10;
-  if (!isnan(acos(x))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_ACOS)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double arg = 10;
-  if (!isnan(asin(arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_ASIN)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile double base = 1.0;
-  volatile double infinity = 1.0 / 0.0;
-  if (pow(base, infinity) != 1.0 || pow(base, -infinity) != 1.0) {
-    exit(1);
-  }
-  if (pow(-base, infinity) != 1.0 || pow(-base, -infinity) != 1.0) {
-    exit(1);
-  }
-
-  base = 0.0;
-  if (pow(base, infinity) != 0.0) {
-    exit(1);
-  }
-  if (pow(base, -infinity) != infinity) {
-    exit(1);
-  }
-
-  base = 1.1;
-  if (pow(-base, infinity) != infinity || pow(base, infinity) != infinity) {
-    exit(1);
-  }
-  if (pow(-base, -infinity) != 0.0 || pow(base, -infinity) != 0.0) {
-    exit(1);
-  }
-
-  base = 0.0;
-  volatile int iexp = 1;
-  if (pow(-base, -iexp) != -infinity) {
-    exit(1);
-  }
-  if (pow(base, -iexp) != infinity) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(int argc, char **argv) {
-  double result;
-  volatile double base = 3.2e-10;
-  volatile double exp = 1 - 5e14;
-
-  result = pow(-base, exp);
-  if (result != -1.0 / 0.0) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_VALID_NEGATIVE_INF_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(int argc, char **argv) {
-    double result;
-    volatile double base = 3.5;
-    volatile double exp = 3e100;
-
-    result = pow(-base, exp);
-    if (result != 1.0 / 0.0) {
-        exit(1);
-    }
-    exit(0);
-}" HAVE_VALID_POSITIVE_INF_POW)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  double pi = 3.14159265358979323846;
-  double result;
-  volatile double y = 0.0;
-  volatile double x = 0.0;
-
-  result = atan2(y, -x);
-  if (fabs(pi - result) > 0.0000001) {
-    exit(1);
-  }
-
-  result = atan2(-y, -x);
-  if (fabs(-pi - result) > 0.0000001) {
-    exit(1);
-  }
-
-  result = atan2 (-y, x);
-  if (result != 0.0 || copysign (1.0, result) > 0) {
-    exit(1);
-  }
-
-  result = atan2 (y, x);
-  if (result != 0.0 || copysign (1.0, result) < 0) {
-    exit(1);
-  }
-
-  exit (0);
-}" HAVE_COMPATIBLE_ATAN2)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  double d = exp(1.0), e = M_E;
-
-  /* Used memcmp rather than == to test that the doubles are equal to
-   prevent gcc's optimizer from using its 80 bit internal long
-   doubles. If you use ==, then on BSD you get a false negative since
-   exp(1.0) == M_E to 64 bits, but not 80.
-  */
-
-  if (memcmp (&d, &e, sizeof (double)) == 0) {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_COMPATIBLE_EXP)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  if (FP_ILOGB0 != -2147483648) {
-    exit(1);
-  }
-
-  exit(0);
-}" HAVE_COMPATIBLE_ILOGB0)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  if (FP_ILOGBNAN != 2147483647) {
-    exit(1);
-  }
-
-  exit(0);
-}" HAVE_COMPATIBLE_ILOGBNAN)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile int arg = 10000;
-  if (!isnan(log(-arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_LOG)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_cxx_source_runs("
-#include <math.h>
-#include <stdlib.h>
-
-int main(void) {
-  volatile int arg = 10000;
-  if (!isnan(log10(-arg))) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_COMPATIBLE_LOG10)
-set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-int main(void)
-{
-  char* szFileName;
-  FILE* pFile = NULL;
-  int ret = 1;
-
-  szFileName = tempnam(\".\", \"tmp\");
-
-  /* open the file write-only */
-  pFile = fopen(szFileName, \"a\");
-  if (pFile == NULL)
-  {
-    exit(0);
-  }
-  if (ungetc('A', pFile) != EOF)
-  {
-    ret = 0;
-  }
-  unlink(szFileName);
-  exit(ret);
-}" UNGETC_NOT_RETURN_EOF)
 
 set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
 check_cxx_source_runs("
@@ -962,69 +603,6 @@ int main() {
   exit(0);
 }" HAS_POSIX_SEMAPHORES)
 set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <sys/types.h>
-#include <pwd.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-
-int main(void)
-{
-  struct passwd sPasswd;
-  struct passwd *pPasswd;
-  char buf[1];
-  int bufLen = sizeof(buf)/sizeof(buf[0]);
-  int euid = geteuid();
-  int ret = 0;
-
-  errno = 0; // clear errno
-  ret = getpwuid_r(euid, &sPasswd, buf, bufLen, &pPasswd);
-  if (0 != ret)
-  {
-    if (ERANGE == errno)
-    {
-      return 0;
-    }
-  }
-
-  return 1; // assume errno is NOT set for all other cases
-}" GETPWUID_R_SETS_ERRNO)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-
-int main()
-{
-  FILE *fp = NULL;
-  char *fileName = \"/dev/zero\";
-  char buf[10];
-
-  /*
-   * Open the file in append mode and try to read some text.
-   * And, make sure ferror() is set.
-   */
-  fp = fopen (fileName, \"a\");
-  if ( (NULL == fp) ||
-       (fread (buf, sizeof(buf), 1, fp) > 0) ||
-       (!ferror(fp))
-     )
-  {
-    return 0;
-  }
-
-  /*
-   * Now that ferror() is set, try to close the file.
-   * If we get an error, we can conclude that this
-   * fgets() depended on the previous ferror().
-   */
-  if ( fclose(fp) != 0 )
-  {
-    return 0;
-  }
-
-  return 1;
-}" FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL)
 
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
@@ -1047,32 +625,18 @@ int main(int argc, char **argv)
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv)
+{
+    int flag = (int)UNW_AARCH64_X19;
+    return 0;
+}" HAVE_UNW_AARCH64_X19)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()
-
-check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <vm/vm_param.h>
-
-int main(int argc, char **argv)
-{
-    struct xswdev xsw;
-
-    return 0;
-}" HAVE_XSWDEV)
-
-check_cxx_source_compiles("
-#include <sys/param.h>
-#include <sys/sysctl.h>
-
-int main(int argc, char **argv)
-{
-    struct xsw_usage xsu;
-
-    return 0;
-}" HAVE_XSW_USAGE)
 
 check_cxx_source_compiles("
 #include <signal.h>
@@ -1325,42 +889,33 @@ if(CLR_CMAKE_TARGET_OSX)
   set(HAVE__NSGETENVIRON 1)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 1)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
 elseif(CLR_CMAKE_TARGET_FREEBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
-  set(BSD_REGS_STYLE "((reg).r_##rr)")
+  if (CLR_CMAKE_HOST_ARCH_AMD64)
+    set(BSD_REGS_STYLE "((reg).r_##rr)")
+  elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+    set(BSD_REGS_STYLE "((reg).rr)")
+  else()
+    message(FATAL_ERROR "Unknown FreeBSD architecture")
+  endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(BSD_REGS_STYLE "((reg).regs[_REG_##RR])")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+  set(SET_SCHEDPARAM_NEEDS_PRIVS 1)
+elseif(CLR_CMAKE_TARGET_HAIKU)
+  # Haiku does not have ptrace.
+  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
+  set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 else() # Anything else is Linux
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
@@ -1368,11 +923,6 @@ else() # Anything else is Linux
   endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
-  set(PAL_PT_ATTACH PTRACE_ATTACH)
-  set(PAL_PT_DETACH PTRACE_DETACH)
-  set(PAL_PT_READ_D PTRACE_PEEKDATA)
-  set(PAL_PT_WRITE_D PTRACE_POKEDATA)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 endif(CLR_CMAKE_TARGET_OSX)
 

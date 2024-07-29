@@ -3,6 +3,7 @@
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface ISurrogateSelector
     {
         void ChainSelector(ISurrogateSelector selector);

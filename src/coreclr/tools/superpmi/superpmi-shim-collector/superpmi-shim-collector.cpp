@@ -37,7 +37,7 @@ void SetDefaultPaths()
 
     if (g_DefaultRealJitPath == nullptr)
     {
-        size_t len           = wcslen(g_HomeDirectory) + 1 + wcslen(DEFAULT_REAL_JIT_NAME_W) + 1;
+        size_t len           = u16_strlen(g_HomeDirectory) + 1 + u16_strlen(DEFAULT_REAL_JIT_NAME_W) + 1;
         g_DefaultRealJitPath = new WCHAR[len];
         wcscpy_s(g_DefaultRealJitPath, len, g_HomeDirectory);
         wcscat_s(g_DefaultRealJitPath, len, DIRECTORY_SEPARATOR_STR_W);
@@ -107,6 +107,12 @@ void InitializeShim()
         exit(1);
     }
 #endif // HOST_UNIX
+
+#ifdef HOST_WINDOWS
+    // Assertions will be sent to stderr instead of a pop-up dialog.
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif // HOST_WINDOWS
 
     Logger::Initialize();
     SetLogFilePath();
@@ -210,7 +216,7 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #ifdef TARGET_WINDOWS
     pJitInstance->currentOs = CORINFO_WINNT;
 #elif defined(TARGET_OSX)
-    pJitInstance->currentOs = CORINFO_MACOS;
+    pJitInstance->currentOs = CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     pJitInstance->currentOs = CORINFO_UNIX;
 #else

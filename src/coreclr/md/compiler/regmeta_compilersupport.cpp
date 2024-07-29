@@ -28,7 +28,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>

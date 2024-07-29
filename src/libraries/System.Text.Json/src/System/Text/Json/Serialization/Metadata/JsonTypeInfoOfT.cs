@@ -10,11 +10,17 @@ namespace System.Text.Json.Serialization.Metadata
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
     /// <typeparam name="T">The generic definition of the type.</typeparam>
-    public abstract partial class JsonTypeInfo<T> : JsonTypeInfo
+    public sealed partial class JsonTypeInfo<T> : JsonTypeInfo
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 
         private Func<T>? _typedCreateObject;
+
+        internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
+            : base(typeof(T), converter, options)
+        {
+            EffectiveConverter = converter.CreateCastingConverter<T>();
+        }
 
         /// <summary>
         /// A Converter whose declared type always matches that of the current JsonTypeInfo.
@@ -91,24 +97,22 @@ namespace System.Text.Json.Serialization.Metadata
 
             _createObject = untypedCreateObject;
             _typedCreateObject = typedCreateObject;
-        }
 
-        private protected void SetCreateObjectIfCompatible(Delegate? createObject)
-        {
-            Debug.Assert(!IsConfigured);
+            // Clear any data related to the previously specified ctor
+            ConstructorAttributeProviderFactory = null;
+            ConstructorAttributeProvider = null;
 
-            // Guard against the reflection resolver/source generator attempting to pass
-            // a CreateObject delegate to converters/metadata that do not support it.
-            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
+            if (CreateObjectWithArgs is not null)
             {
-                SetCreateObject(createObject);
-            }
-        }
+                _parameterInfoValuesIndex = null;
+                CreateObjectWithArgs = null;
+                ParameterCount = 0;
 
-        internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
-            : base(typeof(T), converter, options)
-        {
-            EffectiveConverter = converter.CreateCastingConverter<T>();
+                foreach (JsonPropertyInfo propertyInfo in PropertyList)
+                {
+                    propertyInfo.AssociatedParameter = null;
+                }
+            }
         }
 
         /// <summary>
@@ -123,11 +127,11 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 return _serialize;
             }
-            private protected set
+            internal set
             {
-                Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
+                Debug.Assert(!IsReadOnly, "We should not mutate read-only JsonTypeInfo");
                 _serialize = value;
-                CanUseSerializeHandler = value != null;
+                HasSerializeHandler = value != null;
             }
         }
 
@@ -135,7 +139,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             return new JsonPropertyInfo<T>(
                 declaringType: typeof(T),
-                declaringTypeInfo: null,
+                declaringTypeInfo: this,
                 Options)
             {
                 JsonTypeInfo = this,
@@ -143,50 +147,12 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options)
         {
-            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
+            return new JsonPropertyInfo<T>(declaringType ?? declaringTypeInfo.Type, declaringTypeInfo, options)
             {
                 JsonTypeInfo = this
             };
-        }
-
-        private protected void PopulatePolymorphismMetadata()
-        {
-            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
-            if (options != null)
-            {
-                options.DeclaringTypeInfo = this;
-                _polymorphismOptions = options;
-            }
-        }
-
-        private protected void MapInterfaceTypesToCallbacks()
-        {
-            // Callbacks currently only supported in object kinds
-            // TODO: extend to collections/dictionaries
-            if (Kind == JsonTypeInfoKind.Object)
-            {
-                if (typeof(IJsonOnSerializing).IsAssignableFrom(typeof(T)))
-                {
-                    OnSerializing = static obj => ((IJsonOnSerializing)obj).OnSerializing();
-                }
-
-                if (typeof(IJsonOnSerialized).IsAssignableFrom(typeof(T)))
-                {
-                    OnSerialized = static obj => ((IJsonOnSerialized)obj).OnSerialized();
-                }
-
-                if (typeof(IJsonOnDeserializing).IsAssignableFrom(typeof(T)))
-                {
-                    OnDeserializing = static obj => ((IJsonOnDeserializing)obj).OnDeserializing();
-                }
-
-                if (typeof(IJsonOnDeserialized).IsAssignableFrom(typeof(T)))
-                {
-                    OnDeserialized = static obj => ((IJsonOnDeserialized)obj).OnDeserialized();
-                }
-            }
         }
     }
 }

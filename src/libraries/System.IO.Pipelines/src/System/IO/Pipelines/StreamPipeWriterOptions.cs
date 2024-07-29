@@ -10,7 +10,7 @@ namespace System.IO.Pipelines
     {
         private const int DefaultMinimumBufferSize = 4096;
 
-        internal static StreamPipeWriterOptions s_default = new StreamPipeWriterOptions();
+        internal static readonly StreamPipeWriterOptions s_default = new StreamPipeWriterOptions();
 
         /// <summary>Initializes a <see cref="System.IO.Pipelines.StreamPipeWriterOptions" /> instance, optionally specifying a memory pool, a minimum buffer size, and whether the underlying stream should be left open after the <see cref="System.IO.Pipelines.PipeWriter" /> completes.</summary>
         /// <param name="pool">The memory pool to use when allocating memory. The default value is <see langword="null" />.</param>

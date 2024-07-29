@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test "X * 2" to "X + X"
 
@@ -11,7 +12,8 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float[] testValues =
             {

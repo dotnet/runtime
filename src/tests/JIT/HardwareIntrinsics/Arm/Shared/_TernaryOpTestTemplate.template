@@ -38,65 +38,17 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario_Load();
-                }
-
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing a static member works, using pinning and Load
-                    test.RunClsVarScenario_Load();
-                }
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing a local works, using Load
-                    test.RunLclVarScenario_Load();
-                }
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing the field of a local class works, using pinning and Load
-                    test.RunClassLclFldScenario_Load();
-                }
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing an instance member of a class works, using pinning and Load
-                    test.RunClassFldScenario_Load();
-                }
-
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing the field of a local struct works, using pinning and Load
-                    test.RunStructLclFldScenario_Load();
-                }
-
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing an instance member of a struct works, using pinning and Load
-                    test.RunStructFldScenario_Load();
-                }
             }
             else
             {
@@ -201,23 +153,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
             }
-
-            public void RunStructFldScenario_Load({TemplateName}TernaryOpTest__{TestName} testClass)
-            {
-                fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
-                fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &_fld2)
-                fixed ({Op3VectorType}<{Op3BaseType}>* pFld3 = &_fld3)
-                {
-                    var result = {Isa}.{Method}(
-                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
-                        {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2)),
-                        {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(pFld3))
-                    );
-
-                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                    testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
-                }
-            }
         }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
@@ -231,25 +166,11 @@ namespace JIT.HardwareIntrinsics.Arm
         private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
         private static {Op3BaseType}[] _data3 = new {Op3BaseType}[Op3ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-        private static {Op2VectorType}<{Op2BaseType}> _clsVar2;
-        private static {Op3VectorType}<{Op3BaseType}> _clsVar3;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op2VectorType}<{Op2BaseType}> _fld2;
         private {Op3VectorType}<{Op3BaseType}> _fld3;
 
         private DataTable _dataTable;
-
-        static {TemplateName}TernaryOpTest__{TestName}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _clsVar2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
-            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = {NextValueOp3}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _clsVar3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
-        }
 
         public {TemplateName}TernaryOpTest__{TestName}()
         {
@@ -315,54 +236,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
-
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>), typeof({Op3VectorType}<{Op3BaseType}>) })
-                                     .Invoke(null, new object[] {
-                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
-                                        {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr)),
-                                        {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(_dataTable.inArray3Ptr))
-                                     });
-
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar1,
-                _clsVar2,
-                _clsVar3
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pClsVar1 = &_clsVar1)
-            fixed ({Op2VectorType}<{Op2BaseType}>* pClsVar2 = &_clsVar2)
-            fixed ({Op3VectorType}<{Op3BaseType}>* pClsVar3 = &_clsVar3)
-            {
-                var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pClsVar1)),
-                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pClsVar2)),
-                    {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(pClsVar3))
-                );
-
-                Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
-            }
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -376,51 +249,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
-
-            var op1 = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr));
-            var op2 = {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr));
-            var op3 = {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(_dataTable.inArray3Ptr));
-            var result = {Isa}.{Method}(op1, op2, op3);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new {TemplateName}TernaryOpTest__{TestName}();
-            var result = {Isa}.{Method}(test._fld1, test._fld2, test._fld3);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
-
-            var test = new {TemplateName}TernaryOpTest__{TestName}();
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &test._fld1)
-            fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &test._fld2)
-            fixed ({Op3VectorType}<{Op3BaseType}>* pFld3 = &test._fld3)
-            {
-                var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
-                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2)),
-                    {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(pFld3))
-                );
-
-                Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
-            }
-        }
-
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -429,25 +257,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
-            fixed ({Op2VectorType}<{Op2BaseType}>* pFld2 = &_fld2)
-            fixed ({Op3VectorType}<{Op3BaseType}>* pFld3 = &_fld3)
-            {
-                var result = {Isa}.{Method}(
-                    {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)),
-                    {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(pFld2)),
-                    {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(pFld3))
-                );
-
-                Unsafe.Write(_dataTable.outArrayPtr, result);
-                ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
-            }
         }
 
         public void RunStructLclFldScenario()
@@ -461,35 +270,12 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
         }
 
-        public void RunStructLclFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
-
-            var test = TestStruct.Create();
-            var result = {Isa}.{Method}(
-                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(&test._fld1)),
-                {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(&test._fld2)),
-                {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(&test._fld3))
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
-        }
-
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
-        }
-
-        public void RunStructFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
-
-            var test = TestStruct.Create();
-            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()

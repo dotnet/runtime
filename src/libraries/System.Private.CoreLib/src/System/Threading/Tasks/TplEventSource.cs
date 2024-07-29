@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
@@ -10,13 +10,7 @@ namespace System.Threading.Tasks
     /// <summary>Provides an event source for tracing TPL information.</summary>
     [EventSource(
         Name = "System.Threading.Tasks.TplEventSource",
-        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5",
-        LocalizationResources =
-#if CORECLR
-            "System.Private.CoreLib.Strings"
-#else
-            null
-#endif
+        Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
         )]
     [EventSourceAutoGenerate]
     internal sealed partial class TplEventSource : EventSource
@@ -193,7 +187,8 @@ namespace System.Threading.Tasks
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(TASKSCHEDULED_ID, Task = Tasks.TaskScheduled, Version = 1, Opcode = EventOpcode.Send,
-         Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
+         Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks,
+         Message = "Task {2} scheduled to TaskScheduler {0}.")]
         public void TaskScheduled(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, int CreatingTaskID, int TaskCreationOptions, int appDomain = DefaultAppDomainID)
@@ -242,7 +237,8 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         [Event(TASKSTARTED_ID,
-         Level = EventLevel.Informational, Keywords = Keywords.Tasks)]
+         Level = EventLevel.Informational, Keywords = Keywords.Tasks,
+         Message = "Task {2} executing.")]
         public void TaskStarted(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID)
@@ -263,7 +259,8 @@ namespace System.Threading.Tasks
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(TASKCOMPLETED_ID, Version = 1,
-         Level = EventLevel.Informational, Keywords = Keywords.TaskStops)]
+         Level = EventLevel.Informational, Keywords = Keywords.TaskStops,
+         Message = "Task {2} completed.")]
         public void TaskCompleted(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, bool IsExceptional)
@@ -306,8 +303,9 @@ namespace System.Threading.Tasks
         /// </param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-        [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
-         Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
+        [Event(TASKWAITBEGIN_ID, Version = 3, Task = Tasks.TaskWait, Opcode = EventOpcode.Send,
+         Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks,
+         Message = "Beginning wait ({3}) on Task {2}.")]
         public void TaskWaitBegin(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID, TaskWaitBehavior Behavior, int ContinueWithTaskID)
@@ -353,7 +351,8 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         [Event(TASKWAITEND_ID,
-         Level = EventLevel.Verbose, Keywords = Keywords.Tasks)]
+         Level = EventLevel.Verbose, Keywords = Keywords.Tasks,
+         Message = "Ending wait on Task {2}.")]
         public void TaskWaitEnd(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
             int TaskID)
@@ -503,7 +502,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuation(int TaskID, object Object) { RunningContinuation(TaskID, (long)*((void**)Unsafe.AsPointer(ref Object))); }
+        public unsafe void RunningContinuation(int TaskID, object Object) => RunningContinuation(TaskID, ObjectIDForEvents(Object));
         [Event(20, Keywords = Keywords.Debug)]
         private void RunningContinuation(int TaskID, long Object)
         {
@@ -512,7 +511,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) { RunningContinuationList(TaskID, Index, (long)*((void**)Unsafe.AsPointer(ref Object))); }
+        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) => RunningContinuationList(TaskID, Index, ObjectIDForEvents(Object));
 
         [Event(21, Keywords = Keywords.Debug)]
         public void RunningContinuationList(int TaskID, int Index, long Object)
@@ -527,8 +526,6 @@ namespace System.Threading.Tasks
         [Event(24, Keywords = Keywords.Debug)]
         public void DebugFacilityMessage1(string Facility, string Message, string Value1) { WriteEvent(24, Facility, Message, Value1); }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-            Justification = "Guid parameter is safe with WriteEvent")]
         [Event(25, Keywords = Keywords.DebugActivityId)]
         public void SetActivityId(Guid NewId)
         {
@@ -546,7 +543,7 @@ namespace System.Threading.Tasks
         [NonEvent]
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
-            System.Diagnostics.Debug.Assert(stateMachineBox != null);
+            Diagnostics.Debug.Assert(stateMachineBox != null);
             if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();

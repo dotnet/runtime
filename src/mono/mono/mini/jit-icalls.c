@@ -21,6 +21,7 @@
 #include "jit-icalls.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+#include "llvmonly-runtime.h"
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
@@ -42,17 +43,19 @@ mono_ldftn (MonoMethod *method)
 
 	if (mono_llvm_only) {
 		// FIXME: No error handling
+		if (mono_method_signature_internal (method)->pinvoke) {
+			addr = mono_compile_method_checked (method, error);
+			mono_error_assert_ok (error);
+			g_assert (addr);
 
-		addr = mono_compile_method_checked (method, error);
-		mono_error_assert_ok (error);
-		g_assert (addr);
+			return addr;
+		} else {
+			/* Managed function pointers are ftndesc's */
+			addr = mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+			mono_error_assert_ok (error);
 
-		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-			/* The caller doesn't pass it */
-			g_assert_not_reached ();
-
-		addr = mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
-		return addr;
+			return addr;
+		}
 	}
 
 	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
@@ -62,7 +65,7 @@ mono_ldftn (MonoMethod *method)
 	} else {
 		addr = mono_create_jump_trampoline (method, FALSE, error);
 		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-                        addr = mono_create_static_rgctx_trampoline (method, addr);
+			addr = mono_create_static_rgctx_trampoline (method, addr);
 	}
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -541,7 +544,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 		return 0;
 	}
 
-	return res;
+	return GINT64_TO_INT32 (res);
 }
 
 gint32
@@ -556,7 +559,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 
 gint32
@@ -571,7 +574,7 @@ mono_imul_ovf_un_oom (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 #endif
 
@@ -987,9 +990,8 @@ mono_rconv_u4 (float v)
 gint64
 mono_fconv_ovf_i8 (double v)
 {
-	const gint64 res = (gint64)v;
-
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	gint64 res;
+	if (!mono_try_trunc_i64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1002,33 +1004,12 @@ guint64
 mono_fconv_ovf_u8 (double v)
 {
 	guint64 res;
-
-/*
- * The soft-float implementation of some ARM devices have a buggy guin64 to double
- * conversion that it looses precision even when the integer if fully representable
- * as a double.
- *
- * This was found with 4294967295ull, converting to double and back looses one bit of precision.
- *
- * To work around this issue we test for value boundaries instead.
- */
-#if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-	if (mono_isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
+	if (!mono_try_trunc_u64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
 		return 0;
 	}
-	res = (guint64)v;
-#else
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
-		ERROR_DECL (error);
-		mono_error_set_overflow (error);
-		mono_error_set_pending_exception (error);
-		return 0;
-	}
-#endif
 	return res;
 }
 
@@ -1043,9 +1024,8 @@ mono_rconv_i8 (float v)
 gint64
 mono_rconv_ovf_i8 (float v)
 {
-	const gint64 res = (gint64)v;
-
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	gint64 res;
+	if (!mono_try_trunc_i64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1058,9 +1038,7 @@ guint64
 mono_rconv_ovf_u8 (float v)
 {
 	guint64 res;
-
-	res = (guint64)v;
-	if (mono_isnan (v) || mono_trunc (v) != res) {
+	if (!mono_try_trunc_u64 (v, &res)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1348,6 +1326,29 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 	return compiled_ptr;
 }
 
+gpointer
+mono_gsharedvt_constrained_call_fast (gpointer mp, MonoGsharedvtConstrainedCallInfo *info, gpointer *out_receiver)
+{
+	switch (info->call_type) {
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE:
+		/* Calling a vtype method with a vtype receiver */
+		*out_receiver = mp;
+		return info->code;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
+		/* Calling a ref method with a ref receiver */
+		*out_receiver = *(gpointer*)mp;
+		return info->code;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_BOX: {
+		ERROR_DECL (error);
+		*out_receiver = mono_value_box_checked (info->klass, mp, error);
+		mono_error_assert_ok (error);
+		return info->code;
+	}
+	default:
+		return NULL;
+	}
+}
+
 static MonoMethod*
 constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg, MonoError *error)
 {
@@ -1357,7 +1358,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 
 	error_init (error);
 
-	if (mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) {
+	if ((mono_class_is_interface (klass) || !m_class_is_valuetype (klass)) && !m_method_is_static (cmethod)) {
 		MonoObject *this_obj;
 
 		is_iface = mono_class_is_interface (klass);
@@ -1389,7 +1390,12 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		}
 	}
 
-	if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
+	if (m_method_is_static (cmethod)) {
+		/*
+		 * Static calls don't have this arg
+		 */
+		*this_arg = NULL;
+	} else if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
@@ -1427,7 +1433,8 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  * MP is NULL if CMETHOD is a static virtual method.
  */
 MonoObject*
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass,
+								 MonoGsharedvtConstrainedCallInfo *info, guint8 *deref_args, gpointer *args)
 {
 	ERROR_DECL (error);
 	MonoObject *o;
@@ -1435,33 +1442,49 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	gpointer this_arg;
 	gpointer new_args [16];
 
-	/* Object.GetType () is an intrinsic under netcore */
-	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
-		MonoVTable *vt;
+	switch (info->call_type) {
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE:
+		/* Calling a vtype method with a vtype receiver */
+		this_arg = mp;
+		m = info->method;
+		break;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
+		/* Calling a ref method with a ref receiver */
+		/* Static calls don't have this arg */
+		this_arg = m_method_is_static (cmethod) ? NULL : *(gpointer*)mp;
+		m = info->method;
+		break;
+	default:
+		/* Object.GetType () is an intrinsic under netcore */
+		if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
+			MonoVTable *vt;
 
-		vt = mono_class_vtable_checked (klass, error);
+			vt = mono_class_vtable_checked (klass, error);
+			if (!is_ok (error)) {
+				mono_error_set_pending_exception (error);
+				return NULL;
+			}
+			return vt->type;
+		}
+
+		m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
-		return vt->type;
+		if (!m)
+			return NULL;
+		break;
 	}
 
-	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
-	if (!is_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	if (!m)
-		return NULL;
 	if (deref_args) {
 		/* Have to deref gsharedvt ref arguments since the runtime invoke expects it */
 		MonoMethodSignature *fsig = mono_method_signature_internal (m);
 		g_assert (fsig->param_count < 16);
 		memcpy (new_args, args, fsig->param_count * sizeof (gpointer));
 		for (int i = 0; i < fsig->param_count; ++i) {
-			if (deref_args [i])
+			// If the argument is not a vtype or nullable, deref it
+			if (deref_args [i] && (deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_VTYPE && deref_args [i] != MONO_GSHAREDVT_BOX_TYPE_NULLABLE))
 				new_args [i] = *(gpointer*)new_args [i];
 		}
 		args = new_args;
@@ -1556,6 +1579,11 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
+
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1569,6 +1597,11 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
 	ERROR_DECL (error);
 	gpointer res;
+
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, error);
 	if (!is_ok (error)) {
@@ -1658,6 +1691,22 @@ mono_throw_invalid_program (const char *msg)
 }
 
 void
+mono_throw_type_load (MonoClass* klass)
+{
+	ERROR_DECL (error);
+
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_dummy_jit_icall (void)
 {
 }
@@ -1665,6 +1714,16 @@ mono_dummy_jit_icall (void)
 void
 mono_dummy_jit_icall_val (gpointer val)
 {
+}
+
+/* Dummy icall place holder function representing runtime init call. */
+/* When used, function will be replaced with a direct icall to a custom */
+/* runtime init function called from start of native-to-managed wrapper. */
+/* This function should never end up being called. */
+void
+mono_dummy_runtime_init_callback (void)
+{
+	g_assert (!"Runtime incorrectly configured to support runtime init callback from native-to-managed wrapper.");
 }
 
 void

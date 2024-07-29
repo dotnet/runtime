@@ -23,13 +23,16 @@
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
-    <CoreCLRCrossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))</CoreCLRCrossgen2Dir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
-    <CoreCLRCrossILCompilerDir Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
+    <CoreCLRCrossILCompilerDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
     <CoreCLRBuildIntegrationDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'build'))</CoreCLRBuildIntegrationDir>
 
-    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
+    <Crossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'crossgen2'))</Crossgen2Dir>
+
+    <ToolsILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(ToolsConfiguration)'))</ToolsILLinkDir>
+
+    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS)-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
     <GrpcServerDockerImageDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'obj', 'grpcserver', 'docker'))</GrpcServerDockerImageDir>
 
     <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
@@ -77,7 +80,14 @@
       <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)'))</MonoArtifactsPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+      <_nativeAotRuntimeFiles Include="$(CoreCLRAotSdkDir)*" />
+      <RuntimeFiles Include="@(_nativeAotRuntimeFiles)" Condition="'%(Extension)' != '.xml'">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'">
       <RuntimeFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
       <RuntimeFiles Condition="'$(PgoInstrument)' == 'true'" Include="$(CoreCLRSharedFrameworkDir)PGD/*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
@@ -111,14 +121,15 @@
       </CoreCLRCrossTargetFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" />
+      <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdacreader*" />
       <RuntimeFiles>
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <FrameworkReleaseFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.release.framework\*.*" />
-      <FrameworkDebugFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.debug.framework\*.*" />
+      <MonoFrameworkReleaseFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.release.framework\*.*" />
+      <MonoFrameworkDebugFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.debug.framework\*.*" />
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
+      <MonoBuildFiles Include="$(MonoArtifactsPath)\build\**\*.*" />
     </ItemGroup>
 
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
@@ -169,7 +180,11 @@
         IsNative="" />
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
+
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(RuntimeFlavor)' != 'Mono'"
+                                          Include="$(LibrariesNativeArtifactsPath)System.Globalization.Native.dll;$(LibrariesNativeArtifactsPath)System.Globalization.Native.so;$(LibrariesNativeArtifactsPath)System.Globalization.Native.dylib" />
       <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
@@ -179,38 +194,68 @@
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'android'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)*.dex;
+        $(LibrariesNativeArtifactsPath)*.jar;"
+        IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.js.map;
+        $(LibrariesNativeArtifactsPath)dotnet.native.js;
+        $(LibrariesNativeArtifactsPath)dotnet.globalization.js;
+        $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
+        $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
-        $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
-        $(LibrariesNativeArtifactsPath)dotnet.wasm;
-        $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
-        $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
-        $(LibrariesNativeArtifactsPath)*.dat;"
+        $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;
+        $(LibrariesNativeArtifactsPath)*.dat;
+        $(LibrariesNativeArtifactsPath)segmentation-rules.json;"
         IsNative="true" />
       <!-- for threaded wasm -->
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.mjs')"
                              Include="
-        $(LibrariesNativeArtifactsPath)dotnet.worker.js"
+        $(LibrariesNativeArtifactsPath)dotnet.native.worker.mjs"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
         $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
         $(LibrariesNativeArtifactsPath)src\emcc-link.rsp;
-        $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
+        $(LibrariesNativeArtifactsPath)src\wasm-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
                              NativeSubDirectory="src\es6"
                              IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
+        $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
+        NativeSubDirectory="include\wasm"
+        IsNative="true" />
+    </ItemGroup>
+
+    <ItemGroup Label="Wasi" Condition="'$(TargetOS)' == 'wasi'">
+      <LibrariesRuntimeFiles
+                             Include="
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;
+        $(LibrariesNativeArtifactsPath)*.dat;"
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)src\wasi-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\wasi-link.rsp;
+        $(LibrariesNativeArtifactsPath)src\wasm-props.json;
+        $(LibrariesNativeArtifactsPath)src\*.c"
+        NativeSubDirectory="src"
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
         NativeSubDirectory="include\wasm"
         IsNative="true" />
@@ -223,10 +268,4 @@
           DependsOnTargets="
             ResolveLibrariesRefAssembliesFromLocalBuild;
             ResolveLibrariesRuntimeFilesFromLocalBuild" />
-
-  <PropertyGroup>
-    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
-    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
-    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
-  </PropertyGroup>
 </Project>

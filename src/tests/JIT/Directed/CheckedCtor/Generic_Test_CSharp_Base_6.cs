@@ -11,16 +11,17 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Test
 {
-    static class App
+    public static class App
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             new DerivedClass<Reftype>();
             new DerivedClass<Valuetype>();
-            return 100;
         }
     }
 

@@ -4,6 +4,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
     <Compile Include="RegisteredWaitTests.cs" />
@@ -13,5 +16,8 @@
              Link="CommonTest\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="CommonTest\System\Threading\ThreadTestHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Threading.ThreadPool.UseWindowsThreadPool" Value="false" />
   </ItemGroup>
 </Project>

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_IntConv
 {
     const int Pass = 100;
@@ -31,7 +32,8 @@ public class BringUpTest_IntConv
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static UInt32 IntConv(long x) { return (UInt32)x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long x = IntConv((int)3);
         Console.WriteLine(x);

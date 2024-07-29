@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
@@ -8,9 +9,17 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
-        public readonly X509Certificate2 Certificate;
-        public readonly X509Certificate2[] IntermediateCertificates;
         internal readonly SslCertificateTrust? Trust;
+
+        /// <summary>
+        /// Gets the target (leaf) certificate of the built chain.
+        /// </summary>
+        public X509Certificate2 TargetCertificate { get; }
+
+        /// <summary>
+        /// Gets the intermediate certificates for the built chain.
+        /// </summary>
+        public ReadOnlyCollection<X509Certificate2> IntermediateCertificates { get; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
@@ -42,9 +51,24 @@ namespace System.Net.Security
             {
                 if (additionalCertificates != null)
                 {
-                    foreach (X509Certificate cert in additionalCertificates)
+                    chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                }
+
+                if (trust != null)
+                {
+                    if (trust._store != null)
                     {
-                        chain.ChainPolicy.ExtraStore.Add(cert);
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                    }
+
+                    if (trust._trustList != null)
+                    {
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
+                    }
+
+                    if (chain.ChainPolicy.CustomTrustStore.Count > 0)
+                    {
+                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                     }
                 }
 
@@ -56,6 +80,20 @@ namespace System.Net.Security
                 if (!chainStatus && NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
+                }
+
+                if (!chainStatus && ChainBuildNeedsTrustedRoot && additionalCertificates?.Count > 0)
+                {
+                    // Some platforms like Android may not be able to build the chain unless the chain root is trusted.
+                    // We can try to rebuild the chain with making all extra certificates trused.
+                    // We do not try to evaluate trust here, we jsut need to construct the chain so it should not matter.
+                    chain.ChainPolicy.CustomTrustStore.AddRange(additionalCertificates);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chainStatus = chain.Build(target);
+                    if (!chainStatus && NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"Failed to build chain for {target.Subject} while trusting additional certificates");
+                    }
                 }
 
                 int count = chain.ChainElements.Count - 1;
@@ -96,30 +134,42 @@ namespace System.Net.Security
                     // Dispose the copy of the target cert.
                     chain.ChainElements[0].Certificate.Dispose();
 
-                    // Dispose the last cert, if we didn't include it.
-                    for (int i = count + 1; i < chain.ChainElements.Count; i++)
+                    // Dispose of the certificates that we do not need. If we are holding on to the root,
+                    // don't dispose of it.
+                    int stopDisposingChainPosition = root is null ?
+                        chain.ChainElements.Count :
+                        chain.ChainElements.Count - 1;
+
+                    for (int i = count + 1; i < stopDisposingChainPosition; i++)
                     {
                         chain.ChainElements[i].Certificate.Dispose();
                     }
                 }
             }
 
-            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
+            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, new ReadOnlyCollection<X509Certificate2>(intermediates), trust);
 
             // On Linux, AddRootCertificate will start a background download of an OCSP response,
             // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
             ctx.SetNoOcspFetch(offline || noOcspFetch);
-            ctx.AddRootCertificate(root);
+
+            bool transferredOwnership = false;
+            ctx.AddRootCertificate(root, ref transferredOwnership);
+
+            if (!transferredOwnership)
+            {
+                root?.Dispose();
+            }
 
             return ctx;
         }
 
-        partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership);
         partial void SetNoOcspFetch(bool noOcspFetch);
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates, Trust);
+            return new SslStreamCertificateContext(new X509Certificate2(TargetCertificate), IntermediateCertificates, Trust);
         }
     }
 }

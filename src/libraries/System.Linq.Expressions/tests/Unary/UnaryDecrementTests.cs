@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Tests
         public static void CustomOpDecrement(Decrementable operand, Decrementable expected, bool useInterpreter)
         {
             Func<Decrementable> func = Expression.Lambda<Func<Decrementable>>(
-                Expression.Decrement(Expression.Constant(operand))).Compile(useInterpreter);
+                            Expression.Decrement(Expression.Constant(operand))).Compile(useInterpreter);
             Assert.Equal(expected.Value, func().Value);
         }
 

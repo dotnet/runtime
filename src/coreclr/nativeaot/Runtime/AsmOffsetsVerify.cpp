@@ -6,18 +6,19 @@
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "TargetPtrs.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
-#include "CallDescr.h"
+#include <minipal/cpufeatures.h>
+
+#include "CommonMacros.inl"
+#include "GCMemoryHelpers.inl"
 
 class AsmOffsets
 {

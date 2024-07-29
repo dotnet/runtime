@@ -16,9 +16,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;                           // for XmlReader/Writer
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml;                           // for XmlReader/Writer
 
 namespace System.IO.Packaging
 {
@@ -244,8 +244,8 @@ namespace System.IO.Packaging
                         // Make sure that the current node read is an Element
                         if (reader.NodeType == XmlNodeType.Element
                             && (reader.Depth == 0)
-                            && (string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0)
-                            && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
+                            && (reader.LocalName == RelationshipsTagName)
+                            && (reader.NamespaceURI == PackagingUtilities.RelationshipNamespaceUri))
                         {
                             ThrowIfXmlBaseAttributeIsPresent(reader);
 
@@ -268,8 +268,8 @@ namespace System.IO.Packaging
 
                                 if (reader.NodeType == XmlNodeType.Element
                                     && (reader.Depth == 1)
-                                    && (string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
-                                    && (string.CompareOrdinal(PackagingUtilities.RelationshipNamespaceUri, reader.NamespaceURI) == 0))
+                                    && (reader.LocalName == RelationshipTagName)
+                                    && (reader.NamespaceURI == PackagingUtilities.RelationshipNamespaceUri))
                                 {
                                     ThrowIfXmlBaseAttributeIsPresent(reader);
 
@@ -295,7 +295,7 @@ namespace System.IO.Packaging
                                     }
                                 }
                                 else
-                                    if (!(string.CompareOrdinal(RelationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
+                                    if (!((reader.LocalName == RelationshipsTagName) && (reader.NodeType == XmlNodeType.EndElement)))
                                     throw new XmlException(SR.UnknownTagEncountered, null, reader.LineNumber, reader.LinePosition);
                             }
                         }
@@ -320,7 +320,7 @@ namespace System.IO.Packaging
             {
                 try
                 {
-#if NET6_0_OR_GREATER
+#if NET
                     relationshipTargetMode = Enum.Parse<TargetMode>(targetModeAttributeValue, ignoreCase: false);
 #else
                     relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, ignoreCase: false));
@@ -370,7 +370,7 @@ namespace System.IO.Packaging
             //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
             reader.MoveToContent();
 
-            if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(RelationshipTagName, reader.LocalName) == 0)
+            if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName == RelationshipTagName)
                 return;
             else
                 throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, RelationshipTagName), null, reader.LineNumber, reader.LinePosition);

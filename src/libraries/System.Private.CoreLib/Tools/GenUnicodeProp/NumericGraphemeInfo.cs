@@ -28,9 +28,9 @@ namespace GenUnicodeProp
             _data.graphemeClusterBreakProperty = codePoint.GraphemeClusterBreakProperty;
         }
 
-        public override bool Equals(object obj) => Equals(obj as NumericGraphemeInfo);
+        public override bool Equals(object? obj) => Equals(obj as NumericGraphemeInfo);
 
-        public bool Equals(NumericGraphemeInfo other)
+        public bool Equals(NumericGraphemeInfo? other)
         {
             return !(other is null) && this._data.Equals(other._data);
         }

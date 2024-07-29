@@ -31,7 +31,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _partsToUnindex.Add(partManager);
             }
 
-            public IEnumerable<PartManager> GetAffectedParts(IEnumerable<string> changedContractNames)
+            public List<PartManager> GetAffectedParts(IEnumerable<string> changedContractNames)
             {
                 UpdateImportIndex();
 

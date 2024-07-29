@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Xml.Schema;
 using System.Collections;
 using System.Diagnostics;
-
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -60,10 +59,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -79,10 +75,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
 
                 ValidateNCName(localName);
 
@@ -243,10 +236,7 @@ namespace System.Xml
         {
             if (_checkNames)
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 XmlConvert.VerifyNMTOKEN(name);
             }
             return writer.WriteNmTokenAsync(name);

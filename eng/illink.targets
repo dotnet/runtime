@@ -1,20 +1,16 @@
 <Project>
+
+  <PropertyGroup>
+    <!-- Custom trimming logic should always use live ILLink, even when none of the
+         trimming-related SDK properties are set. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
+  </PropertyGroup>
+
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
-  </PropertyGroup>
-  
-  <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
-       to exclude non trimmable assemblies. -->
-  <ItemDefinitionGroup>
-    <TargetPathWithTargetPlatformMoniker>
-      <IsTrimmable>$(IsTrimmable)</IsTrimmable>
-    </TargetPathWithTargetPlatformMoniker>
-  </ItemDefinitionGroup>
 
-  <!-- Inputs and outputs of ILLinkTrimAssembly -->
-  <PropertyGroup>
     <ILLinkDirectory Condition="'$(ILLinkDirectory)' == ''">$(MSBuildProjectDirectory)\ILLink\</ILLinkDirectory>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
@@ -31,94 +27,80 @@
     <ILLinkSubstitutionsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Substitutions.xml</ILLinkSubstitutionsXmlIntermediatePath>
     <ILLinkLinkAttributesXmlIntermediatePath>$(IntermediateOutputPath)ILLink.LinkAttributes.xml</ILLinkLinkAttributesXmlIntermediatePath>
 
-    <ILLinkSuppressionsXmlFilePrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlFilePrefix>
-    <ILLinkSuppressionsXmlFile>$(ILLinkSuppressionsXmlFilePrefix).xml</ILLinkSuppressionsXmlFile>
-    <ILLinkSuppressionsConfigurationSpecificXmlFile>$(ILLinkSuppressionsXmlFilePrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXmlFile>
-    <ILLinkSuppressionsLibraryBuildXmlFile>$(ILLinkSuppressionsXmlFilePrefix).LibraryBuild.xml</ILLinkSuppressionsLibraryBuildXmlFile>
+    <ILLinkSuppressionsXmlPrefix>$(ILLinkDirectory)ILLink.Suppressions</ILLinkSuppressionsXmlPrefix>
+    <ILLinkSuppressionsXml>$(ILLinkSuppressionsXmlPrefix).xml</ILLinkSuppressionsXml>
+    <ILLinkSuppressionsConfigurationSpecificXml>$(ILLinkSuppressionsXmlPrefix).$(Configuration).xml</ILLinkSuppressionsConfigurationSpecificXml>
     <!-- Only run the trim analyzer on libraries which have been annotated. -->
-    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXmlFile)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)'))">false</EnableTrimAnalyzer>
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == '' And (Exists('$(ILLinkSuppressionsXml)') Or Exists('$(ILLinkSuppressionsConfigurationSpecificXml)'))">false</EnableTrimAnalyzer>
 
-    <!-- if building a PDB, tell illink to rewrite the symbols file -->
-    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' and '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
+    <!-- tell illink to rewrite the symbols file -->
+    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == ''">true</ILLinkRewritePDBs>
+
+    <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
 
+   <ItemGroup>
+    <ILLinkSuppressionsLibraryBuildXml Include="$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml"
+                                       Condition="Exists('$(ILLinkSuppressionsXmlPrefix).LibraryBuild.xml')" />
+
+    <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsXml)"
+                            Condition="Exists('$(ILLinkSuppressionsXml)')" />
+    <ILLinkSuppressionsXmls Include="$(ILLinkSuppressionsConfigurationSpecificXml)"
+                            Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXml)')" />
+    <ILLinkSuppressionsXmls Include="@(ILLinkSuppressionsLibraryBuildXml)" />
+    <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)"
+                            TargetPath="%(FileName).$(AssemblyName).xml" />
+  </ItemGroup>
+
   <ItemGroup>
-    <None Include="$(ILLinkDescriptorsLibraryBuildXml)" Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)"
+                             Condition="'$(GenerateResourcesSubstitutions)' == 'true'" />
     <None Include="@(ILLinkSubstitutionsXmls)" />
+    <None Include="$(ILLinkDescriptorsLibraryBuildXml)"
+          Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <NetCoreAppCurrentBuildSettings Condition="'$(NetCoreAppCurrentBuildSettings)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
-    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(NetCoreAppCurrentBuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
-    <ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>
-    <ILLinkTrimAssemblyOOBSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)oob-suppressions-xmls\</ILLinkTrimAssemblyOOBSuppressionsXmlsDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir Condition="'$(IsNETCoreAppSrc)' == 'true'">$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)</ILLinkTrimAssemblySuppressionsXmlsDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir Condition="'$(IsNETCoreAppSrc)' != 'true'">$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)</ILLinkTrimAssemblySuppressionsXmlsDir>
-  </PropertyGroup>
+  <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
+       to exclude non trimmable assemblies. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsTrimmable>$(IsTrimmable)</IsTrimmable>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
-  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
-       Must be enabled by setting BinPlaceILLinkTrimAssembly=true
-  -->
-  <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
-      <ItemName>TrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
-      <ItemName>TrimmingReport</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
-      <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
-      <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsXmlFile)')"
-                            Include="$(ILLinkSuppressionsXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsConfigurationSpecificXmlFile)')"
-                            Include="$(ILLinkSuppressionsConfigurationSpecificXmlFile)" />
-    <ILLinkSuppressionsXmls Condition="Exists('$(ILLinkSuppressionsLibraryBuildXmlFile)')"
-                            Include="$(ILLinkSuppressionsLibraryBuildXmlFile)" />
-    <ILLinkSuppressionsXmls Update="@(ILLinkSuppressionsXmls)" TargetPath="%(FileName).$(AssemblyName).xml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)">
-      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
-      <ItemName>ILLinkSuppressionsXmls</ItemName>
-    </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
-      <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
-      <ItemName>ILLinkSuppressionsXmls</ItemName>
-    </BinPlaceTargetFrameworks>
-  </ItemGroup>
-
-  <Target Name="_EmbedILLinkXmls"
-          DependsOnTargets="_CombineILLinkDescriptorsXmls;_CombineILLinkSubstitutionsXmls;_CombineILLinkLinkAttributesXmls">
-
-    <ItemGroup Condition="'$(ILLinkDescriptorsXml)' != ''">
-      <EmbeddedResource Include="$(ILLinkDescriptorsXml)">
-        <LogicalName>ILLink.Descriptors.xml</LogicalName>
-      </EmbeddedResource>
+  <!-- Flow the ILLinkSuppressionsXmls item list down to consuming projects, in order for sfx.proj and oob.proj to
+       receive the suppression files. -->
+  <Target Name="AnnotateTargetPathWithILLinkSuppressionsXmlsProp"
+          AfterTargets="GetTargetPathWithTargetPlatformMoniker">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker ILLinkSuppressionsXmls="@(ILLinkSuppressionsXmls->Metadata('FullPath'))" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(ILLinkSubstitutionsXml)' != ''">
-      <EmbeddedResource Include="$(ILLinkSubstitutionsXml)">
-        <LogicalName>ILLink.Substitutions.xml</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(ILLinkLinkAttributesXml)' != ''">
-      <EmbeddedResource Include="$(ILLinkLinkAttributesXml)">
-        <LogicalName>ILLink.LinkAttributes.xml</LogicalName>
-      </EmbeddedResource>
-    </ItemGroup>
-
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <Target Name="_EmbedILLinkXmls"
+          DependsOnTargets="_CombineILLinkDescriptorsXmls;
+                            _CombineILLinkSubstitutionsXmls;
+                            _CombineILLinkLinkAttributesXmls">
+    <ItemGroup>
+      <EmbeddedResource Include="$(ILLinkDescriptorsXml)"
+                        LogicalName="ILLink.Descriptors.xml"
+                        Condition="'$(ILLinkDescriptorsXml)' != ''" />
+
+      <EmbeddedResource Include="$(ILLinkSubstitutionsXml)"
+                        LogicalName="ILLink.Substitutions.xml"
+                        Condition="'$(ILLinkSubstitutionsXml)' != ''" />
+
+      <EmbeddedResource Include="$(ILLinkLinkAttributesXml)"
+                        LogicalName="ILLink.LinkAttributes.xml"
+                        Condition="'$(ILLinkLinkAttributesXml)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="CombineLinkerXmlFiles"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkDescriptorsXmls"
           Condition="'@(ILLinkDescriptorsXmls)' != ''"
           Inputs="@(ILLinkDescriptorsXmls)"
@@ -134,15 +116,6 @@
       <FileWrites Include="$(ILLinkDescriptorsXml)" />
     </ItemGroup>
   </Target>
-
-  <PropertyGroup>
-    <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
-    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(GenerateResourcesSubstitutions)' == 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkResourcesSubstitutionIntermediatePath)" />
-  </ItemGroup>
 
   <!-- If a library uses string resources, the following target generates a substitution xml that will be embedded on the
   library so that if a consumer wants to run the linker they can specify a feature switch to strip out all resources
@@ -218,11 +191,12 @@
     </PropertyGroup>
   </Target>
 
-  <!-- ILLinkTrimAssembly
-       Examines the "input assembly" for IL that is unreachable from public API and trims that,
-       rewriting the assembly to an "output assembly"
-  -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <!-- Examines the "input assembly" for IL that is unreachable from public API and trims that,
+       rewriting the assembly to an "output assembly" -->
+  <UsingTask TaskName="ILLink"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="ILLinkTrimAssembly"
           Condition="'$(ILLinkTrimAssembly)' == 'true'"
           DependsOnTargets="PrepareForAssembliesTrim">
@@ -234,44 +208,35 @@
       <!-- trim the target assembly -->
       <ILLinkArgs>$(ILLinkArgs) --action link $(TargetName)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)') and '$(DeterministicSourcePaths)' == 'true'">$(ILLinkArgs) --preserve-symbol-paths</ILLinkArgs>
       <!-- pass the non-embedded descriptors xml file on the command line -->
       <ILLinkArgs Condition="'$(ILLinkDescriptorsLibraryBuildXml)' != ''">$(ILLinkArgs) -x "$(ILLinkDescriptorsLibraryBuildXml)"</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkSubstitutionsLibraryBuildXml)' != ''">$(ILLinkArgs) --substitutions "$(ILLinkSubstitutionsLibraryBuildXml)"</ILLinkArgs>
+      <ILLinkArgs Condition="'@(ILLinkSuppressionsLibraryBuildXml)' != ''">$(ILLinkArgs) --link-attributes "@(ILLinkSuppressionsLibraryBuildXml->'%(FullPath)', '" --link-attributes "')"</ILLinkArgs>
       <!-- suppress warnings with the following codes:
            IL2008: Could not find type A specified in resource B
            IL2009: Could not find method A in type B specified in resource C
-           IL2012: Could not find field A in type B specified in resource C
+           IL2121: Unnecessary UnconditionalSuppressMessage attribute
            IL2025: Duplicate preserve of A in B
-           IL2026: Calling A which has B can break functionality when trimming application code. The target method might be removed.
            IL2035: Unresolved assembly A in DynamicDependencyAttribute on B
-           IL2050: P/invoke method A declares a parameter with COM marshalling. Correctness of COM interop
-                   cannot be guaranteed after trimming. Interfaces and interface members might be removed.
       -->
-      <LinkerNoWarn>IL2008;IL2009;IL2012;IL2025;IL2026;IL2035;IL2050</LinkerNoWarn>
-      <!-- IL2032,IL2055,IL2057-IL2061: Reflection intrinsics with unknown arguments -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061</LinkerNoWarn>
-      <!-- IL2062-IL2066: Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2062;IL2063;IL2064;IL2065;IL2066</LinkerNoWarn>
-      <!-- IL2067-IL2091: Unsatisfied DynamicallyAccessedMembers requirements -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</LinkerNoWarn>
-      <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
-      <LinkerNoWarn>$(LinkerNoWarn);IL2121</LinkerNoWarn>
+      <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2121;IL2025;IL2035</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
     </PropertyGroup>
 
-    <MakeDir Directories="$(ILLinkTrimInputPath)" />
-
     <!-- Move the assembly into a subdirectory for ILLink -->
     <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
-          DestinationFolder="$(ILLinkTrimInputPath)"
-    />
+          DestinationFolder="$(ILLinkTrimInputPath)">
+      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
+    </Move>
 
     <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
     <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
           DestinationFolder="$(ILLinkTrimInputPath)"
-          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')"
-    />
+          Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')">
+      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
+    </Move>
 
     <ItemGroup>
       <_DependencyDirectoriesTemp Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)')" />
@@ -333,21 +298,4 @@
     <Message Text="Assembly trimming report: $(AsmDiffList)" />
   </Target>
 
-  <!-- Similar to _CheckForCompileOutputs and runs in the same places,
-       always set these even if compile didn't run. -->
-  <Target Name="_CheckForILLinkTrimAssemblyOutputs"
-          BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
-          Condition="'$(ILLinkTrimAssembly)' == 'true'">
-    <ItemGroup>
-      <PreTrimmedItem Condition="Exists('$(ILLinkTrimInputAssembly)')" Include="$(ILLinkTrimInputAssembly)" />
-      <PreTrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimInputSymbols)')" Include="$(ILLinkTrimInputSymbols)" />
-      <FileWrites Include="@(PreTrimmedItem)" />
-
-      <TrimmedItem Condition="Exists('$(ILLinkTrimAssemblyPath)')" Include="$(ILLinkTrimAssemblyPath)" />
-      <TrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' and Exists('$(ILLinkTrimAssemblySymbols)')" Include="$(ILLinkTrimAssemblySymbols)" />
-
-      <TrimmingReport Condition="Exists('$(AsmDiffReport)')" Include="$(AsmDiffReport)" />
-      <TrimmingReport Condition="Exists('$(AsmDiffList)')" Include="$(AsmDiffList)" />
-    </ItemGroup>
-  </Target>
 </Project>

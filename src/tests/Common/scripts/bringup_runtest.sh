@@ -36,6 +36,7 @@ function print_usage {
     echo '                                     Failing tests are listed in coreclr/tests/failingTestsOutsideWindows.txt, one per'
     echo '                                     line, as paths to .sh files relative to the directory specified by --testRootDir.'
     echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
+    echo '  --jobs=<n>                       : Set the maximum number of processes the scheduler can create.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --playlist=<path>                : Run only the tests that are specified in the file at <path>, in the same format as'
     echo '                                     runFailingTestsOnly'
@@ -728,12 +729,12 @@ function run_test {
 }
 
 # Get the number of processors available to the scheduler
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
   NumProc="$(($(sysctl -n hw.ncpu)+1))"
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
-elif [[ "$platform" == "Darwin" ]]; then
+elif [[ "$platform" == "darwin" ]]; then
   NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
 elif command -v nproc > /dev/null 2>&1; then
   NumProc="$(nproc)"
@@ -1115,6 +1116,9 @@ do
         --runcrossgentests)
             export RunCrossGen2=1
             ;;
+        --jobs=*)
+            maxProcesses=${i#*=}
+            ;;
         --sequential)
             ((maxProcesses = 1))
             ;;
@@ -1276,7 +1280,6 @@ else
 fi
 
 scriptPath=$(dirname $0)
-${scriptPath}/setup-stress-dependencies.sh --arch=$ARCH --outputDir=$coreOverlayDir
 
 export __TestEnv=$testEnv
 

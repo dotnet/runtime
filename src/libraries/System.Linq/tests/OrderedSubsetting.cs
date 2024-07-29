@@ -225,7 +225,6 @@ namespace System.Linq.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "This fails with an OOM, as it iterates through the large array. See https://github.com/dotnet/corefx/pull/6821.")]
         public void TakeAndSkip_DoesntIterateRangeUnlessNecessary()
         {
             Assert.Empty(Enumerable.Range(0, int.MaxValue).Take(int.MaxValue).OrderBy(i => i).Skip(int.MaxValue - 4).Skip(15));
@@ -417,7 +416,7 @@ namespace System.Linq.Tests
             var iterator = Enumerable.Range(-1, 8).Shuffle().OrderBy(i => i).Skip(1).Take(5).Select(i => i * 2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]

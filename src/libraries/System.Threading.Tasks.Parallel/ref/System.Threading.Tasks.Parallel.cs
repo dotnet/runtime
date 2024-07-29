@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Numerics;
+
 namespace System.Threading.Tasks
 {
     public static partial class Parallel
@@ -16,6 +18,9 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.ParallelLoopResult For(long fromInclusive, long toExclusive, System.Action<long> body) { throw null; }
         public static System.Threading.Tasks.ParallelLoopResult For(long fromInclusive, long toExclusive, System.Threading.Tasks.ParallelOptions parallelOptions, System.Action<long, System.Threading.Tasks.ParallelLoopState> body) { throw null; }
         public static System.Threading.Tasks.ParallelLoopResult For(long fromInclusive, long toExclusive, System.Threading.Tasks.ParallelOptions parallelOptions, System.Action<long> body) { throw null; }
+        public static System.Threading.Tasks.Task ForAsync<T>(T fromInclusive, T toExclusive, System.Func<T, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> body) where T : notnull, System.Numerics.IBinaryInteger<T> { throw null; }
+        public static System.Threading.Tasks.Task ForAsync<T>(T fromInclusive, T toExclusive, System.Threading.CancellationToken cancellationToken, System.Func<T, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> body) where T : notnull, System.Numerics.IBinaryInteger<T> { throw null; }
+        public static System.Threading.Tasks.Task ForAsync<T>(T fromInclusive, T toExclusive, System.Threading.Tasks.ParallelOptions parallelOptions, System.Func<T, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask> body) where T : notnull, System.Numerics.IBinaryInteger<T> { throw null; }
         public static System.Threading.Tasks.ParallelLoopResult ForEach<TSource>(System.Collections.Concurrent.OrderablePartitioner<TSource> source, System.Action<TSource, System.Threading.Tasks.ParallelLoopState, long> body) { throw null; }
         public static System.Threading.Tasks.ParallelLoopResult ForEach<TSource>(System.Collections.Concurrent.OrderablePartitioner<TSource> source, System.Threading.Tasks.ParallelOptions parallelOptions, System.Action<TSource, System.Threading.Tasks.ParallelLoopState, long> body) { throw null; }
         public static System.Threading.Tasks.ParallelLoopResult ForEach<TSource>(System.Collections.Concurrent.Partitioner<TSource> source, System.Action<TSource, System.Threading.Tasks.ParallelLoopState> body) { throw null; }

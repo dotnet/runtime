@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Xml.Schema;
-using System.Collections;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -1013,7 +1013,7 @@ namespace System.Xml
             Debug.Assert(_parserContext != null);
             Debug.Assert(_coreReaderImpl.DtdInfo == null);
 
-            if (_parserContext.DocTypeName == null || _parserContext.DocTypeName.Length == 0)
+            if (string.IsNullOrEmpty(_parserContext.DocTypeName))
             {
                 return;
             }
@@ -1082,7 +1082,7 @@ namespace System.Xml
             if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
                 // it is safe to return valid resolver as it'll be used in the schema validation
-                return s_tempResolver ??= new XmlUrlResolver();
+                return s_tempResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return tempResolver;

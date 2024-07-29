@@ -4,8 +4,9 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
-internal partial class VectorTest
+public partial class VectorTest
 {
     private const int Pass = 100;
     private const int Fail = -1;
@@ -42,7 +43,8 @@ internal partial class VectorTest
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = Pass;
 

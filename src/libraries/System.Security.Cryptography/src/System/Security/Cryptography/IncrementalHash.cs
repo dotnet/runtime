@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -272,6 +272,22 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Creates a new instance of <see cref="IncrementalHash" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public IncrementalHash Clone()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+
+            return _hash is not null ?
+                new IncrementalHash(_algorithmName, _hash.Clone()) :
+                new IncrementalHash(_algorithmName, _hmac!.Clone());
+        }
+
+        /// <summary>
         /// Release all resources used by the current instance of the
         /// <see cref="IncrementalHash"/> class.
         /// </summary>
@@ -308,6 +324,7 @@ namespace System.Security.Cryptography
         public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm)
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            CheckSha3Support(hashAlgorithm.Name);
 
             return new IncrementalHash(hashAlgorithm, HashProviderDispenser.CreateHashProvider(hashAlgorithm.Name));
         }
@@ -366,8 +383,28 @@ namespace System.Security.Cryptography
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            CheckSha3Support(hashAlgorithm.Name);
 
             return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key, -1));
+        }
+
+        private static void CheckSha3Support(string hashAlgorithmName)
+        {
+            switch (hashAlgorithmName)
+            {
+                case HashAlgorithmNames.SHA3_256 when !SHA3_256.IsSupported:
+                    Debug.Assert(!HMACSHA3_256.IsSupported);
+                    throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHA3_384 when !SHA3_384.IsSupported:
+                    Debug.Assert(!HMACSHA3_384.IsSupported);
+                    throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHA3_512 when !SHA3_512.IsSupported:
+                    Debug.Assert(!HMACSHA3_512.IsSupported);
+                    throw new PlatformNotSupportedException();
+                default:
+                    // Other unknown algorithms will be handled separately as CryptographicExceptions.
+                    break;
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using Mono.Cecil;
 
 
@@ -48,16 +49,28 @@ namespace Mono.Linker
 			return "Other:" + o;
 		}
 
-		static bool WillAssemblyBeModified (LinkContext context, AssemblyDefinition assembly)
+		static bool ShouldRecordAssembly (LinkContext context, AssemblyDefinition assembly)
 		{
-			switch (context.Annotations.GetAction (assembly)) {
-			case AssemblyAction.Link:
-			case AssemblyAction.AddBypassNGen:
-			case AssemblyAction.AddBypassNGenUsed:
-				return true;
-			default:
-				return false;
+			Debug.Assert (context.EnableReducedTracing || context.TraceAssembly != null);
+
+			if (context.TraceAssembly != null && !context.TraceAssembly.Contains (assembly.Name.Name))
+				return false; // We were asked to only trace a specific set of assemblies and this is not one of them
+
+			// We were either asked to trace in general, or to trace this assembly in particular.
+
+			// Note: with reduced tracing, we may still not trace an assembly if it's not linked.
+			if (context.EnableReducedTracing) {
+				switch (context.Annotations.GetAction (assembly)) {
+				case AssemblyAction.Link:
+				case AssemblyAction.AddBypassNGen:
+				case AssemblyAction.AddBypassNGenUsed:
+					return true;
+				default:
+					return false;
+				}
 			}
+
+			return true;
 		}
 
 		public static bool ShouldRecord (LinkContext context, object? source, object target)
@@ -85,14 +98,16 @@ namespace Mono.Linker
 
 		public static bool ShouldRecord (LinkContext context, object? o)
 		{
-			if (!context.EnableReducedTracing)
+			// If tracing a specific set of assemblies (TraceAssembly != null),
+			// this takes precedence over the EnableReducedTracing setting.
+			if (!context.EnableReducedTracing && context.TraceAssembly == null)
 				return true;
 
 			if (o is TypeDefinition t)
-				return WillAssemblyBeModified (context, t.Module.Assembly);
+				return ShouldRecordAssembly (context, t.Module.Assembly);
 
 			if (o is IMemberDefinition m)
-				return WillAssemblyBeModified (context, m.DeclaringType.Module.Assembly);
+				return ShouldRecordAssembly (context, m.DeclaringType.Module.Assembly);
 
 			if (o is TypeReference typeRef) {
 				var resolved = context.TryResolve (typeRef);
@@ -101,7 +116,7 @@ namespace Mono.Linker
 				if (resolved == null)
 					return true;
 
-				return WillAssemblyBeModified (context, resolved.Module.Assembly);
+				return ShouldRecordAssembly (context, resolved.Module.Assembly);
 			}
 
 			if (o is MemberReference mRef) {
@@ -111,18 +126,18 @@ namespace Mono.Linker
 				if (resolved == null)
 					return true;
 
-				return WillAssemblyBeModified (context, resolved.DeclaringType.Module.Assembly);
+				return ShouldRecordAssembly (context, resolved.DeclaringType.Module.Assembly);
 			}
 
 			if (o is ModuleDefinition module)
-				return WillAssemblyBeModified (context, module.Assembly);
+				return ShouldRecordAssembly (context, module.Assembly);
 
 			if (o is AssemblyDefinition assembly)
-				return WillAssemblyBeModified (context, assembly);
+				return ShouldRecordAssembly (context, assembly);
 
 			if (o is ParameterDefinition parameter) {
 				if (parameter.Method is MethodDefinition parameterMethodDefinition)
-					return WillAssemblyBeModified (context, parameterMethodDefinition.DeclaringType.Module.Assembly);
+					return ShouldRecordAssembly (context, parameterMethodDefinition.DeclaringType.Module.Assembly);
 			}
 
 			return true;

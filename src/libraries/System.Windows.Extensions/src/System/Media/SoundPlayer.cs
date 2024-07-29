@@ -61,6 +61,10 @@ namespace System.Media
             _stream = stream;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected SoundPlayer(SerializationInfo serializationInfo, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -310,7 +314,20 @@ namespace System.Media
                 int streamLen = (int)_stream.Length;
                 _currentPos = 0;
                 _streamData = new byte[streamLen];
-                _stream.Read(_streamData, 0, streamLen);
+#if NET
+                _stream.ReadExactly(_streamData);
+#else
+                int totalRead = 0;
+                while (totalRead < streamLen)
+                {
+                    int bytesRead = _stream.Read(_streamData, totalRead, streamLen - totalRead);
+                    if (bytesRead <= 0)
+                    {
+                        throw new EndOfStreamException();
+                    }
+                    totalRead += bytesRead;
+                }
+#endif
                 IsLoadCompleted = true;
                 OnLoadCompleted(new AsyncCompletedEventArgs(null, false, null));
             }
@@ -565,9 +582,9 @@ namespace System.Media
                         if (waveFormat == null)
                         {
                             int dw = ck.cksize;
-                            if (dw < Marshal.SizeOf(typeof(Interop.WinMM.WAVEFORMATEX)))
+                            if (dw < Marshal.SizeOf<Interop.WinMM.WAVEFORMATEX>())
                             {
-                                dw = Marshal.SizeOf(typeof(Interop.WinMM.WAVEFORMATEX));
+                                dw = Marshal.SizeOf<Interop.WinMM.WAVEFORMATEX>();
                             }
 
                             waveFormat = new Interop.WinMM.WAVEFORMATEX();
@@ -613,32 +630,22 @@ namespace System.Media
 
         private static void ValidateSoundData(byte[] data)
         {
-            int position;
-            short wFormatTag = -1;
-            bool fmtChunkFound = false;
-
-            // the RIFF header should be at least 12 bytes long.
-            if (data.Length < 12)
-            {
-                throw new InvalidOperationException(SR.SoundAPIInvalidWaveHeader);
-            }
-
             // validate the RIFF header
-            if (data[0] != 'R' || data[1] != 'I' || data[2] != 'F' || data[3] != 'F')
-            {
-                throw new InvalidOperationException(SR.SoundAPIInvalidWaveHeader);
-            }
-            if (data[8] != 'W' || data[9] != 'A' || data[10] != 'V' || data[11] != 'E')
+            if (data.Length < 12 ||
+                !data.AsSpan().StartsWith("RIFF"u8) ||
+                !data.AsSpan(8).StartsWith("WAVE"u8))
             {
                 throw new InvalidOperationException(SR.SoundAPIInvalidWaveHeader);
             }
 
             // we only care about "fmt " chunk
-            position = 12;
+            int position = 12;
             int len = data.Length;
+            short wFormatTag = -1;
+            bool fmtChunkFound = false;
             while (!fmtChunkFound && position < len - 8)
             {
-                if (data[position] == (byte)'f' && data[position + 1] == (byte)'m' && data[position + 2] == (byte)'t' && data[position + 3] == (byte)' ')
+                if (data.AsSpan(position).StartsWith("fmt "u8))
                 {
                     // fmt chunk
                     fmtChunkFound = true;

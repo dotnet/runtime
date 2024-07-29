@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+using System.Composition.Hosting;
 using System.Composition.Hosting.Core;
 using System.Composition.TypedParts.ActivationFeatures;
-using System.Composition.Hosting;
+using System.Linq;
+using System.Reflection;
 
 namespace System.Composition.TypedParts
 {
@@ -29,7 +29,7 @@ namespace System.Composition.TypedParts
         public static ImportInfo GetImportInfo(Type memberType, object[] attributes, object site)
         {
             var importedContract = new CompositionContract(memberType);
-            IDictionary<string, object> importMetadata = null;
+            Dictionary<string, object> importMetadata = null;
             var allowDefault = false;
             var explicitImportsApplied = 0;
 

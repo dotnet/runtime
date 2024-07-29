@@ -811,7 +811,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    int thisAge = g_theGCHeap->WhichGeneration(*pValue);
+                    int thisAge = GetConvertedGeneration(*pValue);
                     if (minAge > thisAge)
                         minAge = thisAge;
 
@@ -820,7 +820,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                         [](Object*, Object* to, void* ctx)
                         {
                             int* minAge = reinterpret_cast<int*>(ctx);
-                            int generation = g_theGCHeap->WhichGeneration(to);
+                            int generation = GetConvertedGeneration(to);
                             if (*minAge > generation)
                             {
                                 *minAge = generation;
@@ -903,7 +903,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
 {
     VerifyObject(from, obj);
 
-    int thisAge = g_theGCHeap->WhichGeneration(obj);
+    int thisAge = GetConvertedGeneration(obj);
 
     //debugging code
     //if (minAge > thisAge && thisAge < g_theGCHeap->GetMaxGeneration())
@@ -916,7 +916,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
     //    // for test programs - if the object is a string, print it
     //    if (obj->GetGCSafeMethodTable() == g_pStringClass)
     //    {
-    //        printf("'%ls'\n", ((StringObject *)obj)->GetBuffer());
+    //        wprintf("'%s'\n", ((StringObject *)obj)->GetBuffer());
     //    }
     //    else
     //    {
@@ -929,6 +929,15 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
         _ASSERTE(!"Fatal Error in HandleTable.");
         GCToEEInterface::HandleFatalError(COR_E_EXECUTIONENGINE);
     }
+}
+
+size_t my_get_size (_UNCHECKED_OBJECTREF ob)
+{
+    MethodTable* mT = ob->GetGCSafeMethodTable();
+
+    return (mT->GetBaseSize() +
+            (mT->HasComponentSize() ?
+             ((size_t)reinterpret_cast<ArrayBase*>(ob)->GetNumComponents() * mT->RawGetComponentSize()) : 0));
 }
 
 /*
@@ -989,6 +998,23 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
                             if (pSecondary)
                             {
                                 VerifyObject(pSecondary, pSecondary);
+                            }
+                        }
+                    }
+                    if (uType == HNDTYPE_WEAK_INTERIOR_POINTER)
+                    {
+                        PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
+
+                        // if we did then copy the value
+                        if (pUserData)
+                        {
+                            uintptr_t pObjectInteriorPointer = **reinterpret_cast<uintptr_t**>(pUserData);
+                            _UNCHECKED_OBJECTREF pObjectPointerRef = *pValue;
+                            uintptr_t pObjectPointer = reinterpret_cast<uintptr_t>(pObjectPointerRef);
+                            if (pObjectInteriorPointer < pObjectPointer || pObjectInteriorPointer >= (pObjectPointer + my_get_size(pObjectPointerRef)))
+                            {
+                                _ASSERTE(!"Weak interior pointer has interior pointer which does not point at the object of the handle.");
+                                GCToEEInterface::HandleFatalError(COR_E_EXECUTIONENGINE);
                             }
                         }
                     }

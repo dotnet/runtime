@@ -5,6 +5,7 @@
 // loops and (illegally) above the corresponding type initializer calls.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace N
 {
@@ -30,7 +31,8 @@ namespace N
             return s;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return foo(20, 4);
         }

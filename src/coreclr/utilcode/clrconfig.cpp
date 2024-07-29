@@ -143,7 +143,7 @@ namespace
 
         WCHAR buff[64];
         const WCHAR* fallbackPrefix = NULL;
-        const size_t namelen = wcslen(name);
+        const size_t namelen = u16_strlen(name);
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         if (noPrefix)
@@ -201,7 +201,11 @@ namespace
                 // Validate the cache and no-cache logic result in the same answer
                 SString nameToConvert(name);
 
+#ifdef HOST_WINDOWS
                 CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix);
+#else
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &PAL_getenv);
+#endif
                 LPCSTR valueNoCache = nonCache.AsString();
 
                 _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);
@@ -249,7 +253,7 @@ namespace
         {
             errno = 0;
             LPWSTR endPtr;
-            DWORD configMaybe = wcstoul(val, &endPtr, radix);
+            DWORD configMaybe = u16_strtoul(val, &endPtr, radix);
             BOOL fSuccess = ((errno != ERANGE) && (endPtr != val));
             if (fSuccess)
             {
@@ -324,7 +328,7 @@ namespace
         *pwszTrimmed = NULL;
 
         // Get pointers into internal string that show where to do the trimming.
-        size_t cchOrig = wcslen(wszOrig);
+        size_t cchOrig = u16_strlen(wszOrig);
         if (!FitsIn<DWORD>(cchOrig))
             return COR_E_OVERFLOW;
         DWORD cchAfterTrim = (DWORD) cchOrig;

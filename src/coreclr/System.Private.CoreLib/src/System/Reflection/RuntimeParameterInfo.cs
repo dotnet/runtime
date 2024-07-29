@@ -29,6 +29,11 @@ namespace System.Reflection
         private static ParameterInfo[] GetParameters(
             IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo? returnParameter, bool fetchReturnParameter)
         {
+            // The lifetime rules for MetadataImport expect these two objects to be the same instance.
+            // See the lifetime of MetadataImport, acquired through IRuntimeMethodInfo, but extended
+            // through the MemberInfo instance.
+            Debug.Assert(ReferenceEquals(methodHandle, member));
+
             returnParameter = null;
             int sigArgCount = sig.Arguments.Length;
             ParameterInfo[] args =
@@ -43,7 +48,7 @@ namespace System.Reflection
             // are generated on the fly by the runtime.
             if (!MdToken.IsNullToken(tkMethodDef))
             {
-                MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(RuntimeMethodHandle.GetDeclaringType(methodHandle));
+                MetadataImport scope = RuntimeMethodHandle.GetDeclaringType(methodHandle).GetRuntimeModule().MetadataImport;
 
                 scope.EnumParams(tkMethodDef, out MetadataEnumResult tkParamDefs);
 
@@ -73,7 +78,7 @@ namespace System.Reflection
                     }
                     else if (!fetchReturnParameter && position >= 0)
                     {
-                        // position beyong sigArgCount?
+                        // position beyond sigArgCount?
                         if (position >= sigArgCount)
                             throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
@@ -86,7 +91,7 @@ namespace System.Reflection
             // Fill in empty ParameterInfos for those without tokens
             if (fetchReturnParameter)
             {
-                returnParameter ??= new RuntimeParameterInfo(sig, MetadataImport.EmptyImport, 0, -1, (ParameterAttributes)0, member);
+                returnParameter ??= new RuntimeParameterInfo(sig, default, 0, -1, (ParameterAttributes)0, member);
             }
             else
             {
@@ -97,7 +102,7 @@ namespace System.Reflection
                         if (args[i] != null)
                             continue;
 
-                        args[i] = new RuntimeParameterInfo(sig, MetadataImport.EmptyImport, 0, i, (ParameterAttributes)0, member);
+                        args[i] = new RuntimeParameterInfo(sig, default, 0, i, (ParameterAttributes)0, member);
                     }
                 }
             }
@@ -107,13 +112,13 @@ namespace System.Reflection
         #endregion
 
         #region Private Data Members
-        private int m_tkParamDef;
-        private MetadataImport m_scope;
-        private Signature? m_signature;
+        private readonly int m_tkParamDef;
+        private readonly MetadataImport m_scope;
+        private readonly Signature? m_signature;
         private volatile bool m_nameIsCached;
         private readonly bool m_noMetadata;
         private bool m_noDefaultValue;
-        private MethodBase? m_originalMember;
+        private readonly MethodBase? m_originalMember;
         #endregion
 
         #region Internal Properties
@@ -165,7 +170,7 @@ namespace System.Reflection
             PositionImpl = accessor.Position;
             AttrsImpl = accessor.Attributes;
 
-            // Strictly speeking, property's don't contain parameter tokens
+            // Strictly speaking, properties don't contain parameter tokens
             // However we need this to make ca's work... oh well...
             m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
             m_scope = accessor.m_scope;
@@ -176,7 +181,7 @@ namespace System.Reflection
             int position, ParameterAttributes attributes, MemberInfo member)
         {
             Debug.Assert(member != null);
-            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
+            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals((MetadataImport)default));
             Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
             PositionImpl = position;
@@ -201,7 +206,7 @@ namespace System.Reflection
             PositionImpl = position;
             AttrsImpl = ParameterAttributes.None;
             m_tkParamDef = (int)MetadataTokenType.ParamDef;
-            m_scope = MetadataImport.EmptyImport;
+            m_scope = default;
         }
         #endregion
 
@@ -239,6 +244,7 @@ namespace System.Reflection
                     if (!MdToken.IsNullToken(m_tkParamDef))
                     {
                         string name = m_scope.GetName(m_tkParamDef).ToString();
+                        GC.KeepAlive(this);
                         NameImpl = name;
                     }
 
@@ -259,9 +265,7 @@ namespace System.Reflection
                 if (m_noMetadata || m_noDefaultValue)
                     return false;
 
-                object? defaultValue = GetDefaultValueInternal(false);
-
-                return defaultValue != DBNull.Value;
+                return TryGetDefaultValueInternal(false, out _);
             }
         }
 
@@ -277,9 +281,7 @@ namespace System.Reflection
                 return null;
 
             // for dynamic method we pretend to have cached the value so we do not go to metadata
-            object? defaultValue = GetDefaultValueInternal(raw);
-
-            if (defaultValue == DBNull.Value)
+            if (!TryGetDefaultValueInternal(raw, out object? defaultValue))
             {
                 #region Handle case if no default value was found
                 if (IsOptional)
@@ -295,7 +297,7 @@ namespace System.Reflection
 
         private object? GetDefaultValueFromCustomAttributeData()
         {
-            foreach (CustomAttributeData attributeData in RuntimeCustomAttributeData.GetCustomAttributes(this))
+            foreach (CustomAttributeData attributeData in CustomAttributeData.GetCustomAttributes(this))
             {
                 Type attributeType = attributeData.AttributeType;
                 if (attributeType == typeof(DecimalConstantAttribute))
@@ -328,23 +330,22 @@ namespace System.Reflection
         }
 
         // returns DBNull.Value if the parameter doesn't have a default value
-        private object? GetDefaultValueInternal(bool raw)
+        private bool TryGetDefaultValueInternal(bool raw, out object? defaultValue)
         {
             Debug.Assert(!m_noMetadata);
 
-            if (m_noDefaultValue)
-                return DBNull.Value;
-
-            object? defaultValue = null;
+            if (m_noDefaultValue || MdToken.IsNullToken(m_tkParamDef))
+            {
+                defaultValue = DBNull.Value;
+                m_noDefaultValue = true;
+                return false;
+            }
 
             // Prioritize metadata constant over custom attribute constant
             #region Look for a default value in metadata
-            if (!MdToken.IsNullToken(m_tkParamDef))
-            {
-                // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
-                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
-            }
-            #endregion
+            // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
+            defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
+            GC.KeepAlive(this);
 
             // If default value is not specified in metadata, look for it in custom attributes
             if (defaultValue == DBNull.Value)
@@ -357,18 +358,23 @@ namespace System.Reflection
                 // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
                 //  RawDefaultValue and DefaultValue.
                 defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
+
+                if (defaultValue == DBNull.Value)
+                {
+                    m_noDefaultValue = true;
+                    return false;
+                }
             }
 
-            if (defaultValue == DBNull.Value)
-                m_noDefaultValue = true;
+            return true;
 
-            return defaultValue;
+            #endregion
         }
 
         private static decimal GetRawDecimalConstant(CustomAttributeData attr)
         {
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
-            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
+            IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
             Debug.Assert(args.Count == 5);
 
             return new decimal(
@@ -439,6 +445,9 @@ namespace System.Reflection
                 Type.EmptyTypes :
                 m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
+
+        public override Type GetModifiedParameterType() =>
+            ModifiedType.Create(unmodifiedType: ParameterType, m_signature, parameterIndex: PositionImpl + 1);
 
         #endregion
 

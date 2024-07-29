@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System
 {
-    [Serializable]
     public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private readonly IntPtr value;
@@ -18,13 +18,10 @@ namespace System
             value = v;
         }
 
-        private RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public IntPtr Value => value;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -91,10 +88,10 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReboxFromNullable (object? src, ObjectHandleOnStack res);
+        private static extern void ReboxFromNullable(object? src, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void ReboxToNullable (object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
+        private static extern void ReboxToNullable(object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
 
         internal static object ReboxFromNullable(object? src)
         {

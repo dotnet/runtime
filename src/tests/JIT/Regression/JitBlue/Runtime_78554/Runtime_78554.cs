@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_78554
 {
@@ -20,10 +21,10 @@ public class Runtime_78554
         Consume(i);
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var arr = new uint[] { 1, 42, 3000 };
         ArrayIndexConsume(arr, 0xffffffff);
-        return 100;
     }
 }

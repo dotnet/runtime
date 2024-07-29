@@ -3,12 +3,17 @@
 
 // NOTE: This is a generated file - do not manually edit!
 
-#pragma warning disable 649
+#pragma warning disable 649, SA1121, IDE0036, SA1129
 
+using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using Internal.LowLevelLinq;
+using Internal.Metadata.NativeFormat.Writer;
 using Internal.NativeFormat;
+using HandleType = Internal.Metadata.NativeFormat.HandleType;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat.Writer
@@ -28,19 +33,19 @@ namespace Internal.Metadata.NativeFormat.Writer
             ElementType = visitor.Visit(this, ElementType);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ArraySignature;
             if (other == null) return false;
-            if (!Equals(ElementType, other.ElementType)) return false;
+            if (!Object.Equals(ElementType, other.ElementType)) return false;
             if (Rank != other.Rank) return false;
             if (!Sizes.SequenceEqual(other.Sizes)) return false;
             if (!LowerBounds.SequenceEqual(other.LowerBounds)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -48,19 +53,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             int hash = -1450734452;
             hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ Rank.GetHashCode();
-            if (Sizes != null)
+            for (int i = 0; i < Sizes.Length; i++)
             {
-                for (int i = 0; i < Sizes.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Sizes[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Sizes[i].GetHashCode();
             }
-            if (LowerBounds != null)
+            for (int i = 0; i < LowerBounds.Length; i++)
             {
-                for (int i = 0; i < LowerBounds.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ LowerBounds[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ LowerBounds[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -72,7 +71,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(ElementType == null ||
                 ElementType.HandleType == HandleType.TypeDefinition ||
                 ElementType.HandleType == HandleType.TypeReference ||
-                ElementType.HandleType == HandleType.TypeSpecification);
+                ElementType.HandleType == HandleType.TypeSpecification ||
+                ElementType.HandleType == HandleType.ModifiedType);
             writer.Write(ElementType);
             writer.Write(Rank);
             writer.Write(Sizes);
@@ -101,8 +101,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public MetadataRecord ElementType;
         public int Rank;
-        public int[] Sizes;
-        public int[] LowerBounds;
+        public Int32[] Sizes;
+        public Int32[] LowerBounds;
     } // ArraySignature
 
     public partial class ByReferenceSignature : MetadataRecord
@@ -120,16 +120,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Type = visitor.Visit(this, Type);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ByReferenceSignature;
             if (other == null) return false;
-            if (!Equals(Type, other.Type)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -146,7 +146,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
         } // Save
 
@@ -187,27 +188,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantBooleanArray;
             if (other == null) return false;
             if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 1817079014;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -239,7 +237,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public bool[] Value;
+        public Boolean[] Value;
     } // ConstantBooleanArray
 
     public partial class ConstantBooleanValue : MetadataRecord
@@ -256,16 +254,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantBooleanValue;
             if (other == null) return false;
             if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -305,88 +303,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public bool Value;
     } // ConstantBooleanValue
 
-    public partial class ConstantBoxedEnumValue : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ConstantBoxedEnumValue;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Value = visitor.Visit(this, Value);
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public sealed override bool Equals(object obj)
-        {
-            if (ReferenceEquals(this, obj)) return true;
-            var other = obj as ConstantBoxedEnumValue;
-            if (other == null) return false;
-            if (!Equals(Value, other.Value)) return false;
-            if (!Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public sealed override int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 879057725;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            Debug.Assert(Value == null ||
-                Value.HandleType == HandleType.ConstantByteValue ||
-                Value.HandleType == HandleType.ConstantSByteValue ||
-                Value.HandleType == HandleType.ConstantInt16Value ||
-                Value.HandleType == HandleType.ConstantUInt16Value ||
-                Value.HandleType == HandleType.ConstantInt32Value ||
-                Value.HandleType == HandleType.ConstantUInt32Value ||
-                Value.HandleType == HandleType.ConstantInt64Value ||
-                Value.HandleType == HandleType.ConstantUInt64Value);
-            writer.Write(Value);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
-            writer.Write(Type);
-        } // Save
-
-        internal static ConstantBoxedEnumValueHandle AsHandle(ConstantBoxedEnumValue record)
-        {
-            if (record == null)
-            {
-                return new ConstantBoxedEnumValueHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ConstantBoxedEnumValueHandle Handle
-        {
-            get
-            {
-                return new ConstantBoxedEnumValueHandle(HandleOffset);
-            }
-        } // Handle
-
-        public MetadataRecord Value;
-        public MetadataRecord Type;
-    } // ConstantBoxedEnumValue
-
     public partial class ConstantByteArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -401,27 +317,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantByteArray;
             if (other == null) return false;
             if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 2080036690;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -453,7 +366,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public byte[] Value;
+        public Byte[] Value;
     } // ConstantByteArray
 
     public partial class ConstantByteValue : MetadataRecord
@@ -470,19 +383,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantByteValue;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -536,30 +446,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantCharArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -210173789;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -591,7 +495,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public char[] Value;
+        public Char[] Value;
     } // ConstantCharArray
 
     public partial class ConstantCharValue : MetadataRecord
@@ -608,19 +512,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantCharValue;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -674,30 +575,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantDoubleArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value, DoubleComparer.Instance))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value, DoubleComparer.Instance)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 1195490519;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -729,7 +624,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public double[] Value;
+        public Double[] Value;
     } // ConstantDoubleArray
 
     public partial class ConstantDoubleValue : MetadataRecord
@@ -746,19 +641,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantDoubleValue;
-            if (other == null)
-                return false;
-            if (!CustomComparer.Equals(Value, other.Value))
-                return false;
+            if (other == null) return false;
+            if (!CustomComparer.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -814,21 +706,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             Value = visitor.Visit(this, Value);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantEnumArray;
-            if (other == null)
-                return false;
-            if (!Equals(ElementType, other.ElementType))
-                return false;
-            if (!Equals(Value, other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(ElementType, other.ElementType)) return false;
+            if (!Object.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -871,6 +759,75 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Value;
     } // ConstantEnumArray
 
+    public partial class ConstantEnumValue : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.ConstantEnumValue;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            Value = visitor.Visit(this, Value);
+            Type = visitor.Visit(this, Type);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as ConstantEnumValue;
+            if (other == null) return false;
+            if (!Object.Equals(Value, other.Value)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = 1536570168;
+            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.Write(Value);
+            writer.Write(Type);
+        } // Save
+
+        internal static ConstantEnumValueHandle AsHandle(ConstantEnumValue record)
+        {
+            if (record == null)
+            {
+                return new ConstantEnumValueHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new ConstantEnumValueHandle Handle
+        {
+            get
+            {
+                return new ConstantEnumValueHandle(HandleOffset);
+            }
+        } // Handle
+
+        public MetadataRecord Value;
+        public MetadataRecord Type;
+    } // ConstantEnumValue
+
     public partial class ConstantHandleArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -886,19 +843,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Value = visitor.Visit(this, Value);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantHandleArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -951,30 +905,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt16Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -1341795012;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1006,7 +954,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public short[] Value;
+        public Int16[] Value;
     } // ConstantInt16Array
 
     public partial class ConstantInt16Value : MetadataRecord
@@ -1023,19 +971,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt16Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1089,30 +1034,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt32Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -889690268;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1144,7 +1083,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public int[] Value;
+        public Int32[] Value;
     } // ConstantInt32Array
 
     public partial class ConstantInt32Value : MetadataRecord
@@ -1161,19 +1100,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt32Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1227,30 +1163,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt64Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -1304463479;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1282,7 +1212,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public long[] Value;
+        public Int64[] Value;
     } // ConstantInt64Array
 
     public partial class ConstantInt64Value : MetadataRecord
@@ -1299,19 +1229,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantInt64Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1365,15 +1292,15 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantReferenceValue;
             if (other == null) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1424,30 +1351,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSByteArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 234859551;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1479,7 +1400,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public sbyte[] Value;
+        public SByte[] Value;
     } // ConstantSByteArray
 
     public partial class ConstantSByteValue : MetadataRecord
@@ -1496,19 +1417,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSByteValue;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1562,30 +1480,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSingleArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value, SingleComparer.Instance))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value, SingleComparer.Instance)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -2043917844;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1617,7 +1529,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public float[] Value;
+        public Single[] Value;
     } // ConstantSingleArray
 
     public partial class ConstantSingleValue : MetadataRecord
@@ -1634,19 +1546,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantSingleValue;
-            if (other == null)
-                return false;
-            if (!CustomComparer.Equals(Value, other.Value))
-                return false;
+            if (other == null) return false;
+            if (!CustomComparer.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1701,19 +1610,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Value = visitor.Visit(this, Value);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantStringArray;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1769,19 +1675,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantStringValue;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1841,30 +1744,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt16Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -89281077;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -1896,7 +1793,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ushort[] Value;
+        public UInt16[] Value;
     } // ConstantUInt16Array
 
     public partial class ConstantUInt16Value : MetadataRecord
@@ -1913,19 +1810,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt16Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -1979,30 +1873,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt32Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = -1294553100;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2034,7 +1922,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public uint[] Value;
+        public UInt32[] Value;
     } // ConstantUInt32Array
 
     public partial class ConstantUInt32Value : MetadataRecord
@@ -2051,19 +1939,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt32Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2117,30 +2002,24 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt64Array;
-            if (other == null)
-                return false;
-            if (!Value.SequenceEqual(other.Value))
-                return false;
+            if (other == null) return false;
+            if (!Value.SequenceEqual(other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 47301549;
-            if (Value != null)
+            for (int i = 0; i < Value.Length; i++)
             {
-                for (int i = 0; i < Value.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Value[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2172,7 +2051,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ulong[] Value;
+        public UInt64[] Value;
     } // ConstantUInt64Array
 
     public partial class ConstantUInt64Value : MetadataRecord
@@ -2189,19 +2068,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ConstantUInt64Value;
-            if (other == null)
-                return false;
-            if (Value != other.Value)
-                return false;
+            if (other == null) return false;
+            if (Value != other.Value) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2263,9 +2139,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             NamedArguments = visitor.Visit(this, NamedArguments);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj)) return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as CustomAttribute;
             if (other == null) return false;
             if (_equalsReentrancyGuard.Value.Contains(other))
@@ -2273,39 +2149,33 @@ namespace Internal.Metadata.NativeFormat.Writer
             _equalsReentrancyGuard.Value.Push(other);
             try
             {
-            if (!Equals(Constructor, other.Constructor)) return false;
+            if (!Object.Equals(Constructor, other.Constructor)) return false;
             if (!FixedArguments.SequenceEqual(other.FixedArguments)) return false;
             if (!NamedArguments.SequenceEqual(other.NamedArguments)) return false;
             }
             finally
             {
                 var popped = _equalsReentrancyGuard.Value.Pop();
-                Debug.Assert(ReferenceEquals(other, popped));
+                Debug.Assert(Object.ReferenceEquals(other, popped));
             }
             return true;
         } // Equals
         private ThreadLocal<ReentrancyGuardStack> _equalsReentrancyGuard;
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
             int hash = 478371161;
             hash = ((hash << 13) - (hash >> 19)) ^ (Constructor == null ? 0 : Constructor.GetHashCode());
-            if (FixedArguments != null)
-            {
             for (int i = 0; i < FixedArguments.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
-                }
-            }
-            if (NamedArguments != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
+            }
             for (int i = 0; i < NamedArguments.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2331,6 +2201,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 handle.HandleType == HandleType.ConstantDoubleArray ||
                 handle.HandleType == HandleType.ConstantDoubleValue ||
                 handle.HandleType == HandleType.ConstantEnumArray ||
+                handle.HandleType == HandleType.ConstantEnumValue ||
                 handle.HandleType == HandleType.ConstantHandleArray ||
                 handle.HandleType == HandleType.ConstantInt16Array ||
                 handle.HandleType == HandleType.ConstantInt16Value ||
@@ -2398,27 +2269,20 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Event;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
-            if (!MethodSemantics.SequenceEqual(other.MethodSemantics))
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            if (!MethodSemantics.SequenceEqual(other.MethodSemantics)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2427,19 +2291,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            if (MethodSemantics != null)
-            {
             for (int i = 0; i < MethodSemantics.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-                }
-            }
-            if (CustomAttributes != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
+            }
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2504,29 +2362,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Field;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
-            if (!Equals(DefaultValue, other.DefaultValue))
-                return false;
-            if (Offset != other.Offset)
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
+            if (!Object.Equals(DefaultValue, other.DefaultValue)) return false;
+            if (Offset != other.Offset) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2537,12 +2387,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ Offset.GetHashCode();
-            if (CustomAttributes != null)
-            {
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2567,6 +2414,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||
@@ -2635,19 +2483,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Type = visitor.Visit(this, Type);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as FieldSignature;
-            if (other == null)
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2707,19 +2552,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Signature = visitor.Visit(this, Signature);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as FunctionPointerSignature;
-            if (other == null)
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2776,29 +2618,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as GenericParameter;
-            if (other == null)
-                return false;
-            if (Number != other.Number)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (Kind != other.Kind)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Constraints.SequenceEqual(other.Constraints))
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Number != other.Number) return false;
+            if (Flags != other.Flags) return false;
+            if (Kind != other.Kind) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Constraints.SequenceEqual(other.Constraints)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2808,12 +2642,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Kind.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
-            if (Constraints != null)
-            {
             for (int i = 0; i < Constraints.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -2880,23 +2711,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             Signature = visitor.Visit(this, Signature);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MemberReference;
-            if (other == null)
-                return false;
-            if (!Equals(Parent, other.Parent))
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Parent, other.Parent)) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -2968,31 +2794,22 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Method;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (ImplFlags != other.ImplFlags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
-            if (!Parameters.SequenceEqual(other.Parameters))
-                return false;
-            if (!GenericParameters.SequenceEqual(other.GenericParameters))
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (ImplFlags != other.ImplFlags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
+            if (!Parameters.SequenceEqual(other.Parameters)) return false;
+            if (!GenericParameters.SequenceEqual(other.GenericParameters)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3002,19 +2819,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ ImplFlags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
-            }
-            if (GenericParameters != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
+            }
             for (int i = 0; i < GenericParameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -3077,21 +2888,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             GenericTypeArguments = visitor.Visit(this, GenericTypeArguments);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MethodInstantiation;
-            if (other == null)
-                return false;
-            if (!Equals(Method, other.Method))
-                return false;
-            if (!GenericTypeArguments.SequenceEqual(other.GenericTypeArguments))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Method, other.Method)) return false;
+            if (!GenericTypeArguments.SequenceEqual(other.GenericTypeArguments)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3112,7 +2919,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(GenericTypeArguments.TrueForAll(handle => handle == null ||
                 handle.HandleType == HandleType.TypeDefinition ||
                 handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification));
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(GenericTypeArguments);
         } // Save
 
@@ -3155,21 +2963,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             Method = visitor.Visit(this, Method);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MethodSemantics;
-            if (other == null)
-                return false;
-            if (Attributes != other.Attributes)
-                return false;
-            if (!Equals(Method, other.Method))
-                return false;
+            if (other == null) return false;
+            if (Attributes != other.Attributes) return false;
+            if (!Object.Equals(Method, other.Method)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3229,27 +3033,20 @@ namespace Internal.Metadata.NativeFormat.Writer
             VarArgParameters = visitor.Visit(this, VarArgParameters);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MethodSignature;
-            if (other == null)
-                return false;
-            if (CallingConvention != other.CallingConvention)
-                return false;
-            if (GenericParameterCount != other.GenericParameterCount)
-                return false;
-            if (!Equals(ReturnType, other.ReturnType))
-                return false;
-            if (!Parameters.SequenceEqual(other.Parameters))
-                return false;
-            if (!VarArgParameters.SequenceEqual(other.VarArgParameters))
-                return false;
+            if (other == null) return false;
+            if (CallingConvention != other.CallingConvention) return false;
+            if (GenericParameterCount != other.GenericParameterCount) return false;
+            if (!Object.Equals(ReturnType, other.ReturnType)) return false;
+            if (!Parameters.SequenceEqual(other.Parameters)) return false;
+            if (!VarArgParameters.SequenceEqual(other.VarArgParameters)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3258,19 +3055,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ GenericParameterCount.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (ReturnType == null ? 0 : ReturnType.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
-            }
-            if (VarArgParameters != null)
             {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
+            }
             for (int i = 0; i < VarArgParameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -3321,7 +3112,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public CallingConventions CallingConvention;
+        public SignatureCallingConvention CallingConvention;
         public int GenericParameterCount;
         public MetadataRecord ReturnType;
         public List<MetadataRecord> Parameters = new List<MetadataRecord>();
@@ -3342,19 +3133,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MethodTypeVariableSignature;
-            if (other == null)
-                return false;
-            if (Number != other.Number)
-                return false;
+            if (other == null) return false;
+            if (Number != other.Number) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3410,23 +3198,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             Type = visitor.Visit(this, Type);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ModifiedType;
-            if (other == null)
-                return false;
-            if (IsOptional != other.IsOptional)
-                return false;
-            if (!Equals(ModifierType, other.ModifierType))
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
+            if (other == null) return false;
+            if (IsOptional != other.IsOptional) return false;
+            if (!Object.Equals(ModifierType, other.ModifierType)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3498,25 +3281,19 @@ namespace Internal.Metadata.NativeFormat.Writer
             Value = visitor.Visit(this, Value);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamedArgument;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
-            if (!Equals(Value, other.Value))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            if (!Object.Equals(Value, other.Value)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3553,6 +3330,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 Value.HandleType == HandleType.ConstantDoubleArray ||
                 Value.HandleType == HandleType.ConstantDoubleValue ||
                 Value.HandleType == HandleType.ConstantEnumArray ||
+                Value.HandleType == HandleType.ConstantEnumValue ||
                 Value.HandleType == HandleType.ConstantHandleArray ||
                 Value.HandleType == HandleType.ConstantInt16Array ||
                 Value.HandleType == HandleType.ConstantInt16Value ||
@@ -3621,21 +3399,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceDefinition;
-            if (other == null)
-                return false;
-            if (!Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace))
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3703,21 +3477,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             Name = visitor.Visit(this, Name);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as NamespaceReference;
-            if (other == null)
-                return false;
-            if (!Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace))
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(ParentScopeOrNamespace, other.ParentScopeOrNamespace)) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3780,27 +3550,20 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Parameter;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (Sequence != other.Sequence)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(DefaultValue, other.DefaultValue))
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (Sequence != other.Sequence) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(DefaultValue, other.DefaultValue)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3833,6 +3596,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||
@@ -3899,19 +3663,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Type = visitor.Visit(this, Type);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as PointerSignature;
-            if (other == null)
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -3975,29 +3736,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Property;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
-            if (!MethodSemantics.SequenceEqual(other.MethodSemantics))
-                return false;
-            if (!Equals(DefaultValue, other.DefaultValue))
-                return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
+            if (!MethodSemantics.SequenceEqual(other.MethodSemantics)) return false;
+            if (!Object.Equals(DefaultValue, other.DefaultValue)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4006,20 +3759,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
-            if (MethodSemantics != null)
-            {
             for (int i = 0; i < MethodSemantics.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
-            if (CustomAttributes != null)
-            {
             for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -4045,6 +3792,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 DefaultValue.HandleType == HandleType.ConstantDoubleArray ||
                 DefaultValue.HandleType == HandleType.ConstantDoubleValue ||
                 DefaultValue.HandleType == HandleType.ConstantEnumArray ||
+                DefaultValue.HandleType == HandleType.ConstantEnumValue ||
                 DefaultValue.HandleType == HandleType.ConstantHandleArray ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Array ||
                 DefaultValue.HandleType == HandleType.ConstantInt16Value ||
@@ -4113,23 +3861,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             Parameters = visitor.Visit(this, Parameters);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as PropertySignature;
-            if (other == null)
-                return false;
-            if (CallingConvention != other.CallingConvention)
-                return false;
-            if (!Equals(Type, other.Type))
-                return false;
-            if (!Parameters.SequenceEqual(other.Parameters))
-                return false;
+            if (other == null) return false;
+            if (CallingConvention != other.CallingConvention) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            if (!Parameters.SequenceEqual(other.Parameters)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4137,12 +3880,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             int hash = -1535652143;
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            if (Parameters != null)
-            {
             for (int i = 0; i < Parameters.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
-                }
+            {
+                hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -4207,21 +3947,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnclosingType = visitor.Visit(this, EnclosingType);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as QualifiedField;
-            if (other == null)
-                return false;
-            if (!Equals(Field, other.Field))
-                return false;
-            if (!Equals(EnclosingType, other.EnclosingType))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Field, other.Field)) return false;
+            if (!Object.Equals(EnclosingType, other.EnclosingType)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4280,21 +4016,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnclosingType = visitor.Visit(this, EnclosingType);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as QualifiedMethod;
-            if (other == null)
-                return false;
-            if (!Equals(Method, other.Method))
-                return false;
-            if (!Equals(EnclosingType, other.EnclosingType))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Method, other.Method)) return false;
+            if (!Object.Equals(EnclosingType, other.EnclosingType)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4352,19 +4084,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             ElementType = visitor.Visit(this, ElementType);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as SZArraySignature;
-            if (other == null)
-                return false;
-            if (!Equals(ElementType, other.ElementType))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(ElementType, other.ElementType)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4431,39 +4160,26 @@ namespace Internal.Metadata.NativeFormat.Writer
             ModuleCustomAttributes = visitor.Visit(this, ModuleCustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ScopeDefinition;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (HashAlgorithm != other.HashAlgorithm)
-                return false;
-            if (MajorVersion != other.MajorVersion)
-                return false;
-            if (MinorVersion != other.MinorVersion)
-                return false;
-            if (BuildNumber != other.BuildNumber)
-                return false;
-            if (RevisionNumber != other.RevisionNumber)
-                return false;
-            if (!PublicKey.SequenceEqual(other.PublicKey))
-                return false;
-            if (!Equals(Culture, other.Culture))
-                return false;
-            if (!Equals(ModuleName, other.ModuleName))
-                return false;
-            if (!Mvid.SequenceEqual(other.Mvid))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (HashAlgorithm != other.HashAlgorithm) return false;
+            if (MajorVersion != other.MajorVersion) return false;
+            if (MinorVersion != other.MinorVersion) return false;
+            if (BuildNumber != other.BuildNumber) return false;
+            if (RevisionNumber != other.RevisionNumber) return false;
+            if (!PublicKey.SequenceEqual(other.PublicKey)) return false;
+            if (!Object.Equals(Culture, other.Culture)) return false;
+            if (!Object.Equals(ModuleName, other.ModuleName)) return false;
+            if (!Mvid.SequenceEqual(other.Mvid)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4476,21 +4192,15 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
-            if (PublicKey != null)
+            for (int i = 0; i < PublicKey.Length; i++)
             {
-                for (int i = 0; i < PublicKey.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ PublicKey[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ PublicKey[i].GetHashCode();
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (ModuleName == null ? 0 : ModuleName.GetHashCode());
-            if (Mvid != null)
+            for (int i = 0; i < Mvid.Length; i++)
             {
-                for (int i = 0; i < Mvid.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ Mvid[i].GetHashCode();
             }
             LeaveGetHashCode();
             _hash = hash;
@@ -4544,14 +4254,14 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort MinorVersion;
         public ushort BuildNumber;
         public ushort RevisionNumber;
-        public byte[] PublicKey;
+        public Byte[] PublicKey;
         public ConstantStringValue Culture;
         public NamespaceDefinition RootNamespaceDefinition;
         public QualifiedMethod EntryPoint;
         public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
         public ConstantStringValue ModuleName;
-        public byte[] Mvid;
+        public Byte[] Mvid;
         public List<CustomAttribute> ModuleCustomAttributes = new List<CustomAttribute>();
     } // ScopeDefinition
 
@@ -4571,33 +4281,23 @@ namespace Internal.Metadata.NativeFormat.Writer
             Culture = visitor.Visit(this, Culture);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as ScopeReference;
-            if (other == null)
-                return false;
-            if (Flags != other.Flags)
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (MajorVersion != other.MajorVersion)
-                return false;
-            if (MinorVersion != other.MinorVersion)
-                return false;
-            if (BuildNumber != other.BuildNumber)
-                return false;
-            if (RevisionNumber != other.RevisionNumber)
-                return false;
-            if (!PublicKeyOrToken.SequenceEqual(other.PublicKeyOrToken))
-                return false;
-            if (!Equals(Culture, other.Culture))
-                return false;
+            if (other == null) return false;
+            if (Flags != other.Flags) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (MajorVersion != other.MajorVersion) return false;
+            if (MinorVersion != other.MinorVersion) return false;
+            if (BuildNumber != other.BuildNumber) return false;
+            if (RevisionNumber != other.RevisionNumber) return false;
+            if (!PublicKeyOrToken.SequenceEqual(other.PublicKeyOrToken)) return false;
+            if (!Object.Equals(Culture, other.Culture)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4609,12 +4309,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ MinorVersion.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ BuildNumber.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ RevisionNumber.GetHashCode();
-            if (PublicKeyOrToken != null)
+            for (int i = 0; i < PublicKeyOrToken.Length; i++)
             {
-                for (int i = 0; i < PublicKeyOrToken.Length; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ PublicKeyOrToken[i].GetHashCode();
-                }
+                hash = ((hash << 13) - (hash >> 19)) ^ PublicKeyOrToken[i].GetHashCode();
             }
             hash = ((hash << 13) - (hash >> 19)) ^ (Culture == null ? 0 : Culture.GetHashCode());
             LeaveGetHashCode();
@@ -4660,7 +4357,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort MinorVersion;
         public ushort BuildNumber;
         public ushort RevisionNumber;
-        public byte[] PublicKeyOrToken;
+        public Byte[] PublicKeyOrToken;
         public ConstantStringValue Culture;
     } // ScopeReference
 
@@ -4690,23 +4387,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeDefinition;
-            if (other == null)
-                return false;
-            if (!Equals(NamespaceDefinition, other.NamespaceDefinition))
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!Equals(EnclosingType, other.EnclosingType))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(NamespaceDefinition, other.NamespaceDefinition)) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!Object.Equals(EnclosingType, other.EnclosingType)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4801,23 +4493,18 @@ namespace Internal.Metadata.NativeFormat.Writer
             NestedTypes = visitor.Visit(this, NestedTypes);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeForwarder;
-            if (other == null)
-                return false;
-            if (!Equals(Scope, other.Scope))
-                return false;
-            if (!Equals(Name, other.Name))
-                return false;
-            if (!NestedTypes.SequenceEqual(other.NestedTypes))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Scope, other.Scope)) return false;
+            if (!Object.Equals(Name, other.Name)) return false;
+            if (!NestedTypes.SequenceEqual(other.NestedTypes)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4878,21 +4565,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             GenericTypeArguments = visitor.Visit(this, GenericTypeArguments);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeInstantiationSignature;
-            if (other == null)
-                return false;
-            if (!Equals(GenericType, other.GenericType))
-                return false;
-            if (!GenericTypeArguments.SequenceEqual(other.GenericTypeArguments))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(GenericType, other.GenericType)) return false;
+            if (!GenericTypeArguments.SequenceEqual(other.GenericTypeArguments)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -4914,7 +4597,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(GenericTypeArguments.TrueForAll(handle => handle == null ||
                 handle.HandleType == HandleType.TypeDefinition ||
                 handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification));
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(GenericTypeArguments);
         } // Save
 
@@ -4958,21 +4642,17 @@ namespace Internal.Metadata.NativeFormat.Writer
             TypeName = visitor.Visit(this, TypeName);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeReference;
-            if (other == null)
-                return false;
-            if (!Equals(ParentNamespaceOrType, other.ParentNamespaceOrType))
-                return false;
-            if (!Equals(TypeName, other.TypeName))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(ParentNamespaceOrType, other.ParentNamespaceOrType)) return false;
+            if (!Object.Equals(TypeName, other.TypeName)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -5033,19 +4713,16 @@ namespace Internal.Metadata.NativeFormat.Writer
             Signature = visitor.Visit(this, Signature);
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeSpecification;
-            if (other == null)
-                return false;
-            if (!Equals(Signature, other.Signature))
-                return false;
+            if (other == null) return false;
+            if (!Object.Equals(Signature, other.Signature)) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
@@ -5110,19 +4787,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
         } // Visit
 
-        public sealed override bool Equals(object obj)
+        public override sealed bool Equals(Object obj)
         {
-            if (ReferenceEquals(this, obj))
-                return true;
+            if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as TypeVariableSignature;
-            if (other == null)
-                return false;
-            if (Number != other.Number)
-                return false;
+            if (other == null) return false;
+            if (Number != other.Number) return false;
             return true;
         } // Equals
 
-        public sealed override int GetHashCode()
+        public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;

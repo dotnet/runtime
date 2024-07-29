@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -57,14 +58,14 @@ namespace DefaultNamespace
         internal static V2[] V2Array = new V2[Length];
         //	static V3[] V3Array = new V3[Length];
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             for (int i = 0; i < Length; i++)
             {
                 V2Array[i] = new V2();
                 //			V3Array[i] = new V3();
             }
-            return 100;
         }
     }
 }

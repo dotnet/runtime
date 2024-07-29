@@ -30,8 +30,9 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, wasi, NetBSD, illumos or Solaris."
+  echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
+  echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
+  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -44,6 +45,7 @@ usage()
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
+  echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo ""
@@ -65,8 +67,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net8.0 or net48."
-  echo "                             [Default: net8.0]"
+  echo "  --framework (-f)           Build framework: net9.0 or net48."
+  echo "                             [Default: net9.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -82,6 +84,7 @@ usage()
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
+  echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -130,24 +133,23 @@ usage()
 
 initDistroRid()
 {
-    source "$scriptroot"/native/init-distro-rid.sh
+    source "$scriptroot"/common/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
-    local buildArch="$2"
+    local targetArch="$2"
     local isCrossBuild="$3"
-    local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
-    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
 {
-  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary"
+  "$scriptroot/common/build.sh" "-restore" "-build" "/p:Subset=help" "/clp:nosummary /tl:false"
 }
 
 arguments=''
@@ -156,7 +158,7 @@ extraargs=''
 crossBuild=0
 portableBuild=1
 
-source $scriptroot/native/init-os-and-arch.sh
+source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
 
@@ -261,34 +263,44 @@ while [[ $# > 0 ]]; do
         windows)
           os="windows" ;;
         linux)
-          os="Linux" ;;
+          os="linux" ;;
         freebsd)
-          os="FreeBSD" ;;
+          os="freebsd" ;;
         osx)
-          os="OSX" ;;
+          os="osx" ;;
         maccatalyst)
-          os="MacCatalyst" ;;
+          os="maccatalyst" ;;
         tvos)
-          os="tvOS" ;;
+          os="tvos" ;;
         tvossimulator)
-          os="tvOSSimulator" ;;
+          os="tvossimulator" ;;
         ios)
-          os="iOS" ;;
+          os="ios" ;;
         iossimulator)
-          os="iOSSimulator" ;;
+          os="iossimulator" ;;
         android)
-          os="Android" ;;
+          os="android" ;;
         browser)
-          os="Browser" ;;
+          os="browser" ;;
         wasi)
           os="wasi" ;;
         illumos)
           os="illumos" ;;
         solaris)
-          os="Solaris" ;;
+          os="solaris" ;;
+        linux-bionic)
+          os="linux"
+          __PortableTargetOS=linux-bionic
+          ;;
+        linux-musl)
+          os="linux"
+          __PortableTargetOS=linux-musl
+          ;;
+        haiku)
+          os="haiku" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, wasi, illumos and Solaris."
+          echo "Try 'build.sh --help' for values supported by '--os'."
           exit 1
           ;;
       esac
@@ -358,6 +370,11 @@ while [[ $# > 0 ]]; do
       esac
       arguments="$arguments /p:RuntimeFlavor=$val"
       shift 2
+      ;;
+
+     -usemonoruntime)
+      arguments="$arguments /p:PrimaryRuntimeFlavor=Mono"
+      shift 1
       ;;
 
      -librariesconfiguration|-lc)
@@ -438,7 +455,7 @@ while [[ $# > 0 ]]; do
         echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      arguments="$arguments /p:OutputRID=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       shift 2
       ;;
 
@@ -492,6 +509,26 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+      -fsanitize)
+      if [ -z ${2+x} ]; then
+        echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:EnableNativeSanitizers=$2"
+      shift 2
+      ;;
+
+      -fsanitize=*)
+      sanitizers="${opt/#-fsanitize=/}" # -fsanitize=address => address
+      arguments="$arguments /p:EnableNativeSanitizers=$sanitizers"
+      shift 2
+      ;;
+
+      -verbose)
+      arguments="$arguments /p:CoreclrVerbose=true"
+      shift 1
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -503,7 +540,7 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [[ "$os" == "Browser" ]]; then
+if [[ "$os" == "browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
@@ -512,7 +549,14 @@ if [[ "$os" == "wasi" ]]; then
     arch=wasm
 fi
 
-initDistroRid $os $arch $crossBuild $portableBuild
+if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
+    arguments="$arguments -warnAsError 0"
+fi
+
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+arguments="$arguments -tl:false"
+
+initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

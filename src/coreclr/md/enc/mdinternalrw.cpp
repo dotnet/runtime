@@ -69,7 +69,7 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
                 pbSigBlob,          // signature from the imported scope
                 NULL,               // Internal OID mapping structure.
                 pqkSigEmit,         // [OUT] translated signature
-                NULL,               // start from first byte of the signature
+                0,               // start from first byte of the signature
                 NULL,               // don't care how many bytes consumed
                 pcbSig);           // [OUT] total number of bytes write to pqkSigEmit
 
@@ -466,7 +466,7 @@ ULONG MDInternalRW::Release()
     cRef = InterlockedDecrement(&m_cRefs);
     if (cRef == 0)
     {
-        LOG((LOGMD, "MDInternalRW(0x%08x)::destruction\n", this));
+        LOG((LOGMD, "MDInternalRW(0x%p)::destruction\n", this));
         delete this;
     }
     return cRef;

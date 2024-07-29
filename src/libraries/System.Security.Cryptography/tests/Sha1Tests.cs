@@ -8,12 +8,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class Sha1Tests : HashAlgorithmTestDriver
+    public sealed class FactorySha1Tests : Sha1Tests<FactorySha1Tests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return SHA1.Create();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA1.HashSizeInBytes;
+            public static HashAlgorithm Create() => SHA1.Create();
         }
+    }
+
+    public abstract class Sha1Tests<THashTrait> : HashAlgorithmTestDriver<THashTrait> where THashTrait : IHashTrait
+    {
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA1;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
@@ -130,6 +137,13 @@ namespace System.Security.Cryptography.Tests
         public async Task Sha1_Rfc3174_4_Async()
         {
             await VerifyRepeatingAsync("0123456701234567012345670123456701234567012345670123456701234567", 10, "DEA356A2CDDD90C7A7ECEDC5EBB563934F460452");
+        }
+
+        [Fact]
+        public void Sha1_HashSizes()
+        {
+            Assert.Equal(160, SHA1.HashSizeInBits);
+            Assert.Equal(20, SHA1.HashSizeInBytes);
         }
     }
 }

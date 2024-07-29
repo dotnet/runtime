@@ -9,7 +9,7 @@ namespace System.Buffers.Text
         {
             int srcIndex = 0;
             byte c = default;
-            while (srcIndex != source.Length)
+            while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
                 if (!(c == ' ' || c == '\t'))

@@ -514,7 +514,7 @@ check_interface_method_override (MonoClass *klass, MonoMethod *im, MonoMethod *c
 	gboolean variant_itf = (flags & MONO_ITF_OVERRIDE_VARIANT_ITF) != 0;
 	MonoMethodSignature *cmsig, *imsig;
 	if (strcmp (im->name, cm->name) == 0) {
-		if (! (cm->flags & METHOD_ATTRIBUTE_PUBLIC)) {
+		if ((cm->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PUBLIC) {
 			TRACE_INTERFACE_VTABLE (printf ("[PUBLIC CHECK FAILED]"));
 			return FALSE;
 		}
@@ -773,6 +773,11 @@ mono_method_get_method_definition (MonoMethod *method)
 static gboolean
 verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 {
+#ifndef ENABLE_CHECKED_BUILD
+	if (klass->image == mono_defaults.corlib)
+		return TRUE;
+#endif
+
 	int i;
 
 	for (i = 0; i < onum; ++i) {
@@ -1760,7 +1765,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			MonoMethod *override = iface_overrides [i*2 + 1];
 			if (mono_class_is_gtd (override->klass)) {
 				override = mono_class_inflate_generic_method_full_checked (override, ic, mono_class_get_context (ic), error);
-			} 
+			}
 			// there used to be code here to inflate decl if decl->is_inflated, but in https://github.com/dotnet/runtime/pull/64102#discussion_r790019545 we
 			// think that this does not correspond to any real code.
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
@@ -1877,7 +1882,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						flags |= MONO_ITF_OVERRIDE_EXPLICITLY_IMPLEMENTED;
 					if (interface_is_explicitly_implemented_by_class && variant_itf)
 						flags |= MONO_ITF_OVERRIDE_VARIANT_ITF;
-					if (vtable [im_slot] == NULL)
+					// if the slot is emtpy, or it's filled with a DIM, treat it as empty
+					if (vtable [im_slot] == NULL || m_class_is_interface (vtable [im_slot]->klass))
 						flags |= MONO_ITF_OVERRIDE_SLOT_EMPTY;
 					if (check_interface_method_override (klass, im, cm, flags)) {
 						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING\n"));
@@ -1914,6 +1920,33 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 						if (mono_class_has_failure (klass)) /*Might be set by check_interface_method_override*/
 							goto fail;
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("\n"));
+					}
+				}
+
+				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
+					// For covariant returns we might need to lookup matching virtual methods in parent types
+					// that were overriden with a method that doesn't exactly match interface method signature.
+					gboolean found = FALSE;
+					for (MonoClass *parent_klass = klass->parent; parent_klass != NULL && !found; parent_klass = parent_klass->parent) {
+						gpointer iter = NULL;
+						while ((cm = mono_class_get_virtual_methods (parent_klass, &iter))) {
+							TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
+							if ((cm != NULL) && check_interface_method_override (klass, im, cm, MONO_ITF_OVERRIDE_SLOT_EMPTY)) {
+								TRACE_INTERFACE_VTABLE (printf ("[everything ok]: ASSIGNING\n"));
+								found = TRUE;
+								if (vtable [cm->slot]) {
+									// We match the current method was overriding it. If this method will
+									// get overriden again, the interface slot will also be updated
+									vtable [im_slot] = vtable [cm->slot];
+								} else {
+									// We add abstract method in the vtable. This method will be overriden
+									// with the actual implementation once we resolve the abstract method later.
+									// FIXME If klass is abstract, we can end up with abstract method in the vtable. Is this a problem ?
+									vtable [im_slot] = cm;
+								}
+								break;
+							}
+						}
 					}
 				}
 

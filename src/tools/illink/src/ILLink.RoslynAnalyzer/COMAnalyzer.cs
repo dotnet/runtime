@@ -20,18 +20,20 @@ namespace ILLink.RoslynAnalyzer
 		private const string MarshalAsAttribute = nameof (MarshalAsAttribute);
 
 		static readonly DiagnosticDescriptor s_correctnessOfCOMCannotBeGuaranteed = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed,
-			helpLinkUri: "https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-warnings/il2050");
+			helpLinkUri: "https://learn.microsoft.com/dotnet/core/deploying/trim-warnings/il2050");
 
 		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_correctnessOfCOMCannotBeGuaranteed);
 
 		public override void Initialize (AnalysisContext context)
 		{
+			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			if (!System.Diagnostics.Debugger.IsAttached)
 				context.EnableConcurrentExecution ();
-			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
+
 			context.RegisterCompilationStartAction (context => {
 				var compilation = context.Compilation;
-				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, compilation))
+				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer))
 					return;
 
 				context.RegisterOperationAction (operationContext => {
@@ -40,7 +42,7 @@ namespace ILLink.RoslynAnalyzer
 					if (!targetMethod.HasAttribute (DllImportAttribute))
 						return;
 
-					if (operationContext.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+					if (operationContext.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
 					bool comDangerousMethod = IsComInterop (targetMethod.ReturnType);

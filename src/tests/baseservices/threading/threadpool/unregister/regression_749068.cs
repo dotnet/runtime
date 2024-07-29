@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using Xunit;
 
 /************************
  * Regression test for bug Bug 749068:WatsonCrash: coreclr.dll!Thread::DoAppropriateWaitWorker -- APPLICATION_HANG_BlockedOn_EventHandle c0000194
@@ -88,9 +89,10 @@ namespace Prog
         }
     }
 
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Callback obj = new Callback();
 
@@ -101,7 +103,6 @@ namespace Prog
             obj.unregister();
 
             Console.WriteLine("end");
-            return 100;
         }
     }
 }

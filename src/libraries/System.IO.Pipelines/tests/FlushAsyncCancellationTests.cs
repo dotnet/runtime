@@ -217,12 +217,14 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsyncThrowsIfPassedCanceledCancellationToken()
+        public async Task FlushAsyncThrowsIfPassedCanceledCancellationToken()
         {
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
-            Assert.Throws<OperationCanceledException>(() => Pipe.Writer.FlushAsync(cancellationTokenSource.Token));
+            ValueTask<FlushResult> task = Pipe.Writer.FlushAsync(cancellationTokenSource.Token);
+            Assert.True(task.IsCanceled);
+            await AssertExtensions.CanceledAsync(cancellationTokenSource.Token, async () => await task);
         }
 
         [Fact]
@@ -318,7 +320,7 @@ namespace System.IO.Pipelines.Tests
             // and not only setting IsCompleted flag
             var task = Pipe.Reader.ReadAsync().AsTask();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await Pipe.Writer.FlushAsync(cancellationTokenSource.Token));
+            await AssertExtensions.CanceledAsync(cancellationTokenSource.Token, async () => await Pipe.Writer.FlushAsync(cancellationTokenSource.Token));
 
             Pipe.Writer.Complete();
 

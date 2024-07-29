@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -28,18 +29,20 @@ namespace System
         {
         }
 
-        public ObjectDisposedException(string? objectName, string? message) : base(message)
+        public ObjectDisposedException(string? objectName, string? message) : base(message ?? SR.ObjectDisposed_Generic)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
             _objectName = objectName;
         }
 
         public ObjectDisposedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.ObjectDisposed_Generic, innerException)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ObjectDisposedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -72,6 +75,8 @@ namespace System
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

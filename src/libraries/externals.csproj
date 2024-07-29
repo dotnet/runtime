@@ -11,8 +11,8 @@
 
   <PropertyGroup>
     <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
-    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
-    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
     <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
   </PropertyGroup>
@@ -27,6 +27,8 @@
   <ItemGroup>
     <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
     <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)$(SymbolsSuffix)" />
     <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
   </ItemGroup>
 
@@ -60,6 +62,12 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
+    <!-- Include any native sanitizer runtimes so we can run our tests on machines without the exact same development environment. -->
+    <Copy SourceFiles="@(SanitizerRuntimeToCopy->'$(DotNetHostBinDir)%(Identity)')"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
     <Copy Condition="$(CopyCoreDisToolsToCoreRoot)"
           SourceFiles="$(CoreDisToolsLibrary)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
@@ -72,13 +80,30 @@
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(UseNativeAotCoreLib)' != 'true'">
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
+      <RuntimeFiles Include="@(_HostSymbols)" Condition="Exists('@(_HostSymbols)')" IsNative="true" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <!-- Include cDAC reader library
+           TODO: [cdac] Remove once cdacreader is added to shipping shared framework -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\*cdacreader*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\*cdacreader*" />
+    </ItemGroup>
+    <!-- If the build has native sanitizers, copy over the non-sanitized diagnostic binaries so they can be loaded by a debugger -->
+    <ItemGroup Condition="'$(EnableNativeSanitizers)' != ''">
+      <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\*mscordaccore*" />
+      <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\*mscordbi*" />
+      <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\PDB\*mscordaccore*" />
+      <RuntimeFiles Remove="$(CoreCLRArtifactsPath)\sharedFramework\PDB\*mscordbi*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\sharedFramework\*" IsNative="true" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\PDB\*mscordaccore*" IsNative="true" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\unsanitized\PDB\*mscordbi*" IsNative="true" />
+    </ItemGroup>
+    <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
     <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">
@@ -95,9 +120,9 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' == 'Mono'">
     <ItemGroup>
-      <!-- copy the host files to make the desktop samples work -->
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
+      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" Condition="Exists('@(_HostSymbols)') and '$(TargetsMobile)' != 'true'" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"

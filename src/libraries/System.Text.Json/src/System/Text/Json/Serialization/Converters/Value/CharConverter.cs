@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,6 +12,11 @@ namespace System.Text.Json.Serialization.Converters
 
         public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
+            }
+
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, 1, MaxEscapedCharacterLength))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedChar(reader.TokenType);
@@ -31,8 +36,8 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
-#if NETCOREAPP
-                MemoryMarshal.CreateSpan(ref value, 1)
+#if NET
+                new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
 #endif
@@ -48,12 +53,15 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, char value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(
-#if NETCOREAPP
-                MemoryMarshal.CreateSpan(ref value, 1)
+#if NET
+                new ReadOnlySpan<char>(in value)
 #else
                 value.ToString()
 #endif
                 );
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new() { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 1 };
     }
 }

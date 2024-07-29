@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
-using System.Text;
 using System.Net.Mail;
+using System.Text;
 
 namespace System.Net.Mime
 {
     internal class MimeBasePart
     {
         internal const string DefaultCharSet = "utf-8";
-        private static readonly char[] s_decodeEncodingSplitChars = new char[] { '?', '\r', '\n' };
 
         protected ContentType? _contentType;
         protected ContentDisposition? _contentDisposition;
@@ -96,21 +95,23 @@ namespace System.Net.Mime
                 return null;
             }
 
-            string[] subStrings = value.Split(s_decodeEncodingSplitChars);
-            if ((subStrings.Length < 5 || subStrings[0] != "=" || subStrings[4] != "="))
+            ReadOnlySpan<char> valueSpan = value;
+            Span<Range> subStrings = stackalloc Range[6];
+            if (valueSpan.SplitAny(subStrings, "?\r\n") < 5 ||
+                valueSpan[subStrings[0]] is not "=" ||
+                valueSpan[subStrings[4]] is not "=")
             {
                 return null;
             }
 
-            string charSet = subStrings[1];
-            return Encoding.GetEncoding(charSet);
+            return Encoding.GetEncoding(value[subStrings[1]]);
         }
 
         internal static bool IsAscii(string value, bool permitCROrLF)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            return Ascii.IsValid(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') < 0);
+            return Ascii.IsValid(value) && (permitCROrLF || !value.AsSpan().ContainsAny('\r', '\n'));
         }
 
         internal string? ContentID

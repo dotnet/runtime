@@ -1,14 +1,18 @@
-cmake_minimum_required(VERSION 3.14.5)
+cmake_minimum_required(VERSION 3.20)
 
 project(Profiler)
 
 set(SOURCES
+    assemblyprofiler/assemblyprofiler.cpp
     eltprofiler/slowpatheltprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
+    nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
@@ -30,9 +34,10 @@ set(SOURCES
 
 include_directories(../../../coreclr/pal/prebuilt/inc)
 
+add_compile_definitions(SOS_INCLUDE)
+
 if(NOT WIN32)
     include_directories(../../../coreclr/pal/inc/rt ../../../coreclr/pal/inc ../../../coreclr/inc)
-    add_compile_options(-DPAL_STDCPP_COMPAT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-arithmetic)
     else(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -46,7 +51,7 @@ add_library(Profiler SHARED ${SOURCES})
 if(WIN32)
 	set(DEPENDENCIES Advapi32.lib oleaut32.lib Ole32.lib)
 else(WIN32)
-    set(DEPENDENCIES pthread dl)
+    set(DEPENDENCIES pthread ${CMAKE_DL_LIBS})
 endif(WIN32)
 
 target_link_libraries(Profiler PUBLIC ${DEPENDENCIES})

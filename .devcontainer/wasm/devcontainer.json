@@ -1,17 +1,17 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "C# (.NET)",
+	"name": "WASM singlethreaded development (prebuilt)",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			// Update 'VARIANT' to pick a .NET Core version: 3.1, 6.0
-			// Append -bullseye or -focal to pin to an OS version.
-			"VARIANT": "6.0-focal"
+			// Update 'VARIANT' to pick a .NET Core version: 6.0, 7.0
+			"VARIANT": "6.0-jammy"
 		}
 	},
 	"hostRequirements": {
 		"cpus": 4,
-		"memory": "8gb"
+		"memory": "8gb",
+		"storage": "40gb"
 	},
 
 	"features": {
@@ -41,7 +41,7 @@
 	"onCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/onCreateCommand.sh wasm",
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh",
+	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/scripts/postCreateCommand.sh wasm",
 
 	// Add the locally installed dotnet to the path to ensure that it is activated
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
@@ -49,8 +49,6 @@
 	"remoteEnv": {
 		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}",
 		"DOTNET_MULTILEVEL_LOOKUP": "0",
-		// Path to provisioned Emscripten SDK, for rebuilding the wasm runtime
-		"EMSDK_PATH": "${containerWorkspaceFolder}/src/mono/wasm/emsdk",
 	},
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.

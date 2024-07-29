@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -31,6 +32,52 @@ namespace Microsoft.Extensions.Options.Tests
                 Assert.True(v.Validate(Options.DefaultName, options).Succeeded);
                 Assert.True(v.Validate("Something", options).Skipped);
             }
+        }
+
+        [Fact]
+        public void ValidateOnStart_NotCalled()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Validate(o => o.Integer > 12);
+
+            var sp = services.BuildServiceProvider();
+
+            var validator = sp.GetService<IStartupValidator>();
+            Assert.Null(validator);
+        }
+
+        [Fact]
+        public void ValidateOnStart_Called()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Validate(o => o.Integer > 12)
+                .ValidateOnStart();
+
+            var sp = services.BuildServiceProvider();
+
+            var validator = sp.GetService<IStartupValidator>();
+            Assert.NotNull(validator);
+            OptionsValidationException ex = Assert.Throws<OptionsValidationException>(validator.Validate);
+            Assert.Equal(1, ex.Failures.Count());
+        }
+
+        [Fact]
+        public void ValidateOnStart_CalledMultiple()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<ComplexOptions>()
+                .Validate(o => o.Boolean)
+                .Validate(o => o.Integer > 12)
+                .ValidateOnStart();
+
+            var sp = services.BuildServiceProvider();
+
+            var validator = sp.GetService<IStartupValidator>();
+            Assert.NotNull(validator);
+            OptionsValidationException ex = Assert.Throws<OptionsValidationException>(validator.Validate);
+            Assert.Equal(2, ex.Failures.Count());
         }
 
         [Fact]

@@ -3,14 +3,16 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // Test case where a type-equvalent delegate is assigned
 
-class X
+public class X
 {
     static int F() => 3;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         XD x = F;
         XD y = Lib.GetDelegate();

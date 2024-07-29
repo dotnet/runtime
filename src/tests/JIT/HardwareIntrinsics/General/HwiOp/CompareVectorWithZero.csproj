@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
-  </ItemGroup>
-</Project>

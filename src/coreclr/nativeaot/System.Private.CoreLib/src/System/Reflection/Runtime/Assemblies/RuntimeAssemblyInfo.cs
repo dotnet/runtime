@@ -1,26 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.Serialization;
+using System.IO;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeParsing;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Security;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
-
-using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -45,6 +38,8 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -71,34 +66,12 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException();
-            if (name.Length == 0)
-                throw new ArgumentException();
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-            TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
-            if (typeName == null)
-                return null;
-            if (typeName is AssemblyQualifiedTypeName)
-            {
-                if (throwOnError)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
-                else
-                    return null;
-            }
-
-            CoreAssemblyResolver coreAssemblyResolver = GetRuntimeAssemblyIfExists;
-            CoreTypeResolver coreTypeResolver =
-                delegate (Assembly containingAssemblyIfAny, string coreTypeName)
-                {
-                    if (containingAssemblyIfAny == null)
-                        return GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                    else
-                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                };
-            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-
-            return typeName.ResolveType(this, getTypeOptions);
+            return TypeNameResolver.GetType(name,
+                throwOnError: throwOnError,
+                ignoreCase: ignoreCase,
+                topLevelAssembly: this);
         }
 
 #pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
@@ -132,9 +105,7 @@ namespace System.Reflection.Runtime.Assemblies
                 Exception exception = TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
                 if (exception == null)
                 {
-                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
-                    if (type == null)
-                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, throwOnError: true, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
                 }
 
                 Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
@@ -185,12 +156,16 @@ namespace System.Reflection.Runtime.Assemblies
         ///
         /// Returns null if the type does not exist. Throws for all other error cases.
         /// </summary>
-        internal RuntimeTypeInfo GetTypeCore(string fullName, bool ignoreCase)
+        internal Type GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
         {
-            if (ignoreCase)
-                return GetTypeCoreCaseInsensitive(fullName);
-            else
-                return GetTypeCoreCaseSensitive(fullName);
+            RuntimeTypeInfo? type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
+            if (type == null)
+            {
+                if (throwOnError)
+                    throw Helpers.CreateTypeLoadException(fullName, this.FullName);
+                return null;
+            }
+            return type.ToType();
         }
 
         // Types that derive from RuntimeAssembly must implement the following public surface area members
@@ -212,12 +187,6 @@ namespace System.Reflection.Runtime.Assemblies
         public abstract override string ImageRuntimeVersion { get; }
         public abstract override bool Equals(object obj);
         public abstract override int GetHashCode();
-
-        /// <summary>
-        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
-        /// loaded and its constructor already ran, we do not run it again.
-        /// </summary>
-        internal abstract void RunModuleConstructor();
 
         /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
@@ -301,7 +270,7 @@ namespace System.Reflection.Runtime.Assemblies
             // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
             // so it must return a freshly allocated array on each call.
 
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
             IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
             Assembly[] results = new Assembly[bindResults.Count];
             for (int i = 0; i < bindResults.Count; i++)

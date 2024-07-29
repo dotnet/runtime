@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace DefaultNamespace
 {
@@ -41,7 +42,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object"),
           Type.GetType("Simple"),
           Type.GetType("System.Empty[]"),
-          Type.GetType("System.Void[]"),
           Type.GetType("System.Boolean[]"),
           Type.GetType("System.Char[]"),
           Type.GetType("System.SByte[]"),
@@ -65,7 +65,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object[]"),
           Type.GetType("Simple[]"),
           Type.GetType("System.Empty[][]"),
-          Type.GetType("System.Void[][]"),
           Type.GetType("System.Boolean[][]"),
           Type.GetType("System.Char[][]"),
           Type.GetType("System.SByte[][]"),
@@ -89,7 +88,6 @@ namespace DefaultNamespace
           Type.GetType("System.Object[][]"),
           Type.GetType("Simple[][]"),
           Type.GetType("System.Empty[][][]"),
-          Type.GetType("System.Void[][][]"),
           Type.GetType("System.Boolean[][][]"),
           Type.GetType("System.Char[][][]"),
           Type.GetType("System.SByte[][][]"),
@@ -135,10 +133,10 @@ namespace DefaultNamespace
         internal static readonly String[,] strArr = {{"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."},
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             new Bug();
-            return 100;
         }
     }
 

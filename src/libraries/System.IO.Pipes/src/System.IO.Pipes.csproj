@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -17,6 +19,7 @@
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.cs" />
+    <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeDirection.cs" />
     <Compile Include="System\IO\Pipes\PipeOptions.cs" />
     <Compile Include="System\IO\Pipes\PipeState.cs" />
@@ -24,8 +27,6 @@
     <Compile Include="System\IO\Pipes\PipeTransmissionMode.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
@@ -116,7 +117,6 @@
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
-    <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRule.cs" />
     <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
     <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />
@@ -125,7 +125,7 @@
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Unix.cs" />
@@ -147,14 +147,14 @@
              Link="Common\Interop\Unix\Interop.FLock.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs"
-             Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Pipe.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
@@ -190,9 +190,10 @@
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
   </ItemGroup>
+
 </Project>

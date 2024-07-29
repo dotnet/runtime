@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics;
-using System.Collections.Generic;
-
 using System.Reflection.Runtime.General;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
-
-using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
@@ -27,8 +25,10 @@ namespace Internal.Reflection.Execution
     {
         private AssemblyBinderImplementation()
         {
-            _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
-            ModuleList.AddModuleRegistrationCallback(RegisterModule);
+            _scopeGroups = Array.Empty<KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>>();
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                RegisterModule(module);
         }
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
@@ -82,7 +82,7 @@ namespace Internal.Reflection.Execution
                 {
                     if (foundMatch)
                     {
-                        exception = new AmbiguousMatchException();
+                        exception = new AmbiguousMatchException(SR.Format(SR.AmbiguousMatchException_Assembly, refName.FullName));
                         return false;
                     }
 
@@ -194,16 +194,9 @@ namespace Internal.Reflection.Execution
         /// that this function may never be called concurrently so that we can assume that two threads
         /// never update the reader and scope list at the same time.
         /// </summary>
-        /// <param name="moduleInfo">Module to register</param>
-        private void RegisterModule(ModuleInfo moduleInfo)
+        /// <param name="nativeFormatModuleInfo">Module to register</param>
+        private void RegisterModule(NativeFormatModuleInfo nativeFormatModuleInfo)
         {
-            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
-
-            if (nativeFormatModuleInfo == null)
-            {
-                return;
-            }
-
             LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>();
             foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> oldGroup in _scopeGroups)
             {

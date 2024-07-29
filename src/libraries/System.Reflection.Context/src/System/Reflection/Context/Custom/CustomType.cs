@@ -257,7 +257,6 @@ namespace System.Reflection.Context.Custom
                 }
             }
 
-
             if (matchingMethods.Count == 0)
                 return null;
 
@@ -266,10 +265,12 @@ namespace System.Reflection.Context.Custom
                 Debug.Assert(types == null || types.Length == 0);
 
                 // matches any signature
+                MethodInfo match = matchingMethods[0];
                 if (matchingMethods.Count == 1)
-                    return matchingMethods[0];
-                else
-                    throw new AmbiguousMatchException();
+                    return match;
+
+                Type? declaringType = match.DeclaringType;
+                throw new AmbiguousMatchException(SR.Format(SR.Arg_AmbiguousMatchException_MemberInfo, declaringType, match));
             }
             else
             {

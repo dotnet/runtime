@@ -207,14 +207,7 @@ namespace System.Net.Http
         {
             const int Length = 16;
             const string CharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-            return string.Create<object?>(Length, null, static (destination, _) =>
-            {
-                for (int i = 0; i < destination.Length; i++)
-                {
-                    destination[i] = CharacterSet[RandomNumberGenerator.GetInt32(CharacterSet.Length)];
-                }
-            });
+            return RandomNumberGenerator.GetString(CharacterSet, Length);
         }
 
         private static string ComputeHash(string data, string algorithm)
@@ -237,7 +230,7 @@ namespace System.Net.Http
 #pragma warning restore CA5351
             }
 
-            return HexConverter.ToString(hashBuffer.Slice(0, written), HexConverter.Casing.Lower);
+            return Convert.ToHexStringLower(hashBuffer.Slice(0, written));
         }
 
         internal sealed class DigestResponse

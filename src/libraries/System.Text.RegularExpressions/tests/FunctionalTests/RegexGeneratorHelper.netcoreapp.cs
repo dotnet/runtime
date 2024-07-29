@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions.Tests
             if (PlatformDetection.IsBrowser)
             {
                 // These tests that use Roslyn don't work well on browser wasm today
-                return new MetadataReference[0];
+                return [];
             }
 
             // Typically we'd want to use the right reference assemblies, but as we're not persisting any
@@ -103,7 +103,7 @@ namespace System.Text.RegularExpressions.Tests
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
             ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
             ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
-            if (!results.Success || resultsDiagnostics.Length != 0 || generatorDiagnostics.Length != 0)
+            if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +
@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Tests
         internal static async Task<Regex> SourceGenRegexAsync(
             string pattern, CultureInfo? culture, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
         {
-            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, culture, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
+            Regex[] results = await SourceGenRegexAsync([(pattern, culture, options, matchTimeout)], cancellationToken).ConfigureAwait(false);
             return results[0];
         }
 
@@ -177,7 +177,9 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
-                code.AppendLine($")] public static partial Regex Get{count}();");
+
+                bool useProp = count % 2 == 0; // validate both methods and properties by alternating between them
+                code.AppendLine($")] public static partial Regex Get{count}{(useProp ? " { get; }" : "();")}");
 
                 count++;
             }
@@ -238,12 +240,13 @@ namespace System.Text.RegularExpressions.Tests
             var alc = new RegexLoadContext(Environment.CurrentDirectory);
             Assembly a = alc.LoadFromStream(dll);
 
-            // Instantiate each regex using the newly created static Get method that was source generated.
+            // Instantiate each regex using the newly created static Get member that was source generated.
             var instances = new Regex[count];
             Type c = a.GetType("C")!;
             for (int i = 0; i < instances.Length; i++)
             {
-                instances[i] = (Regex)c.GetMethod($"Get{i}")!.Invoke(null, null)!;
+                string memberName = $"Get{i}";
+                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName).GetGetMethod())!.Invoke(null, null)!;
             }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected
@@ -257,14 +260,9 @@ namespace System.Text.RegularExpressions.Tests
             string.Join(Environment.NewLine, source.Split(Environment.NewLine).Select((line, lineNumber) => $"{lineNumber,6}: {line}"));
 
         /// <summary>Simple AssemblyLoadContext used to load source generated regex assemblies so they can be unloaded.</summary>
-        private sealed class RegexLoadContext : AssemblyLoadContext
+        private sealed class RegexLoadContext(string pluginPath) : AssemblyLoadContext(isCollectible: true)
         {
-            private readonly AssemblyDependencyResolver _resolver;
-
-            public RegexLoadContext(string pluginPath) : base(isCollectible: true)
-            {
-                _resolver = new AssemblyDependencyResolver(pluginPath);
-            }
+            private readonly AssemblyDependencyResolver _resolver = new AssemblyDependencyResolver(pluginPath);
 
             protected override Assembly? Load(AssemblyName assemblyName)
             {

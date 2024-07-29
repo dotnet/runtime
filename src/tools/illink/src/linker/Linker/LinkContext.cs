@@ -49,6 +49,8 @@ namespace Mono.Linker
 		public virtual AnnotationStore CreateAnnotationStore (LinkContext context) => new AnnotationStore (context);
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
+		public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo () => new ();
+		public virtual AssemblyResolver CreateResolver (LinkContext context) => new AssemblyResolver (context, new ReaderParameters ());
 	}
 
 	public static class TargetRuntimeVersion
@@ -57,13 +59,7 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-	}
-
-	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -72,7 +68,7 @@ namespace Mono.Linker
 		int? _targetRuntime;
 
 		readonly AssemblyResolver _resolver;
-		readonly TypeNameResolver _typeNameResolver;
+		TypeNameResolver? _typeNameResolver;
 
 		readonly AnnotationStore _annotations;
 		readonly CustomAttributeSource _customAttributes;
@@ -106,9 +102,13 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
-		public readonly bool KeepMembersForDebugger = true;
+		public bool PreserveSymbolPaths { get; set; }
 
-		public bool IgnoreUnresolved { get; set; }
+		public bool KeepComInterfaces { get; set; }
+
+		public bool KeepMembersForDebugger { get; set; } = true;
+
+		public bool IgnoreUnresolved { get; set; } = true;
 
 		public bool EnableReducedTracing { get; set; }
 
@@ -146,9 +146,8 @@ namespace Mono.Linker
 			get { return _resolver; }
 		}
 
-		internal TypeNameResolver TypeNameResolver {
-			get { return _typeNameResolver; }
-		}
+		internal TypeNameResolver TypeNameResolver
+			=> _typeNameResolver ??= new TypeNameResolver (this, this);
 
 		public ISymbolReaderProvider SymbolReaderProvider { get; set; }
 
@@ -174,6 +173,10 @@ namespace Mono.Linker
 
 		public Tracer Tracer { get; private set; }
 
+		internal HashSet<string>? TraceAssembly { get; set; }
+
+		public EmbeddedXmlInfo EmbeddedXmlInfo { get; private set; }
+
 		public CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
@@ -191,12 +194,16 @@ namespace Mono.Linker
 		public SerializationMarker SerializationMarker { get; }
 
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
+			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
+		{
+		}
+
+		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
 			_pipeline = pipeline;
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
-			_resolver = new AssemblyResolver (this);
-			_typeNameResolver = new TypeNameResolver (this);
+			_resolver = factory.CreateResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
@@ -208,11 +215,11 @@ namespace Mono.Linker
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
-			var factory = new UnintializedContextFactory ();
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);
 			Tracer = factory.CreateTracer (this);
+			EmbeddedXmlInfo = factory.CreateEmbeddedXmlInfo ();
 			MarkedKnownMembers = new KnownMembers ();
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
@@ -237,7 +244,8 @@ namespace Mono.Linker
 				CodeOptimizations.RemoveLinkAttributes |
 				CodeOptimizations.RemoveSubstitutions |
 				CodeOptimizations.RemoveDynamicDependencyAttribute |
-				CodeOptimizations.OptimizeTypeHierarchyAnnotations;
+				CodeOptimizations.OptimizeTypeHierarchyAnnotations |
+				CodeOptimizations.SubstituteFeatureGuards;
 
 			DisableEventSourceSpecialHandling = true;
 
@@ -246,7 +254,7 @@ namespace Mono.Linker
 
 		public void SetFeatureValue (string feature, bool value)
 		{
-			Debug.Assert (!String.IsNullOrEmpty (feature));
+			Debug.Assert (!string.IsNullOrEmpty (feature));
 			FeatureSettings[feature] = value;
 		}
 
@@ -257,7 +265,7 @@ namespace Mono.Linker
 
 		public TypeDefinition? GetType (string fullName)
 		{
-			int pos = fullName.IndexOf (",");
+			int pos = fullName.IndexOf (',');
 			fullName = TypeReferenceExtensions.ToCecilName (fullName);
 			if (pos == -1) {
 				foreach (AssemblyDefinition asm in GetReferencedAssemblies ()) {
@@ -558,14 +566,13 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
 		{
 			WarnVersion version = GetWarningVersion ();
@@ -575,13 +582,12 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (MessageOrigin origin, DiagnosticId id, params string[] args)
 		{
 			WarnVersion version = GetWarningVersion ();
@@ -591,15 +597,14 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
-		public void LogWarning (string text, int code, IMemberDefinition origin, int? ilOffset = null, string subcategory = MessageSubCategory.None)
+		internal void LogWarning (string text, int code, IMemberDefinition origin, int ilOffset = MessageOrigin.UnsetILOffset, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (text, code, _origin, subcategory);
@@ -607,14 +612,13 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
-		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
+		internal void LogWarning (IMemberDefinition origin, DiagnosticId id, int ilOffset = MessageOrigin.UnsetILOffset, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (_origin, id, args);
@@ -622,13 +626,12 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (IMemberDefinition origin, DiagnosticId id, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -637,14 +640,13 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string text, int code, string origin, string subcategory = MessageSubCategory.None)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -653,13 +655,12 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string origin, DiagnosticId id, params string[] args)
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
@@ -670,10 +671,9 @@ namespace Mono.Linker
 		/// Display an error message to the end user.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of errors and possibly add a new one</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
 			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin);
@@ -684,13 +684,39 @@ namespace Mono.Linker
 		/// Display an error message to the end user.
 		/// </summary>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md and https://github.com/dotnet/linker/blob/main/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md and https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
-		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (MessageOrigin? origin, DiagnosticId id, params string[] args)
 		{
 			var error = MessageContainer.CreateErrorMessage (origin, id, args);
 			LogMessage (error);
+		}
+
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		public static void FatalError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin));
+		}
+
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="innerException">Optional, an inner exception</param>
+		public static void FatalError (string text, int code, Exception innerException, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin), innerException);
 		}
 
 		public void FlushCachedWarnings ()
@@ -768,8 +794,11 @@ namespace Mono.Linker
 			if (methodReference is null)
 				return null;
 
-			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md))
+			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md)) {
+				if (md == null && !IgnoreUnresolved)
+					ReportUnresolved (methodReference);
 				return md;
+			}
 
 #pragma warning disable RS0030 // Cecil's resolve is banned -- this provides the wrapper
 			md = methodReference.Resolve ();
@@ -813,8 +842,11 @@ namespace Mono.Linker
 			if (fieldReference is null)
 				return null;
 
-			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition? fd))
+			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition? fd)) {
+				if (fd == null && !IgnoreUnresolved)
+					ReportUnresolved (fieldReference);
 				return fd;
+			}
 
 			fd = fieldReference.Resolve ();
 			if (fd == null && !IgnoreUnresolved)
@@ -854,8 +886,11 @@ namespace Mono.Linker
 			if (typeReference is null)
 				return null;
 
-			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition? td))
+			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition? td)) {
+				if (td == null && !IgnoreUnresolved)
+					ReportUnresolved (typeReference);
 				return td;
+			}
 
 			//
 			// Types which never have TypeDefinition or can have ambiguous definition should not be passed in
@@ -936,7 +971,7 @@ namespace Mono.Linker
 		public TypeDefinition? TryResolve (AssemblyDefinition assembly, string typeNameString)
 		{
 			// It could be cached if it shows up on fast path
-			return _typeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
+			return TypeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference, out _)
 				? TryResolve (typeReference)
 				: null;
 		}
@@ -944,7 +979,7 @@ namespace Mono.Linker
 		readonly HashSet<MethodDefinition> _processed_bodies_for_method = new HashSet<MethodDefinition> (2048);
 
 		/// <summary>
-		/// Linker applies some optimization on method bodies. For example it can remove dead branches of code
+		/// ILLink applies some optimization on method bodies. For example it can remove dead branches of code
 		/// based on constant propagation. To avoid overmarking, all code which processes the method's IL
 		/// should only view the IL after it's been optimized.
 		/// As such typically MethodDefinition.MethodBody should not be accessed directly on the Cecil object model
@@ -1117,5 +1152,10 @@ namespace Mono.Linker
 		/// Otherwise, type annotation will only be applied with calls to object.GetType()
 		/// </summary>
 		OptimizeTypeHierarchyAnnotations = 1 << 24,
+
+		/// <summary>
+		/// Option to substitute properties annotated as FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) with false
+		/// </summary>
+		SubstituteFeatureGuards = 1 << 25,
 	}
 }

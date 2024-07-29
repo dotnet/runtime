@@ -1,16 +1,13 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// This test tries to hit a case where the entire assemly is preserved (via descriptor, NOT action)
+	// This test tries to hit a case where the entire assembly is preserved (via descriptor, NOT action)
 	// meaning we will go and mark all types and members in it.
 	// At the same time there's a compiler generated method (local function) which is called from
 	// a branch which will be removed due to constant propagation.
@@ -20,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[ExpectedNoWarnings]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[SetupLinkerDescriptorFile ("CompilerGeneratedCodeInPreservedAssembly.xml")]
+	[SetupLinkerArgument ("--feature", "AlwaysFalse", "false")]
 	class CompilerGeneratedCodeInPreservedAssembly
 	{
 		public static void Main ()
@@ -43,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-				[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
 				void LocalWithWarning ()
 				{
 					// No warning
@@ -63,13 +61,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-			[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
 			void LocalWithWarning ()
 			{
 				Requires ();
 			}
 		}
 
+		[FeatureSwitchDefinition ("AlwaysFalse")]
 		public static bool AlwaysFalse => false;
 
 		[RequiresUnreferencedCode ("RUC")]

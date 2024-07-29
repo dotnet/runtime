@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     // This is a regression test for https://github.com/dotnet/runtime/issues/79022
     static ulong[,] s_1;
@@ -22,7 +23,8 @@ class Program
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

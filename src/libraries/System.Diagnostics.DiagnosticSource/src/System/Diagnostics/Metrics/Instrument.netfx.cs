@@ -12,9 +12,6 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public abstract partial class Instrument<T> : Instrument where T : struct
     {
         [ThreadStatic]
@@ -70,12 +67,12 @@ namespace System.Diagnostics.Metrics
             ts_tags = tags;
         }
 
-         /// <summary>
+        /// <summary>
         /// Record the measurement by notifying all <see cref="MeterListener" /> objects which listening to this instrument.
         /// </summary>
         /// <param name="measurement">The measurement value.</param>
         /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
-       protected void RecordMeasurement(T measurement, in TagList tagList)
+        protected void RecordMeasurement(T measurement, in TagList tagList)
         {
             KeyValuePair<string, object?>[]? tags = tagList.Tags;
             if (tags is not null)
@@ -96,7 +93,7 @@ namespace System.Diagnostics.Metrics
                 case 3: tags[2] = tagList.Tag3; goto case 2;
                 case 2: tags[1] = tagList.Tag2; goto case 1;
                 case 1: tags[0] = tagList.Tag1; break;
-                case 0: return; // no need to report anything
+                case 0: break;
                 default:
                     Debug.Assert(false);
                     return;

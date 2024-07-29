@@ -3,14 +3,16 @@
 //
 
 using System;
+using Xunit;
 
 namespace test
 {
 
-    class Class1
+    public class Class1
     {
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             try
             {
@@ -48,7 +50,6 @@ namespace test
             {
                 Console.WriteLine(" finally 1");
             }
-            return 100;
         }
     }
 }

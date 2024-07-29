@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Struct1
 {
@@ -130,7 +131,8 @@ public class Test_RecursiveTailCall
         return TestStackParam(i1 - 1, i2, i3, i4);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

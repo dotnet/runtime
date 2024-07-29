@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupLinkerAction ("copy", "FirstForwarder")]
 
 	[KeptTypeInAssembly ("FirstForwarder.dll", typeof (ImplementationLibrary))]
-	// Dynamically accessing a type forwarder will cause the linker to mark the scope
+	// Dynamically accessing a type forwarder will cause the ILLink to mark the scope
 	// of type pointed to as well as the resolved type.
 	[KeptTypeInAssembly ("SecondForwarder.dll", typeof (ImplementationLibrary))]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]

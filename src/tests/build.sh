@@ -60,8 +60,8 @@ build_Tests()
     export MSBUILDDEBUGPATH
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
-        "$__TargetOS" != "Browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
-        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
+        "$__TargetOS" != "browser" && "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
+        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -110,6 +110,7 @@ build_Tests()
     export __MsgPrefix
     export __ErrMsgPrefix
     export __Exclude
+    export EnableNativeSanitizers
 
     # Generate build command
     buildArgs=("$__RepoRootDir/src/tests/build.proj")
@@ -137,33 +138,37 @@ build_Tests()
 }
 
 usage_list=()
-
-usage_list+=("-skipmanaged: do not build managed components.")
-usage_list+=("-skipnative: do not build native components.")
-usage_list+=("-skiprestorepackages: skip package restore.")
-usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
-usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
-
-usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
-usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
-usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
-
-usage_list+=("-test:xxx - only build a single test project");
-usage_list+=("-dir:xxx - build all tests in a given directory");
-usage_list+=("-tree:xxx - build all tests in a given subtree");
-
-usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
-usage_list+=("-nativeaot: Builds the tests for Native AOT compilation.")
-usage_list+=("-priority1: include priority=1 tests in the build.")
-usage_list+=("-composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
-usage_list+=("-perfmap: emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
-usage_list+=("-allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
-
-usage_list+=("-rebuild: if tests have already been built - rebuild them.")
-usage_list+=("-runtests: run tests after building them.")
-usage_list+=("-mono: Build the tests for the Mono runtime honoring mono-specific issues.")
-
-usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
+usage_list+=("All arguments are optional and the '-' prefix is optional. The options are:")
+usage_list+=("")
+usage_list+=("-rebuild - Clean up all test artifacts prior to building tests.")
+usage_list+=("-skiprestorepackages - Skip package restore.")
+usage_list+=("-skipmanaged - Skip the managed tests build.")
+usage_list+=("-skipnative - Skip the native tests build.")
+usage_list+=("-skiptestwrappers - Skip generating test wrappers.")
+usage_list+=("-skipgeneratelayout - Skip generating the Core_Root layout.")
+usage_list+=("")
+usage_list+=("-copynativeonly - Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
+usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
+usage_list+=("-buildtestwrappersonly - Only generate test wrappers without building managed or native test components or generating layouts.")
+usage_list+=("")
+usage_list+=("-crossgen2 - Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
+usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
+usage_list+=("-priority1 - Include priority=1 tests in the build.")
+usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
+usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
+usage_list+=("")
+usage_list+=("-runtests - Run tests after building them.")
+usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
+usage_list+=("-mono_aot - Use Mono AOT mode.")
+usage_list+=("-mono_fullaot - Use Mono Full AOT mode.")
+usage_list+=("")
+usage_list+=("-test:xxx - Only build the specified test project ^(relative or absolute project path under src\tests^).");
+usage_list+=("-dir:xxx - Build all test projects in the given directory ^(relative or absolute directory under src\tests^).");
+usage_list+=("-tree:xxx - Build all test projects in the given subtree ^(relative or absolute directory under src\tests^).");
+usage_list+=("-log:xxx - Base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step).")
+usage_list+=("")
+usage_list+=("Any unrecognized arguments will be passed directly to MSBuild.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
@@ -234,19 +239,34 @@ handle_arguments_local() {
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                __BuildTestProject="$__BuildTestProject$2%3B"
+                __ShiftArgs=1
+            else
+                __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            fi
             ;;
 
         dir*|-dir*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                __BuildTestDir="$__BuildTestDir$2%3B"
+                __ShiftArgs=1
+            else
+                __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            fi
             ;;
 
         tree*|-tree*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                __BuildTestTree="$__BuildTestTree$2%3B"
+                __ShiftArgs=1
+            else
+                __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            fi
             ;;
 
         runtests|-runtests)
@@ -281,10 +301,21 @@ handle_arguments_local() {
             __SkipNative=1
             ;;
 
+        coreclr|-coreclr)
+            __Mono=0
+            __MonoAot=0
+            __MonoFullAot=0
+            ;;
+
         log*|-log*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildLogRootName="${parts[1]}"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                __BuildLogRootName="$2"
+                __ShiftArgs=1
+            else
+                __BuildLogRootName="${parts[1]}"
+            fi
             ;;
 
         *)
@@ -308,7 +339,6 @@ __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
-__DistroRid=""
 __CompositeBuildMode=
 __CreatePerfmap=
 __TestBuildMode=
@@ -340,6 +370,7 @@ __MonoAot=0
 __MonoFullAot=0
 __BuildLogRootName="TestBuild"
 CORE_ROOT=
+EnableNativeSanitizers=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
 
@@ -347,7 +378,7 @@ if [[ "${__TargetArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
-if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "Android" ]]; then
+if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "android" ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 
@@ -358,12 +389,12 @@ else
 fi
 
 # Get the number of processors available to the scheduler
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
-elif [[ "$platform" == "Darwin" ]]; then
+elif [[ "$platform" == "darwin" ]]; then
   __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"

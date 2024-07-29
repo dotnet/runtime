@@ -4,15 +4,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Runtime.Versioning;
+using System.Text;
+using System.Threading;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Threading;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Schema
 {
@@ -1025,7 +1025,7 @@ namespace System.Xml.Schema
                         if (attributeNS.Length > 0)
                         {
                             defaultPrefix = GetDefaultAttributePrefix(attributeNS);
-                            if (defaultPrefix == null || defaultPrefix.Length == 0)
+                            if (string.IsNullOrEmpty(defaultPrefix))
                             {
                                 SendValidationEvent(SR.Sch_DefaultAttributeNotApplied, new string[2] { attdef.Name.ToString(), QNameString(_context.LocalName!, _context.Namespace!) });
                                 continue;
@@ -2596,7 +2596,7 @@ namespace System.Xml.Schema
         {
             if (getParticles)
             {
-                string ContinuationString = SR.Format(SR.Sch_ContinuationString, new string[] { " " });
+                string ContinuationString = SR.Format(SR.Sch_ContinuationString, " ");
                 XmlSchemaParticle? currentParticle;
                 XmlSchemaParticle? nextParticle = null;
                 XmlQualifiedName currentQName;

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Internal.Collections;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.Composition
 {
-    internal struct CompositionResult<T>
+    internal readonly struct CompositionResult<T>
     {
         private readonly IEnumerable<CompositionError>? _errors;
         private readonly T? _value;

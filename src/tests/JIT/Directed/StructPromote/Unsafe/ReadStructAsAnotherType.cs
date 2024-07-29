@@ -10,8 +10,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
-class TestAssignFieldsBetweenPromotedNotPromotedStructs
+public class TestAssignFieldsBetweenPromotedNotPromotedStructs
 {
 
     struct PrimitiveStruct // a struct of single field of scalar types aligned at their natural boundary.
@@ -54,7 +55,8 @@ class TestAssignFieldsBetweenPromotedNotPromotedStructs
 
     // Some simple tests that check that lcl variables
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestStructCasts()
+    [Fact]
+    public static void TestStructCasts()
     {
         PromotedStruct a = new PromotedStruct(); // Addr-exposed, cannot be promoted.promotedField.
         a.promotedField.pointerSizedField = 4;
@@ -73,12 +75,5 @@ class TestAssignFieldsBetweenPromotedNotPromotedStructs
 
         Debug.Assert(c.anotherOverlappingStruct.b == 0x5);
     }
-
-    public static int Main()
-    {
-        TestStructCasts();
-        return 100;
-    }
-
 }
 

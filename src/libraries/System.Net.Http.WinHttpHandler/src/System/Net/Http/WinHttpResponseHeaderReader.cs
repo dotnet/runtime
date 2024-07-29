@@ -58,11 +58,9 @@ namespace System.Net.Http
                 }
 
                 // Normalize header value by trimming whitespace.
-                int valueStartIndex = colonIndex + 1;
-                int valueLength = startIndex + length - colonIndex - 1;
-                CharArrayHelpers.Trim(_buffer, ref valueStartIndex, ref valueLength);
+                ReadOnlySpan<char> valueSpan = new ReadOnlySpan<char>(_buffer, colonIndex + 1, startIndex + length - colonIndex - 1).Trim();
 
-                value = HttpKnownHeaderNames.GetHeaderValue(name, _buffer, valueStartIndex, valueLength);
+                value = HttpKnownHeaderNames.GetHeaderValue(name, valueSpan);
 
                 return true;
             }

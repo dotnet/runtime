@@ -598,6 +598,12 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.Loopback, true },
             new object[] { IPAddress.Loopback, false },
         };
+
+        public static readonly object[][] LoopbacksAndAny = new object[][]
+        {
+            new object[] { IPAddress.IPv6Loopback, IPAddress.IPv6Any },
+            new object[] { IPAddress.Loopback, IPAddress.Any },
+        };
     }
 
     //

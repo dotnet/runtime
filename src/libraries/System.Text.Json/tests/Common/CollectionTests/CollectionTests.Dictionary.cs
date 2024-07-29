@@ -1117,69 +1117,69 @@ namespace System.Text.Json.Serialization.Tests
         {
             public Dictionary<string, int> Parsed1 { get; set; }
             public Dictionary<string, int> Parsed2 { get; set; }
-            public Dictionary<string, int> Skipped3 { get; }
+            public Dictionary<string, int>? Skipped3 { get; }
         }
 
         public class ClassWithIgnoredDictionary2
         {
             public IDictionary<string, int> Parsed1 { get; set; }
-            public IDictionary<string, int> Skipped2 { get; }
+            public IDictionary<string, int>? Skipped2 { get; }
             public IDictionary<string, int> Parsed3 { get; set; }
         }
 
         public class ClassWithIgnoredDictionary3
         {
             public Dictionary<string, int> Parsed1 { get; set; }
-            public Dictionary<string, int> Skipped2 { get; }
-            public Dictionary<string, int> Skipped3 { get; }
+            public Dictionary<string, int>? Skipped2 { get; }
+            public Dictionary<string, int>? Skipped3 { get; }
         }
 
         public class ClassWithIgnoredDictionary4
         {
-            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int>? Skipped1 { get; }
             public Dictionary<string, int> Parsed2 { get; set; }
             public Dictionary<string, int> Parsed3 { get; set; }
         }
 
         public class ClassWithIgnoredDictionary5
         {
-            public Dictionary<string, int> Skipped1 { get; }
+            public Dictionary<string, int>? Skipped1 { get; }
             public Dictionary<string, int> Parsed2 { get; set; }
-            public Dictionary<string, int> Skipped3 { get; }
+            public Dictionary<string, int>? Skipped3 { get; }
         }
 
         public class ClassWithIgnoredDictionary6
         {
-            public Dictionary<string, int> Skipped1 { get; }
-            public Dictionary<string, int> Skipped2 { get; }
+            public Dictionary<string, int>? Skipped1 { get; }
+            public Dictionary<string, int>? Skipped2 { get; }
             public Dictionary<string, int> Parsed3 { get; set; }
         }
 
         public class ClassWithIgnoredDictionary7
         {
-            public Dictionary<string, int> Skipped1 { get; }
-            public Dictionary<string, int> Skipped2 { get; }
-            public Dictionary<string, int> Skipped3 { get; }
+            public Dictionary<string, int>? Skipped1 { get; }
+            public Dictionary<string, int>? Skipped2 { get; }
+            public Dictionary<string, int>? Skipped3 { get; }
         }
 
         public class ClassWithIgnoredIDictionary
         {
             public IDictionary<string, int> Parsed1 { get; set; }
-            public IDictionary<string, int> Skipped2 { get; }
+            public IDictionary<string, int>? Skipped2 { get; }
             public IDictionary<string, int> Parsed3 { get; set; }
         }
 
         public class ClassWithIgnoreAttributeDictionary
         {
             public Dictionary<string, int> Parsed1 { get; set; }
-            [JsonIgnore] public Dictionary<string, int> Skipped2 { get; set; } // Note this has a setter.
+            [JsonIgnore] public Dictionary<string, int>? Skipped2 { get; set; } // Note this has a setter.
             public Dictionary<string, int> Parsed3 { get; set; }
         }
 
         public class ClassWithIgnoredImmutableDictionary
         {
             public ImmutableDictionary<string, int> Parsed1 { get; set; }
-            public ImmutableDictionary<string, int> Skipped2 { get; }
+            public ImmutableDictionary<string, int>? Skipped2 { get; }
             public ImmutableDictionary<string, int> Parsed3 { get; set; }
         }
 
@@ -1355,23 +1355,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Multi-dim arrays not supported.")]
-#endif
         public async Task DictionaryNotSupported()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
 
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ClassWithNotSupportedDictionary>(json));
 
-            // The exception contains the type.
-            Assert.Contains(typeof(Dictionary<int[,], int>).ToString(), ex.Message);
+            // The exception contains the key type.
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("$.MyDictionary", ex.Message);
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Multi-dim arrays not supported.")]
-#endif
         public async Task DictionaryNotSupportedButIgnored()
         {
             string json = @"{""MyDictionary"":{""Key"":1}}";
@@ -1619,25 +1614,25 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithDictionaryOfString_ChildWithDictionaryOfString
         {
             public string Test { get; set; }
-            public Dictionary<string, string> Dict { get; set; }
+            public Dictionary<string, string>? Dict { get; set; }
             public ClassWithDictionaryOfString Child { get; set; }
         }
 
         public class ClassWithDictionaryOfString
         {
-            public string Test { get; set; }
-            public Dictionary<string, string> Dict { get; set; }
+            public string? Test { get; set; }
+            public Dictionary<string, string>? Dict { get; set; }
         }
 
         public class ClassWithDictionaryAndProperty_DictionaryLast
         {
             public string Test { get; set; }
-            public Dictionary<string, string> Dict { get; set; }
+            public Dictionary<string, string>? Dict { get; set; }
         }
 
         public class ClassWithDictionaryAndProperty_DictionaryFirst
         {
-            public Dictionary<string, string> Dict { get; set; }
+            public Dictionary<string, string>? Dict { get; set; }
             public string Test { get; set; }
         }
 

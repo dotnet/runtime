@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -16,6 +16,9 @@ namespace System.Globalization
             Debug.Assert(char.IsLowSurrogate(l));
 
             UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(h, l)), out hr, out lr);
+
+            Debug.Assert(char.IsHighSurrogate(hr));
+            Debug.Assert(char.IsLowSurrogate(lr));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -25,6 +28,9 @@ namespace System.Globalization
             Debug.Assert(char.IsLowSurrogate(l));
 
             UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(CharUnicodeInfo.ToLower(UnicodeUtility.GetScalarFromUtf16SurrogatePair(h, l)), out hr, out lr);
+
+            Debug.Assert(char.IsHighSurrogate(hr));
+            Debug.Assert(char.IsLowSurrogate(lr));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

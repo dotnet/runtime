@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -33,7 +34,6 @@
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
 
@@ -42,45 +42,34 @@
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
     <DefineConstants>$(DefineConstants);TARGET_AMD64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <PlatformTarget>x86</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'armv6'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARMV6</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <PlatformTarget>arm</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 's390x'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_S390X</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'ppc64le'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
   </PropertyGroup>
 
@@ -121,22 +110,18 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
-    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
-    <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
-    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != true or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
+    <FeatureWasmManagedThreads Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(WasmEnableThreads)' == 'true')">true</FeatureWasmPerfTracing>
+    <FeaturePortableTimer Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'">true</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'">true</FeaturePortableThreadPool>
+    <FeaturePerfTracing Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
-    <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
@@ -148,19 +133,17 @@
 
   <ItemGroup>
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.xml" />
-    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.OSX.xml"
-                           Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.OSX.xml" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
     <ILLinkDescriptorsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
     <ILLinkDescriptorsXmls Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
 
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml"
-                             Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml"
-                             Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml" Condition="Exists('$(ILLinkDirectory)ILLink.Substitutions.$(Platform).xml')" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.x86.xml" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.Vectors.xml" />
 
     <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
-    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml"
-                              Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
+    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml" Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
 
   <!-- Sources -->
@@ -179,7 +162,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeFieldHandle.cs" />
@@ -191,7 +174,6 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
@@ -201,7 +183,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.Mono.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
+      <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.Mono.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
@@ -211,7 +193,9 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
@@ -223,42 +207,40 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DerivedTypes.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventOnTypeBuilderInst.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInst.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInst.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInstantiation.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEventBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeFieldBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeILGenerator.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeLocalBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameResolver.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.Mono.cs" />
@@ -269,30 +251,37 @@
                Condition="'$(FeatureObjCMarshal)' == 'true'"/>
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
+      <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
+        <Link>CommonSystem\Collections\Generic\ArrayBuilder.cs</Link>
+      </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeaturePortableThreadPool)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Threads.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PortableThreadPool.Browser.Threads.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Threads.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Wasi.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Wasi.Mono.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
@@ -301,6 +290,9 @@
   <!-- Enable unsupported browser warnings -->
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' or '$(TargetsAnyOS)' == 'true'">
+    <SupportedPlatform Include="wasi"/>
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
@@ -311,8 +303,8 @@
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
     <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(RuntimeBinDir)"
-        SkipUnchangedFiles="true" />
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Setup eventing file generation -->
@@ -339,7 +331,7 @@
       <_EventingSourceFileDirectory Condition="HasTrailingSlash('$(_EventingSourceFileDirectory)')">$(_EventingSourceFileDirectory.TrimEnd('\'))</_EventingSourceFileDirectory>
     </PropertyGroup>
 
-    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot; --runtimeflavor mono" />
+    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot; --runtimeflavor mono" />
 
     <ItemGroup>
       <FileWrites Include="@(EventingSourceFile)" />

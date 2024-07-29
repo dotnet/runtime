@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            :this(password, salt, iterations, hashAlgorithm, clearPassword: false)
+            : this(password, salt, iterations, hashAlgorithm, clearPassword: false)
         {
         }
 
@@ -252,7 +252,10 @@ namespace System.Security.Cryptography
             if (hashAlgorithm != HashAlgorithmName.SHA1 &&
                 hashAlgorithm != HashAlgorithmName.SHA256 &&
                 hashAlgorithm != HashAlgorithmName.SHA384 &&
-                hashAlgorithm != HashAlgorithmName.SHA512)
+                hashAlgorithm != HashAlgorithmName.SHA512 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_256 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_384 &&
+                hashAlgorithm != HashAlgorithmName.SHA3_512)
             {
                 throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }

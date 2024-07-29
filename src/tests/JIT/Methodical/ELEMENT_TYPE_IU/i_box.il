@@ -16,7 +16,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'i_box'// as "avg"
+.assembly ASSEMBLY_NAME// as "avg"
 {
 }
 .assembly extern xunit.core {}

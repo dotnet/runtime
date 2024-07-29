@@ -50,10 +50,10 @@ namespace System.Data.ProviderBase
                 Owner = owner;
                 Completion = completion;
             }
-            public long DueTime { get; private set; }
-            public DbConnection Owner { get; private set; }
-            public TaskCompletionSource<DbConnectionInternal> Completion { get; private set; }
-            public DbConnectionOptions? UserOptions { get; private set; }
+            public long DueTime { get; }
+            public DbConnection Owner { get; }
+            public TaskCompletionSource<DbConnectionInternal> Completion { get; }
+            public DbConnectionOptions? UserOptions { get; }
         }
 
         private sealed class TransactedConnectionPool
@@ -352,7 +352,7 @@ namespace System.Data.ProviderBase
         private readonly WaitCallback _poolCreateRequest;
 
         private int _waitCount;
-        private PoolWaitHandles _waitHandles;
+        private readonly PoolWaitHandles _waitHandles;
 
         private Exception? _resError;
         private volatile bool _errorOccurred;

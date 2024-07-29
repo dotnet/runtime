@@ -4,7 +4,7 @@
 // Defines the type "ValueNum".
 
 // This file exists only to break an include file cycle -- had been in ValueNum.h.  But that
-// file wanted to include gentree.h to get GT_COUNT, and gentree.h wanted ton include ValueNum.h to
+// file wanted to include gentree.h to get GT_COUNT, and gentree.h wanted to include ValueNum.h for
 // the ValueNum type.
 
 /*****************************************************************************/
@@ -115,7 +115,9 @@ public:
     // Initializes both elements to "NoVN".  Defined in ValueNum.cpp.
     ValueNumPair();
 
-    ValueNumPair(ValueNum lib, ValueNum cons) : m_liberal(lib), m_conservative(cons)
+    ValueNumPair(ValueNum lib, ValueNum cons)
+        : m_liberal(lib)
+        , m_conservative(cons)
     {
     }
 

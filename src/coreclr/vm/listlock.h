@@ -65,7 +65,7 @@ public:
         m_pNext(NULL),
         m_dwRefCount(1),
         m_hrResultCode(S_FALSE),
-        m_hInitException(NULL),
+        m_hInitException{},
         m_pLoaderAllocator(dac_cast<PTR_LoaderAllocator>(nullptr))
     {
         WRAPPER_NO_CONTRACT;

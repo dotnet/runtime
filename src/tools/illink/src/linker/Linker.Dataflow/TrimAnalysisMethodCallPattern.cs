@@ -30,13 +30,13 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (origin.Provider is MethodDefinition);
 			Operation = operation;
 			CalledMethod = calledMethod;
-			Instance = instance.Clone ();
+			Instance = instance.DeepCopy ();
 			if (arguments.IsEmpty) {
 				Arguments = ImmutableArray<MultiValue>.Empty;
 			} else {
 				var builder = ImmutableArray.CreateBuilder<MultiValue> ();
 				foreach (var argument in arguments)
-					builder.Add (argument.Clone ());
+					builder.Add (argument.DeepCopy ());
 				Arguments = builder.ToImmutableArray ();
 			}
 			Origin = origin;
@@ -63,14 +63,13 @@ namespace Mono.Linker.Dataflow
 
 		public void MarkAndProduceDiagnostics (ReflectionMarker reflectionMarker, MarkStep markStep, LinkContext context)
 		{
-			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider);
+			bool diagnosticsEnabled = !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (Origin.Provider, out _);
 			var diagnosticContext = new DiagnosticContext (Origin, diagnosticsEnabled, context);
 			ReflectionMethodBodyScanner.HandleCall (Operation, CalledMethod, Instance, Arguments,
 				diagnosticContext,
 				reflectionMarker,
 				context,
-				markStep,
-				out MultiValue _);
+				markStep);
 		}
 	}
 }

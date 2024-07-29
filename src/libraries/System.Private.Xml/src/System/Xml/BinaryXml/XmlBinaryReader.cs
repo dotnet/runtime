@@ -16,13 +16,11 @@ namespace System.Xml
 {
     internal sealed partial class XmlSqlBinaryReader : XmlReader, IXmlNamespaceResolver
     {
-        internal static readonly Type TypeOfObject = typeof(object);
-        internal static readonly Type TypeOfString = typeof(string);
-
         private static volatile Type?[] s_tokenTypeMap = null!;
 
-        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
-        // length scale
+        private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => // 8
+        [
+            // length scale
             3, // 0
             3, // 1
             3, // 2
@@ -31,7 +29,7 @@ namespace System.Xml
             5, // 5
             5, // 6
             5, // 7
-        };
+        ];
 
         private enum ScanState
         {
@@ -306,7 +304,7 @@ namespace System.Xml
         // linked list of pushed nametables (to support nested binary-xml documents)
         private NestedBinXml? _prevNameInfo;
         // XmlTextReader to handle embedded text blocks
-        private XmlReader? _textXmlReader;
+        private XmlTextReaderImpl? _textXmlReader;
         // close input flag
         private readonly bool _closeInput;
 
@@ -350,7 +348,7 @@ namespace System.Xml
             AddInitNamespace(string.Empty, string.Empty);
             AddInitNamespace(_xml, _xnt.Add(XmlReservedNs.NsXml));
             AddInitNamespace(_xmlns, _nsxmlns);
-            _valueType = TypeOfString;
+            _valueType = typeof(string);
             // init buffer position, etc
             _inStrm = stream;
             if (data != null)
@@ -690,8 +688,8 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                    throw new ArgumentOutOfRangeException(nameof(i));
+                ArgumentOutOfRangeException.ThrowIfNegative(i);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
                 return GetAttributeText(i);
             }
         }
@@ -747,10 +745,8 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(i));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(i);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
                 PositionOnAttribute(i + 1);
             }
         }
@@ -856,7 +852,7 @@ namespace System.Xml
                     else
                     {
                         _token = BinXmlToken.Error;
-                        _valueType = TypeOfString;
+                        _valueType = typeof(string);
                         _state = ScanState.AttrValPseudoValue;
                     }
                     _qnameOther.Clear();
@@ -1050,7 +1046,7 @@ namespace System.Xml
                                 break;
 
                             default:
-                                throw ThrowNotSupported(SR.XmlBinary_ListsOfValuesNotSupported);
+                                throw CreateNotSupportedException(SR.XmlBinary_ListsOfValuesNotSupported);
                         }
                     }
                 }
@@ -1812,8 +1808,7 @@ namespace System.Xml
             if (ScanState.XmlText == _state)
             {
                 Debug.Assert(_textXmlReader != null);
-                IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
-                return resolver.GetNamespacesInScope(scope);
+                return _textXmlReader.GetNamespacesInScope(scope);
             }
             else
             {
@@ -1853,8 +1848,7 @@ namespace System.Xml
             if (ScanState.XmlText == _state)
             {
                 Debug.Assert(_textXmlReader != null);
-                IXmlNamespaceResolver resolver = (IXmlNamespaceResolver)_textXmlReader;
-                return resolver.LookupPrefix(namespaceName);
+                return _textXmlReader.LookupPrefix(namespaceName);
             }
             else
             {
@@ -1886,7 +1880,7 @@ namespace System.Xml
         {
             if (_version < requiredVersion)
             {
-                throw ThrowUnexpectedToken(token);
+                throw CreateUnexpectedTokenException(token);
             }
         }
 
@@ -2056,7 +2050,7 @@ namespace System.Xml
             while (FillAllowEOF() && ((_pos + require) >= _end))
                 ;
             if ((_pos + require) >= _end)
-                throw ThrowXmlException(SR.Xml_UnexpectedEOF1);
+                throw CreateXmlException(SR.Xml_UnexpectedEOF1);
         }
 
         // inline the common case
@@ -2114,7 +2108,7 @@ namespace System.Xml
                         // actually has space for 3 more bits.
                         t = (uint)b & (uint)0x07;
                         if (b > 7)
-                            throw ThrowXmlException(SR.XmlBinary_ValueTooBig);
+                            throw CreateXmlException(SR.XmlBinary_ValueTooBig);
                         u += (t << 28);
                     }
                 }
@@ -2151,7 +2145,7 @@ namespace System.Xml
                             // last byte only has 4 significant digits
                             t = (uint)b & (uint)0x07;
                             if (b > 7)
-                                throw ThrowXmlException(SR.XmlBinary_ValueTooBig);
+                                throw CreateXmlException(SR.XmlBinary_ValueTooBig);
                             u += (t << 28);
                         }
                     }
@@ -2408,7 +2402,7 @@ namespace System.Xml
             _token = BinXmlToken.Attr;
             _nodetype = XmlNodeType.Attribute;
             _state = ScanState.Attr;
-            _valueType = TypeOfObject;
+            _valueType = typeof(object);
             _stringValue = null;
         }
 
@@ -2638,7 +2632,7 @@ namespace System.Xml
                     }
                     else if (n.namespaceUri.Length != 0)
                     {
-                        throw ThrowXmlException(SR.XmlBinary_AttrWithNsNoPrefix, n.localname, n.namespaceUri);
+                        throw CreateXmlException(SR.XmlBinary_AttrWithNsNoPrefix, n.localname, n.namespaceUri);
                     }
                     _attrCount++;
                     lastWasValue = false;
@@ -2650,7 +2644,7 @@ namespace System.Xml
                     // don't allow lists of values
                     if (lastWasValue)
                     {
-                        throw ThrowNotSupported(SR.XmlBinary_ListsOfValuesNotSupported);
+                        throw CreateNotSupportedException(SR.XmlBinary_ListsOfValuesNotSupported);
                     }
 
                     // if char checking is on, we need to scan text values to
@@ -2832,7 +2826,7 @@ namespace System.Xml
 
             ClearAttributes();
             _attrCount = 0;
-            _valueType = TypeOfString;
+            _valueType = typeof(string);
             _stringValue = null;
             _hasTypedValue = false;
 
@@ -2945,7 +2939,7 @@ namespace System.Xml
                     return true;
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
 
             return true;
@@ -2964,7 +2958,7 @@ namespace System.Xml
                 case BinXmlToken.SQL_NCHAR:
                 case BinXmlToken.SQL_NVARCHAR:
                 case BinXmlToken.SQL_NTEXT:
-                    _valueType = TypeOfString;
+                    _valueType = typeof(string);
                     _hasTypedValue = false;
                     break;
                 default:
@@ -3021,7 +3015,7 @@ namespace System.Xml
                 case BinXmlToken.XSD_UNSIGNEDINT:
                 case BinXmlToken.XSD_UNSIGNEDLONG:
                 case BinXmlToken.XSD_QNAME:
-                    throw ThrowNotSupported(SR.XmlBinary_ListsOfValuesNotSupported);
+                    throw CreateNotSupportedException(SR.XmlBinary_ListsOfValuesNotSupported);
                 default:
                     break;
             }
@@ -3041,7 +3035,7 @@ namespace System.Xml
                         _docState = 3;
                         break;
                     case -1:
-                        throw ThrowUnexpectedToken(_token);
+                        throw CreateUnexpectedTokenException(_token);
                     default:
                         break;
                 }
@@ -3094,14 +3088,14 @@ namespace System.Xml
                 }
             }
             _nodetype = XmlNodeType.Element;
-            _valueType = TypeOfObject;
+            _valueType = typeof(object);
             _posAfterAttrs = _pos;
         }
 
         private void ImplReadEndElement()
         {
             if (_elemDepth == 0)
-                throw ThrowXmlException(SR.Xml_UnexpectedEndTag);
+                throw CreateXmlException(SR.Xml_UnexpectedEndTag);
             int index = _elemDepth;
             if (1 == index && 3 == _docState)
                 _docState = -1;
@@ -3113,7 +3107,7 @@ namespace System.Xml
         private void ImplReadDoctype()
         {
             if (_dtdProcessing == DtdProcessing.Prohibit)
-                throw ThrowXmlException(SR.Xml_DtdIsProhibited);
+                throw CreateXmlException(SR.Xml_DtdIsProhibited);
             // 0=>auto, 1=>doc/pre-dtd, 2=>doc/pre-elem, 3=>doc/instance -1=>doc/post-elem, 9=>frag
             switch (_docState)
             {
@@ -3121,9 +3115,9 @@ namespace System.Xml
                 case 1: // 1=>doc/pre-dtd
                     break;
                 case 9: // 9=>frag
-                    throw ThrowXmlException(SR.Xml_DtdNotAllowedInFragment);
+                    throw CreateXmlException(SR.Xml_DtdNotAllowedInFragment);
                 default: // 2=>doc/pre-elem, 3=>doc/instance -1=>doc/post-elem
-                    throw ThrowXmlException(SR.Xml_BadDTDLocation);
+                    throw CreateXmlException(SR.Xml_BadDTDLocation);
             }
             _docState = 2;
             _qnameOther.localname = ParseText();
@@ -3265,7 +3259,7 @@ namespace System.Xml
                 case 3:
                     break;
                 default:
-                    throw ThrowXmlException(SR.Xml_InvalidRootData);
+                    throw CreateXmlException(SR.Xml_InvalidRootData);
             }
         }
 
@@ -3312,6 +3306,7 @@ namespace System.Xml
             map[(int)BinXmlToken.SQL_UDT] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BINHEX] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BASE64] = TypeOfByteArray;
+            Type TypeOfString = typeof(string);
             map[(int)BinXmlToken.SQL_CHAR] = TypeOfString;
             map[(int)BinXmlToken.SQL_VARCHAR] = TypeOfString;
             map[(int)BinXmlToken.SQL_TEXT] = TypeOfString;
@@ -3327,7 +3322,7 @@ namespace System.Xml
             Type? t = s_tokenTypeMap[(int)token];
 
             if (t == null)
-                throw ThrowUnexpectedToken(token);
+                throw CreateUnexpectedTokenException(token);
 
             return t;
         }
@@ -3481,7 +3476,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        throw ThrowUnexpectedToken(token);
+                        throw CreateUnexpectedTokenException(token);
                 }
             }
             Fill(-1);
@@ -3493,7 +3488,9 @@ namespace System.Xml
             Debug.Assert(_checkCharacters, "this.checkCharacters");
             // grab local copy (perf)
 
-            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _end - _tokDataPos);
+            // Get the bytes for the current token. _tokDataPos is the beginning position,
+            // and _pos has advanced to the next token (1 past the end of this token).
+            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _pos - _tokDataPos);
             Debug.Assert(data.Length % 2 == 0, "Data size should not be odd");
 
             if (!attr)
@@ -3530,7 +3527,7 @@ namespace System.Xml
                 {
                     if (!BinaryPrimitives.TryReadUInt16LittleEndian(data, out ushort lowSurr))
                     {
-                        throw ThrowXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
+                        throw CreateXmlException(SR.Xml_InvalidSurrogateMissingLowChar);
                     }
                     if (!XmlCharType.IsLowSurrogate((char)lowSurr))
                     {
@@ -3572,7 +3569,7 @@ namespace System.Xml
         private void CheckValueTokenBounds()
         {
             if ((_end - _tokDataPos) < _tokLen)
-                throw ThrowXmlException(SR.Xml_UnexpectedEOF1);
+                throw CreateXmlException(SR.Xml_UnexpectedEOF1);
         }
 
         private int GetXsdKatmaiTokenLength(BinXmlToken token)
@@ -3597,7 +3594,7 @@ namespace System.Xml
                     scale = _data[_pos];
                     return 6 + XsdKatmaiTimeScaleToValueLength(scale);
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3667,7 +3664,7 @@ namespace System.Xml
                     }
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3680,7 +3677,7 @@ namespace System.Xml
             }
             else
             {
-                throw ThrowUnexpectedToken(_token);
+                throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3728,7 +3725,7 @@ namespace System.Xml
                     }
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3764,7 +3761,7 @@ namespace System.Xml
                     return (double)ValueAsDecimal();
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3828,7 +3825,7 @@ namespace System.Xml
                     return BinXmlDateTime.XsdKatmaiTimeOffsetToDateTime(_data, _tokDataPos);
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -3840,7 +3837,7 @@ namespace System.Xml
                 BinXmlToken.XSD_KATMAI_DATEOFFSET => BinXmlDateTime.XsdKatmaiDateOffsetToDateTimeOffset(_data, _tokDataPos),
                 BinXmlToken.XSD_KATMAI_DATETIMEOFFSET => BinXmlDateTime.XsdKatmaiDateTimeOffsetToDateTimeOffset(_data, _tokDataPos),
                 BinXmlToken.XSD_KATMAI_TIMEOFFSET => BinXmlDateTime.XsdKatmaiTimeOffsetToDateTimeOffset(_data, _tokDataPos),
-                _ => throw ThrowUnexpectedToken(_token),
+                _ => throw CreateUnexpectedTokenException(_token),
             };
         }
 
@@ -3905,7 +3902,7 @@ namespace System.Xml
                     return BinXmlDateTime.XsdKatmaiTimeOffsetToString(_data, _tokDataPos);
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -4026,7 +4023,7 @@ namespace System.Xml
                         }
 
                     default:
-                        throw ThrowUnexpectedToken(_token);
+                        throw CreateUnexpectedTokenException(_token);
                 }
             }
             catch
@@ -4172,7 +4169,7 @@ namespace System.Xml
                     }
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
         }
 
@@ -4373,7 +4370,7 @@ namespace System.Xml
                     }
 
                 default:
-                    throw ThrowUnexpectedToken(_token);
+                    throw CreateUnexpectedTokenException(_token);
             }
             return value;
         }
@@ -4394,25 +4391,25 @@ namespace System.Xml
 
         private double GetDouble(int offset) => BinaryPrimitives.ReadDoubleLittleEndian(_data.AsSpan(offset));
 
-        private Exception ThrowUnexpectedToken(BinXmlToken token)
+        private XmlException CreateUnexpectedTokenException(BinXmlToken token)
         {
             System.Diagnostics.Debug.WriteLine($"Unhandled token: {token}");
-            return ThrowXmlException(SR.XmlBinary_UnexpectedToken);
+            return CreateXmlException(SR.XmlBinary_UnexpectedToken);
         }
 
-        private Exception ThrowXmlException(string res)
+        private XmlException CreateXmlException(string res)
         {
             _state = ScanState.Error;
             return new XmlException(res, (string[]?)null);
         }
 
-        private Exception ThrowXmlException(string res, string arg1, string arg2)
+        private XmlException CreateXmlException(string res, string arg1, string arg2)
         {
             _state = ScanState.Error;
             return new XmlException(res, new string[] { arg1, arg2 });
         }
 
-        private Exception ThrowNotSupported(string res)
+        private NotSupportedException CreateNotSupportedException(string res)
         {
             _state = ScanState.Error;
             return new NotSupportedException(res);

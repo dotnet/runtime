@@ -5,7 +5,9 @@ namespace System.IO
 {
     internal static partial class ArchivingUtils
     {
-        internal static string SanitizeEntryFilePath(string entryPath) => entryPath.Replace('\0', '_');
+#pragma warning disable IDE0060 // preserveDriveRoot is unused.
+        internal static string SanitizeEntryFilePath(string entryPath, bool preserveDriveRoot = false) => entryPath.Replace('\0', '_');
+#pragma warning restore IDE0060
 
         public static unsafe string EntryFromPath(ReadOnlySpan<char> path, bool appendPathSeparator = false)
         {

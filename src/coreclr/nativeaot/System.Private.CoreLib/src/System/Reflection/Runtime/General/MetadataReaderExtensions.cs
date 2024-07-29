@@ -3,18 +3,17 @@
 
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 
-using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
+using Debug = System.Diagnostics.Debug;
 
 namespace System.Reflection.Runtime.General
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public static partial class MetadataReaderExtensions
     {
@@ -48,16 +47,6 @@ namespace System.Reflection.Runtime.General
             return *(int*)&handle;
         }
 
-        /// <summary>
-        /// Convert typed metadata handle to the raw token value.
-        /// </summary>
-        /// <param name="handle">Typed metadata handle</param>
-        /// <returns>Token - raw integral handle represented as unsigned int</returns>
-        public static unsafe uint AsUInt(this Handle handle)
-        {
-            return *(uint*)&handle;
-        }
-
         public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
         {
             return reader.GetConstantStringValue(handle).Value;
@@ -66,7 +55,7 @@ namespace System.Reflection.Runtime.General
         // Useful for namespace Name string which can be a null handle.
         public static string GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
         {
-            if (reader.IsNull(handle))
+            if (handle.IsNil)
                 return null;
             return reader.GetConstantStringValue(handle).Value;
         }
@@ -131,15 +120,12 @@ namespace System.Reflection.Runtime.General
             ByteCollection publicKeyOrToken,
             global::Internal.Metadata.NativeFormat.AssemblyFlags assemblyFlags)
         {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
+            AssemblyNameFlags assemblyNameFlags = (AssemblyNameFlags)(assemblyFlags & (
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.PublicKey |
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.Retargetable |
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.ContentTypeMask));
 
-            ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
+            ArrayBuilder<byte> keyOrTokenArrayBuilder = default;
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
 

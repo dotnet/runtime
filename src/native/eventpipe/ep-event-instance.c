@@ -230,17 +230,13 @@ sequence_point_fini (EventPipeSequencePoint *sequence_point)
 	EP_ASSERT (sequence_point != NULL);
 
 	// Each entry in the map owns a ref-count on the corresponding thread
-	if (ep_rt_thread_sequence_number_map_count (&sequence_point->thread_sequence_numbers) != 0) {
-		for (ep_rt_thread_sequence_number_hash_map_iterator_t iterator = ep_rt_thread_sequence_number_map_iterator_begin (&sequence_point->thread_sequence_numbers);
-			!ep_rt_thread_sequence_number_map_iterator_end (&sequence_point->thread_sequence_numbers, &iterator);
-			ep_rt_thread_sequence_number_map_iterator_next (&iterator)) {
-
-			EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
+	if (dn_umap_size (sequence_point->thread_sequence_numbers) != 0) {
+		DN_UMAP_FOREACH_KEY_BEGIN (EventPipeThreadSessionState *, key, sequence_point->thread_sequence_numbers) {
 			ep_thread_release (ep_thread_session_state_get_thread (key));
-		}
+		} DN_UMAP_FOREACH_END;
 	}
 
-	ep_rt_thread_sequence_number_map_free (&sequence_point->thread_sequence_numbers);
+	dn_umap_free (sequence_point->thread_sequence_numbers);
 }
 
 
@@ -266,8 +262,8 @@ ep_sequence_point_init (EventPipeSequencePoint *sequence_point)
 	EP_ASSERT (sequence_point != NULL);
 
 	sequence_point->timestamp = 0;
-	ep_rt_thread_sequence_number_map_alloc (&sequence_point->thread_sequence_numbers, NULL, NULL, NULL, NULL);
-	return ep_rt_thread_sequence_number_map_is_valid (&sequence_point->thread_sequence_numbers) ? sequence_point : NULL;
+	sequence_point->thread_sequence_numbers = dn_umap_alloc ();
+	return sequence_point->thread_sequence_numbers ? sequence_point : NULL;
 }
 
 void

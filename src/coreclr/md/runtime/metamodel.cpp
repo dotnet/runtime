@@ -168,7 +168,7 @@ CMiniMdSchema::SaveTo(
 {
     ULONG ulData;   // Bytes stored.
     CMiniMdSchema *pDest = reinterpret_cast<CMiniMdSchema*>(pvData);
-    const unsigned __int64 one = 1;
+    const uint64_t one = 1;
 
     // Make sure the tables fit in the mask.
     _ASSERTE((sizeof(m_maskvalid) * 8) > TBL_COUNT);
@@ -244,7 +244,7 @@ CMiniMdSchema::LoadFrom(
     memcpy((void *)this, (void *)pvData, sizeof(CMiniMdSchemaBase));
     static_cast<CMiniMdSchemaBase*>(this)->ConvertEndianness();
 
-    unsigned __int64 maskvalid = m_maskvalid;
+    uint64_t maskvalid = m_maskvalid;
 
     // Transfer the variable fields.
     memset(m_cRecs, 0, sizeof(m_cRecs));
@@ -717,13 +717,17 @@ CMiniMdBase::InitColsForTable(
                                     // should we write the data into the structure
 {
     const CMiniTableDef *pTemplate;     // Template table definition.
-    CMiniColDef pCols[9];               // The col defs to init.
+    // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition
+    const uint8_t MAX_COL_COUNT = 9;
+    BYTE colData[1 + sizeof(CMiniColDef) * MAX_COL_COUNT];
+    colData[0] = 0;
+    CMiniColDef* pCols = BYTEARRAY_TO_COLDES(colData);
     BYTE        iOffset;                // Running size of a record.
     BYTE        iSize;                  // Size of a field.
     HRESULT     hr = S_OK;
 
     _ASSERTE((bExtra == 0) || (bExtra == 1));
-    _ASSERTE(ARRAY_SIZE(pCols) >= pTable->m_cCols);
+    _ASSERTE(MAX_COL_COUNT >= pTable->m_cCols);
 
     bExtra = 0;//<TODO>@FUTURE: save in schema header.  until then use 0.</TODO>
 
@@ -939,18 +943,18 @@ CMiniMdBase::SwapConstant(
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
         _ASSERTE(ValueLength == 4);
-        *(__int32 *)pConstant = GET_UNALIGNED_VAL32(pBlobValue);
+        *(int32_t *)pConstant = GET_UNALIGNED_VAL32(pBlobValue);
         break;
     case ELEMENT_TYPE_R4:
         {
-            __int32 Value = GET_UNALIGNED_VAL32(pBlobValue);
+            int32_t Value = GET_UNALIGNED_VAL32(pBlobValue);
             *(float *)pConstant = (float &)Value;
         }
         break;
 
     case ELEMENT_TYPE_R8:
         {
-            __int64 Value = GET_UNALIGNED_VAL64(pBlobValue);
+            int64_t Value = GET_UNALIGNED_VAL64(pBlobValue);
             *(double *)pConstant = (double &) Value;
         }
         break;
@@ -958,7 +962,7 @@ CMiniMdBase::SwapConstant(
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
         _ASSERTE(ValueLength == 8);
-        *(__int64 *)pConstant = GET_UNALIGNED_VAL64(pBlobValue);
+        *(int64_t *)pConstant = GET_UNALIGNED_VAL64(pBlobValue);
         break;
     case ELEMENT_TYPE_STRING:
         memcpy(pConstant, pBlobValue, ValueLength);

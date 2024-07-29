@@ -33,6 +33,12 @@
          SYSLIB0036: Regex.CompileToAssembly
     -->
     <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032;SYSLIB0036</NoWarn>
+
+    <!-- Ignore analyzers that recommend APIs introduced in .NET Core when targeting frameworks that lack those APIs
+         to avoid issues with multitargeting.
+    -->
+    <NoWarn Condition="$(TargetFrameworks.Contains('net4')) or $(TargetFrameworks.Contains('netstandard'))">$(NoWarn);CA1510;CA1511;CA1512;CA1513;CA1845;CA1846;CA1847</NoWarn>
+
     <!-- Microsoft.NET.Sdk enables some warnings as errors out of the box.
          We want to remove some items from this list so they don't fail the build.
          Can't use 'WarningsNotAsErrors' element because vbproj doesn't honor it.
@@ -41,18 +47,12 @@
     -->
     <WarningsAsErrors>$(WarningsAsErrors.Replace('NU1605', ''))</WarningsAsErrors>
 
-    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and
-                                              '$(IsSourceProject)' == 'true' and
-                                              Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)') and
-                                              !Exists('$(LibrariesProjectRoot)$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref') and
-                                              !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
-
     <!-- The source of truth for these IsNETCoreApp* properties is NetCoreAppLibrary.props. -->
-    <IsNETCoreAppSrc Condition="('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
+    <IsNETCoreAppSrc Condition="'$(IsSourceProject)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppSrc>
     <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
-                                !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+                                '$(IsPrivateAssembly)' != 'true'">true</IsNETCoreAppRef>
     <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
                                      $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
     <!-- Inbox analyzers shouldn't use the live targeting / runtime pack. They better depend on an LKG to avoid layering concerns. -->
@@ -70,25 +70,27 @@
                                    '$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</ILLinkTrimAssembly>
   </PropertyGroup>
 
+  <!-- The assembly version gets updated during servicing when the assembly isn't part of a targeting pack. -->
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing' and
+                            '$(IsPackable)' == 'true' and
+                            '$(PackageUseIncrementalServicingVersion)' == 'true'">
+    <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
+    <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
+    <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
+    <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsSourceProject)' == 'true'" />
 
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
-    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and '$(IsSourceProject)' == 'true'">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
-    <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
 
-  <Target Name="AddDocumentationFileAsBinPlaceItemForExtensionsProjects"
-          Condition="Exists('$(DocumentationFile)')">
-    <ItemGroup>
-      <!-- Microsoft.Extensions are not yet using the doc-file package -->
-      <BinPlaceItem Include="$(DocumentationFile)" />
-    </ItemGroup>
-  </Target>
-
-  <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
+  <ItemGroup>
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
                               Condition="'$(BinPlaceForTargetVertical)' == 'true'">
@@ -98,7 +100,7 @@
     </BinPlaceTargetFrameworks>
 
     <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
-    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)$(GeneratorProjectBaseTargetPath)"
                  Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
                             '$(TargetFramework)' == 'netstandard2.0'" />
 
@@ -114,30 +116,32 @@
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
       <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
-
-    <BinPlaceTargetFrameworks Include="@(AdditionalBinPlaceTargetFrameworks)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
-      <!-- Libraries non test projects shouldn't reference compat shims. -->
+      <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
     <SkipTargetingPackShimReferences Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and
                                                 '$(IsTestProject)' != 'true' and
-                                                '$(IsTestSupportProject)' != 'true'">true</SkipTargetingPackShimReferences>
+                                                '$(IsTestSupportProject)' != 'true' and
+                                                '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
+
+    <!-- Make libraries packages use and require a package readme file. -->
+    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsTrimmingTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
   <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -169,6 +173,7 @@
   <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
   <ItemGroup Condition="'$(Nullable)' != '' and
                         '$(Nullable)' != 'disable' and
+                        '$(SkipIncludeNullableAttributes)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
@@ -199,6 +204,12 @@
       </PropertyGroup>
     </When>
   </Choose>
+
+  <ItemGroup Condition="'$(IncludeIndexRangeTypes)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Range.cs" Link="System\Range.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing.cs" Link="System\Numerics\Hashing.cs" />
+  </ItemGroup>
 
   <PropertyGroup>
     <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SkipLocalsInit>

@@ -88,7 +88,8 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 //------------------------------------------------------------------------
 // Returns the ID of the type if found. If not found, assigns the ID and
 // returns the new ID.
-UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
+// If useFatPointerDispatch = true, return the next Fat ID of the type.
+UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT, bool useFatPointerDispatch)
 {
     CONTRACTL {
         THROWS;
@@ -110,7 +111,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         {
             return id;
         }
-        id = GetNextID();
+        id = GetNextID(useFatPointerDispatch);
 
         CONSISTENCY_CHECK(id <= TypeIDProvider::MAX_TYPE_ID);
         // Insert the pair, with lookups in both directions
@@ -303,7 +304,6 @@ DispatchMap::DispatchMap(
 // }
 void
 DispatchMap::CreateEncodedMapping(
-    MethodTable *        pMT,
     DispatchMapBuilder * pMapBuilder,
     StackingAllocator *  pAllocator,
     BYTE **              ppbMap,
@@ -313,7 +313,6 @@ DispatchMap::CreateEncodedMapping(
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pMT));
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -414,9 +413,6 @@ DispatchMap::CreateEncodedMapping(
             curTargetSlot = -1;
             do
             {
-                // Only virtual targets can be mapped virtually.
-                CONSISTENCY_CHECK((it.GetTargetMD() == NULL) ||
-                                  it.GetTargetMD()->IsVirtual());
                 // Encode the slot
                 prevSlot = curSlot;
                 curSlot = it.GetSlotNumber();
@@ -551,9 +547,9 @@ DispatchMap::EncodedMapIterator::EncodedMapIterator(MethodTable * pMT)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    if (pMT->HasDispatchMap())
+    DispatchMap * pMap = pMT->GetDispatchMap();
+    if (pMap != NULL)
     {
-        DispatchMap * pMap = pMT->GetDispatchMap();
         Init(PTR_BYTE(PTR_HOST_MEMBER_TADDR(DispatchMap, pMap, m_rgMap)));
     }
     else

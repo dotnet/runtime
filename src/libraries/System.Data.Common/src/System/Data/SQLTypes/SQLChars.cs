@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlTypes
 {
@@ -595,10 +595,9 @@ namespace System.Data.SqlTypes
             set
             {
                 CheckIfStreamClosed("set_Position");
-                if (value < 0 || value > _sqlchars.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                else
-                    _lPosition = value;
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _sqlchars.Length);
+                _lPosition = value;
             }
         }
 
@@ -647,10 +646,10 @@ namespace System.Data.SqlTypes
             CheckIfStreamClosed();
 
             ArgumentNullException.ThrowIfNull(buffer);
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
 
             int icharsRead = (int)_sqlchars.Read(_lPosition, buffer, offset, count);
             _lPosition += icharsRead;
@@ -663,10 +662,10 @@ namespace System.Data.SqlTypes
             CheckIfStreamClosed();
 
             ArgumentNullException.ThrowIfNull(buffer);
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > buffer.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
 
             _sqlchars.Write(_lPosition, buffer, offset, count);
             _lPosition += count;

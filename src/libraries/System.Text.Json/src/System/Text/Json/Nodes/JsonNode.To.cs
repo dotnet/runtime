@@ -1,13 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
+
 namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
     {
-        // linker-safe default JsonSerializerOptions instance used by JsonNode methods.
-        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
-
         /// <summary>
         ///   Converts the current instance to string in JSON format.
         /// </summary>
@@ -15,13 +14,25 @@ namespace System.Text.Json.Nodes
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
-            using (var writer = new Utf8JsonWriter(output, options == null ? default(JsonWriterOptions) : options.GetWriterOptions()))
+            JsonWriterOptions writerOptions = default;
+            int defaultBufferSize = JsonSerializerOptions.BufferSizeDefault;
+            if (options is not null)
             {
-                WriteTo(writer, options);
+                writerOptions = options.GetWriterOptions();
+                defaultBufferSize = options.DefaultBufferSize;
             }
 
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(writerOptions, defaultBufferSize, out PooledByteBufferWriter output);
+            try
+            {
+                WriteTo(writer, options);
+                writer.Flush();
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         /// <summary>
@@ -33,25 +44,28 @@ namespace System.Text.Json.Nodes
             // Special case for string; don't quote it.
             if (this is JsonValue)
             {
-                if (this is JsonValue<string> jsonString)
+                if (this is JsonValuePrimitive<string> jsonString)
                 {
                     return jsonString.Value;
                 }
 
-                if (this is JsonValue<JsonElement> jsonElement &&
-                    jsonElement.Value.ValueKind == JsonValueKind.String)
+                if (this is JsonValueOfElement { Value.ValueKind: JsonValueKind.String } jsonElement)
                 {
                     return jsonElement.Value.GetString()!;
                 }
             }
 
-            using var output = new PooledByteBufferWriter(JsonSerializerOptions.BufferSizeDefault);
-            using (var writer = new Utf8JsonWriter(output, new JsonWriterOptions { Indented = true }))
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(new JsonWriterOptions { Indented = true }, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
+            try
             {
                 WriteTo(writer);
+                writer.Flush();
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
             }
-
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.ToArray());
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         /// <summary>

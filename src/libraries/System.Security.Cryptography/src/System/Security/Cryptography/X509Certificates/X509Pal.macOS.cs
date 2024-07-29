@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
 
-            private static AsymmetricAlgorithm DecodeRsaPublicKey(byte[] encodedKeyValue)
+            private static RSA DecodeRsaPublicKey(byte[] encodedKeyValue)
             {
                 RSA rsa = RSA.Create();
                 try
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
             {
                 SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
@@ -93,13 +93,13 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 DSA dsa = DSA.Create();
-                IDisposable? toDispose = dsa;
+                DSA? toDispose = dsa;
 
                 try
                 {
-                   dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
-                   toDispose = null;
-                   return dsa;
+                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    toDispose = null;
+                    return dsa;
                 }
                 finally
                 {
@@ -111,7 +111,8 @@ namespace System.Security.Cryptography.X509Certificates
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
-                if (rawData == null || rawData.Length == 0)
+
+                if (rawData.IsEmpty)
                 {
                     // Throw to match Windows and Unix behavior.
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData);
 
-                // Apple doesn't seem to recognize PFX files with no MAC, so try a quick maybe-it's-a-PFX test
+                // Apple's native check can't check for PKCS12, so do a quick decode test to see if it is PKCS12 / PFX.
                 if (contentType == X509ContentType.Unknown)
                 {
                     try
@@ -128,9 +129,11 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             fixed (byte* pin = rawData)
                             {
+                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+
                                 using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                                 {
-                                    PfxAsn.Decode(manager.Memory, AsnEncodingRules.BER);
+                                    PfxAsn.Decode(ref reader, manager.Memory, out _);
                                 }
 
                                 contentType = X509ContentType.Pkcs12;

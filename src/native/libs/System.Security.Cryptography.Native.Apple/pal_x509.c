@@ -3,14 +3,6 @@
 
 #include "pal_x509.h"
 #include "pal_utilities.h"
-#include <dlfcn.h>
-#include <pthread.h>
-
-#if !defined(TARGET_MACCATALYST)
-static pthread_once_t once = PTHREAD_ONCE_INIT;
-static SecKeyRef (*secCertificateCopyKey)(SecCertificateRef);
-static OSStatus (*secCertificateCopyPublicKey)(SecCertificateRef, SecKeyRef*);
-#endif
 
 int32_t
 AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* pCertOut, SecIdentityRef* pIdentityOut)
@@ -42,55 +34,18 @@ AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* 
     return 1;
 }
 
-#if !defined(TARGET_MACCATALYST)
-static void InitCertificateCopy(void)
-{
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
-    // SecCertificateCopyPublicKey on iOS/tvOS has same function prototype as SecCertificateCopyKey
-    secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
-    if (secCertificateCopyKey == NULL)
-    {
-        secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
-    }
-#else
-    secCertificateCopyKey = (SecKeyRef (*)(SecCertificateRef))dlsym(RTLD_DEFAULT, "SecCertificateCopyKey");
-    secCertificateCopyPublicKey = (OSStatus (*)(SecCertificateRef, SecKeyRef*))dlsym(RTLD_DEFAULT, "SecCertificateCopyPublicKey");
-#endif
-}
-#endif
-
 int32_t
-AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut)
+AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut)
 {
     if (pPublicKeyOut != NULL)
         *pPublicKeyOut = NULL;
-    if (pOSStatusOut != NULL)
-        *pOSStatusOut = noErr;
 
-    if (cert == NULL || pPublicKeyOut == NULL || pOSStatusOut == NULL)
+    if (cert == NULL || pPublicKeyOut == NULL)
         return kErrorUnknownState;
 
-#if !defined(TARGET_MACCATALYST)
-    pthread_once(&once, InitCertificateCopy);
-    // SecCertificateCopyPublicKey was deprecated in 10.14, so use SecCertificateCopyKey on the systems that have it (10.14+),
-    // and SecCertificateCopyPublicKey on the systems that don’t.
-    if (secCertificateCopyKey != NULL)
-    {
-        *pPublicKeyOut = (*secCertificateCopyKey)(cert);
-    }
-    else if (secCertificateCopyPublicKey != NULL)
-    {
-        *pOSStatusOut = (*secCertificateCopyPublicKey)(cert, pPublicKeyOut);
-    }
-    else
-    {
-        return kErrorBadInput;
-    }
-    return (*pOSStatusOut == noErr);
-#else
     *pPublicKeyOut = SecCertificateCopyKey(cert);
+
     return 1;
-#endif
 }
 
 PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_t cbData)
@@ -106,7 +61,6 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     // The sniffing order is:
     // * X509 DER
     // * PKCS7 PEM/DER
-    // * PKCS12 DER (or PEM if Apple has non-standard support for that)
     // * X509 PEM or PEM aggregate (or DER, but that already matched)
     //
     // If the X509 PEM check is done first SecItemImport will erroneously match
@@ -114,6 +68,11 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     //
     // Likewise, if the X509 DER check isn't done first, Apple will report it as
     // being a PKCS#7.
+    //
+    // This does not attempt to open a PFX / PKCS12 as Apple does not provide
+    // a suitable API to determine if it is PKCS12 without doing potentially
+    // unbound MAC / KDF work. Instead, let that return Unknown and let the managed
+    // decoding do the check.
     SecCertificateRef certref = SecCertificateCreateWithData(NULL, cfData);
 
     if (certref != NULL)
@@ -137,41 +96,6 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
         {
             CFRelease(cfData);
             return PAL_Pkcs7;
-        }
-    }
-
-    dataFormat = kSecFormatPKCS12;
-    actualFormat = dataFormat;
-    itemType = kSecItemTypeAggregate;
-    actualType = itemType;
-
-    osStatus = SecItemImport(cfData, NULL, &actualFormat, &actualType, 0, NULL, NULL, NULL);
-
-    if (osStatus == errSecPassphraseRequired)
-    {
-        dataFormat = kSecFormatPKCS12;
-        actualFormat = dataFormat;
-        itemType = kSecItemTypeAggregate;
-        actualType = itemType;
-
-        SecItemImportExportKeyParameters importParams;
-        memset(&importParams, 0, sizeof(SecItemImportExportKeyParameters));
-
-        importParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
-        importParams.passphrase = CFSTR("");
-
-        osStatus = SecItemImport(cfData, NULL, &actualFormat, &actualType, 0, &importParams, NULL, NULL);
-
-        CFRelease(importParams.passphrase);
-        importParams.passphrase = NULL;
-    }
-
-    if (osStatus == noErr || osStatus == errSecPkcs12VerifyFailure)
-    {
-        if (actualType == itemType && actualFormat == dataFormat)
-        {
-            CFRelease(cfData);
-            return PAL_Pkcs12;
         }
     }
 

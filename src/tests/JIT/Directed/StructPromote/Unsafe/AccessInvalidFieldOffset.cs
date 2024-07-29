@@ -9,8 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
-class TestStructAccessThroughRef
+public class TestStructAccessThroughRef
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -37,7 +38,8 @@ class TestStructAccessThroughRef
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestStructCasts()
+    [Fact]
+    public static void TestStructCasts()
     {
         PromotedStruct a = new PromotedStruct(); // Addr-exposed, cannot be independent promoted.
         a.anotherField = 5;
@@ -52,11 +54,4 @@ class TestStructAccessThroughRef
         PromotedStruct.AsNotPromotedStruct(ref a).overlappingField = 0x700000000;
         Debug.Assert(a.smallField == 0x7);
     }
-
-    static int Main()
-    {
-        TestStructCasts();
-        return 100;
-    }
-
 }

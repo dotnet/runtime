@@ -4,16 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -44,7 +41,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.MarshallerTypeMustSpecifyManagedTypeMessage" />
         public static readonly DiagnosticDescriptor MarshallerTypeMustSpecifyManagedTypeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidCustomMarshallerAttributeUsage,
                 GetResourceString(nameof(SR.InvalidCustomMarshallerAttributeUsageTitle)),
                 GetResourceString(nameof(SR.MarshallerTypeMustSpecifyManagedTypeMessage)),
@@ -55,7 +52,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.MarshallerTypeMustBeStaticClassOrStructMessage" />
         public static readonly DiagnosticDescriptor MarshallerTypeMustBeStaticClassOrStructRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidMarshallerType,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.MarshallerTypeMustBeStaticClassOrStructMessage)),
@@ -66,7 +63,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ElementMarshallerCannotBeStatefulMessage" />
         public static readonly DiagnosticDescriptor ElementMarshallerCannotBeStatefulRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidMarshallerType,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.ElementMarshallerCannotBeStatefulMessage)),
@@ -77,7 +74,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.TypeMustBeUnmanagedMessage" />
         public static readonly DiagnosticDescriptor UnmanagedTypeMustBeUnmanagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidNativeType,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.TypeMustBeUnmanagedMessage)),
@@ -88,7 +85,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.GetPinnableReferenceReturnTypeBlittableMessage" />
         public static readonly DiagnosticDescriptor GetPinnableReferenceReturnTypeBlittableRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.GetPinnableReferenceReturnTypeBlittableMessage)),
@@ -99,7 +96,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.TypeMustHaveExplicitCastFromVoidPointerMessage" />
         public static readonly DiagnosticDescriptor TypeMustHaveExplicitCastFromVoidPointerRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidNativeType,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.TypeMustHaveExplicitCastFromVoidPointerMessage)),
@@ -110,7 +107,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessValueInRequiresConvertToUnmanagedMessage" />
         public static readonly DiagnosticDescriptor StatelessValueInRequiresConvertToUnmanagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessValueInRequiresConvertToUnmanagedMessage)),
@@ -121,7 +118,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage" />
         public static readonly DiagnosticDescriptor StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage)),
@@ -132,7 +129,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.OutRequiresToManagedMessage" />
         public static readonly DiagnosticDescriptor OutRequiresToManagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.OutRequiresToManagedMessage)),
@@ -143,7 +140,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessRequiresConvertToManagedMessage" />
         public static readonly DiagnosticDescriptor StatelessRequiresConvertToManagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessRequiresConvertToManagedMessage)),
@@ -154,7 +151,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.LinearCollectionInRequiresCollectionMethodsMessage" />
         public static readonly DiagnosticDescriptor LinearCollectionInRequiresCollectionMethodsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.LinearCollectionInRequiresCollectionMethodsMessage)),
@@ -165,7 +162,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessLinearCollectionInRequiresCollectionMethodsMessage" />
         public static readonly DiagnosticDescriptor StatelessLinearCollectionInRequiresCollectionMethodsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessLinearCollectionInRequiresCollectionMethodsMessage)),
@@ -176,7 +173,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.LinearCollectionOutRequiresCollectionMethodsMessage" />
         public static readonly DiagnosticDescriptor LinearCollectionOutRequiresCollectionMethodsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.LinearCollectionOutRequiresCollectionMethodsMessage)),
@@ -187,7 +184,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessLinearCollectionOutRequiresCollectionMethodsMessage" />
         public static readonly DiagnosticDescriptor StatelessLinearCollectionOutRequiresCollectionMethodsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessLinearCollectionOutRequiresCollectionMethodsMessage)),
@@ -198,7 +195,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage" />
         public static readonly DiagnosticDescriptor StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage)),
@@ -209,7 +206,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.CallerAllocFromManagedMustHaveBufferSizeMessage" />
         public static readonly DiagnosticDescriptor CallerAllocFromManagedMustHaveBufferSizeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.CallerAllocFromManagedMustHaveBufferSizeMessage)),
@@ -220,7 +217,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage" />
         public static readonly DiagnosticDescriptor StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage)),
@@ -231,7 +228,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatefulMarshallerRequiresFromManagedMessage" />
         public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromManagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedMessage)),
@@ -242,7 +239,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatefulMarshallerRequiresToUnmanagedMessage" />
         public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToUnmanagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedMessage)),
@@ -253,7 +250,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatefulMarshallerRequiresToManagedMessage" />
         public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToManagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedMessage)),
@@ -264,7 +261,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatefulMarshallerRequiresFromUnmanagedMessage" />
         public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromUnmanagedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedMessage)),
@@ -275,7 +272,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.StatefulMarshallerRequiresFreeMessage" />
         public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFreeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.StatefulMarshallerRequiresFreeMessage)),
@@ -286,7 +283,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.FromUnmanagedOverloadsNotSupportedMessage" />
         public static readonly DiagnosticDescriptor FromUnmanagedOverloadsNotSupportedRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                 GetResourceString(nameof(SR.FromUnmanagedOverloadsNotSupportedMessage)),
@@ -297,7 +294,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.MarshallerTypeMustBeClosedOrMatchArityMessage" />
         public static readonly DiagnosticDescriptor MarshallerTypeMustBeClosedOrMatchArityRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidCustomMarshallerAttributeUsage,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.MarshallerTypeMustBeClosedOrMatchArityMessage)),
@@ -308,7 +305,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.MarshallerTypeMustBeNonNullMessage" />
         public static readonly DiagnosticDescriptor MarshallerTypeMustBeNonNullRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidCustomMarshallerAttributeUsage,
                 GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
                 GetResourceString(nameof(SR.MarshallerTypeMustBeNonNullMessage)),
@@ -319,7 +316,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.FirstParameterMustMatchReturnTypeMessage" />
         public static readonly DiagnosticDescriptor FirstParameterMustMatchReturnTypeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.FirstParameterMustMatchReturnTypeMessage)),
@@ -330,7 +327,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ReturnTypesMustMatchMessage" />
         public static readonly DiagnosticDescriptor ReturnTypesMustMatchRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.ReturnTypesMustMatchMessage)),
@@ -341,7 +338,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.FirstParametersMustMatchMessage" />
         public static readonly DiagnosticDescriptor FirstParametersMustMatchRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.FirstParametersMustMatchMessage)),
@@ -352,7 +349,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ElementTypesOfReturnTypesMustMatchMessage" />
         public static readonly DiagnosticDescriptor ElementTypesOfReturnTypesMustMatchRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.ElementTypesOfReturnTypesMustMatchMessage)),
@@ -363,7 +360,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ReturnTypeMustBeExpectedTypeMessage" />
         public static readonly DiagnosticDescriptor ReturnTypeMustBeExpectedTypeRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidSignaturesInMarshallerShape,
                 GetResourceString(nameof(SR.InvalidSignaturesInMarshallerShapeTitle)),
                 GetResourceString(nameof(SR.ReturnTypeMustBeExpectedTypeMessage)),
@@ -374,7 +371,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ManagedTypeMustBeClosedOrMatchArityMessage" />
         public static readonly DiagnosticDescriptor ManagedTypeMustBeClosedOrMatchArityRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidCustomMarshallerAttributeUsage,
                 GetResourceString(nameof(SR.InvalidManagedTypeTitle)),
                 GetResourceString(nameof(SR.ManagedTypeMustBeClosedOrMatchArityMessage)),
@@ -385,7 +382,7 @@ namespace Microsoft.Interop.Analyzers
 
         /// <inheritdoc cref="SR.ManagedTypeMustBeNonNullMessage" />
         public static readonly DiagnosticDescriptor ManagedTypeMustBeNonNullRule =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidCustomMarshallerAttributeUsage,
                 GetResourceString(nameof(SR.InvalidManagedTypeTitle)),
                 GetResourceString(nameof(SR.ManagedTypeMustBeNonNullMessage)),
@@ -393,6 +390,17 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ManagedTypeMustBeNonNullDescription)));
+
+        /// <inheritdoc cref="SR.MarshalModeMustBeValidEnumValue" />
+        public static readonly DiagnosticDescriptor MarshalModeMustBeValidValue =
+            DiagnosticDescriptorHelper.Create(
+                Ids.InvalidCustomMarshallerAttributeUsage,
+                GetResourceString(nameof(SR.InvalidMarshalModeTitle)),
+                GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalModeMustBeValidEnumValue)));
 
         // We are intentionally using the same diagnostic IDs as the parent type.
         // These diagnostics are the same diagnostics, but with a different severity,
@@ -403,7 +411,7 @@ namespace Microsoft.Interop.Analyzers
         {
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessValueInRequiresConvertToUnmanagedRule" />
             private static readonly DiagnosticDescriptor StatelessValueInRequiresConvertToUnmanagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessValueInRequiresConvertToUnmanagedMessage)),
@@ -414,7 +422,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule" />
             private static readonly DiagnosticDescriptor StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage)),
@@ -425,7 +433,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessRequiresConvertToManagedRule" />
             private static readonly DiagnosticDescriptor StatelessRequiresConvertToManagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessRequiresConvertToManagedMessage)),
@@ -436,7 +444,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessLinearCollectionInRequiresCollectionMethodsRule" />
             private static readonly DiagnosticDescriptor StatelessLinearCollectionInRequiresCollectionMethodsRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessLinearCollectionInRequiresCollectionMethodsMessage)),
@@ -447,7 +455,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessLinearCollectionOutRequiresCollectionMethodsMessage" />
             private static readonly DiagnosticDescriptor StatelessLinearCollectionOutRequiresCollectionMethodsRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessLinearCollectionOutRequiresCollectionMethodsMessage)),
@@ -458,7 +466,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage" />
             private static readonly DiagnosticDescriptor StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage)),
@@ -469,7 +477,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromManagedRule" />
             private static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromManagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedMessage)),
@@ -480,7 +488,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToUnmanagedRule" />
             private static readonly DiagnosticDescriptor StatefulMarshallerRequiresToUnmanagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedMessage)),
@@ -491,7 +499,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToManagedRule" />
             private static readonly DiagnosticDescriptor StatefulMarshallerRequiresToManagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedMessage)),
@@ -502,7 +510,7 @@ namespace Microsoft.Interop.Analyzers
 
             /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromUnmanagedRule" />
             private static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromUnmanagedRule =
-                new DiagnosticDescriptor(
+                DiagnosticDescriptorHelper.Create(
                     Ids.CustomMarshallerTypeMustHaveRequiredShape,
                     GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
                     GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedMessage)),
@@ -610,13 +618,10 @@ namespace Microsoft.Interop.Analyzers
 
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
-            if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is not null)
+            if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is { } customMarshallerAttribute)
             {
-                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation);
-
-                // TODO: Change this from a SyntaxNode action to an operation attribute once attribute application is represented in the
-                // IOperation tree by Roslyn.
-                context.RegisterSyntaxNodeAction(perCompilationAnalyzer.AnalyzeAttribute, SyntaxKind.Attribute);
+                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation, customMarshallerAttribute);
+                context.RegisterOperationAction(perCompilationAnalyzer.AnalyzeAttribute, OperationKind.Attribute);
             }
         }
 
@@ -625,63 +630,78 @@ namespace Microsoft.Interop.Analyzers
             private readonly Compilation _compilation;
             private readonly INamedTypeSymbol _spanOfT;
             private readonly INamedTypeSymbol _readOnlySpanOfT;
+            private readonly INamedTypeSymbol _customMarshallerAttribute;
 
-            public PerCompilationAnalyzer(Compilation compilation)
+            public PerCompilationAnalyzer(Compilation compilation, INamedTypeSymbol customMarshallerAttribute)
             {
                 _compilation = compilation;
+                _customMarshallerAttribute = customMarshallerAttribute;
                 _spanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_Span_Metadata);
                 _readOnlySpanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
             }
-
-            public void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
+            public void AnalyzeAttribute(OperationAnalysisContext context)
             {
-                AttributeSyntax syntax = (AttributeSyntax)context.Node;
-                ISymbol attributedSymbol = context.ContainingSymbol!;
-
-                AttributeData? attr = syntax.FindAttributeData(attributedSymbol);
-                if (attr?.AttributeClass?.ToDisplayString() == TypeNames.CustomMarshallerAttribute
-                    && attr.AttributeConstructor is not null)
+                IAttributeOperation attr = (IAttributeOperation)context.Operation;
+                if (attr.Operation is IObjectCreationOperation attrCreation
+                    && attrCreation.Type.Equals(_customMarshallerAttribute, SymbolEqualityComparer.Default))
                 {
-                    DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("managedType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
-                    INamedTypeSymbol entryType = (INamedTypeSymbol)attributedSymbol;
-
-                    ITypeSymbol? managedTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[0].Value;
-                    if (managedTypeInAttribute is null)
+                    INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol!;
+                    IArgumentOperation? managedTypeArgument = attrCreation.GetArgumentByOrdinal(0);
+                    if (managedTypeArgument.Value.IsNullLiteralOperation())
                     {
+                        DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(managedTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
                         managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeNonNullRule, entryType.ToDisplayString());
-                        return;
                     }
+                    else if (managedTypeArgument.Value is ITypeOfOperation managedTypeOfOp)
+                    {
+                        DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)managedTypeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic);
 
-                    if (!ManualTypeMarshallingHelper.TryResolveManagedType(
-                        entryType,
-                        ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeInAttribute, entryType, context.Compilation),
-                        ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType),
-                        (entryType, managedType) => managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeClosedOrMatchArityRule, managedType, entryType), out ITypeSymbol managedType))
-                    {
-                        return;
-                    }
-                    DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("marshallerType", 2).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
-                    ITypeSymbol? marshallerTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[2].Value;
-                    if (marshallerTypeInAttribute is null)
-                    {
-                        marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeNonNullRule);
-                        return;
-                    }
-                    if (!ManualTypeMarshallingHelper.TryResolveMarshallerType(
-                        entryType,
-                        marshallerTypeInAttribute,
-                        (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
-                        out ITypeSymbol marshallerType))
-                    {
-                        return;
-                    }
+                        ITypeSymbol managedTypeInAttribute = managedTypeOfOp.TypeOperand;
 
-                    AnalyzeMarshallerType(
-                        marshallerTypeReporter,
-                        managedType,
-                        (MarshalMode)attr.ConstructorArguments[1].Value,
-                        (INamedTypeSymbol)marshallerType,
-                        ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
+                        if (!ManualTypeMarshallingHelper.TryResolveManagedType(
+                            entryType,
+                            ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeInAttribute, entryType, context.Compilation),
+                            ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType),
+                            (entryType, managedType) => managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeClosedOrMatchArityRule, managedType, entryType), out ITypeSymbol managedType))
+                        {
+                            return;
+                        }
+
+                        IArgumentOperation? marshallerTypeArgument = attrCreation.GetArgumentByOrdinal(2);
+                        if (marshallerTypeArgument.Value.IsNullLiteralOperation())
+                        {
+                            DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(marshallerTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
+                            marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeNonNullRule, entryType.ToDisplayString());
+                        }
+                        else if (marshallerTypeArgument.Value is ITypeOfOperation marshallerTypeOfOp)
+                        {
+                            DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)marshallerTypeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic);
+                            ITypeSymbol? marshallerTypeInAttribute = marshallerTypeOfOp.TypeOperand;
+                            if (!ManualTypeMarshallingHelper.TryResolveMarshallerType(
+                                entryType,
+                                marshallerTypeInAttribute,
+                                (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
+                                out ITypeSymbol marshallerType))
+                            {
+                                return;
+                            }
+                            var marshalModeArgument = attrCreation.GetArgumentByOrdinal(1);
+                            if (marshalModeArgument.Value is not IFieldReferenceOperation { ConstantValue.Value: var marshalMode }
+                                || !Enum.IsDefined(typeof(MarshalMode), (MarshalMode)marshalMode))
+                            {
+                                DiagnosticReporter marshalModeReporter = DiagnosticReporter.CreateForLocation(marshalModeArgument.Syntax.GetLocation(), context.ReportDiagnostic);
+                                marshalModeReporter.CreateAndReportDiagnostic(MarshalModeMustBeValidValue);
+                                return;
+                            }
+
+                            AnalyzeMarshallerType(
+                                marshallerTypeReporter,
+                                managedType,
+                                (MarshalMode)marshalMode,
+                                (INamedTypeSymbol)marshallerType,
+                                ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
+                        }
+                    }
                 }
             }
 
@@ -864,7 +884,7 @@ namespace Microsoft.Interop.Analyzers
                         // First verify all usages in the managed->unmanaged shape.
                         IMethodSymbol toUnmanagedMethod = methods.ToUnmanaged ?? methods.ToUnmanagedWithBuffer;
                         unmanagedType = toUnmanagedMethod.ReturnType;
-                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                         {
                             diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, toUnmanagedMethod.ToDisplayString());
                         }
@@ -1180,7 +1200,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         // First verify all usages in the managed->unmanaged shape.
                         unmanagedType = methods.ToUnmanaged.ReturnType;
-                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                         {
                             diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, methods.ToUnmanaged.ToDisplayString());
                         }
@@ -1199,7 +1219,7 @@ namespace Microsoft.Interop.Analyzers
                         {
                             unmanagedType = fromUnmanagedMethod.Parameters[0].Type;
 
-                            if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                            if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittableInContext(_compilation))
                             {
                                 diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, fromUnmanagedMethod.ToDisplayString());
                             }

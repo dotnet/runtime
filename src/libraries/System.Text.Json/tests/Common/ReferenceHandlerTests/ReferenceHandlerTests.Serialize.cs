@@ -16,20 +16,20 @@ namespace System.Text.Json.Serialization.Tests
 
         public class Employee
         {
-            public string Name { get; set; }
-            public Employee Manager { get; set; }
-            public Employee Manager2 { get; set; }
-            public List<Employee> Subordinates { get; set; }
-            public List<Employee> Subordinates2 { get; set; }
-            public Dictionary<string, Employee> Contacts { get; set; }
-            public Dictionary<string, Employee> Contacts2 { get; set; }
+            public string? Name { get; set; }
+            public Employee? Manager { get; set; }
+            public Employee? Manager2 { get; set; }
+            public List<Employee>? Subordinates { get; set; }
+            public List<Employee>? Subordinates2 { get; set; }
+            public Dictionary<string, Employee>? Contacts { get; set; }
+            public Dictionary<string, Employee>? Contacts2 { get; set; }
 
             //Properties with default value to verify they get overwritten when deserializing into them.
             public List<string> SubordinatesString { get; set; } = new List<string> { "Bob" };
             public Dictionary<string, string> ContactsString { get; set; } = new Dictionary<string, string>() { { "Bob", "555-5555" } };
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task ExtensionDataDictionaryHandlesPreserveReferences()
         {
             Employee bob = new Employee { Name = "Bob" };

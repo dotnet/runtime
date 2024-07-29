@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -80,12 +80,12 @@ namespace System.IO
                 Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
+                    lpSecurityDescriptor = pSecurityDescriptor
                 };
 
                 while (stackDir.Count > 0)
                 {
-                    string name = stackDir[stackDir.Count - 1];
+                    string name = stackDir[^1];
                     stackDir.RemoveAt(stackDir.Count - 1);
 
                     r = Interop.Kernel32.CreateDirectory(name, &secAttrs);

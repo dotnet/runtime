@@ -12,7 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'jumper4' // as "jumper"
+.assembly ASSEMBLY_NAME // as "jumper"
 {
  //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]

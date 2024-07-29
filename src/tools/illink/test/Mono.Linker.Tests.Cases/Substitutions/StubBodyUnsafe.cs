@@ -6,7 +6,6 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 {
 	[SetupLinkerSubstitutionFile ("StubBodyUnsafe.xml")]
 	[SetupCompileArgument ("/unsafe")]
-	[SkipPeVerify]
 	public class StubBodyUnsafe
 	{
 		public static unsafe void Main ()

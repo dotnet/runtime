@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,7 +27,6 @@
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DiagnosticUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializer.cs" />
@@ -36,6 +36,7 @@
     <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
     <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExceptionUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExportOptions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" />
@@ -58,7 +59,6 @@
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\SurrogateDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatReaderGenerator.cs" />
@@ -147,11 +147,13 @@
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" />
+    <Compile Include="System\Runtime\Serialization\ContextAware.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
                       ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -163,6 +165,8 @@
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Intrinsics" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
@@ -173,4 +177,5 @@
     <Reference Include="System.Xml.XDocument" />
     <Reference Include="System.Xml.XmlSerializer" />
   </ItemGroup>
+
 </Project>

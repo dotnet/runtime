@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+     <LibrariesConfiguration>$(RuntimeConfiguration)</LibrariesConfiguration>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\build\WasmApp.InTree.props" />
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
+    <Configuration>Debug</Configuration>
+
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>219</NoWarn>
+    <RunAnalyzers>false</RunAnalyzers>
+
+    <AppDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\AppBundle</AppDir>
+    <OutDir>$(ArtifactsBinDir)debugger-test\$(Configuration)\wasm</OutDir>
+
+    <MicrosoftNetCoreAppRuntimePackRidDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(RuntimeConfiguration)\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackRidDir>
+  </PropertyGroup>
+</Project>

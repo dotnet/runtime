@@ -4,10 +4,12 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_61486
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var my = new My(new My(null));
         var m = my.GetType().GetMethod("M");

@@ -22,7 +22,9 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         // Build number suggested by the WinHttp team.
         // It can be reduced if bidirectional streaming is backported.
-        public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
+        public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0)
+            || PlatformDetection.IsWindowsServer2022; // This is required
+                                                                              // because WINHTTP_FLAG_AUTOMATIC_CHUNKING is backported to WS2022.
 
         public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
 
@@ -143,7 +145,17 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 // Server sends RST_STREAM.
                 await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.EndStream, 0, streamId));
 
-                await Assert.ThrowsAsync<IOException>(() => requestStream.WriteAsync(new byte[50]).AsTask());
+                await Assert.ThrowsAsync<IOException>(async () =>
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        await requestStream.WriteAsync(new byte[50]);
+
+                        // WriteAsync succeeded because handler hasn't processed RST_STREAM yet.
+                        // Small wait before trying again.
+                        await Task.Delay(50);
+                    }
+                });
             }
         }
 

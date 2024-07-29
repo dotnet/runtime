@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -44,12 +45,12 @@ namespace System.Reflection.TypeLoading
 
         // Location and codebase
         public abstract override string Location { get; }
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
@@ -158,7 +159,7 @@ namespace System.Reflection.TypeLoading
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
-#if NETCOREAPP
+#if NET
         [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public sealed override bool GlobalAssemblyCache => false;
@@ -197,6 +198,10 @@ namespace System.Reflection.TypeLoading
         }
 
         // Serialization
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) => throw new NotSupportedException();
 
         // Satellite assemblies

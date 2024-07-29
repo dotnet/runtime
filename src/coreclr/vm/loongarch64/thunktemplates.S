@@ -4,6 +4,8 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
+// Note that the offsets specified in pcaddi must match the behavior of GetStubCodePageSize() on this architecture/os.
+
 LEAF_ENTRY StubPrecodeCode
     pcaddi  $r21, 0x1004  //4, for Type encoding.
     ld.d  $t2,$r21, (StubPrecodeData__MethodDesc - 4*4)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -16,7 +15,6 @@ namespace System.Text.Json
     /// <summary>Handler used to clear JsonSerializerOptions reflection cache upon a metadata update.</summary>
     internal static class JsonSerializerOptionsUpdateHandler
     {
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public static void ClearCache(Type[]? types)
         {
             // Ignore the types, and just clear out all reflection caches from serializer options.
@@ -25,8 +23,7 @@ namespace System.Text.Json
                 options.Key.ClearCaches();
             }
 
-            // Flush the dynamic method cache
-            ReflectionEmitCachingMemberAccessor.Clear();
+            DefaultJsonTypeInfoResolver.ClearMemberAccessorCaches();
         }
     }
 }

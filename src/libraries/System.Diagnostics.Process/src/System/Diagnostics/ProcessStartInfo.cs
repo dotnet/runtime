@@ -16,7 +16,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-    [DebuggerDisplay("FileName={FileName}, Arguments={BuildArguments()}, WorkingDirectory={WorkingDirectory}")]
+    [DebuggerDisplay("FileName = {FileName}, Arguments = {BuildArguments()}, WorkingDirectory = {WorkingDirectory}")]
     public sealed partial class ProcessStartInfo
     {
         private string? _fileName;
@@ -53,6 +53,19 @@ namespace System.Diagnostics
         {
             _fileName = fileName;
             _arguments = arguments;
+        }
+
+        /// <summary>
+        /// Specifies the name of the application that is to be started, as well as a set
+        /// of command line arguments to pass to the application.
+        /// </summary>
+        public ProcessStartInfo(string fileName, IEnumerable<string> arguments)
+        {
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(arguments);
+
+            _fileName = fileName;
+            _argumentList = new Collection<string>(new List<string>(arguments));
         }
 
         /// <devdoc>

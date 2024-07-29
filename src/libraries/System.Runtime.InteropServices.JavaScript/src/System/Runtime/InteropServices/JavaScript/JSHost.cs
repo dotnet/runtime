@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -44,10 +44,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="moduleUrl">The location of the module file.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A proxy for the JavaScript object that contains the module's exports.</returns>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken = default)
         {
             return JSHostImplementation.ImportAsync(moduleName, moduleUrl, cancellationToken);
         }
+
     }
 }

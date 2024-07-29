@@ -9,7 +9,7 @@ namespace System.Collections
 {
     internal static class ThrowHelper
     {
-        public static void ThrowIfNull(object arg, [CallerArgumentExpression("arg")] string? paramName = null)
+        public static void ThrowIfNull(object arg, [CallerArgumentExpression(nameof(arg))] string? paramName = null)
         {
             if (arg is null)
             {
@@ -30,7 +30,15 @@ namespace System.Collections
             throw new KeyNotFoundException();
 
         [DoesNotReturn]
+        public static void ThrowKeyNotFoundException<TKey>(TKey key) =>
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException() =>
             throw new InvalidOperationException();
+
+        [DoesNotReturn]
+        internal static void ThrowIncompatibleComparer() =>
+            throw new InvalidOperationException(SR.InvalidOperation_IncompatibleComparer);
     }
 }

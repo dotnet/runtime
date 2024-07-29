@@ -3,8 +3,9 @@
 //
 
 using System;
+using Xunit;
 
-class AA
+public class AA
 {
 	bool[] m_null = null;
 	
@@ -34,10 +35,10 @@ class AA
 		GC.Collect();
 	}
 	
-	public static int Main()
+	[Fact]
+	public static void TestEntryPoint()
 	{
 		DoThings();
 		new AA().CheckHeap();
-		return 100;
 	}
 }

@@ -60,7 +60,7 @@ extern "C" INT_PTR QCALLTYPE NativeLibrary_GetSymbol(INT_PTR handle, LPCWSTR sym
 {
     QCALL_CONTRACT;
 
-    INT_PTR address = NULL;
+    INT_PTR address = 0;
 
     BEGIN_QCALL;
 

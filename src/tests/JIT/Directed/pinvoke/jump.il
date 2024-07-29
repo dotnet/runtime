@@ -11,7 +11,7 @@
 .assembly jump { }
 .namespace JitTest
 {
-  .class private sequential ansi sealed beforefieldinit SYSTEM_INFO
+  .class public sequential ansi sealed beforefieldinit SYSTEM_INFO
          extends [mscorlib]System.ValueType
   {
     .field private unsigned int32 dwOemId
@@ -35,8 +35,7 @@
     	call  void [System.Console]System.Console::WriteLine(string)
     	jmp  void JitTest.SYSTEM_INFO::GetSystemInfo(valuetype JitTest.SYSTEM_INFO& si)
     }
-    .method public hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

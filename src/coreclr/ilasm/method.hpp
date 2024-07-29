@@ -337,6 +337,8 @@ public:
     unsigned m_LineNum;
     // debug info
     LinePCList m_LinePCList;
+    Document* m_FirstDocument;
+    BOOL m_HasMultipleDocuments;
     // custom values
     CustomDescrList m_CustomDescrList;
     // token relocs (used for OBJ generation only)
@@ -359,7 +361,7 @@ public:
         int i,retval=-1;
         for(i=0; i < (int)m_NumTyPars; i++)
         {
-            if(!wcscmp(wz,m_TyPars[i].Name()))
+            if(!u16_strcmp(wz,m_TyPars[i].Name()))
             {
                 retval = i;
             }
@@ -371,7 +373,7 @@ public:
         if(sz)
         {
             wzUniBuf[0] = 0;
-            WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
             return FindTyPar(wzUniBuf);
         }
         else return -1;

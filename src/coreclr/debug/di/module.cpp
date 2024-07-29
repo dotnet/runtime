@@ -526,9 +526,9 @@ void CordbModule::RefreshMetaData()
         // So far we've only got a reader for in-memory-writable metadata (MDInternalRW implementation)
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
-        TADDR remoteMDInternalRWAddr = NULL;
+        TADDR remoteMDInternalRWAddr = (TADDR)NULL;
         GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr);
-        if (remoteMDInternalRWAddr != NULL)
+        if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
             _ASSERTE(m_pIMImport == NULL);
@@ -800,7 +800,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         // fallback to IL image if the debugger doesn't have the image loaded already.
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if (NULL == WszGetModuleHandle(szFullPathName))
+        if (NULL == GetModuleHandle(szFullPathName))
 #endif
         {
             szFullPathName = NULL;
@@ -926,7 +926,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(dwFileHigh == 0);
 
-        HandleHolder hMap = WszCreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
+        HandleHolder hMap = CreateFileMapping(hMDFile, NULL, PAGE_READONLY, dwFileHigh, dwFileLow, NULL);
         if (hMap == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't create mapping of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -1852,7 +1852,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
     return pCopy;
 }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 //---------------------------------------------------------------------------------------
 //
 // Creates a new CordbFunction object to represent this new version of a function and
@@ -1929,7 +1929,7 @@ HRESULT CordbModule::UpdateFunction(mdMethodDef funcMetaDataToken,
 
     return hr;
 }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 
 HRESULT CordbModule::LookupOrCreateClass(mdTypeDef classMetaDataToken,CordbClass** ppClass)
@@ -2158,7 +2158,7 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
     // We enable EnC back in code:CordbModule::SetJITCompilerFlags.
     // If EnC isn't enabled, then we'll fail in the LS when we try to ApplyChanges.
     // We'd expect a well-behaved debugger to never actually land here.
@@ -2274,7 +2274,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
     HRESULT hr;
 
     void * pRemoteBuf = NULL;
@@ -2394,9 +2394,9 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         TESTANDRETURNHR(hr2);
     }
     return hr;
-#else // FEATURE_ENC_SUPPORTED
+#else // FEATURE_REMAP_FUNCTION
     return E_NOTIMPL;
-#endif // FEATURE_ENC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
 
 }
 
@@ -3078,9 +3078,9 @@ HRESULT CordbCode::GetVersionNumber( ULONG32 *nVersion)
 
     *nVersion = (ULONG32)m_nVersion;
 
-#ifndef EnC_SUPPORTED
+#ifndef FEATURE_METADATA_UPDATER
     _ASSERTE(*nVersion == 1);
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return S_OK;
 }
@@ -3114,7 +3114,7 @@ CordbILCode::CordbILCode(CordbFunction * pFunction,
                          mdSignature     localVarSigToken,
                          UINT_PTR        id)
   : CordbCode(pFunction, id, nVersion, TRUE),
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     m_fIsOld(FALSE),
 #endif
     m_codeRegionInfo(codeRegionInfo),
@@ -3123,7 +3123,7 @@ CordbILCode::CordbILCode(CordbFunction * pFunction,
 } // CordbILCode::CordbILCode
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 //-----------------------------------------------------------------------------
 // CordbILCode::MakeOld
 // Internal method to perform any cleanup necessary when a code blob is no longer
@@ -4125,7 +4125,7 @@ HRESULT CordbNativeCode::GetAddress(CORDB_ADDRESS * pStart)
     // Since we don't do code-pitching, the address points directly to the code.
     *pStart = (m_rgCodeRegions[kHot].pAddress);
 
-    if (*pStart == NULL)
+    if (*pStart == (CORDB_ADDRESS)NULL)
     {
         return CORDBG_E_CODE_NOT_AVAILABLE;
     }
@@ -4250,12 +4250,12 @@ HRESULT CordbNativeCode::GetILToNativeMapping(ULONG32                    cMap,
         LoadNativeInfo();
 
         SequencePoints * pSeqPts = GetSequencePoints();
-        DebuggerILToNativeMap * rgMapInt = pSeqPts->GetMapAddr();
         ULONG32 cMapIntCount = pSeqPts->GetEntryCount();
 
         // If they gave us space to copy into...
-        if (map != NULL)
+        if (map != NULL && cMapIntCount != 0)
         {
+            DebuggerILToNativeMap * rgMapInt = pSeqPts->GetMapAddr();
             // Only copy as much as either they gave us or we have to copy.
             ULONG32 cMapToCopy = min(cMap, cMapIntCount);
 
@@ -4661,7 +4661,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     return -1;
 
 #elif defined(TARGET_AMD64)
-    BYTE rex = NULL;
+    BYTE rex = 0;
     BYTE prefix = *ip;
     BOOL fContainsPrefix = FALSE;
 
@@ -4743,7 +4743,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     BYTE rex_x = 0;
     BYTE rex_r = 0;
 
-    if (rex != NULL)
+    if (rex != 0)
     {
         rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field or OPCODE reg field    -- Hmm, when which?
         rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
@@ -4757,7 +4757,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     {
                  BYTE modrm = *ip++;
 
-                 _ASSERT(modrm != NULL);
+                 _ASSERT(modrm != 0);
 
                  BYTE mod = (modrm & 0xC0) >> 6;
                  BYTE reg = (modrm & 0x38) >> 3;
@@ -4788,7 +4788,7 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
                          // Get values from the SIB byte
                          //
                          BYTE sib   = *ip;
-                         _ASSERT(sib != NULL);
+                         _ASSERT(sib != 0);
 
                          BYTE base  = (sib & 0x07);
                          base  |= (rex_b << 3);
@@ -4872,6 +4872,8 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
     _ASSERTE(!"Invalid opcode!");
     return -1;
+#elif defined(TARGET_RISCV64)
+    return MAX_INSTRUCTION_LENGTH;
 #else
 #error Platform not implemented
 #endif
@@ -5236,7 +5238,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
                                                         CORDB_ADDRESS startAddress)
 {
     INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(startAddress != NULL);
+    _ASSERTE(startAddress != (CORDB_ADDRESS)NULL);
     _ASSERTE(methodDesc != VMPTR_MethodDesc::NullPtr());
 
     CordbNativeCode * pNativeCode = NULL;

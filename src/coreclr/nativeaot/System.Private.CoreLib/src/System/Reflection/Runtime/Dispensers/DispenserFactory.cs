@@ -16,7 +16,7 @@ namespace System.Reflection.Runtime.Dispensers
         //
         // Note: If your K is a valuetype, use CreateDispenserV() instead. Some algorithms will not be available for use.
         //
-        public static Dispenser<K, V> CreateDispenser<K, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]V>(DispenserScenario scenario, Func<K, V> factory)
+        public static Dispenser<K, V> CreateDispenser<K, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] V>(DispenserScenario scenario, Func<K, V> factory)
             where K : class, IEquatable<K>
             where V : class
         {
@@ -54,6 +54,6 @@ namespace System.Reflection.Runtime.Dispensers
         }
 
 
-        private static readonly DispenserPolicy s_dispenserPolicy = new DefaultDispenserPolicy();
+        private static readonly DefaultDispenserPolicy s_dispenserPolicy = new DefaultDispenserPolicy();
     }
 }

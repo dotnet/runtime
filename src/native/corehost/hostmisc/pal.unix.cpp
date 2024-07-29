@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
-#include <locale>
 #include <pwd.h>
 #include "config.h"
 #include <minipal/getexepath.h>
@@ -592,6 +591,22 @@ bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::str
         append_path(recv, get_arch_name(arch));
     }
 #endif
+#elif defined(TARGET_FREEBSD)
+    int mib[2];
+    char buf[PATH_MAX];
+    size_t len = PATH_MAX;
+
+    mib[0] = CTL_USER;
+    mib[1] = USER_LOCALBASE;
+    if (::sysctl(mib, 2, buf, &len, NULL, 0) == 0)
+    {
+        recv->assign(buf);
+        recv->append(_X("/share/dotnet"));
+    }
+    else
+    {
+        recv->assign(_X("/usr/local/share/dotnet"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -842,8 +857,13 @@ pal::string_t pal::get_current_os_rid_platform()
                     size_t pos = line.find(strVersionID);
                     if ((pos != std::string::npos) && (pos == 0))
                     {
-                        valVersionID.append(line.substr(11));
-                        fFoundVersion = true;
+                        pal::string_t version = line.substr(11);
+                        // check if version characters are valid (quotes are trimmed at a later stage)
+                        if (!version.empty() && version.find_first_not_of("0123456789.\"'") == std::string::npos)
+                        {
+                            valVersionID.append(version);
+                            fFoundVersion = true;
+                        }
                     }
                 }
 

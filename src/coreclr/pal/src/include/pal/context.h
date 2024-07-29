@@ -28,6 +28,8 @@ extern "C"
 #include <signal.h>
 #include <pthread.h>
 
+#include <minipal/cpuid.h>
+
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
@@ -40,19 +42,107 @@ typedef ucontext_t native_context_t;
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#if defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64) && !HAVE_PUBLIC_XSTATE_STRUCT
 namespace asm_sigcontext
 {
 #include <asm/sigcontext.h>
 };
 using asm_sigcontext::_fpx_sw_bytes;
 using asm_sigcontext::_xstate;
-#endif // defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#endif // XSTATE_SUPPORTED && HOST_AMD64 && !HAVE_PUBLIC_XSTATE_STRUCT
 
 #else // !HAVE_MACH_EXCEPTIONS
 #include <mach/kern_return.h>
 #include <mach/mach_port.h>
 #endif // !HAVE_MACH_EXCEPTIONS else
+
+#if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS))
+bool Xstate_IsAvx512Supported();
+#endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
+
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+#if !defined(SVE_MAGIC)
+
+// Add the missing SVE defines
+
+#define EXTRA_MAGIC 0x45585401
+
+struct extra_context {
+    struct _aarch64_ctx head;
+    __u64 datap; /* 16-byte aligned pointer to extra space cast to __u64 */
+    __u32 size; /* size in bytes of the extra space */
+    __u32 __reserved[3];
+};
+
+#define SVE_MAGIC   0x53564501
+
+struct sve_context {
+    struct _aarch64_ctx head;
+    __u16 vl;
+    __u16 flags;
+    __u16 __reserved[2];
+};
+
+#define __SVE_VQ_BYTES      16  /* number of bytes per quadword */
+
+#define __SVE_NUM_ZREGS     32
+#define __SVE_NUM_PREGS     16
+
+#define sve_vq_from_vl(vl)    ((vl) / __SVE_VQ_BYTES)
+#define sve_vl_from_vq(vq)    ((vq) * __SVE_VQ_BYTES)
+
+#define __SVE_ZREG_SIZE(vq) ((__u32)(vq) * __SVE_VQ_BYTES)
+#define __SVE_PREG_SIZE(vq) ((__u32)(vq) * (__SVE_VQ_BYTES / 8))
+#define __SVE_FFR_SIZE(vq)  __SVE_PREG_SIZE(vq)
+
+#define __SVE_ZREGS_OFFSET  0
+#define __SVE_ZREG_OFFSET(vq, n) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREG_SIZE(vq) * (n))
+#define __SVE_ZREGS_SIZE(vq) \
+    (__SVE_ZREG_OFFSET(vq, __SVE_NUM_ZREGS) - __SVE_ZREGS_OFFSET)
+
+#define __SVE_PREGS_OFFSET(vq) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREGS_SIZE(vq))
+#define __SVE_PREG_OFFSET(vq, n) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREG_SIZE(vq) * (n))
+#define __SVE_PREGS_SIZE(vq) \
+    (__SVE_PREG_OFFSET(vq, __SVE_NUM_PREGS) - __SVE_PREGS_OFFSET(vq))
+
+#define __SVE_FFR_OFFSET(vq) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREGS_SIZE(vq))
+
+
+#define SVE_SIG_ZREG_SIZE(vq)   __SVE_ZREG_SIZE(vq)
+#define SVE_SIG_PREG_SIZE(vq)   __SVE_PREG_SIZE(vq)
+#define SVE_SIG_FFR_SIZE(vq)    __SVE_FFR_SIZE(vq)
+
+#define SVE_SIG_REGS_OFFSET                 \
+    ((sizeof(struct sve_context) + (__SVE_VQ_BYTES - 1))    \
+        / __SVE_VQ_BYTES * __SVE_VQ_BYTES)
+
+#define SVE_SIG_ZREGS_OFFSET \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREGS_OFFSET)
+#define SVE_SIG_ZREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREG_OFFSET(vq, n))
+#define SVE_SIG_ZREGS_SIZE(vq) __SVE_ZREGS_SIZE(vq)
+
+#define SVE_SIG_PREGS_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREGS_OFFSET(vq))
+#define SVE_SIG_PREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREG_OFFSET(vq, n))
+#define SVE_SIG_PREGS_SIZE(vq) __SVE_PREGS_SIZE(vq)
+
+#define SVE_SIG_FFR_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_FFR_OFFSET(vq))
+
+#define SVE_SIG_REGS_SIZE(vq) \
+        (__SVE_FFR_OFFSET(vq) + __SVE_FFR_SIZE(vq))
+
+#define SVE_SIG_CONTEXT_SIZE(vq) \
+        (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
+
+#endif // SVE_MAGIC
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
 
 #ifdef HOST_S390X
 
@@ -157,7 +247,6 @@ using asm_sigcontext::_xstate;
 #define MCREG_Pc(mc)      ((mc).__pc)
 
 #elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this"
 
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
@@ -166,7 +255,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_T0(mc)      ((mc).__gregs[5])
 #define MCREG_T1(mc)      ((mc).__gregs[6])
 #define MCREG_T2(mc)      ((mc).__gregs[7])
-#define MCREG_S0(mc)      ((mc).__gregs[8])
+#define MCREG_Fp(mc)      ((mc).__gregs[8])
 #define MCREG_S1(mc)      ((mc).__gregs[9])
 #define MCREG_A0(mc)      ((mc).__gregs[10])
 #define MCREG_A1(mc)      ((mc).__gregs[11])
@@ -192,7 +281,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
 
-#else // HOST_LOONGARCH64
+#else // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
@@ -229,7 +318,7 @@ using asm_sigcontext::_xstate;
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#endif // HOST_LOONGARCH64
+#endif // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #else // HOST_64BIT
 
@@ -346,7 +435,7 @@ using asm_sigcontext::_xstate;
 /////////////////////
 // Extended state
 
-#ifdef XSTATE_SUPPORTED
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64)
 
 #if HAVE_FPSTATE_GLIBC_RESERVED1
 #define FPSTATE_RESERVED __glibc_reserved1
@@ -354,12 +443,54 @@ using asm_sigcontext::_xstate;
 #define FPSTATE_RESERVED padding
 #endif
 
-// The mask for YMM registers presence flag stored in the xfeatures (formerly xstate_bv). On current Linuxes, this definition is
-// only in internal headers, so we define it here. The xfeatures (formerly xstate_bv) is extracted from the processor xstate bit
-// vector register, so the value is OS independent.
-#ifndef XSTATE_YMM
-#define XSTATE_YMM 4
+// Presence for various extended state registers is detected via the xfeatures (formerly xstate_bv) field. On some
+// Linux distros, this definition is only in internal headers, so we define it here. The masks are extracted from
+// the processor xstate bit vector register, so the value is OS independent.
+
+#ifndef XFEATURE_MASK_YMM
+#define XFEATURE_MASK_YMM (1 << XSTATE_AVX)
+#endif // XFEATURE_MASK_YMM
+
+#ifndef XFEATURE_MASK_OPMASK
+#define XFEATURE_MASK_OPMASK (1 << XSTATE_AVX512_KMASK)
+#endif // XFEATURE_MASK_OPMASK
+
+#ifndef XFEATURE_MASK_ZMM_Hi256
+#define XFEATURE_MASK_ZMM_Hi256 (1 << XSTATE_AVX512_ZMM_H)
+#endif // XFEATURE_MASK_ZMM_Hi256
+
+#ifndef XFEATURE_MASK_Hi16_ZMM
+#define XFEATURE_MASK_Hi16_ZMM (1 << XSTATE_AVX512_ZMM)
+#endif // XFEATURE_MASK_Hi16_ZMM
+
+#ifndef XFEATURE_MASK_AVX512
+#define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
+#endif // XFEATURE_MASK_AVX512
+
+#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
+#define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xstate_bv
+#else
+#define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xfeatures
 #endif
+
+// The internal _xstate struct is exposed as fpstate, xstate_hdr, ymmh. However, in reality this is
+// fpstate, xstate_hdr, extended_state_area and "technically" we are supposed to be determining the
+// offset and size of each XFEATURE_MASK_* via CPUID. The extended region always starts at offset
+// 576 which is the same as the address of ymmh
+
+#define FPREG_Xstate_ExtendedStateArea_Offset offsetof(_xstate, ymmh)
+#define FPREG_Xstate_ExtendedStateArea(uc) (reinterpret_cast<uint8_t *>(FPREG_Fpstate(uc)) + \
+                                            FPREG_Xstate_ExtendedStateArea_Offset)
+
+struct Xstate_ExtendedFeature
+{
+    bool     initialized;
+    uint32_t offset;
+    uint32_t size;
+};
+
+#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
+extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
@@ -378,7 +509,7 @@ inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
     return FPREG_FpxSwBytes(uc)->extended_size;
 }
 
-inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
+inline bool FPREG_HasExtendedState(const ucontext_t *uc)
 {
     // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
     static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
@@ -401,22 +532,101 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
         return false;
     }
 
-#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
-    return (FPREG_FpxSwBytes(uc)->xstate_bv & XSTATE_YMM) != 0;
-#else
-    return (FPREG_FpxSwBytes(uc)->xfeatures & XSTATE_YMM) != 0;
-#endif
+    return true;
 }
 
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 {
-    static_assert_no_msg(sizeof(reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space) == 16 * 16);
-    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
 
-    return reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space;
+    return (FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM;
 }
 
-#endif // XSTATE_SUPPORTED
+inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featureSize, uint32_t featureIndex)
+{
+    _ASSERTE(featureSize != nullptr);
+    _ASSERTE(featureIndex < (sizeof(Xstate_ExtendedFeatures) / sizeof(Xstate_ExtendedFeature)));
+    _ASSERT(FPREG_Xstate_ExtendedStateArea_Offset == 576);
+
+    Xstate_ExtendedFeature *extendedFeature = &Xstate_ExtendedFeatures[featureIndex];
+
+    if (!extendedFeature->initialized)
+    {
+        int cpuidInfo[4];
+
+        const int CPUID_EAX = 0;
+        const int CPUID_EBX = 1;
+        const int CPUID_ECX = 2;
+        const int CPUID_EDX = 3;
+
+#ifdef _DEBUG
+        // We should only be calling this function if we know the extended feature exists
+
+        __cpuid(cpuidInfo, 0x00000000);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
+
+        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
+        _ASSERTE((cpuidInfo[CPUID_EAX] & (1 << featureIndex)) != 0);
+#endif // _DEBUG
+
+        __cpuidex(cpuidInfo, 0x0000000D, static_cast<int32_t>(featureIndex));
+
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) > 0);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EBX]) >= FPREG_Xstate_ExtendedStateArea_Offset);
+
+        extendedFeature->size   = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
+        extendedFeature->offset = static_cast<uint32_t>(cpuidInfo[CPUID_EBX] - FPREG_Xstate_ExtendedStateArea_Offset);
+
+        extendedFeature->initialized = true;
+    }
+
+    *featureSize = extendedFeature->size;
+    return (FPREG_Xstate_ExtendedStateArea(uc) + extendedFeature->offset);
+}
+
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX);
+}
+
+inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
+{
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
+
+    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_AVX512) != XFEATURE_MASK_AVX512)
+    {
+        return false;
+    }
+
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    return Xstate_IsAvx512Supported();
+}
+
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_KMASK);
+}
+
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM_H);
+}
+
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
+}
+#endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /////////////////////
 
@@ -448,7 +658,57 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
 #if defined(HOST_ARM64)
 
-#ifndef TARGET_OSX
+#if defined(TARGET_FREEBSD)
+
+#define MCREG_X0(mc)  (mc.mc_gpregs.gp_x[0])
+#define MCREG_X1(mc)  (mc.mc_gpregs.gp_x[1])
+#define MCREG_X2(mc)  (mc.mc_gpregs.gp_x[2])
+#define MCREG_X3(mc)  (mc.mc_gpregs.gp_x[3])
+#define MCREG_X4(mc)  (mc.mc_gpregs.gp_x[4])
+#define MCREG_X5(mc)  (mc.mc_gpregs.gp_x[5])
+#define MCREG_X6(mc)  (mc.mc_gpregs.gp_x[6])
+#define MCREG_X7(mc)  (mc.mc_gpregs.gp_x[7])
+#define MCREG_X8(mc)  (mc.mc_gpregs.gp_x[8])
+#define MCREG_X9(mc)  (mc.mc_gpregs.gp_x[9])
+#define MCREG_X10(mc) (mc.mc_gpregs.gp_x[10])
+#define MCREG_X11(mc) (mc.mc_gpregs.gp_x[11])
+#define MCREG_X12(mc) (mc.mc_gpregs.gp_x[12])
+#define MCREG_X13(mc) (mc.mc_gpregs.gp_x[13])
+#define MCREG_X14(mc) (mc.mc_gpregs.gp_x[14])
+#define MCREG_X15(mc) (mc.mc_gpregs.gp_x[15])
+#define MCREG_X16(mc) (mc.mc_gpregs.gp_x[16])
+#define MCREG_X17(mc) (mc.mc_gpregs.gp_x[17])
+#define MCREG_X18(mc) (mc.mc_gpregs.gp_x[18])
+#define MCREG_X19(mc) (mc.mc_gpregs.gp_x[19])
+#define MCREG_X20(mc) (mc.mc_gpregs.gp_x[20])
+#define MCREG_X21(mc) (mc.mc_gpregs.gp_x[21])
+#define MCREG_X22(mc) (mc.mc_gpregs.gp_x[22])
+#define MCREG_X23(mc) (mc.mc_gpregs.gp_x[23])
+#define MCREG_X24(mc) (mc.mc_gpregs.gp_x[24])
+#define MCREG_X25(mc) (mc.mc_gpregs.gp_x[25])
+#define MCREG_X26(mc) (mc.mc_gpregs.gp_x[26])
+#define MCREG_X27(mc) (mc.mc_gpregs.gp_x[27])
+#define MCREG_X28(mc) (mc.mc_gpregs.gp_x[28])
+
+#define MCREG_Cpsr(mc) (mc.mc_gpregs.gp_spsr)
+#define MCREG_Lr(mc)   (mc.mc_gpregs.gp_lr)
+#define MCREG_Sp(mc)   (mc.mc_gpregs.gp_sp)
+#define MCREG_Pc(mc)   (mc.mc_gpregs.gp_elr)
+#define MCREG_Fp(mc)   (mc.mc_gpregs.gp_x[29])
+
+inline
+struct fpregs* GetNativeSigSimdContext(native_context_t *mc)
+{
+    return &(mc->uc_mcontext.mc_fpregs);
+}
+
+inline
+const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
+{
+    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+}
+
+#elif !defined(TARGET_OSX) // TARGET_FREEBSD
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -486,41 +746,18 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_Pc(mc)      ((mc).pc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 
+void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_ptr, sve_context **sve_ptr);
 
 inline
-fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
+void GetNativeSigSimdContext(native_context_t *mc, fpsimd_context **fp_ptr, sve_context **sve_ptr)
 {
-    size_t size = 0;
-
-    do
-    {
-        fpsimd_context* fp = reinterpret_cast<fpsimd_context *>(&mc->uc_mcontext.__reserved[size]);
-
-        if(fp->head.magic == FPSIMD_MAGIC)
-        {
-            _ASSERTE(fp->head.size >= sizeof(fpsimd_context));
-            _ASSERTE(size + fp->head.size <= sizeof(mc->uc_mcontext.__reserved));
-
-            return fp;
-        }
-
-        if (fp->head.size == 0)
-        {
-            break;
-        }
-
-        size += fp->head.size;
-    } while (size + sizeof(fpsimd_context) <= sizeof(mc->uc_mcontext.__reserved));
-
-    _ASSERTE(false);
-
-    return nullptr;
+    _GetNativeSigSimdContext((uint8_t *)&mc->uc_mcontext.__reserved[0], sizeof(mc->uc_mcontext.__reserved), fp_ptr, sve_ptr);
 }
 
 inline
-const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
+void GetConstNativeSigSimdContext(const native_context_t *mc, fpsimd_context const **fp_ptr, sve_context const **sve_ptr)
 {
-    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+    GetNativeSigSimdContext(const_cast<native_context_t*>(mc), const_cast<fpsimd_context **>(fp_ptr), const_cast<sve_context **>(sve_ptr));
 }
 
 #else // TARGET_OSX
@@ -656,11 +893,48 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 }
 
 static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_XMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX_STATE64&)FPSTATE(uc)).__fpu_ymmh0);
 }
 
+inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
+{
+    _ASSERTE((uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64)));
+    return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
+}
+
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_OPMASK_REG) * 8;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_k0);
+}
+
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_YMM_REG) * 16;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmmh0);
+}
+
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
+}
 #else //TARGET_OSX
 
     // For FreeBSD, as found in x86/ucontext.h
@@ -957,6 +1231,8 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 
 #ifdef HOST_64BIT
 
+#ifdef HOST_AMD64
+
 #define BSDREG_Rbx(reg)     BSD_REGS_STYLE(reg,RBX,rbx)
 #define BSDREG_Rcx(reg)     BSD_REGS_STYLE(reg,RCX,rcx)
 #define BSDREG_Rdx(reg)     BSD_REGS_STYLE(reg,RDX,rdx)
@@ -977,6 +1253,45 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_R14(reg)     BSD_REGS_STYLE(reg,R14,r14)
 #define BSDREG_R15(reg)     BSD_REGS_STYLE(reg,R15,r15)
 #define BSDREG_EFlags(reg)  BSD_REGS_STYLE(reg,RFLAGS,rflags)
+
+#elif defined(HOST_ARM64)
+
+#define BSDREG_X0(reg) BSD_REGS_STYLE(reg,X[0],x[0])
+#define BSDREG_X1(reg) BSD_REGS_STYLE(reg,X[1],x[1])
+#define BSDREG_X2(reg) BSD_REGS_STYLE(reg,X[2],x[2])
+#define BSDREG_X3(reg) BSD_REGS_STYLE(reg,X[3],x[3])
+#define BSDREG_X4(reg) BSD_REGS_STYLE(reg,X[4],x[4])
+#define BSDREG_X5(reg) BSD_REGS_STYLE(reg,X[5],x[5])
+#define BSDREG_X6(reg) BSD_REGS_STYLE(reg,X[6],x[6])
+#define BSDREG_X7(reg) BSD_REGS_STYLE(reg,X[7],x[7])
+#define BSDREG_X8(reg) BSD_REGS_STYLE(reg,X[8],x[8])
+#define BSDREG_X9(reg) BSD_REGS_STYLE(reg,X[9],x[9])
+#define BSDREG_X10(reg) BSD_REGS_STYLE(reg,X[10],x[10])
+#define BSDREG_X11(reg) BSD_REGS_STYLE(reg,X[11],x[11])
+#define BSDREG_X12(reg) BSD_REGS_STYLE(reg,X[12],x[12])
+#define BSDREG_X13(reg) BSD_REGS_STYLE(reg,X[13],x[13])
+#define BSDREG_X14(reg) BSD_REGS_STYLE(reg,X[14],x[14])
+#define BSDREG_X15(reg) BSD_REGS_STYLE(reg,X[15],x[15])
+#define BSDREG_X16(reg) BSD_REGS_STYLE(reg,X[16],x[16])
+#define BSDREG_X17(reg) BSD_REGS_STYLE(reg,X[17],x[17])
+#define BSDREG_X18(reg) BSD_REGS_STYLE(reg,X[18],x[18])
+#define BSDREG_X19(reg) BSD_REGS_STYLE(reg,X[19],x[19])
+#define BSDREG_X20(reg) BSD_REGS_STYLE(reg,X[20],x[20])
+#define BSDREG_X21(reg) BSD_REGS_STYLE(reg,X[21],x[21])
+#define BSDREG_X22(reg) BSD_REGS_STYLE(reg,X[22],x[22])
+#define BSDREG_X23(reg) BSD_REGS_STYLE(reg,X[23],x[23])
+#define BSDREG_X24(reg) BSD_REGS_STYLE(reg,X[24],x[24])
+#define BSDREG_X25(reg) BSD_REGS_STYLE(reg,X[25],x[25])
+#define BSDREG_X26(reg) BSD_REGS_STYLE(reg,X[26],x[26])
+#define BSDREG_X27(reg) BSD_REGS_STYLE(reg,X[27],x[27])
+#define BSDREG_X28(reg) BSD_REGS_STYLE(reg,X[28],x[28])
+#define BSDREG_Pc(reg) BSD_REGS_STYLE(reg,Elr,elr)
+#define BSDREG_Fp(reg) BSD_REGS_STYLE(reg,X[29],x[29])
+#define BSDREG_Sp(reg) BSD_REGS_STYLE(reg,Sp,sp)
+#define BSDREG_Lr(reg) BSD_REGS_STYLE(reg,Lr,lr)
+#define BSDREG_Cpsr(reg) BSD_REGS_STYLE(reg,Spsr,spsr)
+
+#endif // HOST_ARM64
 
 #else // HOST_64BIT
 
@@ -1039,8 +1354,6 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_RISCV64)
-    return pContext->S0;
 #else
     return pContext->Fp;
 #endif
@@ -1230,6 +1543,22 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context);
 
 #endif  // HAVE_MACH_EXCEPTIONS else
+
+#if defined(HOST_ARM64)
+/*++
+Function :
+    CONTEXT_GetSveLengthFromOS
+
+    Gets the SVE vector length
+Parameters :
+    None
+Return value :
+    The SVE vector length in bytes
+--*/
+DWORD64
+CONTEXT_GetSveLengthFromOS(
+    );
+#endif // HOST_ARM64
 
 #ifdef __cplusplus
 }

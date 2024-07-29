@@ -24,7 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-EXTERN _StubRareEnableWorker@4:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
 endif ; FEATURE_COMINTEROP
@@ -41,6 +40,7 @@ EXTERN _NDirectImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
+EXTERN _CallCopyConstructorsWorker@4:PROC
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -251,6 +251,10 @@ COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
 
+ifdef HAS_ADDRESS_SANITIZER
+EXTERN ___asan_handle_no_return:PROC
+endif
+
 ; Note that RtlUnwind trashes EBX, ESI and EDI, so this wrapper preserves them
 CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, callback :DWORD, pExceptionRecord :DWORD, retVal :DWORD
 
@@ -268,6 +272,10 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
+        ; Call ___asan_handle_no_return here as we are not going to return.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
 
         mov     ebx, [edx+EHContext_Ebx]
@@ -293,6 +301,10 @@ _ResumeAtJitEHHelper@4 ENDP
 ; int __stdcall CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFilterHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -334,6 +346,10 @@ _CallJitEHFilterHelper@8 ENDP
 ; void __stdcall CallJITEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFinallyHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -377,114 +393,6 @@ endif
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
 
-
-_GetSpecificCpuTypeAsm@0 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      Assume486
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      Assume486   ; brif CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-
-        ; filter out everything except family and model
-        ; Note that some multi-procs have different stepping number for each proc
-        and     eax, 0ff0h
-
-        jmp     CpuTypeDone
-
-Assume486:
-        mov     eax, 0400h ; report 486
-CpuTypeDone:
-        pop     ebx
-        retn
-_GetSpecificCpuTypeAsm@0 ENDP
-
-; uint32_t __stdcall GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
-_GetSpecificCpuFeaturesAsm@4 PROC public
-        push    ebx         ; ebx is trashed by the cpuid calls
-
-        ; See if the chip supports CPUID
-        pushfd
-        pop     ecx         ; Get the EFLAGS
-        mov     eax, ecx    ; Save for later testing
-        xor     ecx, 200000h ; Invert the ID bit.
-        push    ecx
-        popfd               ; Save the updated flags.
-        pushfd
-        pop     ecx         ; Retrieve the updated flags
-        xor     ecx, eax    ; Test if it actually changed (bit set means yes)
-        push    eax
-        popfd               ; Restore the flags
-
-        test    ecx, 200000h
-        jz      CpuFeaturesFail
-
-        xor     eax, eax
-        cpuid
-
-        test    eax, eax
-        jz      CpuFeaturesDone ; br if CPUID1 not allowed
-
-        mov     eax, 1
-        cpuid
-        mov     eax, edx        ; return all feature flags
-        mov     edx, [esp+8]
-        test    edx, edx
-        jz      CpuFeaturesDone
-        mov     [edx],ebx       ; return additional useful information
-        jmp     CpuFeaturesDone
-
-CpuFeaturesFail:
-        xor     eax, eax    ; Nothing to report
-CpuFeaturesDone:
-        pop     ebx
-        retn    4
-_GetSpecificCpuFeaturesAsm@4 ENDP
-
-
-;-----------------------------------------------------------------------
-; The out-of-line portion of the code to enable preemptive GC.
-; After the work is done, the code jumps back to the "pRejoinPoint"
-; which should be emitted right after the inline part is generated.
-;
-; Assumptions:
-;      ebx = Thread
-; Preserves
-;      all registers except ecx.
-;
-;-----------------------------------------------------------------------
-_StubRareEnable proc public
-        push    eax
-        push    edx
-
-        push    ebx
-        call    _StubRareEnableWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareEnable ENDP
-
 ifdef FEATURE_COMINTEROP
 _StubRareDisableHR proc public
         push    edx
@@ -516,39 +424,6 @@ InternalExceptionWorker proc public
         push    edx             ; restore RETADDR
         jmp     @JIT_InternalThrow@4
 InternalExceptionWorker endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubNullException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_NullReferenceException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubNullException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubRangeException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_IndexOutOfRangeException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubRangeException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubTypeMismatchException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_ArrayTypeMismatchException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubTypeMismatchException endp
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -1131,6 +1006,29 @@ GoCallCalliWorker:
 
 _GenericPInvokeCalliHelper@0 endp
 
+;==========================================================================
+; This is small stub whose purpose is to record current stack pointer and
+; call CallCopyConstructorsWorker to invoke copy constructors and destructors
+; as appropriate. This stub operates on arguments already pushed to the
+; stack by JITted IL stub and must not create a new frame, i.e. it must tail
+; call to the target for it to see the arguments that copy ctors have been
+; called on.
+;
+_CopyConstructorCallStub@0 proc public
+    ; there may be an argument in ecx - save it
+    push    ecx
+
+    ; push pointer to arguments
+    lea     edx, [esp + 8]
+    push    edx
+
+    call    _CallCopyConstructorsWorker@4
+
+    ; restore ecx and tail call to the target
+    pop     ecx
+    jmp     eax
+_CopyConstructorCallStub@0 endp
+
 ifdef FEATURE_COMINTEROP
 
 ;==========================================================================
@@ -1335,7 +1233,7 @@ _TheUMEntryPrestub@0 endp
 ifdef FEATURE_COMINTEROP
 ;==========================================================================
 ; CLR -> COM generic or late-bound call
-_GenericComPlusCallStub@0 proc public
+_GenericCLRToCOMCallStub@0 proc public
 
     STUB_PROLOG
 
@@ -1357,19 +1255,19 @@ _GenericComPlusCallStub@0 proc public
 
     ; From here on, mustn't trash eax:edx
 
-    ; Get pComPlusCallInfo for return thunk
-    mov         ecx, [ebx + ComPlusCallMethodDesc__m_pComPlusCallInfo]
+    ; Get pCLRToCOMCallInfo for return thunk
+    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
 
     STUB_EPILOG_RETURN
 
     ; Tailcall return thunk
-    jmp [ecx + ComPlusCallInfo__m_pRetThunk]
+    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
 
-_GenericComPlusCallStub@0 endp
+_GenericCLRToCOMCallStub@0 endp
 endif ; FEATURE_COMINTEROP
 
 

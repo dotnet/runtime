@@ -17,8 +17,6 @@
 
 GCSystemInfo g_SystemInfo;
 
-static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
-
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
 static AffinitySet g_processAffinitySet;
@@ -252,10 +250,6 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The limit was cached already
-    if (g_RestrictedPhysicalMemoryLimit != (size_t)UINTPTR_MAX)
-        return g_RestrictedPhysicalMemoryLimit;
-
     size_t job_physical_memory_limit = (size_t)UINTPTR_MAX;
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
@@ -296,8 +290,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 (job_process_memory_limit != (size_t)UINTPTR_MAX) ||
                 (job_workingset_limit != (size_t)UINTPTR_MAX))
             {
-                job_physical_memory_limit = min (job_memory_limit, job_process_memory_limit);
-                job_physical_memory_limit = min (job_physical_memory_limit, job_workingset_limit);
+                job_physical_memory_limit = std::min (job_memory_limit, job_process_memory_limit);
+                job_physical_memory_limit = std::min (job_physical_memory_limit, job_workingset_limit);
 
                 MEMORYSTATUSEX ms;
                 ::GetProcessMemoryLoad(&ms);
@@ -305,7 +299,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 total_physical = ms.ullAvailPhys;
 
                 // A sanity check in case someone set a larger limit than there is actual physical memory.
-                job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
+                job_physical_memory_limit = (size_t) std::min (job_physical_memory_limit, (size_t)ms.ullTotalPhys);
             }
         }
     }
@@ -337,8 +331,7 @@ exit:
         job_physical_memory_limit = 0;
     }
 
-    VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
-    return g_RestrictedPhysicalMemoryLimit;
+    return job_physical_memory_limit;
 }
 
 // This function checks to see if GetLogicalProcessorInformation API is supported.
@@ -566,7 +559,7 @@ uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 // Get id of the process
 uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return ::GetCurrentThreadId();
+    return ::GetCurrentProcessId();
 }
 
 // Set ideal processor for the current thread
@@ -950,7 +943,16 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     return &g_processAffinitySet;
 }
 
-// Return the size of the user-mode portion of the virtual address space of this process.
+// Return the maximum address of the of the virtual address space of this process.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+size_t GCToOSInterface::GetVirtualMemoryMaxAddress()
+{
+    // On Windows, the maximum address is the same as the virtual memory limit, unlike Unix
+    return GCToOSInterface::GetVirtualMemoryLimit();
+}
+
+// Return the size of the available user-mode portion of the virtual address space of this process.
 // Return:
 //  non zero if it has succeeded, (size_t)-1 if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
@@ -1137,7 +1139,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
                     mask &= mask - 1;
                 }
 
-                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
+                currentProcsOnNode = std::max(currentProcsOnNode, procsOnNode);
             }
             *max_procs_per_node = currentProcsOnNode;
             *total_nodes = (uint16_t)g_nNodes;
@@ -1161,7 +1163,7 @@ bool GCToOSInterface::GetCPUGroupInfo(uint16_t* total_groups, uint32_t* max_proc
         DWORD currentProcsInGroup = 0;
         for (WORD i = 0; i < g_nGroups; i++)
         {
-            currentProcsInGroup = max(currentProcsInGroup, g_CPUGroupInfoArray[i].nr_active);
+            currentProcsInGroup = std::max(currentProcsInGroup, (DWORD)g_CPUGroupInfoArray[i].nr_active);
         }
         *max_procs_per_group = currentProcsInGroup;
         return true;

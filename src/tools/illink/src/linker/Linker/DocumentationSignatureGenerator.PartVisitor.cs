@@ -9,8 +9,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-
-	public sealed partial class DocumentationSignatureGenerator
+	internal sealed partial class DocumentationSignatureGenerator
 	{
 		/// <summary>
 		///  A visitor that generates the part of the documentation comment after the initial type
@@ -122,7 +121,7 @@ namespace Mono.Linker
 
 					// If the containing type is nested within other types.
 					// e.g. A<T>.B<U>.M<V>(T t, U u, V v) should be M(`0, `1, ``0).
-					// Roslyn needs to add generic arities of parents, but the innermost type redeclares 
+					// Roslyn needs to add generic arities of parents, but the innermost type redeclares
 					// all generic parameters so we don't need to add them.
 					builder.Append ('`');
 				}
@@ -155,7 +154,7 @@ namespace Mono.Linker
 					builder.Append ('.');
 				}
 
-				if (!String.IsNullOrEmpty (typeReference.Namespace))
+				if (!string.IsNullOrEmpty (typeReference.Namespace))
 					builder.Append (typeReference.Namespace).Append ('.');
 
 				// This includes '`n' for mangled generic types

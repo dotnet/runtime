@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -265,8 +264,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			static void TestWithNoTypeParameters ()
 			{
-				// Linker should not warn even if the type parameters don't match since the target method has no requirements
-				// the fact that the reflection API may fail in this case is not something linker should worry about.
+				// ILLink should not warn even if the type parameters don't match since the target method has no requirements
+				// the fact that the reflection API may fail in this case is not something ILLink should worry about.
 				Expression.Call (typeof (TestGenericMethods), nameof (GenericMethodCalledAsNonGeneric), Type.EmptyTypes);
 			}
 
@@ -285,8 +284,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", "Expression.Call", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", "Expression.Call")]
 			static void TestMethodWithRequirementsUnknownTypeArray (Type[] types)
 			{
 				// The passed in types array cannot be analyzed, so a warning is produced.
@@ -317,14 +315,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[ExpectedWarning ("IL2060")]
 				public static void TestWithTypeParameters ()
 				{
-					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					// Trimming tools have no idea which method to mark - so it should warn if there are type parameters
 					Expression.Call (typeof (UnknownMethodWithRequirements), _unknownMethodName, new Type[] { GetUnknownType () });
 				}
 
 				[Kept]
 				public static void TestWithoutTypeParameters ()
 				{
-					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					// Trimming tools have no idea which method to mark - so it should warn if there are type parameters
 					Expression.Call (typeof (UnknownMethodWithRequirements), _unknownMethodName, Type.EmptyTypes);
 				}
 			}
@@ -347,14 +345,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[ExpectedWarning ("IL2060")]
 				public static void TestWithTypeParameters ()
 				{
-					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					// Trimming tools have no idea which method to mark - so it should warn if there are type parameters
 					Expression.Call (_unknownType, "NoMethod", new Type[] { GetUnknownType () });
 				}
 
 				[Kept]
 				public static void TestWithoutTypeParameters ()
 				{
-					// Linker has no idea which method to mark - so it should warn if there are type parameters
+					// Trimming tools have no idea which method to mark - so it should warn if there are type parameters
 					Expression.Call (_unknownType, "NoMethod", Type.EmptyTypes);
 				}
 			}

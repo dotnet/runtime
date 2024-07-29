@@ -96,7 +96,7 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateManagedCastHelpers()
+void ECall::PopulateManagedHelpers()
 {
 
     STANDARD_VM_CONTRACT;
@@ -137,28 +137,63 @@ void ECall::PopulateManagedCastHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_UNBOX, pDest);
 
-    // Array element accessors are more perf sensitive than other managed helpers and indirection
-    // costs introduced by PreStub could be noticeable (7% to 30% depending on platform).
-    // Other helpers are either more complex, less common, or have their trivial case inlined by the JIT,
-    // so indirection is not as big concern.
-    // We JIT-compile the following helpers eagerly here to avoid indirection costs.
-
-    //TODO: revise if this specialcasing is still needed when crossgen supports tailcall optimizations
-    //      see: https://github.com/dotnet/runtime/issues/5857
-
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__STELEMREF));
-    pMD->DoPrestub(NULL);
-    // This helper is marked AggressiveOptimization and its native code is in its final form.
-    // Get the code directly to avoid PreStub indirection.
-    pDest = pMD->GetNativeCode();
+    pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_ARRADDR_ST, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__LDELEMAREF));
-    pMD->DoPrestub(NULL);
-    // This helper is marked AggressiveOptimization and its native code is in its final form.
-    // Get the code directly to avoid PreStub indirection.
-    pDest = pMD->GetNativeCode();
+    pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMSET));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMSET, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMZERO));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMZERO, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__SPAN_HELPERS__MEMCOPY));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_MEMCPY, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__BUFFER__MEMCOPYGC));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_BULK_WRITEBARRIER, pDest);
+
+#ifndef TARGET_64BIT
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_INT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_LMUL_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__MULTIPLY_CHECKED_UINT64));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ULMUL_OVF, pDest);
+#endif
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2INT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT32_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2UINT_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_INT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2LNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT64_CHECKED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;
@@ -461,7 +496,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != NULL);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -512,7 +547,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != NULL);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 
@@ -611,7 +646,6 @@ MethodDesc* ECall::MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoi
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

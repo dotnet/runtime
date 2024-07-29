@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -47,28 +47,32 @@ namespace Mono.Linker.Steps
 
 			var reducer = new BodyReducer (method.Body, _context);
 
-			//
-			// If no external dependency can be extracted into constant there won't be
-			// anything to optimize in the method
-			//
-			if (!reducer.ApplyTemporaryInlining (this))
-				return;
+			try {
+				//
+				// If no external dependency can be extracted into constant there won't be
+				// anything to optimize in the method
+				//
+				if (!reducer.ApplyTemporaryInlining (this))
+					return;
 
-			//
-			// This is the main step which evaluates if any expression can
-			// produce folded branches. When it finds them the unreachable
-			// branch is removed.
-			//
-			if (reducer.RewriteBody ())
-				_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
+				//
+				// This is the main step which evaluates if any expression can
+				// produce folded branches. When it finds them the unreachable
+				// branch is removed.
+				//
+				if (reducer.RewriteBody ())
+					_context.LogMessage ($"Reduced '{reducer.InstructionsReplaced}' instructions in conditional branches for [{method.DeclaringType.Module.Assembly.Name}] method '{method.GetDisplayName ()}'.");
 
-			//
-			// Note: The inliner cannot run before reducer rewrites body as it
-			// would require another recomputing offsets due to instructions replacement
-			// done by inliner
-			//
-			var inliner = new CallInliner (method.Body, this);
-			inliner.RewriteBody ();
+				//
+				// Note: The inliner cannot run before reducer rewrites body as it
+				// would require another recomputing offsets due to instructions replacement
+				// done by inliner
+				//
+				var inliner = new CallInliner (method.Body, this);
+				inliner.RewriteBody ();
+			} catch (Exception e) {
+				throw new InternalErrorException ($"Could not process the body of method '{method.GetDisplayName ()}'.", e);
+			}
 		}
 
 		static bool IsMethodSupported (MethodDefinition method)
@@ -88,21 +92,39 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int>? mapping = null)
+		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int?>? mapping = null)
 		{
 			foreach (var instr in instructions) {
 				switch (instr.OpCode.FlowControl) {
 				case FlowControl.Branch:
 				case FlowControl.Cond_Branch:
 					if (instr.Operand is Instruction target) {
-						int index = mapping == null ? instructions.IndexOf (target) : mapping (target);
-						if (index >= firstInstr && index <= lastInstr)
-							return true;
+						if (mapping != null && mapping (target) is int index) {
+							if (index >= firstInstr && index <= lastInstr) {
+								return true;
+							}
+						}
+						else {
+							for (int i = firstInstr; i <= lastInstr; i++) {
+								if (instructions[i] == target) {
+									return true;
+								}
+							}
+						}
 					} else {
 						foreach (var rtarget in (Instruction[]) instr.Operand) {
-							int index = mapping == null ? instructions.IndexOf (rtarget) : mapping (rtarget);
-							if (index >= firstInstr && index <= lastInstr)
-								return true;
+							if (mapping != null && mapping (rtarget) is int index) {
+								if (index >= firstInstr && index <= lastInstr) {
+									return true;
+								}
+							}
+							else {
+								for (int i = firstInstr; i <= lastInstr; i++) {
+									if (instructions[i] == rtarget) {
+										return true;
+									}
+								}
+							}
 						}
 					}
 
@@ -535,8 +557,14 @@ namespace Mono.Linker.Steps
 			//
 			// Sorted list of body instruction indexes which were
 			// replaced pass-through nop
-			// 
+			//
 			List<int>? conditionInstrsToRemove;
+
+			//
+			// Sorted list of body instruction indexes which were
+			// set to be replaced with different intstruction
+			//
+			List<(int, Instruction)>? conditionInstrsToReplace;
 
 			public BodyReducer (MethodBody body, LinkContext context)
 			{
@@ -546,6 +574,7 @@ namespace Mono.Linker.Steps
 				FoldedInstructions = null;
 				mapping = null;
 				conditionInstrsToRemove = null;
+				conditionInstrsToReplace = null;
 				InstructionsReplaced = 0;
 			}
 
@@ -560,8 +589,8 @@ namespace Mono.Linker.Steps
 
 			Collection<Instruction>? FoldedInstructions { get; set; }
 
-			[MemberNotNull ("FoldedInstructions")]
-			[MemberNotNull ("mapping")]
+			[MemberNotNull (nameof(FoldedInstructions))]
+			[MemberNotNull (nameof(mapping))]
 			void InitializeFoldedInstruction ()
 			{
 				FoldedInstructions = new Collection<Instruction> (Instructions);
@@ -582,12 +611,56 @@ namespace Mono.Linker.Steps
 				FoldedInstructions[index] = newInstruction;
 			}
 
+			void RewriteCondition (int index, Instruction instr, int operand)
+			{
+				switch (instr.OpCode.Code) {
+				case Code.Brfalse:
+				case Code.Brfalse_S:
+					if (operand == 0) {
+						Rewrite (index, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+				case Code.Brtrue:
+				case Code.Brtrue_S:
+					if (operand != 0) {
+						Rewrite (index, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+
+				case Code.Switch:
+					var targets = (Instruction[]) instr.Operand;
+					if (operand < targets.Length) {
+						// It does not need to be conditional but existing logic in BodySweeper would
+						// need to be updated to deal with 1->2 instruction replacement
+						RewriteConditionTo (index, Instruction.Create (operand == 0 ? OpCodes.Brfalse : OpCodes.Brtrue, targets[operand]));
+						Rewrite (index, Instruction.Create (OpCodes.Br, targets[operand]));
+					} else {
+						RewriteConditionToNop (index);
+					}
+
+					break;
+				}
+			}
+
 			void RewriteConditionToNop (int index)
 			{
 				conditionInstrsToRemove ??= new List<int> ();
 
 				conditionInstrsToRemove.Add (index);
 				RewriteToNop (index);
+			}
+
+			void RewriteConditionTo (int index, Instruction instruction)
+			{
+				conditionInstrsToReplace ??= new List<(int, Instruction)> ();
+
+				conditionInstrsToReplace.Add ((index, instruction));
 			}
 
 			public void RewriteToNop (int index, int stackDepth)
@@ -718,7 +791,7 @@ namespace Mono.Linker.Steps
 				var bodySweeper = new BodySweeper (Body, reachableInstrs, unreachableEH, context);
 				bodySweeper.Initialize ();
 
-				bodySweeper.Process (conditionInstrsToRemove, out var nopInstructions);
+				bodySweeper.Process (conditionInstrsToRemove, conditionInstrsToReplace, out var nopInstructions);
 				InstructionsReplaced = bodySweeper.InstructionsReplaced;
 				if (InstructionsReplaced == 0)
 					return false;
@@ -859,10 +932,6 @@ namespace Mono.Linker.Steps
 					var opcode = instr.OpCode;
 
 					if (opcode.FlowControl == FlowControl.Cond_Branch) {
-						// No support for removing branches from switch instruction
-						if (opcode == OpCodes.Switch)
-							continue;
-
 						if (opcode.StackBehaviourPop == StackBehaviour.Pop1_pop1) {
 							if (!GetOperandsConstantValues (i, out left, out right))
 								continue;
@@ -894,12 +963,7 @@ namespace Mono.Linker.Steps
 										continue;
 
 									RewriteToNop (i - 1);
-
-									if (IsConstantBranch (opcode, opint)) {
-										Rewrite (i, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
-									} else {
-										RewriteConditionToNop (i);
-									}
+									RewriteCondition (i, instr, opint);
 
 									changed = true;
 									continue;
@@ -924,12 +988,27 @@ namespace Mono.Linker.Steps
 								RewriteToNop (i - 3);
 								RewriteToNop (i - 2);
 								RewriteToNop (i - 1);
+								RewriteCondition (i, instr, opint2);
 
-								if (IsConstantBranch (opcode, opint2)) {
-									Rewrite (i, Instruction.Create (OpCodes.Br, (Instruction) instr.Operand));
-								} else {
-									RewriteConditionToNop (i);
-								}
+								changed = true;
+								continue;
+							}
+
+							// Pattern for non-zero based switch with constant input
+							if (i >= 5 && opcode == OpCodes.Switch && GetConstantValue (FoldedInstructions[i - 5], out operand) && operand is int opint3 && IsPairedStlocLdloc (FoldedInstructions[i - 4], FoldedInstructions[i - 3])) {
+								if (IsJumpTargetRange (i - 4, i))
+									continue;
+
+								if (!GetConstantValue (FoldedInstructions[i - 2], out operand) || operand is not int offset)
+									continue;
+
+								if (FoldedInstructions[i - 1].OpCode != OpCodes.Sub)
+									continue;
+
+								RewriteToNop (i - 5);
+								RewriteToNop (i - 4);
+								RewriteToNop (i - 3);
+								RewriteCondition (i, instr, opint3 - offset);
 
 								changed = true;
 								continue;
@@ -1064,8 +1143,20 @@ namespace Mono.Linker.Steps
 							condBranches ??= new Stack<int> ();
 
 							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
-							if (handler.FilterStart != null)
+							if (handler.FilterStart != null) {
 								condBranches.Push (GetInstructionIndex (handler.FilterStart));
+								int filterEnd = GetInstructionIndex (handler.HandlerStart) - 1;
+								if (filterEnd >= 0 && FoldedInstructions[filterEnd].OpCode == OpCodes.Endfilter) {
+									// The endfilter instruction must be at the end of each filter block, even if it's not reachable:
+									//
+									// ECMA 335
+									// I.12.4.2.8.2.5 endfilter:
+									// 1.Shall appear as the lexically last instruction in the filter.
+									// [Note: The endfilter is required even if no control - flow path reaches it.This can happen if, for
+									// example, the filter does a throw.end note]
+									reachable[filterEnd] = true;
+								}
+							}
 						}
 
 						if (condBranches?.Count > 0) {
@@ -1100,6 +1191,15 @@ namespace Mono.Linker.Steps
 				idx = FoldedInstructions.IndexOf (instruction);
 				Debug.Assert (idx >= 0);
 				return idx;
+			}
+
+			int? TryGetInstructionIndex (Instruction instruction)
+			{
+				Debug.Assert (mapping != null);
+				if (mapping.TryGetValue (instruction, out int idx))
+					return idx;
+
+				return null;
 			}
 
 			bool GetOperandsConstantValues (int index, out object? left, out object? right)
@@ -1137,24 +1237,10 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			static bool IsConstantBranch (OpCode opCode, int operand)
-			{
-				switch (opCode.Code) {
-				case Code.Brfalse:
-				case Code.Brfalse_S:
-					return operand == 0;
-				case Code.Brtrue:
-				case Code.Brtrue_S:
-					return operand != 0;
-				}
-
-				throw new NotImplementedException (opCode.ToString ());
-			}
-
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
 				Debug.Assert (FoldedInstructions != null);
-				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, GetInstructionIndex);
+				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, TryGetInstructionIndex);
 			}
 		}
 
@@ -1219,15 +1305,34 @@ namespace Mono.Linker.Steps
 				ilprocessor = body.GetLinkerILProcessor ();
 			}
 
-			public void Process (List<int>? conditionInstrsToRemove, out List<Instruction>? sentinelNops)
+			public void Process (List<int>? conditionInstrsToRemove, List<(int, Instruction)>? conditionInstrsToReplace, out List<Instruction>? sentinelNops)
 			{
 				List<VariableDefinition>? removedVariablesReferences = null;
+				var instrs = Instructions;
+
+				//
+				// Process list of conditional instructions that were set to be replaced and not removed
+				//
+				if (conditionInstrsToReplace != null) {
+					foreach (var pair in conditionInstrsToReplace) {
+						var instr = instrs[pair.Item1];
+						switch (instr.OpCode.StackBehaviourPop) {
+						case StackBehaviour.Popi:
+							ILProcessor.Replace (pair.Item1, pair.Item2);
+							InstructionsReplaced++;
+							break;
+						default:
+							Debug.Fail ("not supported");
+							break;
+						}
+					}
+
+				}
 
 				//
 				// Initial pass which replaces unreachable instructions with nops or
 				// ret to keep the body verifiable
 				//
-				var instrs = Instructions;
 				for (int i = 0; i < instrs.Count; ++i) {
 					if (reachable[i])
 						continue;
@@ -1409,7 +1514,7 @@ namespace Mono.Linker.Steps
 			//
 			public bool SideEffectFreeResult { get; private set; }
 
-			[MemberNotNullWhen (true, "Result")]
+			[MemberNotNullWhen (true, nameof(Result))]
 			public bool Analyze (in CalleePayload callee, Stack<MethodDefinition> callStack)
 			{
 				MethodDefinition method = callee.Method;
@@ -1478,7 +1583,7 @@ namespace Mono.Linker.Steps
 								return false;
 
 							if (operand is int oint) {
-								if (oint == 1)
+								if (oint != 0)
 									jmpTarget = (Instruction) instr.Operand;
 
 								continue;
@@ -1786,7 +1891,7 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			[MemberNotNullWhen (true, "Result")]
+			[MemberNotNullWhen (true, nameof(Result))]
 			bool ConvertStackToResult ()
 			{
 				if (stack_instr == null)

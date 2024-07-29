@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <AppName>HelloiOS</AppName>
+    <GenerateXcodeProject>true</GenerateXcodeProject>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <!-- Escape NativeAOT bundling targets -->
+    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <IlcGenerateMstatFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateMstatFile>
+    <IlcGenerateDgmlFile Condition="'$(GenerateStats)' == 'true'">true</IlcGenerateDgmlFile>
+  </PropertyGroup>
+
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
+  <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
+
+  <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
+    <PublishAot>true</PublishAot>
+    <MSBuildWarningsAsErrors>$(MSBuildWarningsAsErrors);NU1603</MSBuildWarningsAsErrors>
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+    <RestoreAdditionalProjectSources>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'packages', '$(CoreCLRConfiguration)', 'Shipping'))</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\iOS\Program.cs" Link="Program.cs" />
+    <DirectPInvoke Include="__Internal" />
+    <_ExcludeFromAppDir Include=".dll" />
+    <_ExcludeFromAppDir Include=".json" />
+    <!-- The libbootstrapper and libbootstrapperdll get copied over to the AppDir, and since their extension is *.o both get included in the app build which results with an error.
+         This was not a problem before when these libraries were shipped as archives. -->
+    <_ExcludeFromAppDir Condition="'$(PublishAotUsingRuntimePack)' == 'true'"
+                        Include="libbootstrapper.o" />
+  </ItemGroup>
+
+  <!-- Use locally built runtime and ilcompiler packages -->
+  <Target Name="UpdateRuntimePackVersion" Condition="'$(PublishAotUsingRuntimePack)' == 'true'" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'NativeAOT'" LatestRuntimeFrameworkVersion="$(MajorVersion).$(MinorVersion).0-dev" />
+      <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
+        <ILCompilerPackVersion>$(MajorVersion).$(MinorVersion).0-dev</ILCompilerPackVersion>
+      </KnownILCompilerPack>
+    </ItemGroup>
+  </Target>
+
+  <!-- Run before ILC setup  -->
+  <Target Name="ConfigureIlcPathsForiOSCrossCompilation" Condition="'$(PublishAotUsingRuntimePack)' != 'true'"
+    BeforeTargets="SetupProperties">
+      <PropertyGroup>
+        <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+        <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+        <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+        <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RunAppBundle"
+          AfterTargets="_AppleGenerateAppBundle"
+          Condition="'$(DeployAndRun)' == 'true'">
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
+  </Target>
+
+</Project>

@@ -38,18 +38,17 @@ typedef enum
     LocaleString_Iso3166CountryName2= 0x00000068,
     LocaleString_NaNSymbol = 0x00000069,
     LocaleString_PositiveInfinitySymbol = 0x0000006a,
+    LocaleString_NegativeInfinitySymbol = 0x0000006b,
     LocaleString_ParentName = 0x0000006d,
     LocaleString_PercentSymbol = 0x00000076,
     LocaleString_PerMilleSymbol = 0x00000077
 } LocaleStringData;
-
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
-
-PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
-                                                          int shortFormat, UChar* value,
-                                                          int32_t valueLength);
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData, const char* currentUILocaleName);
+#endif  
 

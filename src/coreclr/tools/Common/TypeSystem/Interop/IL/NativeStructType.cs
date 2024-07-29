@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using ILCompiler;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
@@ -66,6 +67,12 @@ namespace Internal.TypeSystem.Interop
             {
                 return ManagedStructType.IsExplicitLayout;
             }
+        }
+
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
         }
 
         public override bool IsSequentialLayout
@@ -143,6 +150,7 @@ namespace Internal.TypeSystem.Interop
         private NativeStructField[] _fields;
         private InteropStateManager _interopStateManager;
         private bool _hasInvalidLayout;
+        private DefType _typeForFieldIteration;
 
         public bool HasInvalidLayout
         {
@@ -170,7 +178,8 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
-            _hasInvalidLayout = false;
+            _hasInvalidLayout = !managedStructType.HasLayout();
+            _typeForFieldIteration = managedStructType.IsInlineArray ? new TypeWithRepeatedFields(managedStructType) : managedStructType;
 
             Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());
             if (typesBeingLookedAt.Contains(managedStructType))
@@ -193,19 +202,20 @@ namespace Internal.TypeSystem.Interop
             bool isAnsi = ManagedStructType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
 
             int numFields = 0;
-            foreach (FieldDesc field in ManagedStructType.GetFields())
+            foreach (FieldDesc field in _typeForFieldIteration.GetFields())
             {
                 if (field.IsStatic)
                 {
                     continue;
                 }
+
                 numFields++;
             }
 
             _fields = new NativeStructField[numFields];
 
             int index = 0;
-            foreach (FieldDesc field in ManagedStructType.GetFields())
+            foreach (FieldDesc field in _typeForFieldIteration.GetFields())
             {
                 if (field.IsStatic)
                 {
@@ -365,6 +375,8 @@ namespace Internal.TypeSystem.Interop
             }
 
             public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
+            public override bool HasEmbeddedSignatureData => false;
 
             public override bool HasRva
             {

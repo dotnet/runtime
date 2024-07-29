@@ -235,7 +235,7 @@ decode_eht_entry(const uint32_t* data, size_t* off, size_t* len) {
   } else {
     // 6.3: ARM Compact Model
     //
-    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeded
+    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeed
     // by format:
     Descriptor::Format format =
         static_cast<Descriptor::Format>((*data & 0x0f000000) >> 24);
@@ -432,10 +432,11 @@ _Unwind_VRS_Interpret(_Unwind_Context *context, const uint32_t *data,
       uint32_t sp;
       uint32_t pac;
       _Unwind_VRS_Get(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp);
-      _Unwind_VRS_Get(context, _UVRSC_PSEUDO, UNW_ARM_RA_AUTH_CODE,
-                      _UVRSD_UINT32, &pac);
+      _Unwind_VRS_Get(context, _UVRSC_PSEUDO, 0, _UVRSD_UINT32, &pac);
       __asm__ __volatile__("autg %0, %1, %2" : : "r"(pac), "r"(lr), "r"(sp) :);
     }
+#else
+    (void)hasReturnAddrAuthCode;
 #endif
     _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_IP, _UVRSD_UINT32, &lr, NULL);
   }
@@ -708,7 +709,7 @@ unwind_phase2_forced(unw_context_t *uc, unw_cursor_t *cursor,
     // Update info about this frame.
     unw_proc_info_t frameInfo;
     if (__unw_get_proc_info(cursor, &frameInfo) != UNW_ESUCCESS) {
-      _LIBUNWIND_TRACE_UNWINDING("unwind_phase2_forced(ex_ojb=%p): __unw_step "
+      _LIBUNWIND_TRACE_UNWINDING("unwind_phase2_forced(ex_ojb=%p): __unw_get_proc_info "
                                  "failed => _URC_END_OF_STACK",
                                  (void *)exception_object);
       return _URC_FATAL_PHASE2_ERROR;
@@ -884,8 +885,11 @@ _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context) {
   return result;
 }
 
-static uint64_t ValueAsBitPattern(_Unwind_VRS_DataRepresentation representation,
-                                  void* valuep) {
+// Only used in _LIBUNWIND_TRACE_API, which is a no-op when assertions are
+// disabled.
+[[gnu::unused]] static uint64_t
+ValueAsBitPattern(_Unwind_VRS_DataRepresentation representation,
+                  const void *valuep) {
   uint64_t value = 0;
   switch (representation) {
     case _UVRSD_UINT32:
@@ -961,7 +965,7 @@ _Unwind_VRS_Set(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
       if (representation != _UVRSD_UINT32 || regno != 0)
         return _UVRSR_FAILED;
       return __unw_set_reg(cursor, (unw_regnum_t)(UNW_ARM_RA_AUTH_CODE),
-                           *(unw_word_t *)valuep) == UNW_ESUCCESS
+                           *(unw_word_t *)valuep, NULL) == UNW_ESUCCESS
                  ? _UVRSR_OK
                  : _UVRSR_FAILED;
       break;
@@ -1137,9 +1141,8 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
         return _UVRSR_FAILED;
       }
       uint32_t pac = *sp++;
-      _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp);
-      return _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_RA_AUTH_CODE,
-                             _UVRSD_UINT32, &pac);
+      _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP, _UVRSD_UINT32, &sp, NULL);
+      return _Unwind_VRS_Set(context, _UVRSC_PSEUDO, 0, _UVRSD_UINT32, &pac, NULL);
     }
   }
   _LIBUNWIND_ABORT("unsupported register class");
@@ -1195,6 +1198,7 @@ _Unwind_DeleteException(_Unwind_Exception *exception_object) {
 extern "C" _LIBUNWIND_EXPORT _Unwind_Reason_Code
 __gnu_unwind_frame(_Unwind_Exception *exception_object,
                    struct _Unwind_Context *context) {
+  (void)exception_object;
   unw_cursor_t *cursor = (unw_cursor_t *)context;
   switch (__unw_step(cursor)) {
   case UNW_STEP_SUCCESS:

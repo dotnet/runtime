@@ -1,46 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Globalization;
 using System.Net.Sockets;
-using System.Text;
 
-#if SYSTEM_NET_PRIMITIVES_DLL
 namespace System.Net
-#else
-namespace System.Net.Internals
-#endif
 {
     // This class is used when subclassing EndPoint, and provides indication
     // on how to format the memory buffers that the platform uses for network addresses.
-#if SYSTEM_NET_PRIMITIVES_DLL
-    public
-#else
-    internal sealed
-#endif
-    class SocketAddress
+    public class SocketAddress : IEquatable<SocketAddress>
     {
 #pragma warning disable CA1802 // these could be const on Windows but need to be static readonly for Unix
         internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
         internal static readonly int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
+        internal static readonly int UdsAddressSize = SocketAddressPal.UdsAddressSize;
+        internal static readonly int MaxAddressSize = SocketAddressPal.MaxAddressSize;
 #pragma warning restore CA1802
 
-        internal int InternalSize;
-        internal byte[] Buffer;
+        private int _size;
+        private byte[] _buffer;
 
         private const int MinSize = 2;
-        private const int MaxSize = 32; // IrDA requires 32 bytes
         private const int DataOffset = 2;
-        private bool _changed = true;
-        private int _hash;
 
         public AddressFamily Family
         {
             get
             {
-                return SocketAddressPal.GetAddressFamily(Buffer);
+                return SocketAddressPal.GetAddressFamily(_buffer);
             }
         }
 
@@ -48,7 +35,13 @@ namespace System.Net.Internals
         {
             get
             {
-                return InternalSize;
+                return _size;
+            }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _buffer.Length);
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, 0);
+                _size = value;
             }
         }
 
@@ -60,27 +53,31 @@ namespace System.Net.Internals
         {
             get
             {
-                if (offset < 0 || offset >= Size)
+                if ((uint)offset >= (uint)Size)
                 {
                     throw new IndexOutOfRangeException();
                 }
-                return Buffer[offset];
+                return _buffer[offset];
             }
             set
             {
-                if (offset < 0 || offset >= Size)
+                if ((uint)offset >= (uint)Size)
                 {
                     throw new IndexOutOfRangeException();
                 }
-                if (Buffer[offset] != value)
-                {
-                    _changed = true;
-                }
-                Buffer[offset] = value;
+                _buffer[offset] = value;
             }
         }
 
-        public SocketAddress(AddressFamily family) : this(family, MaxSize)
+        public static int GetMaximumAddressSize(AddressFamily addressFamily) => addressFamily switch
+        {
+            AddressFamily.InterNetwork => IPv4AddressSize,
+            AddressFamily.InterNetworkV6 => IPv6AddressSize,
+            AddressFamily.Unix => UdsAddressSize,
+            _ => MaxAddressSize
+        };
+
+        public SocketAddress(AddressFamily family) : this(family, GetMaximumAddressSize(family))
         {
         }
 
@@ -88,24 +85,20 @@ namespace System.Net.Internals
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(size, MinSize);
 
-            InternalSize = size;
-#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
-            // WSARecvFrom needs a pinned pointer to the 32bit socket address size: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom
-            // Allocate IntPtr.Size extra bytes at the end of Buffer ensuring IntPtr.Size alignment, so we don't need to pin anything else.
-            // The following formula will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
-            size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
-#endif
-            Buffer = new byte[size];
+            _size = size;
+            _buffer = new byte[size];
+            _buffer[0] = (byte)_size;
 
-            SocketAddressPal.SetAddressFamily(Buffer, family);
+            SocketAddressPal.SetAddressFamily(_buffer, family);
         }
 
         internal SocketAddress(IPAddress ipAddress)
             : this(ipAddress.AddressFamily,
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
+
             // No Port.
-            SocketAddressPal.SetPort(Buffer, 0);
+            SocketAddressPal.SetPort(_buffer, 0);
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
@@ -113,7 +106,7 @@ namespace System.Net.Internals
                 ipAddress.TryWriteBytes(addressBytes, out int bytesWritten);
                 Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
 
-                SocketAddressPal.SetIPv6Address(Buffer, addressBytes, (uint)ipAddress.ScopeId);
+                SocketAddressPal.SetIPv6Address(_buffer, addressBytes, (uint)ipAddress.ScopeId);
             }
             else
             {
@@ -122,108 +115,39 @@ namespace System.Net.Internals
 #pragma warning restore CS0618
 
                 Debug.Assert(ipAddress.AddressFamily == AddressFamily.InterNetwork);
-                SocketAddressPal.SetIPv4Address(Buffer, address);
+                SocketAddressPal.SetIPv4Address(_buffer, address);
             }
         }
 
         internal SocketAddress(IPAddress ipaddress, int port)
             : this(ipaddress)
         {
-            SocketAddressPal.SetPort(Buffer, unchecked((ushort)port));
+            SocketAddressPal.SetPort(_buffer, unchecked((ushort)port));
         }
 
-        internal SocketAddress(AddressFamily addressFamily, ReadOnlySpan<byte> buffer)
+        /// <summary>This represents underlying memory that can be passed to native OS calls.</summary>
+        /// <remarks>
+        /// Content of the memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
+        /// </remarks>
+        public Memory<byte> Buffer
         {
-            Buffer = buffer.ToArray();
-            InternalSize = Buffer.Length;
-            SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
-        }
-
-        internal IPAddress GetIPAddress()
-        {
-            if (Family == AddressFamily.InterNetworkV6)
+            get
             {
-                Debug.Assert(Size >= IPv6AddressSize);
-
-                Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
-                uint scope;
-                SocketAddressPal.GetIPv6Address(Buffer, address, out scope);
-
-                return new IPAddress(address, (long)scope);
-            }
-            else if (Family == AddressFamily.InterNetwork)
-            {
-                Debug.Assert(Size >= IPv4AddressSize);
-                long address = (long)SocketAddressPal.GetIPv4Address(Buffer) & 0x0FFFFFFFF;
-                return new IPAddress(address);
-            }
-            else
-            {
-#if SYSTEM_NET_PRIMITIVES_DLL
-                throw new SocketException(SocketError.AddressFamilyNotSupported);
-#else
-                throw new SocketException((int)SocketError.AddressFamilyNotSupported);
-#endif
+                return new Memory<byte>(_buffer);
             }
         }
 
-        internal int GetPort() => (int)SocketAddressPal.GetPort(Buffer);
-
-        internal IPEndPoint GetIPEndPoint()
-        {
-            return new IPEndPoint(GetIPAddress(), GetPort());
-        }
-
-#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
-        // For ReceiveFrom we need to pin address size, using reserved Buffer space.
-        internal void CopyAddressSizeIntoBuffer()
-        {
-            int addressSizeOffset = GetAddressSizeOffset();
-            Buffer[addressSizeOffset] = unchecked((byte)(InternalSize));
-            Buffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
-            Buffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
-            Buffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
-        }
-
-        // Can be called after the above method did work.
-        internal int GetAddressSizeOffset()
-        {
-            return Buffer.Length - IntPtr.Size;
-        }
-#endif
 
         public override bool Equals(object? comparand) =>
-            comparand is SocketAddress other &&
-            Buffer.AsSpan(0, Size).SequenceEqual(other.Buffer.AsSpan(0, other.Size));
+            comparand is SocketAddress other && Equals(other);
+
+        public bool Equals(SocketAddress? comparand) => comparand != null && Buffer.Span.SequenceEqual(comparand.Buffer.Span);
 
         public override int GetHashCode()
         {
-            if (_changed)
-            {
-                _changed = false;
-                _hash = 0;
-
-                int i;
-                int size = Size & ~3;
-
-                for (i = 0; i < size; i += 4)
-                {
-                    _hash ^= BinaryPrimitives.ReadInt32LittleEndian(Buffer.AsSpan(i));
-                }
-                if ((Size & 3) != 0)
-                {
-                    int remnant = 0;
-                    int shift = 0;
-
-                    for (; i < Size; ++i)
-                    {
-                        remnant |= ((int)Buffer[i]) << shift;
-                        shift += 8;
-                    }
-                    _hash ^= remnant;
-                }
-            }
-            return _hash;
+            HashCode hash = default;
+            hash.AddBytes(new ReadOnlySpan<byte>(_buffer, 0, _size));
+            return hash.ToHashCode();
         }
 
         public override string ToString()
@@ -257,7 +181,7 @@ namespace System.Net.Internals
             result[length++] = ':';
             result[length++] = '{';
 
-            byte[] buffer = Buffer;
+            byte[] buffer = _buffer;
             for (int i = DataOffset; i < Size; i++)
             {
                 if (i > DataOffset)

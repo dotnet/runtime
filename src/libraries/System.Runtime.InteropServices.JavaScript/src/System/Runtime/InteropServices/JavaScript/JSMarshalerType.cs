@@ -45,6 +45,15 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
+        /// Dispatches the call asynchronously and doesn't wait for result.
+        /// </summary>
+        /// <returns>The marshaler metadata.</returns>
+        public static JSMarshalerType DiscardNoWait { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
+        {
+            Type = MarshalerType.DiscardNoWait
+        });
+
+        /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>
@@ -428,9 +437,9 @@ namespace System.Runtime.InteropServices.JavaScript
             });
         }
 
-        internal static void CheckNullable(JSMarshalerType underlyingSig)
+        internal static void CheckNullable(JSMarshalerType underlyingType)
         {
-            MarshalerType underlying = underlyingSig._signatureType.Type;
+            MarshalerType underlying = underlyingType._signatureType.Type;
             if (underlying == MarshalerType.Boolean
                 || underlying == MarshalerType.Byte
                 || underlying == MarshalerType.Int16
@@ -444,12 +453,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.DateTime
                 || underlying == MarshalerType.DateTimeOffset
                 ) return;
-            throw new ArgumentException("Bad nullable value type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedNullableType, underlying), nameof(underlyingType));
         }
 
-        internal static void CheckArray(JSMarshalerType underlyingSig)
+        internal static void CheckArray(JSMarshalerType underlyingType)
         {
-            MarshalerType underlying = underlyingSig._signatureType.Type;
+            MarshalerType underlying = underlyingType._signatureType.Type;
             if (underlying == MarshalerType.Byte
                 || underlying == MarshalerType.Int32
                 || underlying == MarshalerType.Double
@@ -457,22 +466,22 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.Object
                 || underlying == MarshalerType.JSObject
                 ) return;
-            throw new ArgumentException("Bad array element type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedElementType, underlying), nameof(underlyingType));
         }
 
-        internal static void CheckArraySegment(JSMarshalerType underlyingSig)
+        internal static void CheckArraySegment(JSMarshalerType underlyingType)
         {
-            MarshalerType underlying = underlyingSig._signatureType.Type;
+            MarshalerType underlying = underlyingType._signatureType.Type;
             if (underlying == MarshalerType.Byte
                 || underlying == MarshalerType.Int32
                 || underlying == MarshalerType.Double
                 ) return;
-            throw new ArgumentException("Bad array element type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedElementType, underlying), nameof(underlyingType));
         }
 
-        internal static void CheckTask(JSMarshalerType underlyingSig)
+        internal static void CheckTask(JSMarshalerType underlyingType)
         {
-            MarshalerType underlying = underlyingSig._signatureType.Type;
+            MarshalerType underlying = underlyingType._signatureType.Type;
             // TODO maybe allow Task<byte[]> and Task<int[]> which don't need element marshaler
             if (underlying == MarshalerType.Array
                 || underlying == MarshalerType.ArraySegment
@@ -483,7 +492,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.Function
                 )
             {
-                throw new ArgumentException("Bad task result type");
+                throw new ArgumentException(SR.Format(SR.UnsupportedTaskResultType, underlying), nameof(underlyingType));
             }
         }
     }

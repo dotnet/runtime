@@ -107,7 +107,7 @@ DacGetThreadContext(Thread* thread, T_CONTEXT* context)
     HRESULT status =
         g_dacImpl->m_pTarget->
         GetThreadContext(thread->GetOSThreadId(), contextFlags,
-                         sizeof(*context), (PBYTE)context);
+                         sizeof(DT_CONTEXT), (PBYTE)context);
     if (status != S_OK)
     {
         DacError(status);

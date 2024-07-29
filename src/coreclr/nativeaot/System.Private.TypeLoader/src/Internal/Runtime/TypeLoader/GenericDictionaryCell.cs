@@ -5,10 +5,9 @@
 using System;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
 
@@ -138,6 +137,39 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 return result;
+            }
+        }
+
+        /// <summary>
+        /// Used for generic static constrained Methods
+        /// </summary>
+        private class GenericStaticConstrainedMethodCell : GenericDictionaryCell
+        {
+            internal DefType ConstraintType;
+            internal InstantiatedMethod ConstrainedMethod;
+            private InstantiatedMethod _resolvedMethod;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                _resolvedMethod = TypeLoaderEnvironment.GVMLookupForSlotWorker(ConstraintType, ConstrainedMethod);
+
+                if (_resolvedMethod.CanShareNormalGenericCode())
+                    builder.PrepareMethod(_resolvedMethod);
+            }
+
+            internal override IntPtr Create(TypeBuilder builder)
+            {
+                if (_resolvedMethod.CanShareNormalGenericCode())
+                {
+                    IntPtr methodDictionary = _resolvedMethod.RuntimeMethodDictionary;
+                    return FunctionPointerOps.GetGenericMethodFunctionPointer(_resolvedMethod.FunctionPointer, methodDictionary);
+                }
+                else
+                {
+                    if (!TypeLoaderEnvironment.Instance.TryLookupExactMethodPointer(_resolvedMethod, out nint result))
+                        Environment.FailFast("Unable to find exact method pointer for a resolved GVM.");
+                    return result;
+                }
             }
         }
 
@@ -316,9 +348,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 IntPtr result = TypeLoaderEnvironment.TryGetDefaultConstructorForType(Type);
 
-
-                if (result == IntPtr.Zero)
+                if (result != IntPtr.Zero)
+                {
+                    if (Type.IsValueType)
+                    {
+                        result = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result,
+                            builder.GetRuntimeTypeHandle(Type));
+                    }
+                }
+                else
+                {
                     result = RuntimeAugments.GetFallbackDefaultConstructor();
+                }
+
                 return result;
             }
         }
@@ -499,6 +541,23 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 
+                case FixupSignatureKind.GenericStaticConstrainedMethod:
+                    {
+                        TypeDesc constraintType = nativeLayoutInfoLoadContext.GetType(ref parser);
+
+                        NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
+                        MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser);
+
+                        TypeLoaderLogger.WriteLine("GenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
+
+                        cell = new GenericStaticConstrainedMethodCell()
+                        {
+                            ConstraintType = (DefType)constraintType,
+                            ConstrainedMethod = (InstantiatedMethod)constrainedMethod,
+                        };
+                    }
+                    break;
+
                 case FixupSignatureKind.ThreadStaticIndex:
                     {
                         var type = nativeLayoutInfoLoadContext.GetType(ref parser);
@@ -509,7 +568,6 @@ namespace Internal.Runtime.TypeLoader
                     break;
 
                 case FixupSignatureKind.NotYetSupported:
-                case FixupSignatureKind.GenericStaticConstrainedMethod:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
 

@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Authentication;
 using System.Text;
-using Ssl = Interop.Ssl;
+using Microsoft.Win32.SafeHandles;
 using OpenSsl = Interop.OpenSsl;
+using Ssl = Interop.Ssl;
 
 namespace System.Net.Security
 {
     internal sealed class CipherSuitesPolicyPal
     {
-        private byte[] _cipherSuites;
-        private byte[] _tls13CipherSuites;
-        private List<TlsCipherSuite> _tlsCipherSuites = new List<TlsCipherSuite>();
+        private readonly byte[] _cipherSuites;
+        private readonly byte[] _tls13CipherSuites;
+        private readonly List<TlsCipherSuite> _tlsCipherSuites = new List<TlsCipherSuite>();
 
         internal IEnumerable<TlsCipherSuite> GetCipherSuites() => _tlsCipherSuites;
 
@@ -191,7 +191,7 @@ namespace System.Net.Security
             private const string SSL_TXT_Separator = ":";
             private static readonly byte[] EmptyString = new byte[1] { 0 };
 
-            private MemoryStream _ms;
+            private readonly MemoryStream _ms;
             private bool _first = true;
 
             public OpenSslStringBuilder() : base(new MemoryStream(), Encoding.ASCII)

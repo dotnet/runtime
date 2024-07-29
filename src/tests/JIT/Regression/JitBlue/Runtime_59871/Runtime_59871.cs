@@ -1,15 +1,16 @@
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Runtime_59871
 {
     LargeStruct _large;
     Union _field;
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Foo(new Runtime_59871());
-        return 100;
     }
 
     static DateTime Foo(Runtime_59871 p)

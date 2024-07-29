@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class Runtime_76194
 {
@@ -58,7 +59,8 @@ public unsafe class Runtime_76194
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         nuint pageSize = (nuint)Environment.SystemPageSize;
         for (int i = 0; i < 100; i++)
@@ -82,7 +84,6 @@ public unsafe class Runtime_76194
 
             CrossplatVirtualAlloc.Free(ptr, pageSize);
         }
-        return 100;
     }
 }
 

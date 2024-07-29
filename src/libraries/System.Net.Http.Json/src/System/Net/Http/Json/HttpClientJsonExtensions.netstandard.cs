@@ -13,8 +13,7 @@ namespace System.Net.Http.Json
 
         private static Task<HttpResponseMessage> PatchAsync(this HttpClient client, string? requestUri, HttpContent content, CancellationToken cancellationToken)
         {
-            Uri? uri = string.IsNullOrEmpty(requestUri) ? null : new Uri(requestUri, UriKind.RelativeOrAbsolute);
-            return client.PatchAsync(uri, content, cancellationToken);
+            return client.PatchAsync(CreateUri(requestUri), content, cancellationToken);
         }
 
         private static Task<HttpResponseMessage> PatchAsync(this HttpClient client, Uri? requestUri, HttpContent content, CancellationToken cancellationToken)

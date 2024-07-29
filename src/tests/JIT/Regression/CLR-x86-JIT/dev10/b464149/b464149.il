@@ -21,7 +21,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private sequential ansi sealed beforefieldinit HFA
+.class public sequential ansi sealed beforefieldinit HFA
        extends [mscorlib]System.ValueType
 {
   .field public float64 d1
@@ -83,7 +83,7 @@
     IL_0054:  ret
   } // end of method HFA::ToString
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

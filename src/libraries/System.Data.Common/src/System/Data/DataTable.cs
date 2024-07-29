@@ -4,18 +4,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Data
 {
@@ -195,6 +195,8 @@ namespace System.Data
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()
         {
             bool isSingleTable = context.Context != null ? Convert.ToBoolean(context.Context, CultureInfo.InvariantCulture) : true;
@@ -221,6 +223,8 @@ namespace System.Data
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -1353,7 +1357,7 @@ namespace System.Data
             get
             {
                 // used for Formating/Parsing
-                // https://docs.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.isneutralculture
+                // https://learn.microsoft.com/dotnet/api/system.globalization.cultureinfo.isneutralculture
                 if (null == _formatProvider)
                 {
                     CultureInfo culture = Locale;
@@ -2348,7 +2352,7 @@ namespace System.Data
             return targetTable;
         }
 
-        private DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
+        private static DataTable CloneHierarchy(DataTable sourceTable, DataSet ds, Hashtable? visitedMap)
         {
             visitedMap ??= new Hashtable();
             if (visitedMap.Contains(sourceTable))
@@ -5492,7 +5496,7 @@ namespace System.Data
             WriteXmlSchema(w, writeHierarchy);
         }
 
-        private bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
+        private static bool CheckForClosureOnExpressions(DataTable dt, bool writeHierarchy)
         {
             List<DataTable> tableList = new List<DataTable>();
             tableList.Add(dt);
@@ -6613,7 +6617,7 @@ namespace System.Data
             }
         }
 
-        private void CreateTableList(DataTable currentTable, List<DataTable> tableList)
+        private static void CreateTableList(DataTable currentTable, List<DataTable> tableList)
         {
             foreach (DataRelation r in currentTable.ChildRelations)
             {

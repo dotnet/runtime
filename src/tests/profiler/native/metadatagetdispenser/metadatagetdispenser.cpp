@@ -93,11 +93,11 @@ HRESULT MetaDataGetDispenser::ModuleLoadStarted(ModuleID moduleId)
         return E_FAIL;
     }
 
-    WCHAR filePath[STRING_LENGTH];
+    WCHAR filePath[STR_LENGTH];
     ULONG filePathLength;
     hr = pCorProfilerInfo->GetModuleInfo2(moduleId,
                                           NULL,
-                                          STRING_LENGTH,
+                                          STR_LENGTH,
                                           &filePathLength,
                                           filePath,
                                           NULL,

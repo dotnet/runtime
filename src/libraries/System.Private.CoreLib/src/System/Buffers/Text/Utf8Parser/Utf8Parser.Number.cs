@@ -44,7 +44,7 @@ namespace System.Buffers.Text
 
                 case Utf8Constants.Plus:
                     srcIndex++;
-                    if (srcIndex == source.Length)
+                    if (srcIndex >= source.Length)
                     {
                         bytesConsumed = 0;
                         return false;
@@ -61,7 +61,7 @@ namespace System.Buffers.Text
             int maxDigitCount = digits.Length - 1;
 
             // Throw away any leading zeroes
-            while (srcIndex != source.Length)
+            while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
                 if (c != '0')
@@ -79,7 +79,7 @@ namespace System.Buffers.Text
             int startIndexNonLeadingDigitsBeforeDecimal = srcIndex;
 
             int hasNonZeroTail = 0;
-            while (srcIndex != source.Length)
+            while (srcIndex < source.Length)
             {
                 c = source[srcIndex];
                 int value = (byte)(c - (byte)('0'));
@@ -134,7 +134,7 @@ namespace System.Buffers.Text
                 srcIndex++;
                 int startIndexDigitsAfterDecimal = srcIndex;
 
-                while (srcIndex != source.Length)
+                while (srcIndex < source.Length)
                 {
                     c = source[srcIndex];
                     int value = (byte)(c - (byte)('0'));
@@ -268,7 +268,7 @@ namespace System.Buffers.Text
                 // continue eating digits from there
                 srcIndex += 10;
 
-                while (srcIndex != source.Length)
+                while (srcIndex < source.Length)
                 {
                     c = source[srcIndex];
                     int value = (byte)(c - (byte)('0'));

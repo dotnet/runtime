@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Text.RegularExpressions
@@ -31,7 +32,7 @@ namespace System.Text.RegularExpressions
         /// developers should prefer using the constructor
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
-        public RegexMatchTimeoutException() { }
+        public RegexMatchTimeoutException() : base(SR.RegexMatchTimeoutException_Occurred) { }
 
         /// <summary>
         /// This constructor is provided in compliance with common .NET Framework design patterns;
@@ -39,7 +40,7 @@ namespace System.Text.RegularExpressions
         /// <code>public RegexMatchTimeoutException(string input, string pattern, TimeSpan matchTimeout)</code>.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
-        public RegexMatchTimeoutException(string message) : base(message) { }
+        public RegexMatchTimeoutException(string message) : base(message ?? SR.RegexMatchTimeoutException_Occurred) { }
 
         /// <summary>
         /// This constructor is provided in compliance with common .NET Framework design patterns;
@@ -48,8 +49,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception, or a <code>null</code>.</param>
-        public RegexMatchTimeoutException(string message, Exception inner) : base(message, inner) { }
+        public RegexMatchTimeoutException(string message, Exception inner) : base(message ?? SR.RegexMatchTimeoutException_Occurred, inner) { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected RegexMatchTimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -58,6 +61,7 @@ namespace System.Text.RegularExpressions
             MatchTimeout = new TimeSpan(info.GetInt64("timeoutTicks"));
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

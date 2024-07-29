@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -12,13 +14,13 @@ namespace System.ComponentModel
     /// The exception that is thrown for a Win32 error code.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class Win32Exception : ExternalException, ISerializable
+    [TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class Win32Exception : ExternalException
     {
         private const int E_FAIL = unchecked((int)0x80004005);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error
+        /// Initializes a new instance of the <see cref='Win32Exception'/> class with the last Win32 error
         /// that occurred.
         /// </summary>
         public Win32Exception() : this(Marshal.GetLastPInvokeError())
@@ -26,13 +28,13 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error.
+        /// Initializes a new instance of the <see cref='Win32Exception'/> class with the specified error.
         /// </summary>
         public Win32Exception(int error) : this(error, Marshal.GetPInvokeErrorMessage(error))
         {
         }
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error and the
+        /// Initializes a new instance of the <see cref='Win32Exception'/> class with the specified error and the
         /// specified detailed description.
         /// </summary>
         public Win32Exception(int error, string? message) : base(message)
@@ -56,11 +58,15 @@ namespace System.ComponentModel
             NativeErrorCode = Marshal.GetLastPInvokeError();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             NativeErrorCode = info.GetInt32(nameof(NativeErrorCode));
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

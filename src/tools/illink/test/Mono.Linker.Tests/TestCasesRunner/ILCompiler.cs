@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static string BuildArguments (CompilerOptions options)
 		{
 			var args = new StringBuilder ();
-#if NETCOREAPP
+#if NET
 			args.Append (options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
 			args.Append ($" -out:{options.OutputPath.InQuotes ()}");
 #else
@@ -62,12 +62,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual NPath LocateIlasm ()
 		{
-#if NETCOREAPP
+#if NET
 			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
 
-			var toolsDir = Path.Combine((string)AppContext.GetData("Mono.Linker.Tests.ArtifactsDir")!, "tools");
+			var toolsDir = (string)AppContext.GetData("Mono.Linker.Tests.ILToolsDir")!;
 
-			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, "ilasm", $"ilasm{extension}")).ToNPath ();
+			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, $"ilasm{extension}")).ToNPath ();
 			if (ilasmPath.FileExists ())
 				return ilasmPath;
 

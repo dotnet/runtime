@@ -201,14 +201,12 @@ namespace System.Collections.Immutable
         /// </summary>
         public override bool Contains(TValue item)
         {
-            var sortedDictionary = this.Dictionary as ImmutableSortedDictionary<TKey, TValue>;
-            if (sortedDictionary != null)
+            if (this.Dictionary is ImmutableSortedDictionary<TKey, TValue> sortedDictionary)
             {
                 return sortedDictionary.ContainsValue(item);
             }
 
-            var dictionary = this.Dictionary as IImmutableDictionaryInternal<TKey, TValue>;
-            if (dictionary != null)
+            if (this.Dictionary is IImmutableDictionaryInternal<TKey, TValue> dictionary)
             {
                 return dictionary.ContainsValue(item);
             }

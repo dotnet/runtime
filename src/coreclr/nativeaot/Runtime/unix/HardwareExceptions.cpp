@@ -10,8 +10,9 @@
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
+#include "PalCreateDump.h"
 
-#if defined(HOST_OSX)
+#if defined(HOST_APPLE)
 #include <mach/mach.h>
 #include <mach/mach_error.h>
 #include <mach/exception.h>
@@ -559,6 +560,8 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGSEGV);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Handler for the SIGFPE signal
@@ -579,6 +582,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGFPE);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Initialize hardware exception handling
@@ -594,7 +599,8 @@ bool InitializeHardwareExceptionHandling()
         return false;
     }
 
-#if defined(HOST_OSX)
+#if defined(HOST_APPLE)
+#ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
 	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
 	// exceptions first to any registered "activation" handler and then to
 	// any registered task handler before dispatching the exception to a
@@ -613,6 +619,7 @@ bool InitializeHardwareExceptionHandling()
 		EXCEPTION_STATE_IDENTITY,
 		MACHINE_THREAD_STATE);
     ASSERT(kr == KERN_SUCCESS);
+#endif
 #endif
 
     return true;

@@ -44,9 +44,40 @@ namespace ILCompiler
                     alignment = new LayoutInt(16);
                 }
             }
+            else if (name == "Vector256`1")
+            {
+                if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
+                {
+                    // No such type exists for the Procedure Call Standard for ARM. We will default
+                    // to the same alignment as __m128, which is supported by the ABI.
+                    alignment = new LayoutInt(8);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64)
+                {
+                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
+                    // 16-byte alignment for __m256.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.LoongArch64)
+                {
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    alignment = new LayoutInt(16);
+                }
+                else
+                {
+                    alignment = new LayoutInt(32);
+                }
+            }
             else
             {
-                Debug.Assert(name == "Vector256`1");
+                Debug.Assert(name == "Vector512`1");
 
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -60,9 +91,21 @@ namespace ILCompiler
                     // 16-byte alignment for __m256.
                     alignment = new LayoutInt(16);
                 }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.LoongArch64)
+                {
+                    // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
+                    alignment = new LayoutInt(16);
+                }
+                else if (defType.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                {
+                    // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
+                    // RISC-V Vector Extenstion Intrinsic Document
+                    // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
+                    alignment = new LayoutInt(16);
+                }
                 else
                 {
-                    alignment = new LayoutInt(32);
+                    alignment = new LayoutInt(64);
                 }
             }
 
@@ -106,6 +149,7 @@ namespace ILCompiler
                     8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
                     16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
                     32 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    64 => ValueTypeShapeCharacteristics.Vector128Aggregate,
                     _ => ValueTypeShapeCharacteristics.None
                 };
             }
@@ -116,9 +160,10 @@ namespace ILCompiler
         {
             return type.IsIntrinsic &&
                 type.Namespace == "System.Runtime.Intrinsics" &&
-                (type.Name == "Vector64`1" ||
-                type.Name == "Vector128`1" ||
-                type.Name == "Vector256`1");
+                ((type.Name == "Vector64`1") ||
+                 (type.Name == "Vector128`1") ||
+                 (type.Name == "Vector256`1") ||
+                 (type.Name == "Vector512`1"));
         }
     }
 }

@@ -184,47 +184,6 @@ GetModuleFileNameWrapper(
     return ret;
 }
 
-DWORD WINAPI GetTempPathWrapper(
-    SString& lpBuffer
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    DWORD ret = 0;
-    DWORD lastError = 0;
-
-    EX_TRY
-    {
-        //Change the behaviour in Redstone to retry
-        COUNT_T size = MAX_LONGPATH;
-
-        ret = GetTempPathW(
-            size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
-            );
-
-        lastError = GetLastError();
-        lpBuffer.CloseBuffer(ret);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (hr != S_OK)
-    {
-        SetLastError(hr);
-    }
-    else if (ret == 0)
-    {
-        SetLastError(lastError);
-    }
-
-    return ret;
-}
-
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
     _Out_opt_ SString&  lpBuffer
@@ -571,7 +530,7 @@ HRESULT LongFile::NormalizePath(SString & path)
         //In this case if path is \\server the extended syntax should be like  \\?\UNC\server
         //The below logic populates the path from prefixLen offset from the start. This ensures that first 2 characters are overwritten
         //
-        prefixLen = prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX);
+        prefixLen = prefix.GetCount() - (COUNT_T)u16_strlen(UNCPATHPREFIX);
         _ASSERTE(prefixLen > 0 );
     }
 
@@ -615,10 +574,10 @@ HRESULT LongFile::NormalizePath(SString & path)
 	SString fullpath(SString::Literal,buffer + prefixLen);
 
     //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-    if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX))
+    if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)u16_strlen(UNCPATHPREFIX))
     {
         //Remove the leading '\\' from the UNC path to be replaced with UNCExtendedPathPrefix
-        fullpath.Replace(fullpath.Begin(), (COUNT_T)wcslen(UNCPATHPREFIX), UNCExtendedPathPrefix);
+        fullpath.Replace(fullpath.Begin(), (COUNT_T)u16_strlen(UNCPATHPREFIX), SL(UNCExtendedPathPrefix));
         path.CloseBuffer();
         path.Set(fullpath);
     }

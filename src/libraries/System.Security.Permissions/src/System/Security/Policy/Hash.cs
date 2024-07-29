@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security.Cryptography;
+using System.ComponentModel;
 using System.Runtime.Serialization;
+using System.Security.Cryptography;
 
 namespace System.Security.Policy
 {
@@ -16,6 +17,10 @@ namespace System.Security.Policy
         public static Hash CreateSHA1(byte[] sha1) { return default(Hash); }
         public static Hash CreateSHA256(byte[] sha256) { return default(Hash); }
         public byte[] GenerateHash(HashAlgorithm hashAlg) { return null; }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

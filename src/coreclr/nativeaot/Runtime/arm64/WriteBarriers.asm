@@ -206,8 +206,15 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;;   x15  : trashed
 ;;   x12, x17  : trashed
 ;;
+;;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;;         if you add more trashed registers.
+;;
+;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
+;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
+;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
     LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
 
+    ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
         b       RhpCheckedAssignRefArm64
 
@@ -279,10 +286,6 @@ NotInHeap
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
 
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-
 ;; RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 ;;
 ;; Interlocked compare exchange on objectref.
@@ -294,13 +297,24 @@ NotInHeap
 ;;
 ;; On exit:
 ;;  x0: original value of objectref
-;;  x10, x12, x17: trashed
+;;  x10, x12, x16, x17: trashed
 ;;
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, CmpXchgRetry
+#endif
+
+        mov    x10, x2
+        casal  x10, x1, [x0]                  ;; exchange
+        cmp    x2, x10
+        bne    CmpXchgNoUpdate
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        b      DoCardsCmpXchg
 CmpXchgRetry
         ;; Check location value is what we expect.
-    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     CmpXchgNoUpdate
@@ -308,8 +322,10 @@ CmpXchgRetry
         ;; Current value matches comparand, attempt to update with the new value.
         stlxr   w12, x1, [x0]
         cbnz    w12, CmpXchgRetry
+#endif
 
-        ;; We've successfully updated the value of the objectref so now we need a GC write barrier.
+DoCardsCmpXchg
+        ;; We have successfully updated the value of the objectref so now we need a GC write barrier.
         ;; The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         ;; already correctly set up.
 
@@ -318,14 +334,15 @@ CmpXchgRetry
 CmpXchgNoUpdate
         ;; x10 still contains the original value.
         mov     x0, x10
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        tbnz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierCmpXchg
         InterlockedOperationBarrier
+NoBarrierCmpXchg
+#endif
         ret     lr
 
     LEAF_END RhpCheckedLockCmpXchg
-
-;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen within at RhpCheckedXchgAVLocation
-;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 
 ;; RhpCheckedXchg(Object** destination, Object* value)
 ;;
@@ -338,20 +355,30 @@ CmpXchgNoUpdate
 ;; On exit:
 ;;  x0: original value of objectref
 ;;  x10: trashed
-;;  x12, x17: trashed
+;;  x12, x16, x17: trashed
 ;;
     LEAF_ENTRY RhpCheckedXchg
 
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
+#endif
+
+        swpal  x1, x10, [x0]                   ;; exchange
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        b      DoCardsXchg
 ExchangeRetry
         ;; Read the existing memory location.
-    ALTERNATE_ENTRY RhpCheckedXchgAVLocation
         ldaxr   x10,  [x0]
 
         ;; Attempt to update with the new value.
         stlxr   w12, x1, [x0]
         cbnz    w12, ExchangeRetry
+#endif
 
-        ;; We've successfully updated the value of the objectref so now we need a GC write barrier.
+DoCardsXchg
+        ;; We have successfully updated the value of the objectref so now we need a GC write barrier.
         ;; The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         ;; already correctly set up.
 
@@ -359,7 +386,12 @@ ExchangeRetry
 
         ;; x10 still contains the original value.
         mov     x0, x10
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        tbnz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierXchg
         InterlockedOperationBarrier
+NoBarrierXchg
+#endif
         ret
 
     LEAF_END RhpCheckedXchg

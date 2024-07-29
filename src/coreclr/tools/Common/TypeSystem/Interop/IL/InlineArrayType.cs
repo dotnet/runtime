@@ -248,6 +248,12 @@ namespace Internal.TypeSystem.Interop
             return flags;
         }
 
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
+
         private void InitializeMethods()
         {
             MethodDesc[] methods = new MethodDesc[] {
@@ -373,17 +379,13 @@ namespace Internal.TypeSystem.Interop
             {
                 var emitter = new ILEmitter();
                 var codeStream = emitter.NewCodeStream();
-                _ = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Boolean));
                 var elementType = _owningType.ElementType;
 
                 // Getter:
                 // return ((ElementType*)(&this))[index];
                 //
                 // Setter:
-                // fixed (InlineArray* pThis = &this)
-                //{
-                //  ((ElementType*)pThis)[(ulong)index] = (ElementType)value;
-                //}
+                // ((ElementType*)(&this)[(ulong)index] = (ElementType)value;
 
                 var vThis = emitter.NewLocal(_owningType.MakeByRefType());
                 codeStream.EmitLdArg(0);
@@ -439,6 +441,8 @@ namespace Internal.TypeSystem.Interop
                 }
             }
             public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
+            public override bool HasEmbeddedSignatureData => false;
 
             public override bool HasRva
             {

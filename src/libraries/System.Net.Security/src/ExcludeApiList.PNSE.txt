@@ -1,0 +1,2 @@
+System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy
+System.Security.Authentication.ExtendedProtection.ServiceNameCollection

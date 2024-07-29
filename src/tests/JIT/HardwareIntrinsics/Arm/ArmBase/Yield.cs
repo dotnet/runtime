@@ -11,7 +11,7 @@ using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
-    class Program
+    public class Program
     {
         [Fact]
         public static unsafe void Yield()

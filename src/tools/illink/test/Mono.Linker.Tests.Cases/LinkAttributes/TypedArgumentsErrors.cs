@@ -4,6 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes
 {
+	[ExpectNonZeroExitCode (1)]
 	[SetupLinkAttributesFile ("TypedArgumentsErrors.xml")]
 	[IgnoreLinkAttributes (false)]
 	[NoLinkedOutput]

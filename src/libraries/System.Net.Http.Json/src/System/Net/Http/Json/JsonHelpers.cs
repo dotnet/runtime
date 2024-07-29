@@ -2,23 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Net.Http.Json
 {
     internal static class JsonHelpers
     {
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        internal static JsonTypeInfo GetJsonTypeInfo(Type type, JsonSerializerOptions? options)
+        {
+            Debug.Assert(type is not null);
 
-        internal static MediaTypeHeaderValue GetDefaultMediaType() => new("application/json") { CharSet = "utf-8" };
+            // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
+            // following the semantics of the JsonSerializer reflection methods.
+            options ??= JsonSerializerOptions.Web;
+            options.MakeReadOnly(populateMissingResolver: true);
+            return options.GetTypeInfo(type);
+        }
 
-        internal static Encoding? GetEncoding(string? charset)
+        internal const string DefaultMediaType = "application/json; charset=utf-8";
+
+        internal static Encoding? GetEncoding(HttpContent content)
         {
             Encoding? encoding = null;
 
-            if (charset != null)
+            if (content.Headers.ContentType?.CharSet is string charset)
             {
                 try
                 {

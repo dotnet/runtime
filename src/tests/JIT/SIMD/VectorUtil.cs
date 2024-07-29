@@ -6,7 +6,7 @@ using System;
 using System.Numerics;
 using System.IO;
 
-internal partial class VectorTest
+public partial class VectorTest
 {
     public static bool CheckValue<T>(T value, T expectedValue)
     {

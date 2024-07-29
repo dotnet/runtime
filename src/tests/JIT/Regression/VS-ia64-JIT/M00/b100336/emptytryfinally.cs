@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 public class a
 {
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -14,6 +16,5 @@ public class a
         finally
         {
         }
-        return 100;
     }
 }

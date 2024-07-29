@@ -1,22 +1,17 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Tests
 {
-    public static unsafe class VTableGCHandlePair<TUnmanagedInterface, TKey>
-        where TUnmanagedInterface : IUnmanagedInterfaceType<TUnmanagedInterface, TKey>
-        where TKey : IEquatable<TKey>
+    public unsafe class VTableGCHandlePair<TUnmanagedInterface> : IUnmanagedObjectUnwrapper
+        where TUnmanagedInterface : IUnmanagedInterfaceType
     {
         public static void* Allocate(TUnmanagedInterface obj)
         {
-            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * (nuint)IUnmanagedVirtualMethodTableProvider<TKey>.GetVirtualMethodTableLength<TUnmanagedInterface>());
+            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * 2);
             unmanaged[0] = TUnmanagedInterface.VirtualMethodTableManagedImplementation;
             unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj));
             return unmanaged;
@@ -32,5 +27,8 @@ namespace ComInterfaceGenerator.Tests
         {
             return (TUnmanagedInterface)GCHandle.FromIntPtr((nint)((void**)pair)[1]).Target;
         }
+
+        static object IUnmanagedObjectUnwrapper.GetObjectForUnmanagedWrapper(void* ptr) => 
+            (TUnmanagedInterface)GCHandle.FromIntPtr((nint)((void**)ptr)[1]).Target;
     }
 }

@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using Xunit;
 
 
 public class A
@@ -133,9 +134,10 @@ public class B
 
 
 
-internal class Test_b02762
+public class Test_b02762
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte[] block = new byte[20];
         return B.B1(-123456781234567L, -123456781234567L, block, 0, 0);

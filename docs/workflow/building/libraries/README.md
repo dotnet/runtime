@@ -12,11 +12,11 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build.cmd -vs System.Text.RegularExpressions
+:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+build.cmd -vs System.Collections.Concurrent
 
-:: Switch to working on a given library (RegularExpressions in this case)
-cd src\libraries\System.Text.RegularExpressions
+:: Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src\libraries\System.Collections.Concurrent
 
 :: Change to test directory
 cd tests
@@ -33,19 +33,19 @@ Instructions for Unix-like operating systems are essentially the same:
 
 # From root:
 git clean -xdf
-git pull upstream main & git push origin main
+git pull upstream main; git push origin main
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
 # Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-# Switch to working on a given library (RegularExpressions in this case)
-cd src/libraries/System.Text.RegularExpressions
+# Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src/libraries/System.Collections.Concurrent
 
 # Change to test directory
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:test
+pushd ../src; dotnet build; popd; dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
@@ -76,8 +76,8 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net8.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
-- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net9.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
@@ -105,7 +105,17 @@ By default the `build` script only builds the product libraries and none of the 
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
-### How to building native components only
+### Building the native components with native sanitizers
+
+The libraries native components can be built with native sanitizers like AddressSanitizer to help catch memory safety issues. To build the project with native sanitizers, add the `-fsanitize` argument to the build script like the following:
+
+```bash
+build.sh -s libs -fsanitize address
+```
+
+When building the repo with any native sanitizers, you should build all native components in the repo with the same set of sanitizers.
+
+### How to build native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
@@ -156,7 +166,7 @@ Under the `src` directory is a set of directories, each of which represents a pa
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
@@ -169,7 +179,7 @@ For libraries that have multiple target frameworks the target frameworks will be
 
 - Build project for Linux
 ```bash
-dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
+dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=linux
 ```
 
 - Build Release version of library
@@ -223,6 +233,10 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.
 
+## Debugging
+
+Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that the debugging libraries that shipped with the .NET Runtime are correctly signed before loading them. See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+
 ## Running tests
 
 For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).
@@ -234,11 +248,11 @@ To build a library's package, simply invoke `dotnet pack` on the src project aft
 
 ```cmd
 build libs
-dotnet pack src\libraries\System.Text.Json\src\
+dotnet.cmd pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
 
 ```cmd
-dotnet pack src\libraries\System.Text.Json\src\ -c Release
+dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```

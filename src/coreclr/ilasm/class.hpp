@@ -83,7 +83,7 @@ public:
         int i,retval=-1;
         for(i=0; i < (int)m_NumTyPars; i++)
         {
-            if(!wcscmp(wz,m_TyPars[i].Name()))
+            if(!u16_strcmp(wz,m_TyPars[i].Name()))
             {
                 retval = i;
                 break;
@@ -96,7 +96,7 @@ public:
         if(sz)
         {
             wzUniBuf[0] = 0;
-            WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
             return FindTyPar(wzUniBuf);
         }
         else return -1;

@@ -22,7 +22,7 @@
 #endif // WIN32
 
 #define SHORT_LENGTH    32
-#define STRING_LENGTH  256
+#define STR_LENGTH     256
 #define LONG_LENGTH   1024
 
 typedef void (*ProfilerCallback) (void);
@@ -90,20 +90,20 @@ private:
     std::atomic<int> refCount;
     static ProfilerCallback s_callback;
     static ManualEvent s_callbackSet;
-    
+
 
 protected:
-    static void NotifyManagedCodeViaCallback(ICorProfilerInfo13 *pCorProfilerInfo);
+    static void NotifyManagedCodeViaCallback(ICorProfilerInfo15 *pCorProfilerInfo);
 
-    String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
 
 public:
     static Profiler *Instance;
     static void SetCallback(ProfilerCallback callback);
+    String GetClassIDName(ClassID classId);
 
-    ICorProfilerInfo13* pCorProfilerInfo;
+    ICorProfilerInfo15* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();

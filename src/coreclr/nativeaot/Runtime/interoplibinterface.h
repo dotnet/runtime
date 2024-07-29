@@ -6,11 +6,11 @@
 class ObjCMarshalNative
 {
 public:
-    using TryGetCallback = void*(REDHAWK_CALLCONV *)(void);
-    using TryGetTaggedMemoryCallback = CLR_BOOL(REDHAWK_CALLCONV *)(_In_ Object *, _Out_ void **);
-    using BeginEndCallback = void(REDHAWK_CALLCONV *)(void);
-    using IsReferencedCallback = int(REDHAWK_CALLCONV *)(_In_ void*);
-    using EnteredFinalizationCallback = void(REDHAWK_CALLCONV *)(_In_ void*);
+    using TryGetCallback = void*(F_CALL_CONV *)(void);
+    using TryGetTaggedMemoryCallback = CLR_BOOL(F_CALL_CONV *)(_In_ Object *, _Out_ void **);
+    using BeginEndCallback = void(F_CALL_CONV *)(void);
+    using IsReferencedCallback = int(F_CALL_CONV *)(_In_ void*);
+    using EnteredFinalizationCallback = void(F_CALL_CONV *)(_In_ void*);
 
 public: // Instance inspection
     static bool IsTrackedReference(_In_ Object * pObject, _Out_ bool* isReferenced);

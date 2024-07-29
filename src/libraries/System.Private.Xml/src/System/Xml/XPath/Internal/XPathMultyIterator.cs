@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.XPath;
+using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections;
+using System.Xml;
+using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathMultyIterator : ResettableIterator
     {
-        private ResettableIterator[] arr;
+        private readonly ResettableIterator[] arr;
         private int firstNotEmpty;
         private int position;
 

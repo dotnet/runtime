@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Program
+public class Program
 {
 
     private static TestUtil.TestLog testLog;
@@ -29,7 +30,7 @@ class Program
         testLog = new TestUtil.TestLog(expectedOut);
     }
 
-    public static void Test(int count)
+    internal static void Test(int count)
     {
         try
         {
@@ -76,7 +77,8 @@ class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // start recording
         testLog.StartRecording();

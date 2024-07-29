@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 struct StructWithHoles
@@ -16,7 +17,7 @@ struct StructWithHoles
     public int C;
 }
 
-class Runtime_61040_2
+public class Runtime_61040_2
 {
     static int z = 0;
 
@@ -45,5 +46,6 @@ class Runtime_61040_2
         return -1;
     }
 
-    public static int Main() => Problem(new() { Index = 0 }, new() { Index = 100_000_000 }, new int[10]);
+    [Fact]
+    public static int TestEntryPoint() => Problem(new() { Index = 0 }, new() { Index = 100_000_000 }, new int[10]);
 }

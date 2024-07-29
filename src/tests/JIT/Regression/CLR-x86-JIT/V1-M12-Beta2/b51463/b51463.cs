@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -11,7 +12,7 @@ namespace Test
         public static long[] m_alStatic1 = null;
     }
 
-    struct AA
+    public struct AA
     {
         bool Method1() { return false; }
 
@@ -24,7 +25,8 @@ namespace Test
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

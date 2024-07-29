@@ -38,9 +38,9 @@ void DebugBreakorAV(int val)
     if (IsDebuggerPresent())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;
@@ -87,7 +87,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal  = (DWORD)wcslen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)u16_strlen(defaultValue) + 1; // add one for null terminator
             retString = new WCHAR[dwRetVal];
             memcpy_s(retString, dwRetVal * sizeof(WCHAR), defaultValue, dwRetVal * sizeof(WCHAR));
         }
@@ -138,7 +138,7 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
             LogError("LoadRealJitLib - No real jit path");
             return false;
         }
-        jitLib = ::LoadLibraryW(jitLibPath);
+        jitLib = ::LoadLibraryExW(jitLibPath, NULL, 0);
         if (jitLib == NULL)
         {
             LogError("LoadRealJitLib - LoadLibrary failed to load '%ws' (0x%08x)", jitLibPath, ::GetLastError());
@@ -152,13 +152,11 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
 {
     WCHAR* quote = nullptr;
 
-    // If there are any quotes in the file name convert them to spaces.
-    while ((quote = wcsstr(fileName, W("\""))) != nullptr)
-    {
-        *quote = W(' ');
-    }
-
-    // Convert non-ASCII to ASCII for simplicity.
+    // Perform the following transforms:
+    //  - Convert non-ASCII to ASCII for simplicity
+    //  - Remove any illegal or annoying characters from the file name by
+    // converting them to underscores.
+    //  - Replace any quotes in the file name with spaces.
     for (quote = fileName; *quote != '\0'; quote++)
     {
         WCHAR ch = *quote;
@@ -166,20 +164,31 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
         {
             *quote = W('_');
         }
-    }
-
-    // Remove any illegal or annoying characters from the file name by converting them to underscores.
-    while ((quote = wcspbrk(fileName, W("()=<>:\"/\\|?! *.,"))) != nullptr)
-    {
-        *quote = W('_');
+        else
+        {
+            switch (ch)
+            {
+                case W('('): case W(')'): case W('='): case W('<'):
+                case W('>'): case W(':'): case W('/'): case W('\\'):
+                case W('|'): case W('?'): case W('!'): case W('*'):
+                case W('.'): case W(','):
+                    *quote = W('_');
+                    break;
+                case W('"'):
+                    *quote = W(' ');
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
 
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    const size_t extensionLength    = wcslen(extension);
-    const size_t fileNameLength     = wcslen(fileName);
+    const size_t extensionLength    = u16_strlen(extension);
+    const size_t fileNameLength     = u16_strlen(fileName);
     const size_t randomStringLength = 8;
     const size_t maxPathLength      = MAX_PATH - 50;
 
@@ -253,6 +262,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
 #elif defined(TARGET_LOONGARCH64)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_RISCV64;
 #else
 #error Unsupported architecture
 #endif
@@ -379,6 +390,95 @@ void PutArm64MovkConstant(UINT32* p, unsigned con)
     *p = (*p & ~(0xffff << 5)) | ((con & 0xffff) << 5);
 }
 
+// GetArm32MovwConstant / GetArm32MovtConstant: Decode Arm32 movw / movt instructions, e.g.:
+//    4b f2 33 40    movw    r0, #46131
+//    c0 f2 79 30    movt    r0, #889
+//
+// Return `true` if the instruction pointed to by `p` is a movw/movt, `false` otherwise.
+// If true, fill out the target register in `*pReg`, constant in `*pCon`.
+
+bool GetArm32MovwConstant(UINT32* p, unsigned* pReg, unsigned* pCon)
+{
+    // This decodes the "MOV (immediate)" instruction, Encoding T3, from the ARM manual section A8.8.102.
+    if (!Is32BitThumb2Instruction((UINT16*)p))
+    {
+        return false;
+    }
+
+    // A Thumb-2 instruction is one or two 16-bit words (in little-endian format).
+    UINT16 instr1 = *(UINT16*)p;
+    UINT16 instr2 = *((UINT16*)p + 1);
+    UINT32 instr = (instr1 << 16) | instr2;
+    if ((instr & 0xfbf08000) != 0xf2400000)
+    {
+        return false;
+    }
+
+    *pReg = (instr & 0xf00) >> 8;
+    *pCon = ExtractArm32MovImm(instr);
+    return true;
+}
+
+bool GetArm32MovtConstant(UINT32* p, unsigned* pReg, unsigned* pCon)
+{
+    // This decodes the "MOVT" instruction, Encoding T1, from the ARM manual section A8.8.106.
+    if (!Is32BitThumb2Instruction((UINT16*)p))
+    {
+        return false;
+    }
+
+    // A Thumb-2 instruction is one or two 16-bit words (in little-endian format).
+    UINT16 instr1 = *(UINT16*)p;
+    UINT16 instr2 = *((UINT16*)p + 1);
+    UINT32 instr = (instr1 << 16) | instr2;
+    if ((instr & 0xfbf08000) != 0xf2C00000)
+    {
+        return false;
+    }
+
+    *pReg = (instr & 0xf00) >> 8;
+    *pCon = ExtractArm32MovImm(instr);
+    return true;
+}
+
+// Is the instruction we're pointing to an Arm32 (Thumb-2) 32-bit instruction?
+bool Is32BitThumb2Instruction(UINT16* p)
+{
+    UINT16 instr1 = *p;
+    if ((instr1 & 0xf800) < 0xe800)
+    {
+        // Not a 32-bit instruction
+        return false;
+    }
+    return true;
+}
+
+// Extract the immediate value from a movw/movt instruction encoding.
+UINT32 ExtractArm32MovImm(UINT32 instr)
+{
+    UINT32 imm4 = (instr >> 16) & 0xf;
+    UINT32 i    = (instr >> 26) & 0x1;
+    UINT32 imm3 = (instr >> 12) & 0x7;
+    UINT32 imm8 = instr & 0xff;
+    return (imm4 << 12) | (i << 11) | (imm3 << 8) | imm8;
+}
+
+// PutArm32MovtConstant: set the constant field in an Arm32 `movt` instruction.
+// `*p` points to a `movt` instruction. `con` must be a 16-bit constant.
+void PutArm32MovtConstant(UINT32* p, unsigned con)
+{
+    UINT32 imm4 = (con >> 12) & 0xf;
+    UINT32 i    = (con >> 11) & 0x1;
+    UINT32 imm3 = (con >> 8) & 0x7;
+    UINT32 imm8 = con & 0xff;
+    UINT16 instr1 = *(UINT16*)p;
+    UINT16 instr2 = *((UINT16*)p + 1);
+    UINT32 instr = (instr1 << 16) | instr2;
+    instr = (instr & 0xfbf08f00) | (imm4 << 16) | (i << 26) | (imm3 << 12) | imm8;
+    *(UINT16*)p       = (UINT16)(instr >> 16);
+    *((UINT16*)p + 1) = (UINT16)instr;
+}
+
 template<typename TPrint>
 static std::string getFromPrinter(TPrint print)
 {
@@ -412,4 +512,15 @@ std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
     return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
         return mc->repPrintClassName(clsHnd, buffer, bufferSize, requiredBufferSize);
         });
+}
+
+std::string ConvertToUtf8(const WCHAR* str)
+{
+    unsigned len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    std::vector<char> buf(len + 1);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    return std::string{ buf.data() };
 }

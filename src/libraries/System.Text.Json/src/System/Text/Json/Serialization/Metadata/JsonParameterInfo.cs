@@ -2,117 +2,127 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Holds relevant state about a method parameter, like the default value of
-    /// the parameter, and the position in the method's parameter list.
+    /// Provides JSON serialization-related metadata about a constructor parameter.
     /// </summary>
-    internal abstract class JsonParameterInfo
+    public abstract class JsonParameterInfo
     {
-        private JsonTypeInfo? _jsonTypeInfo;
-
-        public JsonConverter ConverterBase { get; private set; } = null!;
-
-        private protected bool MatchingPropertyCanBeNull { get; private set; }
-
-        // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
-        public object? DefaultValue { get; private protected set; }
-
-        public bool IgnoreNullTokensOnRead { get; private set; }
-
-        // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
-        public JsonSerializerOptions? Options { get; set; } // initialized in Init method
-
-        // The name of the parameter as UTF-8 bytes.
-        public byte[] NameAsUtf8Bytes { get; private set; } = null!;
-
-        public JsonNumberHandling? NumberHandling { get; private set; }
-
-        // Using a field to avoid copy semantics.
-        public JsonParameterInfoValues ClrInfo = null!;
-
-        public JsonTypeInfo JsonTypeInfo
+        internal JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
         {
-            get
-            {
-                Debug.Assert(Options != null);
-                Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
-            }
-            set
-            {
-                // Used by JsonMetadataServices.
-                Debug.Assert(_jsonTypeInfo == null);
-                _jsonTypeInfo = value;
-            }
-        }
+            Debug.Assert(matchingProperty.PropertyType == parameterInfoValues.ParameterType);
 
-        public Type PropertyType { get; set; } = null!;
-
-        public bool ShouldDeserialize { get; private set; }
-
-        public JsonPropertyInfo MatchingProperty { get; private set; } = null!;
-
-        public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
-        {
+            Position = parameterInfoValues.Position;
+            Name = parameterInfoValues.Name;
+            HasDefaultValue = parameterInfoValues.HasDefaultValue;
+            DefaultValue = parameterInfoValues.HasDefaultValue ? parameterInfoValues.DefaultValue : null;
             MatchingProperty = matchingProperty;
-            ClrInfo = parameterInfo;
-            Options = options;
-            ShouldDeserialize = true;
-
-            PropertyType = matchingProperty.PropertyType;
-            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            ConverterBase = matchingProperty.EffectiveConverter;
-            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
-            NumberHandling = matchingProperty.EffectiveNumberHandling;
-            MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
+            IsMemberInitializer = parameterInfoValues.IsMemberInitializer;
         }
 
         /// <summary>
-        /// Create a parameter that is ignored at run time. It uses the same type (typeof(sbyte)) to help
-        /// prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
+        /// Gets the declaring type of the constructor.
         /// </summary>
-        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
-            JsonParameterInfoValues parameterInfo,
-            JsonPropertyInfo matchingProperty,
-            bool sourceGenMode)
+        public Type DeclaringType => MatchingProperty.DeclaringType;
+
+        /// <summary>
+        /// Gets the zero-based position of the parameter in the formal parameter list.
+        /// </summary>
+        public int Position { get; }
+
+        /// <summary>
+        /// Gets the type of this parameter.
+        /// </summary>
+        public Type ParameterType => MatchingProperty.PropertyType;
+
+        /// <summary>
+        /// Gets the name of the parameter.
+        /// </summary>
+        public string Name { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the parameter has a default value.
+        /// </summary>
+        public bool HasDefaultValue { get; }
+
+        /// <summary>
+        /// Gets a value indicating the default value if the parameter has a default value.
+        /// </summary>
+        public object? DefaultValue { get; }
+
+        /// <summary>
+        /// The default value to be passed to the constructor argument array, replacing null with default(TParameter).
+        /// </summary>
+        internal object? EffectiveDefaultValue { get; private protected init; }
+
+        /// <summary>
+        /// Gets a value indicating whether the constructor parameter is annotated as nullable.
+        /// </summary>
+        /// <remarks>
+        /// Contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// derive the value of this parameter from nullable reference type annotations, including annotations
+        /// from attributes such as <see cref="AllowNullAttribute"/> or <see cref="DisallowNullAttribute"/>.
+        ///
+        /// This property has no effect on deserialization unless the <see cref="JsonSerializerOptions.RespectNullableAnnotations"/>
+        /// property has been enabled, in which case the serializer will reject any <see langword="null"/> deserialization results.
+        ///
+        /// This setting is in sync with the associated <see cref="JsonPropertyInfo.IsSetNullable"/> property.
+        /// </remarks>
+        public bool IsNullable => MatchingProperty.IsSetNullable;
+
+        /// <summary>
+        /// Gets a value indicating whether the parameter represents a required or init-only member initializer.
+        /// </summary>
+        /// <remarks>
+        /// Only returns <see langword="true" /> for source generated metadata which can only access
+        /// required or init-only member initializers using object initialize expressions.
+        /// </remarks>
+        public bool IsMemberInitializer { get; }
+
+        /// <summary>
+        /// Gets a custom attribute provider for the current parameter.
+        /// </summary>
+        /// <remarks>
+        /// When resolving metadata via the built-in resolvers this will be populated with
+        /// the underlying <see cref="ParameterInfo" /> of the constructor metadata.
+        /// </remarks>
+        public ICustomAttributeProvider? AttributeProvider
         {
-            JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
-            jsonParameterInfo.ClrInfo = parameterInfo;
-            jsonParameterInfo.PropertyType = matchingProperty.PropertyType;
-            jsonParameterInfo.NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-
-            // TODO: https://github.com/dotnet/runtime/issues/60082.
-            // Default value initialization for params mapping to ignored properties doesn't
-            // account for the default value of optional parameters. This should be fixed.
-
-            if (sourceGenMode)
+            get
             {
-                // The <T> value in the matching JsonPropertyInfo<T> instance matches the parameter type.
-                jsonParameterInfo.DefaultValue = matchingProperty.DefaultValue;
-            }
-            else
-            {
-                // The <T> value in the created JsonPropertyInfo<T> instance (sbyte)
-                // doesn't match the parameter type, use reflection to get the default value.
-                Type parameterType = parameterInfo.ParameterType;
-
-                DefaultValueHolder holder;
-                if (matchingProperty.Options.TryGetTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
+                // Use delayed initialization to ensure that reflection dependencies are pay-for-play.
+                Debug.Assert(MatchingProperty.DeclaringTypeInfo != null, "Declaring type metadata must have already been configured.");
+                ICustomAttributeProvider? parameterInfo = _attributeProvider;
+                if (parameterInfo is null && MatchingProperty.DeclaringTypeInfo.ConstructorAttributeProvider is MethodBase ctorInfo)
                 {
-                    holder = typeInfo.DefaultValueHolder;
-                }
-                else
-                {
-                    holder = DefaultValueHolder.CreateHolder(parameterInfo.ParameterType);
+                    ParameterInfo[] parameters = ctorInfo.GetParameters();
+                    if (Position < parameters.Length)
+                    {
+                        _attributeProvider = parameterInfo = parameters[Position];
+                    }
                 }
 
-                jsonParameterInfo.DefaultValue = holder.DefaultValue;
+                return parameterInfo;
             }
-
-            return jsonParameterInfo;
         }
+
+        private ICustomAttributeProvider? _attributeProvider;
+
+        internal JsonPropertyInfo MatchingProperty { get; }
+
+        internal JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
+        internal bool IgnoreNullTokensOnRead => MatchingProperty.IgnoreNullTokensOnRead;
+        internal JsonSerializerOptions Options => MatchingProperty.Options;
+
+        // The effective name of the parameter as UTF-8 bytes.
+        internal byte[] JsonNameAsUtf8Bytes => MatchingProperty.NameAsUtf8Bytes;
+        internal JsonNumberHandling? NumberHandling => MatchingProperty.EffectiveNumberHandling;
+        internal JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
+        internal bool ShouldDeserialize => !MatchingProperty.IsIgnored;
+        internal bool IsRequiredParameter => !HasDefaultValue && !IsMemberInitializer;
     }
 }

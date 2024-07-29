@@ -10,7 +10,7 @@ namespace ILLink.Shared
 {
 	public enum DiagnosticId
 	{
-		// Linker error ids.
+		// Trimming error ids.
 		XmlFeatureDoesNotSpecifyFeatureValue = 1001,
 		XmlUnsupportedNonBooleanValueForFeature = 1002,
 		XmlException = 1003,
@@ -59,7 +59,7 @@ namespace ILLink.Shared
 		InvalidMetadataOption = 1046,
 		InvalidDependenciesFileFormat = 1047,
 
-		// Linker diagnostic ids.
+		// Trimming diagnostic ids.
 		TypeHasNoFieldsToPreserve = 2001,
 		TypeHasNoMethodsToPreserve = 2002,
 		CouldNotResolveDependencyAssembly = 2003,
@@ -83,7 +83,7 @@ namespace ILLink.Shared
 		_unused_RearrangedXmlWarning2 = 2021,
 		XmlCouldNotFindMatchingConstructorForCustomAttribute = 2022,
 		XmlMoreThanOneReturnElementForMethod = 2023,
-		XmlMoreThanOneValyForParameterOfMethod = 2024,
+		XmlMoreThanOneValueForParameterOfMethod = 2024,
 		XmlDuplicatePreserveMember = 2025,
 		RequiresUnreferencedCode = 2026,
 		AttributeShouldOnlyBeUsedOnceOnMember = 2027,
@@ -169,7 +169,7 @@ namespace ILLink.Shared
 		InvalidIsTrimmableValue = 2102,
 		PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined = 2103,
 		AssemblyProducedTrimWarnings = 2104,
-		TypeWasNotFoundInAssemblyNorBaseLibrary = 2105,
+		_unused_TypeWasNotFoundInAssemblyNorBaseLibrary = 2105,
 		DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings = 2106,
 		MethodsAreAssociatedWithStateMachine = 2107,
 		InvalidScopeInUnconditionalSuppressMessage = 2108,
@@ -182,10 +182,12 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers = 2115,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 		MethodsAreAssociatedWithUserMethod = 2117,
-		CompilerGeneratedMemberAccessedViaReflection = 2118,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
+		_unused_CompilerGeneratedMemberAccessedViaReflection = 2118,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
 		RedundantSuppression = 2121,
+		TypeNameIsNotAssemblyQualified = 2122,
+		_EndTrimAnalysisWarningsSentinel,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,
@@ -202,6 +204,11 @@ namespace ILLink.Shared
 		GenericRecursionCycle = 3054,
 		CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
 		RequiresDynamicCodeOnStaticConstructor = 3056,
+		_EndAotAnalysisWarningsSentinel,
+
+		// Feature guard diagnostic ids.
+		ReturnValueDoesNotMatchFeatureGuards = 4000,
+		InvalidFeatureGuard = 4001
 	}
 
 	public static class DiagnosticIdExtensions
@@ -222,9 +229,9 @@ namespace ILLink.Shared
 				2103 => MessageSubCategory.TrimAnalysis,
 				2106 => MessageSubCategory.TrimAnalysis,
 				2107 => MessageSubCategory.TrimAnalysis,
-				>= 2109 and <= 2121 => MessageSubCategory.TrimAnalysis,
+				>= 2109 and < (int) DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
 				>= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-				>= 3054 and <= 3055 => MessageSubCategory.AotAnalysis,
+				>= 3054 and < (int) DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
 				_ => MessageSubCategory.None,
 			};
 
@@ -234,6 +241,14 @@ namespace ILLink.Shared
 				>= 3000 and < 3050 => DiagnosticCategory.SingleFile,
 				>= 3050 and <= 6000 => DiagnosticCategory.AOT,
 				_ => throw new ArgumentException ($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
+			};
+
+		public static string? GetHelpUri(this DiagnosticId diagnosticId) =>
+			diagnosticId.GetDiagnosticCategory() switch {
+				DiagnosticCategory.Trimming => $"https://learn.microsoft.com/dotnet/core/deploying/trimming/trim-warnings/il{(int) diagnosticId}",
+				DiagnosticCategory.SingleFile => $"https://learn.microsoft.com/dotnet/core/deploying/single-file/warnings/il{(int) diagnosticId}",
+				DiagnosticCategory.AOT =>$"https://learn.microsoft.com/dotnet/core/deploying/native-aot/warnings/il{(int) diagnosticId}",
+				_ => null
 			};
 	}
 }

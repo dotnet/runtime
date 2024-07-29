@@ -146,7 +146,6 @@ namespace System.Reflection.Tests
         // to spread GetGenericArguments() calls all over so we do it once in this helper.
         public static Type[] GetGenericTypeParameters(this Type t)
         {
-            Debug.Assert(t.IsGenericTypeDefinition);
             return t.GetGenericArguments();
         }
 
@@ -184,7 +183,7 @@ namespace System.Reflection.Tests
                 if (t2.Equals(t1))
                     continue;
 
-                Assert.True(false, "Expected Equals() to return true: " + t1 + ", " + t2);
+                Assert.Fail("Expected Equals() to return true: " + t1 + ", " + t2);
             }
         }
 

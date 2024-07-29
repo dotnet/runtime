@@ -29,11 +29,11 @@ namespace System.Net.Http.Headers
 
         public ProductHeaderValue(string name, string? version)
         {
-            HeaderUtilities.CheckValidToken(name, nameof(name));
+            HeaderUtilities.CheckValidToken(name);
 
             if (!string.IsNullOrEmpty(version))
             {
-                HeaderUtilities.CheckValidToken(version, nameof(version));
+                HeaderUtilities.CheckValidToken(version);
                 _version = version;
             }
 
@@ -82,7 +82,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static ProductHeaderValue Parse(string? input)
+        public static ProductHeaderValue Parse(string input)
         {
             int index = 0;
             return (ProductHeaderValue)GenericHeaderParser.SingleValueProductParser.ParseValue(input, null, ref index);

@@ -38,7 +38,7 @@ namespace System.Diagnostics
             {
                 if (value < TraceLevel.Off || value > TraceLevel.Verbose)
                     throw new ArgumentException(SR.TraceSwitchInvalidLevel);
-                SwitchSetting = (int)value;
+                SetSwitchValues((int)value, value.ToString());
             }
         }
 
@@ -93,7 +93,21 @@ namespace System.Diagnostics
 
         protected override void OnValueChanged()
         {
-            SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
+            // Parse the new value and set the switch setting accordingly. Parse should throw an exception if the value is invalid.
+            TraceLevel level = Enum.Parse<TraceLevel>(Value, true);
+
+            if (level < TraceLevel.Off)
+            {
+                level = TraceLevel.Off;
+            }
+            else if (level > TraceLevel.Verbose)
+            {
+                level = TraceLevel.Verbose;
+            }
+
+
+            // Update the switch value string accordingly.
+            SetSwitchValues((int)level, level.ToString());
         }
     }
 }

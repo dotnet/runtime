@@ -8,7 +8,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal struct ResultCache
     {
-        public static ResultCache None { get; } = new ResultCache(CallSiteResultCacheLocation.None, ServiceCacheKey.Empty);
+        public static ResultCache None(Type serviceType)
+        {
+            var cacheKey = new ServiceCacheKey(ServiceIdentifier.FromServiceType(serviceType), 0);
+            return new ResultCache(CallSiteResultCacheLocation.None, cacheKey);
+        }
 
         internal ResultCache(CallSiteResultCacheLocation lifetime, ServiceCacheKey cacheKey)
         {
@@ -16,10 +20,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Key = cacheKey;
         }
 
-        public ResultCache(ServiceLifetime lifetime, Type? type, int slot)
+        public ResultCache(ServiceLifetime lifetime, ServiceIdentifier serviceIdentifier, int slot)
         {
-            Debug.Assert(lifetime == ServiceLifetime.Transient || type != null);
-
             switch (lifetime)
             {
                 case ServiceLifetime.Singleton:
@@ -35,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Location = CallSiteResultCacheLocation.None;
                     break;
             }
-            Key = new ServiceCacheKey(type, slot);
+            Key = new ServiceCacheKey(serviceIdentifier, slot);
         }
 
         public CallSiteResultCacheLocation Location { get; set; }

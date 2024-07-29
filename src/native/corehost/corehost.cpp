@@ -19,7 +19,6 @@
 #endif
 
 #define CURHOST_TYPE    _X("apphost")
-#define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
 #define CURHOST_EXE
 
 /**
@@ -60,15 +59,23 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
         return false;
     }
 
+    std::string binding(&embed[0]);
+
+    // Check if the path exceeds the max allowed size
+    if (binding.size() > EMBED_MAX - 1) // -1 for null terminator
+    {
+        trace::error(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
+        return false;
+    }
+
+    // Check if the value is the same as the placeholder
     // Since the single static string is replaced by editing the executable, a reference string is needed to do the compare.
     // So use two parts of the string that will be unaffected by the edit.
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
-
-    std::string binding(&embed[0]);
-    if ((binding.size() >= (hi_len + lo_len)) &&
-        binding.compare(0, hi_len, &hi_part[0]) == 0 &&
-        binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
+    if (binding.size() >= (hi_len + lo_len)
+        && binding.compare(0, hi_len, &hi_part[0]) == 0
+        && binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
     {
         trace::error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll->c_str());
         return false;
@@ -80,37 +87,31 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 
 #elif !defined(FEATURE_LIBHOST)
 #define CURHOST_TYPE    _X("dotnet")
-#define CUREXE_PKG_VER  HOST_PKG_VER
 #define CURHOST_EXE
 #endif
 
 void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
     trace::error(
-        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
-        _X("\n\n")
-        _X("App: %s\n")
-        _X("Architecture: %s\n")
-        _X("App host version: %s\n")
-        _X(".NET location: %s\n")
-        _X("\n")
-        _X("Learn about runtime installation:\n")
-        DOTNET_APP_LAUNCH_FAILED_URL
-        _X("\n\n")
-        _X("Download the .NET runtime:\n")
-        _X("%s&apphost_version=%s"),
+        MISSING_RUNTIME_ERROR_FORMAT,
+        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
         host_path.c_str(),
         get_current_arch_name(),
-        _STRINGIFY(COMMON_HOST_PKG_VER),
+        _STRINGIFY(HOST_VERSION),
         dotnet_root.c_str(),
         get_download_url().c_str(),
-        _STRINGIFY(COMMON_HOST_PKG_VER));
+        _STRINGIFY(HOST_VERSION));
 }
 
 #if defined(CURHOST_EXE)
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    extern void initialize_static_createdump();
+    initialize_static_createdump();
+#endif
+
     pal::string_t host_path;
     if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
     {
@@ -126,7 +127,6 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::string_t embedded_app_name;
     if (!is_exe_enabled_for_execution(&embedded_app_name))
     {
-        trace::error(_X("A fatal error was encountered. This executable was not bound to load a managed DLL."));
         return StatusCode::AppHostExeNotBoundFailure;
     }
 
@@ -165,7 +165,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         // dotnet.exe is signed by Microsoft. It is technically possible to rename the file MyApp.exe and include it in the application.
         // Then one can create a shortcut for "MyApp.exe MyApp.dll" which works. The end result is that MyApp looks like it's signed by Microsoft.
         // To prevent this dotnet.exe must not be renamed, otherwise it won't run.
-        trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
+        trace::error(_X("Error: cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 
@@ -303,7 +303,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked %s [version: %s, commit hash: %s] main = {"), CURHOST_TYPE, _STRINGIFY(CUREXE_PKG_VER), _STRINGIFY(REPO_COMMIT_HASH));
+        trace::info(_X("--- Invoked %s [version: %s] main = {"), CURHOST_TYPE, get_host_version_description().c_str());
         for (int i = 0; i < argc; ++i)
         {
             trace::info(_X("%s"), argv[i]);

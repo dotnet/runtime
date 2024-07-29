@@ -101,7 +101,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -127,7 +127,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1> objTuple))
+            if (other is not Tuple<T1> objTuple)
             {
                 return false;
             }
@@ -149,7 +149,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1> objTuple))
+            if (other is not Tuple<T1> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -218,7 +218,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -247,7 +247,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2> objTuple))
+            if (other is not Tuple<T1, T2> objTuple)
             {
                 return false;
             }
@@ -269,7 +269,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2> objTuple))
+            if (other is not Tuple<T1, T2> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -340,7 +340,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -372,7 +372,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3> objTuple))
+            if (other is not Tuple<T1, T2, T3> objTuple)
             {
                 return false;
             }
@@ -394,7 +394,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3> objTuple))
+            if (other is not Tuple<T1, T2, T3> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -472,7 +472,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3, T4> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -507,7 +507,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3, T4> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4> objTuple)
             {
                 return false;
             }
@@ -529,7 +529,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3, T4> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -614,7 +614,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3, T4, T5> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -652,7 +652,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5> objTuple)
             {
                 return false;
             }
@@ -674,7 +674,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -766,7 +766,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3, T4, T5, T6> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -807,7 +807,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 return false;
             }
@@ -829,7 +829,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -928,7 +928,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3, T4, T5, T6, T7> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -972,7 +972,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 return false;
             }
@@ -994,7 +994,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
@@ -1100,7 +1100,7 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> : IStructuralEquatable, IStructuralComparable, IComparable, ITupleInternal, ITuple where TRest : notnull
     {
         private readonly T1 m_Item1; // Do not rename (binary serialization)
@@ -1123,7 +1123,7 @@ namespace System
 
         public Tuple(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest)
         {
-            if (!(rest is ITupleInternal))
+            if (rest is not ITupleInternal)
             {
                 throw new ArgumentException(SR.ArgumentException_TupleLastArgumentNotATuple);
             }
@@ -1152,7 +1152,7 @@ namespace System
         {
             if (other == null) return false;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 return false;
             }
@@ -1174,7 +1174,7 @@ namespace System
         {
             if (other == null) return 1;
 
-            if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple))
+            if (other is not Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }

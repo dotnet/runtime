@@ -2056,7 +2056,7 @@ CMiniMdRW::GetFullSaveSize(
     cbTotal += cbAlign;
     m_cbSaveSize = cbTotal;
 
-    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %d\n", cbTotal));
+    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %u\n", cbTotal));
 
     *pcbSaveSize = cbTotal;
 
@@ -2984,7 +2984,7 @@ CMiniMdRW::PreSaveEnc()
                 // If we found the token, don't keep the record.
                 if (pul != 0)
                 {
-                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token %d", pFrom->GetToken()));
+                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token 0x%x", pFrom->GetToken()));
                     continue;
                 }
                 // First time token was seen, so keep track of it.
@@ -3995,7 +3995,7 @@ CMiniMdRW::Impl_GetStringW(
             *pcchBuffer = 0;
         goto ErrExit;
     }
-    if (!(iSize=::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer)))
+    if (!(iSize=::MultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer)))
     {
         // What was the problem?
         DWORD dwNT = GetLastError();
@@ -4006,7 +4006,7 @@ CMiniMdRW::Impl_GetStringW(
 
         // Truncation error; get the size required.
         if (pcchBuffer)
-            *pcchBuffer = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
+            *pcchBuffer = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
 
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string

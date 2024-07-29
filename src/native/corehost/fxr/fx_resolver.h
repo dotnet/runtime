@@ -9,45 +9,57 @@
 #include "fx_definition.h"
 
 class runtime_config_t;
-struct host_startup_info_t;
 
 class fx_resolver_t
 {
 public:
-    static StatusCode resolve_frameworks_for_app(
-        const host_startup_info_t& host_info,
-        bool disable_multilevel_lookup,
+    struct resolution_failure_info
+    {
+        fx_reference_t missing;
+        fx_reference_t incompatible_lower;
+        fx_reference_t incompatible_higher;
+        std::unique_ptr<fx_definition_t> invalid_config;
+    };
+
+public:
+    static StatusCode resolve_frameworks(
+        const pal::string_t& dotnet_root,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
-        fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name = nullptr);
+        /*in_out*/ fx_definition_vector_t& fx_definitions,
+        resolution_failure_info& resolution_failure);
+
+    static StatusCode resolve_frameworks_for_app(
+        const pal::string_t& dotnet_root,
+        const runtime_config_t::settings_t& override_settings,
+        const runtime_config_t& app_config,
+        /*in_out*/ fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name);
 
     static bool is_config_compatible_with_frameworks(
         const runtime_config_t& config,
         const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
 
 private:
-    fx_resolver_t();
+    fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
+        : m_disable_multilevel_lookup{disable_multilevel_lookup}
+        , m_override_settings{override_settings}
+    { }
 
     void update_newest_references(
         const runtime_config_t& config);
     StatusCode read_framework(
-        const host_startup_info_t& host_info,
-        bool disable_multilevel_lookup,
-        const runtime_config_t::settings_t& override_settings,
+        const pal::string_t& dotnet_root,
         const runtime_config_t& config,
         const fx_reference_t * effective_parent_fx_ref,
         fx_definition_vector_t& fx_definitions,
-        const pal::char_t* app_display_name);
+        resolution_failure_info& resolution_failure);
 
-    static StatusCode reconcile_fx_references_helper(
-        const fx_reference_t& lower_fx_ref,
-        const fx_reference_t& higher_fx_ref,
-        /*out*/ fx_reference_t& effective_fx_ref);
     static StatusCode reconcile_fx_references(
         const fx_reference_t& fx_ref_a,
         const fx_reference_t& fx_ref_b,
-        /*out*/ fx_reference_t& effective_fx_ref);
+        /*out*/ fx_reference_t& effective_fx_ref,
+        resolution_failure_info& resolution_failure);
 
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
@@ -83,6 +95,9 @@ private:
     // to fill the "oldest reference" for each resolved framework in the end. It does not affect the behavior
     // of the algorithm.
     fx_name_to_fx_reference_map_t m_oldest_fx_references;
+
+    bool m_disable_multilevel_lookup;
+    const runtime_config_t::settings_t& m_override_settings;
 };
 
 #endif // __FX_RESOLVER_H__

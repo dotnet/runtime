@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -279,6 +278,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DirectoryContext Context => context;
 
+        private static readonly string[] s_name = new string[] { "name" };
+        private static readonly string[] s_cn = new string[] { "cn" };
+        private static readonly string[] s_objectClassCn = new string[] { "objectClass", "cn" };
+
         internal unsafe void CheckConsistencyHelper(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // call DsReplicaConsistencyCheck
@@ -350,13 +353,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this is the case of meta data
                     if (type == (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_METADATA_2_FOR_OBJ)
                     {
-                        if (result == ExceptionHelper.ERROR_DS_DRA_BAD_DN || result == ExceptionHelper.ERROR_DS_NAME_UNPARSEABLE)
+                        if (result == Interop.Errors.ERROR_DS_DRA_BAD_DN || result == Interop.Errors.ERROR_DS_NAME_UNPARSEABLE)
                             throw new ArgumentException(ExceptionHelper.GetErrorMessage(result, false), "objectPath");
 
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
                         try
                         {
-                            verifyEntry.RefreshCache(new string[] { "name" });
+                            verifyEntry.RefreshCache(s_name);
                         }
                         catch (COMException e)
                         {
@@ -626,14 +629,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
-            IntPtr errorInfo = (IntPtr)0;
+            void* pErrors = null;
 
             if (!Partitions.Contains(partition))
                 throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, void**, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (dsReplicaSyncAllW == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
@@ -643,16 +646,16 @@ namespace System.DirectoryServices.ActiveDirectory
             fixed (char* partitionPtr = partition)
             {
                 IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
-                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &errorInfo);
+                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &pErrors);
                 GC.KeepAlive(syncAllCallback);
             }
 
             try
             {
                 // error happens during the synchronization
-                if (errorInfo != (IntPtr)0)
+                if (pErrors is not null)
                 {
-                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)pErrors, false);
                     if (e == null)
                         return;
                     else
@@ -668,8 +671,8 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // release the memory
-                if (errorInfo != (IntPtr)0)
-                    global::Interop.Kernel32.LocalFree(errorInfo);
+                if (pErrors is not null)
+                    global::Interop.Kernel32.LocalFree(pErrors);
             }
         }
 
@@ -689,8 +692,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {
-            int structSize = Marshal.SizeOf(typeof(Guid));
-            IntPtr unmanagedGuid = (IntPtr)0;
+            int structSize = sizeof(Guid);
+            IntPtr unmanagedGuid = 0;
             Guid guid = Guid.Empty;
             AdamInstance? adamServer = null;
             DomainController? dcServer = null;
@@ -734,10 +737,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         string? serverDownName = null;
                         // this is the error returned when the server that we want to sync from is down
-                        if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
+                        if (result == Interop.Errors.RPC_S_SERVER_UNAVAILABLE)
                             serverDownName = sourceServer;
                         // this is the error returned when the server that we want to get synced is down
-                        else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
+                        else if (result == Interop.Errors.RPC_S_CALL_FAILED)
                             serverDownName = Name;
 
                         throw ExceptionHelper.GetExceptionFromErrorCode(result, serverDownName);
@@ -769,7 +772,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection))",
-                                                      new string[] { "cn" },
+                                                      s_cn,
                                                       SearchScope.OneLevel);
                 SearchResultCollection? srchResults = null;
 
@@ -808,7 +811,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string serverName = (this is DomainController) ? ((DomainController)this).ServerObjectName : ((AdamInstance)this).ServerObjectName;
                 ADSearcher adSearcher = new ADSearcher(de,
                                                                "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection)(fromServer=CN=NTDS Settings," + serverName + "))",
-                                                               new string[] { "objectClass", "cn" },
+                                                               s_objectClassCn,
                                                                SearchScope.Subtree);
 
                 SearchResultCollection? results = null;

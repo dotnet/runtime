@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
-    class BB
+    public class BB
     {
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int i = 10;
             bool f = false;
@@ -18,7 +20,6 @@ namespace DefaultNamespace
                 while (i > 39)
                     while (f)
                         GC.Collect();
-            return 100;
         }
     }
 }

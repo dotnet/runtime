@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>System.Reflection</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
+    <NoWarn>$(NoWarn);CA1865</NoWarn>
     <PackageDescription>Provides read-only reflection on assemblies in an isolated context with support for assemblies that target different processor architectures and runtimes. Using MetadataLoadContext enables you to inspect assemblies without loading them into the main execution context. Assemblies in MetadataLoadContext are treated only as metadata, that is, you can read information about their members, but cannot execute any code contained in them.</PackageDescription>
   </PropertyGroup>
 
@@ -65,7 +69,6 @@
     <Compile Include="System\Reflection\TypeLoading\General\CoreTypes.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaDefaultValueProcessing.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaHelpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaModifiedTypeProvider.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaPinnedTypeProvider.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaResolver.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\EcmaSignatureTypeProviderForToString.cs" />
@@ -77,12 +80,13 @@
     <Compile Include="System\Reflection\TypeLoading\General\Ecma\MetadataTable.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\HashHelpers.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Helpers.cs" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
-    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\TypeLoading\General\MethodSig.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\RoAssemblyName.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Sentinels.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.net.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(_TargetFrameworkVersionWithoutV)' &gt;= '8.0'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.net7.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(_TargetFrameworkVersionWithoutV)' &lt; '8.0'" />
+    <Compile Include="System\Reflection\TypeLoading\General\TypeExtensions.netstandard.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="System\Reflection\TypeLoading\General\TypeFactories.cs" />
     <Compile Include="System\Reflection\TypeLoading\General\Utf8Constants.cs" />
     <Compile Include="System\Reflection\TypeLoading\MethodBase\IMethodDecoder.cs" />
@@ -129,9 +133,14 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoConstructedGenericType.Key.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoDefinitionType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoExceptionType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoFunctionPointerType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoGenericParameterType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoHasElementType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoInstantiationProviderType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedHasElementType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedFunctionPointerType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedGenericType.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedStandaloneType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPinnedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPointerType.cs" />
@@ -141,6 +150,7 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -157,4 +167,5 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
+
 </Project>

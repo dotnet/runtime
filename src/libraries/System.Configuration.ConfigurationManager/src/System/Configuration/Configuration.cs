@@ -36,7 +36,7 @@ namespace System.Configuration
             UpdateConfigHost updateConfigHost = new UpdateConfigHost(configHost);
 
             // Now wrap in ImplicitMachineConfigHost so we can stub in a simple machine.config if needed.
-            IInternalConfigHost implicitMachineConfigHost = new ImplicitMachineConfigHost(updateConfigHost);
+            ImplicitMachineConfigHost implicitMachineConfigHost = new ImplicitMachineConfigHost(updateConfigHost);
 
             InternalConfigRoot configRoot = new InternalConfigRoot(this, updateConfigHost);
             ((IInternalConfigRoot)configRoot).Init(implicitMachineConfigHost, isDesignTime: true);
@@ -217,7 +217,7 @@ namespace System.Configuration
         }
 
         // Force all sections and section groups to be instantiated.
-        private void ForceGroupsRecursive(ConfigurationSectionGroup group)
+        private static void ForceGroupsRecursive(ConfigurationSectionGroup group)
         {
             foreach (ConfigurationSection configSection in group.Sections)
             {

@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.CompilerServices;
 
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-using Internal.Reflection.Augments;
 
 namespace System
 {
@@ -67,12 +66,6 @@ namespace System
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public override int GetHashCode()
         {
             if (_value == IntPtr.Zero)
@@ -84,13 +77,13 @@ namespace System
             RuntimeAugments.TypeLoaderCallbacks.GetRuntimeMethodHandleComponents(this, out declaringType, out nameAndSignature, out genericArgs);
 
             int hashcode = declaringType.GetHashCode();
-            hashcode = (hashcode + _rotl(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
+            hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ nameAndSignature.Name.GetHashCode();
             if (genericArgs != null)
             {
                 for (int i = 0; i < genericArgs.Length; i++)
                 {
                     int argumentHashCode = genericArgs[i].GetHashCode();
-                    hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
+                    hashcode = (hashcode + int.RotateLeft(hashcode, 13)) ^ argumentHashCode;
                 }
             }
 
@@ -119,6 +112,8 @@ namespace System
             return ReflectionAugments.ReflectionCoreCallbacks.GetFunctionPointer(this, declaringType);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

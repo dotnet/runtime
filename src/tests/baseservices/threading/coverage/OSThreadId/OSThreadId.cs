@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+using Xunit;
 
 namespace Threading.Tests
 {
@@ -12,10 +13,11 @@ namespace Threading.Tests
         private static ManualResetEvent s_resetEvent = new ManualResetEvent(false);
         private static ulong[] s_threadIds = new ulong[NumThreads];
 
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             // The property to be tested is internal.
-            Type runtimeThreadType = typeof(object).Assembly.GetType("System.Threading.Thread");
+            Type runtimeThreadType = Type.GetType("System.Threading.Thread");
             Assert(runtimeThreadType != null);
             PropertyInfo osThreadIdProperty = runtimeThreadType.GetProperty("CurrentOSThreadId", BindingFlags.NonPublic | BindingFlags.Static);
             Assert(osThreadIdProperty != null);
@@ -58,8 +60,6 @@ namespace Threading.Tests
                     previousThreadId = s_threadIds[i];
                 }
             }
-
-            return 100;
         }
 
         private static ulong GetCurrentThreadId()

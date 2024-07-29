@@ -10,14 +10,14 @@ can also be passed using `_ExtraTrimmerArgs` property.
 
 The command:
 
-`illink -a Program.exe`
+`illink -a Program.dll`
 
-will use the assembly `Program.exe` as root linker input. That means that the linker will
-start with the main entry point method of `Program.exe` (typically the `Main` method) and
+will use the assembly `Program.dll` as root ILLink input. That means that the ILLink will
+start with the main entry point method of `Program.dll` (typically the `Main` method) and
 process all its dependencies to determine what is necessary for this assembly to run.
 
-It's possible to use multiple input files and linker will use them all as multiple sources.
-When a library is used instead of executable linker will root and mark all members instead of
+It's possible to use multiple input files and ILLink will use them all as multiple sources.
+When a library is used instead of executable ILLink will root and mark all members instead of
 assembly entry point. This rooting behaviour can be customized by passing additional option
 which can use one of following values.
 
@@ -30,10 +30,10 @@ for multi entry-point libraries bundles.
 - `visible` - Keep all members and types visible outside of the assembly. All internals members
 are also rooted when assembly contains InternalsVisibleToAttribute.
 
-You can retain all public members of `Program.exe` application even if they are not
-referenced by any dependency by calling linker like
+You can retain all public members of `Program.dll` application even if they are not
+referenced by any dependency by calling ILLink like
 
-`illink -a Program.exe visible`
+`illink -a Program.dll visible`
 
 ### Trimming from an [XML descriptor](data-formats.md#descriptor-format)
 
@@ -41,15 +41,15 @@ The command:
 
 `illink -x desc.xml`
 
-will use the XML descriptor as a source. That means that the linker will
+will use the XML descriptor as a source. That means that ILLink will
 use this file to decide what to link in a set of assemblies. The format of the
 descriptors is described in [data-formats document](data-formats.md).
 
 ### Actions on the assemblies
 
-You can specify what the linker should do exactly per assembly.
+You can specify what the ILLink should do exactly per assembly.
 
-The linker can do the following things on all or individual assemblies
+ILLink can do the following things on all or individual assemblies
 
 - `skip` - skip them, and do nothing with them
 - `copy` - copy them to the output directory
@@ -80,7 +80,7 @@ You can specify what action to do on assemblies without such an attribute with t
 
 ### The output directory
 
-By default, the linker will create an `output` directory in the current
+By default, ILLink will create an `output` directory in the current
 directory where it will store the processed files, to avoid overwritting input
 assemblies. You can change the output directory with the option:
 
@@ -91,13 +91,13 @@ important assemblies of yours.
 
 ### Specifying assembly lookup paths
 
-By default, the linker will first look for assemblies in the directories `.`
+By default, ILLink will first look for assemblies in the directories `.`
 and `bin`. You can specify additional locations where assemblies will be searched
 for by using `-d PATH` option.
 
 Example:
 
-`illink -d ../../libs -a program.exe`
+`illink -d ../../libs -a Program.dll`
 
 ### Excluding framework features
 
@@ -110,7 +110,7 @@ Each feature can be controlled independently using `--feature NAME value` option
 The list of available feature names is framework-dependent and can vary between different
 framework versions.
 
-The list of controllable features for .NET Core is available at https://docs.microsoft.com/en-us/dotnet/core/run-time-config/.
+The list of controllable features for .NET Core is available at https://learn.microsoft.com/dotnet/core/run-time-config/.
 
 ### Using custom substitutions
 
@@ -121,26 +121,26 @@ with `ipconstprop` optimization (enabled by default) can help reduce output
 size as any dependencies under conditional logic which will be evaluated as
 unreachable will be removed.
 
-### Adding custom linker steps
+### Adding custom ILLink steps
 
-You can write [custom steps](custom-steps.md) for the linker and instruct
-the linker to add them into its existing pipeline. To tell the linker where this assembly is
+You can write [custom steps](custom-steps.md) for ILLink and instruct
+ILLink to add them into its existing pipeline. To tell ILLink where this assembly is
 located, you have to append its full path after a comma which separates the custom
  step's name from the custom assembly's path
 
 `--custom-step [custom step],[custom assembly]`
 
-You can now ask the linker to add the custom step at the end of the pipeline:
+You can now ask ILLink to add the custom step at the end of the pipeline:
 
 `illink --custom-step Foo.FooStep,D:\Bar\Foo.dll`
 
-Or you can ask the linker to add it after a specific step:
+Or you can ask ILLink to add it after a specific step:
 
-`illink --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step +MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a Program.dll`
 
 Or before a specific step:
 
-`illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a program.exe`
+`illink --custom-step -MarkStep:Foo.FooStep,D:\Bar\Foo.dll -a Program.dll`
 
 ### Passing data to custom steps
 

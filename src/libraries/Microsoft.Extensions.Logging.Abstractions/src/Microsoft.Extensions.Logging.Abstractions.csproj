@@ -5,7 +5,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 
 Commonly Used Types:
@@ -26,6 +25,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
              Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
     <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
              Link="Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\DebuggerDisplayFormatting.cs"
+             Link="Common\src\Extensions\Logging\DebuggerDisplayFormatting.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
@@ -38,16 +39,21 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+
+    <!-- Important: Only the most recent source generator project should be referenced when building from source. -->
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true"
-                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
                       ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
+                      PackAsAnalyzer="true"
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" /> 
   </ItemGroup>
 
 </Project>

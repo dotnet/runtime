@@ -43,11 +43,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsReferenceOrContainsReferences")
-            {
-                result = elementType.IsGCPointer || (elementType is DefType defType && defType.ContainsGCPointers);
-            }
-            else if (methodName == "IsReference")
+            if (methodName == "IsReference")
             {
                 result = elementType.IsGCPointer;
             }
@@ -84,13 +80,18 @@ namespace Internal.IL.Stubs
                             {
                                 result = true;
                             }
-                            else if (mdType.IsValueType && !ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition()))
+                            else if (mdType.IsValueType)
                             {
-                                // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
-                                MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
-                                result =
-                                    mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
-                                    ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
+                                bool? equatable = ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition());
+
+                                if (equatable.HasValue && !equatable.Value)
+                                {
+                                    // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
+                                    MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                                    result =
+                                        mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
+                                        ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
+                                }
                             }
                         }
                         break;

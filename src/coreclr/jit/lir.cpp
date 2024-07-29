@@ -9,7 +9,10 @@
 #pragma hdrstop
 #endif
 
-LIR::Use::Use() : m_range(nullptr), m_edge(nullptr), m_user(nullptr)
+LIR::Use::Use()
+    : m_range(nullptr)
+    , m_edge(nullptr)
+    , m_user(nullptr)
 {
 }
 
@@ -30,7 +33,10 @@ LIR::Use::Use(const Use& other)
 //
 // Return Value:
 //
-LIR::Use::Use(Range& range, GenTree** edge, GenTree* user) : m_range(&range), m_edge(edge), m_user(user)
+LIR::Use::Use(Range& range, GenTree** edge, GenTree* user)
+    : m_range(&range)
+    , m_edge(edge)
+    , m_user(user)
 {
     AssertIsValid();
 }
@@ -241,11 +247,11 @@ void LIR::Use::ReplaceWith(GenTree* replacement)
 //    lclNum - The local to use for temporary storage. If BAD_VAR_NUM (the
 //             default) is provided, this method will create and use a new
 //             local var.
-//    assign - On return, if non null, contains the created assignment node
+//    pStore - On return, if non null, contains the created store node
 //
 // Return Value: The number of the local var used for temporary storage.
 //
-unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** assign)
+unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTree** pStore)
 {
     assert(IsInitialized());
     assert(compiler != nullptr);
@@ -259,7 +265,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
         lclNum = compiler->lvaGrabTemp(true DEBUGARG("ReplaceWithLclVar is creating a new local variable"));
     }
 
-    GenTreeLclVar* const store = compiler->gtNewTempAssign(lclNum, node)->AsLclVar();
+    GenTreeLclVar* const store = compiler->gtNewTempStore(lclNum, node)->AsLclVar();
     assert(store != nullptr);
     assert(store->gtOp1 == node);
 
@@ -273,18 +279,22 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
 
-    if (assign != nullptr)
+    if (pStore != nullptr)
     {
-        *assign = store;
+        *pStore = store;
     }
     return lclNum;
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange() : m_firstNode(nullptr), m_lastNode(nullptr)
+LIR::ReadOnlyRange::ReadOnlyRange()
+    : m_firstNode(nullptr)
+    , m_lastNode(nullptr)
 {
 }
 
-LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_firstNode), m_lastNode(other.m_lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other)
+    : m_firstNode(other.m_firstNode)
+    , m_lastNode(other.m_lastNode)
 {
 #ifdef DEBUG
     other.m_firstNode = nullptr;
@@ -301,10 +311,32 @@ LIR::ReadOnlyRange::ReadOnlyRange(ReadOnlyRange&& other) : m_firstNode(other.m_f
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_firstNode(firstNode), m_lastNode(lastNode)
+LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode)
+    : m_firstNode(firstNode)
+    , m_lastNode(lastNode)
 {
     assert((m_firstNode == nullptr) == (m_lastNode == nullptr));
     assert((m_firstNode == m_lastNode) || (Contains(m_lastNode)));
+}
+
+//------------------------------------------------------------------------
+// LIR::ReadOnlyRange::operator=:
+//    Move assignment operator= for LIR ranges.
+//
+// Arguments:
+//    other - The range to move from.
+//
+LIR::ReadOnlyRange& LIR::ReadOnlyRange::operator=(ReadOnlyRange&& other)
+{
+    m_firstNode = other.m_firstNode;
+    m_lastNode  = other.m_lastNode;
+
+#ifdef DEBUG
+    other.m_firstNode = nullptr;
+    other.m_lastNode  = nullptr;
+#endif
+
+    return *this;
 }
 
 //------------------------------------------------------------------------
@@ -406,11 +438,13 @@ bool LIR::ReadOnlyRange::Contains(GenTree* node) const
 
 #endif
 
-LIR::Range::Range() : ReadOnlyRange()
+LIR::Range::Range()
+    : ReadOnlyRange()
 {
 }
 
-LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
+LIR::Range::Range(Range&& other)
+    : ReadOnlyRange(std::move(other))
 {
 }
 
@@ -422,7 +456,8 @@ LIR::Range::Range(Range&& other) : ReadOnlyRange(std::move(other))
 //    firstNode - The first node in the range.
 //    lastNode  - The last node in the range.
 //
-LIR::Range::Range(GenTree* firstNode, GenTree* lastNode) : ReadOnlyRange(firstNode, lastNode)
+LIR::Range::Range(GenTree* firstNode, GenTree* lastNode)
+    : ReadOnlyRange(firstNode, lastNode)
 {
 }
 
@@ -1111,9 +1146,9 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 }
 
 //------------------------------------------------------------------------
-// LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
-//                           in the dataflow trees rooted at a particular
-//                           set of nodes.
+// LIR::Range::GetMarkedRange:
+//   Computes the subrange that includes all nodes in the dataflow trees rooted
+//   at a particular set of nodes.
 //
 // This method logically uses the following algorithm to compute the
 // range:
@@ -1144,14 +1179,29 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // occurring before uses).
 //
 // Arguments:
-//    root        - The root of the dataflow tree.
-//    isClosed    - An output parameter that is set to true if the returned
-//                  range contains only nodes in the dataflow tree and false
-//                  otherwise.
+//    markCount         - The number of marks initially set on nodes before the
+//                        start node.
+//    start             - The node to start looking backwards from.
+//    isClosed          - [out] Set to true if the returned range contains only
+//                        nodes in the dataflow tree and false otherwise.
+//    sideEffects       - [out] Combined side effect flags for all nodes in the
+//                        returned range.
+//
+// Template arguments:
+//    markFlagsOperands - Whether the dataflow algorithm should also try to
+//                        mark operands that are defining flags. For example,
+//                        GT_JCC implicitly consumes the flags defined by the
+//                        previous node in linear order. If this argument is
+//                        true, then the algorithm will also include the flags
+//                        definition (which is e.g. a CMP node) in the returned
+//                        range.
+//                        This works on a best-effort basis; the user should not
+//                        rely on all flags defs to be found.
 //
 // Returns:
 //    The computed subrange.
 //
+template <bool markFlagsOperands>
 LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                                               GenTree*  start,
                                               bool*     isClosed,
@@ -1161,6 +1211,12 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     assert(start != nullptr);
     assert(isClosed != nullptr);
     assert(sideEffects != nullptr);
+
+#ifndef DEBUG
+    // The treatment of flags definitions is on a best-effort basis; it should
+    // be used for debug purposes only.
+    static_assert_no_msg(!markFlagsOperands);
+#endif
 
     bool     sawUnmarkedNode    = false;
     unsigned sideEffectsInRange = 0;
@@ -1182,6 +1238,17 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 markCount++;
                 return GenTree::VisitResult::Continue;
             });
+
+            if (markFlagsOperands && firstNode->OperConsumesFlags())
+            {
+                GenTree* prev = firstNode->gtPrev;
+                if ((prev != nullptr) && ((prev->gtFlags & GTF_SET_FLAGS) != 0) &&
+                    ((prev->gtLIRFlags & LIR::Flags::Mark) == 0))
+                {
+                    prev->gtLIRFlags |= LIR::Flags::Mark;
+                    markCount++;
+                }
+            }
 
             // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
@@ -1262,6 +1329,34 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
     return GetMarkedRange(markCount, root, isClosed, sideEffects);
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// LIR::Range::GetTreeRangeWithFlags:
+// Computes the subrange that includes all nodes in the dataflow tree rooted at
+// a particular node, taking into account that the nodes may also implicitly
+// consume flags defined by non-operands.
+//
+// Arguments:
+//    root        - The root of the dataflow tree range of nodes.
+//    isClosed    - An output parameter that is set to true if the returned
+//                  range contains only nodes in the dataflow tree and false
+//                  otherwise.
+//    sideEffects - An output parameter that summarizes the side effects
+//                  contained in the returned range.
+//
+// Returns:
+//    The computed subrange.
+LIR::ReadOnlyRange LIR::Range::GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const
+{
+    assert(root != nullptr);
+
+    unsigned markCount = 1;
+    root->gtLIRFlags |= LIR::Flags::Mark;
+
+    return GetMarkedRange<true>(markCount, root, isClosed, sideEffects);
+}
+#endif
+
 //------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
 //                           in the dataflow trees rooted by the operands
@@ -1326,8 +1421,8 @@ public:
     //    range - a range to do the check.
     //    unusedDefs - map of defs that do no have users.
     //
-    CheckLclVarSemanticsHelper(Compiler*         compiler,
-                               const LIR::Range* range,
+    CheckLclVarSemanticsHelper(Compiler*                            compiler,
+                               const LIR::Range*                    range,
                                SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
         : compiler(compiler)
         , range(range)
@@ -1358,7 +1453,7 @@ public:
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
                 SmallHashTable<GenTree*, GenTree*>* reads;
                 if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
                 {
@@ -1474,7 +1569,7 @@ private:
     void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
     {
         SmallHashTable<GenTree*, GenTree*>* reads;
-        const bool foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        const bool                          foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
         assert(foundReads);
 
         bool found = reads->TryRemove(defInfo.Node());
@@ -1489,11 +1584,11 @@ private:
     }
 
 private:
-    Compiler*         compiler;
-    const LIR::Range* range;
-    SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
+    Compiler*                                                     compiler;
+    const LIR::Range*                                             range;
+    SmallHashTable<GenTree*, bool, 32U>&                          unusedDefs;
     SmallHashTable<int, SmallHashTable<GenTree*, GenTree*>*, 16U> unusedLclVarReads;
-    ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
+    ArrayStack<SmallHashTable<GenTree*, GenTree*>*>               lclVarReadsMapsCache;
 };
 
 //------------------------------------------------------------------------
@@ -1525,37 +1620,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         return true;
     }
 
-    // Check the gtNext/gtPrev links: (1) ensure there are no circularities, (2) ensure the gtPrev list is
-    // precisely the inverse of the gtNext list.
-    //
-    // To detect circularity, use the "tortoise and hare" 2-pointer algorithm.
-
-    GenTree* slowNode = FirstNode();
-    assert(slowNode != nullptr); // because it's a non-empty range
-    GenTree* fastNode1    = nullptr;
-    GenTree* fastNode2    = slowNode;
-    GenTree* prevSlowNode = nullptr;
-    while (((fastNode1 = fastNode2->gtNext) != nullptr) && ((fastNode2 = fastNode1->gtNext) != nullptr))
-    {
-        if ((slowNode == fastNode1) || (slowNode == fastNode2))
-        {
-            assert(!"gtNext nodes have a circularity!");
-        }
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-        assert(slowNode != nullptr); // the fastNodes would have gone null first.
-    }
-    // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
-    assert((fastNode1 == nullptr) || (fastNode2 == nullptr));
-
-    // Need to check the rest of the gtPrev links.
-    while (slowNode != nullptr)
-    {
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-    }
+    CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(FirstNode());
 
     SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 
@@ -1720,19 +1785,18 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         assert(insertionPoint != nullptr);
 
 #if DEBUG
-        switch (block->bbJumpKind)
+        switch (block->GetKind())
         {
             case BBJ_COND:
                 assert(insertionPoint->OperIsConditionalJump());
                 break;
 
             case BBJ_SWITCH:
-                assert((insertionPoint->OperGet() == GT_SWITCH) || (insertionPoint->OperGet() == GT_SWITCH_TABLE));
+                assert(insertionPoint->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
                 break;
 
             case BBJ_RETURN:
-                assert((insertionPoint->OperGet() == GT_RETURN) || (insertionPoint->OperGet() == GT_JMP) ||
-                       (insertionPoint->OperGet() == GT_CALL));
+                assert(insertionPoint->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET, GT_JMP, GT_CALL));
                 break;
 
             default:
@@ -1742,6 +1806,86 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     }
 
     blockRange.InsertBefore(insertionPoint, std::move(range));
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given two nodes in the same block range, find which node appears last.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree* node1, GenTree* node2)
+{
+    assert(node1 != nullptr);
+    assert(node2 != nullptr);
+
+    if (node1 == node2)
+    {
+        return node1;
+    }
+
+    GenTree* cursor1 = node1->gtNext;
+    GenTree* cursor2 = node2->gtNext;
+
+    while (true)
+    {
+        if ((cursor1 == node2) || (cursor2 == nullptr))
+        {
+            return node2;
+        }
+
+        if ((cursor2 == node1) || (cursor1 == nullptr))
+        {
+            return node1;
+        }
+
+        cursor1 = cursor1->gtNext;
+        cursor2 = cursor2->gtNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// LIR::LastNode:
+//    Given an array of nodes in a block range, find the last one.
+//
+// Arguments:
+//    nodes    - Pointer to nodes
+//    numNodes - Number of nodes
+//
+// Returns:
+//    Node that appears last.
+//
+GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
+{
+    assert(numNodes > 0);
+    GenTree* lastNode = nodes[0];
+    for (size_t i = 1; i < numNodes; i++)
+    {
+        lastNode = LastNode(lastNode, nodes[i]);
+    }
+
+    return lastNode;
+}
+
+//------------------------------------------------------------------------
+// LIR::FirstNode:
+//    Given two nodes in the same block range, find which node appears first.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears first.
+//
+GenTree* LIR::FirstNode(GenTree* node1, GenTree* node2)
+{
+    return LastNode(node1, node2) == node1 ? node2 : node1;
 }
 
 #ifdef DEBUG

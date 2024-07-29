@@ -26,23 +26,25 @@ namespace System.Text.Unicode
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
-            OperationStatus status = Ascii.ToUtf16(new ReadOnlySpan<byte>(pInputBuffer, inputLength), new Span<char>(pOutputBuffer, outputCharsRemaining), out int bytesConsumed);
-
-            pInputBuffer += bytesConsumed;
-            pOutputBuffer += bytesConsumed;
-
-            // Quick check - did we just end up consuming the entire input buffer?
-            // If so, short-circuit the remainder of the method.
-
-            if (status == OperationStatus.Done)
             {
-                pInputBufferRemaining = pInputBuffer;
-                pOutputBufferRemaining = pOutputBuffer;
-                return OperationStatus.Done;
-            }
+                nuint numElementsConverted = Ascii.WidenAsciiToUtf16(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputCharsRemaining));
 
-            inputLength -= bytesConsumed;
-            outputCharsRemaining -= bytesConsumed;
+                pInputBuffer += numElementsConverted;
+                pOutputBuffer += numElementsConverted;
+
+                // Quick check - did we just end up consuming the entire input buffer?
+                // If so, short-circuit the remainder of the method.
+
+                if ((int)numElementsConverted == inputLength)
+                {
+                    pInputBufferRemaining = pInputBuffer;
+                    pOutputBufferRemaining = pOutputBuffer;
+                    return OperationStatus.Done;
+                }
+
+                inputLength -= (int)numElementsConverted;
+                outputCharsRemaining -= (int)numElementsConverted;
+            }
 
             if (inputLength < sizeof(uint))
             {
@@ -282,7 +284,7 @@ namespace System.Text.Unicode
                             goto ProcessRemainingBytesSlow; // running out of output buffer
                         }
 
-                        Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractTwoCharsPackedFromTwoAdjacentTwoByteSequences(thisDWord));
+                        Unsafe.WriteUnaligned(pOutputBuffer, ExtractTwoCharsPackedFromTwoAdjacentTwoByteSequences(thisDWord));
 
                         pInputBuffer += 4;
                         pOutputBuffer += 2;
@@ -622,7 +624,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractCharsFromFourByteSequence(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, ExtractCharsFromFourByteSequence(thisDWord));
 
                     pInputBuffer += 4;
                     pOutputBuffer += 2;
@@ -846,23 +848,23 @@ namespace System.Text.Unicode
             // First, try vectorized conversion.
 
             {
-                OperationStatus status = Ascii.FromUtf16(new ReadOnlySpan<char>(pInputBuffer, inputLength), new Span<byte>(pOutputBuffer, outputBytesRemaining), out int charsConsumed);
+                nuint numElementsConverted = Ascii.NarrowUtf16ToAscii(pInputBuffer, pOutputBuffer, (uint)Math.Min(inputLength, outputBytesRemaining));
 
-                pInputBuffer += charsConsumed;
-                pOutputBuffer += charsConsumed;
+                pInputBuffer += numElementsConverted;
+                pOutputBuffer += numElementsConverted;
 
                 // Quick check - did we just end up consuming the entire input buffer?
                 // If so, short-circuit the remainder of the method.
 
-                if (status == OperationStatus.Done)
+                if ((int)numElementsConverted == inputLength)
                 {
                     pInputBufferRemaining = pInputBuffer;
                     pOutputBufferRemaining = pOutputBuffer;
                     return OperationStatus.Done;
                 }
 
-                inputLength -= charsConsumed;
-                outputBytesRemaining -= charsConsumed;
+                inputLength -= (int)numElementsConverted;
+                outputBytesRemaining -= (int)numElementsConverted;
             }
 
             if (inputLength < CharsPerDWord)
@@ -924,7 +926,7 @@ namespace System.Text.Unicode
                     // (Same logic works regardless of endianness.)
                     uint valueToWrite = thisDWord | (thisDWord >> 8);
 
-                    Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)valueToWrite);
+                    Unsafe.WriteUnaligned(pOutputBuffer, (ushort)valueToWrite);
 
                     pInputBuffer += 2;
                     pOutputBuffer += 2;
@@ -945,13 +947,13 @@ namespace System.Text.Unicode
                         Vector128<short> utf16Data;
                         for (i = 0; (uint)i < maxIters; i++)
                         {
-                            // The linker won't trim out nonAsciiUtf16DataMask unless this is in the loop.
+                            // The trimmer won't trim out nonAsciiUtf16DataMask unless this is in the loop.
                             // Luckily, this is a nop and will be elided by the JIT
                             Unsafe.SkipInit(out nonAsciiUtf16DataMask);
 
                             utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
 
-                            if (AdvSimd.IsSupported)
+                            if (AdvSimd.Arm64.IsSupported)
                             {
                                 Vector128<short> isUtf16DataNonAscii = AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask);
                                 bool hasNonAsciiDataInVector = AdvSimd.Arm64.MinPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;
@@ -1000,7 +1002,7 @@ namespace System.Text.Unicode
                             }
                             else
                             {
-                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                                Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
                             }
 
                             pInputBuffer += 4;
@@ -1038,7 +1040,7 @@ namespace System.Text.Unicode
                             }
                             else
                             {
-                                Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                                Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
                             }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1054,7 +1056,7 @@ namespace System.Text.Unicode
                         if (Utf16Utility.AllCharsInUInt32AreAscii(thisDWord))
                         {
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
                             pInputBuffer += 2;
                             pOutputBuffer += 2;
                             outputBytesRemaining -= 2;
@@ -1081,8 +1083,8 @@ namespace System.Text.Unicode
 
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
                             // (Same logic works regardless of endianness.)
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer + 2, (ushort)(secondDWord | (secondDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer + 2, (ushort)(secondDWord | (secondDWord >> 8)));
 
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1102,7 +1104,7 @@ namespace System.Text.Unicode
                         {
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
                             // (Same logic works regardless of endianness.)
-                            Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
+                            Unsafe.WriteUnaligned(pOutputBuffer, (ushort)(thisDWord | (thisDWord >> 8)));
                             pInputBuffer += 2;
                             pOutputBuffer += 2;
                             outputBytesRemaining -= 2;
@@ -1170,7 +1172,7 @@ namespace System.Text.Unicode
                             goto ProcessOneCharFromCurrentDWordAndFinish; // running out of output buffer
                         }
 
-                        Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractTwoUtf8TwoByteSequencesFromTwoPackedUtf16Chars(thisDWord));
+                        Unsafe.WriteUnaligned(pOutputBuffer, ExtractTwoUtf8TwoByteSequencesFromTwoPackedUtf16Chars(thisDWord));
 
                         pInputBuffer += 2;
                         pOutputBuffer += 4;
@@ -1204,7 +1206,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<ushort>(pOutputBuffer, (ushort)ExtractUtf8TwoByteSequenceFromFirstUtf16Char(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, (ushort)ExtractUtf8TwoByteSequenceFromFirstUtf16Char(thisDWord));
 
                     // The buffer contains a 2-byte sequence followed by 2 bytes that aren't a 2-byte sequence.
                     // Unlikely that a 3-byte sequence would follow a 2-byte sequence, so perhaps remaining
@@ -1376,7 +1378,7 @@ namespace System.Text.Unicode
                         goto OutputBufferTooSmall;
                     }
 
-                    Unsafe.WriteUnaligned<uint>(pOutputBuffer, ExtractFourUtf8BytesFromSurrogatePair(thisDWord));
+                    Unsafe.WriteUnaligned(pOutputBuffer, ExtractFourUtf8BytesFromSurrogatePair(thisDWord));
 
                     pInputBuffer += 2;
                     pOutputBuffer += 4;

@@ -40,11 +40,11 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 When running tests by building a test project, tests that don't apply to the `TargetOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux
+dotnet build <csproj_file> /t:Test /p:TargetOS=linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux /p:WithCategories=failing
+dotnet build <csproj_file> /t:Test /p:TargetOS=linux /p:WithCategories=failing
 ```
 
 This attribute is defined [here](https://github.com/dotnet/arcade/blob/main/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/PlatformSpecificAttribute.cs).
@@ -232,7 +232,7 @@ dotnet build <csproj_file> /t:Test /p:TargetOS=windows
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
+dotnet build <csproj_file> /t:Test /p:TargetOS=osx /p:WithCategories="OuterLoop;failing""
 ```
 
 ## SkipOnCoreClrAttribute
@@ -302,7 +302,7 @@ SkipOnCoreClr(string reason, TestPlatforms testPlatforms, RuntimeConfiguration r
 **Disable using multiple attributes:**
 
 This attribute can be used multiple times, in which case the test is disabled for any of the conditions. In this example,
-only Release builds where `COMPlus_JITMinOpts` is not set would run the test.
+only Release builds where `DOTNET_JITMinOpts` is not set would run the test.
 ```cs
 [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", ~RuntimeConfiguration.Release)]
 [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", RuntimeTestModes.JitMinOpts)]
@@ -337,3 +337,15 @@ A common usage in the libraries tests is the following:
 ```
 
 This is put on test classes to indicate that none of the tests in that class (which as usual run serially with respect to each other) may run concurrently with tests in another class. This is used for tests that use a lot of disk space or memory, or dominate all the cores, such that they are likely to disrupt any tests that run concurrently.
+
+## FactAttribute and `Skip`
+
+Another way to disable the test entirely is to use the `Skip` named argument that is used on the `FactAttribute`.
+
+Example:
+```cs
+[Fact(Skip = "<reason for skipping>")]
+```
+
+If the reason for skipping is a link to an issue, it is recommended to use the `ActiveIssueAttribute` instead.
+Otherwise, `Skip` allows for a more descriptive reason.

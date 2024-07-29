@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime;
 using System.Collections.Generic;
+using System.Runtime;
 
-using Internal.Runtime.CompilerServices;
-using Internal.NativeFormat;
 using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
+using Internal.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class TypeLoaderCallbacks
     {
+        public abstract bool TryGetOwningTypeForMethodDictionary(IntPtr dictionary, out RuntimeTypeHandle owningType);
         public abstract TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader);
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle handle, int index);
@@ -23,7 +23,7 @@ namespace Internal.Runtime.Augments
         public abstract RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs);
         public abstract bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2);
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
-        public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementations, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
+        public abstract IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod);
         public abstract bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName);
         public abstract RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName);
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle pointerTypeHandle);

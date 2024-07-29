@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <RootNamespace>System.Xml</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Xml</RootNamespace>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
              Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
@@ -40,14 +43,16 @@
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml\src\System.Private.Xml.csproj" PrivateAssets="all" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Memory" />
   </ItemGroup>
+
 </Project>

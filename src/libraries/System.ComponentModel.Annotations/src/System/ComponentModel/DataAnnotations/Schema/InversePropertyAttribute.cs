@@ -17,11 +17,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// <param name="property">The navigation property representing the other end of the same relationship.</param>
         public InversePropertyAttribute(string property)
         {
-            if (string.IsNullOrWhiteSpace(property))
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentIsNullOrWhitespace, nameof(property)), nameof(property));
-            }
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(property);
             Property = property;
         }
 

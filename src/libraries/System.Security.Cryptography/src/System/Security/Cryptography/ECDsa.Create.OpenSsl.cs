@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         /// </param>
         public static partial ECDsa Create(ECParameters parameters)
         {
-            ECDsa ec = new ECDsaOpenSsl();
+            var ec = new ECDsaOpenSsl();
 
             try
             {

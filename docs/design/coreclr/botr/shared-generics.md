@@ -25,7 +25,7 @@ Without shared generics, the code for instantiations like `Method<object>` or `M
     ret
 ```
 
-With shared generics, the canonical code will not have any hard-coded versions of the type handle of List<T>, but instead looks up the exact type handle either through a call to a runtime helper API, or by loading it up from the *generic dictionary* of the instantiation of Method<T> that is executing. The code would look more like the following:
+With shared generics, the canonical code will not have any hard-coded versions of the type handle of `List<T>`, but instead looks up the exact type handle either through a call to a runtime helper API, or by loading it up from the *generic dictionary* of the instantiation of `Method<T>` that is executing. The code would look more like the following:
 ``` asm
     mov rcx, generic context                                                // MethodDesc of Method<string> or Method<object>
     mov rcx, [rcx + offset of InstantiatedMethodDesc::m_pPerInstInfo]       // This is the generic dictionary
@@ -34,9 +34,9 @@ With shared generics, the canonical code will not have any hard-coded versions o
     ret
 ```
 
-The generic context in this example is the InstantiatedMethodDesc of `Method<object>` or `Method<string>`. The generic dictionary is a data structure used by shared generic code to fetch instantiation-specific information. It is basically an array where the entries are instantiation-specific type handles, method handles, field handles, method entry points, etc... The "PerInstInfo" fields on MethodTable and InstantiatedMethodDesc structures point at the generic dictionary structure for a generic type and method respectively.
+The generic context in this example is the `InstantiatedMethodDesc` of `Method<object>` or `Method<string>`. The generic dictionary is a data structure used by shared generic code to fetch instantiation-specific information. It is basically an array where the entries are instantiation-specific type handles, method handles, field handles, method entry points, etc... The "PerInstInfo" fields on MethodTable and `InstantiatedMethodDesc` structures point at the generic dictionary structure for a generic type and method respectively.
 
-In this example, the generic dictionary for Method<object> will contain a slot with the type handle for type List<object>, and the generic dictionary for Method<string> will contain a slot with the type handle for type List<string>.
+In this example, the generic dictionary for `Method<object>` will contain a slot with the type handle for type `List<object>`, and the generic dictionary for `Method<string>` will contain a slot with the type handle for type `List<string>`.
 
 This feature is currently only supported for instantiations over reference types because they all have the same size/properties/layout/etc... For instantiations over primitive types or value types, the runtime will generate separate code bodies for each instantiation.
 
@@ -89,7 +89,7 @@ Note that `AnotherDerivedClass` doesn't have a dictionary of its own given that 
 
 ### Dictionary Slots
 
-As described earlier, a generic dictionary is an array of multiple slots containing instantiation-specific information. When a dictionary is initially allocated for a certain generic type or method, all of its slots are initialized to NULL, and are lazily populated on demand as code executes (see: `Dictionary::PopulateEntry(...)`).
+As described earlier, a generic dictionary is an array of multiple slots containing instantiation-specific information. When a dictionary is initially allocated for a certain generic type or method, all of its slots are initialized to `NULL`, and are lazily populated on demand as code executes (see: `Dictionary::PopulateEntry(...)`).
 
 The first N slots in an instantiation of N arguments are always going to be the type handles of the instantiation type arguments (this is kind of an optimization as well). The slots that follow contain instantiation-based information.
 
@@ -97,17 +97,17 @@ For instance, here is an example of the contents of the generic dictionary for o
 
 | `Method<string>'s dictionary` |
 |--------------------------|
-| slot[0]: TypeHandle(`string`)      |
-| slot[1]: Total dictionary size  |
-| slot[2]: TypeHandle(`List<string>`)  |
-| slot[3]: NULL (not used)  |
-| slot[4]: NULL (not used)  |
+| `slot[0]: TypeHandle(string)` |
+| `slot[1]: Total dictionary size` |
+| `slot[2]: TypeHandle(List<string>)` |
+| `slot[3]: NULL (not used)` |
+| `slot[4]: NULL (not used)` |
 
 *Note: the size slot is never used by generic code, and is part of the dynamic dictionary expansion feature. More on that below.*
 
-When this dictionary is first allocated, only slot[0] is initialized because it contains the instantiation type arguments (and of course the size slot is also initialized with the dictionary expansion feature), but the rest of the slots (example slot[2]) are NULL, and get lazily populated with values if we ever hit a code path that attempts to use them.
+When this dictionary is first allocated, only `slot[0]` is initialized because it contains the instantiation type arguments (and of course the size slot is also initialized with the dictionary expansion feature), but the rest of the slots (for example, `slot[2]`) are `NULL`, and get lazily populated with values if we ever hit a code path that attempts to use them.
 
-When loading information from a slot that is still NULL, the generic code will call one of these runtime helper functions to populate the dictionary slot with a value:
+When loading information from a slot that is still `NULL`, the generic code will call one of these runtime helper functions to populate the dictionary slot with a value:
 - `JIT_GenericHandleClass`: Used to lookup a value in a generic type dictionary. This helper is used by all instance methods on generic types.
 - `JIT_GenericHandleMethod`: Used to lookup a value in a generic method dictionary. This helper used by all generic methods, or non-generic static methods on generic types.
 
@@ -117,9 +117,9 @@ When generating shared generic code, the JIT knows which slots to use for the va
 
 The `DictionaryLayout` structure is what tells the JIT which slot to use when performing a dictionary lookup. This `DictionaryLayout` structure has a couple of important properties:
 - It is shared across all compatible instantiations of a certain type of method. In other words, a dictionary layout is associated with the canonical instantiation of a type or a method. For instance, in our example above, `Method<object>` and `Method<string>` are compatible instantiations, each with their own **separate dictionaries**, however they all share the **same dictionary layout**, which is associated with the canonical instantiation `Method<__Canon>`.
-- The dictionaries of generic types or methods have the same number of slots as their dictionary layouts. Note: historically before the introduction of the dynamic dictionary expansion feature, the generic dictionaries could be smaller than their layouts, meaning that for certain lookups, we had to use invoke some runtime helper APIs (slow path).
+- The dictionaries of generic types or methods have the same number of slots as their dictionary layouts. Note: historically before the introduction of the dynamic dictionary expansion feature, the generic dictionaries could be smaller than their layouts, meaning that for certain lookups, we had to invoke some runtime helper APIs (slow path).
 
-When a generic type or method is first created, its dictionary layout contains 'unassigned' slots. Assignments happen as part of code generation, whenever the JIT needs to emit a dictionary lookup sequence. This assignment happens during the calls to the `DictionaryLayout::FindToken(...)` APIs. Once a slot has been assigned, it becomes associated with a certain signature, which describes the kind of value that will go in every instantiated dictionary at that slot index.
+When a generic type or method is first created, its dictionary layout contains 'unassigned' slots. Assignments happen as part of code generation, whenever the JIT needs to emit a dictionary lookup sequence. This assignment happens during calls to the `DictionaryLayout::FindToken(...)` APIs. Once a slot has been assigned, it becomes associated with a certain signature, which describes the kind of value that will go in every instantiated dictionary at that slot index.
 
 Given an input signature, slot assignment is performed with the following algorithm:
 

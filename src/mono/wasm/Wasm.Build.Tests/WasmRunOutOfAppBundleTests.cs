@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class WasmRunOutOfAppBundleTests : BuildTestBase
+public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
 {
     public WasmRunOutOfAppBundleTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
     {}
@@ -41,7 +41,7 @@ public class WasmRunOutOfAppBundleTests : BuildTestBase
             indexHtmlPath = Path.Combine(outerDir, "index.html");
             if (!File.Exists(indexHtmlPath))
             {
-                var html = @"<html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
+                var html = @"<!DOCTYPE html><html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
                 File.WriteAllText(indexHtmlPath, html);
             }
         }

@@ -1,7 +1,7 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.StartupHookProvider" feature="System.StartupHookProvider.IsSupported" featurevalue="false">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    <type fullname="System.Runtime.CompilerServices.RuntimeFeature" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" featurevalue="true">
+      <method signature="System.Boolean get_IsDynamicCodeCompiled()" body="stub" value="true" />
     </type>
   </assembly>
 </linker>

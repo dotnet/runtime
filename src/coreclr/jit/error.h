@@ -73,11 +73,7 @@ extern void DECLSPEC_NORETURN noWayAssertBody(const char* cond, const char* file
 // Conditionally invoke the noway assert body. The conditional predicate is evaluated using a method on the tlsCompiler.
 // If a noway_assert is hit, we ask the Compiler whether to raise an exception (i.e., conditionally raise exception.)
 // To have backward compatibility between v4.5 and v4.0, in min-opts we take a shot at codegen rather than rethrow.
-extern void ANALYZER_NORETURN noWayAssertBodyConditional(
-#ifdef FEATURE_TRACELOGGING
-    const char* file, unsigned line
-#endif
-    );
+extern void ANALYZER_NORETURN noWayAssertBodyConditional();
 
 extern void ANALYZER_NORETURN noWayAssertBodyConditional(const char* cond, const char* file, unsigned line);
 
@@ -135,25 +131,19 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) implLimitation()
 
-#ifdef FEATURE_TRACELOGGING
-#define NOWAY_ASSERT_BODY_ARGUMENTS __FILE__, __LINE__
-#else
-#define NOWAY_ASSERT_BODY_ARGUMENTS
-#endif
-
 #define noway_assert(cond)                                                                                             \
     do                                                                                                                 \
     {                                                                                                                  \
         RECORD_NOWAY_ASSERT(#cond)                                                                                     \
         if (!(cond))                                                                                                   \
         {                                                                                                              \
-            noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS);                                                   \
+            noWayAssertBodyConditional();                                                                              \
         }                                                                                                              \
     } while (0)
 #define unreached() noWayAssertBody()
 
-#define NOWAY_MSG(msg) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
-#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(NOWAY_ASSERT_BODY_ARGUMENTS)
+#define NOWAY_MSG(msg) noWayAssertBodyConditional()
+#define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional()
 
 #endif // !DEBUG
 
@@ -174,6 +164,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -182,6 +173,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -190,6 +182,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM(msg)    NYIRAW("NYI_ARM: " msg)
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -198,6 +191,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
 #define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
 
 #elif defined(TARGET_LOONGARCH64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -205,10 +199,19 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
+#define NYI_RISCV64(msg) do { } while (0)
+
+#elif defined(TARGET_RISCV64)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) NYIRAW("NYI_RISCV64: " msg)
 
 #else
 
-#error "Unknown platform, not x86, ARM, LOONGARCH64 or AMD64?"
+#error "Unknown platform, not x86, ARM, LOONGARCH64, AMD64, or RISCV64?"
 
 #endif
 

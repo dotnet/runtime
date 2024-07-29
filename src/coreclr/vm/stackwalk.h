@@ -52,22 +52,19 @@ class AppDomain;
 // Enumerate all functions.
 //************************************************************************
 
-/* This enumerator is meant to be used for the most common cases, i.e. to
-   enumerate just all the functions of the requested thread. It is just a
-   cover for the "real" enumerator.
- */
+namespace AsmOffsetsAsserts
+{
+    class AsmOffsets;
+};
 
-StackWalkAction StackWalkFunctions(Thread * thread, PSTACKWALKFRAMESCALLBACK pCallback, VOID * pData);
-
-/*<TODO>@ISSUE: Maybe use a define instead?</TODO>
-#define StackWalkFunctions(thread, callBack, userdata) thread->StackWalkFrames(METHODSONLY, (callBack),(userData))
-*/
-
+#ifdef FEATURE_EH_FUNCLETS
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
+#endif
 
 class CrawlFrame
 {
 public:
-
+    friend class AsmOffsetsAsserts::AsmOffsets;
 #ifdef TARGET_X86
     friend StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data);
 #endif // TARGET_X86
@@ -250,7 +247,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE((int)isNoFrameTransition != 0xcc);
 
-        return (isNoFrameTransition ? taNoFrameTransitionMarker : NULL);
+        return (isNoFrameTransition ? taNoFrameTransitionMarker : 0);
     }
 
     /* Has the IP been adjusted to a point where it is safe to do GC ?
@@ -287,7 +284,6 @@ public:
             if (!HasFaulted() && !IsIPadjusted())
             {
                 _ASSERTE(!(flags & ActiveStackFrame));
-                flags |= AbortingCall;
             }
         }
 
@@ -305,9 +301,9 @@ public:
      */
     bool IsGcSafe();
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool HasTailCalls();
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     PREGDISPLAY GetRegisterSet()
     {
@@ -376,20 +372,6 @@ public:
         return codeInfo.GetCodeManager();
     }
 
-    inline StackwalkCacheEntry* GetStackwalkCacheEntry()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (isCachedMethod != stackWalkCache.IsEmpty());
-        if (isCachedMethod && stackWalkCache.m_CacheEntry.IsSafeToUseCache())
-        {
-            return &(stackWalkCache.m_CacheEntry);
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
     void CheckGSCookies();
 
     inline Thread* GetThread()
@@ -434,6 +416,18 @@ public:
         return fShouldParentFrameUseUnwindTargetPCforGCReporting;
     }
 
+    bool ShouldParentToFuncletReportSavedFuncletSlots()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldParentToFuncletReportSavedFuncletSlots;
+    }
+
+    bool ShouldSaveFuncletInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldSaveFuncletInfo;
+    }
+
     const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
     {
         return ehClauseForCatch;
@@ -455,6 +449,7 @@ private:
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
+    friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
 
     CodeManState      codeManState;
@@ -485,13 +480,11 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    bool              fShouldSaveFuncletInfo;
+    bool              fShouldParentToFuncletReportSavedFuncletSlots;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
-
-    // fields used for stackwalk cache
-    BOOL              isCachedMethod;
-    StackwalkCache    stackWalkCache;
 
     GSCookie         *pCurGSCookie;
     GSCookie         *pFirstGSCookie;
@@ -567,6 +560,7 @@ private:
 
 class StackFrameIterator
 {
+    friend class AsmOffsetsAsserts::AsmOffsets;
 public:
     // This constructor is for the usage pattern of creating an uninitialized StackFrameIterator and then
     // calling Init() on it.
@@ -604,6 +598,43 @@ public:
     // advance to the next frame according to the stackwalk flags
     StackWalkAction Next(void);
 
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+    // advance to the position that the other iterator is currently at
+    void SkipTo(StackFrameIterator *pOtherStackFrameIterator);
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
+
+#ifdef FEATURE_EH_FUNCLETS
+    void ResetNextExInfoForSP(TADDR SP);
+
+    ExInfo* GetNextExInfo()
+    {
+        return m_pNextExInfo;
+    }
+
+    void SetAdjustedControlPC(TADDR pc)
+    {
+        m_AdjustedControlPC = pc;
+    }
+
+    void UpdateIsRuntimeWrappedExceptions()
+    {
+        CONTRACTL
+        {
+            MODE_ANY;
+            GC_TRIGGERS;
+            NOTHROW;
+        }
+        CONTRACTL_END
+
+#if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+#endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
     enum FrameState
     {
         SFITER_UNINITIALIZED,               // uninitialized
@@ -626,6 +657,24 @@ public:
 #endif // _DEBUG
 
 private:
+
+    // For the new exception handling that uses managed code to dispatch the
+    // exceptions, we need to force the stack walker to report GC references
+    // in the exception handling code frames, since they are alive. This is
+    // different from the old exception handling where no frames below the
+    // funclets upto the parent frame are alive.
+    enum class ForceGCReportingStage : BYTE
+    {
+        Off = 0,
+        // The stack walker has hit a funclet, we are looking for the first managed 
+        // frame that would be one of the managed exception handling code frames
+        LookForManagedFrame = 1,
+        // The stack walker has already hit a managed exception handling code frame,
+        // we are looking for a marker frame which indicates the native caller of
+        // the managed exception handling code
+        LookForMarkerFrame = 2
+    };
+
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
 
@@ -692,7 +741,6 @@ private:
     // This is the real starting explicit frame.  If m_pStartFrame is NULL,
     // then this is equal to m_pThread->GetFrame().  Otherwise this is equal to m_pStartFrame.
     INDEBUG(PTR_Frame m_pRealStartFrame);
-
     ULONG32               m_flags;          // StackWalkFrames flags.
     ICodeManagerFlags     m_codeManFlags;
     ExecutionManager::ScanFlag m_scanFlag;
@@ -717,11 +765,24 @@ private:
     StackFrame    m_sfIntermediaryFuncletParent;
     bool          m_fProcessIntermediaryNonFilterFunclet;
     bool          m_fDidFuncletReportGCReferences;
+    bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
+    // State of forcing of GC reference reporting for managed exception handling methods (RhExThrow, RhDispatchEx etc)
+    ForceGCReportingStage m_forceReportingWhileSkipping;
+    // The stack walk has moved past the first ExInfo location on the stack
+    bool          m_movedPastFirstExInfo;
+    // Indicates that no funclet was seen during the current stack walk yet
+    bool          m_fFuncletNotSeen;
+    // Indicates that the stack walk has moved past a funclet
+    bool          m_fFoundFirstFunclet;
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
 #endif // RECORD_RESUMABLE_FRAME_SP
+#ifdef FEATURE_EH_FUNCLETS
+    ExInfo* m_pNextExInfo;
+    TADDR m_AdjustedControlPC;
+#endif // FEATURE_EH_FUNCLETS
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);

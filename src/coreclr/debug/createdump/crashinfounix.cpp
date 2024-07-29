@@ -8,6 +8,7 @@
 #endif
 
 extern CrashInfo* g_crashInfo;
+extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
@@ -17,10 +18,15 @@ bool
 CrashInfo::Initialize()
 {
     char memPath[128];
-    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
+    int chars = snprintf(memPath, sizeof(memPath), "/proc/%u/mem", m_pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(memPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/mem name\n");
+        return false;
+    }
 
-    m_fd = open(memPath, O_RDONLY);
-    if (m_fd == -1)
+    m_fdMem = open(memPath, O_RDONLY);
+    if (m_fdMem == -1)
     {
         int err = errno;
         const char* message = "Problem accessing memory";
@@ -35,6 +41,30 @@ CrashInfo::Initialize()
         printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
         return false;
     }
+
+    CLRConfigNoCache disablePagemapUse = CLRConfigNoCache::Get("DbgDisablePagemapUse", /*noprefix*/ false, &getenv);
+    DWORD val = 0;
+    if (disablePagemapUse.IsSet() && disablePagemapUse.TryAsInteger(10, val) && val == 0)
+    {
+        TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
+        char pagemapPath[128];
+        chars = snprintf(pagemapPath, sizeof(pagemapPath), "/proc/%u/pagemap", m_pid);
+        if (chars <= 0 || (size_t)chars >= sizeof(pagemapPath))
+        {
+            printf_error("snprintf failed building /proc/<pid>/pagemap name\n");
+            return false;
+        }
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
+    }
+    else
+    {
+        m_fdPagemap = -1;
+    }
+
     // Get the process info
     if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
     {
@@ -57,10 +87,15 @@ CrashInfo::CleanupAndResumeProcess()
             waitpid(thread->Tid(), &waitStatus, __WALL);
         }
     }
-    if (m_fd != -1)
+    if (m_fdMem != -1)
     {
-        close(m_fd);
-        m_fd = -1;
+        close(m_fdMem);
+        m_fdMem = -1;
+    }
+    if (m_fdPagemap != -1)
+    {
+        close(m_fdPagemap);
+        m_fdPagemap = -1;
     }
 }
 
@@ -71,7 +106,12 @@ bool
 CrashInfo::EnumerateAndSuspendThreads()
 {
     char taskPath[128];
-    snprintf(taskPath, sizeof(taskPath), "/proc/%d/task", m_pid);
+    int chars = snprintf(taskPath, sizeof(taskPath), "/proc/%u/task", m_pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(taskPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/task\n");
+        return false;
+    }
 
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
@@ -115,8 +155,12 @@ bool
 CrashInfo::GetAuxvEntries()
 {
     char auxvPath[128];
-    snprintf(auxvPath, sizeof(auxvPath), "/proc/%d/auxv", m_pid);
-
+    int chars = snprintf(auxvPath, sizeof(auxvPath), "/proc/%u/auxv", m_pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(auxvPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/auxv\n");
+        return false;
+    }
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
@@ -171,10 +215,13 @@ CrashInfo::EnumerateMemoryRegions()
 
     // Making something like: /proc/123/maps
     char mapPath[128];
-    int chars = snprintf(mapPath, sizeof(mapPath), "/proc/%d/maps", m_pid);
-    assert(chars > 0 && (size_t)chars <= sizeof(mapPath));
-
-    FILE* mapsFile = fopen(mapPath, "r");
+    int chars = snprintf(mapPath, sizeof(mapPath), "/proc/%u/maps", m_pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(mapPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/maps\n");
+        return false;
+    }
+    FILE* mapsFile = fopen(mapPath, "rb");
     if (mapsFile == nullptr)
     {
         printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
@@ -220,20 +267,29 @@ CrashInfo::EnumerateMemoryRegions()
             if (strchr(permissions, 'p')) {
                 regionFlags |= MEMORY_REGION_FLAG_PRIVATE;
             }
-            MemoryRegion memoryRegion(regionFlags, start, end, offset, std::string(moduleName != nullptr ? moduleName : ""));
+            ModuleRegion moduleRegion(regionFlags, start, end, offset, moduleName);
 
             if (moduleName != nullptr && *moduleName == '/')
             {
-                m_moduleMappings.insert(memoryRegion);
-                m_cbModuleMappings += memoryRegion.Size();
+                // Don't add files that don't exists anymore especially /memfd:doublemapper.
+                size_t last = moduleRegion.FileName().rfind(" (deleted)");
+                if (last == std::string::npos)
+                {
+                    m_moduleMappings.insert(moduleRegion);
+                    m_cbModuleMappings += moduleRegion.Size();
+                }
+                else
+                {
+                    m_otherMappings.insert(moduleRegion);
+                }
             }
             else
             {
-                m_otherMappings.insert(memoryRegion);
+                m_otherMappings.insert(moduleRegion);
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryRegion(memoryRegion);
+                InsertMemoryRegion(moduleRegion);
             }
             free(moduleName);
             free(permissions);
@@ -243,7 +299,7 @@ CrashInfo::EnumerateMemoryRegions()
     if (g_diagnostics)
     {
         TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
-        for (const MemoryRegion& region : m_moduleMappings)
+        for (const ModuleRegion& region : m_moduleMappings)
         {
             region.Trace();
         }
@@ -286,8 +342,8 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     // it with the one found in the /proc/<pid>/maps.
     if (moduleName.empty())
     {
-        MemoryRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
-        const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
+        ModuleRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
+        const ModuleRegion* region = SearchModuleRegions(search);
         if (region != nullptr)
         {
             moduleName = region->FileName();
@@ -315,7 +371,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 }
             }
         }
-        else if (g_checkForSingleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             if (PopulateForSymbolLookup(baseAddress))
             {
@@ -325,12 +381,34 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
 
-                    RuntimeInfo runtimeInfo { };
-                    if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                    // explicit initialization for old gcc support; instead of just runtimeInfo { }
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
+                    if (ReadMemory(baseAddress + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                         {
                             TRACE("Found valid single-file runtime info\n");
+                        }
+                    }
+                }
+            }
+        }
+        else if (m_appModel == AppModelType::NativeAOT)
+        {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
+                uint64_t symbolOffset;
+                if (TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+                {
+                    m_coreclrPath = GetDirectory(moduleName);
+                    m_runtimeBaseAddress = baseAddress;
+
+                    uint8_t cookie[sizeof(g_debugHeaderCookie)];
+                    if (ReadMemory(baseAddress + symbolOffset, cookie, sizeof(cookie)))
+                    {
+                        if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
+                        {
+                            TRACE("Found valid NativeAOT runtime module\n");
                         }
                     }
                 }
@@ -345,7 +423,7 @@ BOOL
 ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
 {
     size_t read = 0;
-    return g_crashInfo->ReadProcessMemory(address, buffer, size, &read);
+    return g_crashInfo->ReadProcessMemory(CONVERT_FROM_SIGN_EXTENDED(address), buffer, size, &read);
 }
 
 //
@@ -376,19 +454,22 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
             TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
             InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
 
-            ULONG64 ehFrameStart;
-            ULONG64 ehFrameSize;
-            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
+            if (m_appModel != AppModelType::NativeAOT)
             {
-                TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
-                if (ehFrameStart != 0 && ehFrameSize != 0)
+                ULONG64 ehFrameStart;
+                ULONG64 ehFrameSize;
+                if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
                 {
-                    InsertMemoryRegion(ehFrameStart, ehFrameSize);
+                    TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
+                    if (ehFrameStart != 0 && ehFrameSize != 0)
+                    {
+                        InsertMemoryRegion(ehFrameStart, ehFrameSize);
+                    }
                 }
-            }
-            else
-            {
-                TRACE("VisitProgramHeader: PAL_GetUnwindInfoSize FAILED\n");
+                else
+                {
+                    TRACE("VisitProgramHeader: PAL_GetUnwindInfoSize FAILED\n");
+                }
             }
         }
         break;
@@ -405,16 +486,18 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
-    const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
+    assert(start == CONVERT_FROM_SIGN_EXTENDED(start));
+
+    ModuleRegion search(0, start, start + PAGE_SIZE, 0);
+    const ModuleRegion* moduleRegion = SearchModuleRegions(search);
+    if (moduleRegion != nullptr) {
+        return moduleRegion->Flags();
+    }
+    const MemoryRegion* region = SearchMemoryRegions(m_otherMappings, search);
     if (region != nullptr) {
         return region->Flags();
     }
-    region = SearchMemoryRegions(m_otherMappings, search);
-    if (region != nullptr) {
-        return region->Flags();
-    }
-    TRACE("GetMemoryRegionFlags: FAILED\n");
+    TRACE_VERBOSE("GetMemoryRegionFlags: %016llx FAILED\n", start);
     return PF_R | PF_W | PF_X;
 }
 
@@ -422,7 +505,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
 // Read raw memory
 //
 bool
-CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read)
+CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
@@ -432,7 +515,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     if (m_canUseProcVmReadSyscall)
     {
         iovec local{ buffer, size };
-        iovec remote{ address, size };
+        iovec remote{ (void*)address, size };
         *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
     }
 
@@ -443,8 +526,8 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         // After all, the use of process_vm_readv is largely as a
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
-        assert(m_fd != -1);
-        *read = pread64(m_fd, buffer, size, (off64_t)address);
+        assert(m_fdMem != -1);
+        *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
     if (*read == (size_t)-1)
@@ -464,9 +547,14 @@ bool
 GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
 {
     char statusPath[128];
-    snprintf(statusPath, sizeof(statusPath), "/proc/%d/status", pid);
+    int chars = snprintf(statusPath, sizeof(statusPath), "/proc/%d/status", pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(statusPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/status\n");
+        return false;
+    }
 
-    FILE *statusFile = fopen(statusPath, "r");
+    FILE *statusFile = fopen(statusPath, "rb");
     if (statusFile == nullptr)
     {
         printf_error("GetStatus fopen(%s) FAILED %s (%d)\n", statusPath, strerror(errno), errno);
@@ -513,6 +601,13 @@ ModuleInfo::LoadModule()
     if (m_module == nullptr)
     {
         m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
-        m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+        if (m_module != nullptr)
+        {
+            m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+        }
+        else
+        {
+            TRACE("LoadModule: dlopen(%s) FAILED %s\n", m_moduleName.c_str(), dlerror());
+        }
     }
 }

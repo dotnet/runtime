@@ -374,7 +374,7 @@ namespace System.PrivateUri.Tests
                         uriInput);
                     break;
                 default:
-                    Assert.False(true, "Unknown Uri component: " + component.ToString());
+                    Assert.Fail("Unknown Uri component: " + component.ToString());
                     break;
             }
 
@@ -479,7 +479,7 @@ namespace System.PrivateUri.Tests
             {
                 string bigString2 = GetUnicodeString(0, MaxUriLength + 1, 1);
                 Uri u = new Uri(bigString2);
-                Assert.False(true, "Expected UriFormatException: Uri too large");
+                Assert.Fail("Expected UriFormatException: Uri too large");
             }
             catch (FormatException)
             { }
@@ -617,7 +617,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(Iri_ExpandingContents_TooLong))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
         {
             Assert.Throws<UriFormatException>(() => new Uri(input));

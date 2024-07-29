@@ -3,9 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [module: UnconditionalSuppressMessage ("Test", "IL2071", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.DetectRedundantSuppressionsInMembersAndTypesUsingTarget.RedundantSuppressionOnType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2071", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.DetectRedundantSuppressionsInMembersAndTypesUsingTarget.RedundantSuppressionOnMethod.Test")]
@@ -39,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			return "test";
 		}
 
-		[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 		public class RedundantSuppressionOnType
 		{
 			public static void Test ()
@@ -50,7 +48,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		public class RedundantSuppressionOnMethod
 		{
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			public static void Test ()
 			{
 				TrimmerCompatibleMethod ();
@@ -64,7 +62,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				NestedType.TrimmerCompatibleMethod ();
 			}
 
-			[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 			public class NestedType
 			{
 				public static void TrimmerCompatibleMethod ()
@@ -82,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			}
 
 			public static string TrimmerCompatibleProperty {
-				[ExpectedWarning ("IL2121", "IL2071", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2121", "IL2071", Tool.Trimmer, "")]
 				get {
 					return TrimmerCompatibleMethod ();
 				}

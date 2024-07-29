@@ -39,11 +39,13 @@ namespace System.Text.RegularExpressions.Symbolic
                 CharSetSolver charSetSolver = _builder._charSetSolver;
 
                 // Create helper BDDs for handling anchors and preferentially generating ASCII inputs
-                BDD asciiWordCharacters = charSetSolver.Or(new BDD[] {
-                charSetSolver.CreateBDDFromRange('A', 'Z'),
-                charSetSolver.CreateBDDFromRange('a', 'z'),
-                charSetSolver.CreateBDDFromChar('_'),
-                charSetSolver.CreateBDDFromRange('0', '9')});
+                BDD asciiWordCharacters = charSetSolver.Or(
+                [
+                    charSetSolver.CreateBDDFromRange('A', 'Z'),
+                    charSetSolver.CreateBDDFromRange('a', 'z'),
+                    charSetSolver.CreateBDDFromChar('_'),
+                    charSetSolver.CreateBDDFromRange('0', '9')
+                ]);
                 // Visible ASCII range for input character generation
                 BDD ascii = charSetSolver.CreateBDDFromRange('\x20', '\x7E');
                 BDD asciiNonWordCharacters = charSetSolver.And(ascii, charSetSolver.Not(asciiWordCharacters));
@@ -69,7 +71,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     NfaMatchingState states = new();
                     // Here one could also consider previous characters for example for \b, \B, and ^ anchors
                     // and initialize inputSoFar accordingly
-                    states.InitializeFrom(this, _initialStates[GetCharKind<FullInputReader>(ReadOnlySpan<char>.Empty, -1)]);
+                    states.InitializeFrom(this, _initialStates[GetCharKind([], -1)]);
                     CurrentState statesWrapper = new(states);
 
                     // Used for end suffixes
@@ -182,14 +184,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static T[] Shuffle<T>(Random random, T[] array)
             {
-                // In-place Fisher-Yates shuffle
-                for (int i = 0; i < array.Length - 1; ++i)
-                {
-                    int j = random.Next(i, array.Length);
-                    var tmp = array[i];
-                    array[i] = array[j];
-                    array[j] = tmp;
-                }
+                random.Shuffle(array);
                 return array;
             }
         }

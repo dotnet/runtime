@@ -8,9 +8,10 @@
 
 
 using System;
+using Xunit;
 
 
-class Program
+public class Program
 {
       public sealed class Variables
     {
@@ -37,10 +38,10 @@ class Program
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         string s = "skip"; // Test checks commpilation process.
         VerifyMacvalueSSlV2(s);
-        return 100;
     }
 }

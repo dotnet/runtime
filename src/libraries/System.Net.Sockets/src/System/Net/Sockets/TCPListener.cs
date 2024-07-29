@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.Versioning;
-using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
     // The System.Net.Sockets.TcpListener class provide TCP services at a higher level of abstraction
     // than the System.Net.Sockets.Socket class. System.Net.Sockets.TcpListener is used to create a
     // host process that listens for connections from TCP clients.
-    public class TcpListener
+    public class TcpListener : IDisposable
     {
         private readonly IPEndPoint _serverSocketEP;
         private Socket? _serverSocket;
@@ -167,6 +167,11 @@ namespace System.Net.Sockets
             _serverSocket = null;
         }
 
+        /// <summary>
+        /// Releases all resources used by the current <see cref="TcpListener"/> instance.
+        /// </summary>
+        public void Dispose() => Stop();
+
         // Determine if there are pending connection requests.
         public bool Pending()
         {
@@ -201,13 +206,13 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptSocketAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptSocketAsync(), callback, state);
 
         public Socket EndAcceptSocket(IAsyncResult asyncResult) =>
             EndAcceptCore<Socket>(asyncResult);
 
         public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptTcpClientAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptTcpClientAsync(), callback, state);
 
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
             EndAcceptCore<TcpClient>(asyncResult);
@@ -283,7 +288,7 @@ namespace System.Net.Sockets
         {
             try
             {
-                return TaskToApm.End<TResult>(asyncResult);
+                return TaskToAsyncResult.End<TResult>(asyncResult);
             }
             catch (SocketException) when (!_active)
             {

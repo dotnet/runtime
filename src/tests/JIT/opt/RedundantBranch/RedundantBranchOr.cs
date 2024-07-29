@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class RedundantBranchOr
+public class RedundantBranchOr
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Or_00(int a, int b)
@@ -112,7 +113,8 @@ class RedundantBranchOr
         return 3;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Func<int, int, int>[] funcs = {Or_00, Or_01, Or_02, Or_03, Or_04, Or_05, Or_06};
         int funcNum = 0;

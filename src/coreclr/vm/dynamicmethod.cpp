@@ -112,7 +112,7 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetHighFrequencyHeap(), pamTracker);
+    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetLoaderAllocator(), pamTracker);
 }
 
 void DynamicMethodTable::Destroy()
@@ -189,7 +189,7 @@ void DynamicMethodTable::AddMethodsToList()
         pResolver->m_DynamicMethodTable = this;
         pNewMD->m_pResolver = pResolver;
 
-        pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
+        pNewMD->SetTemporaryEntryPoint(&amt);
 
 #ifdef _DEBUG
         pNewMD->m_pDebugMethodTable = m_pMethodTable;
@@ -437,7 +437,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
@@ -457,7 +457,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pHeapList = (PTR_HeapList)pHp;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
-        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, pTracker->size));
+        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
     pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
@@ -515,7 +515,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
 
                 // The space left is not big enough for a new block, let's just
                 // update the TrackAllocation record for the current block
-                if (pCurrent->size - realSize < max(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
+                if (pCurrent->size - realSize < max<size_t>(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
                 {
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item removed %p, size 0x%X\n", this, pCurrent, pCurrent->size));
                     // remove current
@@ -898,7 +898,7 @@ void DynamicMethodDesc::Destroy()
         delete[] pszMethodName;
     }
 
-    if (pSig != NULL)
+    if (pSig != (PCODE)NULL)
     {
         delete[] (BYTE*)pSig;
     }
@@ -1102,6 +1102,17 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
 {
     LIMITED_METHOD_CONTRACT;
     return &m_jitMetaHeap;
+}
+
+bool LCGMethodResolver::RequiresAccessCheck()
+{
+    LIMITED_METHOD_CONTRACT;
+    return true;
+}
+
+CORJIT_FLAGS LCGMethodResolver::GetJitFlags()
+{
+    return{};
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)
@@ -1314,7 +1325,7 @@ void LCGMethodResolver::AddToUsedIndCellList(BYTE * indcell)
 
 }
 
-void LCGMethodResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
+void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1324,24 +1335,35 @@ void LCGMethodResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc
 
     DECLARE_ARGHOLDER_ARRAY(args, 5);
 
+    TypeHandle handle;
+    MethodDesc* pMD = NULL;
+    FieldDesc* pFD = NULL;
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
     args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = pTH;
-    args[ARGNUM_3] = ppMD;
-    args[ARGNUM_4] = ppFD;
+    args[ARGNUM_2] = &handle;
+    args[ARGNUM_3] = &pMD;
+    args[ARGNUM_4] = &pFD;
 
     CALL_MANAGED_METHOD_NORET(args);
 
-    _ASSERTE(*ppMD == NULL || *ppFD == NULL);
+    _ASSERTE(pMD == NULL || pFD == NULL);
 
-    if (pTH->IsNull())
+    if (handle.IsNull())
     {
-        if (*ppMD != NULL) *pTH = (*ppMD)->GetMethodTable();
-        else
-        if (*ppFD != NULL) *pTH = (*ppFD)->GetEnclosingMethodTable();
+        if (pMD != NULL)
+        {
+            handle = pMD->GetMethodTable();
+        }
+        else if (pFD != NULL)
+        {
+            handle = pFD->GetEnclosingMethodTable();
+        }
     }
 
-    _ASSERTE(!pTH->IsNull());
+    _ASSERTE(!handle.IsNull());
+    resolvedToken->TypeHandle = handle;
+    resolvedToken->Method = pMD;
+    resolvedToken->Field = pFD;
 }
 
 //---------------------------------------------------------------------------------------

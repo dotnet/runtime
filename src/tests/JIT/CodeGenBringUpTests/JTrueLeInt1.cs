@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_JTrueLeInt1
 {
     const int Pass = 100;
@@ -35,7 +36,8 @@ public class BringUpTest_JTrueLeInt1
         return returnValue;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnValue = Pass;
 

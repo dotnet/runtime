@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="subovfun1_r.il" />
+    <Compile Include="subovfun1.il" />
+  </ItemGroup>
+</Project>

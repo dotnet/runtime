@@ -5,10 +5,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-unsafe class LoopSideEffectsForHwiStores
+public unsafe class LoopSideEffectsForHwiStores
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         static bool VerifyExpectedVtor(Vector128<int> a) => a.Equals(Vector128.Create(4));
 

@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    // This type is only needed for the VTable source generator or to provide abstract concepts that the COM generator would use under the hood.
+    // These are types that we can exclude from the API proposals and either inline into the generated code, provide as file-scoped types, or not provide publicly (indicated by comments on each type).
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class VirtualMethodIndexAttribute : Attribute
     {

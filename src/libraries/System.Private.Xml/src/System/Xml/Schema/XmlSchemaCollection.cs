@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Collections;
-using System.Xml.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Xml.Schema;
 
 namespace System.Xml.Schema
 {
@@ -95,7 +95,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
-            if (uri == null || uri.Length == 0)
+            if (string.IsNullOrEmpty(uri))
                 throw new ArgumentNullException(nameof(uri));
             XmlTextReader reader = new XmlTextReader(uri, _nameTable);
             reader.XmlResolver = _xmlResolver;
@@ -227,14 +227,11 @@ namespace System.Xml.Schema
         void ICollection.CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
             ArgumentOutOfRangeException.ThrowIfNegative(index);
+
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
-                if (index == array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                 array.SetValue(e.Current, index++);
             }
         }
@@ -242,18 +239,14 @@ namespace System.Xml.Schema
         public void CopyTo(XmlSchema[] array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
             ArgumentOutOfRangeException.ThrowIfNegative(index);
+
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 XmlSchema? schema = e.Current;
                 if (schema != null)
                 {
-                    if (index == array.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
-
+                    ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                     array[index++] = e.Current!;
                 }
             }

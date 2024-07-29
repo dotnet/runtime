@@ -3,10 +3,10 @@
 
 namespace System.IO.Pipelines
 {
-    internal struct PipeCompletionCallback
+    internal readonly struct PipeCompletionCallback
     {
-        public Action<Exception?, object?> Callback;
-        public object? State;
+        public readonly Action<Exception?, object?> Callback;
+        public readonly object? State;
 
         public PipeCompletionCallback(Action<Exception?, object?> callback, object? state)
         {

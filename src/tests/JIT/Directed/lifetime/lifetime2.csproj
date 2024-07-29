@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for JitOptimizationSensitive, GC.WaitForPendingFinalizers -->
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="lifetime2.cs" />

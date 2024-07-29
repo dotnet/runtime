@@ -2,16 +2,16 @@
 
 initTargetDistroRid()
 {
-    source "$__RepoRootDir/eng/native/init-distro-rid.sh"
+    source "$__RepoRootDir/eng/common/native/init-distro-rid.sh"
 
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "Darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$passedRootfsDir"
 }
 
 setup_dirs()
@@ -28,7 +28,7 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    if [[ "$__HostOS" == "OSX" ]]; then
+    if [[ "$__HostOS" == "osx" ]]; then
         # Check presence of pkg-config on the path
         command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
@@ -63,7 +63,7 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
+    if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$hostArch" == arm64 ]]; then
@@ -74,17 +74,19 @@ build_native()
         fi
     fi
 
-    if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    if [[ "$targetOS" == maccatalyst ]]; then
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
-    if [[ ( "$targetOS" == Android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
+    if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
         fi
 
-        # keep ANDROID_PLATFORM in sync with src/mono/Directory.Build.props
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
+
+        # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
@@ -100,6 +102,58 @@ build_native()
             cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
         else
             echo "Error: Unknown Android architecture $hostArch."
+            exit 1
+        fi
+    elif [[ "$targetOS" == iossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$targetOS" == ios ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$targetOS" == tvossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$targetOS" == tvos ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS architecture $__TargetArch."
             exit 1
         fi
     fi
@@ -163,7 +217,7 @@ build_native()
         popd
     else
         cmake_command=cmake
-        if [[ "$build_arch" == "wasm" && "$__TargetOS" == "Browser" ]]; then
+        if [[ "$build_arch" == "wasm" && "$__TargetOS" == "browser" ]]; then
             cmake_command="emcmake cmake"
             echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
             $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
@@ -216,6 +270,7 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
+    echo "-fsanitize: Enable native sanitizers"
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -227,21 +282,19 @@ usage()
     exit 1
 }
 
-source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
+source "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
 __TargetOS=$os
-__HostOS=$os
-__BuildOS=$os
 __OutputRid=''
 
 # Get the number of processors available to the scheduler
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
-elif [[ "$platform" == "Darwin" ]]; then
+elif [[ "$platform" == "darwin" ]]; then
   __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"
@@ -258,7 +311,7 @@ while :; do
 
     lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
-        -\?|-h|--help)
+        -\?|-h|-help)
             usage
             exit 1
             ;;
@@ -340,6 +393,17 @@ while :; do
             __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
+        -fsanitize)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$2"
+            EnableNativeSanitizers=$2
+            shift
+            ;;
+        -fsanitize=*)
+            sanitizers="${lowerI/#-fsanitize=/}" # -fsanitize=address => address
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$sanitizers"
+            EnableNativeSanitizers=$sanitizers
+            ;;
+
         ninja|-ninja)
             __UseNinja=1
             ;;
@@ -410,7 +474,7 @@ while :; do
 
         os|-os)
             if [[ -n "$2" ]]; then
-                __TargetOS="$2"
+                __TargetOS=$(echo "$2" | tr '[:upper:]' '[:lower:]')
                 shift
             else
                 echo "ERROR: 'os' requires a non-empty option argument"
@@ -421,9 +485,20 @@ while :; do
         hostarch|-hostarch)
             if [[ -n "$2" ]]; then
                 __HostArch="$2"
+                __ExplicitHostArch=1
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
+        hostos|-hostos)
+            if [[ -n "$2" ]]; then
+                __HostOS="$2"
+                shift
+            else
+                echo "ERROR: 'hostos' requires a non-empty option argument"
                 exit 1
             fi
             ;;
@@ -444,6 +519,10 @@ if [[ -z "$__HostArch" ]]; then
     __HostArch=$__TargetArch
 fi
 
+if [[ -z "$__HostOS" ]]; then
+    __HostOS=$__TargetOS
+fi
+
 __CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
@@ -460,13 +539,13 @@ fi
 if [[ "$__TargetArch" == wasm ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android ]]; then
+elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 else
@@ -478,15 +557,23 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi
 fi
 
-# init the target distro name
+# init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
-
 if [ -z "$__OutputRid" ]; then
-    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+    if [[ "$__PortableBuild" == 0 ]]; then
+        __OutputRid="$__DistroRid"
+    else
+        __OutputRid="$__PortableTargetOS-$__TargetArch"
+    fi
 fi
+export __OutputRid
+echo "__OutputRid: ${__OutputRid}"
+
+# When the host runs on an unknown rid, it falls back to the output rid
+__HostFallbackOS="${__OutputRid%-*}" # Strip architecture

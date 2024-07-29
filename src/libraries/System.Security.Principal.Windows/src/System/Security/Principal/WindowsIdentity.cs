@@ -1,27 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
-
+using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using KERB_LOGON_SUBMIT_TYPE = Interop.SspiCli.KERB_LOGON_SUBMIT_TYPE;
 using KERB_S4U_LOGON = Interop.SspiCli.KERB_S4U_LOGON;
 using KerbS4uLogonFlags = Interop.SspiCli.KerbS4uLogonFlags;
-using LUID = Interop.LUID;
 using LSA_STRING = Interop.Advapi32.LSA_STRING;
+using LUID = Interop.LUID;
 using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
 using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
 using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
-using System.Runtime.Serialization;
-using System.Threading.Tasks;
 
 namespace System.Security.Principal
 {
@@ -320,6 +319,8 @@ namespace System.Security.Principal
             _safeTokenHandle = DuplicateAccessToken(userToken);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public WindowsIdentity(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

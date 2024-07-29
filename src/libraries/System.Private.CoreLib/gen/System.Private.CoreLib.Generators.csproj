@@ -5,9 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />
     <Compile Include="EventSourceGenerator.Parser.cs" />
+    <Compile Include="IntrinsicsInSystemPrivateCoreLibAnalyzer.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
@@ -19,4 +21,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
   </ItemGroup>
+
 </Project>

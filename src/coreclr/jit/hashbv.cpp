@@ -127,7 +127,7 @@ int countBitsInWord(unsigned int bits)
     return (int)bits;
 }
 
-int countBitsInWord(unsigned __int64 bits)
+int countBitsInWord(uint64_t bits)
 {
     bits = ((bits >> 1) & 0x5555555555555555) + (bits & 0x5555555555555555);
     bits = ((bits >> 2) & 0x3333333333333333) + (bits & 0x3333333333333333);
@@ -611,36 +611,32 @@ void hashBv::Resize(int newSize)
 #ifdef DEBUG
 void hashBv::dump()
 {
-    bool      first = true;
-    indexType index;
+    bool first = true;
 
     // uncomment to print internal implementation details
     // DBEXEC(TRUE, printf("[%d(%d)(nodes:%d)]{ ", hashtable_size(), countBits(), this->numNodes));
 
     printf("{");
-    FOREACH_HBV_BIT_SET(index, this)
-    {
+    ForEachHbvBitSet(*this, [&](indexType index) {
         if (!first)
         {
             printf(" ");
         }
         printf("%d", index);
         first = false;
-    }
-    NEXT_HBV_BIT_SET;
+        return HbvWalk::Continue;
+    });
     printf("}\n");
 }
 
 void hashBv::dumpFancy()
 {
-    indexType index;
     indexType last_1 = -1;
     indexType last_0 = -1;
 
     printf("{");
     printf("count:%d", this->countBits());
-    FOREACH_HBV_BIT_SET(index, this)
-    {
+    ForEachHbvBitSet(*this, [&](indexType index) {
         if (last_1 != index - 1)
         {
             if (last_0 + 1 != last_1)
@@ -654,8 +650,9 @@ void hashBv::dumpFancy()
             last_0 = index - 1;
         }
         last_1 = index;
-    }
-    NEXT_HBV_BIT_SET;
+
+        return HbvWalk::Continue;
+    });
 
     // Print the last one
     if (last_0 + 1 != last_1)
@@ -827,7 +824,7 @@ void hashBv::setAll(indexType numToSet)
     for (unsigned int i = 0; i < numToSet; i += BITS_PER_NODE)
     {
         hashBvNode* node        = getOrAddNodeForIndex(i);
-        indexType   bits_to_set = min(BITS_PER_NODE, numToSet - i);
+        indexType   bits_to_set = min((indexType)BITS_PER_NODE, numToSet - i);
         node->setLowest(bits_to_set);
     }
 }
@@ -1951,7 +1948,7 @@ more_data:
         current_element++;
         // printf("current element is %d\n", current_element);
         // reached the end of this node
-        if (current_element == (indexType) this->currNode->numElements())
+        if (current_element == (indexType)this->currNode->numElements())
         {
             // printf("going to next node\n");
             this->nextNode();
@@ -1959,7 +1956,7 @@ more_data:
         }
         else
         {
-            assert(current_element < (indexType) this->currNode->numElements());
+            assert(current_element < (indexType)this->currNode->numElements());
             // printf("getting more data\n");
             current_data = this->currNode->elements[current_element];
             current_base = this->currNode->baseIndex + current_element * BITS_PER_ELEMENT;

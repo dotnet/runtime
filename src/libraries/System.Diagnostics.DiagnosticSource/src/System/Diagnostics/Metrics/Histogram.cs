@@ -8,17 +8,20 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// The histogram is a metrics Instrument which can be used to report arbitrary values that are likely to be statistically meaningful.
     /// e.g. the request duration.
-    /// Use <see cref="Meter.CreateHistogram" /> method to create the Histogram object.
+    /// Use <see cref="Meter.CreateHistogram(string, string?, string?)" /> method to create the Histogram object.
     /// </summary>
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
-        internal Histogram(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)
+        internal Histogram(Meter meter, string name, string? unit, string? description)
+            : this(meter, name, unit, description, tags: null, advice: null)
+        {
+        }
+
+        internal Histogram(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags, InstrumentAdvice<T>? advice)
+            : base(meter, name, unit, description, tags, advice)
         {
             Publish();
         }
@@ -58,7 +61,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         /// <param name="value">The measurement value.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
-        public void Record(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(value, tags);
+        public void Record(T value, params ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(value, tags);
 
         /// <summary>
         /// Record a measurement value.

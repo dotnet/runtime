@@ -35,7 +35,6 @@ class ComCallMethodDesc;
 // functions implemented in AMD64 assembly
 //
 EXTERN_C void SinglecastDelegateInvokeStub();
-EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 
 #define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
@@ -47,9 +46,6 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         12   // # bytes to allocate for a back to back 64-bit jump instruction
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
-
-// Also in CorCompile.h, FnTableAccess.h
-#define USE_INDIRECT_CODEHEADER                 // use CodeHeader, RealCodeHeader construct
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
@@ -188,6 +184,9 @@ struct REGDISPLAY;
 
 #define NUM_CALLEE_SAVED_REGISTERS 6
 
+// No floating point callee saved registers on Unix AMD64
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
+
 #else // UNIX_AMD64_ABI
 
 #define ENUM_ARGUMENT_REGISTERS() \
@@ -211,6 +210,18 @@ struct REGDISPLAY;
     CALLEE_SAVED_REGISTER(R15)
 
 #define NUM_CALLEE_SAVED_REGISTERS 8
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Xmm6) \
+    CALLEE_SAVED_REGISTER(Xmm7) \
+    CALLEE_SAVED_REGISTER(Xmm8) \
+    CALLEE_SAVED_REGISTER(Xmm9) \
+    CALLEE_SAVED_REGISTER(Xmm10) \
+    CALLEE_SAVED_REGISTER(Xmm11) \
+    CALLEE_SAVED_REGISTER(Xmm12) \
+    CALLEE_SAVED_REGISTER(Xmm13) \
+    CALLEE_SAVED_REGISTER(Xmm14) \
+    CALLEE_SAVED_REGISTER(Xmm15)
 
 #endif // UNIX_AMD64_ABI
 
@@ -277,7 +288,47 @@ struct EHContext {
 
 #include "stublinkeramd64.h"
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
 
+#ifdef PROFILING_SUPPORTED
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
+
+typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    FunctionID  functionId;
+    void       *rbp;
+    void       *probeRsp;
+    void       *ip;
+    void       *profiledRsp;
+    UINT64      rax;
+    LPVOID      hiddenArg;
+    UINT64      flt0;   // floats stored as doubles
+    UINT64      flt1;
+    UINT64      flt2;
+    UINT64      flt3;
+#if defined(UNIX_AMD64_ABI)
+    UINT64      flt4;
+    UINT64      flt5;
+    UINT64      flt6;
+    UINT64      flt7;
+    UINT64      rdi;
+    UINT64      rsi;
+    UINT64      rdx;
+    UINT64      rcx;
+    UINT64      r8;
+    UINT64      r9;
+#endif
+    UINT32      flags;
+#if defined(UNIX_AMD64_ABI)
+    // A buffer to copy structs in to so they are sequential for GetFunctionEnter3Info.
+    UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+#endif
+} PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
+
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -342,7 +393,7 @@ inline void SetSP(CONTEXT *context, TADDR rsp)
     context->Rsp = rsp;
 }
 
-#if defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline DWORD64 GetSSP(const CONTEXT * context)
 {
     CONTRACTL
@@ -353,13 +404,15 @@ inline DWORD64 GetSSP(const CONTEXT * context)
         PRECONDITION(CheckPointer(context));
     }
     CONTRACTL_END;
-
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(const_cast<PCONTEXT>(context), XSTATE_CET_U, NULL);
     if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
     {
         return pCET->Ia32Pl3SspMsr;
     }
-
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
     return 0;
 }
 
@@ -374,16 +427,26 @@ inline void SetSSP(CONTEXT *context, DWORD64 ssp)
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(context, XSTATE_CET_U, NULL);
     if (pCET != NULL)
     {
         pCET->Ia32Pl3SspMsr = ssp;
         pCET->Ia32CetUMsr = 1;
     }
+#else
+    // TODO: implement when we enable Intel CET on Unix
+#endif
 }
-#endif // TARGET_WINDOWS && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
-#define SetFP(context, ebp)
+inline void SetFP(CONTEXT *context, TADDR rbp)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    context->Rbp = (DWORD64)rbp;
+}
+
 inline TADDR GetFP(const CONTEXT * context)
 {
     LIMITED_METHOD_CONTRACT;
@@ -430,13 +493,6 @@ inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target
     emitJump(pBufferRX, pBufferRW, target);
 }
 
-inline BOOL isBackToBackJump(PCODE pCode)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return isJumpRel32(pCode) || isJumpRel64(pCode);
-}
-
 inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     WRAPPER_NO_CONTRACT;
@@ -447,7 +503,7 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     if (isJumpRel64(pCode))
         return decodeJump64(pCode);
     else
-        return NULL;
+        return (PCODE)0;
 }
 
 extern "C" void setFPReturn(int fpSize, INT64 retVal);
@@ -552,11 +608,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
-
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 #endif // __cgencpu_h__

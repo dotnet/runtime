@@ -20,17 +20,27 @@
     <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>
-    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
-    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
-    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'android'" />
+    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
+    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
     <!-- needed to test workloads for wasm -->
-    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
+                      Pack="true"
+                      Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/bundle/Microsoft.NETCore.App.Bundle.bundleproj" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
-          Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
+          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets"
+          Condition="'$(TargetOS)' == 'wasi' and '$(ContinuousIntegrationBuild)' == 'true'" />
 
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
@@ -47,6 +57,8 @@
   <Target Name="GetSharedFrameworkRuntimeFiles">
     <ItemGroup>
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.so" />
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.dex" />
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.jar" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Apple.dylib" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
@@ -66,10 +78,10 @@
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRid)"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRID)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRid)"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRID)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
@@ -97,17 +109,17 @@
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
-                                         RuntimeGraphFiles="$(BundledRuntimeIdentifierGraphFile)"
-                                         TargetRuntimeIdentifier="$(OutputRid)" />
+                                         RuntimeGraphFiles="$([MSBuild]::ValueOrDefault('$(RuntimeIdentifierGraphPath)', '$(BundledRuntimeIdentifierGraphFile)'))"
+                                         TargetRuntimeIdentifier="$(OutputRID)" />
   </Target>
 
   <Target Name="GetRuntimePackFiles">
     <ItemGroup>
       <RuntimePackLibFile Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
-        <TargetPath>runtimes/$(OutputRid)/lib/$(NetCoreAppCurrent)</TargetPath>
+        <TargetPath>runtimes/$(OutputRID)/lib/$(NetCoreAppCurrent)</TargetPath>
       </RuntimePackLibFile>
       <RuntimePackNativeFile Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
-        <TargetPath>runtimes/$(OutputRid)/native</TargetPath>
+        <TargetPath>runtimes/$(OutputRID)/native</TargetPath>
         <IsNative>true</IsNative>
       </RuntimePackNativeFile>
       <!-- Clear the IsNative flag on System.Private.CoreLib given that it is present in native dir but it is actually managed -->

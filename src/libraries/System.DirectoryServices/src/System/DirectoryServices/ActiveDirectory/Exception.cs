@@ -47,6 +47,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryObjectNotFoundException() : base() { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryObjectNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -55,6 +59,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public string? Name { get; }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -79,28 +87,36 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ActiveDirectoryOperationException : Exception, ISerializable
     {
-        public ActiveDirectoryOperationException(string? message, Exception? inner, int errorCode) : base(message, inner)
+        public ActiveDirectoryOperationException(string? message, Exception? inner, int errorCode) : base(message ?? SR.DSUnknownFailure, inner)
         {
             ErrorCode = errorCode;
         }
 
-        public ActiveDirectoryOperationException(string? message, int errorCode) : base(message)
+        public ActiveDirectoryOperationException(string? message, int errorCode) : base(message ?? SR.DSUnknownFailure)
         {
             ErrorCode = errorCode;
         }
 
-        public ActiveDirectoryOperationException(string? message, Exception? inner) : base(message, inner) { }
+        public ActiveDirectoryOperationException(string? message, Exception? inner) : base(message ?? SR.DSUnknownFailure, inner) { }
 
-        public ActiveDirectoryOperationException(string? message) : base(message) { }
+        public ActiveDirectoryOperationException(string? message) : base(message ?? SR.DSUnknownFailure) { }
 
         public ActiveDirectoryOperationException() : base(SR.DSUnknownFailure) { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryOperationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
         public int ErrorCode { get; }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -129,6 +145,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryServerDownException() : base() { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryServerDownException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -150,6 +170,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -166,6 +190,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectoryObjectExistsException() : base() { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryObjectExistsException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -177,17 +205,21 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private readonly SyncFromAllServersErrorInformation[]? _errors;
 
-        public SyncFromAllServersOperationException(string? message, Exception? inner, SyncFromAllServersErrorInformation[]? errors) : base(message, inner)
+        public SyncFromAllServersOperationException(string? message, Exception? inner, SyncFromAllServersErrorInformation[]? errors) : base(message ?? SR.DSSyncAllFailure, inner)
         {
             _errors = errors;
         }
 
-        public SyncFromAllServersOperationException(string? message, Exception? inner) : base(message, inner) { }
+        public SyncFromAllServersOperationException(string? message, Exception? inner) : base(message ?? SR.DSSyncAllFailure, inner) { }
 
-        public SyncFromAllServersOperationException(string? message) : base(message) { }
+        public SyncFromAllServersOperationException(string? message) : base(message ?? SR.DSSyncAllFailure) { }
 
         public SyncFromAllServersOperationException() : base(SR.DSSyncAllFailure) { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected SyncFromAllServersOperationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -207,6 +239,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -217,23 +253,31 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public class ForestTrustCollisionException : ActiveDirectoryOperationException, ISerializable
     {
-        public ForestTrustCollisionException(string? message, Exception? inner, ForestTrustRelationshipCollisionCollection? collisions) : base(message, inner)
+        public ForestTrustCollisionException(string? message, Exception? inner, ForestTrustRelationshipCollisionCollection? collisions) : base(message ?? SR.ForestTrustCollision, inner)
         {
             Collisions = collisions;
         }
 
-        public ForestTrustCollisionException(string? message, Exception? inner) : base(message, inner) { }
+        public ForestTrustCollisionException(string? message, Exception? inner) : base(message ?? SR.ForestTrustCollision, inner) { }
 
-        public ForestTrustCollisionException(string? message) : base(message) { }
+        public ForestTrustCollisionException(string? message) : base(message ?? SR.ForestTrustCollision) { }
 
         public ForestTrustCollisionException() : base(SR.ForestTrustCollision) { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ForestTrustCollisionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
         public ForestTrustRelationshipCollisionCollection? Collisions { get; } = new ForestTrustRelationshipCollisionCollection();
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -242,21 +286,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static class ExceptionHelper
     {
-        private const int ERROR_NOT_ENOUGH_MEMORY = 8; // map to outofmemory exception
-        private const int ERROR_OUTOFMEMORY = 14; // map to outofmemory exception
-        private const int ERROR_DS_DRA_OUT_OF_MEM = 8446;    // map to outofmemory exception
-        private const int ERROR_NO_SUCH_DOMAIN = 1355; // map to ActiveDirectoryServerDownException
-        private const int ERROR_ACCESS_DENIED = 5; // map to UnauthorizedAccessException
-        private const int ERROR_NO_LOGON_SERVERS = 1311; // map to ActiveDirectoryServerDownException
-        private const int ERROR_DS_DRA_ACCESS_DENIED = 8453; // map to UnauthorizedAccessException
-        private const int RPC_S_OUT_OF_RESOURCES = 1721; // map to outofmemory exception
-        internal const int RPC_S_SERVER_UNAVAILABLE = 1722; // map to ActiveDirectoryServerDownException
-        internal const int RPC_S_CALL_FAILED = 1726; // map to ActiveDirectoryServerDownException
-        private const int ERROR_CANCELLED = 1223;
-        internal const int ERROR_DS_DRA_BAD_DN = 8439;
-        internal const int ERROR_DS_NAME_UNPARSEABLE = 8350;
-        internal const int ERROR_DS_UNKNOWN_ERROR = 8431;
-
         //
         // This method maps some common COM Hresults to
         // existing clr exceptions
@@ -354,15 +383,15 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string errorMsg = GetErrorMessage(errorCode, false);
 
-            if ((errorCode == ERROR_ACCESS_DENIED) || (errorCode == ERROR_DS_DRA_ACCESS_DENIED))
+            if ((errorCode == Interop.Errors.ERROR_ACCESS_DENIED) || (errorCode == Interop.Errors.ERROR_DS_DRA_ACCESS_DENIED))
 
                 return new UnauthorizedAccessException(errorMsg);
 
-            else if ((errorCode == ERROR_NOT_ENOUGH_MEMORY) || (errorCode == ERROR_OUTOFMEMORY) || (errorCode == ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == RPC_S_OUT_OF_RESOURCES))
+            else if ((errorCode == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY) || (errorCode == Interop.Errors.ERROR_OUTOFMEMORY) || (errorCode == Interop.Errors.ERROR_DS_DRA_OUT_OF_MEM) || (errorCode == Interop.Errors.RPC_S_OUT_OF_RESOURCES))
 
                 return new OutOfMemoryException();
 
-            else if ((errorCode == ERROR_NO_LOGON_SERVERS) || (errorCode == ERROR_NO_SUCH_DOMAIN) || (errorCode == RPC_S_SERVER_UNAVAILABLE) || (errorCode == RPC_S_CALL_FAILED))
+            else if ((errorCode == Interop.Errors.ERROR_NO_LOGON_SERVERS) || (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN) || (errorCode == Interop.Errors.RPC_S_SERVER_UNAVAILABLE) || (errorCode == Interop.Errors.RPC_S_CALL_FAILED))
 
                 return new ActiveDirectoryServerDownException(errorMsg, errorCode, targetName);
 
@@ -396,7 +425,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string? source = Marshal.PtrToStringUni(error.pszSrcId);
                 string? target = Marshal.PtrToStringUni(error.pszSvrId);
 
-                if (error.dwWin32Err == ERROR_CANCELLED)
+                if (error.dwWin32Err == Interop.Errors.ERROR_CANCELLED)
                 {
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
                     return null;
@@ -418,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     DS_REPSYNCALL_ERRINFO error = new DS_REPSYNCALL_ERRINFO();
                     Marshal.PtrToStructure(tempPtr, error);
                     // this is a special case. the failure is because user specifies SyncAllOptions.CheckServerAlivenessOnly, ignore it here
-                    if (error.dwWin32Err != ERROR_CANCELLED)
+                    if (error.dwWin32Err != Interop.Errors.ERROR_CANCELLED)
                     {
                         string message = GetErrorMessage(error.dwWin32Err, false);
                         string? source = Marshal.PtrToStringUni(error.pszSrcId);

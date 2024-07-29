@@ -4,9 +4,11 @@
 #include "common.h"
 #include "configuration.h"
 #include "gcheaputilities.h"
-#include "gcenv.ee.h"
 #include "appdomain.hpp"
+#include "hostinformation.h"
 
+#include "../gc/env/gcenv.ee.h"
+#include "../gc/env/gctoeeinterface.standalone.inl"
 
 // These globals are variables used within the GC and maintained
 // by the EE for use in write barriers. It is the responsibility
@@ -66,8 +68,8 @@ bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
-extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
-extern "C" HRESULT GC_Initialize(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(/* Out */ VersionInfo* info);
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
     /* Out */ IGCHandleManager** gcHandleManager,
@@ -84,7 +86,6 @@ PTR_VOID GCHeapUtilities::GetGCModuleBase()
 
 namespace
 {
-
 // This block of code contains all of the state necessary to handle incoming
 // EtwCallbacks before the GC has been initialized. This is a tricky problem
 // because EtwCallbacks can appear at any time, even when we are just about
@@ -160,18 +161,56 @@ void StashKeywordAndLevel(bool isPublicProvider, GCEventKeyword keywords, GCEven
 }
 
 #ifdef FEATURE_STANDALONE_GC
-HMODULE LoadStandaloneGc(LPCWSTR libFileName)
+HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
 {
     LIMITED_METHOD_CONTRACT;
+    HMODULE result = nullptr;
 
-    // Look for the standalone GC module next to the clr binary
-    PathString libPath = GetInternalSystemDirectory();
-    libPath.Append(libFileName);
+    if (libFilePath)
+    {
+        return CLRLoadLibrary(libFilePath);
+    }
 
-    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %s\n", libPath.GetUTF8()));
+    //
+    // This is not a security feature.
+    // The libFileName originates either from an environment variable or from the runtimeconfig.json
+    // These are trusted locations, and therefore even if it is a relative path, there is no security risk.
+    //
+    // However, users often don't know the absolute path to their coreclr module, especially on production.
+    // Therefore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
+    // are warned that they should keep the file in a secure location such that it cannot be tampered.
+    //
+    if (!ValidateModuleName(libFileName))
+    {
+        LOG((LF_GC, LL_INFO100, "Invalid GC name found %s\n", libFileName));
+        return nullptr;
+    }
 
-    LPCWSTR libraryName = libPath.GetUnicode();
-    return CLRLoadLibrary(libraryName);
+    SString appBase;
+    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase))
+    {
+        PathString libPath = appBase.GetUnicode();
+        libPath.Append(libFileName);
+
+        LOG((LF_GC, LL_INFO100, "Loading standalone GC from appBase %s\n", libPath.GetUTF8()));
+
+        LPCWSTR libraryName = libPath.GetUnicode();
+        result = CLRLoadLibrary(libraryName);
+    }
+
+    if (result == nullptr)
+    {
+        // Look for the standalone GC module next to the clr binary
+        PathString libPath = GetInternalSystemDirectory();
+        libPath.Append(libFileName);
+
+        LOG((LF_GC, LL_INFO100, "Loading standalone GC by coreclr %s\n", libPath.GetUTF8()));
+
+        LPCWSTR libraryName = libPath.GetUnicode();
+        result = CLRLoadLibrary(libraryName);
+    }
+
+    return result;
 }
 #endif // FEATURE_STANDALONE_GC
 
@@ -181,7 +220,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
 //
 // See Documentation/design-docs/standalone-gc-loading.md for details
 // on the loading protocol in use here.
-HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
+HRESULT LoadAndInitializeGC(LPCWSTR standaloneGCName, LPCWSTR standaloneGCPath)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -189,11 +228,17 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     LOG((LF_GC, LL_FATALERROR, "EE not built with the ability to load standalone GCs"));
     return E_FAIL;
 #else
-    HMODULE hMod = LoadStandaloneGc(standaloneGcLocation);
+    HMODULE hMod = LoadStandaloneGc(standaloneGCName, standaloneGCPath);
     if (!hMod)
     {
         HRESULT err = GetLastError();
-        LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
+#ifdef LOGGING
+        LPCWSTR standaloneGCNameLogging = standaloneGCName ? standaloneGCName : W("");
+        LPCWSTR standaloneGCPathLogging = standaloneGCPath ? standaloneGCPath : W("");
+        MAKE_UTF8PTR_FROMWIDE(standaloneGCNameUtf8, standaloneGCNameLogging);
+        MAKE_UTF8PTR_FROMWIDE(standaloneGCPathUtf8, standaloneGCPathLogging);
+        LOG((LF_GC, LL_FATALERROR, "Load of %s or %s failed\n", standaloneGCNameUtf8, standaloneGCPathUtf8));
+#endif // LOGGING
         return __HRESULT_FROM_WIN32(err);
     }
 
@@ -215,8 +260,8 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
-    g_gc_version_info.MajorVersion = GC_INTERFACE_MAJOR_VERSION;
-    g_gc_version_info.MinorVersion = GC_INTERFACE_MINOR_VERSION;
+    g_gc_version_info.MajorVersion = EE_INTERFACE_MAJOR_VERSION;
+    g_gc_version_info.MinorVersion = 0;
     g_gc_version_info.BuildVersion = 0;
     versionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;
@@ -340,14 +385,17 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     assert(g_gc_load_status == GC_LOAD_STATUS_BEFORE_START);
     g_gc_load_status = GC_LOAD_STATUS_START;
 
-    LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
-    if (!standaloneGcLocation)
+    LPCWSTR standaloneGCName = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
+    LPCWSTR standaloneGCPath = Configuration::GetKnobStringValue(W("System.GC.Path"), CLRConfig::EXTERNAL_GCPath);
+    g_gc_dac_vars.major_version_number = GC_INTERFACE_MAJOR_VERSION;
+    g_gc_dac_vars.minor_version_number = GC_INTERFACE_MINOR_VERSION;
+    if (!standaloneGCName && !standaloneGCPath)
     {
         return InitializeDefaultGC();
     }
     else
     {
-        return LoadAndInitializeGC(standaloneGcLocation);
+        return LoadAndInitializeGC(standaloneGCName, standaloneGCPath);
     }
 }
 

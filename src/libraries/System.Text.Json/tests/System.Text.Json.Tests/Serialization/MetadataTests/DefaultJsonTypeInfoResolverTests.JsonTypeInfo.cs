@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Tests;
@@ -220,6 +221,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData((JsonNumberHandling)(-1))]
+        [InlineData((JsonNumberHandling)8)]
+        [InlineData((JsonNumberHandling)int.MaxValue)]
+        public static void NumberHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonNumberHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            Assert.Throws<ArgumentOutOfRangeException>(() => jsonTypeInfo.NumberHandling = handling);
+        }
+
+        [Theory]
         [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
         [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
         [InlineData(typeof(object), JsonTypeInfoKind.None)]
@@ -408,9 +419,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateJsonPropertyInfo(typeof(string), "foo"));
+            Assert.Throws<InvalidOperationException>(() => typeInfo.UnmappedMemberHandling = typeInfo.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+            Assert.Throws<InvalidOperationException>(() => typeInfo.PreferredPropertyObjectCreationHandling = null);
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OriginatingResolver = new DefaultJsonTypeInfoResolver());
 
             if (typeInfo.Properties.Count > 0)
             {
@@ -431,7 +445,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Throws<InvalidOperationException>(() => jpo.DerivedTypes.Insert(0, default));
             }
 
-            foreach (var property in typeInfo.Properties)
+            foreach (JsonPropertyInfo property in typeInfo.Properties)
             {
                 Assert.NotNull(property.PropertyType);
                 Assert.Null(property.CustomConverter);
@@ -453,6 +467,14 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.NotNull(exception.InnerException);
                     Assert.IsType<InvalidOperationException>(exception.InnerException);
                 }
+
+                Assert.Throws<InvalidOperationException>(() => property.Name = null);
+                Assert.Throws<InvalidOperationException>(() => property.ShouldSerialize = null);
+                Assert.Throws<InvalidOperationException>(() => property.Get = null);
+                Assert.Throws<InvalidOperationException>(() => property.Set = null);
+                Assert.Throws<InvalidOperationException>(() => property.ObjectCreationHandling = null);
+                Assert.Throws<InvalidOperationException>(() => property.IsExtensionData = true);
+                Assert.Throws<InvalidOperationException>(() => property.IsRequired = true);
             }
         }
 
@@ -1347,12 +1369,132 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(7, value.IsOnDeserializedInvocations);
         }
 
+        [Fact]
+        public static void CollectionWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(CollectionWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new CollectionWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void CollectionWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(CollectionWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((CollectionWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((CollectionWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new CollectionWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("[]", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<CollectionWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void DictionaryWithCallBacks_JsonTypeInfoCallbackDelegatesArePopulated()
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var jti = resolver.GetTypeInfo(typeof(DictionaryWithCallBacks), new());
+
+            Assert.NotNull(jti.OnSerializing);
+            Assert.NotNull(jti.OnSerialized);
+            Assert.NotNull(jti.OnDeserializing);
+            Assert.NotNull(jti.OnDeserialized);
+
+            var value = new DictionaryWithCallBacks();
+            jti.OnSerializing(value);
+            Assert.Equal(1, value.IsOnSerializingInvocations);
+
+            jti.OnSerialized(value);
+            Assert.Equal(1, value.IsOnSerializedInvocations);
+
+            jti.OnDeserializing(value);
+            Assert.Equal(1, value.IsOnDeserializingInvocations);
+
+            jti.OnDeserialized(value);
+            Assert.Equal(1, value.IsOnDeserializedInvocations);
+        }
+
+        [Fact]
+        public static void DictionaryWithCallBacks_CanCustomizeCallbacks()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(DictionaryWithCallBacks))
+                            {
+                                jti.OnSerializing = null;
+                                jti.OnSerialized = (obj => ((DictionaryWithCallBacks)obj).IsOnSerializedInvocations += 10);
+
+                                jti.OnDeserializing = null;
+                                jti.OnDeserialized = (obj => ((DictionaryWithCallBacks)obj).IsOnDeserializedInvocations += 7);
+                            }
+                        }
+                    }
+                }
+            };
+
+            var value = new DictionaryWithCallBacks();
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal("{}", json);
+
+            Assert.Equal(0, value.IsOnSerializingInvocations);
+            Assert.Equal(10, value.IsOnSerializedInvocations);
+
+            value = JsonSerializer.Deserialize<DictionaryWithCallBacks>(json, options);
+            Assert.Equal(0, value.IsOnDeserializingInvocations);
+            Assert.Equal(7, value.IsOnDeserializedInvocations);
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(string))]
         [InlineData(typeof(object))]
-        [InlineData(typeof(List<int>))]
-        [InlineData(typeof(Dictionary<string, int>))]
         public static void SettingCallbacksOnUnsupportedTypes_ThrowsInvalidOperationException(Type type)
         {
             var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
@@ -1366,6 +1508,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
             Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = null);
             Assert.Throws<InvalidOperationException>(() => jti.OnDeserialized = (obj => { }));
+        }
+
+        [Theory]
+        [InlineData(typeof(ImmutableArray<string>))]
+        [InlineData(typeof(ImmutableList<string>))]
+        [InlineData(typeof(IImmutableList<string>))]
+        [InlineData(typeof(ImmutableStack<string>))]
+        [InlineData(typeof(IImmutableStack<string>))]
+        [InlineData(typeof(ImmutableQueue<string>))]
+        [InlineData(typeof(IImmutableQueue<string>))]
+        [InlineData(typeof(ImmutableSortedSet<string>))]
+        [InlineData(typeof(ImmutableHashSet<string>))]
+        [InlineData(typeof(IImmutableSet<string>))]
+        [InlineData(typeof(ImmutableDictionary<string, string>))]
+        [InlineData(typeof(ImmutableSortedDictionary<string, string>))]
+        [InlineData(typeof(IImmutableDictionary<string, string>))]
+        [InlineData(typeof(string[]))]
+        [InlineData(typeof(Memory<string>))]
+        [InlineData(typeof(ReadOnlyMemory<string>))]
+        public static void SettingOnDeserializingCallbackOnImmutableTypes_ThrowsInvalidOperationException(Type type)
+        {
+            var jti = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            Assert.NotEqual(JsonTypeInfoKind.Object, jti.Kind);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = null);
+            Assert.Throws<InvalidOperationException>(() => jti.OnDeserializing = (obj => { }));
         }
 
         public class ClassWithCallBacks :
@@ -1385,6 +1553,193 @@ namespace System.Text.Json.Serialization.Tests
             public void OnSerialized() => IsOnSerializedInvocations++;
             public void OnDeserializing() => IsOnDeserializingInvocations++;
             public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        public class CollectionWithCallBacks : List<int>,
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        public class DictionaryWithCallBacks : Dictionary<string, int>,
+            IJsonOnSerializing, IJsonOnSerialized,
+            IJsonOnDeserializing, IJsonOnDeserialized
+        {
+            [JsonIgnore]
+            public int IsOnSerializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnSerializedInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializingInvocations { get; set; }
+            [JsonIgnore]
+            public int IsOnDeserializedInvocations { get; set; }
+
+            public void OnSerializing() => IsOnSerializingInvocations++;
+            public void OnSerialized() => IsOnSerializedInvocations++;
+            public void OnDeserializing() => IsOnDeserializingInvocations++;
+            public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(JsonUnmappedMemberHandling.Skip)]
+        [InlineData(JsonUnmappedMemberHandling.Disallow)]
+        public static void UnmappedMemberHandling_ShouldGetSetValue(JsonUnmappedMemberHandling? handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), JsonSerializerOptions.Default);
+            jsonTypeInfo.UnmappedMemberHandling = handling;
+            Assert.Equal(handling, jsonTypeInfo.UnmappedMemberHandling);
+            JsonSerializer.Serialize(new Poco(), jsonTypeInfo);
+            Assert.Equal(handling, jsonTypeInfo.UnmappedMemberHandling);
+        }
+
+        [Theory]
+        [InlineData((JsonUnmappedMemberHandling)(-1))]
+        [InlineData((JsonUnmappedMemberHandling)2)]
+        [InlineData((JsonUnmappedMemberHandling)int.MaxValue)]
+        public static void UnmappedMemberHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonUnmappedMemberHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            Assert.Throws<ArgumentOutOfRangeException>(() => jsonTypeInfo.UnmappedMemberHandling = handling);
+        }
+
+        [Theory]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(Dictionary<string, int>))]
+        public static void PreferredPropertyObjectCreationHandling_NonObjectKind_ThrowsInvalidOperationException(Type type)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+
+            // Invalid kinds default to null.
+            Assert.Null(jsonTypeInfo.PreferredPropertyObjectCreationHandling);
+
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = null);
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Populate);
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = JsonObjectCreationHandling.Replace);
+            Assert.Null(jsonTypeInfo.PreferredPropertyObjectCreationHandling);
+        }
+
+        [Theory]
+        [InlineData((JsonObjectCreationHandling)(-1))]
+        [InlineData((JsonObjectCreationHandling)2)]
+        [InlineData((JsonObjectCreationHandling)int.MaxValue)]
+        public static void PreferredPropertyObjectCreationHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonObjectCreationHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            Assert.Throws<ArgumentOutOfRangeException>(() => jsonTypeInfo.PreferredPropertyObjectCreationHandling = handling);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void UnmappedMemberHandling_InvalidMetadataKind_ThrowsInvalidOperationException(Type type)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void DefaultJsonTypeInfo_OriginatingResolver_GetterReturnsResolver(Type type)
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions();
+
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Same(resolver, typeInfo.OriginatingResolver);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void OriginatingResolver_GetterReturnsTheSetValue(Type type)
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions();
+
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            typeInfo.OriginatingResolver = null;
+            Assert.Null(typeInfo.OriginatingResolver);
+
+            typeInfo.OriginatingResolver = JsonSerializerOptions.Default.TypeInfoResolver;
+            Assert.Same(JsonSerializerOptions.Default.TypeInfoResolver, typeInfo.OriginatingResolver);
+        }
+
+        [Theory]
+        [InlineData(typeof(bool?))]
+        [InlineData(typeof(int?))]
+        [InlineData(typeof(Guid?))]
+        [InlineData(typeof(BigInteger?))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(Poco))]
+        public static void JsonPropertyInfo_IsNullable_PropertyTypeSupportsNull_SupportsAllConfigurations(Type propertyType)
+        {
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new()); // The declaring type shouldn't matter.
+            JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(propertyType, "SomePropertyName");
+
+            Assert.True(propertyInfo.IsGetNullable);
+            Assert.True(propertyInfo.IsSetNullable);
+
+            propertyInfo.IsGetNullable = false;
+            propertyInfo.IsSetNullable = false;
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            propertyInfo.IsGetNullable = true;
+            propertyInfo.IsSetNullable = true;
+
+            Assert.True(propertyInfo.IsGetNullable);
+            Assert.True(propertyInfo.IsSetNullable);
+        }
+
+        [Theory]
+        [InlineData(typeof(bool))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(Guid))]
+        [InlineData(typeof(BigInteger))]
+        public static void JsonPropertyInfo_IsNullable_PropertyTypeNotNull_CannotBeMadeNullable(Type propertyType)
+        {
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new()); // The declaring type shouldn't matter.
+            JsonPropertyInfo propertyInfo = typeInfo.CreateJsonPropertyInfo(propertyType, "SomePropertyName");
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsGetNullable = true);
+            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsSetNullable = true);
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
+
+            // Setting to false is a no-op.
+            propertyInfo.IsGetNullable = false;
+            propertyInfo.IsSetNullable = false;
+
+            Assert.False(propertyInfo.IsGetNullable);
+            Assert.False(propertyInfo.IsSetNullable);
         }
     }
 }

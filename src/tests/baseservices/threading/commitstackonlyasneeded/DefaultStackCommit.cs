@@ -6,12 +6,14 @@ using System.Linq;
 using System.Text;
 // using System.Configuration;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace StackCommitTest
 {
-    class DefaultStackCommit
+    public class DefaultStackCommit
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int result = 1;
             bool commitEnabled = false;

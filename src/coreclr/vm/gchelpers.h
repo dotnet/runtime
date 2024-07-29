@@ -23,6 +23,12 @@
 OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 OBJECTREF AllocateSzArray(TypeHandle  arrayType, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 
+// Allocate single-dimensional array on a frozen segment
+// Returns nullptr if it's not possible.
+OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
+// Same for non-array objects
+OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT);
+
 // The main Array allocation routine, can do multi-dimensional
 OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
@@ -47,10 +53,24 @@ OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 // for NULL return value from them.
 
 OBJECTREF AllocateObject(MethodTable *pMT
+                         , GC_ALLOC_FLAGS flags
 #ifdef FEATURE_COMINTEROP
                          , bool fHandleCom = true
 #endif
     );
+
+inline OBJECTREF AllocateObject(MethodTable *pMT
+#ifdef FEATURE_COMINTEROP
+                                , bool fHandleCom = true
+#endif
+    )
+{
+    return AllocateObject(pMT, GC_ALLOC_NO_FLAGS
+#ifdef FEATURE_COMINTEROP
+                          , fHandleCom
+#endif
+        );
+}
 
 extern int StompWriteBarrierEphemeral(bool isRuntimeSuspended);
 extern int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
@@ -67,5 +87,7 @@ extern void ThrowOutOfMemoryDimensionsExceeded();
 //========================================================================
 
 void ErectWriteBarrier(OBJECTREF* dst, OBJECTREF ref);
-void SetCardsAfterBulkCopy(Object **start, size_t len);
+
+void PublishFrozenObject(Object*& orObject);
+
 #endif // _GCHELPERS_H_

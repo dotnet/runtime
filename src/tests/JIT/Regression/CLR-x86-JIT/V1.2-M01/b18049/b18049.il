@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly 'b18049' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -15,8 +16,12 @@
 .field public static int32 a at D_a
 .field public static int32 b at D_b
 
+.class public auto ansi Test_b18049 extends [mscorlib] System.Object {
 .method static public int32 main() cil managed
 { .entrypoint
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .maxstack  3
   .locals (int32* V_0)
  
@@ -41,4 +46,5 @@ Label_Exit:
   call void [System.Console]System.Console::WriteLine(class System.String)
   ldc.i4 100
   ret
+}
 }

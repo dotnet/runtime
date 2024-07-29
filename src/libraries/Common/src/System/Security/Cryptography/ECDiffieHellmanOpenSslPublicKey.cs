@@ -80,34 +80,13 @@ namespace System.Security.Cryptography
         internal SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             SafeEcKeyHandle currentKey = GetKey();
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return Interop.Crypto.CreateEvpPkeyFromEcKey(currentKey);
         }
 
         [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key is null)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanOpenSslPublicKey));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEcKeyHandle GetKey()

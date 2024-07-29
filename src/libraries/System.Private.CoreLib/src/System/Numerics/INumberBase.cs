@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Unicode;
 
 namespace System.Numerics
 {
@@ -23,7 +26,9 @@ namespace System.Numerics
           ISpanParsable<TSelf>,
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>
+          IUnaryNegationOperators<TSelf, TSelf>,
+          IUtf8SpanFormattable,
+          IUtf8SpanParsable<TSelf>
         where TSelf : INumberBase<TSelf>?
     {
         /// <summary>Gets the value <c>1</c> for the type.</summary>
@@ -166,10 +171,13 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
         static abstract bool IsNaN(TSelf value);
 
-        /// <summary>Determines if a value is negative.</summary>
+        /// <summary>Determines if a value represents a negative real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> represents negative zero or a negative real number; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>If this type has signed zero, then <c>-0</c> is also considered negative.</para>
+        ///     <para>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</para>
+        /// </remarks>
         static abstract bool IsNegative(TSelf value);
 
         /// <summary>Determines if a value is negative infinity.</summary>
@@ -187,14 +195,17 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is an odd integer; otherwise, <c>false</c>.</returns>
         /// <remarks>
         ///     <para>This correctly handles floating-point values and so <c>3.0</c> will return <c>true</c> while <c>3.3</c> will return <c>false</c>.</para>
-        ///     <para>This functioning returning <c>false</c> does not imply that <see cref="IsOddInteger(TSelf)" /> will return <c>true</c>. A number with a fractional portion, <c>3.3</c>, is neither even nor odd.</para>
+        ///     <para>This functioning returning <c>false</c> does not imply that <see cref="IsEvenInteger(TSelf)" /> will return <c>true</c>. A number with a fractional portion, <c>3.3</c>, is neither even nor odd.</para>
         /// </remarks>
         static abstract bool IsOddInteger(TSelf value);
 
-        /// <summary>Determines if a value is positive.</summary>
+        /// <summary>Determines if a value represents zero or a positive real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> represents (positive) zero or a positive real number; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>If this type has signed zero, then <c>-0</c> is not considered positive, but <c>+0</c> is.</para>
+        ///     <para>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</para>
+        /// </remarks>
         static abstract bool IsPositive(TSelf value);
 
         /// <summary>Determines if a value is positive infinity.</summary>
@@ -219,33 +230,44 @@ namespace System.Numerics
         /// <remarks>This function treats both positive and negative zero as zero and so will return <c>true</c> for <c>+0.0</c> and <c>-0.0</c>.</remarks>
         static abstract bool IsZero(TSelf value);
 
-        /// <summary>Compares two values to compute which is greater.</summary>
+        /// <summary>Compares two values to compute which has the greater magnitude.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
 
         /// <summary>Compares two values to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <returns><paramref name="x" /> if it has a greater magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>maximumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
 
-        /// <summary>Compares two values to compute which is lesser.</summary>
+        /// <summary>Compares two values to compute which has the lesser magnitude.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
         /// <summary>Compares two values to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
-        /// <returns><paramref name="x" /> if it is less than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        /// <returns><paramref name="x" /> if it has a lesser magnitude than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
         /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
+
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The value to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The value to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The value to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        static virtual TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend) => (left * right) + addend;
 
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
@@ -267,6 +289,61 @@ namespace System.Numerics
         /// <exception cref="FormatException"><paramref name="s" /> is not in the correct format.</exception>
         /// <exception cref="OverflowException"><paramref name="s" /> is not representable by <typeparamref name="TSelf" />.</exception>
         static abstract TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider);
+
+        /// <summary>Parses a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <returns>The result of parsing <paramref name="utf8Text" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format.</exception>
+        /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <typeparamref name="TSelf" />.</exception>
+        static virtual TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
+        {
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount <= 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[256];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray;
+            }
+
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (utf8TextStatus != OperationStatus.Done)
+            {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            TSelf result = TSelf.Parse(utf16Text, style, provider);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return result;
+        }
 
         /// <summary>Tries to convert a value to an instance of the current type, throwing an overflow exception for any values that fall outside the representable range of the current type.</summary>
         /// <typeparam name="TOther">The type of <paramref name="value" />.</typeparam>
@@ -347,5 +424,209 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
+
+        /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
+        {
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount <= 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[256];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray;
+            }
+
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (utf8TextStatus != OperationStatus.Done)
+            {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
+                result = default;
+                return false;
+            }
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            bool succeeded = TSelf.TryParse(utf16Text, style, provider, out result);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return succeeded;
+        }
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            char[]? utf16DestinationArray;
+            scoped Span<char> utf16Destination;
+            int destinationMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Destination.Length);
+
+            if (destinationMaxCharCount <= 256)
+            {
+                utf16DestinationArray = null;
+                utf16Destination = stackalloc char[256];
+            }
+            else
+            {
+                utf16DestinationArray = ArrayPool<char>.Shared.Rent(destinationMaxCharCount);
+                utf16Destination = utf16DestinationArray;
+            }
+
+            if (!TryFormat(utf16Destination, out int charsWritten, format, provider))
+            {
+                if (utf16DestinationArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16DestinationArray);
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+
+            // Make sure we slice the buffer to just the characters written
+            utf16Destination = utf16Destination.Slice(0, charsWritten);
+
+            OperationStatus utf8DestinationStatus = Utf8.FromUtf16(utf16Destination, utf8Destination, out _, out bytesWritten, replaceInvalidSequences: false);
+
+            if (utf16DestinationArray != null)
+            {
+                // Return rented buffers if necessary
+                ArrayPool<char>.Shared.Return(utf16DestinationArray);
+            }
+
+            if (utf8DestinationStatus == OperationStatus.Done)
+            {
+                return true;
+            }
+
+            if (utf8DestinationStatus != OperationStatus.DestinationTooSmall)
+            {
+                ThrowHelper.ThrowInvalidOperationException_InvalidUtf8();
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        {
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount <= 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[256];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray;
+            }
+
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (utf8TextStatus != OperationStatus.Done)
+            {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            TSelf result = TSelf.Parse(utf16Text, provider);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return result;
+        }
+
+        static bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
+        {
+            // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
+
+            char[]? utf16TextArray;
+            scoped Span<char> utf16Text;
+            int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
+
+            if (textMaxCharCount <= 256)
+            {
+                utf16TextArray = null;
+                utf16Text = stackalloc char[256];
+            }
+            else
+            {
+                utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
+                utf16Text = utf16TextArray;
+            }
+
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (utf8TextStatus != OperationStatus.Done)
+            {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
+                result = default;
+                return false;
+            }
+            utf16Text = utf16Text.Slice(0, utf16TextLength);
+
+            // Actual operation
+
+            bool succeeded = TSelf.TryParse(utf16Text, provider, out result);
+
+            // Return rented buffers if necessary
+
+            if (utf16TextArray != null)
+            {
+                ArrayPool<char>.Shared.Return(utf16TextArray);
+            }
+
+            return succeeded;
+        }
     }
 }

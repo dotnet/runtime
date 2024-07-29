@@ -142,9 +142,49 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
+        public static AndConstraint<CommandResultAssertions> ErrorWithMissingAssembly(this CommandResultAssertions assertion, string depsFileName, string dependencyName, string dependencyVersion)
+        {
+            return assertion.HaveStdErrContaining(
+                $"Error:{Environment.NewLine}" +
+                $"  An assembly specified in the application dependencies manifest ({depsFileName}) was not found:" + Environment.NewLine +
+                $"    package: \'{dependencyName}\', version: \'{dependencyVersion}\'" + Environment.NewLine +
+                $"    path: \'{dependencyName}.dll\'");
+        }
+
         public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalDeps(this CommandResultAssertions assertion, string depsFilePath)
         {
             return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalProbingPath(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.HaveStdErrContaining($"Additional probe dir: {path}")
+                .And.HaveStdErrContaining($"probe type=lookup dir=[{path}]");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveReadRidGraph(this CommandResultAssertions assertion, bool readRidGraph)
+        {
+            string ridGraphMsg = "RID fallback graph =";
+            string hostRidsMsg = "Host RID list =";
+            return readRidGraph
+                ? assertion.HaveStdErrContaining(ridGraphMsg).And.NotHaveStdErrContaining(hostRidsMsg)
+                : assertion.HaveStdErrContaining(hostRidsMsg).And.NotHaveStdErrContaining(ridGraphMsg);
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
+        {
+            string msg = "Falling back to base HostRID";
+            return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
+        {
+            return assertion.HaveStdErrContaining($"probe type=framework dir=[{path}] fx_level={level}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.NotHaveStdErrContaining($"probe type=framework dir=[{path}]");
         }
 
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
@@ -178,7 +218,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             List<string> paths = new List<string>();
-            foreach (string relativePath in relativePaths.Split(';'))
+            foreach (string relativePath in relativePaths.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
                 string path = relativePath.Replace('/', Path.DirectorySeparatorChar);
                 if (app != null)

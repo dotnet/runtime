@@ -153,9 +153,14 @@ void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle,
 void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackFrameIterator * pIter,
                                                      DT_CONTEXT *         pContext)
 {
-    // convert the current REGDISPLAY to a CONTEXT
+    // convert the current REGDISPLAY to a DT_CONTEXT
     CrawlFrame * pCF = &(pIter->m_crawl);
-    UpdateContextFromRegDisp(pCF->GetRegisterSet(), reinterpret_cast<T_CONTEXT *>(pContext));
+    T_CONTEXT tmpContext = { };
+    UpdateContextFromRegDisp(pCF->GetRegisterSet(), &tmpContext);
+    CopyMemory(pContext, &tmpContext, sizeof(*pContext));
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    pContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+#endif
 }
 
 
@@ -180,7 +185,7 @@ void DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread           vmTh
     // Allocate a context in DDImpl's memory space. DDImpl can't contain raw pointers back into
     // the client space since that may not marshal.
     T_CONTEXT * pContext2 = GetContextBufferFromHandle(pSFIHandle);
-    *pContext2  = *reinterpret_cast<T_CONTEXT *>(pContext); // memcpy
+    CopyMemory(pContext2, pContext, sizeof(*pContext));
 
     // update the REGDISPLAY with the given CONTEXT.
     // Be sure that the context is in DDImpl's memory space and not the Right-sides.
@@ -256,6 +261,21 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 // Just continue onto the next managed stack frame.
                 continue;
             }
+#ifdef FEATURE_EH_FUNCLETS
+            else if (g_isNewExceptionHandlingEnabled && pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            {
+                // Skip the new exception handling managed code, the debugger clients are not supposed to see them
+                MethodDesc *pMD = pIter->m_crawl.GetFunction();
+
+                // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                {
+                    continue;
+                }
+
+                fIsAtEndOfStack = FALSE;
+            }
+#endif // FEATURE_EH_FUNCLETS
             else
             {
                 fIsAtEndOfStack = FALSE;
@@ -354,8 +374,21 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                 break;
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
-                ftResult = kManagedStackFrame;
-                fInitFrameData = TRUE;
+                {
+#ifdef FEATURE_EH_FUNCLETS
+                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                    {
+                        ftResult = kManagedExceptionHandlingCodeFrame;
+                    }
+                    else
+#endif // FEATURE_EH_FUNCLETS
+                    {
+                        ftResult = kManagedStackFrame;
+                        fInitFrameData = TRUE;
+                    }
+                }
                 break;
 
             case StackFrameIterator::SFITER_FRAME_FUNCTION:
@@ -428,6 +461,20 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     ULONG32 uCount = 0;
     while (pFrame != FRAME_TOP)
     {
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            // Skip new exception handling helpers
+            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
+            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            TADDR datum = dac_cast<TADDR>(pMD);
+            if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
+        }
+#endif // FEATURE_EH_FUNCLETS
         CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
         if (ift != STUBFRAME_NONE)
         {
@@ -458,7 +505,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     Thread *    pThread    = vmThread.GetDacPtr();
     Frame *     pFrame     = pThread->GetFrame();
-    AppDomain * pAppDomain = pThread->GetDomain(INDEBUG(TRUE));
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     // This used to be only true for Enter-Managed chains.
     // Since we don't have chains anymore, this can always be false.
@@ -467,6 +514,20 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     while (pFrame != FRAME_TOP)
     {
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            // Skip new exception handling helpers
+            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
+            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            TADDR datum = dac_cast<TADDR>(pMD);
+            if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
+        }
+#endif // FEATURE_EH_FUNCLETS
         // check if the internal frame is interesting
         frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
         if (frameData.stubFrame.frameType != STUBFRAME_NONE)
@@ -528,7 +589,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
             }
             else
             {
-                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? NULL : pMD->GetMemberDef());
+                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? mdTokenNil : pMD->GetMemberDef());
                 frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
                 frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
             }
@@ -657,8 +718,12 @@ void DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * 
 
     // This is a bit cumbersome.  First we need to convert the CONTEXT into a REGDISPLAY.  Then we need
     // to convert the REGDISPLAY to a DebuggerREGDISPLAY.
+    T_CONTEXT tmpContext = { };
+    CopyMemory(&tmpContext, pInContext, sizeof(*pInContext));
+
     REGDISPLAY rd;
-    FillRegDisplay(&rd, reinterpret_cast<T_CONTEXT *>(const_cast<DT_CONTEXT *>(pInContext)));
+    FillRegDisplay(&rd, &tmpContext);
+
     SetDebuggerREGDISPLAYFromREGDISPLAY(pOutDRD, &rd);
 }
 
@@ -767,7 +832,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
         else
         {
-            pFrameData->v.exactGenericArgsToken = NULL;
+            pFrameData->v.exactGenericArgsToken = (GENERICS_TYPE_TOKEN)NULL;
             pFrameData->v.dwExactGenericArgsTokenIndex = (DWORD)ICorDebugInfo::MAX_ILNUM;
         }
 
@@ -904,7 +969,7 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     if (pCF->IsFunclet())
     {
         DWORD dwParentOffset;
-        StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset, NULL);
+        StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset);
 
         //
         // For funclets, fpParentOrSelf is the FramePointer of the parent.
@@ -1184,7 +1249,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
 
 PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
 {
-    CORDB_ADDRESS ContextPointerAddr = NULL;
+    CORDB_ADDRESS ContextPointerAddr = (CORDB_ADDRESS)NULL;
 
     TADDR controlPC = PCODEToPINSTR(GetControlPC(pRD));
 

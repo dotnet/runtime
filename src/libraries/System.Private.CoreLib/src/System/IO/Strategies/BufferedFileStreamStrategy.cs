@@ -65,15 +65,7 @@ namespace System.IO.Strategies
             }
             set
             {
-                if (_writePos > 0)
-                {
-                    FlushWrite();
-                }
-
-                _readPos = 0;
-                _readLen = 0;
-
-                _strategy.Position = value;
+                Seek(value, SeekOrigin.Begin);
             }
         }
 
@@ -326,6 +318,8 @@ namespace System.IO.Strategies
                 {
                     if (_readLen == _readPos && buffer.Length >= _bufferSize)
                     {
+                        // invalidate the buffered data, otherwise certain Seek operation followed by a ReadAsync could try to re-use data from _buffer
+                        _readPos = _readLen = 0;
                         // hot path #1: the read buffer is empty and buffering would not be beneficial
                         // To find out why we are bypassing cache here, please see WriteAsync comments.
                         return _strategy.ReadAsync(buffer, cancellationToken);
@@ -462,10 +456,10 @@ namespace System.IO.Strategies
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult)
-            => TaskToApm.End<int>(asyncResult);
+            => TaskToAsyncResult.End<int>(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -745,10 +739,10 @@ namespace System.IO.Strategies
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult)
-            => TaskToApm.End(asyncResult);
+            => TaskToAsyncResult.End(asyncResult);
 
         public override void SetLength(long value)
         {
@@ -904,9 +898,6 @@ namespace System.IO.Strategies
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            EnsureNotClosed();
-            EnsureCanSeek();
-
             // If we have bytes in the write buffer, flush them out, seek and be done.
             if (_writePos > 0)
             {

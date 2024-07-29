@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -49,10 +51,6 @@ namespace System.Globalization
 
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
-        // cache for the invariant culture.
-        // invariantInfo is constant irrespective of your current culture.
-        private static volatile DateTimeFormatInfo? s_invariantInfo;
-
         // an index which points to a record in Culture Data Table.
         private readonly CultureData _cultureData;
 
@@ -80,6 +78,11 @@ namespace System.Globalization
         private string? timeSeparator;            // derived from long time (whidbey expects, arrowhead doesn't)
         private string? monthDayPattern;
         private string? dateTimeOffsetPattern;
+
+        private byte[]? amDesignatorUtf8;
+        private byte[]? pmDesignatorUtf8;
+        private byte[]? timeSeparatorUtf8;
+        private byte[]? dateSeparatorUtf8;
 
         private const string rfc1123Pattern = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
 
@@ -285,20 +288,7 @@ namespace System.Globalization
         /// Returns a default DateTimeFormatInfo that will be universally
         /// supported and constant irrespective of the current culture.
         /// </summary>
-        public static DateTimeFormatInfo InvariantInfo
-        {
-            get
-            {
-                if (s_invariantInfo == null)
-                {
-                    DateTimeFormatInfo info = new DateTimeFormatInfo();
-                    info.Calendar.SetReadOnlyState(true);
-                    info._isReadOnly = true;
-                    s_invariantInfo = info;
-                }
-                return s_invariantInfo;
-            }
-        }
+        public static DateTimeFormatInfo InvariantInfo => DateTimeFormat.InvariantFormatInfo;
 
         /// <summary>
         /// Returns the current culture's DateTimeFormatInfo.
@@ -307,7 +297,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     DateTimeFormatInfo? info = culture._dateTimeInfo;
@@ -360,7 +350,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 amDesignator = value;
+                amDesignatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> AMDesignatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(AMDesignator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(amDesignatorUtf8 ??= Encoding.UTF8.GetBytes(AMDesignator));
         }
 
         public Calendar Calendar
@@ -525,14 +524,15 @@ namespace System.Globalization
             }
 
             // The following is based on the assumption that the era value is starting from 1, and has a
-            // serial values.
-            // If that ever changes, the code has to be changed.
-            if ((--era) < EraNames.Length && (era >= 0))
+            // serial values. If that ever changes, the code has to be changed.
+            string[] names = EraNames;
+            era--;
+            if ((uint)era >= names.Length)
             {
-                return m_eraNames![era];
+                throw new ArgumentOutOfRangeException(nameof(era), era + 1, SR.ArgumentOutOfRange_InvalidEraValue);
             }
 
-            throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
+            return names[era];
         }
 
         internal string[] AbbreviatedEraNames => m_abbrevEraNames ??= _cultureData.AbbrevEraNames(Calendar.ID);
@@ -554,12 +554,14 @@ namespace System.Globalization
                 era = Calendar.CurrentEraValue;
             }
 
-            if ((--era) < m_abbrevEraNames!.Length && (era >= 0))
+            string[] names = m_abbrevEraNames!;
+            era--;
+            if ((uint)era >= (uint)names.Length)
             {
-                return m_abbrevEraNames[era];
+                throw new ArgumentOutOfRangeException(nameof(era), era + 1, SR.ArgumentOutOfRange_InvalidEraValue);
             }
 
-            throw new ArgumentOutOfRangeException(nameof(era), era, SR.ArgumentOutOfRange_InvalidEraValue);
+            return names[era];
         }
 
         internal string[] AbbreviatedEnglishEraNames
@@ -597,7 +599,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 dateSeparator = value;
+                dateSeparatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> DateSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(DateSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(dateSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DateSeparator));
         }
 
         public DayOfWeek FirstDayOfWeek
@@ -791,7 +802,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 pmDesignator = value;
+                pmDesignatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> PMDesignatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(PMDesignator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(pmDesignatorUtf8 ??= Encoding.UTF8.GetBytes(PMDesignator));
         }
 
         public string RFC1123Pattern => rfc1123Pattern;
@@ -805,10 +825,7 @@ namespace System.Globalization
         /// </summary>
         public string ShortDatePattern
         {
-            get
-            {
-                return shortDatePattern ??= UnclonedShortDatePatterns[0]; // initialize from the 1st array value if not set
-            }
+            get => shortDatePattern ??= UnclonedShortDatePatterns[0]; // initialize from the 1st array value if not set
             set
             {
                 if (IsReadOnly)
@@ -880,7 +897,7 @@ namespace System.Globalization
         internal string GeneralShortTimePattern => generalShortTimePattern ??= ShortDatePattern + " " + ShortTimePattern;
 
         /// <summary>
-        /// Return the pattern for 'g' general format: shortDate + Long time.
+        /// Return the pattern for 'G' general format: shortDate + Long time.
         /// We put this internal property here so that we can avoid doing the
         /// concatation every time somebody asks for the general format.
         /// </summary>
@@ -901,9 +918,10 @@ namespace System.Globalization
                     bool foundZ = false;
                     bool inQuote = false;
                     char quote = '\'';
-                    for (int i = 0; !foundZ && i < LongTimePattern.Length; i++)
+                    string longTimePattern = LongTimePattern;
+                    for (int i = 0; !foundZ && i < longTimePattern.Length; i++)
                     {
-                        switch (LongTimePattern[i])
+                        switch (longTimePattern[i])
                         {
                             case 'z':
                                 /* if we aren't in a quote, we've found a z */
@@ -912,14 +930,14 @@ namespace System.Globalization
                                 break;
                             case '\'':
                             case '\"':
-                                if (inQuote && (quote == LongTimePattern[i]))
+                                if (inQuote && (quote == longTimePattern[i]))
                                 {
                                     /* we were in a quote and found a matching exit quote, so we are outside a quote now */
                                     inQuote = false;
                                 }
                                 else if (!inQuote)
                                 {
-                                    quote = LongTimePattern[i];
+                                    quote = longTimePattern[i];
                                     inQuote = true;
                                 }
                                 else
@@ -937,8 +955,8 @@ namespace System.Globalization
                     }
 
                     dateTimeOffsetPattern = foundZ ?
-                        ShortDatePattern + " " + LongTimePattern :
-                        ShortDatePattern + " " + LongTimePattern + " zzz";
+                        ShortDatePattern + " " + longTimePattern :
+                        ShortDatePattern + " " + longTimePattern + " zzz";
                 }
                 return dateTimeOffsetPattern;
             }
@@ -966,7 +984,16 @@ namespace System.Globalization
 
                 ClearTokenHashTable();
                 timeSeparator = value;
+                timeSeparatorUtf8 = null;
             }
+        }
+
+        internal ReadOnlySpan<TChar> TimeSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(TimeSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(timeSeparatorUtf8 ??= Encoding.UTF8.GetBytes(TimeSeparator));
         }
 
         public string UniversalSortableDateTimePattern => universalSortableDateTimePattern;
@@ -1146,22 +1173,20 @@ namespace System.Globalization
 
             // The month range is from 1 ~ m_monthNames.Length
             // (actually is 13 right now for all cases)
-            if ((month < 1) || (month > monthNamesArray.Length))
+            month--;
+            if ((uint)month >= (uint)monthNamesArray.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, monthNamesArray.Length));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(month), month + 1, 1, monthNamesArray.Length);
             }
 
-            return monthNamesArray[month - 1];
+            return monthNamesArray[month];
         }
 
         /// <summary>
         /// Retrieve the array which contains the month names in genitive form.
         /// If this culture does not use the genitive form, the normal month name is returned.
         /// </summary>
-        private string[] InternalGetGenitiveMonthNames(bool abbreviated)
+        internal string[] InternalGetGenitiveMonthNames(bool abbreviated)
         {
             if (abbreviated)
             {
@@ -1205,17 +1230,14 @@ namespace System.Globalization
 
         public string GetAbbreviatedDayName(DayOfWeek dayofweek)
         {
-            if (dayofweek < DayOfWeek.Sunday || dayofweek > DayOfWeek.Saturday)
+            string[] names = InternalGetAbbreviatedDayOfWeekNames(); // Use the internal method to avoid a clone.
+            int dow = (int)dayofweek;
+            if ((uint)dow >= (uint)names.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(dayofweek),
-                    dayofweek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(dayofweek), dayofweek, DayOfWeek.Sunday, DayOfWeek.Saturday);
             }
 
-            // Don't call the public property AbbreviatedDayNames here since a clone is needed in that
-            // property, so it will be slower. Instead, use GetAbbreviatedDayOfWeekNames() directly.
-            return InternalGetAbbreviatedDayOfWeekNames()[(int)dayofweek];
+            return names[dow];
         }
 
         /// <summary>
@@ -1223,17 +1245,14 @@ namespace System.Globalization
         /// </summary>
         public string GetShortestDayName(DayOfWeek dayOfWeek)
         {
-            if (dayOfWeek < DayOfWeek.Sunday || dayOfWeek > DayOfWeek.Saturday)
+            string[] names = InternalGetSuperShortDayNames();
+            int dow = (int)dayOfWeek;
+            if ((uint)dow >= (uint)names.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(dayOfWeek),
-                    dayOfWeek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(dayOfWeek), dayOfWeek, DayOfWeek.Sunday, DayOfWeek.Saturday);
             }
 
-            // Don't call the public property SuperShortDayNames here since a clone is needed in that
-            // property, so it will be slower. Instead, use internalGetSuperShortDayNames() directly.
-            return InternalGetSuperShortDayNames()[(int)dayOfWeek];
+            return names[dow];
         }
 
         /// <summary>
@@ -1277,105 +1296,60 @@ namespace System.Globalization
             return results.ToArray();
         }
 
-        public string[] GetAllDateTimePatterns(char format)
-        {
-            string[] result;
-
-            switch (format)
+        public string[] GetAllDateTimePatterns(char format) =>
+            format switch
             {
-                case 'd':
-                    result = AllShortDatePatterns;
-                    break;
-                case 'D':
-                    result = AllLongDatePatterns;
-                    break;
-                case 'f':
-                    result = GetCombinedPatterns(AllLongDatePatterns, AllShortTimePatterns, " ");
-                    break;
-                case 'F':
-                case 'U':
-                    result = GetCombinedPatterns(AllLongDatePatterns, AllLongTimePatterns, " ");
-                    break;
-                case 'g':
-                    result = GetCombinedPatterns(AllShortDatePatterns, AllShortTimePatterns, " ");
-                    break;
-                case 'G':
-                    result = GetCombinedPatterns(AllShortDatePatterns, AllLongTimePatterns, " ");
-                    break;
-                case 'm':
-                case 'M':
-                    result = new string[] { MonthDayPattern };
-                    break;
-                case 'o':
-                case 'O':
-                    result = new string[] { RoundtripFormat };
-                    break;
-                case 'r':
-                case 'R':
-                    result = new string[] { rfc1123Pattern };
-                    break;
-                case 's':
-                    result = new string[] { sortableDateTimePattern };
-                    break;
-                case 't':
-                    result = AllShortTimePatterns;
-                    break;
-                case 'T':
-                    result = AllLongTimePatterns;
-                    break;
-                case 'u':
-                    result = new string[] { UniversalSortableDateTimePattern };
-                    break;
-                case 'y':
-                case 'Y':
-                    result = AllYearMonthPatterns;
-                    break;
-                default:
-                    throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
-            }
-            return result;
-        }
+                'd' => AllShortDatePatterns,
+                'D' => AllLongDatePatterns,
+                'f' => GetCombinedPatterns(AllLongDatePatterns, AllShortTimePatterns, " "),
+                'F' or 'U' => GetCombinedPatterns(AllLongDatePatterns, AllLongTimePatterns, " "),
+                'g' => GetCombinedPatterns(AllShortDatePatterns, AllShortTimePatterns, " "),
+                'G' => GetCombinedPatterns(AllShortDatePatterns, AllLongTimePatterns, " "),
+                'm' or 'M' => [MonthDayPattern],
+                'o' or 'O' => [RoundtripFormat],
+                'r' or 'R' => [rfc1123Pattern],
+                's' => [sortableDateTimePattern],
+                't' => AllShortTimePatterns,
+                'T' => AllLongTimePatterns,
+                'u' => [UniversalSortableDateTimePattern],
+                'y' or 'Y' => AllYearMonthPatterns,
+                _ => throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format)),
+            };
 
         public string GetDayName(DayOfWeek dayofweek)
         {
-            if ((int)dayofweek < 0 || (int)dayofweek > 6)
+            string[] names = InternalGetDayOfWeekNames(); // Use the internal method so we don't clone the array unnecessarily
+            int dow = (int)dayofweek;
+            if ((uint)dow >= (uint)names.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(dayofweek),
-                    dayofweek,
-                    SR.Format(SR.ArgumentOutOfRange_Range, DayOfWeek.Sunday, DayOfWeek.Saturday));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(dayofweek), dayofweek, DayOfWeek.Sunday, DayOfWeek.Saturday);
             }
 
-            // Use the internal one so that we don't clone the array unnecessarily
-            return InternalGetDayOfWeekNames()[(int)dayofweek];
+            return names[dow];
         }
 
         public string GetAbbreviatedMonthName(int month)
         {
-            if (month < 1 || month > 13)
+            string[] names = InternalGetAbbreviatedMonthNames(); // Use the internal method so we don't clone the array unnecessarily
+            month--;
+            if ((uint)month >= (uint)names.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 13));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(month), month + 1, 1, 13);
             }
 
-            // Use the internal one so we don't clone the array unnecessarily
-            return InternalGetAbbreviatedMonthNames()[month - 1];
+            return names[month];
         }
 
         public string GetMonthName(int month)
         {
-            if (month < 1 || month > 13)
+            string[] names = InternalGetMonthNames(); // Use the internal method so we don't clone the array unnecessarily
+            month--;
+            if ((uint)month >= (uint)names.Length)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(month),
-                    month,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 1, 13));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(month), month + 1, 1, 13);
             }
 
-            // Use the internal one so we don't clone the array unnecessarily
-            return InternalGetMonthNames()[month - 1];
+            return names[month];
         }
 
         /// <summary>
@@ -1713,6 +1687,15 @@ namespace System.Globalization
             _decimalSeparator ??=
             new NumberFormatInfo(_cultureData.UseUserOverride ? CultureData.GetCultureData(_cultureData.CultureName, false) : _cultureData).NumberDecimalSeparator;
 
+        private byte[]? _decimalSeparatorUtf8;
+        internal ReadOnlySpan<TChar> DecimalSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(DecimalSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_decimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DecimalSeparator));
+        }
+
         // Positive TimeSpan Pattern
         private string? _fullTimeSpanPositivePattern;
         internal string FullTimeSpanPositivePattern =>
@@ -1775,27 +1758,16 @@ namespace System.Globalization
             return formatFlags;
         }
 
-        internal bool HasForceTwoDigitYears
-        {
-            get
-            {
-                switch (calendar.ID)
-                {
-                    // Handle Japanese and Taiwan cases.
-                    // If is y/yy, do not get (year % 100). "y" will print
-                    // year without leading zero.  "yy" will print year with two-digit in leading zero.
-                    // If pattern is yyy/yyyy/..., print year value with two-digit in leading zero.
-                    // So year 5 is "05", and year 125 is "125".
-                    // The reason for not doing (year % 100) is for Taiwan calendar.
-                    // If year 125, then output 125 and not 25.
-                    // Note: OS uses "yyyy" for Taiwan calendar by default.
-                    case (CalendarId.JAPAN):
-                    case (CalendarId.TAIWAN):
-                        return true;
-                }
-                return false;
-            }
-        }
+        internal bool HasForceTwoDigitYears =>
+            // Handle Japanese and Taiwan cases.
+            // If is y/yy, do not get (year % 100). "y" will print
+            // year without leading zero.  "yy" will print year with two-digit in leading zero.
+            // If pattern is yyy/yyyy/..., print year value with two-digit in leading zero.
+            // So year 5 is "05", and year 125 is "125".
+            // The reason for not doing (year % 100) is for Taiwan calendar.
+            // If year 125, then output 125 and not 25.
+            // Note: OS uses "yyyy" for Taiwan calendar by default.
+            calendar.ID is CalendarId.JAPAN or CalendarId.TAIWAN;
 
         /// <summary>
         /// Returns whether the YearMonthAdjustment function has any fix-up work to do for this culture/calendar.
@@ -1892,8 +1864,8 @@ namespace System.Globalization
         internal const string JapaneseLangName = "ja";
         internal const string EnglishLangName = "en";
 
-        private static volatile DateTimeFormatInfo? s_jajpDTFI;
-        private static volatile DateTimeFormatInfo? s_zhtwDTFI;
+        private static DateTimeFormatInfo? s_jajpDTFI;
+        private static DateTimeFormatInfo? s_zhtwDTFI;
 
         /// <summary>
         /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse
@@ -2088,8 +2060,8 @@ namespace System.Globalization
 
                 if ((FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
-                    string [] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
-                    string [] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
+                    string[] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
+                    string[] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
 
                     for (int i = 1; i <= 13; i++)
                     {

@@ -6,14 +6,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Versioning;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Xslt;
-using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -312,7 +312,7 @@ namespace System.Xml.Xsl.Runtime
             objRet = extFunc.Invoke(instance, objActualArgs);
 
             // 2. Convert to IList<XPathItem>
-            if (objRet == null && extFunc.ClrReturnType == XsltConvert.VoidType)
+            if (objRet == null && extFunc.ClrReturnType == typeof(void))
                 return XmlQueryNodeSequence.Empty;
 
             return (IList<XPathItem>)_runtime.ChangeTypeXsltResult(XmlQueryTypeFactory.ItemS, objRet);

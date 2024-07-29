@@ -35,7 +35,7 @@ namespace System
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory(T[]? array)
         {
@@ -80,8 +80,8 @@ namespace System
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,7 +116,7 @@ namespace System
         /// </summary>
         /// <param name="manager">The memory manager.</param>
         /// <param name="length">The number of items in the memory.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is negative.
         /// </exception>
         /// <remarks>For internal infrastructure only</remarks>
@@ -140,7 +140,7 @@ namespace System
         /// <param name="manager">The memory manager.</param>
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or <paramref name="length"/> is negative.
         /// </exception>
         /// <remarks>For internal infrastructure only</remarks>
@@ -221,7 +221,7 @@ namespace System
         /// Forms a slice out of the given memory, beginning at 'start'.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -241,7 +241,7 @@ namespace System
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -357,7 +357,7 @@ namespace System
         /// a temporary location before the destination is overwritten.
         /// </summary>
         /// <param name="destination">The Memory to copy items into.</param>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// Thrown when the destination is shorter than the source.
         /// </exception>
         public void CopyTo(Memory<T> destination) => Span.CopyTo(destination.Span);
@@ -377,7 +377,7 @@ namespace System
         /// The GC will not move the memory until the returned <see cref="MemoryHandle"/>
         /// is disposed, enabling taking and using the memory's address.
         /// </summary>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// An instance with nonprimitive (non-blittable) members cannot be pinned.
         /// </exception>
         public unsafe MemoryHandle Pin()
@@ -398,6 +398,7 @@ namespace System
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
                 {
+                    // Unsafe.AsPointer is safe since the handle pins it
                     GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                     ref char stringData = ref Unsafe.Add(ref s.GetRawStringData(), _index);
                     return new MemoryHandle(Unsafe.AsPointer(ref stringData), handle);
@@ -410,11 +411,13 @@ namespace System
                     // Array is already pre-pinned
                     if (_index < 0)
                     {
+                        // Unsafe.AsPointer is safe since it's pinned
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index & ReadOnlyMemory<T>.RemoveFlagsBitMask);
                         return new MemoryHandle(pointer);
                     }
                     else
                     {
+                        // Unsafe.AsPointer is safe since the handle pins it
                         GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index);
                         return new MemoryHandle(pointer, handle);

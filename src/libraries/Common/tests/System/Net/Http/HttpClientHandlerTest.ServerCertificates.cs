@@ -116,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls()
         {
-            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.GetRemoteServers())
             {
                 if (remoteServer.IsSecure)
                 {
@@ -286,7 +286,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
             const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
@@ -310,7 +309,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Android rejects the certificate, the custom validation callback in .NET cannot override OS behavior in the current implementation")]
         public async Task UseCallback_SelfSignedCertificate_ExpectedPolicyErrors()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -384,7 +382,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void HttpClientUsesSslCertEnvironmentVariables()
+        public async Task HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
             // The HttpClient should fail to validate the server certificate.
@@ -397,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
+            await RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
                 var version = Version.Parse(useVersionString);
@@ -407,7 +405,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

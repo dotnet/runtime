@@ -5,7 +5,7 @@ namespace System.Security.Cryptography
 {
     public partial class DSA : AsymmetricAlgorithm
     {
-        private static DSA CreateCore()
+        private static DSAWrapper CreateCore()
         {
             return new DSAWrapper(new DSACng());
         }

@@ -1,23 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />
     <Compile Include="ChannelClosedExceptionTests.cs" />
     <Compile Include="ChannelTestBase.cs" />
     <Compile Include="ChannelTests.cs" />
+    <Compile Include="DebugAttributeTests.cs" />
+    <Compile Include="Stress.cs" />
     <Compile Include="TestBase.cs" />
     <Compile Include="UnboundedChannelTests.cs" />
-    <Compile Include="DebugAttributeTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs"
-             Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <Compile Include="Stress.cs" />
-    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" />
-    <Compile Include="ChannelTestBase.netcoreapp.cs" />
+    <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs"  />
+    <Compile Include="PriorityUnboundedChannelTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <ProjectReference Include="..\src\System.Threading.Channels.csproj" />

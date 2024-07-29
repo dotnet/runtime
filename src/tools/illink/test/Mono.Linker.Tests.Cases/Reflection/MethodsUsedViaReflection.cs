@@ -46,7 +46,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestUnknownBindingFlags (BindingFlags bindingFlags)
 		{
-			// Since the binding flags are not known linker should mark all methods on the type
+			// Since the binding flags are not known trimming tools should mark all methods on the type
 			var methods = typeof (TestUnknownBindingClass).GetMethods (bindingFlags);
 		}
 
@@ -337,8 +337,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2638
-			[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2638")]
 			public static void Test ()
 			{
 				BindingFlags left = BindingFlags.Instance | BindingFlags.Static;

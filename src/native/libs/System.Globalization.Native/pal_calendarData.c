@@ -9,7 +9,7 @@
 #include "pal_errors_internal.h"
 #include "pal_calendarData.h"
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_WASI)
 #include <strings.h>
 
 #define STRING_COPY(destination, numberOfElements, source) \
@@ -20,16 +20,6 @@
 #define strcasecmp _stricmp
 #define STRING_COPY(destination, numberOfElements, source) strncpy_s(destination, numberOfElements, source, _TRUNCATE);
 #endif
-
-#define GREGORIAN_NAME "gregorian"
-#define JAPANESE_NAME "japanese"
-#define BUDDHIST_NAME "buddhist"
-#define HEBREW_NAME "hebrew"
-#define DANGI_NAME "dangi"
-#define PERSIAN_NAME "persian"
-#define ISLAMIC_NAME "islamic"
-#define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
-#define ROC_NAME "roc"
 
 #define JAPANESE_LOCALE_AND_CALENDAR "ja_JP@calendar=japanese"
 

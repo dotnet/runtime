@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// Base class of all Metrics Instrument classes
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public abstract class Instrument
     {
         internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
@@ -30,19 +29,53 @@ namespace System.Diagnostics.Metrics
         internal readonly DiagLinkedList<ListenerSubscription> _subscriptions = new DiagLinkedList<ListenerSubscription>();
 
         /// <summary>
-        /// Protected constructor to initialize the common instrument properties like the meter, name, description, and unit.
-        /// All classes extending Instrument need to call this constructor when constructing object of the extended class.
+        /// Constructs a new instance of <see cref="Instrument"/>.
         /// </summary>
-        /// <param name="meter">The meter that created the instrument.</param>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
+        protected Instrument(Meter meter, string name)
+            : this(meter, name, unit: null, description: null, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Constructs a new instance of <see cref="Instrument"/>.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Instrument(Meter meter, string name, string? unit, string? description)
+            : this(meter, name, unit, description, tags: null)
+        {
+        }
+
+        /// <summary>
+        /// Constructs a new instance of <see cref="Instrument"/>.
+        /// </summary>
+        /// <param name="meter">The meter that created the instrument. Cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">Optional instrument tags.</param>
+        protected Instrument(
+            Meter meter,
+            string name,
+            string? unit = default,
+            string? description = default,
+            IEnumerable<KeyValuePair<string, object?>>? tags = default)
         {
             Meter = meter ?? throw new ArgumentNullException(nameof(meter));
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description;
             Unit = unit;
+            if (tags is not null)
+            {
+                var tagList = new List<KeyValuePair<string, object?>>(tags);
+                tagList.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+                Tags = tagList;
+            }
         }
 
         /// <summary>
@@ -50,6 +83,12 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected void Publish()
         {
+            // All instruments call Publish when they are created. We don't want to publish the instrument if the Meter is not supported.
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             List<MeterListener>? allListeners = null;
             lock (Instrument.SyncObject)
             {
@@ -89,6 +128,11 @@ namespace System.Diagnostics.Metrics
         /// Gets the instrument unit of measurements.
         /// </summary>
         public string? Unit { get; }
+
+        /// <summary>
+        /// Returns the tags associated with the instrument.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 
         /// <summary>
         /// Checks if there is any listeners for this instrument.

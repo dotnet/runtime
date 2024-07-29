@@ -14,7 +14,7 @@ namespace System
     // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 
     /// <summary>
-    /// An IEEE 754 compliant float16 type.
+    /// Represents a half-precision floating-point number.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half
@@ -23,7 +23,9 @@ namespace System
           IComparable<Half>,
           IEquatable<Half>,
           IBinaryFloatingPointIeee754<Half>,
-          IMinMaxValue<Half>
+          IMinMaxValue<Half>,
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<Half>
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -35,6 +37,7 @@ namespace System
 
         internal const ushort BiasedExponentMask = 0x7C00;
         internal const int BiasedExponentShift = 10;
+        internal const int BiasedExponentLength = 5;
         internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
         internal const ushort TrailingSignificandMask = 0x03FF;
@@ -52,6 +55,9 @@ namespace System
 
         internal const ushort MinTrailingSignificand = 0x0000;
         internal const ushort MaxTrailingSignificand = 0x03FF;
+
+        internal const int TrailingSignificandLength = 10;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
 
         // Constants representing the private bit-representation for various default values
 
@@ -71,6 +77,8 @@ namespace System
 
         private const ushort PositiveOneBits = 0x3C00;
         private const ushort NegativeOneBits = 0xBC00;
+
+        private const ushort SmallestNormalBits = 0x0400;
 
         private const ushort EBits = 0x4170;
         private const ushort PiBits = 0x4248;
@@ -221,96 +229,105 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(Half value)
         {
-            return StripSign(value) < PositiveInfinityBits;
+            uint bits = value._value;
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(Half value)
         {
-            return StripSign(value) == PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Half value)
         {
-            return StripSign(value) > PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) > PositiveInfinityBits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(Half value)
+        {
+            uint bits = value._value;
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(Half value)
         {
             return (short)(value._value) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegativeInfinity(Half value)
         {
             return value._value == NegativeInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPositiveInfinity(Half value)
         {
             return value._value == PositiveInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
+            uint bits = value._value;
+            return (ushort)((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(Half value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) == 0;
         }
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
-        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
-        }
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static Half Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
-        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static Half Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <param name="provider">A format provider.</param>
-        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
-        }
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
+        public static Half Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -318,12 +335,14 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider.</param>
-        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         /// <summary>
@@ -332,39 +351,34 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
-        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. </returns>
+        /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
         public static Half Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<char, Half>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
-        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, out Half result)
-        {
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
-        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, out Half result)
-        {
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its half-precision floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a half-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Half result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -372,7 +386,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
-        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
@@ -380,11 +394,10 @@ namespace System
 
             if (s == null)
             {
-                result = default;
+                result = Zero;
                 return false;
             }
-
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         /// <summary>
@@ -393,12 +406,12 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <param name="provider">A format provider. </param>
-        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
+        /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseHalf(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         private static bool AreZero(Half left, Half right)
@@ -406,17 +419,7 @@ namespace System
             // IEEE defines that positive and negative zero are equal, this gives us a quick equality check
             // for two values by or'ing the private bits together and stripping the sign. They are both zero,
             // and therefore equivalent, if the resulting value is still zero.
-            return (ushort)((left._value | right._value) & ~SignMask) == 0;
-        }
-
-        private static bool IsNaNOrZero(Half value)
-        {
-            return ((value._value - 1) & ~SignMask) >= PositiveInfinityBits;
-        }
-
-        private static uint StripSign(Half value)
-        {
-            return (ushort)(value._value & ~SignMask);
+            return ((left._value | right._value) & ~SignMask) == 0;
         }
 
         /// <summary>
@@ -426,11 +429,11 @@ namespace System
         /// <exception cref="ArgumentException">Thrown when <paramref name="obj"/> is not of type <see cref="Half"/>.</exception>
         public int CompareTo(object? obj)
         {
-            if (!(obj is Half))
+            if (obj is not Half other)
             {
                 return (obj is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeHalf);
             }
-            return CompareTo((Half)(obj));
+            return CompareTo(other);
         }
 
         /// <summary>
@@ -486,12 +489,15 @@ namespace System
         /// </summary>
         public override int GetHashCode()
         {
+            uint bits = _value;
+
             if (IsNaNOrZero(this))
             {
-                // All NaNs should have the same hash code, as should both Zeros.
-                return _value & PositiveInfinityBits;
+                // Ensure that all NaNs and both zeros have the same hash code
+                bits &= PositiveInfinityBits;
             }
-            return _value;
+
+            return (int)bits;
         }
 
         /// <summary>
@@ -499,7 +505,7 @@ namespace System
         /// </summary>
         public override string ToString()
         {
-            return Number.FormatHalf(this, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(this, null, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -507,7 +513,7 @@ namespace System
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(this, format, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -515,7 +521,7 @@ namespace System
         /// </summary>
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatHalf(this, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -523,7 +529,7 @@ namespace System
         /// </summary>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -536,7 +542,13 @@ namespace System
         /// <returns></returns>
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         //
@@ -597,7 +609,7 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(long value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(nint value) => (Half)(float)value;
@@ -607,30 +619,165 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(float value)
         {
-            const int SingleMaxExponent = 0xFF;
-
-            uint floatInt = BitConverter.SingleToUInt32Bits(value);
-            bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
-            int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
-            uint sig = floatInt & float.TrailingSignificandMask;
-
-            if (exp == SingleMaxExponent)
-            {
-                if (sig != 0) // NaN
-                {
-                    return CreateHalfNaN(sign, (ulong)sig << 41); // Shift the significand bits to the left end
-                }
-                return sign ? NegativeInfinity : PositiveInfinity;
-            }
-
-            uint sigHalf = sig >> 9 | ((sig & 0x1FFU) != 0 ? 1U : 0U); // RightShiftJam
-
-            if ((exp | (int)sigHalf) == 0)
-            {
-                return new Half(sign, 0, 0);
-            }
-
-            return new Half(RoundPackToHalf(sign, (short)(exp - 0x71), (ushort)(sigHalf | 0x4000)));
+            #region Explanation of this algorithm
+            // This algorithm converts a single-precision floating-point number to a half-precision floating-point number by multiplying it as a floating-point number and rearranging the bit sequence.
+            // However, it introduces some tricks to implement rounding correctly, to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
+            //
+            // The bit sequence of a half-precision floating-point number is as follows
+            // seee_eeff_ffff_ffff
+            // The bit sequence of a single-precision floating-point number is as follows
+            // seee_eeee_efff_ffff_ffff_ffff_ffff_ffff
+            // In both cases, "_" is the hexadecimal separator, "s" is the sign, "e" is the exponent part, and "f" is the mantissa part.
+            // In half-precision, the exponent part is 5 bits and the mantissa part is 10 bits. In single precision, the exponent is 8 bits and the mantissa is 23 bits.
+            // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
+            // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
+            //
+            // This conversion algorithm takes advantage of the similarity between the two formats.
+            // By isolating the sign part from the single-precision bitstring, limiting the range of absolute value, rounding the lower bits to match the half-precision, and shifting it 13 bits to the right, the boundary between the exponent and mantissa parts matches with that of half-precision.
+            // In other words,
+            // sEEEeeeeeffffffffffxxxxxxxxxxxxx is rearranged to
+            //    seeeeeffffffffff
+            // The x is the part that certainly gets rounded.
+            //
+            // When you operate with floating-point number, rounding occurs after every single floating-point operation.
+            // For example, when you add 1.1f with MathF.PI, the internal representation of both value is:
+            // 0 01111111 00011001100110011001101 for 1.1f, and
+            // 0 10000000 10010010000111111011011 for MathF.PI (3.1415927f).
+            // And raw binary representation of both numbers is:
+            //   1.00011001100110011001101 for 1.1f, and
+            //  11.0010010000111111011011  for 3.1415927f.
+            // We matched the point for adding them properly.
+            // Adding these numbers results:
+            // 100.00111101110110010000011
+            // After normalizing the number:
+            // 1.0000111101110110010000011 x 2^2
+            // But it has 25 bits below the point. So we should round the number to 23bits by the method called "Round to nearest, ties to even"
+            // - Round to the nearest value
+            // - If the number is at the midway, round it to the nearest value with an even least significant digit.
+            // So we apply this:
+            // 1.00001111011101100100001 x 2^2
+            // And the result is:
+            // 0 10000001 00001111011101100100001
+            // Which matches the ground truth of `BitConverter.SingleToUInt32Bits(MathF.PI + 1.3f)`:
+            // 0 10000001 00001111011101100100001
+            //
+            // When we want to round the number to a certain precision, we can take advantage of this specification.
+            // If we craft a value to add carefully, the result of addition is rounded wherever we expect.
+            // For instance, MathF.PI (3.1415927f) is:
+            // 0 10000000 10010010000111111011011
+            // We craft the adding value to round the MathF.PI into half-precision by adding (exponentOffset0 in the actual code) by:
+            // - Making sure that both the exponentOffset0 and the value is smaller than MaxHalfValueBelowInfinity(65520.0f) as larger values goes infinity in Half, while letting NaN be as it is
+            // - Making sure that the exponentOffset0 is larger than MinExp (0x3880_0000u) as smaller values goes subnormal in Half
+            // - Clearing the fraction bits in exponentOffset0
+            // - Adding Exponent13 (0x0680_0000u) to exponentOffset0 with integer ALU, effectively adding 13 to the exponent part of exponentOffset0
+            // For 3.1415927f, the exponentOffset0 is:
+            // 0 10001101 00000000000000000000000 (16384f)
+            // Adding these numbers with floating-point arithmetic unit results:
+            // 0 10001101 00000000000011001001000 (16387.14f)
+            // You can see the first 11 bits of 11.0010010000111111011011 rounded appears at the bottom of the fraction part of the result.
+            // By subtracting the 16384f from this with floating-point arithmetic unit, we get this:
+            // 0 10000000 10010010000000000000000 (3.140625f)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14)
+            //
+            // Now we have to resolve the difference of the exponent parts.
+            // We can simply multiply the 1.92593E-34f in the floating-point number multiplication unit, to adjust the exponent part.
+            // However, most hardware cannot efficiently handle the multiplication of denormalized numbers.
+            // Adding the exponentOffset0 (16384f) to 3.1415927f with floating-point arithmetic unit results:
+            // 0 10001101 00000000000011001001000 (16387.14f)
+            // Then subtract the Exponent126 (0x3f00_0000u) from it with integer ALU:
+            // 0 00001111 00000000000011001001000 (1.9262991E-34f)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14)
+            // Note that we left the leading 1 in fraction on top of the 10 lowest significant bits.
+            // Now we have to rearrange the bitstring.
+            // By shifting the internal representation of 1.9262991E-34f right by 13 bits, we get this:
+            // 0 01111 0000000000 ((Half)1.0f)
+            // By adding it to the internal representation of 1.9262991E-34f if the value isn't NaN, we get this:
+            // (0 11110000 000) 0 10000 1001001000 (3.14 in Half with some garbage on top of it)
+            // Now we have to merge the sign bit at the right position, and clear the garbage on top of 16-bit final bitstring:
+            // 0 10000 1001001000 (3.14 in Half)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)MathF.PI)` in binary:
+            // 0 10000 1001001000 (3.14 in Half)
+            //
+            // If the value is NaN in Half, we should further modify the exponent part of the intermediate value.
+            // For the 0xffbf_ffffu (NaN,
+            // 1 11111111 01111111111111111111111 in binary), the exponentOffset0 is:
+            // 1 00001100 00000000000000000000000 (-2.4074124E-35f)
+            // It doesn't look correct! But don't worry.
+            // And the result of `value + exponentOffset0` is:
+            // 0 11111111 11111111111111111111111 (NaN)
+            // As the sign part is isolated at the beginning, the sign bit is 0 here.
+            // The exponent don't seem to be changed at all, and the only difference here from the original value 0xffbf_ffffu is the sign bit and the highest bit of fraction part.
+            // Setting the highest bit of fraction part is an expected behavior.
+            // After subtracting the Exponent126 from it, we get this:
+            // 0 10000001 11111111111111111111111 (7.9999995f)
+            // By shifting the internal representation of it right by 13 bits, we get this:
+            // 0010 0 00001 1111111111
+            // By adding it to the internal representation of 7.9999995f if the original value isn't NaN, we get this:
+            // 0010 0 00001 1111111111
+            // Here we changed nothing because the original value is NaN, so 7.9999995f is thrown away from scope already.
+            // The maskedHalfExponentForNaN was generated before checking for the underflow. The value of maskedHalfExponentForNaN here is:
+            // - ExponentMask (0x7c00u) if the value is NaN, 0 otherwise
+            // Then the signAndMaskedExponent is also generated by ORing the maskedHalfExponentForNaN and the isolated sign bit shifted 16 bits right (0x8000u in this case):
+            // 1 11111 0000000000 (Half.NegativeInfinity)
+            // The exponent part here is also a complete gibberish, so we clear them by ANDing the ~maskedHalfExponentForNaN:
+            // 0010 0 00000 1111111111 (6.1E-05 in Half with some garbage on top of it)
+            // Then merge the signAndMaskedExponent with it, and clear the garbage on top of 16-bit final bitstring:
+            // 1 11111 1111111111 (NaN)
+            // And here is the `BitConverter.HalfToUInt16Bits((Half)BitConverter.UInt32BitsToSingle(0xffbf_ffffu))` in binary:
+            // 1 11111 1111111111 (NaN)
+            //
+            // This code does all of above steps, without any single branches.
+            #endregion
+            // Minimum exponent for rounding
+            const uint MinExp = 0x3880_0000u;
+            // Exponent displacement #1
+            const uint Exponent126 = 0x3f00_0000u;
+            // Exponent mask
+            const uint SingleBiasedExponentMask = float.BiasedExponentMask;
+            // Exponent displacement #2
+            const uint Exponent13 = 0x0680_0000u;
+            // Maximum value that is not Infinity in Half
+            const float MaxHalfValueBelowInfinity = 65520.0f;
+            // Mask for exponent bits in Half
+            const uint ExponentMask = BiasedExponentMask;
+            uint bitValue = BitConverter.SingleToUInt32Bits(value);
+            // Extract sign bit
+            uint sign = (bitValue & float.SignMask) >> 16;
+            // Detecting NaN (~0u if a is not NaN)
+            uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);
+            // Clear sign bit
+            value = float.Abs(value);
+            // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
+            value = float.Min(MaxHalfValueBelowInfinity, value);
+            // Rectify lower exponent
+            uint exponentOffset0 = BitConverter.SingleToUInt32Bits(float.Max(value, BitConverter.UInt32BitsToSingle(MinExp)));
+            // Extract exponent
+            exponentOffset0 &= SingleBiasedExponentMask;
+            // Add exponent by 13
+            exponentOffset0 += Exponent13;
+            // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
+            value += BitConverter.UInt32BitsToSingle(exponentOffset0);
+            bitValue = BitConverter.SingleToUInt32Bits(value);
+            // Only exponent bits will be modified if NaN
+            uint maskedHalfExponentForNaN = ~realMask & ExponentMask;
+            // Subtract exponent by 126
+            bitValue -= Exponent126;
+            // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
+            uint newExponent = bitValue >> 13;
+            // Clear the fraction parts if the value was NaN.
+            bitValue &= realMask;
+            // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
+            bitValue += newExponent;
+            // Clear exponents if value is NaN
+            bitValue &= ~maskedHalfExponentForNaN;
+            // Merge sign bit with possible NaN exponent
+            uint signAndMaskedExponent = maskedHalfExponentForNaN | sign;
+            // Merge sign bit and possible NaN exponent
+            bitValue |= signAndMaskedExponent;
+            // The final result
+            return BitConverter.UInt16BitsToHalf((ushort)bitValue);
         }
 
         /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -651,7 +798,7 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
@@ -876,30 +1023,77 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
         public static explicit operator float(Half value)
         {
-            bool sign = IsNegative(value);
-            int exp = value.BiasedExponent;
-            uint sig = value.TrailingSignificand;
-
-            if (exp == MaxBiasedExponent)
-            {
-                if (sig != 0)
-                {
-                    return CreateSingleNaN(sign, (ulong)sig << 54);
-                }
-                return sign ? float.NegativeInfinity : float.PositiveInfinity;
-            }
-
-            if (exp == 0)
-            {
-                if (sig == 0)
-                {
-                    return BitConverter.UInt32BitsToSingle(sign ? float.SignMask : 0); // Positive / Negative zero
-                }
-                (exp, sig) = NormSubnormalF16Sig(sig);
-                exp -= 1;
-            }
-
-            return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
+            #region Explanation of this algorithm
+            // This algorithm converts a half-precision floating-point number to a single-precision floating-point number by rearranging the bit sequence and multiplying it as a floating-point number.
+            // However, it introduces some tricks to avoid multiplying denormalized numbers and to deal with exceptions such as infinity and NaN without using branch instructions.
+            //
+            // The bit sequence of a half-precision floating-point number is as follows
+            // seee_eeff_ffff_ffff
+            // The bit sequence of a single-precision floating-point number is as follows
+            // seee_eeee_efff_ffff_ffff_ffff_ffff_ffff
+            // In both cases, "_" is the hexadecimal separator, "s" is the sign, "e" is the exponent part, and "f" is the mantissa part.
+            // In half-precision, the exponent part is 5 bits and the mantissa part is 10 bits. In single precision, the exponent is 8 bits and the mantissa is 23 bits.
+            // Both formats use an offset binary representation for the exponent part: the exponent part for 1.0 is half of the maximum value for either precision, i.e., 127 for single-precision and 15 for half-precision.
+            // The mantissa part is normalized when the exponent part is nonzero, since in binary numbers, 1 appears as the most significant digit for any nonzero number.
+            //
+            // This conversion algorithm takes advantage of the similarity between the two formats.
+            // By isolating the sign part from the half-precision bitstring and shifting it 13 bits to the left, the boundary between the exponent and mantissa parts matches with that of single-precision.
+            // In other words,
+            //    0eeeeeffffffffff              is rearranged to
+            // 0000eeeeeffffffffff0000000000000
+            // which matches the boundary between the exponent and mantissa parts of single-precision floating-point number:
+            // seeeeeeeefffffffffffffffffffffff
+            //
+            // After rearrangement, this bit sequence is multiplied by the constant 5.192297E+33f in the floating-point number multiplication unit.
+            // However, most hardware cannot efficiently handle the multiplication of denormalized numbers.
+            // Denormalized numbers are more common in half-precision than in single-precision, so they cannot be ignored.
+            //
+            // First, if the value is a denormalized number, the constant 0x3880_0000u is added beforehand in the integer addition unit to make it behave as a normalized number.
+            // For Infinity or NaN, the constant 0x7000_0000u is added beforehand in the integer adder.
+            // These numbers are then converted to single-precision floating-point numbers as per the IEEE754 specification by the following operations.
+            // Next, regardless of whether the value is a denormalized number or not, add the constant 0x3800_0000u to this bit string in the integer addition unit. The constant is chosen to add 112 to the exponent part; 112 is 127 subtracted by 15.
+            // Then, if the value is a denormalized number, the constant 6.1035156E-05f is subtracted in the floating-point number subtraction unit.
+            // The above operation produces the same result as if the rearranged bit sequence were multiplied by the constant 5.192297E+33f.
+            // Finally, merging the isolated sign bits completes the conversion.
+            #endregion
+            // The smallest positive normal number in Half, converted to Single
+            const uint ExponentLowerBound = 0x3880_0000u;
+            // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
+            const uint ExponentOffset = 0x3800_0000u;
+            // Mask for sign bit in Single
+            const uint SingleSignMask = float.SignMask;
+            // Mask for exponent bits in Half
+            const uint HalfExponentMask = BiasedExponentMask;
+            // Mask for bits in Single converted from Half
+            const int HalfToSingleBitsMask = 0x0FFF_E000;
+            // Extract the internal representation of value
+            short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);
+            // Extract sign bit of value
+            uint sign = (uint)(int)valueInInt16Bits & SingleSignMask;
+            // Copy sign bit to upper bits
+            uint bitValueInProcess = (uint)valueInInt16Bits;
+            // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
+            uint offsetExponent = bitValueInProcess & HalfExponentMask;
+            // ~0u when value is subnormal, 0 otherwise
+            uint subnormalMask = (uint)-Unsafe.BitCast<bool, byte>(offsetExponent == 0u);
+            // ~0u when value is either Infinity or NaN, 0 otherwise
+            int infinityOrNaNMask = Unsafe.BitCast<bool, byte>(offsetExponent == HalfExponentMask);
+            // 0x3880_0000u if value is subnormal, 0 otherwise
+            uint maskedExponentLowerBound = subnormalMask & ExponentLowerBound;
+            // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
+            uint offsetMaskedExponentLowerBound = ExponentOffset | maskedExponentLowerBound;
+            // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
+            bitValueInProcess <<= 13;
+            // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
+            offsetMaskedExponentLowerBound <<= infinityOrNaNMask;
+            // Extract exponent bits and fraction bits of value
+            bitValueInProcess &= HalfToSingleBitsMask;
+            // Adjust exponent to match the range of exponent
+            bitValueInProcess += offsetMaskedExponentLowerBound;
+            // If value is subnormal, remove unnecessary 1 on top of fraction bits.
+            uint absoluteValue = BitConverter.SingleToUInt32Bits(BitConverter.UInt32BitsToSingle(bitValueInProcess) - BitConverter.UInt32BitsToSingle(maskedExponentLowerBound));
+            // Merge sign bit with rest
+            return BitConverter.UInt32BitsToSingle(absoluteValue | sign);
         }
 
         // IEEE 754 specifies NaNs to be propagated
@@ -1017,12 +1211,28 @@ namespace System
         {
             ushort bits = BitConverter.HalfToUInt16Bits(value);
 
+            if ((short)bits <= 0)
+            {
+                // Zero and negative values cannot be powers of 2
+                return false;
+            }
+
             byte biasedExponent = ExtractBiasedExponentFromBits(bits);
             ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > Zero)
-                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
-                && (trailingSignificand == MinTrailingSignificand);
+            if (biasedExponent == MinBiasedExponent)
+            {
+                // Subnormal values have 1 bit set when they're powers of 2
+                return ushort.PopCount(trailingSignificand) == 1;
+            }
+            else if (biasedExponent == MaxBiasedExponent)
+            {
+                // NaN and Infinite values cannot be powers of 2
+                return false;
+            }
+
+            // Normal values have 0 bits set when they're powers of 2
+            return trailingSignificand == MinTrailingSignificand;
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -1035,29 +1245,25 @@ namespace System
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value & right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value | right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value ^ right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
-            ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(~value._value));
         }
 
         //
@@ -1107,6 +1313,14 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(Half value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
@@ -1263,9 +1477,9 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Half BitDecrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
@@ -1282,16 +1496,23 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += (ushort)(((short)bits < 0) ? +1 : -1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Half BitIncrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns MinValue
@@ -1308,8 +1529,15 @@ namespace System
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += (ushort)(((short)bits < 0) ? -1 : +1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
@@ -1319,7 +1547,35 @@ namespace System
         public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(Half x) => MathF.ILogB((float)x);
+        public static int ILogB(Half x)
+        {
+            // This code is based on `ilogbf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (!IsNormal(x)) // x is zero, subnormal, infinity, or NaN
+            {
+                if (IsZero(x))
+                {
+                    return int.MinValue;
+                }
+
+                if (!IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(IsSubnormal(x));
+                return MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+            }
+
+            return x.Exponent;
+        }
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
@@ -1418,7 +1674,17 @@ namespace System
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
+        public static Half CopySign(Half value, Half sign)
+        {
+            // This method is required to work for all inputs,
+            // including NaN, so we operate on the raw bits.
+            uint xbits = value._value;
+            uint ybits = sign._value;
+
+            // Remove the sign from x, and remove everything but the sign from y
+            // Then, simply OR them to get the correct sign
+            return new Half((ushort)((xbits & ~SignMask) | (ybits & SignMask)));
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
@@ -1471,7 +1737,24 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(Half value) => MathF.Sign((float)value);
+        public static int Sign(Half value)
+        {
+            if (IsNaN(value))
+            {
+                throw new ArithmeticException(SR.Arithmetic_NaN);
+            }
+
+            if (IsZero(value))
+            {
+                return 0;
+            }
+            else if (IsNegative(value))
+            {
+                return -1;
+            }
+
+            return +1;
+        }
 
         //
         // INumberBase
@@ -1487,7 +1770,7 @@ namespace System
         public static Half Zero => new Half(PositiveZeroBits);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
-        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+        public static Half Abs(Half value) => new Half((ushort)(value._value & ~SignMask));
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1579,7 +1862,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<Half>.IsZero(Half value) => (value == Zero);
+        static bool INumberBase<Half>.IsZero(Half value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
@@ -1637,25 +1920,28 @@ namespace System
             return y;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static Half MultiplyAddEstimate(Half left, Half right, Half addend) => (Half)float.MultiplyAddEstimate((float)left, (float)right, (float)addend);
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertFromChecked<TOther>(TOther value, out Half result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertFromSaturating<TOther>(TOther value, out Half result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertFromTruncating<TOther>(TOther value, out Half result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out Half result)
@@ -1797,14 +2083,14 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertToSaturating<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<Half>.TryConvertToTruncating<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
@@ -1966,6 +2252,24 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static Half CosPi(Half x) => (Half)float.CosPi((float)x);
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Half DegreesToRadians(Half degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (Half)float.DegreesToRadians((float)degrees);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Half RadiansToDegrees(Half radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (Half)float.RadiansToDegrees((float)radians);
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
 
@@ -2005,5 +2309,73 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Half operator +(Half value) => value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static Half Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseFloat<byte, Half>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Half result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static Half Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Half result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentRoundToEven => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentFastPath => 4;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static Half IBinaryFloatParseAndFormatInfo<Half>.BitsToFloat(ulong bits) => BitConverter.UInt16BitsToHalf((ushort)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.FloatToBits(Half value) => BitConverter.HalfToUInt16Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxRoundTripDigits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxPrecisionCustomFormat => 5;
     }
 }

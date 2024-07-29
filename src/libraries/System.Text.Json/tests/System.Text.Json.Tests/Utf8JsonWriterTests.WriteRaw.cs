@@ -1,9 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -23,6 +25,8 @@ namespace System.Text.Json.Tests
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
 
+            string rawJsonAsStr = Encoding.UTF8.GetString(rawJson);
+
             RunTests(skipInputValidation: true);
             RunTests(skipInputValidation: false);
 
@@ -31,22 +35,29 @@ namespace System.Text.Json.Tests
                 // ROS<byte>
                 writer.Reset();
                 ms.SetLength(0);
-                writer.WriteRawValue(rawJson, skipInputValidation);
+                WriteRawValueWithSetting(writer, rawJsonAsStr, OverloadParamType.ByteArray, skipInputValidation);
                 writer.Flush();
                 verifyWithDeserialize(ms.ToArray());
 
                 // string
-                string rawJsonAsStr = Encoding.UTF8.GetString(rawJson);
+                
                 writer.Reset();
                 ms.SetLength(0);
-                writer.WriteRawValue(rawJsonAsStr, skipInputValidation);
+                WriteRawValueWithSetting(writer, rawJsonAsStr, OverloadParamType.String, skipInputValidation);
                 writer.Flush();
                 verifyWithDeserialize(ms.ToArray());
 
                 // ROS<char>
                 writer.Reset();
                 ms.SetLength(0);
-                writer.WriteRawValue(rawJsonAsStr.AsSpan(), skipInputValidation);
+                WriteRawValueWithSetting(writer, rawJsonAsStr, OverloadParamType.ROSChar, skipInputValidation);
+                writer.Flush();
+                verifyWithDeserialize(ms.ToArray());
+
+                // ROS<char>
+                writer.Reset();
+                ms.SetLength(0);
+                WriteRawValueWithSetting(writer, rawJsonAsStr, OverloadParamType.ROSeqByte, skipInputValidation);
                 writer.Flush();
                 verifyWithDeserialize(ms.ToArray());
             }
@@ -244,7 +255,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentNullException>(() => writer.WriteRawValue(json: default(string)));
             Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: ""));
             Assert.Throws<ArgumentException>(() => writer.WriteRawValue(json: default(ReadOnlySpan<char>)));
-            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(utf8Json: default));
+            Assert.Throws<ArgumentException>(() => writer.WriteRawValue(utf8Json: default(ReadOnlySpan<byte>)));
         }
 
         [Theory]
@@ -332,51 +343,59 @@ namespace System.Text.Json.Tests
         /// time the memory is accessed which triggers the full memory allocation.
         /// Also see <see cref="WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88272")]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public void WriteRawLargeJsonToStreamWithoutFlushing()
         {
-            var largeArray = new char[150_000_000];
-            largeArray.AsSpan().Fill('a');
-
-            // Text size chosen so that after several doublings of the underlying buffer we reach ~2 GB (but don't go over)
-            JsonEncodedText text1 = JsonEncodedText.Encode(largeArray.AsSpan(0, 7_500));
-            JsonEncodedText text2 = JsonEncodedText.Encode(largeArray.AsSpan(0, 5_000));
-            JsonEncodedText text3 = JsonEncodedText.Encode(largeArray.AsSpan(0, 150_000_000));
-
-            using (var output = new MemoryStream())
-            using (var writer = new Utf8JsonWriter(output))
+            try
             {
-                writer.WriteStartArray();
-                writer.WriteRawValue(WrapInQuotes(text1.EncodedUtf8Bytes));
-                Assert.Equal(7_503, writer.BytesPending);
+                var largeArray = new char[150_000_000];
+                largeArray.AsSpan().Fill('a');
 
-                for (int i = 0; i < 30_000; i++)
+                // Text size chosen so that after several doublings of the underlying buffer we reach ~2 GB (but don't go over)
+                JsonEncodedText text1 = JsonEncodedText.Encode(largeArray.AsSpan(0, 7_500));
+                JsonEncodedText text2 = JsonEncodedText.Encode(largeArray.AsSpan(0, 5_000));
+                JsonEncodedText text3 = JsonEncodedText.Encode(largeArray.AsSpan(0, 150_000_000));
+
+                using (var output = new MemoryStream())
+                using (var writer = new Utf8JsonWriter(output))
                 {
-                    writer.WriteRawValue(WrapInQuotes(text2.EncodedUtf8Bytes));
+                    writer.WriteStartArray();
+                    writer.WriteRawValue(WrapInQuotes(text1.EncodedUtf8Bytes));
+                    Assert.Equal(7_503, writer.BytesPending);
+
+                    for (int i = 0; i < 30_000; i++)
+                    {
+                        writer.WriteRawValue(WrapInQuotes(text2.EncodedUtf8Bytes));
+                    }
+                    Assert.Equal(150_097_503, writer.BytesPending);
+
+                    for (int i = 0; i < 13; i++)
+                    {
+                        writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes));
+                    }
+                    Assert.Equal(2_100_097_542, writer.BytesPending);
+
+                    // Next write forces a grow beyond max array length
+
+                    Assert.Throws<OutOfMemoryException>(() => writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes)));
+
+                    Assert.Equal(2_100_097_542, writer.BytesPending);
+
+                    var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
+                    for (int i = 0; i < 10_000_000; i++)
+                    {
+                        writer.WriteRawValue(WrapInQuotes(text4.EncodedUtf8Bytes));
+                    }
+
+                    Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
                 }
-                Assert.Equal(150_097_503, writer.BytesPending);
-
-                for (int i = 0; i < 13; i++)
-                {
-                    writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes));
-                }
-                Assert.Equal(2_100_097_542, writer.BytesPending);
-
-                // Next write forces a grow beyond max array length
-
-                Assert.Throws<OutOfMemoryException>(() => writer.WriteRawValue(WrapInQuotes(text3.EncodedUtf8Bytes)));
-
-                Assert.Equal(2_100_097_542, writer.BytesPending);
-
-                var text4 = JsonEncodedText.Encode(largeArray.AsSpan(0, 1));
-                for (int i = 0; i < 10_000_000; i++)
-                {
-                    writer.WriteRawValue(WrapInQuotes(text4.EncodedUtf8Bytes));
-                }
-
-                Assert.Equal(2_100_097_542 + (4 * 10_000_000), writer.BytesPending);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -388,61 +407,69 @@ namespace System.Text.Json.Tests
         [InlineData(JsonTokenType.StartObject)]
         public static void WriteRawMaxUtf16InputLength(JsonTokenType tokenType)
         {
-            // Max raw payload length supported by the writer.
-            int maxLength = int.MaxValue / 3;
-
-            StringBuilder sb = new();
-            sb.Append('"');
-
-            for (int i = 1; i < maxLength - 1; i++)
+            try
             {
-                sb.Append('a');
-            }
+                // Max raw payload length supported by the writer.
+                int maxLength = int.MaxValue / 3;
 
-            sb.Append('"');
+                StringBuilder sb = new(maxLength + 2);
+                sb.Append('"');
 
-            string payload = sb.ToString();
-
-            RunTest(OverloadParamType.ROSChar);
-            RunTest(OverloadParamType.String);
-            RunTest(OverloadParamType.ByteArray);
-
-            void RunTest(OverloadParamType paramType)
-            {
-                using MemoryStream ms = new();
-                using Utf8JsonWriter writer = new(ms);
-
-                switch (tokenType)
+                for (int i = 1; i < maxLength - 1; i++)
                 {
-                    case JsonTokenType.String:
-                        WriteRawValueWithSetting(writer, payload, paramType);
-                        writer.Flush();
-                        Assert.Equal(payload.Length, writer.BytesCommitted);
-                        break;
-                    case JsonTokenType.StartArray:
-                        writer.WriteStartArray();
-                        WriteRawValueWithSetting(writer, payload, paramType);
-                        WriteRawValueWithSetting(writer, payload, paramType);
-                        writer.WriteEndArray();
-                        writer.Flush();
-                        // Start/EndArray + comma, 2 array elements
-                        Assert.Equal(3 + (payload.Length * 2), writer.BytesCommitted);
-                        break;
-                    case JsonTokenType.StartObject:
-                        writer.WriteStartObject();
-                        writer.WritePropertyName("1");
-                        WriteRawValueWithSetting(writer, payload, paramType);
-                        writer.WritePropertyName("2");
-                        WriteRawValueWithSetting(writer, payload, paramType);
-                        writer.WriteEndObject();
-                        writer.Flush();
-                        // Start/EndToken + comma, 2 property names, 2 property values
-                        Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
-                        break;
-                    default:
-                        Assert.True(false, "Unexpected test configuration");
-                        break;
+                    sb.Append('a');
                 }
+
+                sb.Append('"');
+
+                string payload = sb.ToString();
+
+                RunTest(OverloadParamType.ROSChar);
+                RunTest(OverloadParamType.String);
+                RunTest(OverloadParamType.ByteArray);
+                RunTest(OverloadParamType.ROSeqByte);
+
+                void RunTest(OverloadParamType paramType)
+                {
+                    using MemoryStream ms = new();
+                    using Utf8JsonWriter writer = new(ms);
+
+                    switch (tokenType)
+                    {
+                        case JsonTokenType.String:
+                            WriteRawValueWithSetting(writer, payload, paramType);
+                            writer.Flush();
+                            Assert.Equal(payload.Length, writer.BytesCommitted);
+                            break;
+                        case JsonTokenType.StartArray:
+                            writer.WriteStartArray();
+                            WriteRawValueWithSetting(writer, payload, paramType);
+                            WriteRawValueWithSetting(writer, payload, paramType);
+                            writer.WriteEndArray();
+                            writer.Flush();
+                            // Start/EndArray + comma, 2 array elements
+                            Assert.Equal(3 + (payload.Length * 2), writer.BytesCommitted);
+                            break;
+                        case JsonTokenType.StartObject:
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("1");
+                            WriteRawValueWithSetting(writer, payload, paramType);
+                            writer.WritePropertyName("2");
+                            WriteRawValueWithSetting(writer, payload, paramType);
+                            writer.WriteEndObject();
+                            writer.Flush();
+                            // Start/EndToken + comma, 2 property names, 2 property values
+                            Assert.Equal(3 + (4 * 2) + (payload.Length * 2), writer.BytesCommitted);
+                            break;
+                        default:
+                            Assert.Fail("Unexpected test configuration");
+                            break;
+                    }
+                }
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -450,22 +477,27 @@ namespace System.Text.Json.Tests
         {
             ROSChar,
             String,
-            ByteArray
+            ByteArray,
+            ROSeqByte
         }
 
-        private static void WriteRawValueWithSetting(Utf8JsonWriter writer, string payload, OverloadParamType param)
+        private static void WriteRawValueWithSetting(Utf8JsonWriter writer, string payload, OverloadParamType param, bool skipInputValidation = false)
         {
             switch (param)
             {
                 case OverloadParamType.ROSChar:
-                    writer.WriteRawValue(payload.AsSpan());
+                    writer.WriteRawValue(payload.AsSpan(), skipInputValidation);
                     break;
                 case OverloadParamType.String:
-                    writer.WriteRawValue(payload);
+                    writer.WriteRawValue(payload, skipInputValidation);
                     break;
                 case OverloadParamType.ByteArray:
                     byte[] payloadAsBytes = Encoding.UTF8.GetBytes(payload);
-                    writer.WriteRawValue(payloadAsBytes);
+                    writer.WriteRawValue(payloadAsBytes, skipInputValidation);
+                    break;
+                case OverloadParamType.ROSeqByte:
+                    ReadOnlySequence<byte> payloadAsSequence = new(Encoding.UTF8.GetBytes(payload));
+                    writer.WriteRawValue(payloadAsSequence, skipInputValidation);
                     break;
             }
         }
@@ -477,30 +509,62 @@ namespace System.Text.Json.Tests
         [OuterLoop]
         public static void WriteRawUtf16LengthGreaterThanMax(int len)
         {
-            StringBuilder sb = new();
-            sb.Append('"');
-
-            for (int i = 1; i < len - 1; i++)
+            try
             {
-                sb.Append('a');
+                StringBuilder sb = new(len + 2);
+                sb.Append('"');
+
+                for (int i = 1; i < len - 1; i++)
+                {
+                    sb.Append('a');
+                }
+
+                sb.Append('"');
+
+                string payload = sb.ToString();
+
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+
+                // UTF-16 overloads not compatible with this length.
+                Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.ROSChar));
+                Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.String));
+
+                // UTF-8 overload is okay.
+                WriteRawValueWithSetting(writer, payload, OverloadParamType.ByteArray);
+                writer.Flush();
+                Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
+
+                writer.Reset();
+                ms.SetLength(0);
+                WriteRawValueWithSetting(writer, payload, OverloadParamType.ROSeqByte);
+                writer.Flush();
+                Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
             }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
+        }
 
-            sb.Append('"');
-
-            string payload = sb.ToString();
-
-            using MemoryStream ms = new();
-            using Utf8JsonWriter writer = new(ms);
-
-            // UTF-16 overloads not compatible with this length.
-            Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.ROSChar));
-            Assert.Throws<ArgumentException>(() => WriteRawValueWithSetting(writer, payload, OverloadParamType.String));
-
-            // UTF-8 overload is okay.
-            WriteRawValueWithSetting(writer, payload, OverloadParamType.ByteArray);
-            writer.Flush();
-
-            Assert.Equal(payload.Length, Encoding.UTF8.GetString(ms.ToArray()).Length);
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [InlineData(int.MaxValue)]
+        [InlineData((long)int.MaxValue + 1)]
+        [OuterLoop]
+        public void WriteRawUtf8LengthGreaterThanOrEqualToIntMax(long len)
+        {
+            try
+            {
+                using MemoryStream ms = new();
+                using Utf8JsonWriter writer = new(ms);
+                ReadOnlySequence<byte> readonlySeq = CreateLargeReadOnlySequence(len);
+                Assert.Throws<ArgumentException>(() => writer.WriteRawValue(readonlySeq));
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
@@ -508,40 +572,124 @@ namespace System.Text.Json.Tests
         [OuterLoop]
         public static void WriteRawTranscodeFromUtf16ToUtf8TooLong()
         {
-            // Max raw payload length supported by the writer.
-            int maxLength = int.MaxValue / 3;
-
-            StringBuilder sb = new();
-            sb.Append('"');
-
-            for (int i = 1; i < maxLength - 1; i++)
+            try
             {
-                sb.Append('\u7684'); // Non-UTF-8 character than will expand during transcoding
+                // Max raw payload length supported by the writer.
+                int maxLength = int.MaxValue / 3;
+
+                StringBuilder sb = new(maxLength + 2);
+                sb.Append('"');
+
+                for (int i = 1; i < maxLength - 1; i++)
+                {
+                    sb.Append('\u7684'); // Non-UTF-8 character than will expand during transcoding
+                }
+
+                sb.Append('"');
+
+                string payload = sb.ToString();
+
+                RunTest(OverloadParamType.ROSChar);
+                RunTest(OverloadParamType.String);
+                RunTest(OverloadParamType.ByteArray);
+                RunTest(OverloadParamType.ROSeqByte);
+
+                void RunTest(OverloadParamType paramType)
+                {
+                    using MemoryStream ms = new();
+                    using Utf8JsonWriter writer = new(ms);
+
+                    try
+                    {
+                        WriteRawValueWithSetting(writer, payload, paramType);
+                        writer.Flush();
+
+                        // All characters in the payload will be expanded during transcoding, except for the quotes.
+                        int expectedLength = ((payload.Length - 2) * 3) + 2;
+                        Assert.Equal(expectedLength, writer.BytesCommitted);
+                    }
+                    catch (OutOfMemoryException) { } // OutOfMemoryException is okay since the transcoding output is probably too large.
+                }
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
+        }
+
+        private static ReadOnlySequence<byte> CreateLargeReadOnlySequence(long len)
+        {
+            Assert.InRange(len, int.MaxValue, long.MaxValue);
+
+            const int ArrayMaxLength = 0X7FFFFFC7; // Array.MaxLength
+
+            long totalLen = len;
+            TestSequenceSegment? startSegment = null;
+            TestSequenceSegment? endSegment = null;
+
+            // Construct ReadOnlySequence<byte> with length as 'len' which is greater than or equal to int.MaxValue
+            do
+            {
+                if (startSegment is null) // First segment
+                {
+                    var bytes = new byte[ArrayMaxLength];
+                    bytes[0] = (byte)'"';
+                    FillArray(bytes, (byte)'a', 1, bytes.Length);
+                    endSegment = startSegment = new(bytes);
+                }
+                else
+                {
+                    byte[] bytes;
+                    if (totalLen <= ArrayMaxLength) // The last segment
+                    {
+                        bytes = new byte[totalLen];
+                        bytes[totalLen - 1] = (byte)'"';
+                    }
+                    else
+                    {
+                        bytes = new byte[ArrayMaxLength];
+                        bytes[ArrayMaxLength - 1] = (byte)'a';
+                    }
+
+                    FillArray(bytes, (byte)'a', 0, bytes.Length - 1);
+                    endSegment = endSegment!.Append(bytes);
+                }
+
+                totalLen -= endSegment.Memory.Length;
+            } while (totalLen > 0);
+
+            var readonlySeq = new ReadOnlySequence<byte>(startSegment, 0, endSegment, endSegment.Memory.Length);
+
+            Assert.Equal(len, readonlySeq.Length); // Make sure constructed ReadOnlySequence's length is as expected
+
+            return readonlySeq;
+
+            static void FillArray(byte[] bytes, byte value, int start, int end)
+            {
+                for (int i = start; i < end; i++)
+                {
+                    bytes[i] = value;
+                }
+            }
+        }
+
+        private class TestSequenceSegment : ReadOnlySequenceSegment<byte>
+        {
+            public TestSequenceSegment(ReadOnlyMemory<byte> memory)
+            {
+                Memory = memory;
             }
 
-            sb.Append('"');
-
-            string payload = sb.ToString();
-
-            RunTest(OverloadParamType.ROSChar);
-            RunTest(OverloadParamType.String);
-            RunTest(OverloadParamType.ByteArray);
-
-            void RunTest(OverloadParamType paramType)
+            public TestSequenceSegment Append(ReadOnlyMemory<byte> memory)
             {
-                using MemoryStream ms = new();
-                using Utf8JsonWriter writer = new(ms);
-
-                try
+                var newSegment = new TestSequenceSegment(memory)
                 {
-                    WriteRawValueWithSetting(writer, payload, paramType);
-                    writer.Flush();
+                    RunningIndex = RunningIndex + Memory.Length
+                };
 
-                    // All characters in the payload will be expanded during transcoding, except for the quotes.
-                    int expectedLength = ((payload.Length - 2) * 3) + 2;
-                    Assert.Equal(expectedLength, writer.BytesCommitted);
-                }
-                catch (OutOfMemoryException) { } // OutOfMemoryException is okay since the transcoding output is probably too large.
+                Next = newSegment;
+
+                return newSegment;
             }
         }
     }

@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -12,9 +12,10 @@ namespace System.Collections.Immutable
     /// An immutable unordered hash set implementation.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
+    [CollectionBuilder(typeof(ImmutableHashSet), nameof(ImmutableHashSet.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-#if NETCOREAPP
+#if NET
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, IReadOnlySet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
 #else
     public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
@@ -191,7 +192,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> Add(T item)
         {
-            var result = Add(item, this.Origin);
+            ImmutableHashSet<T>.MutationResult result = Add(item, this.Origin);
             return result.Finalize(this);
         }
 
@@ -200,7 +201,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> Remove(T item)
         {
-            var result = Remove(item, this.Origin);
+            ImmutableHashSet<T>.MutationResult result = Remove(item, this.Origin);
             return result.Finalize(this);
         }
 
@@ -242,11 +243,19 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
+        internal ImmutableHashSet<T> Union(ReadOnlySpan<T> other)
+        {
+            return Union(other, this.Origin).Finalize(this);
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableSet{T}"/> interface.
+        /// </summary>
         public ImmutableHashSet<T> Intersect(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
 
-            var result = Intersect(other, this.Origin);
+            ImmutableHashSet<T>.MutationResult result = Intersect(other, this.Origin);
             return result.Finalize(this);
         }
 
@@ -257,7 +266,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var result = Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
+            ImmutableHashSet<T>.MutationResult result = Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
             return result.Finalize(this);
         }
 
@@ -270,7 +279,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var result = SymmetricExcept(other, this.Origin);
+            ImmutableHashSet<T>.MutationResult result = SymmetricExcept(other, this.Origin);
             return result.Finalize(this);
         }
 
@@ -619,13 +628,13 @@ namespace System.Collections.Immutable
             OperationResult result;
             int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket = origin.Root.GetValueOrDefault(hashCode);
-            var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
+            ImmutableHashSet<T>.HashBucket newBucket = bucket.Add(item, origin.EqualityComparer, out result);
             if (result == OperationResult.NoChangeRequired)
             {
                 return new MutationResult(origin.Root, 0);
             }
 
-            var newRoot = UpdateRoot(origin.Root, hashCode, origin.HashBucketEqualityComparer, newBucket);
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = UpdateRoot(origin.Root, hashCode, origin.HashBucketEqualityComparer, newBucket);
             Debug.Assert(result == OperationResult.SizeChanged);
             return new MutationResult(newRoot, 1 /*result == OperationResult.SizeChanged ? 1 : 0*/);
         }
@@ -635,13 +644,13 @@ namespace System.Collections.Immutable
         /// </summary>
         private static MutationResult Remove(T item, MutationInput origin)
         {
-            var result = OperationResult.NoChangeRequired;
+            ImmutableHashSet<T>.OperationResult result = OperationResult.NoChangeRequired;
             int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket;
-            var newRoot = origin.Root;
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = origin.Root;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
-                var newBucket = bucket.Remove(item, origin.EqualityComparer, out result);
+                ImmutableHashSet<T>.HashBucket newBucket = bucket.Remove(item, origin.EqualityComparer, out result);
                 if (result == OperationResult.NoChangeRequired)
                 {
                     return new MutationResult(origin.Root, 0);
@@ -676,13 +685,36 @@ namespace System.Collections.Immutable
             Requires.NotNull(other, nameof(other));
 
             int count = 0;
-            var newRoot = origin.Root;
-            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = origin.Root;
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
                 OperationResult result;
-                var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
+                ImmutableHashSet<T>.HashBucket newBucket = bucket.Add(item, origin.EqualityComparer, out result);
+                if (result == OperationResult.SizeChanged)
+                {
+                    newRoot = UpdateRoot(newRoot, hashCode, origin.HashBucketEqualityComparer, newBucket);
+                    count++;
+                }
+            }
+
+            return new MutationResult(newRoot, count);
+        }
+
+        /// <summary>
+        /// Performs the set operation on a given data structure.
+        /// </summary>
+        private static MutationResult Union(ReadOnlySpan<T> other, MutationInput origin)
+        {
+            int count = 0;
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = origin.Root;
+            foreach (T item in other)
+            {
+                int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+                HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
+                OperationResult result;
+                ImmutableHashSet<T>.HashBucket newBucket = bucket.Add(item, origin.EqualityComparer, out result);
                 if (result == OperationResult.SizeChanged)
                 {
                     newRoot = UpdateRoot(newRoot, hashCode, origin.HashBucketEqualityComparer, newBucket);
@@ -761,13 +793,13 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var newSet = SortedInt32KeyNode<HashBucket>.EmptyNode;
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newSet = SortedInt32KeyNode<HashBucket>.EmptyNode;
             int count = 0;
-            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (Contains(item, origin))
                 {
-                    var result = Add(item, new MutationInput(newSet, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
+                    ImmutableHashSet<T>.MutationResult result = Add(item, new MutationInput(newSet, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
                     newSet = result.Root;
                     count += result.Count;
                 }
@@ -786,8 +818,8 @@ namespace System.Collections.Immutable
             Requires.NotNull(root, nameof(root));
 
             int count = 0;
-            var newRoot = root;
-            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> newRoot = root;
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 int hashCode = item != null ? equalityComparer.GetHashCode(item) : 0;
                 HashBucket bucket;
@@ -813,15 +845,15 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var otherAsSet = ImmutableHashSet.CreateRange(origin.EqualityComparer, other);
+            ImmutableHashSet<T> otherAsSet = ImmutableHashSet.CreateRange(origin.EqualityComparer, other);
 
             int count = 0;
-            var result = SortedInt32KeyNode<HashBucket>.EmptyNode;
+            SortedInt32KeyNode<ImmutableHashSet<T>.HashBucket> result = SortedInt32KeyNode<HashBucket>.EmptyNode;
             foreach (T item in new NodeEnumerable(origin.Root))
             {
                 if (!otherAsSet.Contains(item))
                 {
-                    var mutationResult = Add(item, new MutationInput(result, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
+                    ImmutableHashSet<T>.MutationResult mutationResult = Add(item, new MutationInput(result, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
                     result = mutationResult.Root;
                     count += mutationResult.Count;
                 }
@@ -831,7 +863,7 @@ namespace System.Collections.Immutable
             {
                 if (!Contains(item, origin))
                 {
-                    var mutationResult = Add(item, new MutationInput(result, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
+                    ImmutableHashSet<T>.MutationResult mutationResult = Add(item, new MutationInput(result, origin.EqualityComparer, origin.HashBucketEqualityComparer, count));
                     result = mutationResult.Root;
                     count += mutationResult.Count;
                 }
@@ -1009,14 +1041,13 @@ namespace System.Collections.Immutable
             {
                 // If the items being added actually come from an ImmutableHashSet<T>,
                 // reuse that instance if possible.
-                var other = items as ImmutableHashSet<T>;
-                if (other != null)
+                if (items is ImmutableHashSet<T> other)
                 {
                     return other.WithComparer(this.KeyComparer);
                 }
             }
 
-            var result = Union(items, this.Origin);
+            ImmutableHashSet<T>.MutationResult result = Union(items, this.Origin);
             return result.Finalize(this);
         }
     }

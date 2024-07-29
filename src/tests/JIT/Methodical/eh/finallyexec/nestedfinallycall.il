@@ -10,7 +10,7 @@
 .assembly extern mscorlib {}
 .assembly extern System {}
 .assembly extern eh_common{}
-.assembly 'nestedfinallycall' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .namespace Test_nestedfinallycall {
 .class public EHTest

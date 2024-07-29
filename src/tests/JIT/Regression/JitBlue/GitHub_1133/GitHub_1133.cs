@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class GitHub_1133
+public class GitHub_1133
 {
     static Guid s_dt;
 
@@ -34,7 +35,8 @@ class GitHub_1133
         s_dt = dt;
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
         try

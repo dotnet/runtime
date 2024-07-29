@@ -557,7 +557,40 @@ namespace DispatchProxyTests
             Assert.NotNull(propertyInfo);
         }
 
-#if NETCOREAPP
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Properties(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualPropertyService proxy = CreateHelper<TestType_IStaticVirtualPropertyService, TestDispatchProxy>(useGenericCreate);
+            PropertyInfo? propertyInfo = proxy.GetType().GetTypeInfo().GetDeclaredProperty(nameof(TestType_IStaticVirtualPropertyService.TestProperty));
+            Assert.NotNull(propertyInfo);
+            Assert.True(propertyInfo.GetMethod!.IsStatic);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Proxy_Declares_Interface_Static_Virtual_Methods(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+            Assert.True(methodInfo.IsStatic);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Static_Virtual_Method_Throws_NotSupportedException(bool useGenericCreate)
+        {
+            TestType_IStaticVirtualMethodService proxy = CreateHelper<TestType_IStaticVirtualMethodService, TestDispatchProxy>(useGenericCreate);
+            MethodInfo? methodInfo = proxy.GetType().GetTypeInfo().GetDeclaredMethod(nameof(TestType_IStaticVirtualMethodService.TestMethod));
+            Assert.NotNull(methodInfo);
+            Assert.Throws<NotSupportedException>(() => methodInfo.Invoke(proxy, BindingFlags.DoNotWrapExceptions, null, null, null));
+        }
+
+#if NET
         [Fact]
         public static void Invoke_Event_Add_And_Remove_And_Raise_Invokes_Correct_Methods_Generic_And_Non_Generic_Tests()
         {
@@ -809,6 +842,25 @@ namespace DispatchProxyTests
                            .Invoke(null, new object[] { typeof(IDisposable), type });
                 }
             }
+        }
+
+        [Fact]
+        public static void Test_Multiple_AssemblyLoadContextsWithBadName()
+        {
+            if (typeof(DispatchProxyTests).Assembly.Location == "")
+                return;
+
+            Assembly assembly = Assembly.LoadFile(typeof(DispatchProxyTests).Assembly.Location);
+            Type type = assembly.GetType(typeof(DispatchProxyTests).FullName);
+            MethodInfo method = type.GetMethod(nameof(Demo), BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.True((bool)method.Invoke(null, null));
+        }
+
+        internal static bool Demo()
+        {
+            TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, InternalInvokeProxy>();
+            proxy.Hello("Hello");
+            return true;
         }
 
         private static TInterface CreateHelper<TInterface, TProxy>(bool useGenericCreate) where TProxy : DispatchProxy

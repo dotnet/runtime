@@ -46,18 +46,28 @@ namespace System.Text
                 return false; // EOF previously reached or enumerator was never initialized
             }
 
-            int idx = string.IndexOfNewlineChar(_remaining, out int stride);
-            if (idx >= 0)
+            ReadOnlySpan<char> remaining = _remaining;
+
+            int idx = remaining.IndexOfAny(string.SearchValuesStorage.NewLineChars);
+
+            if ((uint)idx < (uint)remaining.Length)
             {
-                _current = _remaining.Slice(0, idx);
-                _remaining = _remaining.Slice(idx + stride);
+                int stride = 1;
+
+                if (remaining[idx] == '\r' && (uint)(idx + 1) < (uint)remaining.Length && remaining[idx + 1] == '\n')
+                {
+                    stride = 2;
+                }
+
+                _current = remaining.Slice(0, idx);
+                _remaining = remaining.Slice(idx + stride);
             }
             else
             {
                 // We've reached EOF, but we still need to return 'true' for this final
                 // iteration so that the caller can query the Current property once more.
 
-                _current = _remaining;
+                _current = remaining;
                 _remaining = default;
                 _isEnumeratorActive = false;
             }

@@ -66,7 +66,7 @@ namespace Mono.Linker
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicNestedTypes)) {
-				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.NonPublic)) {
+				foreach (var nested in typeDefinition.GetNestedTypesOnType (context, filter: null, bindingFlags: BindingFlags.NonPublic)) {
 					yield return nested;
 					var members = new List<IMetadataTokenProvider> ();
 					nested.GetAllOnType (context, declaredOnly: false, members);
@@ -76,7 +76,7 @@ namespace Mono.Linker
 			}
 
 			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicNestedTypes)) {
-				foreach (var nested in typeDefinition.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.Public)) {
+				foreach (var nested in typeDefinition.GetNestedTypesOnType (context, filter: null, bindingFlags: BindingFlags.Public)) {
 					yield return nested;
 					var members = new List<IMetadataTokenProvider> ();
 					nested.GetAllOnType (context, declaredOnly: false, members);
@@ -105,7 +105,7 @@ namespace Mono.Linker
 					yield return e;
 			}
 
-			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypesOverlay.Interfaces)) {
+			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces)) {
 				foreach (var i in typeDefinition.GetAllInterfaceImplementations (context, declaredOnly))
 					yield return i;
 			}
@@ -136,9 +136,9 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<MethodDefinition> GetMethodsOnTypeHierarchy (this TypeDefinition thisType, LinkContext context, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
+		public static IEnumerable<MethodDefinition> GetMethodsOnTypeHierarchy (this TypeReference thisType, LinkContext context, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
-			TypeDefinition? type = thisType;
+			TypeDefinition? type = thisType.ResolveToTypeDefinition (context);
 			bool onBaseType = false;
 			while (type != null) {
 				foreach (var method in type.Methods) {
@@ -220,8 +220,11 @@ namespace Mono.Linker
 			}
 		}
 
-		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeDefinition type, Func<TypeDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeReference typeRef, LinkContext context, Func<TypeDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
+			if (typeRef.ResolveToTypeDefinition (context) is not TypeDefinition type)
+				yield break;
+
 			foreach (var nestedType in type.NestedTypes) {
 				if (filter != null && !filter (nestedType))
 					continue;
@@ -297,7 +300,7 @@ namespace Mono.Linker
 				foreach (var @event in type.Events) {
 					// Ignore private properties on a base type - those are completely ignored by reflection
 					// (anything private on the base type is not visible via the derived type)
-					// Note that properties themselves are not actually private, their accessors are
+					// Note that events themselves are not actually private, their accessors are
 					if (onBaseType &&
 						(@event.AddMethod == null || @event.AddMethod.IsPrivate) &&
 						(@event.RemoveMethod == null || @event.RemoveMethod.IsPrivate))

@@ -56,7 +56,7 @@ PALTEST(c_runtime__putenv_test1_paltest_putenv_test1, "c_runtime/_putenv/test1/p
          */
         if (TestCases[i].bValidString == TRUE)
         {       
-            variableValue = getenv(TestCases[i].varName);
+            variableValue = PAL_getenv(TestCases[i].varName);
         
             if (variableValue == NULL)
             { 
@@ -81,7 +81,7 @@ PALTEST(c_runtime__putenv_test1_paltest_putenv_test1, "c_runtime/_putenv/test1/p
              * Check to see that putenv fails for malformed _putenvString values
              */
         {
-            variableValue = getenv(TestCases[i].varName);
+            variableValue = PAL_getenv(TestCases[i].varName);
         
             if (variableValue != NULL)
             { 

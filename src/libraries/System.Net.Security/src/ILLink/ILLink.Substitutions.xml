@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Net.Security">
+    <type fullname="System.Net.NegotiateAuthenticationPal">
+      <method signature="System.Boolean get_UseManagedNtlm()" feature="System.Net.Security.UseManagedNtlm" featurevalue="false" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

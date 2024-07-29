@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'GitHub_23950' {}
 
@@ -10,9 +11,12 @@
 .class public sequential ansi sealed beforefieldinit Program
 	extends [mscorlib]System.Object
 {
-	.method private hidebysig static 
+	.method public hidebysig static 
 		int32 Main () cil managed
 	{
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 
 		.maxstack 1
 		.entrypoint

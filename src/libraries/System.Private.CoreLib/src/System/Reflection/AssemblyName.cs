@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
@@ -173,14 +174,9 @@ namespace System.Reflection
                 "GetAssemblyName",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new Type[] { typeof(string) },
-                null);
-
-            if (getAssemblyNameMethod == null)
-            {
+                [typeof(string)],
+                null) ??
                 throw new MissingMethodException(readerType.FullName, "GetAssemblyName");
-            }
-
             return s_getAssemblyName = getAssemblyNameMethod.CreateDelegate<Func<string, AssemblyName>>();
         }
 
@@ -278,6 +274,8 @@ namespace System.Reflection
                 return s;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -295,7 +293,7 @@ namespace System.Reflection
         /// </summary>
         public static bool ReferenceMatchesDefinition(AssemblyName? reference, AssemblyName? definition)
         {
-            if (object.ReferenceEquals(reference, definition))
+            if (ReferenceEquals(reference, definition))
                 return true;
             ArgumentNullException.ThrowIfNull(reference);
             ArgumentNullException.ThrowIfNull(definition);
@@ -432,7 +430,7 @@ namespace System.Reflection
                 // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
                 char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
 
-                if (!(dest is null) && destPos != 0)
+                if (dest is not null && destPos != 0)
                     Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
                 dest = newresult;
             }

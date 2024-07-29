@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly '25param3b' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 .namespace Test_25param3b_il
 {

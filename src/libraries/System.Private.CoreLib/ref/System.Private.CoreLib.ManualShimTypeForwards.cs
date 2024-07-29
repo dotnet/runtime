@@ -6,25 +6,32 @@
 
 namespace System
 {
-    public sealed partial class CultureAwareComparer : System.StringComparer, System.Runtime.Serialization.ISerializable
+    public sealed partial class CultureAwareComparer : System.StringComparer, System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>, System.Runtime.Serialization.ISerializable
     {
         internal CultureAwareComparer() { }
         public override int Compare(string? x, string? y) { throw null; }
+        string System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.Create(System.ReadOnlySpan<char> span) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override bool Equals(string? x, string? y) { throw null; }
+        bool System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.Equals(System.ReadOnlySpan<char> span, string? target) { throw null; }
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(string obj) { throw null; }
+        int System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.GetHashCode(System.ReadOnlySpan<char> span) { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    public partial class OrdinalComparer : System.StringComparer
+    public partial class OrdinalComparer : System.StringComparer, System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>
     {
         internal OrdinalComparer() { }
         public override int Compare(string? x, string? y) { throw null; }
+        string System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.Create(System.ReadOnlySpan<char> span) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override bool Equals(string? x, string? y) { throw null; }
+        bool System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.Equals(System.ReadOnlySpan<char> span, string? target) { throw null; }
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(string obj) { throw null; }
+        int System.Collections.Generic.IAlternateEqualityComparer<System.ReadOnlySpan<char>, string?>.GetHashCode(System.ReadOnlySpan<char> span) { throw null; }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class UnitySerializationHolder : System.Runtime.Serialization.IObjectReference, System.Runtime.Serialization.ISerializable
     {
         public UnitySerializationHolder(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -64,7 +71,7 @@ namespace System.Collections.Generic
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(byte b) { throw null; }
     }
-    public sealed partial class EnumEqualityComparer<T> : System.Collections.Generic.EqualityComparer<T>, System.Runtime.Serialization.ISerializable where T : struct
+    public sealed partial class EnumEqualityComparer<T> : System.Collections.Generic.EqualityComparer<T>, System.Runtime.Serialization.ISerializable where T : struct, System.Enum
     {
         public EnumEqualityComparer() { }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
@@ -90,6 +97,8 @@ namespace System.Collections.Generic
     }
     public partial class NonRandomizedStringEqualityComparer : System.Collections.Generic.IEqualityComparer<string?>, System.Runtime.Serialization.ISerializable
     {
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected NonRandomizedStringEqualityComparer(System.Runtime.Serialization.SerializationInfo information, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool Equals(string? x, string? y) { throw null; }
         public virtual int GetHashCode(string? obj) { throw null; }
@@ -139,6 +148,8 @@ namespace System.Diagnostics.Contracts
         public string Failure { get { throw null; } }
         public System.Diagnostics.Contracts.ContractFailureKind Kind { get { throw null; } }
         public string? UserMessage { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

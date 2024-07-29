@@ -31,13 +31,13 @@
 // Note: I think that IsAlwaysNormalized should probably return true for form C for Chinese 20936 based CPs.
 //
 
-using System.Globalization;
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
 using System;
-using System.Security;
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace System.Text
 {
@@ -56,12 +56,12 @@ namespace System.Text
 
         // We have to load the 936 code page tables, so impersonate 936 as our base
         // This pretends to be other code pages as far as memory sections are concerned.
-        internal ISO2022Encoding(int codePage) : base(codePage, s_tableBaseCodePages[codePage % 10])
+        internal ISO2022Encoding(int codePage) : base(codePage, TableBaseCodePages[codePage % 10])
         {
         }
 
-        private static readonly int[] s_tableBaseCodePages =
-        {
+        private static ReadOnlySpan<int> TableBaseCodePages =>
+        [
             932,    // 50220  ISO-2022-JP, No halfwidth Katakana, convert to full width
             932,    // 50221  ISO-2022-JP, Use escape sequence for half width Katakana
             932,    // 50222  ISO-2022-JP, Use shift-in/shift-out for half width Katakana
@@ -75,7 +75,7 @@ namespace System.Text
             0, //20000,    // 50229  ISO-2022-CN, ModeCNS11643_1
             0, //20000,    // 50229  ISO-2022-CN, ModeCNS11643_2
             0         //                     ModeASCII
-        };
+        ];
 
         internal enum ISO2022Modes
         {
@@ -400,14 +400,14 @@ namespace System.Text
                     {
                         // CodePage 50220 doesn't use halfwidth Katakana, convert to fullwidth
                         // See if its out of range, fallback if so, throws if recursive fallback
-                        if (bTrailByte < 0x21 || bTrailByte >= 0x21 + s_HalfToFullWidthKanaTable.Length)
+                        if (bTrailByte < 0x21 || bTrailByte >= 0x21 + HalfToFullWidthKanaTable.Length)
                         {
                             buffer.Fallback(ch);
                             continue;
                         }
 
                         // Get the full width katakana char to use.
-                        iBytes = unchecked((ushort)(s_HalfToFullWidthKanaTable[bTrailByte - 0x21] & 0x7F7F));
+                        iBytes = unchecked((ushort)(HalfToFullWidthKanaTable[bTrailByte - 0x21] & 0x7F7F));
 
                         // May have to do all sorts of fun stuff for mode, go back to start convert
                         goto StartConvert;
@@ -1852,8 +1852,8 @@ namespace System.Text
             }
         }
 
-        private static readonly ushort[] s_HalfToFullWidthKanaTable =
-        {
+        private static ReadOnlySpan<ushort> HalfToFullWidthKanaTable =>
+        [
             0xa1a3, // 0x8ea1 : Halfwidth Ideographic Period
             0xa1d6, // 0x8ea2 : Halfwidth Opening Corner Bracket
             0xa1d7, // 0x8ea3 : Halfwidth Closing Corner Bracket
@@ -1917,6 +1917,6 @@ namespace System.Text
             0xa5f3, // 0x8edd : Halfwidth Katakana N
             0xa1ab, // 0x8ede : Halfwidth Katakana Voiced Sound Mark
             0xa1ac  // 0x8edf : Halfwidth Katakana Semi-Voiced Sound Mark
-        };
+        ];
     }
 }

@@ -26,6 +26,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         COR_ILEXCEPTION_CLAUSE_FINALLY = 0x0002,        // This clause is a finally clause
         COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
         COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+        COR_ILEXCEPTION_CLAUSE_SAMETRY = 0x0010,        // This clause covers same try block as the previous one
 
         COR_ILEXCEPTION_CLAUSE_KIND_MASK = COR_ILEXCEPTION_CLAUSE_FILTER | COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT,
     }
@@ -113,29 +114,29 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="methodRva">Starting RVA of the runtime function is used to display the try / handler info as RVA intervals</param>
         public void WriteTo(TextWriter writer, int methodRva, bool dumpRva)
         {
-            writer.Write($@"Flags {(uint)Flags:X2} ");
-            writer.Write($@"TryOff {TryOffset:X4} ");
+            writer.Write($"Flags {(uint)Flags:X2} ");
+            writer.Write($"TryOff {TryOffset:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(TryOffset + methodRva):X4}) ");
-            writer.Write($@"TryEnd {TryEnd:X4} ");
+                writer.Write($"(RVA {(TryOffset + methodRva):X4}) ");
+            writer.Write($"TryEnd {TryEnd:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(TryEnd + methodRva):X4}) ");
-            writer.Write($@"HndOff {HandlerOffset:X4} ");
+                writer.Write($"(RVA {(TryEnd + methodRva):X4}) ");
+            writer.Write($"HndOff {HandlerOffset:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(HandlerOffset + methodRva):X4}) ");
-            writer.Write($@"HndEnd {HandlerEnd:X4} ");
+                writer.Write($"(RVA {(HandlerOffset + methodRva):X4}) ");
+            writer.Write($"HndEnd {HandlerEnd:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(HandlerEnd + methodRva):X4}) ");
-            writer.Write($@"ClsFlt {ClassTokenOrFilterOffset:X4}");
+                writer.Write($"(RVA {(HandlerEnd + methodRva):X4}) ");
+            writer.Write($"ClsFlt {ClassTokenOrFilterOffset:X4}");
 
             switch (Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK)
             {
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE:
-                    writer.Write($" CATCH: {0}", ClassName ?? "null");
+                    writer.Write($" CATCH: {ClassName ?? "null"}");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FILTER:
-                    writer.Write($" FILTER (RVA {0:X4})", ClassTokenOrFilterOffset + methodRva);
+                    writer.Write($" FILTER (RVA {(ClassTokenOrFilterOffset + methodRva):X4})");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FINALLY:
@@ -153,6 +154,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_DUPLICATED) != (CorExceptionFlag)0)
             {
                 writer.Write(" DUPLICATED");
+            }
+
+            if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_SAMETRY) != (CorExceptionFlag)0)
+            {
+                writer.Write(" SAMETRY");
             }
         }
     }

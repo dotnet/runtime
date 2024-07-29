@@ -151,11 +151,15 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info
 
   Does not return
 --*/
+#if !defined(HOST_ARM)  // PAL_NORETURN produces broken unwinding information for this method
+                        // making crash dumps impossible to analyze
 PAL_NORETURN
-VOID PROCAbort(int signal = SIGABRT);
+#endif
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
 
 /*++
 Function:
@@ -177,10 +181,12 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
 
 /*++
 Function:

@@ -3,11 +3,13 @@
 //
 
 using System;
+using Xunit;
 
-class foo
+public class foo
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = 3;
 

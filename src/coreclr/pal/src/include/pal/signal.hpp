@@ -112,19 +112,21 @@ Function :
     SEHCleanupSignals
 
     Restore default signal handlers
+Parameters :
+    isChildProcess - indicates that it is called from a child process fork
 
     (no parameters, no return value)
 --*/
-void SEHCleanupSignals();
+void SEHCleanupSignals(bool isChildProcess);
 
 /*++
 Function :
-    SEHCleanupAbort()
+    UnmaskActivationSignal
 
-    Restore default SIGABORT signal handlers
+    Unmask the INJECT_ACTIVATION_SIGNAL for the current thread
 
     (no parameters, no return value)
 --*/
-void SEHCleanupAbort();
+void UnmaskActivationSignal();
 
 #endif /* _PAL_SIGNAL_HPP_ */

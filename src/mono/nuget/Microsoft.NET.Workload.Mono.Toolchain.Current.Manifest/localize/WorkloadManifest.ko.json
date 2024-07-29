@@ -1,0 +1,5 @@
+﻿{
+  "workloads/wasm-tools/description": ".NET WebAssembly 빌드 도구",
+  "workloads/wasm-experimental/description": ".NET WebAssembly 실험 도구",
+  "workloads/runtimes-windows/description": "Windows 런타임 팩"
+}

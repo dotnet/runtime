@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchI
 {
@@ -75,7 +76,8 @@ public static class Array2
         return result;
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         bool result = Bench(Iterations);
         return (result ? 100 : -1);
     }

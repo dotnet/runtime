@@ -66,29 +66,29 @@ namespace System.Reflection.Emit
 
         public int GetTokenFor(DynamicMethod method)
         {
-            return this.method.GetILGenerator().TokenGenerator.GetToken(method, false);
+            return this.method.GetRuntimeILGenerator().TokenGenerator.GetToken(method, false);
         }
 
         public int GetTokenFor(RuntimeFieldHandle field)
         {
-            return this.method.GetILGenerator().TokenGenerator.GetToken(FieldInfo.GetFieldFromHandle(field), false);
+            return this.method.GetRuntimeILGenerator().TokenGenerator.GetToken(FieldInfo.GetFieldFromHandle(field), false);
         }
 
         public int GetTokenFor(RuntimeMethodHandle method)
         {
             MethodBase mi = MethodBase.GetMethodFromHandle(method)!;
-            return this.method.GetILGenerator().TokenGenerator.GetToken(mi, false);
+            return this.method.GetRuntimeILGenerator().TokenGenerator.GetToken(mi, false);
         }
 
         public int GetTokenFor(RuntimeTypeHandle type)
         {
             Type t = Type.GetTypeFromHandle(type)!;
-            return this.method.GetILGenerator().TokenGenerator.GetToken(t, false);
+            return this.method.GetRuntimeILGenerator().TokenGenerator.GetToken(t, false);
         }
 
         public int GetTokenFor(string literal)
         {
-            return method.GetILGenerator().TokenGenerator.GetToken(literal);
+            return method.GetRuntimeILGenerator().TokenGenerator.GetToken(literal);
         }
 
         // FIXME:
@@ -105,7 +105,7 @@ namespace System.Reflection.Emit
 
         public void SetCode(byte[]? code, int maxStackSize)
         {
-            method.GetILGenerator().SetCode(code, maxStackSize);
+            method.GetRuntimeILGenerator().SetCode(code, maxStackSize);
         }
 
         [CLSCompliantAttribute(false)]
@@ -115,7 +115,7 @@ namespace System.Reflection.Emit
             if (codeSize > 0)
                 ArgumentNullException.ThrowIfNull(code);
 
-            method.GetILGenerator().SetCode(code, codeSize, maxStackSize);
+            method.GetRuntimeILGenerator().SetCode(code, codeSize, maxStackSize);
         }
 
         // FIXME:

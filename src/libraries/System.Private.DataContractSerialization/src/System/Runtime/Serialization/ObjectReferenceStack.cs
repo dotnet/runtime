@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
 using System.Collections.Generic;
-
+using System.Diagnostics;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {
@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
             {
                 if (_objectDictionary == null)
                 {
-                    DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
+                    Debug.Fail("Object reference stack in invalid state");
                 }
                 _objectDictionary.Remove(obj);
             }
@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization
             {
                 if (_objectDictionary == null)
                 {
-                    DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
+                    Debug.Fail("Object reference stack in invalid state");
                 }
                 _objectDictionary.Remove(obj);
             }

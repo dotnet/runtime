@@ -196,16 +196,6 @@ namespace System.Diagnostics
             }
         }
 
-        private static Encoding GetEncodingWithFallback(Encoding encoding)
-        {
-            // Clone it and set the "?" replacement fallback
-            Encoding fallbackEncoding = (Encoding)encoding.Clone();
-            fallbackEncoding.EncoderFallback = EncoderFallback.ReplacementFallback;
-            fallbackEncoding.DecoderFallback = DecoderFallback.ReplacementFallback;
-
-            return fallbackEncoding;
-        }
-
         internal void EnsureWriter()
         {
             if (_writer == null)
@@ -226,7 +216,9 @@ namespace System.Diagnostics
                 // encoding to substitute illegal chars. For ex, In case of high surrogate character
                 // D800-DBFF without a following low surrogate character DC00-DFFF
                 // NOTE: We also need to use an encoding that does't emit BOM which is StreamWriter's default
-                Encoding noBOMwithFallback = GetEncodingWithFallback(new UTF8Encoding(false));
+                var noBOMwithFallback = (UTF8Encoding)new UTF8Encoding(false).Clone();
+                noBOMwithFallback.EncoderFallback = EncoderFallback.ReplacementFallback;
+                noBOMwithFallback.DecoderFallback = DecoderFallback.ReplacementFallback;
 
                 // To support multiple appdomains/instances tracing to the same file,
                 // we will try to open the given file for append but if we encounter

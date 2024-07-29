@@ -84,7 +84,7 @@ namespace System.Configuration
 
         internal static IDictionary ReadSettings(string sectionName, bool isUserScoped)
         {
-            IDictionary settings = new Hashtable();
+            Hashtable settings = new Hashtable();
 
             if (isUserScoped && !ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
             {
@@ -108,7 +108,7 @@ namespace System.Configuration
 
         internal static IDictionary ReadSettingsFromFile(string configFileName, string sectionName, bool isUserScoped)
         {
-            IDictionary settings = new Hashtable();
+            Hashtable settings = new Hashtable();
 
             if (isUserScoped && !ConfigurationManagerInternalFactory.Instance.SupportsUserConfig)
             {
@@ -329,14 +329,14 @@ namespace System.Configuration
     /// The ClientSettingsStore talks to the LocalFileSettingsProvider through a dictionary which maps from
     /// setting names to StoredSetting structs. This struct contains the relevant information.
     /// </summary>
-    internal struct StoredSetting
+    internal readonly struct StoredSetting
     {
         internal StoredSetting(SettingsSerializeAs serializeAs, XmlNode value)
         {
             SerializeAs = serializeAs;
             Value = value;
         }
-        internal SettingsSerializeAs SerializeAs;
-        internal XmlNode Value;
+        internal readonly SettingsSerializeAs SerializeAs;
+        internal readonly XmlNode Value;
     }
 }

@@ -6,21 +6,24 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Android","Browser","wasi")][string]$os,
+  [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
-  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [Parameter(Position=0)][string][Alias('s')]$subset,
+  [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()),
+  [switch]$cross = $false,
+  [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
+  [switch]$usemonoruntime = $false,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
   [switch]$pgoinstrument,
+  [string[]]$fsanitize,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -40,7 +43,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android, wasi or Browser."
+  Write-Host "  -os                            Target operating system: windows, linux, osx, android, wasi or browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -51,6 +54,7 @@ function Get-Help() {
   Write-Host "  -subset (-s)                   Build a subset, print available subsets with -subset help."
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
+  Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
@@ -75,17 +79,20 @@ function Get-Help() {
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net8.0 or net48."
-  Write-Host "                          [Default: net8.0]"
+  Write-Host "  -framework (-f)         Build framework: net9.0 or net48."
+  Write-Host "                          [Default: net9.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
 
   Write-Host "Native build settings:"
-  Write-Host "  -cmakeargs              User-settable additional arguments passed to CMake."
-  Write-Host "  -ninja                  Use Ninja to drive the native build. (default)"
-  Write-Host "  -msbuild                Use MSBuild to drive the native build. This is a no-op for Mono."
-  Write-Host "  -pgoinstrument          Build the CLR with PGO instrumentation."
+  Write-Host "  -cmakeargs                User-settable additional arguments passed to CMake."
+  Write-Host "  -ninja                    Use Ninja to drive the native build. (default)"
+  Write-Host "  -msbuild                  Use MSBuild to drive the native build. This is a no-op for Mono."
+  Write-Host "  -pgoinstrument            Build the CLR with PGO instrumentation."
+  Write-Host "  -fsanitize (address)      Build the native components with the specified sanitizers."
+  Write-Host "                            Sanitizers can be specified with a comma-separated list."
+  Write-Host ""
 
   Write-Host "Command-line arguments not listed above are passed through to MSBuild."
   Write-Host "The above arguments can be shortened as much as to be unambiguous."
@@ -124,9 +131,41 @@ if ($help) {
   exit 0
 }
 
+# check the first argument if subset is not explicitly passed in
+if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 -and $properties[0] -match '^[a-zA-Z\.\+]+$') {
+  $subset = $properties[0]
+  $PSBoundParameters.Add("subset", $subset)
+  $properties = $properties | Select-Object -Skip 1
+}
+
 if ($subset -eq 'help') {
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
+  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
+}
+
+# Lower-case the passed in OS string.
+if ($os) {
+  $os = $os.ToLowerInvariant()
+}
+
+if ($os -eq "browser") {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
+    exit 1
+  }
+}
+
+if ($os -eq "wasi") {
+  # override default arch for wasi, we only support wasm
+  $arch = "wasm"
+
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
+    exit 1
+  }
 }
 
 if ($vs) {
@@ -214,10 +253,35 @@ if ($vs) {
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
+  # Disable .NET runtime signature validation errors which errors for local builds
+  $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
+
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
   {
-    # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
+
+  if ($librariesConfiguration)
+  {
+    # Respect the LibrariesConfiguration variable for building inside VS with different libraries configurations
+    $env:LIBRARIESCONFIGURATION=$librariesConfiguration
+  }
+
+  # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
+  if ($runtimeFlavor)
+  {
+    $env:RUNTIMEFLAVOR=$runtimeFlavor
+  }
+
+  # Respect the TargetOS variable for building non AnyOS libraries
+  if ($os) {
+    $env:TARGETOS=$os
+  }
+
+  # Respect the TargetArchitecture variable for building non AnyCPU libraries
+  if ($arch) {
+    $env:TARGETARCHITECTURE=$arch
   }
 
   # Launch Visual Studio with the locally defined environment variables
@@ -237,17 +301,13 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
-if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "Browser") {
-  # make sure it is capitalized
-  $PSBoundParameters['os'] = "Browser"
-}
-
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "usemonoruntime"         { $arguments += " /p:PrimaryRuntimeFlavor=Mono" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
@@ -263,9 +323,17 @@ foreach ($argument in $PSBoundParameters.Keys)
     # configuration and arch can be specified multiple times, so they should be no-ops here
     "configuration"          {}
     "arch"                   {}
+    "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }
+
+if ($env:TreatWarningsAsErrors -eq 'false') {
+  $arguments += " -warnAsError 0"
+}
+
+# disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
+$arguments += " /tl:false"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
@@ -273,37 +341,10 @@ $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 $failedBuilds = @()
 
-if ($os -eq "Browser") {
-  # override default arch for Browser, we only support wasm
-  $arch = "wasm"
-
-  if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
-    exit 1
-  }
-}
-
-if ($os -eq "wasi") {
-  # override default arch for wasi, we only support wasm
-  $arch = "wasm"
-
-  if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
-    exit 1
-  }
-}
-
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "Browser") {
-      $env:__DistroRid="browser-$singleArch"
-    } elseif ($os -eq "wasi") {
-      $env:__DistroRid="wasi-$singleArch"
-    } else {
-      $env:__DistroRid="win-$singleArch"
-    }
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"

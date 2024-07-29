@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 interface Ix
 {
@@ -63,7 +64,8 @@ public class Z
     static int IxF(Ix x) { return x.F(); }
     static int IxG(Ix x) { return x.G(); }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         E e = new E();
         K k = new K();

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 namespace GcHole1
 {
@@ -41,7 +42,7 @@ namespace GcHole1
     }
 
 
-    internal static class App
+    public static class App
     {
         private static bool CheckString(string element)
         {
@@ -50,7 +51,8 @@ namespace GcHole1
         }
 
 
-        private static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             string result;
             IEnumerable<string> sequence;
@@ -59,7 +61,7 @@ namespace GcHole1
             result = sequence.SingleOrDefault(App.CheckString);
             Console.WriteLine("RESULT: `{0}'", result);
 
-            return 100;  //assume if run to completion, the test passes
+            //assume if run to completion, the test passes
         }
     }
 }

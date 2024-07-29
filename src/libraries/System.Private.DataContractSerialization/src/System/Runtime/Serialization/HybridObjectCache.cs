@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
 using System.Collections.Generic;
+using System.Xml;
 
 
 namespace System.Runtime.Serialization
@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
             _objectDictionary ??= new Dictionary<string, object?>();
 
             if (_objectDictionary.ContainsKey(id))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id)));
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id));
             _objectDictionary.Add(id, obj);
         }
 

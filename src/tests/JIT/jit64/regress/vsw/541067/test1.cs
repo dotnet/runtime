@@ -26,12 +26,13 @@
 ////////////////////////////////////////////////////////////////
 
 using System;
+using Xunit;
 
 namespace AutoGen
 {
     public class Program
     {
-        static public void Test()
+        internal static void Test()
         {
             int[] a = new int[1];
             a[0] = 0;
@@ -53,7 +54,8 @@ namespace AutoGen
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

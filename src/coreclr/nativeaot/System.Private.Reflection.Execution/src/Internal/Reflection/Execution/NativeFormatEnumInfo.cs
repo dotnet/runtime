@@ -6,15 +6,15 @@ using System.Numerics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime.Augments;
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution
 {
-    static class NativeFormatEnumInfo
+    internal static class NativeFormatEnumInfo
     {
-        private static void GetEnumValuesAndNames(MetadataReader reader, TypeDefinitionHandle typeDefHandle,
-            out object[] sortedBoxedValues, out string[] sortedNames, out bool isFlags)
+        public static void GetEnumValuesAndNames(MetadataReader reader, TypeDefinitionHandle typeDefHandle,
+            out object[] unsortedBoxedValues, out string[] unsortedNames, out bool isFlags)
         {
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
@@ -30,8 +30,8 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            var names = new string[staticFieldCount];
-            var boxedValues = new object[staticFieldCount]; // TODO: Avoid boxing the values
+            unsortedNames = new string[staticFieldCount];
+            unsortedBoxedValues = new object[staticFieldCount]; // TODO: Avoid boxing the values
 
             int i = 0;
             foreach (FieldHandle fieldHandle in typeDef.Fields)
@@ -39,36 +39,33 @@ namespace Internal.Reflection.Execution
                 Field field = fieldHandle.GetField(reader);
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
-                    names[i] = field.Name.GetString(reader);
-                    boxedValues[i] = field.DefaultValue.ParseConstantNumericValue(reader);
+                    unsortedNames[i] = field.Name.GetString(reader);
+                    var handle = field.DefaultValue;
+                    unsortedBoxedValues[i] = handle.HandleType switch
+                    {
+                        HandleType.ConstantSByteValue => (object)(byte)handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value,
+                        HandleType.ConstantByteValue => handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value,
+                        HandleType.ConstantInt16Value => (ushort)handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value,
+                        HandleType.ConstantUInt16Value => handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value,
+                        HandleType.ConstantInt32Value => (uint)handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value,
+                        HandleType.ConstantUInt32Value => handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value,
+                        HandleType.ConstantInt64Value => (ulong)handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value,
+                        HandleType.ConstantUInt64Value => handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value,
+                        _ => throw new InvalidOperationException(), // unreachable - we would have thrown InvalidOperationException earlier
+                    };
                     i++;
                 }
             }
 
-            // Using object overload to avoid generic expansion for every underlying enum type
-            Array.Sort<object, string>(boxedValues, names);
-
-            sortedBoxedValues = boxedValues;
-            sortedNames = names;
-
             isFlags = false;
             foreach (CustomAttributeHandle cah in typeDef.CustomAttributes)
             {
-                if (cah.IsCustomAttributeOfType(reader, "System", "FlagsAttribute"))
+                if (cah.IsCustomAttributeOfType(reader, ["System"], "FlagsAttribute"))
+                {
                     isFlags = true;
+                    break;
+                }
             }
-        }
-
-        public static EnumInfo<TUnderlyingValue> Create<TUnderlyingValue>(RuntimeTypeHandle typeHandle, MetadataReader reader, TypeDefinitionHandle typeDefHandle)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
-        {
-            GetEnumValuesAndNames(reader, typeDefHandle, out object[] boxedValues, out string[] names, out bool isFlags);
-
-            var values = new TUnderlyingValue[boxedValues.Length];
-            for (int i = 0; i < boxedValues.Length; i++)
-                values[i] = (TUnderlyingValue)boxedValues[i];
-
-            return new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(typeHandle), values, names, isFlags);
         }
     }
 }

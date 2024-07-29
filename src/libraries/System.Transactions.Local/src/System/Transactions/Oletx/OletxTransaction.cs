@@ -22,7 +22,12 @@ namespace System.Transactions.Oletx
     /// the transaction.
     /// </summary>
     [Serializable]
-    internal class OletxTransaction : ISerializable, IObjectReference
+    internal class OletxTransaction : ISerializable
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
+#pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
+        , IObjectReference
+#pragma warning restore SA1001
+#pragma warning restore SYSLIB0050
     {
         // We have a strong reference on realOletxTransaction which does the real work
         internal RealOletxTransaction RealOletxTransaction;
@@ -35,7 +40,7 @@ namespace System.Transactions.Oletx
         // filled with the propagation token from the serialization info.  Later, when
         // GetRealObject is called, this array is used to decide whether or not a new
         // transation needs to be created and if so, to create the transaction.
-        private byte[]? _propagationTokenForDeserialize;
+        private readonly byte[]? _propagationTokenForDeserialize;
 
         protected int Disposed;
 
@@ -135,6 +140,7 @@ namespace System.Transactions.Oletx
             RealOletxTransaction = null!;
         }
 
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
         public object GetRealObject(StreamingContext context)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -181,6 +187,7 @@ namespace System.Transactions.Oletx
 
             return returnValue;
         }
+#pragma warning restore SYSLIB0050
 
         /// <summary>
         /// Implementation of IDisposable.Dispose. Releases managed, and unmanaged resources
@@ -286,7 +293,7 @@ namespace System.Transactions.Oletx
             Debug.Assert(enlistmentNotification != null, "Argument is null");
             Debug.Assert(Disposed == 0, "OletxTransction object is disposed");
 
-            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments )
+            if (RealOletxTransaction == null || RealOletxTransaction.TooLateForEnlistments)
             {
                 throw TransactionException.Create(SR.TooLate, null, DistributedTxId);
             }
@@ -462,7 +469,7 @@ namespace System.Transactions.Oletx
         // Transaction manager
         internal OletxTransactionManager OletxTransactionManagerInstance { get; }
 
-        private TransactionShim? _transactionShim;
+        private readonly TransactionShim? _transactionShim;
 
         // guid related to transaction
         internal Guid TxGuid { get; private set; }
@@ -492,7 +499,7 @@ namespace System.Transactions.Oletx
         internal OletxPhase1VolatileEnlistmentContainer? Phase1EnlistVolatilementContainer;
 
         // Used to get outcomes of transactions with a voter.
-        private OutcomeEnlistment? _outcomeEnlistment;
+        private readonly OutcomeEnlistment? _outcomeEnlistment;
 
         // This is a count of volatile and Phase0 durable enlistments on this transaction that have not yet voted.
         // This is incremented when an enlistment is made and decremented when the
@@ -514,8 +521,8 @@ namespace System.Transactions.Oletx
         // Enlistments on all clones of this Real transaction use this value.
         internal int _enlistmentCount;
 
-        private DateTime _creationTime;
-        private DateTime _lastStateChangeTime;
+        private readonly DateTime _creationTime;
+        private readonly DateTime _lastStateChangeTime;
         private TransactionTraceIdentifier _traceIdentifier = TransactionTraceIdentifier.Empty;
 
         // This field is set directly from the OletxCommittableTransaction constructor.  It will be null
@@ -545,7 +552,7 @@ namespace System.Transactions.Oletx
                 // for COM+ interop purposes, but we can't get the guid or the status of the transaction.
                 if (TxGuid.Equals(Guid.Empty))
                 {
-                    throw TransactionException.Create(SR.GetResourceString(SR.CannotGetTransactionIdentifier), null);
+                    throw TransactionException.Create(SR.CannotGetTransactionIdentifier, null);
                 }
 
                 return TxGuid;
@@ -636,7 +643,7 @@ namespace System.Transactions.Oletx
                 _lastStateChangeTime = _creationTime;
 
                 // Connect this object with the OutcomeEnlistment.
-                InternalClone = new OletxTransaction( this );
+                InternalClone = new OletxTransaction(this);
 
                 // We have have been created without an outcome enlistment if it was too late to create
                 // a clone from the ITransactionNative that we were created from.
@@ -712,7 +719,7 @@ namespace System.Transactions.Oletx
                                 //been enlisted with DTC. So there is no race to worry about
                                 ReleaseContainerLock(localPhase0VolatileContainer, ref phase0ContainerLockAcquired);
 
-                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer( this );
+                                localPhase0VolatileContainer = new OletxPhase0VolatileEnlistmentContainer(this);
                                 needPhase0Enlistment = true;
                             }
                             else
@@ -785,7 +792,7 @@ namespace System.Transactions.Oletx
                             if (needVoterEnlistment)
                             {
                                 Debug.Assert(Phase1EnlistVolatilementContainer == null,
-                                    "RealOletxTransaction.AddDependentClone - phase1VolContainer not null when expected" );
+                                    "RealOletxTransaction.AddDependentClone - phase1VolContainer not null when expected");
                                 Phase1EnlistVolatilementContainer = localPhase1VolatileContainer;
                             }
                             localPhase1VolatileContainer!.AddDependentClone();
@@ -1022,7 +1029,7 @@ namespace System.Transactions.Oletx
                 {
                     Doomed = true;
                 }
-                else if (TooLateForEnlistments )
+                else if (TooLateForEnlistments)
                 {
                     // It's too late for rollback to be called here.
                     throw TransactionException.Create(SR.TransactionAlreadyOver, null, DistributedTxId);
@@ -1227,7 +1234,7 @@ namespace System.Transactions.Oletx
 
                 // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                 // container to drive the aborted notification in that case.
-                if ( localStatus is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                if (localStatus is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
                    realTx.Phase1EnlistVolatilementContainer != null)
                 {
                     realTx.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(localStatus);
@@ -1276,13 +1283,13 @@ namespace System.Transactions.Oletx
                     {
                         foreach (OletxPhase0VolatileEnlistmentContainer phase0VolatileContainer in realOletxTransaction.Phase0EnlistVolatilementContainerList)
                         {
-                            phase0VolatileContainer.OutcomeFromTransaction( status );
+                            phase0VolatileContainer.OutcomeFromTransaction(status);
                         }
                     }
 
                     // We may be getting this notification while there are still volatile prepare notifications outstanding.  Tell the
                     // container to drive the aborted notification in that case.
-                    if ( status is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
+                    if (status is TransactionStatus.Aborted or TransactionStatus.InDoubt &&
                            realOletxTransaction.Phase1EnlistVolatilementContainer != null)
                     {
                         realOletxTransaction.Phase1EnlistVolatilementContainer.OutcomeFromTransaction(status);
@@ -1300,7 +1307,7 @@ namespace System.Transactions.Oletx
         //
         internal static bool TransactionIsInDoubt(RealOletxTransaction realTx)
         {
-            if (realTx.CommittableTransaction is { CommitCalled: false } )
+            if (realTx.CommittableTransaction is { CommitCalled: false })
             {
                 // If this is a committable transaction and commit has not been called
                 // then we know the outcome.

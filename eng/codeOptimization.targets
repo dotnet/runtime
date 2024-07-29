@@ -9,15 +9,15 @@
            IBCMerge optimizations on Mac for now to unblock the official build.
            See issue https://github.com/dotnet/runtime/issues/33303
       -->
-      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'OSX' or '$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
+      <IsEligibleForNgenOptimization Condition="'$(TargetOS)' == 'osx' or '$(TargetsMobile)' == 'true'">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
   <Target Name="SetApplyNgenOptimization"
           Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
           BeforeTargets="CoreCompile">
     <PropertyGroup>
-      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'Unix' or '$(TargetOS)' == 'Linux'">$(IbcOptimizationDataDir)Linux\</IbcOptimizationDataDir>
-      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'windows'">$(IbcOptimizationDataDir)Windows\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'unix' or '$(TargetOS)' == 'linux'">$(IbcOptimizationDataDir)linux\</IbcOptimizationDataDir>
+      <IbcOptimizationDataDir Condition="'$(TargetOS)' == 'windows'">$(IbcOptimizationDataDir)windows\</IbcOptimizationDataDir>
     </PropertyGroup>
     <ItemGroup>
       <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />
@@ -27,4 +27,17 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="AddReadyToRunPgoOptions" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == 'true'">
+    <PropertyGroup>
+      <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
+      <IncludeMibcFilesInReadyToRun Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">true</IncludeMibcFilesInReadyToRun>
+    </PropertyGroup>
+    <ItemGroup>
+      <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'">
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--embed-pgo-data</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
 </Project>

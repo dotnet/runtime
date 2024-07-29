@@ -11,36 +11,23 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class JsonParameterInfo<T> : JsonParameterInfo
     {
-        public T TypedDefaultValue { get; private set; } = default!;
+        public new JsonConverter<T> EffectiveConverter => MatchingProperty.EffectiveConverter;
+        public new JsonPropertyInfo<T> MatchingProperty { get; }
+        public new T? EffectiveDefaultValue { get; }
 
-        public override void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
+        public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo<T> matchingPropertyInfo)
+            : base(parameterInfoValues, matchingPropertyInfo)
         {
-            base.Initialize(parameterInfo, matchingProperty, options);
-            InitializeDefaultValue(matchingProperty);
-        }
+            Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
+            Debug.Assert(!matchingPropertyInfo.IsConfigured);
 
-        private void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
-        {
-            Debug.Assert(ClrInfo.ParameterType == matchingProperty.PropertyType);
-
-            if (ClrInfo.HasDefaultValue)
+            if (parameterInfoValues is { HasDefaultValue: true, DefaultValue: object defaultValue })
             {
-                object? defaultValue = ClrInfo.DefaultValue;
+                EffectiveDefaultValue = (T)defaultValue;
+            }
 
-                if (defaultValue == null && !matchingProperty.PropertyTypeCanBeNull)
-                {
-                    DefaultValue = TypedDefaultValue;
-                }
-                else
-                {
-                    DefaultValue = defaultValue;
-                    TypedDefaultValue = (T)defaultValue!;
-                }
-            }
-            else
-            {
-                DefaultValue = TypedDefaultValue;
-            }
+            MatchingProperty = matchingPropertyInfo;
+            base.EffectiveDefaultValue = EffectiveDefaultValue;
         }
     }
 }

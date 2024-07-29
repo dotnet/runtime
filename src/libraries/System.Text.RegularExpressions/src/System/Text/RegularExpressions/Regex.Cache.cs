@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
         {
             // Does not delegate to GetOrAdd(..., RegexOptions, ...) in order to avoid having
             // a statically-reachable path to the 'new Regex(..., RegexOptions, ...)', which
-            // will force the Regex compiler to be reachable and thus rooted for the linker.
+            // will force the Regex compiler to be reachable and thus rooted for trimming.
 
             Regex.ValidatePattern(pattern);
 
@@ -299,20 +299,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Node for a cached Regex instance.</summary>
-        private sealed class Node
+        private sealed class Node(Key key, Regex regex)
         {
             /// <summary>The key associated with this cached instance.</summary>
-            public readonly Key Key;
+            public readonly Key Key = key;
             /// <summary>The cached Regex instance.</summary>
-            public readonly Regex Regex;
+            public readonly Regex Regex = regex;
             /// <summary>A "time" stamp representing the approximate last access time for this Regex.</summary>
             public long LastAccessStamp;
-
-            public Node(Key key, Regex regex)
-            {
-                Key = key;
-                Regex = regex;
-            }
         }
     }
 }

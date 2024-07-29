@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Auto)]
 public class GenBase<T>
@@ -63,7 +64,8 @@ public class Test_Negative004
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		Eval(new GenTest().Test_Negative004());

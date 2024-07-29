@@ -341,7 +341,15 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
 
                 if (hashAlgorithm == "SHA1")
                 {
-                    pkcs10 = first.CreateSigningRequest(new RSASha1Pkcs1SignatureGenerator(key));
+                    if (SignatureSupport.SupportsX509Sha1Signatures)
+                    {
+                        pkcs10 = first.CreateSigningRequest(new RSASha1Pkcs1SignatureGenerator(key));
+                    }
+                    else
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1Pkcs1SignatureGenerator(key)));
+                        return;
+                    }
                 }
                 else
                 {
@@ -386,7 +394,15 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
 
                 if (hashAlgorithm == "SHA1")
                 {
-                    pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key));
+                    if (SignatureSupport.SupportsX509Sha1Signatures)
+                    {
+                        pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key));
+                    }
+                    else
+                    {
+                        Assert.ThrowsAny<CryptographicException>(() => first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key)));
+                        return;
+                    }
                 }
                 else
                 {

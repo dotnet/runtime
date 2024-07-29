@@ -22,8 +22,6 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
-            JsonWriterHelper.ValidateBytes(bytes);
-
             WriteBase64ByOptions(utf8PropertyName, bytes);
 
             SetFlagToAddListSeparatorBeforeNextItem();
@@ -72,7 +70,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
         {
-            JsonWriterHelper.ValidatePropertyAndBytes(propertyName, bytes);
+            JsonWriterHelper.ValidatePropertyNameLength(propertyName);
 
             WriteBase64Escape(propertyName, bytes);
 
@@ -96,7 +94,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteBase64String(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes)
         {
-            JsonWriterHelper.ValidatePropertyAndBytes(utf8PropertyName, bytes);
+            JsonWriterHelper.ValidatePropertyNameLength(utf8PropertyName);
 
             WriteBase64Escape(utf8PropertyName, bytes);
 
@@ -238,7 +236,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -274,7 +272,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -282,15 +280,15 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - indent - encodedLength - 7 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - indent - encodedLength - 7 - _newLineLength);
 
             // All ASCII, 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, 1 colon, and 1 space => indent + escapedPropertyName.Length + encodedLength + 6
             // Optionally, 1 list separator, 1-2 bytes for new line, and up to 3x growth when transcoding.
-            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + encodedLength + 7 + s_newLineLength;
+            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + encodedLength + 7 + _newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -311,7 +309,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -324,7 +322,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -332,15 +330,15 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - encodedLength - 7 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - encodedLength - 7 - _newLineLength);
 
             // 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, 1 colon, and 1 space => indent + escapedPropertyName.Length + encodedLength + 6
             // Optionally, 1 list separator, and 1-2 bytes for new line.
-            int maxRequired = indent + escapedPropertyName.Length + encodedLength + 7 + s_newLineLength;
+            int maxRequired = indent + escapedPropertyName.Length + encodedLength + 7 + _newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -361,7 +359,7 @@ namespace System.Text.Json
                 WriteNewLine(output);
             }
 
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            WriteIndentation(output.Slice(BytesPending), indent);
             BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Quote;
@@ -375,7 +373,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            Base64EncodeAndWrite(bytes, output, encodedLength);
+            Base64EncodeAndWrite(bytes, output);
 
             output[BytesPending++] = JsonConstants.Quote;
         }

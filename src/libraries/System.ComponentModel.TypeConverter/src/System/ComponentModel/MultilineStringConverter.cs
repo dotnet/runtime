@@ -20,7 +20,7 @@ namespace System.ComponentModel
 
             if (destinationType == typeof(string) && value is string)
             {
-                return SR.GetResourceString(nameof(SR.Text), "(Text)");
+                return SR.UsingResourceKeys() ? "(Text)" : SR.Text;
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

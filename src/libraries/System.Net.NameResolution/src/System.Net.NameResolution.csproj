@@ -1,46 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == 'Browser'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == ''">SR.SystemNetNameResolution_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == 'browser'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="System\Net\Dns.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" />
+    <Compile Include="System\Net\NameResolutionMetrics.cs" />
     <Compile Include="System\Net\NameResolutionTelemetry.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
-             Link="Common\System\Net\Sockets\ProtocolType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs"
-             Link="Common\System\Net\Sockets\SocketType.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
-    <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
-             Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
     <!-- Debug only -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
-    <!-- System.Net.Internals -->
-    <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
-             Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
+    <!-- System.Net common -->
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Windows" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -71,7 +67,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
@@ -98,12 +95,15 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\Net\Dns.Browser.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
@@ -115,4 +115,5 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
+
 </Project>

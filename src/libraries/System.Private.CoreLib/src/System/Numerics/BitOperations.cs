@@ -7,8 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
@@ -25,21 +25,21 @@ namespace System.Numerics
         // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
         // https://github.com/dotnet/roslyn/pull/24621
 
-        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => new byte[32]
-        {
+        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => // 32
+        [
             00, 01, 28, 02, 29, 14, 24, 03,
             30, 22, 20, 15, 25, 17, 04, 08,
             31, 27, 13, 23, 21, 19, 16, 07,
             26, 12, 18, 06, 11, 05, 10, 09
-        };
+        ];
 
-        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
-        {
+        private static ReadOnlySpan<byte> Log2DeBruijn => // 32
+        [
             00, 09, 01, 10, 13, 21, 02, 29,
             11, 14, 16, 18, 22, 25, 03, 30,
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
-        };
+        ];
 
         /// <summary>
         /// Evaluate whether a given integral value is a power of 2.
@@ -96,7 +96,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static uint RoundUpToPowerOf2(uint value)
         {
-            if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported || WasmBase.IsSupported)
+            if (X86Base.IsSupported || ArmBase.IsSupported || WasmBase.IsSupported)
             {
 #if TARGET_64BIT
                 return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
@@ -128,7 +128,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static ulong RoundUpToPowerOf2(ulong value)
         {
-            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported || WasmBase.IsSupported)
+            if (X86Base.X64.IsSupported || ArmBase.Arm64.IsSupported || WasmBase.IsSupported)
             {
                 int shift = 64 - LeadingZeroCount(value - 1);
                 return (1ul ^ (ulong)(shift >> 6)) << shift;
@@ -162,18 +162,6 @@ namespace System.Numerics
 #else
             return (nuint)RoundUpToPowerOf2((uint)value);
 #endif
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LeadingZeroCount(Int128 value)
-        {
-            ulong upper = value.Upper;
-
-            if (upper == 0)
-            {
-                return 64 + LeadingZeroCount(value.Lower);
-            }
-            return LeadingZeroCount(upper);
         }
 
         /// <summary>
@@ -261,23 +249,12 @@ namespace System.Numerics
             return LeadingZeroCount(hi);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LeadingZeroCount(UInt128 value)
-        {
-            ulong upper = value.Upper;
-
-            if (upper == 0)
-            {
-                return 64 + LeadingZeroCount(value.Lower);
-            }
-            return LeadingZeroCount(upper);
-        }
-
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int LeadingZeroCount(nuint value)
@@ -294,6 +271,7 @@ namespace System.Numerics
         /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(uint value)
@@ -339,6 +317,7 @@ namespace System.Numerics
         /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(ulong value)
@@ -380,6 +359,7 @@ namespace System.Numerics
         /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int Log2(nuint value)
@@ -534,6 +514,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction POPCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int PopCount(nuint value)
@@ -604,6 +585,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int TrailingZeroCount(long value)
             => TrailingZeroCount((ulong)value);
@@ -655,15 +637,23 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int TrailingZeroCount(nint value)
-            => TrailingZeroCount((nuint)value);
+        {
+#if TARGET_64BIT
+            return TrailingZeroCount((ulong)(nuint)value);
+#else
+            return TrailingZeroCount((uint)(nuint)value);
+#endif
+        }
 
         /// <summary>
         /// Count the number of trailing zero bits in a mask.
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int TrailingZeroCount(nuint value)
@@ -683,6 +673,7 @@ namespace System.Numerics
         /// <param name="offset">The number of bits to rotate by.
         /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint RotateLeft(uint value, int offset)
@@ -696,6 +687,7 @@ namespace System.Numerics
         /// <param name="offset">The number of bits to rotate by.
         /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong RotateLeft(ulong value, int offset)
@@ -710,6 +702,7 @@ namespace System.Numerics
         /// Any value outside the range [0..31] is treated as congruent mod 32 on a 32-bit process,
         /// and any value outside the range [0..63] is treated as congruent mod 64 on a 64-bit process.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static nuint RotateLeft(nuint value, int offset)
@@ -729,6 +722,7 @@ namespace System.Numerics
         /// <param name="offset">The number of bits to rotate by.
         /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static uint RotateRight(uint value, int offset)
@@ -742,6 +736,7 @@ namespace System.Numerics
         /// <param name="offset">The number of bits to rotate by.
         /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static ulong RotateRight(ulong value, int offset)
@@ -756,6 +751,7 @@ namespace System.Numerics
         /// Any value outside the range [0..31] is treated as congruent mod 32 on a 32-bit process,
         /// and any value outside the range [0..63] is treated as congruent mod 64 on a 64-bit process.</param>
         /// <returns>The rotated value.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static nuint RotateRight(nuint value, int offset)
@@ -773,6 +769,7 @@ namespace System.Numerics
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, byte data)
@@ -796,6 +793,7 @@ namespace System.Numerics
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, ushort data)
@@ -819,6 +817,7 @@ namespace System.Numerics
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, uint data)
@@ -842,6 +841,7 @@ namespace System.Numerics
         /// <param name="crc">The base value to calculate checksum on</param>
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, ulong data)
@@ -852,26 +852,22 @@ namespace System.Numerics
                 return (uint)Sse42.X64.Crc32(crc, data);
             }
 
-            if (Sse42.IsSupported)
-            {
-                uint result = Sse42.Crc32(crc, (uint)(data));
-                return Sse42.Crc32(result, (uint)(data >> 32));
-            }
-
             if (Crc32.Arm64.IsSupported)
             {
                 return Crc32.Arm64.ComputeCrc32C(crc, data);
             }
 
-            return Crc32Fallback.Crc32C(crc, data);
+            return Crc32C(Crc32C(crc, (uint)(data)), (uint)(data >> 32));
         }
 
         private static class Crc32Fallback
         {
-            // Pre-computed CRC-32 transition table.
+            // CRC-32 transition table.
             // While this implementation is based on the Castagnoli CRC-32 polynomial (CRC-32C),
             // x32 + x28 + x27 + x26 + x25 + x23 + x22 + x20 + x19 + x18 + x14 + x13 + x11 + x10 + x9 + x8 + x6 + x0,
-            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u
+            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u.
+            // This is computed lazily so as to avoid increasing the assembly size for data that's
+            // only needed on a fallback path.
             private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
 
             internal static uint Crc32C(uint crc, byte data)
@@ -897,17 +893,6 @@ namespace System.Numerics
             {
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
                 return Crc32CCore(ref lookupTable, crc, data);
-            }
-
-            internal static uint Crc32C(uint crc, ulong data)
-            {
-                ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
-
-                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
-                data >>= 32;
-                crc = Crc32CCore(ref lookupTable, crc, (uint)data);
-
-                return crc;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -937,12 +922,41 @@ namespace System.Numerics
 
         /// <summary>
         /// Reset specific bit in the given value
+        /// Reset the lowest significant bit in the given value
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint ResetBit(uint value, int bitPos)
+        internal static ulong ResetLowestSetBit(ulong value)
         {
-            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
-            return value & ~(uint)(1 << bitPos);
+            // It's lowered to BLSR on x86
+            return value & (value - 1);
+        }
+
+        /// <summary>
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..31] is treated as congruent mod 32.</param>
+        /// <returns>The new value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint FlipBit(uint value, int index)
+        {
+            return value ^ (1u << index);
+        }
+
+        /// <summary>
+        /// Flip the bit at a specific position in a given value.
+        /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
+        /// /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="index">The zero-based index of the bit to flip.
+        /// Any value outside the range [0..63] is treated as congruent mod 64.</param>
+        /// <returns>The new value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong FlipBit(ulong value, int index)
+        {
+            return value ^ (1ul << index);
         }
     }
 }

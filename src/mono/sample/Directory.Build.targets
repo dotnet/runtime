@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
   </PropertyGroup>
 
   <!--

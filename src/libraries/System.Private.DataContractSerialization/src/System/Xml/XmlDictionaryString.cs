@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Text;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Xml;
 
 namespace System.Xml
 {
@@ -27,7 +27,7 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(value);
 
             if (key < MinKey || key > MaxKey)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey)));
+                throw new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey));
             _dictionary = dictionary;
             _value = value;
             _key = key;

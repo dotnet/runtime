@@ -3,17 +3,19 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class MainApp
+public class MainApp
 {
-    public static void Foo_NoInline(string s)
+    internal static void Foo_NoInline(string s)
     {
         Console.WriteLine(s);
         s = "New string";
         Console.WriteLine(s);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -3,18 +3,24 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __sourceRootDir=%~dp0
-set __repoRoot=%~dp0..\..\..
-set __engNativeDir=%__repoRoot%\eng\native
-set __artifactsDir=%__repoRoot%\artifacts
+set "__sourceRootDir=%~dp0"
+:: remove trailing slash
+if %__sourceRootDir:~-1%==\ set "__sourceRootDir=%__sourceRootDir:~0,-1%"
+set "__repoRoot=%__sourceRootDir%\..\..\.."
+:: normalize
+for %%i in ("%__repoRoot%") do set "__repoRoot=%%~fi"
+set "__engNativeDir=%__repoRoot%\eng\native"
+set "__artifactsDir=%__repoRoot%\artifacts"
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
 set __BuildTarget="build"
 set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
-set "__LinkLibraries= "
 set __Ninja=1
+set __icuDir=""
+set __usePThreads=0
+set __ExtraCmakeParams=
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -32,12 +38,17 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
+if /i [%1] == [browser] ( set __TargetOS=browser&&shift&goto Arg_Loop)
 if /i [%1] == [wasi] ( set __TargetOS=wasi&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
+
+if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
+
+if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -54,8 +65,14 @@ call "%__engNativeDir%\version\copy_version_files.cmd"
 
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
-set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
+
+if NOT %__icuDir% == "" (
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_ICU_DIR=%__icuDir%"
+)
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_PTHREADS=%__usePThreads%"
+
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
@@ -85,17 +102,15 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 
 :: Regenerate the VS solution
 
-pushd "%__IntermediatesDir%"
 call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
-popd
 
 :BuildNativeProj
 :: Build the project created by Cmake
 set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
-) else if [%__TargetOS%] == [Browser] (
+) else if [%__TargetOS%] == [browser] (
     set __generatorArgs=
 ) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=

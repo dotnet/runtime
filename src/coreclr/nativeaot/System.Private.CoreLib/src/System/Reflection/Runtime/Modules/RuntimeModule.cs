@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
 using System.Reflection.Runtime.Assemblies;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace System.Reflection.Runtime.Modules
 {
@@ -55,6 +56,8 @@ namespace System.Reflection.Runtime.Modules
             return Assembly.GetHashCode();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -62,7 +65,7 @@ namespace System.Reflection.Runtime.Modules
 
         public abstract override int MetadataToken { get; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return Assembly.GetType(name, throwOnError, ignoreCase);

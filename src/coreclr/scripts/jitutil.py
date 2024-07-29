@@ -19,6 +19,7 @@ import sys
 import tempfile
 import logging
 import time
+import tarfile
 import urllib
 import urllib.request
 import zipfile
@@ -28,6 +29,7 @@ import zipfile
 ## Helper classes
 ##
 ################################################################################
+
 
 class TempDir:
     """ Class to create a temporary working directory, or use one that is passed as an argument.
@@ -68,6 +70,7 @@ class TempDir:
                 except Exception:
                     pass
 
+
 class ChangeDir:
     """ Class to temporarily change to a given directory. Use with "with".
     """
@@ -102,7 +105,6 @@ def set_pipeline_variable(name, value):
     print(define_variable_format.format(name, value))  # set variable
 
 
-
 ################################################################################
 ##
 ## Helper functions
@@ -126,6 +128,7 @@ def decode_and_print(str_to_decode):
     finally:
         return output
 
+
 def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
     """ Runs the command.
 
@@ -133,7 +136,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         command_to_run ([string]): Command to run along with arguments.
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
-        _output_file (): 
+        _output_file ():
         _env: environment for sub-process, passed to subprocess.Popen()
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
@@ -449,6 +452,71 @@ def is_url(path):
     # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
     return path.lower().startswith("http:") or path.lower().startswith("https:")
 
+
+def determine_jit_name(host_os, target_os=None, host_arch=None, target_arch=None, use_cross_compile_jit=False):
+    """ Determine the jit file name to use.
+
+    Args:
+        host_os               (str)  : name of the OS the JIT will run on
+        target_os             (str)  : name of the OS the JIT will generate code for. Only needed for cross-compiler case.
+        host_arch             (str)  : name of the architecture the JIT will run on. Only needed for cross-compiler case.
+        target_arch           (str)  : name of the architecture the JIT will generate code for. Only needed for cross-compiler case.
+        use_cross_compile_jit (bool) : If True, will always generate a fully named "cross-compile" JIT,
+                                       not the default "clrjit.dll".
+
+        If you pass one of target_os, host_arch, or target_arch, you must pass them all.
+
+    Return:
+        (str) : name of the jit for this OS
+    """
+
+    jit_base_name = 'clrjit'
+
+    if use_cross_compile_jit or (host_arch != target_arch) or ((target_os is not None) and (host_os != target_os)):
+        if target_arch.startswith("arm"):
+            jit_os_name = "universal"
+        elif target_os == "windows":
+            jit_os_name = "win"
+        elif target_os == "osx" or target_os == "linux":
+            jit_os_name = "unix"
+        else:
+            raise RuntimeError("Unknown target OS.")
+
+        jit_base_name = 'clrjit_{}_{}_{}'.format(jit_os_name, target_arch, host_arch)
+
+    if host_os == "osx":
+        return "lib" + jit_base_name + ".dylib"
+    elif host_os == "linux":
+        return "lib" + jit_base_name + ".so"
+    elif host_os == "windows":
+        return jit_base_name + ".dll"
+    else:
+        raise RuntimeError("Unknown host OS.")
+
+
+def get_deepest_existing_directory(path):
+    """ Given a path, find the deepest existing directory containing it. This
+        might be the path itself, or a parent directory. If no such directory
+        is found, None is returned.
+
+    Args:
+        path (str) : path to check
+
+    Returns:
+        As described above
+    """
+    path = os.path.abspath(path)
+    lastPath = ""
+
+    # When os.path.dirname() is called on the root directory ("C:\\" on Windows or "/" on Linux),
+    # if returns itself.
+    while not os.path.isdir(path) and path != lastPath:
+        lastPath = path
+        path = os.path.dirname(path)
+
+    return path if os.path.isdir(path) else None
+
+
 ################################################################################
 ##
 ## Azure Storage functions
@@ -469,13 +537,13 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
         Once we've done it once, we don't do it again.
 
         For this to work for cross-module usage, after you call this function, you need to add a line like:
-            from jitutil import BlobClient, AzureCliCredential
+            from jitutil import BlobClient, DefaultAzureCredential
         naming all the types you want to use.
 
         The full set of types this function loads:
-            BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
+            BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
     """
-    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
+    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
 
     if azure_storage_libraries_check:
         return
@@ -492,7 +560,7 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
     azure_identity_import_ok = True
     if need_azure_identity:
         try:
-            from azure.identity import AzureCliCredential
+            from azure.identity import DefaultAzureCredential
         except:
             azure_identity_import_ok = False
 
@@ -503,7 +571,7 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
         logging.error("  pip install azure-storage-blob azure-identity")
         logging.error("or (Windows):")
         logging.error("  py -3 -m pip install azure-storage-blob azure-identity")
-        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
+        logging.error("See also https://learn.microsoft.com/azure/storage/blobs/storage-quickstart-blobs-python")
         raise RuntimeError("Missing Azure Storage package.")
 
     # The Azure packages spam all kinds of output to the logging channels.
@@ -517,7 +585,7 @@ def report_azure_error():
     """ Report an Azure error
     """
     logging.error("A problem occurred accessing Azure. Are you properly authenticated using the Azure CLI?")
-    logging.error("Install the Azure CLI from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli.")
+    logging.error("Install the Azure CLI from https://learn.microsoft.com/cli/azure/install-azure-cli.")
     logging.error("Then log in to Azure using `az login`.")
 
 
@@ -540,7 +608,7 @@ def download_with_azure(uri, target_location, fail_if_not_found=True):
     logging.info("Download: %s -> %s", uri, target_location)
 
     ok = True
-    az_credential = AzureCliCredential()
+    az_credential = DefaultAzureCredential()
     blob = BlobClient.from_blob_url(uri, credential=az_credential)
     with open(target_location, "wb") as my_blob:
         try:
@@ -687,7 +755,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
             is_item_url = is_url(item_path)
             item_name = item_path.split("/")[-1] if is_item_url else os.path.basename(item_path)
 
-            if item_path.lower().endswith(".zip"):
+            if item_path.lower().endswith(".zip") or item_path.lower().endswith(".tar.gz"):
                 # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
                 temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
                 for item in temp_location_items:
@@ -708,22 +776,26 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
                         shutil.copy2(item_path, download_path)
 
                 if verbose:
-                    logging.info("Uncompress %s", download_path)
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
 
-                # Copy everything that was extracted to the target directory.
-                copy_directory(temp_location, target_dir, verbose_copy=verbose, match_func=lambda path: not path.endswith(".zip"))
+                if item_path.lower().endswith(".zip"):
+                    with zipfile.ZipFile(download_path, "r") as zip:
+                        zip.extractall(target_dir)
+                        archive_names = zip.namelist()
+                else:
+                    with tarfile.open(download_path, "r") as tar:
+                        tar.extractall(target_dir)
+                        archive_names = tar.getnames()
 
-                # The caller wants to know where all the files ended up, so compute that.
-                for dirpath, _, files in os.walk(temp_location, topdown=True):
-                    for file_name in files:
-                        if not file_name.endswith(".zip"):
-                            full_file_path = os.path.join(dirpath, file_name)
-                            target_path = full_file_path.replace(temp_location, target_dir)
-                            local_paths.append(target_path)
+                for archive_name in archive_names:
+                    if archive_name.endswith("/"):
+                        # Directory
+                        continue
+
+                    target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                    local_paths.append(target_path)
             else:
-                # Not a zip file; download directory to target directory
+                # Not an archive
                 download_path = os.path.join(target_dir, item_name)
                 if is_item_url:
                     ok = download_one_url(item_path, download_path, fail_if_not_found=fail_if_not_found, is_azure_storage=is_azure_storage, display_progress=display_progress)

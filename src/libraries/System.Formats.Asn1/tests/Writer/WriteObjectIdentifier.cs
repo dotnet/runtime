@@ -229,6 +229,8 @@ namespace System.Formats.Asn1.Tests.Writer
                 new object[] { "Invalid character second position", AsnEncodingRules.CER, "0,1.23" },
                 new object[] { "Invalid character second rid", AsnEncodingRules.DER, "0.1q.23" },
                 new object[] { "Invalid character third rid", AsnEncodingRules.BER, "0.1.23q" },
+                new object[] { "Invalid second RID for first arc 0", AsnEncodingRules.DER, "0.40.1.2.3" },
+                new object[] { "Invalid second RID for first arc 1", AsnEncodingRules.BER, "1.40.1.2.3" },
             };
     }
 }

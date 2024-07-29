@@ -1,31 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Convenient wrapper for an array, an offset, and
-**          a count.  Ideally used in streams & collections.
-**          Net Classes will consume an array of these.
-**
-**
-===========================================================*/
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
+    /// <summary>
+    /// Delimits a section of a one-dimensional array.
+    /// </summary>
     // Note: users should make sure they copy the fields out of an ArraySegment onto their stack
     // then validate that the fields describe valid bounds within the array.  This must be done
     // because assignments to value types are not atomic, and also because one thread reading
     // three fields from an ArraySegment may not see the same ArraySegment from one call to another
     // (ie, users could assign a new value to the old location).
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+    [DebuggerDisplay("Count = {Count}")]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
 #pragma warning restore CA1066
@@ -38,9 +33,9 @@ namespace System
 
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
-#pragma warning disable CA1825
+#pragma warning disable CA1825, IDE0300
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
 
         private readonly T[]? _array; // Do not rename (binary serialization)
         private readonly int _offset; // Do not rename (binary serialization)
@@ -203,7 +198,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
+            int index = System.Array.IndexOf(_array!, item, _offset, _count);
 
             Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
@@ -244,7 +239,7 @@ namespace System
         {
             ThrowInvalidOperationIfDefault();
 
-            int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
+            int index = System.Array.IndexOf(_array!, item, _offset, _count);
 
             Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
@@ -261,12 +256,18 @@ namespace System
 
         #region IEnumerable<T>
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            ThrowInvalidOperationIfDefault();
+            return
+                Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+                new Enumerator(this);
+        }
         #endregion
 
         #region IEnumerable
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
         #endregion
 
         private void ThrowInvalidOperationIfDefault()

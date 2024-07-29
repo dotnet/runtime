@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for JsonNode-derived types. The {T} value must be Object and not JsonNode
     /// since we allow Object-declared members\variables to deserialize as {JsonNode}.
     /// </summary>
-    internal sealed class JsonNodeConverter : JsonConverter<JsonNode>
+    internal sealed class JsonNodeConverter : JsonConverter<JsonNode?>
     {
         private static JsonNodeConverter? s_nodeConverter;
         private static JsonArrayConverter? s_arrayConverter;
@@ -25,26 +26,13 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, JsonNode? value, JsonSerializerOptions options)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
-                // Note JsonSerializer.Deserialize<T>(JsonNode?) also calls WriteNullValue() for a null + root JsonNode.
             }
             else
             {
-                if (value is JsonValue jsonValue)
-                {
-                    ValueConverter.Write(writer, jsonValue, options);
-                }
-                else if (value is JsonObject jsonObject)
-                {
-                    ObjectConverter.Write(writer, jsonObject, options);
-                }
-                else
-                {
-                    Debug.Assert(value is JsonArray);
-                    ArrayConverter.Write(writer, (JsonArray)value, options);
-                }
+                value.WriteTo(writer, options);
             }
         }
 
@@ -61,6 +49,8 @@ namespace System.Text.Json.Serialization.Converters
                     return ObjectConverter.Read(ref reader, typeToConvert, options);
                 case JsonTokenType.StartArray:
                     return ArrayConverter.Read(ref reader, typeToConvert, options);
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw new JsonException();
@@ -83,11 +73,13 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                    node = new JsonValueOfElement(element, options);
                     break;
             }
 
             return node;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
     }
 }

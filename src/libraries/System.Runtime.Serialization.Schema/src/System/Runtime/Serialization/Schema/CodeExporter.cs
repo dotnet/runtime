@@ -32,11 +32,11 @@ namespace System.Runtime.Serialization
         private static readonly object s_codeUserDataActualTypeKey = new object();
         private static readonly object s_surrogateDataKey = typeof(ISerializationSurrogateProvider2);
 
-        private DataContractSet _dataContractSet;
-        private CodeCompileUnit _codeCompileUnit;
-        private ImportOptions? _options;
-        private Dictionary<string, string> _namespaces;
-        private Dictionary<string, string?> _clrNamespaces;
+        private readonly DataContractSet _dataContractSet;
+        private readonly CodeCompileUnit _codeCompileUnit;
+        private readonly ImportOptions? _options;
+        private readonly Dictionary<string, string> _namespaces;
+        private readonly Dictionary<string, string?> _clrNamespaces;
 
         internal CodeExporter(DataContractSet dataContractSet, ImportOptions? options, CodeCompileUnit codeCompileUnit)
         {
@@ -429,7 +429,7 @@ namespace System.Runtime.Serialization
                             typeName = GetClrIdentifier(typeName, ImportGlobals.DefaultTypeName);
                             if (NamespaceContainsType(ns, typeName) || GlobalTypeNameConflicts(clrNamespace, typeName))
                             {
-                                for (int i = 1;; i++)
+                                for (int i = 1; ; i++)
                                 {
                                     string uniqueName = AppendToValidClrIdentifier(typeName, i.ToString(NumberFormatInfo.InvariantInfo));
                                     if (!NamespaceContainsType(ns, uniqueName) && !GlobalTypeNameConflicts(clrNamespace, uniqueName))
@@ -489,7 +489,7 @@ namespace System.Runtime.Serialization
             CodeTypeDeclaration containingType = containingContractCodeDomInfo.TypeDeclaration!; // Nested types by definition have containing types.
             if (TypeContainsNestedType(containingType, nestedTypeName))
             {
-                for (int i = 1;; i++)
+                for (int i = 1; ; i++)
                 {
                     string uniqueName = AppendToValidClrIdentifier(nestedTypeName, i.ToString(NumberFormatInfo.InvariantInfo));
                     if (!TypeContainsNestedType(containingType, uniqueName))
@@ -758,10 +758,11 @@ namespace System.Runtime.Serialization
         private static string GetNameForAttribute(string name)
         {
             string decodedName = XmlConvert.DecodeName(name);
-            if (string.CompareOrdinal(name, decodedName) == 0)
+            if (name == decodedName)
                 return name;
+
             string reencodedName = SchemaImportHelper.EncodeLocalName(decodedName);
-            return (string.CompareOrdinal(name, reencodedName) == 0) ? decodedName : name;
+            return name == reencodedName ? decodedName : name;
         }
 
         private void AddSerializableAttribute(bool generateSerializable, CodeTypeDeclaration type, ContractCodeDomInfo contractCodeDomInfo)
@@ -898,7 +899,7 @@ namespace System.Runtime.Serialization
             if (knownTypeDictionary == null)
                 return null;
 
-            ICollection<DataContract>? knownTypeContracts = knownTypeDictionary.Values;
+            DataContractDictionary.ValueCollection? knownTypeContracts = knownTypeDictionary.Values;
             if (knownTypeContracts == null || knownTypeContracts.Count == 0)
                 return null;
 
@@ -937,7 +938,7 @@ namespace System.Runtime.Serialization
                 return classDataContract.KnownDataContracts;
 
             handledContracts.Add(classDataContract, null);
-                bool objectMemberHandled = false;
+            bool objectMemberHandled = false;
             foreach (DataMember dataMember in classDataContract.DataMembers)
             {
                 DataContract memberContract = dataMember.MemberTypeContract;
@@ -1378,7 +1379,7 @@ namespace System.Runtime.Serialization
             if (contractCodeDomInfo.GetMemberNames().Contains(memberName))
             {
                 string uniqueMemberName;
-                for (int i = 1;; i++)
+                for (int i = 1; ; i++)
                 {
                     uniqueMemberName = AppendToValidClrIdentifier(memberName, i.ToString(NumberFormatInfo.InvariantInfo));
                     if (!contractCodeDomInfo.GetMemberNames().Contains(uniqueMemberName))
@@ -1463,7 +1464,7 @@ namespace System.Runtime.Serialization
                         if (ClrNamespaces.ContainsKey(clrNamespace))
                         {
                             string uniqueNamespace;
-                            for (int i = 1;; i++)
+                            for (int i = 1; ; i++)
                             {
                                 uniqueNamespace = ((clrNamespace.Length == 0) ? ImportGlobals.DefaultClrNamespace : clrNamespace) + i.ToString(NumberFormatInfo.InvariantInfo);
                                 if (!ClrNamespaces.ContainsKey(uniqueNamespace))
@@ -1509,7 +1510,7 @@ namespace System.Runtime.Serialization
 
         private static string GetClrNamespace(string? dataContractNamespace)
         {
-            if (dataContractNamespace == null || dataContractNamespace.Length == 0)
+            if (string.IsNullOrEmpty(dataContractNamespace))
                 return string.Empty;
 
             StringBuilder builder = new StringBuilder();
@@ -1588,7 +1589,7 @@ namespace System.Runtime.Serialization
             string nsFragment = builder.ToString(fragmentOffset, fragmentLength);
             if (fragments.ContainsKey(nsFragment))
             {
-                for (int i = 1;; i++)
+                for (int i = 1; ; i++)
                 {
                     string uniquifier = i.ToString(NumberFormatInfo.InvariantInfo);
                     string uniqueNsFragment = AppendToValidClrIdentifier(nsFragment, uniquifier);
@@ -1807,7 +1808,7 @@ namespace System.Runtime.Serialization
                 setObjectData.Right = new CodeArgumentReferenceExpression(ImportGlobals.SerializationInfoFieldName);
                 baseConstructor.Statements.Add(setObjectData);
                 // Special-cased check for vb here since CodeGeneratorOptions does not provide information indicating that VB cannot initialize event member
-                if (EnableDataBinding && SupportsDeclareEvents && string.CompareOrdinal(FileExtension, "vb") != 0)
+                if (EnableDataBinding && SupportsDeclareEvents && FileExtension != "vb")
                 {
                     baseConstructor.Statements.Add(new CodeAssignStatement(new CodePropertyReferenceExpression(ThisReference, PropertyChangedEvent.Name), NullReference));
                 }

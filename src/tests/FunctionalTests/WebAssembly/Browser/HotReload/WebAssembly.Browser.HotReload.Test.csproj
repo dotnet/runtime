@@ -3,28 +3,16 @@
     <MonoForceInterpreter>true</MonoForceInterpreter>
     <RunAOTCompilation>false</RunAOTCompilation>
     <PublishTrimmed>false</PublishTrimmed>
-    <TestRuntime>true</TestRuntime>
-    <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- setting WasmXHarnessMonoArgs doesn't work here, but see main.js -->
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Content Include="index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <WasmExtraFilesToDeploy Include="index.html" />
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 
   <Target Name="PreserveEnCAssembliesFromLinking"
-          Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'"
           BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- Don't modify EnC test assemblies -->
@@ -36,7 +24,7 @@
 
   <Target Name="IncludeDeltasInWasmBundle"
           BeforeTargets="PrepareForWasmBuildApp"
-          Condition="'$(TargetOS)' == 'Browser'">
+          Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
@@ -48,11 +36,5 @@
                                       Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
     </ItemGroup>
   </Target>
-  
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
-  </ItemGroup>
   
 </Project>

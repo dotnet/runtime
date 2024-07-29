@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.Intrinsics
 {
     internal readonly struct Vector64DebugView<T>
-        where T : struct
     {
         private readonly Vector64<T> _value;
 

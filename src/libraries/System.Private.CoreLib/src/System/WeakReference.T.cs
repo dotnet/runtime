@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
-
+using System.Runtime.Serialization;
 using static System.WeakReferenceHandleTags;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
     public sealed partial class WeakReference<T> : ISerializable
         where T : class?
@@ -63,6 +63,8 @@ namespace System
             return o != null;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
@@ -107,6 +109,10 @@ namespace System
             if ((th & ComAwareBit) != 0 || comInfo != null)
             {
                 ComAwareWeakReference.SetTarget(ref _taggedHandle, target, comInfo);
+
+                // must keep the instance alive as long as we use the handle.
+                GC.KeepAlive(this);
+
                 return;
             }
 #endif
@@ -130,13 +136,22 @@ namespace System
                 if (th == 0)
                     return default;
 
+                T? target;
+
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
-                    return Unsafe.As<T?>(ComAwareWeakReference.GetTarget(th));
+                {
+                    target = Unsafe.As<T?>(ComAwareWeakReference.GetTarget(th));
+
+                    // must keep the instance alive as long as we use the handle.
+                    GC.KeepAlive(this);
+
+                    return target;
+                }
 #endif
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                T? target = Unsafe.As<T?>(GCHandle.InternalGet(th));
+                target = Unsafe.As<T?>(GCHandle.InternalGet(th));
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -151,7 +166,7 @@ namespace System
 #pragma warning disable CA1821 // Remove empty Finalizers
         ~WeakReference()
         {
-            Debug.Assert(false, " WeakReference<T> finalizer should never run");
+            Debug.Fail(" WeakReference<T> finalizer should never run");
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
 

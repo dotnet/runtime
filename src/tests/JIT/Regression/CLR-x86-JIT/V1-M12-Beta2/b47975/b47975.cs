@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static int Method1(uint param2) { return 0; }
 
@@ -22,7 +23,8 @@ namespace Test
             return (int)param2[Method1(au[param1])];
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

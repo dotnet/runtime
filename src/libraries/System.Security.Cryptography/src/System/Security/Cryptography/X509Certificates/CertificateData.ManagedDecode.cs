@@ -75,9 +75,18 @@ namespace System.Security.Cryptography.X509Certificates
         try
         {
 #endif
-            RawData = rawData;
-            certificate = CertificateAsn.Decode(rawData, AsnEncodingRules.DER);
+            // Windows and Unix permit trailing data after the DER contents of the certificate, so we will allow
+            // it here, too.
+            AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+            ReadOnlySpan<byte> encodedValue = reader.PeekEncodedValue();
+
+            CertificateAsn.Decode(ref reader, rawData, out certificate);
             certificate.TbsCertificate.ValidateVersion();
+
+            // Use of == on Span is intentional. If the encodedValue is identical to the rawData, then we can use
+            // raw data as-is, meaning it had no trailing data. Otherwise, use the encodedValue.
+            RawData = encodedValue == rawData ? rawData : encodedValue.ToArray();
+
             Issuer = new X500DistinguishedName(certificate.TbsCertificate.Issuer.Span);
             Subject = new X500DistinguishedName(certificate.TbsCertificate.Subject.Span);
             IssuerName = Issuer.Name;

@@ -444,7 +444,7 @@ namespace System.Xml.Serialization
                 {
                     mapping = ImportStructType(type, typeNs, identifier, baseType, false);
 
-                    if (mapping != null && type.Name != null && type.Name.Length != 0)
+                    if (mapping != null && !string.IsNullOrEmpty(type.Name))
                         ImportDerivedTypes(new XmlQualifiedName(identifier, typeNs));
                 }
                 return mapping;
@@ -533,10 +533,10 @@ namespace System.Xml.Serialization
             }
 
             identifier = Accessor.UnescapeName(identifier);
-            string typeName = type.Name == null || type.Name.Length == 0 ? GenerateUniqueTypeName(identifier, typeNs) : GenerateUniqueTypeName(identifier);
+            string typeName = string.IsNullOrEmpty(type.Name) ? GenerateUniqueTypeName(identifier, typeNs) : GenerateUniqueTypeName(identifier);
             structMapping.TypeDesc = new TypeDesc(typeName, typeName, TypeKind.Struct, baseTypeDesc, flags);
             structMapping.Namespace = typeNs;
-            structMapping.TypeName = type.Name == null || type.Name.Length == 0 ? null : identifier;
+            structMapping.TypeName = string.IsNullOrEmpty(type.Name) ? null : identifier;
             structMapping.BaseMapping = (StructMapping)baseMapping;
             if (!arrayLike)
                 ImportedMappings.Add(type, structMapping);
@@ -1260,7 +1260,7 @@ namespace System.Xml.Serialization
                 if (choiceMember.ChoiceIdentifier != null) return null;
                 arrayMapping.TypeDesc = choiceMember.TypeDesc;
                 arrayMapping.Elements = choiceMember.Elements;
-                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? $"ArrayOf{CodeIdentifier.MakePascal(arrayMapping.TypeDesc!.Name)}" : type.Name;
+                arrayMapping.TypeName = string.IsNullOrEmpty(type.Name) ? $"ArrayOf{CodeIdentifier.MakePascal(arrayMapping.TypeDesc!.Name)}" : type.Name;
             }
             else if (item is XmlSchemaAll || item is XmlSchemaSequence)
             {
@@ -1277,7 +1277,7 @@ namespace System.Xml.Serialization
                     return null;
                 arrayMapping.Elements = new ElementAccessor[] { itemAccessor };
                 arrayMapping.TypeDesc = ((TypeMapping)itemAccessor.Mapping!).TypeDesc!.CreateArrayTypeDesc();
-                arrayMapping.TypeName = (type.Name == null || type.Name.Length == 0) ? $"ArrayOf{CodeIdentifier.MakePascal(itemAccessor.Mapping.TypeDesc.Name)}" : type.Name;
+                arrayMapping.TypeName = string.IsNullOrEmpty(type.Name) ? $"ArrayOf{CodeIdentifier.MakePascal(itemAccessor.Mapping.TypeDesc.Name)}" : type.Name;
             }
             else
             {
@@ -1289,7 +1289,7 @@ namespace System.Xml.Serialization
             // for the array-like mappings we need to create a struct mapping for the case when it referenced by the top-level element
             arrayMapping.TopLevelMapping = ImportStructType(type, ns, identifier, null, true);
             arrayMapping.TopLevelMapping.ReferencedByTopLevelElement = true;
-            if (type.Name != null && type.Name.Length != 0)
+            if (!string.IsNullOrEmpty(type.Name))
                 ImportDerivedTypes(new XmlQualifiedName(identifier, ns));
 
             return arrayMapping;
@@ -1798,7 +1798,7 @@ namespace System.Xml.Serialization
         {
             PrimitiveMapping? mapping = null;
             TypeDesc? typeDesc;
-            if (dataType.Name != null && dataType.Name.Length != 0)
+            if (!string.IsNullOrEmpty(dataType.Name))
             {
                 typeDesc = TypeScope.GetTypeDesc(dataType.Name, ns, flags);
                 if (typeDesc != null)
@@ -1853,7 +1853,7 @@ namespace System.Xml.Serialization
         private TypeDesc GetDataTypeSource(XmlSchemaSimpleType dataType, TypeFlags flags)
         {
             TypeDesc? typeDesc;
-            if (dataType.Name != null && dataType.Name.Length != 0)
+            if (!string.IsNullOrEmpty(dataType.Name))
             {
                 typeDesc = TypeScope.GetTypeDesc(dataType);
                 if (typeDesc != null) return typeDesc;
@@ -1949,14 +1949,14 @@ namespace System.Xml.Serialization
 
                 if (schema != null)
                 {
-                    if (ns == null || ns.Length == 0)
+                    if (string.IsNullOrEmpty(ns))
                     {
                         return schema.ElementFormDefault == XmlSchemaForm.None ? XmlSchemaForm.Unqualified : schema.ElementFormDefault;
                     }
                     else
                     {
                         XmlSchemas.Preprocess(schema);
-                        return element.QualifiedName.Namespace == null || element.QualifiedName.Namespace.Length == 0 ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
+                        return string.IsNullOrEmpty(element.QualifiedName.Namespace) ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
                     }
                 }
                 return XmlSchemaForm.Qualified;
@@ -1976,14 +1976,14 @@ namespace System.Xml.Serialization
                 XmlSchema? schema = parent as XmlSchema;
                 if (schema != null)
                 {
-                    if (ns == null || ns.Length == 0)
+                    if (string.IsNullOrEmpty(ns))
                     {
                         return schema.AttributeFormDefault == XmlSchemaForm.None ? XmlSchemaForm.Unqualified : schema.AttributeFormDefault;
                     }
                     else
                     {
                         XmlSchemas.Preprocess(schema);
-                        return attribute.QualifiedName.Namespace == null || attribute.QualifiedName.Namespace.Length == 0 ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
+                        return string.IsNullOrEmpty(attribute.QualifiedName.Namespace) ? XmlSchemaForm.Unqualified : XmlSchemaForm.Qualified;
                     }
                 }
                 return XmlSchemaForm.Unqualified;

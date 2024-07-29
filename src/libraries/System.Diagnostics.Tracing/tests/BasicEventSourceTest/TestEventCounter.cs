@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
-using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Threading;
+using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -38,9 +34,6 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
-#if !USE_MDT_EVENTSOURCE
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/runtime/issues/23380")]
-#endif
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24036")]
         public void Test_Write_Metric_EventListener()
         {

@@ -3,6 +3,7 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,7 @@ namespace System.Dynamic
     /// as input. On the other hand, the <see cref="DynamicMetaObjectBinder"/> participates in the <see cref="DynamicMetaObject"/>
     /// binding protocol.
     /// </remarks>
+    [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
     public abstract class DynamicMetaObjectBinder : CallSiteBinder
     {
         /// <summary>
@@ -50,18 +52,9 @@ namespace System.Dynamic
             ArgumentNullException.ThrowIfNull(args);
             ArgumentNullException.ThrowIfNull(parameters);
             ArgumentNullException.ThrowIfNull(returnLabel);
-            if (args.Length == 0)
-            {
-                throw System.Linq.Expressions.Error.OutOfRange("args.Length", 1);
-            }
-            if (parameters.Count == 0)
-            {
-                throw System.Linq.Expressions.Error.OutOfRange("parameters.Count", 1);
-            }
-            if (args.Length != parameters.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(args));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(args.Length);
+            ArgumentOutOfRangeException.ThrowIfZero(parameters.Count);
+            ArgumentOutOfRangeException.ThrowIfNotEqual(args.Length, parameters.Count);
 
             // Ensure that the binder's ReturnType matches CallSite's return
             // type. We do this so meta objects and language binders can

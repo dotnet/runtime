@@ -48,6 +48,9 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.CreateInstance(serviceProvider, objectType, argTypes, args))
                 .Returns(result)
                 .Verifiable();
+            mockParentProvider
+                .Setup(p => p.RequireRegisteredTypes)
+                .CallBase();
             var provider = new SubTypeDescriptionProvider(mockParentProvider.Object);
             Assert.Same(result, provider.CreateInstance(serviceProvider, objectType, argTypes, args));
             mockParentProvider.Verify(p => p.CreateInstance(serviceProvider, objectType, argTypes, args), Times.Once());
@@ -279,7 +282,6 @@ namespace System.ComponentModel.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetFullComponentName_WithoutParent_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws NullReferenceException")]
         public void GetFullComponentName_InvokeWithNullTypeDescriptor_ReturnsExpected(object component)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
@@ -599,6 +601,9 @@ namespace System.ComponentModel.Tests
             mockProvider
                 .Setup(p => p.GetTypeDescriptor(objectType, null))
                 .CallBase();
+            mockProvider
+                .Setup(p => p.RequireRegisteredTypes)
+                .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(objectType));
             Assert.Empty(result1.GetProperties());
@@ -660,6 +665,9 @@ namespace System.ComponentModel.Tests
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
                 .Setup(p => p.GetTypeDescriptor(instance.GetType(), instance))
+                .CallBase();
+            mockProvider
+                .Setup(p => p.RequireRegisteredTypes)
                 .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(instance));

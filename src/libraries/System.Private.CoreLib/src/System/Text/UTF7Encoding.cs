@@ -13,19 +13,6 @@ namespace System.Text
 {
     public class UTF7Encoding : Encoding
     {
-        private const string base64Chars =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        // 0123456789111111111122222222223333333333444444444455555555556666
-        //              012345678901234567890123456789012345678901234567890123
-
-        // These are the characters that can be directly encoded in UTF7.
-        private const string directChars =
-            "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-        // These are the characters that can be optionally directly encoded in UTF7.
-        private const string optionalChars =
-            "!\"#$%&*;<=>@[]^_`{|}";
-
 #pragma warning disable SYSLIB0001
         // Used by Encoding.UTF7 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -70,24 +57,30 @@ namespace System.Text
         private void MakeTables()
         {
             // Build our tables
-            _base64Bytes = new byte[64];
-            for (int i = 0; i < 64; i++) _base64Bytes[i] = (byte)base64Chars[i];
+
+            _base64Bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8.ToArray();
+            Debug.Assert(_base64Bytes.Length == 64);
+
             _base64Values = new sbyte[128];
             for (int i = 0; i < 128; i++) _base64Values[i] = -1;
             for (int i = 0; i < 64; i++) _base64Values[_base64Bytes[i]] = (sbyte)i;
+
+            // These are the characters that can be directly encoded in UTF7.
+            ReadOnlySpan<byte> directChars = "\t\n\r '(),-./0123456789:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"u8;
             _directEncode = new bool[128];
-            int count = directChars.Length;
-            for (int i = 0; i < count; i++)
+            foreach (byte c in directChars)
             {
-                _directEncode[directChars[i]] = true;
+                _directEncode[c] = true;
             }
 
             if (_allowOptionals)
             {
-                count = optionalChars.Length;
-                for (int i = 0; i < count; i++)
+                // These are the characters that can be optionally directly encoded in UTF7.
+                ReadOnlySpan<byte> optionalChars = "!\"#$%&*;<=>@[]^_`{|}"u8;
+
+                foreach (byte c in optionalChars)
                 {
-                    _directEncode[optionalChars[i]] = true;
+                    _directEncode[c] = true;
                 }
             }
         }
@@ -205,8 +198,11 @@ namespace System.Text
 
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = s) fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (char* pChars = s)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            {
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // Encodes a range of characters in a character array into a range of bytes
@@ -245,9 +241,12 @@ namespace System.Text
             // Just call pointer version
             int byteCount = bytes.Length - byteIndex;
 
-            fixed (char* pChars = chars) fixed (byte* pBytes = &MemoryMarshal.GetReference((Span<byte>)bytes))
+            fixed (char* pChars = chars)
+            fixed (byte* pBytes = &MemoryMarshal.GetArrayDataReference(bytes))
+            {
                 // Remember that byteCount is # to decode, not size of array.
                 return GetBytes(pChars + charIndex, charCount, pBytes + byteIndex, byteCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -334,9 +333,12 @@ namespace System.Text
             // Just call pointer version
             int charCount = chars.Length - charIndex;
 
-            fixed (byte* pBytes = bytes) fixed (char* pChars = &MemoryMarshal.GetReference((Span<char>)chars))
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = &MemoryMarshal.GetArrayDataReference(chars))
+            {
                 // Remember that charCount is # to decode, not size of array
                 return GetChars(pBytes + byteIndex, byteCount, pChars + charIndex, charCount, null);
+            }
         }
 
         // All of our public Encodings that don't use EncodingNLS must have this (including EncodingNLS)
@@ -401,14 +403,14 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetBytes]charCount >=0");
 
             // Get encoder info
-            UTF7Encoding.Encoder? encoder = (UTF7Encoding.Encoder?)baseEncoder;
+            Encoder? encoder = (Encoder?)baseEncoder;
 
             // Default bits & count
             int bits = 0;
             int bitCount = -1;
 
             // prepare our helpers
-            Encoding.EncodingByteBuffer buffer = new Encoding.EncodingByteBuffer(
+            EncodingByteBuffer buffer = new EncodingByteBuffer(
                 this, encoder, bytes, byteCount, chars, charCount);
 
             if (encoder is not null)
@@ -550,10 +552,10 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetChars]charCount >=0");
 
             // Might use a decoder
-            UTF7Encoding.Decoder? decoder = (UTF7Encoding.Decoder?)baseDecoder;
+            Decoder? decoder = (Decoder?)baseDecoder;
 
             // Get our output buffer info.
-            Encoding.EncodingCharBuffer buffer = new Encoding.EncodingCharBuffer(
+            EncodingCharBuffer buffer = new EncodingCharBuffer(
                 this, decoder, chars, charCount, bytes, byteCount);
 
             // Get decoder info
@@ -709,14 +711,14 @@ namespace System.Text
             return buffer.Count;
         }
 
-        public override System.Text.Decoder GetDecoder()
+        public override Text.Decoder GetDecoder()
         {
-            return new UTF7Encoding.Decoder(this);
+            return new Decoder(this);
         }
 
-        public override System.Text.Encoder GetEncoder()
+        public override Text.Encoder GetEncoder()
         {
-            return new UTF7Encoding.Encoder(this);
+            return new Encoder(this);
         }
 
         public override int GetMaxByteCount(int charCount)

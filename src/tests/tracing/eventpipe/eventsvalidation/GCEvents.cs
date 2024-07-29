@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Xunit;
 
 namespace Tracing.Tests.GCEvents
 {
     public class ProviderValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var providers = new List<EventPipeProvider>()
             {
@@ -21,15 +23,24 @@ namespace Tracing.Tests.GCEvents
                 new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents);
+            bool enableRundown = TestLibrary.Utilities.IsNativeAot? false: true;
+            Dictionary<string, ExpectedEventCount> _expectedEventCounts = TestLibrary.Utilities.IsNativeAot? _expectedEventCountsNativeAOT: _expectedEventCountsCoreCLR;
+            
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesTraceContainEvents, enableRundownProvider:enableRundown);
         }
 
-        private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
+        private static Dictionary<string, ExpectedEventCount> _expectedEventCountsCoreCLR = new Dictionary<string, ExpectedEventCount>()
         {
             { "Microsoft-Windows-DotNETRuntime", -1 },
             { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
             { "Microsoft-DotNETCore-SampleProfiler", -1 }
         };
+
+        private static Dictionary<string, ExpectedEventCount> _expectedEventCountsNativeAOT = new Dictionary<string, ExpectedEventCount>()
+        {
+            { "Microsoft-Windows-DotNETRuntime", -1 }
+        };
+
 
         private static Action _eventGeneratingAction = () =>
         {

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
@@ -176,11 +175,27 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         yield return _factory.NativeLayout.TemplateTypeLayout(arrayCanonicalType);
                     }
+
+                    yield return _factory.MaximallyConstructableType(arrayCanonicalType);
                 }
 
                 while (type.IsParameterizedType)
                 {
                     type = ((ParameterizedType)type).ParameterType;
+                }
+
+                if (type.IsFunctionPointer)
+                {
+                    MethodSignature sig = ((FunctionPointerType)type).Signature;
+                    foreach (var dependency in TemplateConstructableTypes(sig.ReturnType))
+                        yield return dependency;
+
+                    foreach (var param in sig)
+                        foreach (var dependency in TemplateConstructableTypes(param))
+                            yield return dependency;
+
+                    // Nothing else to do for function pointers
+                    yield break;
                 }
 
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -236,12 +251,6 @@ namespace ILCompiler.DependencyAnalysis
                     type = _factory.TypeSystemContext.GetSignatureVariable(genericParameter.Index, method: (genericParameter.Kind == GenericParameterKind.Method));
                 }
 
-                if (type.Category == TypeFlags.FunctionPointer)
-                {
-                    // Pretend for now it's an IntPtr, may need to be revisited depending on https://github.com/dotnet/runtime/issues/11354
-                    type = _factory.TypeSystemContext.GetWellKnownType(WellKnownType.IntPtr);
-                }
-
                 return _typeSignatures.GetOrAdd(type);
             }
 
@@ -295,20 +304,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 public override int GetHashCode()
                 {
                     int hashcode = 0;
                     foreach (NativeLayoutVertexNode node in Vertices)
                     {
                         hashcode ^= node.GetHashCode();
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
                     return hashcode;
                 }
@@ -335,20 +337,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 int IEqualityComparer<List<uint>>.GetHashCode(List<uint> obj)
                 {
                     int hashcode = 0x42284781;
                     foreach (uint u in obj)
                     {
                         hashcode ^= (int)u;
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
 
                     return hashcode;

@@ -29,6 +29,7 @@
 #include "typectxt.h"
 #include "virtualcallstub.h"
 #include "sigbuilder.h"
+#include "dllimport.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -232,7 +233,7 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
             }
 
             // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
-            _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+            _ASSERT(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
 
             PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
             pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
@@ -269,7 +270,7 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(ThrowOutOfMemory(););
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
     CONTRACTL_END
@@ -336,7 +337,7 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
     if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -383,7 +384,7 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
     if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -501,7 +502,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMD->GetMethodDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -559,7 +560,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMT->GetDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -597,6 +598,70 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
     }
 
     RETURN pDictionary;
+}
+
+struct StaticVirtualDispatchHashBlob : public ILStubHashBlobBase
+{
+    MethodDesc *pExactInterfaceMethod;
+    MethodTable *pTargetMT;
+};
+
+PCODE CreateStubForStaticVirtualDispatch(MethodTable* pTargetMT, MethodTable* pInterfaceMT, MethodDesc *pInterfaceMD)
+{
+    GCX_PREEMP();
+
+    Module* pLoaderModule = ClassLoader::ComputeLoaderModule(pTargetMT, 0, pInterfaceMD->GetMethodInstantiation());
+
+    MethodDesc *pExactMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pInterfaceMD,
+            pInterfaceMT,
+            FALSE,              // forceBoxedEntryPoint
+            pInterfaceMD->GetMethodInstantiation(),    // methodInst
+            FALSE,              // allowInstParam
+            TRUE);              // forceRemotableMethod
+
+    StaticVirtualDispatchHashBlob hashBlob;
+    memset(&hashBlob, 0, sizeof(hashBlob));
+    hashBlob.pExactInterfaceMethod = pExactMD;
+    hashBlob.pTargetMT = pTargetMT;
+    hashBlob.m_cbSizeOfBlob = sizeof(hashBlob);
+    ILStubHashBlob *pHashBlob = (ILStubHashBlob*)&hashBlob;
+
+    MethodDesc *pStubMD = pLoaderModule->GetILStubCache()->LookupStubMethodDesc(pHashBlob);
+    if (pStubMD == NULL)
+    {
+        SigTypeContext context(pExactMD);
+        ILStubLinker sl(pExactMD->GetModule(), pExactMD->GetSignature(), &context, pExactMD, ILSTUB_LINKER_FLAG_NONE);
+        MetaSig sig(pInterfaceMD);
+
+        ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+        UINT paramCount = 0;
+        BOOL fReturnVal = !sig.IsReturnTypeVoid();
+        while(paramCount < sig.NumFixedArgs())
+            pCode->EmitLDARG(paramCount++);
+
+        pCode->EmitCONSTRAINED(pCode->GetToken(pTargetMT));
+        pCode->EmitCALL(pCode->GetToken(pInterfaceMD), sig.NumFixedArgs(), fReturnVal);
+        pCode->EmitRET();
+
+        PCCOR_SIGNATURE pSig;
+        DWORD cbSig;
+
+        pInterfaceMD->GetSig(&pSig,&cbSig);
+
+        pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pLoaderModule->GetLoaderAllocator(),
+                                                            pLoaderModule->GetILStubCache()->GetOrCreateStubMethodTable(pLoaderModule),
+                                                            ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB,
+                                                            pInterfaceMD->GetModule(),
+                                                            pSig, cbSig,
+                                                            &context,
+                                                            &sl);
+
+        pStubMD = pLoaderModule->GetILStubCache()->InsertStubMethodDesc(pStubMD, pHashBlob);
+    }
+
+    return JitILStub(pStubMD);
 }
 
 //---------------------------------------------------------------------------------------
@@ -690,10 +755,7 @@ Dictionary::PopulateEntry(
         ptr = SigPointer((PCCOR_SIGNATURE)signature);
         IfFailThrow(ptr.GetData(&kind));
 
-        Module * pContainingZapModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(signature));
-
-        zapSigContext = ZapSig::Context(CoreLibBinder::GetModule(), (void *)pContainingZapModule, ZapSig::NormalTokens);
-        pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
+        pZapSigContext = NULL;
     }
 
     ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
@@ -721,7 +783,7 @@ Dictionary::PopulateEntry(
 
 #if _DEBUG
         // Lock is needed because dictionary pointers can get updated during dictionary size expansion
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
@@ -1071,11 +1133,40 @@ Dictionary::PopulateEntry(
                 }
                 _ASSERTE(!constraintType.IsNull());
 
-                MethodDesc *pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
+                MethodDesc *pResolvedMD;
 
-                // All such calls should be resolvable.  If not then for now just throw an error.
-                _ASSERTE(pResolvedMD);
-                INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);)
+                if (pMethod->IsStatic())
+                {
+                    // Virtual Static Method resolution
+                    _ASSERTE(!ownerType.IsTypeDesc());
+                    _ASSERTE(ownerType.IsInterface());
+                    BOOL uniqueResolution;
+                    pResolvedMD = constraintType.GetMethodTable()->ResolveVirtualStaticMethod(
+                        ownerType.GetMethodTable(),
+                        pMethod,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult |
+                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
+                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc,
+                        &uniqueResolution);
+
+                    // If we couldn't get an exact result, fall back to using a stub to make the exact function call
+                    // This will trigger the logic in the JIT which can handle AmbiguousImplementationException and
+                    // EntryPointNotFoundException at exactly the right time
+                    if (!uniqueResolution || pResolvedMD == NULL || pResolvedMD->IsAbstract())
+                    {
+                        _ASSERTE(pResolvedMD == NULL || pResolvedMD->IsStatic());
+                        result = (CORINFO_GENERIC_HANDLE)CreateStubForStaticVirtualDispatch(constraintType.GetMethodTable(), ownerType.GetMethodTable(), pMethod);
+                        break;
+                    }
+                }
+                else
+                {
+                    pResolvedMD = constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);
+
+                    // All such calls should be resolvable.  If not then for now just throw an error.
+                    _ASSERTE(pResolvedMD);
+                    INDEBUG(if (!pResolvedMD) constraintType.GetMethodTable()->TryResolveConstraintMethodApprox(ownerType, pMethod);)
+                }
                 if (!pResolvedMD)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -1164,6 +1255,7 @@ Dictionary::PopulateEntry(
                 }
                 IfFailThrow(ptr.SkipExactlyOne());
 
+                // Computed by MethodTable::GetIndexForFieldDesc().
                 uint32_t fieldIndex;
                 IfFailThrow(ptr.GetData(&fieldIndex));
 

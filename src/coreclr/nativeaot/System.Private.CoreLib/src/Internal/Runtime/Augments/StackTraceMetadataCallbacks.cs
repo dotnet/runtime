@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Internal.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace Internal.Runtime.Augments
 {
@@ -14,7 +14,6 @@ namespace Internal.Runtime.Augments
     /// Internal.Runtime.Augments.RuntimeAugments.InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks);
     ///
     /// </summary>
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class StackTraceMetadataCallbacks
     {
@@ -23,7 +22,10 @@ namespace Internal.Runtime.Augments
         /// Return null if stack trace information is not available.
         /// </summary>
         /// <param name="methodStartAddress">Memory address representing the start of a method</param>
+        /// <param name="isStackTraceHidden">Returns a value indicating whether the method should be hidden in stack traces</param>
         /// <returns>Formatted method name or null if metadata for the method is not available</returns>
-        public abstract string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress);
+        public abstract string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden);
+
+        public abstract DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromStartAddress(IntPtr methodStartAddress);
     }
 }

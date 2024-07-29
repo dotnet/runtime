@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.MDBenchF
 {
@@ -100,7 +101,8 @@ public static class MDInProd
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = TestBase();
         return (result ? 100 : -1);

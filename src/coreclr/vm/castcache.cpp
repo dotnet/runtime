@@ -12,6 +12,7 @@
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
 OBJECTHANDLE CastCache::s_sentinelTable = NULL;
 DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
+const DWORD CastCache::INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 {
@@ -124,7 +125,7 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTCACHE__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();

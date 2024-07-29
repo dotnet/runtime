@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -30,6 +31,7 @@ namespace System.Speech.Recognition
         {
         }
 
+#pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
         private RecognitionResult(SerializationInfo info, StreamingContext context)
         {
             // Get the set of serializable members for our class and base classes
@@ -53,6 +55,7 @@ namespace System.Speech.Recognition
                 }
             }
         }
+#pragma warning restore SYSLIB0050
 
         #endregion
 
@@ -65,6 +68,7 @@ namespace System.Speech.Recognition
             return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
 
+#pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             Helpers.ThrowIfNull(info, nameof(info));
@@ -107,6 +111,8 @@ namespace System.Speech.Recognition
                 }
             }
         }
+#pragma warning restore SYSLIB0050
+
         internal bool SetTextFeedback(string text, bool isSuccessfulAction)
         {
             if (_sapiRecoResult == null)
@@ -494,24 +500,24 @@ namespace System.Speech.Recognition
 
         internal string DebuggerDisplayString()
         {
-            StringBuilder sb = new("Recognized text: '");
+            StringBuilder sb = new("Recognized text = '");
             sb.Append(Text);
             sb.Append('\'');
             if (Semantics.Value != null)
             {
-                sb.Append(" - Semantic Value  = ");
+                sb.Append(", Semantic Value  = ");
                 sb.Append(Semantics.Value.ToString());
             }
 
             if (Semantics.Count > 0)
             {
-                sb.Append(" - Semantic children count = ");
+                sb.Append(", Semantic children count = ");
                 sb.Append(Semantics.Count.ToString(CultureInfo.InvariantCulture));
             }
 
             if (Alternates.Count > 1)
             {
-                sb.Append(" - Alternate word count = ");
+                sb.Append(", Alternate word count = ");
                 sb.Append(Alternates.Count.ToString(CultureInfo.InvariantCulture));
             }
 

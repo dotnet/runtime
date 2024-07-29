@@ -11,11 +11,6 @@ void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palCont
 // Redirect Unix native context to the PAL_LIMITED_CONTEXT and also set the first two argument registers
 void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext, uintptr_t arg0Reg, uintptr_t arg1Reg);
 
-// Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda); 
-// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet);
-
 #ifdef HOST_AMD64
 // Get value of a register from the native context. The index is the processor specific
 // register index stored in machine instructions.
@@ -125,6 +120,99 @@ struct UNIX_CONTEXT
         lambda((size_t*)&R14());
         lambda((size_t*)&R15());
     }
+#elif defined(TARGET_ARM)
+    uint64_t& Pc();
+    uint64_t& Sp();
+    uint64_t& Lr();
+    uint64_t& R0();
+    uint64_t& R1();
+    uint64_t& R2();
+    uint64_t& R3();
+    uint64_t& R4();
+    uint64_t& R5();
+    uint64_t& R6();
+    uint64_t& R7();
+    uint64_t& R8();
+    uint64_t& R9();
+    uint64_t& R10();
+    uint64_t& R11();
+    uint64_t& R12();
+
+    uintptr_t GetIp() { return (uintptr_t)Pc(); }
+    uintptr_t GetSp() { return (uintptr_t)Sp(); }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        lambda((size_t*)&R0());
+        lambda((size_t*)&R1());
+        lambda((size_t*)&R2());
+        lambda((size_t*)&R3());
+        lambda((size_t*)&R4());
+        lambda((size_t*)&R5());
+        lambda((size_t*)&R6());
+        lambda((size_t*)&R7());
+        lambda((size_t*)&R8());
+        lambda((size_t*)&R9());
+        lambda((size_t*)&R10());
+        lambda((size_t*)&R11());
+        lambda((size_t*)&R12());
+    }
+
+#elif defined(TARGET_LOONGARCH64)
+
+    uint64_t& R0();
+    uint64_t& R2();
+    uint64_t& R4();
+    uint64_t& R5();
+    uint64_t& R6();
+    uint64_t& R7();
+    uint64_t& R8();
+    uint64_t& R9();
+    uint64_t& R10();
+    uint64_t& R11();
+    uint64_t& R12();
+    uint64_t& R13();
+    uint64_t& R14();
+    uint64_t& R15();
+    uint64_t& R16();
+    uint64_t& R17();
+    uint64_t& R18();
+    uint64_t& R19();
+    uint64_t& R20();
+    uint64_t& R21();
+    uint64_t& R23();
+    uint64_t& R24();
+    uint64_t& R25();
+    uint64_t& R26();
+    uint64_t& R27();
+    uint64_t& R28();
+    uint64_t& R29();
+    uint64_t& R30();
+    uint64_t& R31();
+    uint64_t& Fp(); // R22
+    uint64_t& Ra(); // R1
+    uint64_t& Sp(); // R3
+    uint64_t& Pc();
+
+    uintptr_t GetIp() { return (uintptr_t)Pc(); }
+    uintptr_t GetSp() { return (uintptr_t)Sp(); }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        // it is doubtful anyone would implement R0,R2,R4-R21,R23-R31 not as a contiguous array
+        // just in case - here are some asserts.
+        ASSERT(&R4() + 1 == &R5());
+        ASSERT(&R4() + 10 == &R14());
+
+        for (uint64_t* pReg = &R0(); pReg <= &R31(); pReg++)
+            lambda((size_t*)pReg);
+
+        // Ra can be used as a scratch register
+        lambda((size_t*)&Ra());
+    }
+
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");
 #endif // TARGET_ARM

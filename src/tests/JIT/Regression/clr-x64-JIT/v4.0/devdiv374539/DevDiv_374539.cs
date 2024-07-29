@@ -7,8 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-internal class Test_DevDiv_374539
+public class Test_DevDiv_374539
 {
     [DllImport("kernel32.dll")]
     private extern static IntPtr GetModuleHandle(string lpModuleName);
@@ -226,7 +227,8 @@ internal class Test_DevDiv_374539
         Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy();
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -18,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
     public static class TestHelper
     {
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
-        public static int PassingTestTimeoutMilliseconds => 60 * 1000;
+        public const int PassingTestTimeoutMilliseconds = 60 * 1000;
 
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
@@ -100,23 +96,11 @@ namespace System.Net.Http.Functional.Tests
             return TaskTimeoutExtensions.WhenAllOrAnyFailed(tasks, timeoutInMilliseconds);
         }
 
-#if NETCOREAPP
+#if NET
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 #else
         public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
 #endif
-
-        public static IPAddress GetIPv6LinkLocalAddress() =>
-            NetworkInterface
-                .GetAllNetworkInterfaces()
-                .Where(i => !i.Description.StartsWith("PANGP Virtual Ethernet"))    // This is a VPN adapter, but is reported as a regular Ethernet interface with
-                                                                                    // a valid link-local address, but the link-local address doesn't actually work.
-                                                                                    // So just manually filter it out.
-                .Where(i => !i.Name.Contains("Tailscale"))                          // Same as PANGP above.
-                .SelectMany(i => i.GetIPProperties().UnicastAddresses)
-                .Select(a => a.Address)
-                .Where(a => a.IsIPv6LinkLocal)
-                .FirstOrDefault();
 
         public static byte[] GenerateRandomContent(int size)
         {
@@ -158,14 +142,14 @@ namespace System.Net.Http.Functional.Tests
                 X509Certificate2 cert = req.CreateSelfSigned(start, end);
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx), (string?)null);
                 }
 
                 return cert;
             }
         }
 
-#if NETCOREAPP
+#if NET
         public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
         {
             var handler = new SocketsHttpHandler();
@@ -173,9 +157,6 @@ namespace System.Net.Http.Functional.Tests
             // Browser doesn't support ServerCertificateCustomValidationCallback
             if (allowAllCertificates && PlatformDetection.IsNotBrowser)
             {
-                // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
-                // See HttpClientHandlerTestBase.SocketsHttpHandler.cs:CreateHttpClientHandler for more details.
-
                 handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
             }
 

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_LngConv
 {
     const int Pass = 100;
@@ -45,7 +46,8 @@ public class BringUpTest_LngConv
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int a;
         UInt32 b;

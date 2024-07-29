@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class Test_b79642
 {
     public byte m_value;
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Test_b79642 a = new Test_b79642();
         Test_b79642 b = new Test_b79642();
@@ -21,6 +23,5 @@ public class Test_b79642
         Console.WriteLine(a.m_value < b.m_value);
         Console.WriteLine((byte)a.m_value < (byte)b.m_value);
         Console.WriteLine(b1 < b2);
-        return 100;
     }
 }

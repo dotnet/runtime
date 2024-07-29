@@ -188,7 +188,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 
         case GT_RETURN:
-            assert(tree->AsOp()->gtOp1->OperGet() == GT_LONG);
+        case GT_SWIFT_ERROR_RET:
+            assert(tree->AsOp()->GetReturnValue()->OperIs(GT_LONG));
             break;
 
         case GT_STOREIND:
@@ -514,10 +515,8 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     loStore->gtFlags |= GTF_VAR_USEASG;
 
     // Create the store for the upper half of the GT_LONG and insert it after the low store.
-    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4);
-    hiStore->SetOper(GT_STORE_LCL_FLD);
-    hiStore->gtOp1 = value->gtOp2;
-    hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+    GenTreeLclFld* hiStore =
+        m_compiler->gtNewStoreLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4, value->gtOp2);
 
     Range().InsertAfter(loStore, hiStore);
 
@@ -1401,12 +1400,12 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     // For longs, we need to change rols into two GT_LSH_HIs and rors into two GT_RSH_LOs
     // so we will get:
     //
-    // shld lo, hi, rotateAmount
+    // shld lo, hiCopy, rotateAmount
     // shld hi, loCopy, rotateAmount
     //
     // or:
     //
-    // shrd lo, hi, rotateAmount
+    // shrd lo, hiCopy, rotateAmount
     // shrd hi, loCopy, rotateAmount
 
     if (oper == GT_ROL)
@@ -1477,6 +1476,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
         }
 
+        if (oper == GT_RSH_LO)
+        {
+            // lsra/codegen expects these operands in the opposite order
+            std::swap(loOp1, hiOp1);
+        }
         Range().Remove(gtLong);
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();
@@ -1545,10 +1549,10 @@ GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
 
     // Normally GT_SELECT is responsible for evaluating the condition into
     // flags, but for the "upper half" we treat the lower GT_SELECT similar to
-    // other flag producing nodes and reuse them. GT_SELECT_HI is the variant
+    // other flag producing nodes and reuse them. GT_SELECTCC is the variant
     // that uses existing flags and has no condition as part of it.
     select->gtFlags |= GTF_SET_FLAGS;
-    GenTree* hiSelect = m_compiler->gtNewOperNode(GT_SELECT_HI, TYP_INT, hiOp1, hiOp2);
+    GenTree* hiSelect = m_compiler->gtNewOperCC(GT_SELECTCC, TYP_INT, GenCondition::NE, hiOp1, hiOp2);
 
     Range().InsertAfter(select, hiSelect);
 
@@ -1698,11 +1702,16 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
     {
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
+        {
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
+        }
 
         default:
+        {
             noway_assert(!"unexpected GT_HWINTRINSIC node in long decomposition");
             break;
+        }
     }
 
     return nullptr;
@@ -1718,10 +1727,10 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 // create:
 //
 // tmp_simd_var = simd_var
-// tmp_index = index
-// loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2)
-// hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2 + 1)
-// return: GT_LONG(loResult, hiResult)
+// tmp_index_times_two = index * 2
+// lo_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
+// hi_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two + 1)
+// return: GT_LONG(lo_result, hi_result)
 //
 // This isn't optimal codegen, since NI_Vector*_GetElement sometimes requires
 // temps that could be shared, for example.
@@ -1738,7 +1747,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     assert(node == use.Def());
     assert(varTypeIsLong(node));
     assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector256_GetElement));
+           (node->GetHWIntrinsicId() == NI_Vector256_GetElement) ||
+           (node->GetHWIntrinsicId() == NI_Vector512_GetElement));
 
     GenTree*  op1          = node->Op(1);
     GenTree*  op2          = node->Op(2);
@@ -1749,89 +1759,72 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     assert(varTypeIsSIMD(op1->TypeGet()));
     assert(op2->TypeIs(TYP_INT));
 
-    bool    indexIsConst = op2->OperIsConst();
-    ssize_t index        = 0;
-
-    if (indexIsConst)
-    {
-        index = op2->AsIntCon()->IconValue();
-    }
-
     GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
     JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
     Range().Remove(simdTmpVar);
-    op1 = node->Op(1);
 
-    GenTree* indexTmpVar    = nullptr;
-    unsigned indexTmpVarNum = 0;
-
-    if (!indexIsConst)
-    {
-        indexTmpVar    = RepresentOpAsLocalVar(op2, node, &node->Op(2));
-        indexTmpVarNum = indexTmpVar->AsLclVarCommon()->GetLclNum();
-        JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op2 tree to a temp var:\n");
-        DISPTREERANGE(Range(), indexTmpVar);
-        Range().Remove(indexTmpVar);
-        op2 = node->Op(2);
-    }
-
-    // Create:
-    //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, index * 2)
-
-    GenTree* simdTmpVar1 = simdTmpVar;
-    GenTree* indexTimesTwo1;
+    GenTree* indexTimesTwo;
+    bool     indexIsConst = op2->OperIsConst();
 
     if (indexIsConst)
     {
         // Reuse the existing index constant node.
-        indexTimesTwo1 = op2;
-        Range().Remove(indexTimesTwo1);
-        indexTimesTwo1->AsIntCon()->SetIconValue(index * 2);
 
-        Range().InsertBefore(node, simdTmpVar1, indexTimesTwo1);
+        indexTimesTwo = op2;
+        Range().Remove(op2);
+
+        indexTimesTwo->AsIntCon()->SetIconValue(op2->AsIntCon()->IconValue() * 2);
+        Range().InsertBefore(node, simdTmpVar, indexTimesTwo);
     }
     else
     {
-        GenTree* indexTmpVar1 = indexTmpVar;
-        GenTree* two1         = m_compiler->gtNewIconNode(2, TYP_INT);
-        indexTimesTwo1        = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar1, two1);
-        Range().InsertBefore(node, simdTmpVar1, indexTmpVar1, two1, indexTimesTwo1);
+        GenTree* one  = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwo = m_compiler->gtNewOperNode(GT_LSH, TYP_INT, op2, one);
+        Range().InsertBefore(node, simdTmpVar, one, indexTimesTwo);
     }
 
-    GenTree* loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar1, indexTimesTwo1,
-                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    // Create:
+    //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
+
+    GenTreeHWIntrinsic* loResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, loResult);
 
-    // Create:
-    //      hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, index * 2 + 1)
+    simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
+    Range().InsertBefore(node, simdTmpVar);
 
-    GenTree* simdTmpVar2 = m_compiler->gtNewLclLNode(simdTmpVarNum, op1->TypeGet());
+    // Create:
+    //      hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two + 1)
+
     GenTree* indexTimesTwoPlusOne;
 
     if (indexIsConst)
     {
-        indexTimesTwoPlusOne = m_compiler->gtNewIconNode(index * 2 + 1, TYP_INT);
-        Range().InsertBefore(node, simdTmpVar2, indexTimesTwoPlusOne);
+        indexTimesTwoPlusOne = m_compiler->gtNewIconNode(indexTimesTwo->AsIntCon()->IconValue() + 1, TYP_INT);
+        Range().InsertBefore(node, indexTimesTwoPlusOne);
     }
     else
     {
-        GenTree* indexTmpVar2   = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
-        GenTree* two2           = m_compiler->gtNewIconNode(2, TYP_INT);
-        GenTree* indexTimesTwo2 = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar2, two2);
-        GenTree* one            = m_compiler->gtNewIconNode(1, TYP_INT);
-        indexTimesTwoPlusOne    = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo2, one);
-        Range().InsertBefore(node, simdTmpVar2, indexTmpVar2, two2, indexTimesTwo2);
-        Range().InsertBefore(node, one, indexTimesTwoPlusOne);
+        indexTimesTwo                = RepresentOpAsLocalVar(indexTimesTwo, loResult, &loResult->Op(2));
+        unsigned indexTimesTwoVarNum = indexTimesTwo->AsLclVarCommon()->GetLclNum();
+        JITDUMP("[DecomposeHWIntrinsicWithElement]: Saving indexTimesTwo tree to a temp var:\n");
+        DISPTREERANGE(Range(), indexTimesTwo);
+
+        indexTimesTwo        = m_compiler->gtNewLclLNode(indexTimesTwoVarNum, indexTimesTwo->TypeGet());
+        GenTree* one         = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwoPlusOne = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo, one);
+        Range().InsertBefore(node, indexTimesTwo, one, indexTimesTwoPlusOne);
     }
 
-    GenTree* hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne,
-                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* hiResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, hiResult);
 
     // Done with the original tree; remove it.
-
     Range().Remove(node);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -2177,22 +2170,12 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
     for (unsigned index = 0; index < 2; ++index)
     {
         // Grab the temp for the field local.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-        char buf[200];
-        sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
-                  index * 4);
-
-        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-        size_t len  = strlen(buf) + 1;
-        char*  bufp = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-        strcpy_s(bufp, len, buf);
-#endif
 
         // Lifetime of field locals might span multiple BBs, so they are long lifetime temps.
-        unsigned fieldLclNum = m_compiler->lvaGrabTemp(false DEBUGARG(bufp));
-        varDsc               = m_compiler->lvaGetDesc(lclNum);
+        unsigned fieldLclNum = m_compiler->lvaGrabTemp(
+            false DEBUGARG(m_compiler->printfAlloc("%s V%02u.%s (fldOffset=0x%x)", "field", lclNum,
+                                                   index == 0 ? "lo" : "hi", index * 4)));
+        varDsc = m_compiler->lvaGetDesc(lclNum);
 
         LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(fieldLclNum);
         fieldVarDsc->lvType          = TYP_INT;

@@ -116,7 +116,9 @@ public:
     Iterator Remove(Iterator & it);
 
 private:
-    PTR_T m_pHead;
+    // when using PushHeadInterlocked, the head may be inserted concurrently.
+    // m_pHead is volatile - to make sure there are no re-reading optimizations when iterating.
+    PTR_T volatile m_pHead;
 };
 
 MSVC_RESTORE_WARNING_STATE()

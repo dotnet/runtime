@@ -10,7 +10,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include "holder.h"
-
+#include <minipal/strings.h>
 
 #if defined(_MSC_VER)
 #pragma inline_depth (25)
@@ -87,7 +87,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 #ifdef SELF_NO_HOST
             toupper(wc);
 #else
-            PAL_ToUpperInvariant(wc);
+            minipal_toupper_invariant(wc);
 #endif
     }
     else
@@ -97,7 +97,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 #ifdef SELF_NO_HOST
             tolower(wc);
 #else
-            PAL_ToLowerInvariant(wc);
+            minipal_tolower_invariant(wc);
 #endif
     }
 #endif // !TARGET_UNIX
@@ -244,7 +244,7 @@ void SString::Set(const WCHAR *string)
         Clear();
     else
     {
-        Resize((COUNT_T) wcslen(string), REPRESENTATION_UNICODE);
+        Resize((COUNT_T) u16_strlen(string), REPRESENTATION_UNICODE);
         wcscpy_s(GetRawUnicode(), GetBufferSizeInCharIncludeNullChar(), string);
     }
 
@@ -819,13 +819,13 @@ void SString::ConvertToUnicode(SString &s) const
         UNREACHABLE();
     }
 
-    COUNT_T length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
+    COUNT_T length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, 0, 0);
     if (length == 0)
         ThrowLastError();
 
     s.Resize(length-1, REPRESENTATION_UNICODE);
 
-    length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
+    length = MultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
     if (length == 0)
         ThrowLastError();
 
@@ -985,7 +985,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
             const WCHAR *end = GetUnicode() + GetRawCount() - count;
             while (start <= end)
             {
-                if (wcsncmp(start, source.GetRawUnicode(), count) == 0)
+                if (u16_strncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
                     RETURN TRUE;
@@ -1124,7 +1124,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
 
             while (start >= end)
             {
-                if (wcsncmp(start, source.GetRawUnicode(), count) == 0)
+                if (u16_strncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
                     RETURN TRUE;
@@ -1334,7 +1334,7 @@ int SString::Compare(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        result = wcsncmp(GetRawUnicode(), source.GetRawUnicode(), smaller);
+        result = u16_strncmp(GetRawUnicode(), source.GetRawUnicode(), smaller);
         break;
 
     case REPRESENTATION_ASCII:
@@ -1448,7 +1448,7 @@ BOOL SString::Equals(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        RETURN (wcsncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
+        RETURN (u16_strncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
         RETURN (strncmp(GetRawASCII(), source.GetRawASCII(), count) == 0);
@@ -1536,7 +1536,7 @@ BOOL SString::Match(const CIterator &i, const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        RETURN (wcsncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
+        RETURN (u16_strncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
         RETURN (strncmp(i.GetASCII(), source.GetRawASCII(), count) == 0);
@@ -1713,66 +1713,6 @@ void SString::Printf(const CHAR *format, ...)
     va_end(args);
 }
 
-#ifdef _DEBUG
-//
-// Check the Printf use for potential globalization bugs. %S formatting
-// specifier does Unicode->Ansi or Ansi->Unicode conversion using current
-// C-locale. This almost always means globalization bug in the CLR codebase.
-//
-// Ideally, we would elimitate %S from all format strings. Unfortunately,
-// %S is too widespread in non-shipping code that such cleanup is not feasible.
-//
-static void CheckForFormatStringGlobalizationIssues(const SString &format, const SString &result)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        DEBUG_ONLY;
-    }
-    CONTRACTL_END;
-
-    BOOL fDangerousFormat = FALSE;
-
-    // Check whether the format string contains the %S formatting specifier
-    SString::CIterator itrFormat = format.Begin();
-    while (*itrFormat)
-    {
-        if (*itrFormat++ == '%')
-        {
-            // <TODO>Handle the complex format strings like %blahS</TODO>
-            if (*itrFormat++ == 'S')
-            {
-                fDangerousFormat = TRUE;
-                break;
-            }
-        }
-    }
-
-    if (fDangerousFormat)
-    {
-        BOOL fNonAsciiUsed = FALSE;
-
-        // Now check whether there are any non-ASCII characters in the output.
-
-        // Check whether the result contains non-Ascii characters
-        SString::CIterator itrResult = format.Begin();
-        while (*itrResult)
-        {
-            if (*itrResult++ > 127)
-            {
-                fNonAsciiUsed = TRUE;
-                break;
-            }
-        }
-
-        CONSISTENCY_CHECK_MSGF(!fNonAsciiUsed,
-            ("Non-ASCII string was produced by %%S format specifier. This is likely globalization bug."
-            "To fix this, change the format string to %%s and do the correct encoding at the Printf callsite"));
-    }
-}
-#endif
-
 #ifndef EBADF
 #define EBADF 9
 #endif
@@ -1819,8 +1759,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
         {
             // Succeeded in writing. Now resize -
             Resize(result, REPRESENTATION_UTF8, PRESERVE);
-            SString sss(Utf8, format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
     }
@@ -1850,8 +1788,6 @@ void SString::VPrintf(const CHAR *format, va_list args)
         {
             // Succeed in writing. Shrink the buffer to fit exactly.
             Resize(result, REPRESENTATION_UTF8, PRESERVE);
-            SString sss(Utf8, format);
-            INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
 
@@ -1920,7 +1856,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
         // First, try to use our existing buffer to hold the result.
         Resize(GetRawCount(), REPRESENTATION_UNICODE);
 
-        DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+        DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                           lpSource, dwMessageId, dwLanguageId,
                                           GetRawUnicode(), GetRawCount()+1, (va_list*)args);
 
@@ -1942,7 +1878,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     // We don't have enough space in our buffer, do dynamic allocation.
     LocalAllocHolder<WCHAR> string;
 
-    DWORD result = ::WszFormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+    DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
                                       (LPWSTR)(LPWSTR*)&string, 0, (va_list*)args);
 
@@ -2408,11 +2344,11 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             // iPage defaults to CP_ACP.
             if (pcNeedChars)
             {
-                *pcNeedChars = WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
+                *pcNeedChars = MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, NULL, 0);
             }
             if (pBuffer && cBufChars)
             {
-                if (!WszMultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
+                if (!MultiByteToWideChar(iPage, 0, reinterpret_cast<PSTR>(pContent), -1, pBuffer, cBufChars))
                 {
                     return false;
                 }

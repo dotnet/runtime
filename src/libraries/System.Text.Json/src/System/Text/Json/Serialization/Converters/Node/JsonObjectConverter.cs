@@ -3,11 +3,12 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonObjectConverter : JsonConverter<JsonObject>
+    internal sealed class JsonObjectConverter : JsonConverter<JsonObject?>
     {
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
@@ -21,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             scoped ref ReadStack state)
         {
-            bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out JsonNode? value);
+            bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out JsonNode? value, out _);
             Debug.Assert(success); // Node converters are not resumable.
 
             Debug.Assert(obj is JsonObject);
@@ -33,9 +34,14 @@ namespace System.Text.Json.Serialization.Converters
             jObject[propertyName] = jNodeValue;
         }
 
-        public override void Write(Utf8JsonWriter writer, JsonObject value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             value.WriteTo(writer, options);
         }
 
@@ -45,6 +51,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartObject:
                     return ReadObject(ref reader, options.GetNodeOptions());
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedObject(reader.TokenType);
@@ -57,5 +65,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonObject jObject = new JsonObject(jElement, options);
             return jObject;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };
     }
 }

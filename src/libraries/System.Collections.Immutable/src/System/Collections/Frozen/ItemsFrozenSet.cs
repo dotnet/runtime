@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace System.Collections.Frozen
@@ -14,7 +14,7 @@ namespace System.Collections.Frozen
         private protected readonly FrozenHashTable _hashTable;
         private protected readonly T[] _items;
 
-        protected ItemsFrozenSet(HashSet<T> source, IEqualityComparer<T> comparer) : base(comparer)
+        protected ItemsFrozenSet(HashSet<T> source, bool keysAreHashCodes = false) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -23,10 +23,23 @@ namespace System.Collections.Frozen
 
             _items = new T[entries.Length];
 
-            _hashTable = FrozenHashTable.Create(
-                entries,
-                o => o is null ? 0 : comparer.GetHashCode(o),
-                (index, item) => _items[index] = item);
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
+            for (int i = 0; i < entries.Length; i++)
+            {
+                hashCodes[i] = entries[i] is T t ? Comparer.GetHashCode(t) : 0;
+            }
+
+            _hashTable = FrozenHashTable.Create(hashCodes, keysAreHashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _items[destIndex] = entries[srcIndex];
+            }
+
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }
 
         /// <inheritdoc />

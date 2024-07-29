@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <UseManagedCOMServer>true</UseManagedCOMServer>
     <IsManagedCOMClient>true</IsManagedCOMClient>

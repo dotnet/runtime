@@ -28,5 +28,8 @@ namespace ILCompiler.Dataflow
         public override bool Equals(object? obj) => obj is HoistedLocalKey other && Equals(other);
 
         public override int GetHashCode() => Field.GetHashCode();
+
+        public static bool operator ==(HoistedLocalKey left, HoistedLocalKey right) => left.Equals (right);
+        public static bool operator !=(HoistedLocalKey left, HoistedLocalKey right) => !(left == right);
     }
 }

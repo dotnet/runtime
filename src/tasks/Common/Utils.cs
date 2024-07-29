@@ -3,17 +3,38 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Reflection.PortableExecutable;
+using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 internal static class Utils
 {
+    public enum HashAlgorithmType
+    {
+        SHA256,
+        SHA384,
+        SHA512
+    };
+
+    public enum HashEncodingType
+    {
+        Base64,
+        Base64Safe
+    };
+
+    public static string WebcilInWasmExtension = ".wasm";
+
     private static readonly object s_SyncObj = new object();
+
+    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
     public static string GetEmbeddedResource(string file)
     {
@@ -64,6 +85,9 @@ internal static class Utils
             using StreamWriter sw = new(file);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // set encoding to UTF-8 -> full Unicode support is needed for usernames -
+                // `command` contains tmp dir path with the username
+                sw.WriteLine(@"%SystemRoot%\System32\chcp.com 65001>nul");
                 sw.WriteLine("setlocal");
                 sw.WriteLine("set errorlevel=dummy");
                 sw.WriteLine("set errorlevel=");
@@ -113,7 +137,8 @@ internal static class Utils
         bool silent = true,
         bool logStdErrAsMessage = false,
         MessageImportance debugMessageImportance=MessageImportance.High,
-        string? label=null)
+        string? label=null,
+        Action<Stream>? inputProvider = null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running: {path} {args}");
@@ -125,6 +150,7 @@ internal static class Utils
             CreateNoWindow = true,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
+            RedirectStandardInput = inputProvider != null,
             Arguments = args,
         };
 
@@ -181,33 +207,11 @@ internal static class Utils
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        inputProvider?.Invoke(process.StandardInput.BaseStream);
         process.WaitForExit();
 
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
-    }
-
-    internal static string CreateTemporaryBatchFile(string command)
-    {
-        string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
-        string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
-
-        using StreamWriter sw = new(file);
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-                sw.WriteLine("setlocal");
-                sw.WriteLine("set errorlevel=dummy");
-                sw.WriteLine("set errorlevel=");
-        }
-        else
-        {
-            // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
-            sw.WriteLine("#!/bin/sh");
-        }
-
-        sw.WriteLine(command);
-
-        return file;
     }
 
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
@@ -225,16 +229,104 @@ internal static class Utils
         return areDifferent;
     }
 
-    public static string ComputeHash(string filepath)
+    private static string ToBase64SafeString(byte[] data)
     {
-        using var stream = File.OpenRead(filepath);
-        using HashAlgorithm hashAlgorithm = SHA512.Create();
+        if (data.Length == 0)
+            return string.Empty;
 
-        byte[] hash = hashAlgorithm.ComputeHash(stream);
-        return Convert.ToBase64String(hash);
+        int outputLength = ((4 * data.Length / 3) + 3) & ~3;
+        char[] base64Safe = new char[outputLength];
+        int base64SafeLength = Convert.ToBase64CharArray(data, 0, data.Length, base64Safe, 0, Base64FormattingOptions.None);
+
+        //RFC3548, URL and Filename Safe Alphabet.
+        for (int i = 0; i < base64SafeLength; i++)
+        {
+            if (base64Safe[i] == '+')
+                base64Safe[i] = '-';
+            else if (base64Safe[i] == '/')
+                base64Safe[i] = '_';
+        }
+
+        return new string(base64Safe);
     }
 
-#if NETCOREAPP
+    private static byte[] ComputeHashFromStream(Stream stream, HashAlgorithmType algorithm)
+    {
+        if (algorithm == HashAlgorithmType.SHA512)
+        {
+            using HashAlgorithm hashAlgorithm = SHA512.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else if (algorithm == HashAlgorithmType.SHA384)
+        {
+            using HashAlgorithm hashAlgorithm = SHA384.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else if (algorithm == HashAlgorithmType.SHA256)
+        {
+            using HashAlgorithm hashAlgorithm = SHA256.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported hash algorithm: {algorithm}");
+        }
+    }
+
+    private static string EncodeHash(byte[] data, HashEncodingType encoding)
+    {
+        if (encoding == HashEncodingType.Base64)
+        {
+            return Convert.ToBase64String(data);
+        }
+        else if (encoding == HashEncodingType.Base64Safe)
+        {
+            return ToBase64SafeString(data);
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported hash encoding: {encoding}");
+        }
+    }
+
+    public static string ComputeHash(string filepath)
+    {
+        return ComputeHashEx(filepath);
+    }
+
+    public static string ComputeHashEx(string filepath, HashAlgorithmType algorithm = HashAlgorithmType.SHA512, HashEncodingType encoding = HashEncodingType.Base64)
+    {
+        using var stream = File.OpenRead(filepath);
+        return EncodeHash(ComputeHashFromStream(stream, algorithm), encoding);
+    }
+
+    public static string ComputeIntegrity(string filepath)
+    {
+        using var stream = File.OpenRead(filepath);
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(stream);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
+    public static string ComputeIntegrity(byte[] bytes)
+    {
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(bytes);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
+    public static string ComputeTextIntegrity(string str)
+    {
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        var bytes = Encoding.UTF8.GetBytes(str);
+        byte[] hash = hashAlgorithm.ComputeHash(bytes);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
+#if NET
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
         if (!Directory.Exists(destDir))
@@ -255,4 +347,100 @@ internal static class Utils
         }
     }
 #endif
+
+    public static bool IsWindows()
+    {
+#if NET
+        return OperatingSystem.IsWindows();
+#else
+        return true;
+#endif
+    }
+
+    public static bool IsMacOS()
+    {
+#if NET
+        return OperatingSystem.IsMacOS();
+#else
+        return false;
+#endif
+    }
+
+    public static bool IsLinux()
+    {
+#if NET
+        return OperatingSystem.IsLinux();
+#else
+        return false;
+#endif
+    }
+
+    public static bool IsManagedAssembly(string filePath)
+    {
+        if (!File.Exists(filePath))
+            return false;
+
+        // Try to read CLI metadata from the PE file.
+        using FileStream fileStream = File.OpenRead(filePath);
+        using PEReader peReader = new(fileStream, PEStreamOptions.Default);
+        return IsManagedAssembly(peReader);
+    }
+
+    public static bool IsManagedAssembly(byte[] bytes)
+    {
+        using var peReader = new PEReader(ImmutableArray.Create(bytes));
+        return IsManagedAssembly(peReader);
+    }
+
+    private static bool IsManagedAssembly(PEReader peReader)
+    {
+        try
+        {
+            if (!peReader.HasMetadata)
+            {
+                return false; // File does not have CLI metadata.
+            }
+
+            // Check that file has an assembly manifest.
+            MetadataReader reader = peReader.GetMetadataReader();
+            return reader.IsAssembly;
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    // Keep synced with mono_fixup_symbol_name from src/mono/mono/metadata/native-library.c
+    public static string FixupSymbolName(string name)
+    {
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else if (s_charsToReplace.Contains((char)b))
+            {
+                sb.Append('_');
+            }
+            else
+            {
+                sb.Append($"_{b:X}_");
+            }
+        }
+
+        return sb.ToString();
+    }
 }

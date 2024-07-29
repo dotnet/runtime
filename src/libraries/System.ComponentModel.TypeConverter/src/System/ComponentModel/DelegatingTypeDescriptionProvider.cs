@@ -36,7 +36,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             return Provider.CreateInstance(provider, objectType, argTypes, args);
         }
@@ -120,5 +120,13 @@ namespace System.ComponentModel
         }
 
         public override bool IsSupportedType(Type type) => Provider.IsSupportedType(type);
+
+        public override bool IsRegisteredType(Type type) => Provider.IsRegisteredType(type);
+
+        public override bool? RequireRegisteredTypes => Provider.RequireRegisteredTypes;
+
+        public override ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance) => Provider.GetTypeDescriptorFromRegisteredType(objectType, instance);
+
+        public override void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>() => Provider.RegisterType<T>();
     }
 }

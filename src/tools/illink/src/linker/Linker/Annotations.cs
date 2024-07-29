@@ -59,6 +59,7 @@ namespace Mono.Linker
 		protected readonly Dictionary<TypeDefinition, TypePreserveMembers> preserved_type_members = new ();
 		protected readonly Dictionary<ExportedType, TypePreserveMembers> preserved_exportedtype_members = new ();
 		protected readonly Dictionary<IMemberDefinition, List<MethodDefinition>> preserved_methods = new Dictionary<IMemberDefinition, List<MethodDefinition>> ();
+		readonly HashSet<AssemblyDefinition> assemblies_with_root_all_members = new ();
 		protected readonly HashSet<IMetadataTokenProvider> public_api = new HashSet<IMetadataTokenProvider> ();
 		protected readonly Dictionary<AssemblyDefinition, ISymbolReader> symbol_readers = new Dictionary<AssemblyDefinition, ISymbolReader> ();
 		readonly Dictionary<IMemberDefinition, LinkerAttributesInformation> linker_attributes = new Dictionary<IMemberDefinition, LinkerAttributesInformation> ();
@@ -92,7 +93,7 @@ namespace Mono.Linker
 
 		internal HashSet<MethodDefinition> VirtualMethodsWithAnnotationsToValidate { get; }
 
-		TypeMapInfo TypeMapInfo { get; }
+		public TypeMapInfo TypeMapInfo { get; }
 
 		public MemberActionStore MemberActions { get; }
 
@@ -272,7 +273,6 @@ namespace Mono.Linker
 
 		public bool MarkProcessed (IMetadataTokenProvider provider, in DependencyInfo reason)
 		{
-			Debug.Assert (!(reason.Kind == DependencyKind.AlreadyMarked));
 			Tracer.AddDirectDependency (provider, reason, marked: true);
 			// The item may or may not be pending.
 			marked_pending.Remove (provider);
@@ -302,25 +302,12 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public bool HasAppliedPreserve (TypeDefinition type, TypePreserve preserve)
-		{
-			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing))
-				throw new InternalErrorException ($"Type {type} must have a TypePreserve before it can be applied.");
-
-			if (preserve != existing.preserve)
-				throw new InternalErrorException ($"Type {type} does not have {preserve}. The TypePreserve may have changed before the call to {nameof (HasAppliedPreserve)}.");
-
-			return existing.applied;
-		}
-
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
 			Debug.Assert (preserve != TypePreserve.Nothing);
 			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing)) {
 				preserved_types.Add (type, (preserve, false));
 				if (IsProcessed (type)) {
-					// Required to track preserve for marked types where the existing preserve
-					// was Nothing (since these aren't explicitly tracked.)
 					var addedPending = pending_preserve.Add (type);
 					Debug.Assert (addedPending);
 				}
@@ -400,6 +387,16 @@ namespace Mono.Linker
 			return preserved_exportedtype_members.TryGetValue (type, out preserve);
 		}
 
+		public void SetRootAssembly (AssemblyDefinition assembly)
+		{
+			assemblies_with_root_all_members.Add (assembly);
+		}
+
+		public bool IsRootAssembly (AssemblyDefinition assembly)
+		{
+			return assemblies_with_root_all_members.Contains (assembly);
+		}
+
 		public bool TryGetMethodStubValue (MethodDefinition method, out object? value)
 		{
 			return MemberActions.TryGetMethodStubValue (method, out value);
@@ -437,14 +434,22 @@ namespace Mono.Linker
 		}
 
 		/// <summary>
-		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
+		/// Returns a list of all known methods that override <paramref name="method"/>.
+		/// The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
 		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		/// <summary>
+		/// Returns a list of all default interface methods that implement <paramref name="method"/> for a type.
+		/// ImplementingType is the type that implements the interface,
+		/// InterfaceImpl is the <see cref="InterfaceImplementation" /> for the interface <paramref name="method" /> is declared on, and
+		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
+		/// </summary>
+		/// <param name="method">The interface method to find default implementations for</param>
+		public IEnumerable<OverrideInformation>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
@@ -452,7 +457,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns all base methods that <paramref name="method"/> overrides.
 		/// This includes methods on <paramref name="method"/>'s declaring type's base type (but not methods higher up in the type hierarchy),
-		/// methods on an interface that <paramref name="method"/>'s delcaring type implements,
+		/// methods on an interface that <paramref name="method"/>'s declaring type implements,
 		/// and methods an interface implemented by a derived type of <paramref name="method"/>'s declaring type if the derived type uses <paramref name="method"/> as the implementing method.
 		/// The list may be incomplete if there are derived types in assemblies that havent been processed yet that use <paramref name="method"/> to implement an interface.
 		/// </summary>
@@ -601,44 +606,34 @@ namespace Mono.Linker
 		/// Determines if method is within a declared RUC scope - this typically means that trim analysis
 		/// warnings should be suppressed in such a method.
 		/// </summary>
-		/// <remarks>Unlike <see cref="DoesMemberRequireUnreferencedCode(IMemberDefinition, out RequiresUnreferencedCodeAttribute?)"/>
+		/// <remarks>Unlike <see cref="DoesMethodRequireUnreferencedCode(IMemberDefinition, out RequiresUnreferencedCodeAttribute?)"/>
 		/// if a declaring type has RUC, all methods in that type are considered "in scope" of that RUC. So this includes also
 		/// instance methods (not just statics and .ctors).</remarks>
-		internal bool IsInRequiresUnreferencedCodeScope (MethodDefinition method)
+		internal bool IsInRequiresUnreferencedCodeScope (MethodDefinition method, [NotNullWhen (true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
-			if (HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method) && !method.IsStaticConstructor ())
+			if (TryGetLinkerAttribute (method, out attribute) && !method.IsStaticConstructor ())
 				return true;
 
-			if (method.DeclaringType is not null && HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method.DeclaringType))
+			if (method.DeclaringType is not null && TryGetLinkerAttribute (method.DeclaringType, out attribute))
 				return true;
 
+			attribute = null;
 			return false;
 		}
 
-		/// <summary>
-		/// Determines if a member requires unreferenced code (and thus any usage of such method should be warned about).
-		/// </summary>
-		/// <remarks>Unlike <see cref="IsInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods
-		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
-		internal bool DoesMemberRequireUnreferencedCode (IMemberDefinition member, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
+		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ICustomAttributeProvider? originMember, [NotNullWhen (true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
 			attribute = null;
-			return member switch {
-				MethodDefinition method => DoesMethodRequireUnreferencedCode (method, out attribute),
-				FieldDefinition field => DoesFieldRequireUnreferencedCode (field, out attribute),
-				_ => false
-			};
-		}
-
-		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ICustomAttributeProvider? originMember)
-		{
 			// Check if the current scope method has RequiresUnreferencedCode on it
 			// since that attribute automatically suppresses all trim analysis warnings.
 			// Check both the immediate origin method as well as suppression context method
 			// since that will be different for compiler generated code.
 			if (originMember is MethodDefinition &&
-				IsInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
+				IsInRequiresUnreferencedCodeScope ((MethodDefinition) originMember, out attribute))
 				return true;
+
+			if (originMember is FieldDefinition field)
+				return DoesFieldRequireUnreferencedCode (field, out attribute);
 
 			if (originMember is not IMemberDefinition member)
 				return false;
@@ -646,7 +641,7 @@ namespace Mono.Linker
 			MethodDefinition? owningMethod;
 			while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (member, out owningMethod)) {
 				Debug.Assert (owningMethod != member);
-				if (IsInRequiresUnreferencedCodeScope (owningMethod))
+				if (IsInRequiresUnreferencedCodeScope (owningMethod, out attribute))
 					return true;
 				member = owningMethod;
 			}
@@ -654,15 +649,16 @@ namespace Mono.Linker
 			return false;
 		}
 
+		/// <summary>
+		/// Determines if a method requires unreferenced code (and thus any usage of such method should be warned about).
+		/// </summary>
+		/// <remarks>Unlike <see cref="IsInRequiresUnreferencedCodeScope(MethodDefinition)"/> only static methods
+		/// and .ctors are reported as requiring unreferenced code when the declaring type has RUC on it.</remarks>
 		internal bool DoesMethodRequireUnreferencedCode (MethodDefinition originalMethod, [NotNullWhen (returnValue: true)] out RequiresUnreferencedCodeAttribute? attribute)
 		{
 			MethodDefinition? method = originalMethod;
 			do {
-				if (method.IsStaticConstructor ()) {
-					attribute = null;
-					return false;
-				}
-				if (TryGetLinkerAttribute (method, out attribute))
+				if (!method.IsStaticConstructor () && TryGetLinkerAttribute (method, out attribute))
 					return true;
 
 				if ((method.IsStatic || method.IsConstructor) && method.DeclaringType is not null &&
@@ -670,6 +666,7 @@ namespace Mono.Linker
 					return true;
 			} while (context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (method, out method));
 
+			attribute = null;
 			return false;
 		}
 
@@ -706,6 +703,11 @@ namespace Mono.Linker
 
 			if (FlowAnnotations.RequiresVirtualMethodDataFlowAnalysis (method) || HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
+		}
+
+		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
+		{
+			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}
 	}
 }

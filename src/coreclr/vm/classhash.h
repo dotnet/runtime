@@ -39,6 +39,7 @@ typedef struct EEClassHashEntry
     PTR_VOID GetData();
     void SetData(PTR_VOID data) DAC_EMPTY();
 
+
 private:
     PTR_VOID    m_Data;     // Either the token (if EECLASSHASH_TYPEHANDLE_DISCR), or the type handle encoded
                             // as a relative pointer
@@ -61,27 +62,20 @@ public:
     // of the base classes' hash value enumerator.
     typedef DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>::LookupContext LookupContext;
 
-    static EEClassHashTable *Create(Module *pModule, DWORD dwNumBuckets, BOOL bCaseInsensitive, AllocMemTracker *pamTracker);
+    static EEClassHashTable *Create(Module *pModule, DWORD dwNumBuckets, PTR_EEClassHashTable caseSensitiveTable, AllocMemTracker *pamTracker);
 
     //NOTICE: look at InsertValue() in ClassLoader, that may be the function you want to use. Use this only
     //        when you are sure you want to insert the value in 'this' table. This function does not deal
     //        with case (as often the class loader has to)
-    EEClassHashEntry_t *InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker);
-    EEClassHashEntry_t *InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *InsertValueUsingPreallocatedEntry(EEClassHashEntry_t *pStorageForNewEntry, LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser);
-    EEClassHashEntry_t *GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
     EEClassHashEntry_t *AllocNewEntry(AllocMemTracker *pamTracker);
     EEClassHashTable   *MakeCaseInsensitiveTable(Module *pModule, AllocMemTracker *pamTracker);
-    EEClassHashEntry_t *FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *FindNextNestedClass(const NameHandle* pName, PTR_VOID *pData, LookupContext *pContext);
-    EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, LookupContext *pContext);
-    EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, LookupContext *pContext);
+
+    PTR_EEClassHashEntry FindByNameHandle(const NameHandle* pName);
 
     BOOL     CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2);
 
-    static DWORD    Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName);
+    static DWORD    Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, DWORD enclosingHash);
 
     class ConstructKeyCallback
     {
@@ -97,15 +91,32 @@ public:
                                               mdTypeDef *pCL);
     static mdToken UncompressModuleAndClassDef(PTR_VOID Data);
 
+    static DWORD HashEntryToHash(PTR_EEClassHashEntry entry)
+    {
+        return BaseValuePtrToHash(entry);
+    }
+
 private:
 #ifndef DACCESS_COMPILE
     EEClassHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
-        DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
+        DacEnumerableHashTable<EEClassHashTable, EEClassHashEntry, 4>(pModule, pHeap, cInitialBuckets),
+        m_pCaseSensitiveTable(NULL) {}
 #endif
 
     VOID ConstructKeyFromData(PTR_EEClassHashEntry pEntry, ConstructKeyCallback * pCallback);
 
-    BOOL        m_bCaseInsensitive;  // Default is true FALSE unless we call MakeCaseInsensitiveTable
+    bool IsCaseInsensitiveTable() { return m_pCaseSensitiveTable != this; }
+
+    static BOOL IsNested(ModuleBase *pModule, mdToken token, mdToken *mdEncloser);
+    static BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
+
+    PTR_EEClassHashTable m_pCaseSensitiveTable;  // This will be a recursive pointer for the case sensitive table
 };
+
+inline DWORD GetHash(PTR_EEClassHashEntry eeclassHashEntry)
+{
+    // This is only safe, as the only allocator for the EEClassHashEntry type is the hash table
+    return EEClassHashTable::HashEntryToHash(eeclassHashEntry);
+}
 
 #endif // !__CLASS_HASH_INCLUDED

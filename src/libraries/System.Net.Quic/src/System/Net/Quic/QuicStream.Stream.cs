@@ -50,12 +50,12 @@ public partial class QuicStream : Stream
     {
         get
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return (int)_readTimeout.TotalMilliseconds;
         }
         set
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (value <= 0 && value != Timeout.Infinite)
             {
                 throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
@@ -69,12 +69,12 @@ public partial class QuicStream : Stream
     {
         get
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             return (int)_writeTimeout.TotalMilliseconds;
         }
         set
         {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (value <= 0 && value != Timeout.Infinite)
             {
                 throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
@@ -86,15 +86,15 @@ public partial class QuicStream : Stream
     // Read boilerplate.
     /// <inheritdoc />
     /// <summary>Gets a value indicating whether the <see cref="QuicStream" /> supports reading.</summary>
-    public override bool CanRead => Volatile.Read(ref _disposed) == 0 && _canRead;
+    public override bool CanRead => !Volatile.Read(ref _disposed) && _canRead;
 
     /// <inheritdoc />
     public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        => TaskToApm.Begin(ReadAsync(buffer, offset, count, default), callback, state);
+        => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, default), callback, state);
 
     /// <inheritdoc />
     public override int EndRead(IAsyncResult asyncResult)
-        => TaskToApm.End<int>(asyncResult);
+        => TaskToAsyncResult.End<int>(asyncResult);
 
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count)
@@ -107,13 +107,13 @@ public partial class QuicStream : Stream
     public override int ReadByte()
     {
         byte b = 0;
-        return Read(MemoryMarshal.CreateSpan(ref b, 1)) != 0 ? b : -1;
+        return Read(new Span<byte>(ref b)) != 0 ? b : -1;
     }
 
     /// <inheritdoc />
     public override int Read(Span<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
         CancellationTokenSource? cts = null;
@@ -149,15 +149,15 @@ public partial class QuicStream : Stream
     // Write boilerplate.
     /// <inheritdoc />
     /// <summary>Gets a value indicating whether the <see cref="QuicStream" /> supports writing.</summary>
-    public override bool CanWrite => Volatile.Read(ref _disposed) == 0 && _canWrite;
+    public override bool CanWrite => !Volatile.Read(ref _disposed) && _canWrite;
 
     /// <inheritdoc />
     public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-        => TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+        => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
     /// <inheritdoc />
     public override void EndWrite(IAsyncResult asyncResult)
-        => TaskToApm.End(asyncResult);
+        => TaskToAsyncResult.End(asyncResult);
 
     /// <inheritdoc />
     public override void Write(byte[] buffer, int offset, int count)
@@ -175,7 +175,7 @@ public partial class QuicStream : Stream
     /// <inheritdoc />
     public override void Write(ReadOnlySpan<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         CancellationTokenSource? cts = null;
         if (_writeTimeout > TimeSpan.Zero)

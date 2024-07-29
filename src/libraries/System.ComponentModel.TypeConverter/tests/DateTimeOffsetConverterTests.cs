@@ -29,19 +29,32 @@ namespace System.ComponentModel.Tests
 
         public override IEnumerable<ConvertTest> ConvertToTestData()
         {
+            CultureInfo frenchCulture = new CultureInfo("fr-FR");
             CultureInfo polandCulture = new CultureInfo("pl-PL");
             DateTimeFormatInfo formatInfo = CultureInfo.CurrentCulture.DateTimeFormat;
             DateTimeOffset offset = new DateTimeOffset(new DateTime(1998, 12, 5));
             yield return ConvertTest.Valid(offset, offset.ToString(formatInfo.ShortDatePattern + " zzz"));
-            yield return ConvertTest.Valid(offset, offset.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " zzz", polandCulture.DateTimeFormat))
-                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offset, offset.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " zzz", frenchCulture.DateTimeFormat), frenchCulture)
+            .WithRemoteInvokeCulture(frenchCulture);
+            yield return ConvertTest.Valid(offset, offset.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " zzz", frenchCulture.DateTimeFormat), frenchCulture)
+            .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offset, offset.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " zzz", polandCulture.DateTimeFormat), polandCulture)
+            .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offset, offset.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " zzz", polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
             yield return ConvertTest.Valid(offset, offset.ToString("yyyy-MM-dd zzz", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
                 .WithRemoteInvokeCulture(polandCulture);
 
             DateTimeOffset offsetWithTime = new DateTimeOffset(new DateTime(1998, 12, 5, 22, 30, 30));
             yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz"));
-            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern + " zzz", polandCulture.DateTimeFormat))
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " " + frenchCulture.DateTimeFormat.ShortTimePattern + " zzz", frenchCulture.DateTimeFormat), frenchCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(frenchCulture.DateTimeFormat.ShortDatePattern + " " + frenchCulture.DateTimeFormat.ShortTimePattern + " zzz", frenchCulture.DateTimeFormat), frenchCulture)
                 .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern + " zzz", polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern + " zzz", polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(frenchCulture);
             yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
                 .WithRemoteInvokeCulture(polandCulture);
 

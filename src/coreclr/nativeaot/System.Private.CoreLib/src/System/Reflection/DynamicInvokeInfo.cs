@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime;
+
 namespace System.Reflection
 {
     // caches information required for efficient argument validation and type coercion for reflection Invoke.
-    [ReflectionBlocked]
-    public class DynamicInvokeInfo
+    public unsafe class DynamicInvokeInfo
     {
         // Public state
         public MethodBase Method { get; }
@@ -22,7 +24,7 @@ namespace System.Reflection
         // private readonly bool _isValueTypeInstanceMethod;
         private readonly bool _needsCopyBack;
         private readonly Transform _returnTransform;
-        private readonly EETypePtr _returnType;
+        private readonly MethodTable* _returnType;
         private readonly ArgumentInfo[] _arguments;
 
         // We use negative argument count to signal unsupported invoke signatures
@@ -36,22 +38,23 @@ namespace System.Reflection
             Nullable = 0x0002,
             Pointer = 0x0004,
             Reference = 0x0008,
-            AllocateReturnBox = 0x0010,
+            FunctionPointer = 0x0010,
+            AllocateReturnBox = 0x0020,
         }
 
-        private readonly struct ArgumentInfo
+        private readonly unsafe struct ArgumentInfo
         {
-            internal ArgumentInfo(Transform transform, EETypePtr type)
+            internal ArgumentInfo(Transform transform, MethodTable* type)
             {
                 Transform = transform;
                 Type = type;
             }
 
             internal Transform Transform { get; }
-            internal EETypePtr Type { get; }
+            internal MethodTable* Type { get; }
         }
 
-        public DynamicInvokeInfo(MethodBase method, IntPtr invokeThunk)
+        public unsafe DynamicInvokeInfo(MethodBase method, IntPtr invokeThunk)
         {
             Method = method;
             InvokeThunk = invokeThunk;
@@ -60,7 +63,7 @@ namespace System.Reflection
 
             // _isValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             _argumentCount = parameters.Length;
 
@@ -71,32 +74,39 @@ namespace System.Reflection
                 {
                     Transform transform = default;
 
-                    Type argumentType = parameters[i].ParameterType;
+                    var argumentType = (RuntimeType)parameters[i].ParameterType;
                     if (argumentType.IsByRef)
                     {
                         _needsCopyBack = true;
                         transform |= Transform.ByRef;
-                        argumentType = argumentType.GetElementType()!;
+                        argumentType = (RuntimeType)argumentType.GetElementType()!;
                     }
                     Debug.Assert(!argumentType.IsByRef);
 
-                    EETypePtr eeArgumentType = argumentType.GetEEType();
-
-                    if (eeArgumentType.IsValueType)
+                    // This can return a null MethodTable for reference types.
+                    // The compiler makes sure it returns a non-null MT for everything else.
+                    MethodTable* eeArgumentType = argumentType.ToMethodTableMayBeNull();
+                    if (argumentType.IsValueType)
                     {
-                        Debug.Assert(argumentType.IsValueType);
+                        Debug.Assert(eeArgumentType->IsValueType);
 
-                        if (eeArgumentType.IsByRefLike)
+                        if (eeArgumentType->IsByRefLike)
                             _argumentCount = ArgumentCount_NotSupported_ByRefLike;
 
-                        if (eeArgumentType.IsNullable)
+                        if (eeArgumentType->IsNullable)
                             transform |= Transform.Nullable;
                     }
-                    else if (eeArgumentType.IsPointer)
+                    else if (argumentType.IsPointer)
                     {
-                        Debug.Assert(argumentType.IsPointer);
+                        Debug.Assert(eeArgumentType->IsPointer);
 
                         transform |= Transform.Pointer;
+                    }
+                    else if (argumentType.IsFunctionPointer)
+                    {
+                        Debug.Assert(eeArgumentType->IsFunctionPointer);
+
+                        transform |= Transform.FunctionPointer;
                     }
                     else
                     {
@@ -112,29 +122,28 @@ namespace System.Reflection
             {
                 Transform transform = default;
 
-                Type returnType = methodInfo.ReturnType;
+                var returnType = (RuntimeType)methodInfo.ReturnType;
                 if (returnType.IsByRef)
                 {
                     transform |= Transform.ByRef;
-                    returnType = returnType.GetElementType()!;
+                    returnType = (RuntimeType)returnType.GetElementType()!;
                 }
                 Debug.Assert(!returnType.IsByRef);
 
-                EETypePtr eeReturnType = returnType.GetEEType();
-
-                if (eeReturnType.IsValueType)
+                MethodTable* eeReturnType = returnType.ToMethodTableMayBeNull();
+                if (returnType.IsValueType)
                 {
-                    Debug.Assert(returnType.IsValueType);
+                    Debug.Assert(eeReturnType->IsValueType);
 
                     if (returnType != typeof(void))
                     {
-                        if (eeReturnType.IsByRefLike)
+                        if (eeReturnType->IsByRefLike)
                             _argumentCount = ArgumentCount_NotSupported_ByRefLike;
 
                         if ((transform & Transform.ByRef) == 0)
                             transform |= Transform.AllocateReturnBox;
 
-                        if (eeReturnType.IsNullable)
+                        if (eeReturnType->IsNullable)
                             transform |= Transform.Nullable;
                     }
                     else
@@ -143,11 +152,19 @@ namespace System.Reflection
                             _argumentCount = ArgumentCount_NotSupported; // ByRef to void return
                     }
                 }
-                else if (eeReturnType.IsPointer)
+                else if (returnType.IsPointer)
                 {
-                    Debug.Assert(returnType.IsPointer);
+                    Debug.Assert(eeReturnType->IsPointer);
 
                     transform |= Transform.Pointer;
+                    if ((transform & Transform.ByRef) == 0)
+                        transform |= Transform.AllocateReturnBox;
+                }
+                else if (returnType.IsFunctionPointer)
+                {
+                    Debug.Assert(eeReturnType->IsFunctionPointer);
+
+                    transform |= Transform.FunctionPointer;
                     if ((transform & Transform.ByRef) == 0)
                         transform |= Transform.AllocateReturnBox;
                 }
@@ -163,7 +180,7 @@ namespace System.Reflection
 
         public bool IsSupportedSignature => _argumentCount >= 0;
 
-        [DebuggerGuidedStepThroughAttribute]
+        [DebuggerGuidedStepThrough]
         public unsafe object? Invoke(
             object? thisPtr,
             IntPtr methodToCall,
@@ -174,14 +191,7 @@ namespace System.Reflection
             int argCount = parameters?.Length ?? 0;
             if (argCount != _argumentCount)
             {
-                if (_argumentCount < 0)
-                {
-                    if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
-                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                    throw new NotSupportedException();
-                }
-
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                ThrowForArgCountMismatch();
             }
 
             object? returnObject = null;
@@ -208,8 +218,8 @@ namespace System.Reflection
             if ((_returnTransform & Transform.AllocateReturnBox) != 0)
             {
                 returnObject = RuntimeImports.RhNewObject(
-                    (_returnTransform & Transform.Pointer) != 0 ?
-                        EETypePtr.EETypePtrOf<IntPtr>() : _returnType);
+                    (_returnTransform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
+                        MethodTable.Of<IntPtr>() : _returnType);
                 ret = ref returnObject.GetRawData();
             }
 
@@ -227,38 +237,164 @@ namespace System.Reflection
             }
             else if (argCount > MaxStackAllocArgCount)
             {
-                ret = ref InvokeWithManyArguments( methodToCall, ref thisArg, ref ret,
+                ret = ref InvokeWithManyArguments(methodToCall, ref thisArg, ref ret,
                     parameters, binderBundle, wrapInTargetInvocationException);
             }
             else
             {
-                StackAllocedArguments argStorage = default;
-                StackAllocatedByRefs byrefStorage = default;
+                ret = ref InvokeWithFewArguments(methodToCall, ref thisArg, ref ret,
+                    parameters, binderBundle, wrapInTargetInvocationException);
+            }
 
-#pragma warning disable 8500
-                CheckArguments(ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
-#pragma warning restore 8500
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
+        }
 
-                try
+        [DebuggerGuidedStepThrough]
+        public unsafe object? Invoke(
+            object? thisPtr,
+            IntPtr methodToCall,
+            Span<object?> parameters)
+        {
+            int argCount = parameters.Length;
+            if (argCount != _argumentCount)
+            {
+                ThrowForArgCountMismatch();
+            }
+
+            object? returnObject = null;
+
+            scoped ref byte thisArg = ref Unsafe.NullRef<byte>();
+            if (!_isStatic)
+            {
+                // The caller is expected to validate this
+                Debug.Assert(thisPtr != null);
+
+                // See TODO comment in DynamicInvokeMethodThunk.NormalizeSignature
+                // if (_isValueTypeInstanceMethod)
+                // {
+                //     // thisArg is a raw data byref for valuetype instance methods
+                //     thisArg = ref thisPtr.GetRawData();
+                // }
+                // else
                 {
-#pragma warning disable 8500
-                    ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
-#pragma warning restore 8500
-                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                }
-                catch (Exception e) when (wrapInTargetInvocationException)
-                {
-                    throw new TargetInvocationException(e);
-                }
-                finally
-                {
-                    if (_needsCopyBack)
-                        CopyBack(ref argStorage._arg0!, parameters);
+                    thisArg = ref Unsafe.As<object?, byte>(ref thisPtr);
                 }
             }
 
-            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.ByRef)) != 0) ?
-                ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
+            scoped ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
+            if ((_returnTransform & Transform.AllocateReturnBox) != 0)
+            {
+                returnObject = RuntimeImports.RhNewObject(
+                    (_returnTransform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
+                        MethodTable.Of<IntPtr>() : _returnType);
+                ret = ref returnObject.GetRawData();
+            }
+
+            if (argCount == 0)
+            {
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            }
+            else if (argCount > MaxStackAllocArgCount)
+            {
+                ret = ref InvokeWithManyArguments(methodToCall, ref thisArg, ref ret, parameters);
+            }
+            else
+            {
+                ret = ref InvokeWithFewArguments(methodToCall, ref thisArg, ref ret, parameters);
+            }
+
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
+        }
+
+
+        [DebuggerGuidedStepThrough]
+        // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
+        // for the parameters, does not require a copy of the parameters or CopyBack, and does not require
+        // re-throw capability.
+        public unsafe object? InvokeDirectWithFewArgs(
+            object? thisPtr,
+            IntPtr methodToCall,
+            Span<object?> parameters)
+        {
+            int argCount = parameters.Length;
+
+            if (argCount != _argumentCount)
+            {
+                ThrowForArgCountMismatch();
+            }
+
+            Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
+
+            object? returnObject = null;
+
+            scoped ref byte thisArg = ref Unsafe.NullRef<byte>();
+            if (!_isStatic)
+            {
+                // The caller is expected to validate this
+                Debug.Assert(thisPtr != null);
+
+                // See TODO comment in DynamicInvokeMethodThunk.NormalizeSignature
+                // if (_isValueTypeInstanceMethod)
+                // {
+                //     // thisArg is a raw data byref for valuetype instance methods
+                //     thisArg = ref thisPtr.GetRawData();
+                // }
+                // else
+                {
+                    thisArg = ref Unsafe.As<object?, byte>(ref thisPtr);
+                }
+            }
+
+            scoped ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
+            if ((_returnTransform & Transform.AllocateReturnBox) != 0)
+            {
+                returnObject = RuntimeImports.RhNewObject(
+                    (_returnTransform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
+                        MethodTable.Of<IntPtr>() : _returnType);
+                ret = ref returnObject.GetRawData();
+            }
+
+            if (argCount == 0)
+            {
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            }
+            else if (argCount == 1)
+            {
+                ByReference br = ByReference.Create(ref parameters[0]);
+                void* pByrefStorage = &br;
+
+                // Since no copy of args is required, pass 'parameters' for both arguments.
+                CheckArguments(parameters, pByrefStorage, parameters);
+
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByrefStorage);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+                // No need to call CopyBack here since there are no ref values.
+            }
+            else
+            {
+                ret = ref InvokeDirectWithFewArguments(methodToCall, ref thisArg, ref ret, parameters);
+            }
+
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
+        }
+
+        private void ThrowForArgCountMismatch()
+        {
+            if (_argumentCount < 0)
+            {
+                if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
+                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+                throw new NotSupportedException();
+            }
+
+            throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
         private unsafe ref byte InvokeWithManyArguments(
@@ -272,19 +408,18 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-#pragma warning disable 8500
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
-#pragma warning restore 8500
 
-            RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
-            RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
             {
                 RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
                 RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
 
-                CheckArguments(ref Unsafe.As<IntPtr, object>(ref *pStorage), pByRefStorage, parameters, binderBundle);
+                Span<object?> copyOfParameters = new(ref Unsafe.As<IntPtr, object?>(ref *pStorage), argCount);
+                CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
 
                 try
                 {
@@ -298,7 +433,7 @@ namespace System.Reflection
                 finally
                 {
                     if (_needsCopyBack)
-                        CopyBack(ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
+                        CopyBackToArray(ref Unsafe.As<IntPtr, object?>(ref *pStorage), parameters);
                 }
             }
             finally
@@ -310,9 +445,129 @@ namespace System.Reflection
             return ref ret;
         }
 
-        private object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
+        // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
+        // for the parameters and does not require re-throw capability.
+        private unsafe ref byte InvokeWithManyArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
         {
-            object? defaultValue = Method.GetParametersNoCopy()[index].DefaultValue;
+            int argCount = _argumentCount;
+
+            // We don't check a max stack size since we are invoking a method which
+            // naturally requires a stack size that is dependent on the arg count\size.
+            IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
+            NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
+
+            void* pByRefStorage = (ByReference*)(pStorage + argCount);
+
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
+
+            try
+            {
+                RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
+                RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
+
+                Span<object?> copyOfParameters = new(ref Unsafe.As<IntPtr, object?>(ref *pStorage), argCount);
+                CheckArguments(copyOfParameters, pByRefStorage, parameters);
+
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+                if (_needsCopyBack)
+                    CopyBackToSpan(copyOfParameters, parameters);
+            }
+            finally
+            {
+                RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
+                RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+            }
+
+            return ref ret;
+        }
+
+        // This is a separate method to localize the overhead of stack allocs for 'StackAllocatedByRefs' and 'StackAllocatedByRefs'.
+        private unsafe ref byte InvokeWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret,
+            object?[] parameters, BinderBundle? binderBundle, bool wrapInTargetInvocationException)
+        {
+            Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
+
+            StackAllocatedArguments argStorage = default;
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
+            StackAllocatedByRefs byrefStorage = default;
+            void* pByRefStorage = (ByReference*)&byrefStorage;
+
+            CheckArguments(copyOfParameters, pByRefStorage, parameters, binderBundle);
+
+            try
+            {
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            }
+            catch (Exception e) when (wrapInTargetInvocationException)
+            {
+                throw new TargetInvocationException(e);
+            }
+            finally
+            {
+                if (_needsCopyBack)
+                    CopyBackToArray(ref copyOfParameters[0], parameters);
+            }
+
+            return ref ret;
+        }
+
+        // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
+        // for the parameters and does not require 'BinderBundle' or re-throw capability.
+        private unsafe ref byte InvokeWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
+        {
+            Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
+
+            StackAllocatedArguments argStorage = default;
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
+            StackAllocatedByRefs byrefStorage = default;
+            void* pByRefStorage = (ByReference*)&byrefStorage;
+
+            CheckArguments(copyOfParameters, pByRefStorage, parameters);
+
+            try
+            {
+                ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            }
+            finally
+            {
+                if (_needsCopyBack)
+                    CopyBackToSpan(copyOfParameters, parameters);
+            }
+
+            return ref ret;
+        }
+
+        // This method is equivalent to the one above except that it does not require a copy of the args or CopyBack.
+        private unsafe ref byte InvokeDirectWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
+        {
+            Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
+
+            StackAllocatedByRefs byrefStorage = default;
+            void* pByRefStorage = (ByReference*)&byrefStorage;
+
+            // Since no copy of args is required, pass 'parameters' for both arguments.
+            CheckArguments(parameters, pByRefStorage, parameters);
+
+            ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+            // No need to call CopyBack here since there are no ref values.
+
+            return ref ret;
+        }
+
+        private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
+        {
+            object? defaultValue = Method.GetParametersAsSpan()[index].DefaultValue;
             if (defaultValue == DBNull.Value)
                 throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 
@@ -320,21 +575,27 @@ namespace System.Reflection
             {
                 // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
                 // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
-                EETypePtr nullableType = argumentInfo.Type.NullableType;
-                if (nullableType.IsEnum)
+                MethodTable* nullableType = argumentInfo.Type->NullableType;
+                if (nullableType->IsEnum)
                 {
-                    defaultValue = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), defaultValue);
+                    defaultValue = Enum.ToObject(Type.GetTypeFromMethodTable(nullableType), defaultValue);
                 }
             }
 
             return defaultValue;
         }
 
+        private void ThrowForNeverValidNonNullArgument(MethodTable* srcEEType, int index)
+        {
+            Debug.Assert(index != 0 || _isStatic);
+            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, Method.GetParametersAsSpan()[index - (_isStatic ? 0 : 1)].ParameterType, destinationIsByRef: false);
+        }
+
         private unsafe void CheckArguments(
-            ref object copyOfParameters,
+            Span<object?> copyOfParameters,
             void* byrefParameters,
             object?[] parameters,
-            BinderBundle binderBundle)
+            BinderBundle? binderBundle)
         {
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -348,8 +609,8 @@ namespace System.Reflection
                     // null is substituded by zero-initialized value for non-reference type
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
                         arg = RuntimeImports.RhNewObject(
-                            (argumentInfo.Transform & Transform.Pointer) != 0 ?
-                                EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type);
+                            (argumentInfo.Transform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
+                                MethodTable.Of<IntPtr>() : argumentInfo.Type);
                 }
                 else
                 {
@@ -366,19 +627,28 @@ namespace System.Reflection
                             goto Again; // Redo the argument handling to deal with null
                     }
 
-                    EETypePtr srcEEType = arg.GetEETypePtr();
-                    EETypePtr dstEEType = argumentInfo.Type;
+                    MethodTable* srcEEType = arg.GetMethodTable();
+                    MethodTable* dstEEType = argumentInfo.Type;
 
-                    if (!(srcEEType.RawValue == dstEEType.RawValue ||
-                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
-                        (dstEEType.IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
-                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                    if (srcEEType != dstEEType)
                     {
-                        // ByRefs have to be exact match
-                        if ((argumentInfo.Transform & Transform.ByRef) != 0)
-                            throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
+                        // possibly pass a valid non-null object instance here.
+                        if (dstEEType == null)
+                        {
+                            ThrowForNeverValidNonNullArgument(srcEEType, i);
+                        }
 
-                        arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                            (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                        {
+                            // ByRefs have to be exact match
+                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+
+                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+                        }
                     }
 
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
@@ -402,16 +672,93 @@ namespace System.Reflection
                 // is specified for value types, and also used to hold the results from conversions such as
                 // from Int16 to Int32.
 
-                Unsafe.Add(ref copyOfParameters, i) = arg!;
+                copyOfParameters[i] = arg!;
 
-#pragma warning disable 8500, 9094
+#pragma warning disable 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
-                    ref Unsafe.As<object, byte>(ref Unsafe.Add(ref copyOfParameters, i)) : ref arg.GetRawData());
-#pragma warning restore 8500, 9094
+                    ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
+#pragma warning restore 9094
             }
         }
 
-        private unsafe void CopyBack(ref object copyOfParameters, object?[] parameters)
+        // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
+        // for the parameters and does not require the use of 'BinderBundle' or check for 'Type.Missing'.
+        private unsafe void CheckArguments(
+            Span<object?> copyOfParameters,
+            void* byrefParameters,
+            Span<object?> parameters)
+        {
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                object? arg = parameters[i];
+
+                ref readonly ArgumentInfo argumentInfo = ref _arguments[i];
+
+                if (arg is null)
+                {
+                    // null is substituded by zero-initialized value for non-reference type
+                    if ((argumentInfo.Transform & Transform.Reference) == 0)
+                        arg = RuntimeImports.RhNewObject(
+                            (argumentInfo.Transform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
+                                MethodTable.Of<IntPtr>() : argumentInfo.Type);
+                }
+                else
+                {
+                    MethodTable* srcEEType = arg.GetMethodTable();
+                    MethodTable* dstEEType = argumentInfo.Type;
+
+                    if (srcEEType != dstEEType)
+                    {
+                        // Destination type can be null if we don't have a MethodTable for this type. This means one cannot
+                        // possibly pass a valid non-null object instance here.
+                        if (dstEEType == null)
+                        {
+                            ThrowForNeverValidNonNullArgument(srcEEType, i);
+                        }
+
+                        if (!(RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                            (dstEEType->IsInterface && arg is System.Runtime.InteropServices.IDynamicInterfaceCastable castable
+                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
+                        {
+                            // ByRefs have to be exact match
+                            if ((argumentInfo.Transform & Transform.ByRef) != 0)
+                                throw InvokeUtils.CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+
+                            arg = InvokeUtils.CheckArgumentConversions(arg, argumentInfo.Type, InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle: null);
+                        }
+                    }
+
+                    if ((argumentInfo.Transform & Transform.Reference) == 0)
+                    {
+                        if ((argumentInfo.Transform & (Transform.ByRef | Transform.Nullable)) != 0)
+                        {
+                            // Rebox the value to avoid mutating the original box. This also takes care of
+                            // T -> Nullable<T> transformation as side-effect.
+                            object box = RuntimeImports.RhNewObject(argumentInfo.Type);
+                            RuntimeImports.RhUnbox(arg, ref box.GetRawData(), argumentInfo.Type);
+                            arg = box;
+                        }
+                    }
+                }
+
+                // We need to perform type safety validation against the incoming arguments, but we also need
+                // to be resilient against the possibility that some other thread (or even the binder itself!)
+                // may mutate the array after we've validated the arguments but before we've properly invoked
+                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+                // as we validate them. This separate array is also used to hold default values when 'null'
+                // is specified for value types, and also used to hold the results from conversions such as
+                // from Int16 to Int32.
+
+                copyOfParameters[i] = arg;
+
+#pragma warning disable 9094
+                ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
+                    ref Unsafe.As<object?, byte>(ref copyOfParameters[i]) : ref arg.GetRawData());
+#pragma warning restore 9094
+            }
+        }
+
+        private unsafe void CopyBackToArray(ref object? src, object?[] dest)
         {
             ArgumentInfo[] arguments = _arguments;
 
@@ -424,23 +771,60 @@ namespace System.Reflection
                 if ((transform & Transform.ByRef) == 0)
                     continue;
 
-                object obj = Unsafe.Add(ref copyOfParameters, i);
+                object? obj = Unsafe.Add(ref src, i);
 
-                if ((transform & (Transform.Pointer | Transform.Nullable)) != 0)
+                if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
                 {
                     if ((transform & Transform.Pointer) != 0)
                     {
-                        Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
+                        Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
-                parameters[i] = obj;
+                dest[i] = obj;
+            }
+        }
+
+        private unsafe void CopyBackToSpan(Span<object?> src, Span<object?> dest)
+        {
+            ArgumentInfo[] arguments = _arguments;
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                ref readonly ArgumentInfo argumentInfo = ref arguments[i];
+
+                Transform transform = argumentInfo.Transform;
+
+                if ((transform & Transform.ByRef) == 0)
+                    continue;
+
+                object? obj = src[i];
+
+                if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
+                {
+                    if ((transform & Transform.Pointer) != 0)
+                    {
+                        Type type = Type.GetTypeFromMethodTable(argumentInfo.Type);
+                        Debug.Assert(type.IsPointer);
+                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                    }
+                    else
+                    {
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
+                    }
+                }
+
+                dest[i] = obj;
             }
         }
 
@@ -458,9 +842,14 @@ namespace System.Reflection
             object obj;
             if ((_returnTransform & Transform.Pointer) != 0)
             {
-                Type type = Type.GetTypeFromEETypePtr(_returnType);
+                Type type = Type.GetTypeFromMethodTable(_returnType);
                 Debug.Assert(type.IsPointer);
                 obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+            }
+            else if ((_returnTransform & Transform.FunctionPointer) != 0)
+            {
+                Debug.Assert(Type.GetTypeFromMethodTable(_returnType).IsFunctionPointer);
+                obj = RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
             }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
@@ -477,32 +866,33 @@ namespace System.Reflection
 
         private const int MaxStackAllocArgCount = 4;
 
+        [InlineArray(MaxStackAllocArgCount)]
+        internal struct ArgumentData<T>
+        {
+            private T _arg0;
+        }
+
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
         // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
         // and pass it to CheckArguments().
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
         [StructLayout(LayoutKind.Sequential)]
-        private ref struct StackAllocedArguments
+        internal ref struct StackAllocatedArguments
         {
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
+            internal ArgumentData<object?> _args;
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
-        private ref struct StackAllocatedByRefs
+        [InlineArray(MaxStackAllocArgCount)]
+        internal ref struct StackAllocatedByRefs
         {
+            // We're intentionally taking advantage of the runtime functionality, even if the language functionality won't work
+            // CS9184: 'Inline arrays' language feature is not supported for inline array types with element field which is either a 'ref' field, or has type that is not valid as a type argument.
+
+#pragma warning disable CS9184
             internal ref byte _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
+#pragma warning restore CS9184
         }
     }
 }

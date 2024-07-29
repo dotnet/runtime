@@ -9,12 +9,13 @@ include(CheckCSourceCompiles)
 # The compiler driver may be implicitly trying to link against libunwind, which
 # might not work if libunwind doesn't exist yet. Try to check if
 # --unwindlib=none is supported, and use that if possible.
-llvm_check_compiler_linker_flag(C "--unwindlib=none" LIBUNWIND_SUPPORTS_UNWINDLIB_NONE_FLAG)
-if (LIBUNWIND_SUPPORTS_UNWINDLIB_NONE_FLAG)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} --unwindlib=none")
-endif()
+llvm_check_compiler_linker_flag(C "--unwindlib=none" CXX_SUPPORTS_UNWINDLIB_EQ_NONE_FLAG)
 
-check_library_exists(c fopen "" LIBUNWIND_HAS_C_LIB)
+if (HAIKU)
+  check_library_exists(root fopen "" LIBUNWIND_HAS_ROOT_LIB)
+else()
+  check_library_exists(c fopen "" LIBUNWIND_HAS_C_LIB)
+endif()
 
 if (NOT LIBUNWIND_USE_COMPILER_RT)
   if (ANDROID)
@@ -34,19 +35,24 @@ endif()
 # required for the link to go through. We remove sanitizers from the
 # configuration checks to avoid spurious link errors.
 
-llvm_check_compiler_linker_flag(C "-nostdlib++" LIBUNWIND_SUPPORTS_NOSTDLIBXX_FLAG)
-if (LIBUNWIND_SUPPORTS_NOSTDLIBXX_FLAG)
+llvm_check_compiler_linker_flag(CXX "-nostdlib++" CXX_SUPPORTS_NOSTDLIBXX_FLAG)
+if (CXX_SUPPORTS_NOSTDLIBXX_FLAG)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nostdlib++")
 else()
-  llvm_check_compiler_linker_flag(C "-nodefaultlibs" LIBUNWIND_SUPPORTS_NODEFAULTLIBS_FLAG)
-  if (LIBUNWIND_SUPPORTS_NODEFAULTLIBS_FLAG)
+  llvm_check_compiler_linker_flag(C "-nodefaultlibs" C_SUPPORTS_NODEFAULTLIBS_FLAG)
+  if (C_SUPPORTS_NODEFAULTLIBS_FLAG)
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nodefaultlibs")
   endif()
 endif()
 
-if (LIBUNWIND_SUPPORTS_NOSTDLIBXX_FLAG OR LIBUNWIND_SUPPORTS_NODEFAULTLIBS_FLAG)
+# Only link against compiler-rt manually if we use -nodefaultlibs, since
+# otherwise the compiler will do the right thing on its own.
+if (NOT CXX_SUPPORTS_NOSTDLIBXX_FLAG AND C_SUPPORTS_NODEFAULTLIBS_FLAG)
   if (LIBUNWIND_HAS_C_LIB)
     list(APPEND CMAKE_REQUIRED_LIBRARIES c)
+  endif ()
+  if (LIBUNWIND_HAS_ROOT_LIB)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES root)
   endif ()
   if (LIBUNWIND_USE_COMPILER_RT)
     include(HandleCompilerRT)
@@ -74,6 +80,9 @@ if (LIBUNWIND_SUPPORTS_NOSTDLIBXX_FLAG OR LIBUNWIND_SUPPORTS_NODEFAULTLIBS_FLAG)
                         moldname mingwex msvcrt)
     list(APPEND CMAKE_REQUIRED_LIBRARIES ${MINGW_LIBRARIES})
   endif()
+endif()
+
+if (CXX_SUPPORTS_NOSTDLIBXX_FLAG OR C_SUPPORTS_NODEFAULTLIBS_FLAG)
   if (CMAKE_C_FLAGS MATCHES -fsanitize OR CMAKE_CXX_FLAGS MATCHES -fsanitize)
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -fno-sanitize=all")
   endif ()
@@ -88,13 +97,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unknown-pragmas")
   check_c_source_compiles("
 #pragma comment(lib, \"c\")
-int main() { return 0; }
-" LIBUNWIND_HAS_COMMENT_LIB_PRAGMA)
+int main(void) { return 0; }
+" C_SUPPORTS_COMMENT_LIB_PRAGMA)
   cmake_pop_check_state()
 endif()
 
 # Check compiler flags
-check_cxx_compiler_flag(-nostdinc++ LIBUNWIND_HAS_NOSTDINCXX_FLAG)
+check_cxx_compiler_flag(-nostdinc++ CXX_SUPPORTS_NOSTDINCXX_FLAG)
 
 # Check symbols
 check_symbol_exists(__arm__ "" LIBUNWIND_TARGET_ARM)
@@ -113,4 +122,8 @@ if(FUCHSIA)
 else()
   check_library_exists(dl dladdr "" LIBUNWIND_HAS_DL_LIB)
   check_library_exists(pthread pthread_once "" LIBUNWIND_HAS_PTHREAD_LIB)
+endif()
+
+if(HAIKU)
+  check_library_exists(bsd dl_iterate_phdr "" LIBUNWIND_HAS_BSD_LIB)
 endif()

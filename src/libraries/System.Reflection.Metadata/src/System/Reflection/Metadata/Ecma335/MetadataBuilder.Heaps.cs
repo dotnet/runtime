@@ -3,10 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection.Internal;
-using System.Runtime.CompilerServices;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -44,7 +42,7 @@ namespace System.Reflection.Metadata.Ecma335
         private int _stringHeapCapacity = 4 * 1024;
 
         // #Blob heap
-        private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(1024, ByteSequenceComparer.Instance);
+        private readonly BlobDictionary _blobs = new BlobDictionary(1024);
         private readonly int _blobHeapStartOffset;
         private int _blobHeapSize;
 
@@ -118,7 +116,7 @@ namespace System.Reflection.Metadata.Ecma335
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
 
-            _blobs.Add(ImmutableArray<byte>.Empty, default(BlobHandle));
+            _blobs.GetOrAdd(ReadOnlySpan<byte>.Empty, ImmutableArray<byte>.Empty, default, out _);
             _blobHeapSize = 1;
 
             // When EnC delta is applied #US, #String and #Blob heaps are appended.
@@ -193,7 +191,11 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            // TODO: avoid making a copy if the blob exists in the index
+            if (value.TryGetSpan(out ReadOnlySpan<byte> buffer))
+            {
+                return GetOrAddBlob(buffer);
+            }
+
             return GetOrAddBlob(value.ToImmutableArray());
         }
 
@@ -210,8 +212,19 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            // TODO: avoid making a copy if the blob exists in the index
-            return GetOrAddBlob(ImmutableArray.Create(value));
+            return GetOrAddBlob(new ReadOnlySpan<byte>(value));
+        }
+
+        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value, ImmutableArray<byte> immutableValue = default)
+        {
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
+            BlobHandle handle = _blobs.GetOrAdd(value, immutableValue, nextHandle, out bool exists);
+            if (!exists)
+            {
+                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
+            }
+
+            return handle;
         }
 
         /// <summary>
@@ -227,21 +240,12 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            BlobHandle handle;
-            if (!_blobs.TryGetValue(value, out handle))
-            {
-                handle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
-                _blobs.Add(value, handle);
-
-                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
-            }
-
-            return handle;
+            return GetOrAddBlob(value.AsSpan(), value);
         }
 
         /// <summary>
         /// Encodes a constant value to a blob and adds it to the Blob heap, if it's not there already.
-        /// Uses UTF16 to encode string constants.
+        /// Uses UTF-16 to encode string constants.
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <returns>Handle to the added or existing blob.</returns>
@@ -260,13 +264,23 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes a string using UTF16 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// Encodes a string using UTF-16 encoding to a blob and adds it to the Blob heap, if it's not there already.
         /// </summary>
         /// <param name="value">String.</param>
         /// <returns>Handle to the added or existing blob.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddBlobUTF16(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            if (BitConverter.IsLittleEndian)
+            {
+                return GetOrAddBlob(MemoryMarshal.AsBytes(value.AsSpan()));
+            }
+
             var builder = PooledBlobBuilder.GetInstance();
             builder.WriteUTF16(value);
             var handle = GetOrAddBlob(builder);
@@ -275,7 +289,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes a string using UTF8 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// Encodes a string using UTF-8 encoding to a blob and adds it to the Blob heap, if it's not there already.
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <param name="allowUnpairedSurrogates">
@@ -565,7 +579,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private sealed class SuffixSort : IComparer<KeyValuePair<string, StringHandle>>
         {
-            internal static SuffixSort Instance = new SuffixSort();
+            internal static readonly SuffixSort Instance = new SuffixSort();
 
             public int Compare(KeyValuePair<string, StringHandle> xPair, KeyValuePair<string, StringHandle> yPair)
             {
@@ -611,8 +625,8 @@ namespace System.Reflection.Metadata.Ecma335
             int startOffset = _blobHeapStartOffset;
             foreach (var entry in _blobs)
             {
-                int heapOffset = entry.Value.GetHeapOffset();
-                var blob = entry.Key;
+                int heapOffset = entry.Value.Value.GetHeapOffset();
+                var blob = entry.Value.Key;
 
                 writer.Offset = (heapOffset == 0) ? 0 : heapOffset - startOffset;
                 writer.WriteCompressedInteger(blob.Length);

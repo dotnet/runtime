@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public sealed override string ToString()
         {
-            return this.ParameterType.FormatTypeNameForReflection() + " " + this.Name;
+            return this.ParameterType.FormatTypeName() + " " + this.Name;
         }
 
         private readonly MemberInfo _member;

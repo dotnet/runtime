@@ -227,7 +227,7 @@ namespace System.Transactions
         private static OletxTransactionManager CheckTransactionManager(string? nodeName)
         {
             OletxTransactionManager tm = DistributedTransactionManager;
-            if (!((tm.NodeName == null && (nodeName == null || nodeName.Length == 0)) ||
+            if (!((tm.NodeName == null && string.IsNullOrEmpty(nodeName)) ||
                   (tm.NodeName != null && tm.NodeName.Equals(nodeName))))
             {
                 throw new ArgumentException(SR.InvalidRecoveryInformation, "recoveryInformation");
@@ -432,7 +432,7 @@ namespace System.Transactions
         }
 
         internal static bool? s_implicitDistributedTransactions;
-        internal static object s_implicitDistributedTransactionsLock = new();
+        internal static readonly object s_implicitDistributedTransactionsLock = new();
 #else
         public static bool ImplicitDistributedTransactions
         {

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblFillArray
 {
     const int Pass = 100;
@@ -29,7 +30,8 @@ public class BringUpTest_DblFillArray
        return end-start;
     }    
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double []arr = new double[5];
         if (DblFillArray(arr, 0, arr.Length, 1f) != arr.Length) return Fail;

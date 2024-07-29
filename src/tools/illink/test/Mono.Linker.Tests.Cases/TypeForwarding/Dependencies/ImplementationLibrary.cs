@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Reflection;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 //[assembly: AssemblyVersion ("2.0")]
 

@@ -1,11 +1,13 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Loader;
 using ILVerify;
@@ -14,7 +16,7 @@ using Mono.Linker.Tests.Extensions;
 #nullable enable
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	sealed class ILVerifier : ILVerify.IResolver
+	sealed class ILVerifier : ILVerify.IResolver, IDisposable
 	{
 		readonly Verifier _verifier;
 		readonly NPath _assemblyFolder;
@@ -41,12 +43,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					SanityChecks = true,
 					IncludeMetadataTokensInErrorMessages = true
 				});
-			_verifier.SetSystemModuleName (new AssemblyName ("mscorlib"));
+			_verifier.SetSystemModuleName (new AssemblyNameInfo ("mscorlib"));
 
 			var allResults = _verifier.Verify (Resolve (assemblyName))
 				?? Enumerable.Empty<VerificationResult> ();
 
-			Results = allResults.Where (r => r.Code switch {
+			Results = allResults.Where (r => r.Code is not (
 				ILVerify.VerifierError.None
 				// Static interface methods cause this warning
 				or ILVerify.VerifierError.CallAbstract
@@ -57,10 +59,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// ref returning a ref local causes this warning but is okay
 				or VerifierError.ReturnPtrToStack
 				// Span indexing with indexer (ex. span[^4]) causes this warning
-				or VerifierError.InitOnly
-				=> false,
-				_ => true
-			});
+				or VerifierError.InitOnly));
 		}
 
 		PEReader LoadAssembly (string assemblyName)
@@ -85,6 +84,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		bool TryLoadAssemblyFromFolder (string assemblyName, NPath folder, [NotNullWhen (true)] out PEReader? peReader)
 		{
+			if (_assemblyCache.TryGetValue (assemblyName, out peReader))
+				return true;
+
 			Assembly? assembly = null;
 			string assemblyPath = Path.Join (folder.ToString (), assemblyName);
 			if (File.Exists (assemblyPath + ".dll"))
@@ -117,15 +119,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return null;
 		}
 
-		PEReader? ILVerify.IResolver.ResolveAssembly (AssemblyName assemblyName)
+		PEReader? ILVerify.IResolver.ResolveAssembly (AssemblyNameInfo assemblyName)
 			=> Resolve (assemblyName.Name ?? assemblyName.FullName);
 
-		PEReader? ILVerify.IResolver.ResolveModule (AssemblyName referencingModule, string fileName)
+		PEReader? ILVerify.IResolver.ResolveModule (AssemblyNameInfo referencingAssembly, string fileName)
 			=> Resolve (Path.GetFileNameWithoutExtension (fileName));
 
 		public static string GetErrorMessage (VerificationResult result)
 		{
 			return $"IL Verification error:\n{result.Message}";
+		}
+
+		public void Dispose()
+		{
+			foreach(var reader in _assemblyCache.Values)
+				reader.Dispose ();
+			_assemblyCache.Clear ();
 		}
 	}
 }

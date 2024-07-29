@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Runtime_57606
+public class Runtime_57606
 {
     public struct CompositeType16Bytes
     {
@@ -32,7 +33,8 @@ class Runtime_57606
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CompositeTypeMoreThan16Bytes r = ReturnsViaBuffer(1, 2, 3, 4, 5, 6, default(CompositeType16Bytes), __arglist());
         return r._2;

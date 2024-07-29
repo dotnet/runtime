@@ -9,10 +9,10 @@ using System.Runtime.Loader;
 
 namespace System.Xml.Serialization
 {
-    internal sealed class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T> where T : class?
+    internal sealed class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : class?
     {
-        private Hashtable _defaultTable;
-        private ConditionalWeakTable<Type, T> _collectibleTable;
+        private readonly Hashtable _defaultTable;
+        private readonly ConditionalWeakTable<Type, T> _collectibleTable;
 
         public ContextAwareTables()
         {

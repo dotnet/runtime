@@ -4,13 +4,14 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new Program().TestFunction();
-        return 100;
     }
 
     private TestStruct CreateStruct(FourKStruct s, int i)

@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_BindingAttr.TestUnknownNameAndWrongBindingFlags ("Unknown");
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
-#if NETCOREAPP
+#if NET
 			GetMethod_Name_BindingAttr_Types.TestNameBindingFlagsAndTypes ();
 			GetMethod_Name_GenericParameterCount_Types.TestNameWithIntAndType ();
 			GetMethod_Name_GenericParameterCount_Types_Modifiers.TestNameWithIntAndTypeAndModifiers ();
@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void TestNamePrivate ()
 			{
 				// This should fail at runtime, since GetMethod(name) only works on public methods
-				// also means linker should not mark the PrivateMethod in this case
+				// also means trimming tools should not mark the PrivateMethod in this case
 				var method = typeof (GetMethod_Name).GetMethod ("PrivateMethod");
 				method.Invoke (null, new object[] { });
 			}
@@ -122,7 +122,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestNameAndType ()
 			{
-				// Currently linker doesn't analyze the Type[] parameter and thus it marks all methods with the name and matching binding flags (public in this case)
+				// Currently trimming tools doesn't analyze the Type[] parameter and thus it marks all methods with the name and matching binding flags (public in this case)
 				var method = typeof (GetMethod_Name_Types).GetMethod ("OnlyCalledViaReflection", new Type[] { });
 				method.Invoke (null, new object[] { });
 			}
@@ -192,7 +192,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestUnknownBindingFlags (BindingFlags bindingFlags)
 			{
-				// Since the binding flags are not known linker should mark all methods on the type
+				// Since the binding flags are not known trimming tools should mark all methods on the type
 				var method = typeof (UnknownBindingFlags).GetMethod ("OnlyCalledViaReflection", bindingFlags);
 				method.Invoke (null, new object[] { });
 			}
@@ -210,7 +210,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
 			{
-				// Since the binding flags and name are not known linker should mark all methods on the type
+				// Since the binding flags and name are not known trimming tools should mark all methods on the type
 				var method = typeof (UnknownBindingFlagsAndName).GetMethod (name, bindingFlags);
 				method.Invoke (null, new object[] { });
 			}
@@ -246,13 +246,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestUnknownNullBindingFlags (BindingFlags bindingFlags)
 			{
-				// The case here is a pattern which linker doesn't recognize (unlike the test case above, which passes a recognized
+				// The case here is a pattern which trimming tools don't recognize (unlike the test case above, which passes a recognized
 				// method parameter with unknown value). Unrecognized patterns are internally represented as unknown values which are passed
 				// around as nulls in some cases. So there's a potential risk of hitting a nullref. The test here is to validate that
-				// linker can accept such value for binding flags.
+				// trimming tools can accept such value for binding flags.
 				// The semantic is exactly the same as above, that is unknown value and thus all methods should be marked.
 
-				// One way to produce unrecognized pattern is to use some bitfield arithmetics - linker currently doesn't do constexpr evaluation
+				// One way to produce unrecognized pattern is to use some bitfield arithmetics - trimming tools currently don't do constexpr evaluation
 				// and then store it in a local.
 				var bf = bindingFlags | BindingFlags.Static;
 
@@ -391,7 +391,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-#if NETCOREAPP
+#if NET
 		// GetMethod(string name, BindingFlags bindingAttr, Type[] types)
 		[Kept]
 		class GetMethod_Name_BindingAttr_Types

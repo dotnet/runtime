@@ -33,7 +33,7 @@ namespace System.Buffers.Text
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
-                value = Number.NumberToSingle(ref number);
+                value = Number.NumberToFloat<float>(ref number);
                 return true;
             }
 
@@ -66,7 +66,7 @@ namespace System.Buffers.Text
 
             if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
-                value = Number.NumberToDouble(ref number);
+                value = Number.NumberToFloat<double>(ref number);
                 return true;
             }
 

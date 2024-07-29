@@ -4,14 +4,17 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+
 namespace System.Threading.Channels
 {
-    public partial class ChannelClosedException : System.InvalidOperationException
+    public partial class Channel
     {
-        protected ChannelClosedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static System.Threading.Channels.Channel<T> CreateUnboundedPrioritized<T>() { throw null; }
+        public static System.Threading.Channels.Channel<T> CreateUnboundedPrioritized<T>(System.Threading.Channels.UnboundedPrioritizedChannelOptions<T> options) { throw null; }
     }
-    public abstract partial class ChannelReader<T>
+    public sealed partial class UnboundedPrioritizedChannelOptions<T> : System.Threading.Channels.ChannelOptions
     {
-        public virtual System.Collections.Generic.IAsyncEnumerable<T> ReadAllAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Collections.Generic.IComparer<T>? Comparer { get; set; }
     }
 }

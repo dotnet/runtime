@@ -137,12 +137,11 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        break
+        break 0
 .endm
 
 .macro EPILOG_BRANCH Target
         b \Target
-        //break
 .endm
 
 .macro EPILOG_BRANCH_REG reg
@@ -448,7 +447,7 @@ __RedirectionFuncName SETS "|?RedirectedHandledJITCaseFor":CC:"$reason":CC:"@Thr
 
         // Stack alignment. This check is necessary as this function can be
         // entered before complete execution of the prolog of another function.
-        andi $t4, $fp, 15
+        andi $t4, $fp, 0xf
         sub.d  $sp, $sp, $t4
 
 
@@ -481,5 +480,21 @@ $__RedirectionStubEndFuncName
         NESTED_END
 #else
         EMIT_BREAKPOINT
+#endif
+.endm
+
+//-----------------------------------------------------------------------------
+// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+// is misaligned.
+//
+.macro  CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        andi    $t4, $sp, 0xf
+        beq     $t4, $r0, 0f
+        EMIT_BREAKPOINT
+0:
 #endif
 .endm

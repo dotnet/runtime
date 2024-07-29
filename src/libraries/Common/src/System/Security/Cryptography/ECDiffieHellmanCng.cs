@@ -130,5 +130,18 @@ namespace System.Security.Cryptography
                     Interop.NCrypt.SecretAgreementFlags.None);
             }
         }
+
+        /// <inheritdoc />
+        public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
+            using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
+            {
+                return Interop.NCrypt.DeriveKeyMaterialTruncate(
+                    secretAgreement,
+                    Interop.NCrypt.SecretAgreementFlags.None);
+            }
+        }
     }
 }

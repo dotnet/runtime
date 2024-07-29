@@ -62,13 +62,13 @@ namespace ILLink.Tasks
 		/// Helper utility to track feature switch macros in header file
 		/// This type is used in a dictionary as a key
 		/// </summary>
-		readonly struct FeatureSwitchMembers
+		readonly struct FeatureSwitchMembers : IEquatable<FeatureSwitchMembers>
 		{
 			public string Feature { get; }
 			public string FeatureValue { get; }
 			public string FeatureDefault { get; }
 			// Unique value to track the key
-			private readonly String _key;
+			private readonly string _key;
 
 			public FeatureSwitchMembers (string feature, string featureValue, string featureDefault)
 			{
@@ -85,10 +85,10 @@ namespace ILLink.Tasks
 			}
 
 			public override bool Equals (object obj)
-			{
-				FeatureSwitchMembers other = (FeatureSwitchMembers) obj;
-				return other._key.Equals (_key);
-			}
+				=> obj is FeatureSwitchMembers inst && Equals (inst);
+
+			public bool Equals (FeatureSwitchMembers fsm)
+				=> fsm._key == _key;
 		}
 
 		readonly Dictionary<string, string> namespaceDictionary = new Dictionary<string, string> ();
@@ -301,8 +301,12 @@ namespace ILLink.Tasks
 		void OutputXml (string iLLinkTrimXmlFilePath, string outputFileName)
 		{
 			XmlDocument doc = new XmlDocument ();
-			doc.Load (iLLinkTrimXmlFilePath);
-			XmlNode linkerNode = doc["linker"];
+			using (var sr = new StreamReader (iLLinkTrimXmlFilePath)) {
+				using XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
+				doc.Load (reader);
+			}
+
+			XmlElement linkerNode = doc["linker"];
 
 			if (featureSwitchMembers.Count > 0) {
 				foreach ((var fs, var members) in featureSwitchMembers.Select (kv => (kv.Key, kv.Value))) {
@@ -310,7 +314,7 @@ namespace ILLink.Tasks
 						continue;
 
 					// <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="true" featuredefault="true">
-					XmlNode featureAssemblyNode = doc.CreateElement ("assembly");
+					XmlElement featureAssemblyNode = doc.CreateElement ("assembly");
 					XmlAttribute featureAssemblyFullName = doc.CreateAttribute ("fullname");
 					featureAssemblyFullName.Value = "System.Private.CoreLib";
 					featureAssemblyNode.Attributes.Append (featureAssemblyFullName);
@@ -344,7 +348,7 @@ namespace ILLink.Tasks
 
 		static void AddXmlTypeNode (XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members)
 		{
-			XmlNode typeNode = doc.CreateElement ("type");
+			XmlElement typeNode = doc.CreateElement ("type");
 			XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
 			typeFullName.Value = typeName;
 			typeNode.Attributes.Append (typeFullName);
@@ -365,7 +369,7 @@ namespace ILLink.Tasks
 
 				if (!members.keepAllFields && (members.fields != null)) {
 					foreach (string field in members.fields) {
-						XmlNode fieldNode = doc.CreateElement ("field");
+						XmlElement fieldNode = doc.CreateElement ("field");
 						XmlAttribute fieldName = doc.CreateAttribute ("name");
 						fieldName.Value = field;
 						fieldNode.Attributes.Append (fieldName);
@@ -375,7 +379,7 @@ namespace ILLink.Tasks
 
 				if (members.methods != null) {
 					foreach (string method in members.methods) {
-						XmlNode methodNode = doc.CreateElement ("method");
+						XmlElement methodNode = doc.CreateElement ("method");
 						XmlAttribute methodName = doc.CreateAttribute ("name");
 						methodName.Value = method;
 						methodNode.Attributes.Append (methodName);
@@ -467,7 +471,10 @@ namespace ILLink.Tasks
 				Log.LogError ($"Unknown namespace '{classNamespace}'.");
 			}
 
-			return namespaceDictionary[classNamespace] + "." + className;
+			// Convert from the System.Reflection/CoreCLR nested type name format to the IL/Cecil format.
+			string classNameWithCecilNestedFormat = className.Replace ('+', '/');
+
+			return namespaceDictionary[classNamespace] + "." + classNameWithCecilNestedFormat;
 		}
 
 		void InitializeDefineConstants ()

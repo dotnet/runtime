@@ -65,7 +65,24 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
+        #define INST1(id, nm, info, fmt, e1                                                     ) nm,
+        #define INST2(id, nm, info, fmt, e1, e2                                                 ) nm,
+        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) nm,
+        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) nm,
+        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) nm,
+        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) nm,
+        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) nm,
+        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) nm,
+        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) nm,
+        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) nm,
+        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) nm,
+        #include "instrsarm64sve.h"
+
 #elif defined(TARGET_LOONGARCH64)
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
+        #include "instrs.h"
+
+#elif defined(TARGET_RISCV64)
         #define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
@@ -101,12 +118,108 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    const emitter* emit = GetEmitter();
+
+    if (emit->IsVexOrEvexEncodableInstruction(ins))
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-        retbuf = buf[curBuf];
-        curBuf = (curBuf + 1) % 4;
-        return retbuf;
+        if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
+        {
+            if (emit->TakesEvexPrefix(id))
+            {
+                switch (ins)
+                {
+                    case INS_movdqa:
+                    {
+                        return "vmovdqa32";
+                    }
+
+                    case INS_movdqu:
+                    {
+                        return "vmovdqu32";
+                    }
+
+                    case INS_pand:
+                    {
+                        return "vpandd";
+                    }
+
+                    case INS_pandn:
+                    {
+                        return "vpandnd";
+                    }
+
+                    case INS_por:
+                    {
+                        return "vpord";
+                    }
+
+                    case INS_pxor:
+                    {
+                        return "vpxord";
+                    }
+
+                    case INS_roundpd:
+                    {
+                        return "vrndscalepd";
+                    }
+
+                    case INS_roundps:
+                    {
+                        return "vrndscaleps";
+                    }
+
+                    case INS_roundsd:
+                    {
+                        return "vrndscalesd";
+                    }
+
+                    case INS_roundss:
+                    {
+                        return "vrndscaless";
+                    }
+
+                    case INS_vbroadcastf128:
+                    {
+                        return "vbroadcastf32x4";
+                    }
+
+                    case INS_vextractf128:
+                    {
+                        return "vextractf32x4";
+                    }
+
+                    case INS_vinsertf128:
+                    {
+                        return "vinsertf32x4";
+                    }
+
+                    case INS_vbroadcasti128:
+                    {
+                        return "vbroadcasti32x4";
+                    }
+
+                    case INS_vextracti128:
+                    {
+                        return "vextracti32x4";
+                    }
+
+                    case INS_vinserti128:
+                    {
+                        return "vinserti32x4";
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
+            retbuf = buf[curBuf];
+            curBuf = (curBuf + 1) % 4;
+            return retbuf;
+        }
     }
 
     // Some instructions have different mnemonics depending on the size.
@@ -157,36 +270,23 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     static
     const char * const sizes[] =
     {
-        "",
         "byte  ptr ",
         "word  ptr ",
-        nullptr,
         "dword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
         "qword ptr ",
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
         "xmmword ptr ",
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-        "ymmword ptr"
+        "ymmword ptr ",
+        "zmmword ptr "
     };
     // clang-format on
 
     unsigned size = EA_SIZE(attr);
 
-    assert(size == 0 || size == 1 || size == 2 || size == 4 || size == 8 || size == 16 || size == 32);
+    assert(genMaxOneBit(size) && (size <= 64));
 
     if (EA_ATTR(size) == attr)
     {
-        return sizes[size];
+        return (size > 0) ? sizes[genLog2(size)] : "";
     }
     else if (attr == EA_GCREF)
     {
@@ -247,6 +347,22 @@ bool CodeGenInterface::instIsFP(instruction ins)
     return (instInfo[ins] & INST_FP) != 0;
 #endif
 }
+
+#if defined(TARGET_XARCH)
+/*****************************************************************************
+ *
+ *  Returns non-zero if the given CPU instruction is an embedded broadcast
+ *  compatible instruction.
+ */
+
+// static inline
+bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+
+    return (instInfo[ins] & INS_Flags_EmbeddedBroadcastSupported) != 0;
+}
+#endif // TARGET_XARCH
 
 /*****************************************************************************
  *
@@ -340,6 +456,8 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
 #ifdef TARGET_LOONGARCH64
     // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
     NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
+#elif defined(TARGET_RISCV64)
+    NYI_RISCV64("inst_RV-----unused on RISCV64----");
 #else
     GetEmitter()->emitIns_R(ins, size, reg);
 #endif
@@ -356,7 +474,7 @@ void CodeGen::inst_Mov(var_types dstType,
                        emitAttr  size,
                        insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
     {
         if (dstType == TYP_FLOAT)
@@ -378,6 +496,7 @@ void CodeGen::inst_Mov(var_types dstType,
         else
         {
             NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+            NYI_RISCV64("CodeGen::inst_Mov dstType");
         }
     }
 #endif
@@ -470,7 +589,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -505,7 +624,7 @@ void CodeGen::inst_IV_handle(instruction ins, cnsval_ssize_t val)
 void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
-    assert((tree != nullptr) && tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR));
+    assert((tree != nullptr) && (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->IsLclVarAddr()));
     assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
@@ -546,7 +665,7 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_tst);
     assert(ins != INS_mov);
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !TARGET_ARM
 #ifdef TARGET_AMD64
@@ -602,7 +721,13 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
+#ifdef TARGET_ARM64
+    // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
+    assert(GetEmitter()->emitInsIsStore(ins) || (ins == INS_sve_str));
+#else
     assert(GetEmitter()->emitInsIsStore(ins));
+#endif
+
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }
@@ -659,7 +784,7 @@ void CodeGen::inst_RV_SH(
 // logic for determining what "kind" of operand "op" is.
 //
 // Arguments:
-//    op - The operand node for which to obtain the descriptor
+//    op - The operand node for which to obtain the descriptor.
 //
 // Return Value:
 //    The operand descriptor for "op".
@@ -705,13 +830,72 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             assert(op->OperIsHWIntrinsic());
 
 #if defined(FEATURE_HW_INTRINSICS)
-            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
+            GenTreeHWIntrinsic* hwintrinsic  = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
+            var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
+                case NI_AVX_BroadcastScalarToVector128:
+                case NI_AVX_BroadcastScalarToVector256:
+                {
+                    // we have the assumption that AVX_BroadcastScalarToVector*
+                    // only take the memory address as the operand.
+                    assert(hwintrinsic->isContained());
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+                    assert(varTypeIsFloating(simdBaseType));
+                    GenTree* hwintrinsicChild = hwintrinsic->Op(1);
+                    assert(hwintrinsicChild->isContained());
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
+                    {
+                        addr = hwintrinsic->Op(1);
+                        break;
+                    }
+                    else
+                    {
+                        assert(hwintrinsicChild->OperIs(GT_LCL_VAR));
+                        return OperandDesc(simdBaseType, hwintrinsicChild);
+                    }
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                case NI_AVX2_BroadcastScalarToVector128:
+                case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX512F_BroadcastScalarToVector512:
+                {
+                    assert(hwintrinsic->isContained());
+                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    {
+                        assert(simdBaseType == TYP_DOUBLE);
+                    }
+                    // If broadcast node is contained, should mean that we have some forms like
+                    // Broadcast -> CreateScalarUnsafe -> Scalar.
+                    // If so, directly emit scalar.
+                    // In the codes below, we specially handle the `Broadcast -> CNS_INT` form and
+                    // handle other cases recursively.
+                    GenTree* hwintrinsicChild = hwintrinsic->Op(1);
+                    assert(hwintrinsicChild->isContained());
+                    if (hwintrinsicChild->OperIs(GT_CNS_INT))
+                    {
+                        // a special case is when the operand of CreateScalarUnsafe is in integer type,
+                        // CreateScalarUnsafe node will be fold, so we directly match a pattern of
+                        // broadcast -> LCL_VAR(TYP_(U)INT)
+                        ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
+                        UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
+                                                                         genTypeSize(simdBaseType), simdBaseType);
+                        return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                    }
+                    else
+                    {
+                        // If the operand of broadcast is not a constant integer,
+                        // we handle all the other cases recursively.
+                        return genOperandDesc(hwintrinsicChild);
+                    }
+                    break;
+                }
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
@@ -738,22 +922,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #endif // FEATURE_HW_INTRINSICS
         }
 
-        switch (addr->OperGet())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
-            {
-                assert(addr->isContained());
-                varNum = addr->AsLclVarCommon()->GetLclNum();
-                offset = addr->AsLclVarCommon()->GetLclOffs();
-                break;
-            }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
-
-            default:
-                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+            varNum = addr->AsLclFld()->GetLclNum();
+            offset = addr->AsLclFld()->GetLclOffs();
+        }
+        else
+        {
+            return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
         }
     }
     else
@@ -775,8 +951,10 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
+            {
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+            }
 
             case GT_CNS_VEC:
             {
@@ -785,28 +963,40 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
-                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        simd8_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
                         return OperandDesc(emit->emitSimd8Const(constValue));
                     }
 
                     case TYP_SIMD12:
-                    case TYP_SIMD16:
                     {
                         simd16_t constValue = {};
-
-                        if (op->TypeIs(TYP_SIMD12))
-                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
-                        else
-                            constValue = op->AsVecCon()->gtSimd16Val;
-
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
-                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        simd32_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
                         return OperandDesc(emit->emitSimd32Const(constValue));
                     }
+
+                    case TYP_SIMD64:
+                    {
+                        simd64_t constValue;
+                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+                        return OperandDesc(emit->emitSimd64Const(constValue));
+                    }
+
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
                     default:
@@ -814,6 +1004,17 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         unreached();
                     }
                 }
+            }
+
+            case GT_CNS_MSK:
+            {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                simdmask_t constValue;
+                memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
+                return OperandDesc(emit->emitSimdMaskConst(constValue));
+#else
+                unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
             default:
@@ -934,9 +1135,9 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
 }
 
 /*****************************************************************************
-*
-*  Generate an instruction of the form "op reg1, reg2, icon".
-*/
+ *
+ *  Generate an instruction of the form "op reg1, reg2, icon".
+ */
 
 void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival)
 {
@@ -953,27 +1154,36 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 //                and that returns a value in register
 //
 // Arguments:
-//    ins       -- The instruction being emitted
-//    attr      -- The emit attribute
-//    reg1      -- The first operand, a register
-//    rmOp      -- The second operand, which may be a memory node or a node producing a register
-//    ival      -- The immediate operand
+//    ins          -- The instruction being emitted
+//    attr         -- The emit attribute
+//    reg1         -- The first operand, a register
+//    rmOp         -- The second operand, which may be a memory node or a node producing a register
+//    ival         -- The immediate operand
+//    instOptions  -- The options that modify how the instruction is generated
 //
-void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
+void CodeGen::inst_RV_TT_IV(
+    instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival, insOpts instOptions)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, rmOp))
+    {
+        instOptions = AddEmbBroadcastMode(instOptions);
+    }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     OperandDesc rmOpDesc = genOperandDesc(rmOp);
 
     switch (rmOpDesc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_R_C_I(ins, attr, reg1, rmOpDesc.GetFieldHnd(), 0, ival);
+            emit->emitIns_R_C_I(ins, attr, reg1, rmOpDesc.GetFieldHnd(), 0, ival, instOptions);
             break;
 
         case OperandKind::Local:
-            emit->emitIns_R_S_I(ins, attr, reg1, rmOpDesc.GetVarNum(), rmOpDesc.GetLclOffset(), ival);
+            emit->emitIns_R_S_I(ins, attr, reg1, rmOpDesc.GetVarNum(), rmOpDesc.GetLclOffset(), ival, instOptions);
             break;
 
         case OperandKind::Indir:
@@ -982,12 +1192,12 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = rmOpDesc.GetIndirForm(&indirForm);
-            emit->emitIns_R_A_I(ins, attr, reg1, indir, ival);
+            emit->emitIns_R_A_I(ins, attr, reg1, indir, ival, instOptions);
         }
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival);
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival, instOptions);
             break;
 
         default:
@@ -996,20 +1206,72 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 }
 
 //------------------------------------------------------------------------
+// IsEmbeddedBroadcastEnabled: determine if embedded broadcast can be enabled
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    op        -- The second operand of the instruction.
+//
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
+{
+    // To enable embedded broadcast, we need 3 things,
+    // 1. EVEX enabled.
+    // 2. Embedded broadcast compatible intrinsics
+    // 3. A contained broadcast scalar node
+    if (!GetEmitter()->UseEvexEncoding())
+    {
+        return false;
+    }
+    if (!instIsEmbeddedBroadcastCompatible(ins))
+    {
+        return false;
+    }
+    if (!op->isContained() || !op->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    return op->AsHWIntrinsic()->OperIsBroadcastScalar();
+}
+
+//------------------------------------------------------------------------
+// AddEmbBroadcastMode: Adds the embedded broadcast mode to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//
+// Return Value:
+//    The modified insOpts
+//
+insOpts CodeGen::AddEmbBroadcastMode(insOpts instOptions)
+{
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+}
+#endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
 // inst_RV_RV_TT: Generates an instruction that takes 2 operands:
 //                a register operand and an operand that may be in memory or register
 //                the result is returned in register
 //
 // Arguments:
-//    ins       -- The instruction being emitted
-//    size      -- The emit size attribute
-//    targetReg -- The target register
-//    op1Reg    -- The first operand register
-//    op2       -- The second operand, which may be a memory node or a node producing a register
-//    isRMW     -- true if the instruction is RMW; otherwise, false
-//
-void CodeGen::inst_RV_RV_TT(
-    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+//    ins          -- The instruction being emitted
+//    size         -- The emit size attribute
+//    targetReg    -- The target register
+//    op1Reg       -- The first operand register
+//    op2          -- The second operand, which may be a memory node or a node producing a register
+//    isRMW        -- true if the instruction is RMW; otherwise, false
+//    instOptions  -- The options that modify how the instruction is generated
+void CodeGen::inst_RV_RV_TT(instruction ins,
+                            emitAttr    size,
+                            regNumber   targetReg,
+                            regNumber   op1Reg,
+                            GenTree*    op2,
+                            bool        isRMW,
+                            insOpts     instOptions)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
@@ -1017,15 +1279,50 @@ void CodeGen::inst_RV_RV_TT(
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
+    {
+        instOptions = AddEmbBroadcastMode(instOptions);
+
+        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        {
+            switch (ins)
+            {
+                case INS_pand:
+                    ins = INS_vpandq;
+                    break;
+
+                case INS_pandn:
+                    ins = INS_vpandnq;
+                    break;
+
+                case INS_por:
+                    ins = INS_vporq;
+                    break;
+
+                case INS_pxor:
+                    ins = INS_vpxorq;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
+    }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
     OperandDesc op2Desc = genOperandDesc(op2);
+
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0);
+        {
+            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, instOptions);
             break;
-
+        }
         case OperandKind::Local:
-            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset());
+            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(),
+                                     instOptions);
             break;
 
         case OperandKind::Indir:
@@ -1034,7 +1331,7 @@ void CodeGen::inst_RV_RV_TT(
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
-            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir);
+            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir, instOptions);
         }
         break;
 
@@ -1055,7 +1352,93 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
+        }
+        break;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inst_RV_RV_TT_IV: Generates an instruction that takes 3 operands:
+//                   a register operand, an operand that may be in memory or register,
+//                   and an immediate value. The result is returned in register
+//
+// Arguments:
+//    ins          -- The instruction being emitted
+//    size         -- The emit size attribute
+//    targetReg    -- The target register
+//    op1Reg       -- The first operand register
+//    op2          -- The second operand, which may be a memory node or a node producing a register
+//    ival         -- The immediate operand
+//    isRMW        -- true if the instruction is RMW; otherwise, false
+//    instOptions  -- The options that modify how the instruction is generated
+//
+void CodeGen::inst_RV_RV_TT_IV(instruction ins,
+                               emitAttr    size,
+                               regNumber   targetReg,
+                               regNumber   op1Reg,
+                               GenTree*    op2,
+                               int8_t      ival,
+                               bool        isRMW,
+                               insOpts     instOptions)
+{
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
+    {
+        instOptions = AddEmbBroadcastMode(instOptions);
+    }
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+    OperandDesc op2Desc = genOperandDesc(op2);
+
+    switch (op2Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival, instOptions);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival,
+                                       instOptions);
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
+            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival, instOptions);
+        }
+        break;
+
+        case OperandKind::Reg:
+        {
+            regNumber op2Reg = op2Desc.GetReg();
+
+            if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+            {
+                // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+                //
+                // For non-commutative intrinsics, we should have ensured that op2 was marked
+                // delay free in order to prevent it from getting assigned the same register
+                // as target. However, for commutative intrinsics, we can just swap the operands
+                // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+                op2Reg = op1Reg;
+                op1Reg = targetReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival, instOptions);
         }
         break;
 
@@ -1235,152 +1618,163 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
  */
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
-    NYI_LOONGARCH64("ins_Move_Extend");
-
-    instruction ins = INS_invalid;
-
-    if (varTypeIsSIMD(srcType))
+    if (varTypeUsesIntReg(srcType))
     {
-#if defined(TARGET_XARCH)
-        // SSE2/AVX requires destination to be a reg always.
-        // If src is in reg means, it is a reg-reg move.
-        //
-        // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
-        // former doesn't require 66h prefix and one byte smaller than the
-        // latter.
-        //
-        // TODO-CQ: based on whether src type is aligned use movaps instead
-
-        return (srcInReg) ? INS_movaps : INS_movups;
-#elif defined(TARGET_ARM64)
-        return (srcInReg) ? INS_mov : ins_Load(srcType);
-#else  // !defined(TARGET_ARM64) && !defined(TARGET_XARCH)
-        assert(!"unhandled SIMD type");
-#endif // !defined(TARGET_ARM64) && !defined(TARGET_XARCH)
-    }
+        instruction ins = INS_invalid;
 
 #if defined(TARGET_XARCH)
-    if (varTypeIsFloating(srcType))
-    {
-        if (srcType == TYP_DOUBLE)
-        {
-            return (srcInReg) ? INS_movaps : INS_movsdsse2;
-        }
-        else if (srcType == TYP_FLOAT)
-        {
-            return (srcInReg) ? INS_movaps : INS_movss;
-        }
-        else
-        {
-            assert(!"unhandled floating type");
-        }
-    }
-#elif defined(TARGET_ARM)
-    if (varTypeIsFloating(srcType))
-        return INS_vmov;
-#else
-    if (varTypeIsFloating(srcType))
-        return INS_mov;
-#endif
-
-#if defined(TARGET_XARCH)
-    if (!varTypeIsSmall(srcType))
-    {
-        ins = INS_mov;
-    }
-    else if (varTypeIsUnsigned(srcType))
-    {
-        ins = INS_movzx;
-    }
-    else
-    {
-        ins = INS_movsx;
-    }
-#elif defined(TARGET_ARM)
-    //
-    // Register to Register zero/sign extend operation
-    //
-    if (srcInReg)
-    {
         if (!varTypeIsSmall(srcType))
         {
             ins = INS_mov;
         }
         else if (varTypeIsUnsigned(srcType))
         {
-            if (varTypeIsByte(srcType))
-                ins = INS_uxtb;
-            else
-                ins = INS_uxth;
+            ins = INS_movzx;
         }
         else
         {
-            if (varTypeIsByte(srcType))
-                ins = INS_sxtb;
-            else
-                ins = INS_sxth;
+            ins = INS_movsx;
         }
-    }
-    else
-    {
-        ins = ins_Load(srcType);
-    }
-#elif defined(TARGET_ARM64)
-    //
-    // Register to Register zero/sign extend operation
-    //
-    if (srcInReg)
-    {
-        if (varTypeIsUnsigned(srcType))
+#elif defined(TARGET_ARM)
+        //
+        // Register to Register zero/sign extend operation
+        //
+        if (srcInReg)
         {
-            if (varTypeIsByte(srcType))
+            if (!varTypeIsSmall(srcType))
             {
-                ins = INS_uxtb;
-            }
-            else if (varTypeIsShort(srcType))
-            {
-                ins = INS_uxth;
-            }
-            else
-            {
-                // A mov Rd, Rm instruction performs the zero extend
-                // for the upper 32 bits when the size is EA_4BYTE
-
                 ins = INS_mov;
             }
-        }
-        else
-        {
-            if (varTypeIsByte(srcType))
+            else if (varTypeIsUnsigned(srcType))
             {
-                ins = INS_sxtb;
-            }
-            else if (varTypeIsShort(srcType))
-            {
-                ins = INS_sxth;
+                if (varTypeIsByte(srcType))
+                    ins = INS_uxtb;
+                else
+                    ins = INS_uxth;
             }
             else
             {
-                if (srcType == TYP_INT)
+                if (varTypeIsByte(srcType))
+                    ins = INS_sxtb;
+                else
+                    ins = INS_sxth;
+            }
+        }
+        else
+        {
+            ins = ins_Load(srcType);
+        }
+#elif defined(TARGET_ARM64)
+        //
+        // Register to Register zero/sign extend operation
+        //
+        if (srcInReg)
+        {
+            if (varTypeIsUnsigned(srcType))
+            {
+                if (varTypeIsByte(srcType))
                 {
-                    ins = INS_sxtw;
+                    ins = INS_uxtb;
+                }
+                else if (varTypeIsShort(srcType))
+                {
+                    ins = INS_uxth;
                 }
                 else
                 {
+                    // A mov Rd, Rm instruction performs the zero extend
+                    // for the upper 32 bits when the size is EA_4BYTE
+
                     ins = INS_mov;
                 }
             }
+            else
+            {
+                if (varTypeIsByte(srcType))
+                {
+                    ins = INS_sxtb;
+                }
+                else if (varTypeIsShort(srcType))
+                {
+                    ins = INS_sxth;
+                }
+                else
+                {
+                    if (srcType == TYP_INT)
+                    {
+                        ins = INS_sxtw;
+                    }
+                    else
+                    {
+                        ins = INS_mov;
+                    }
+                }
+            }
         }
+        else
+        {
+            ins = ins_Load(srcType);
+        }
+#else
+        NYI("ins_Move_Extend");
+#endif
+
+        assert(ins != INS_invalid);
+        return ins;
+    }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(srcType))
+    {
+#if defined(TARGET_XARCH)
+        return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_mov;
+#endif
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(srcType));
+
+#if defined(TARGET_XARCH)
+    // SSE2/AVX requires destination to be a reg always.
+    // If src is in reg means, it is a reg-reg move.
+    //
+    // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
+    // former doesn't require 66h prefix and one byte smaller than the
+    // latter.
+    //
+    // TODO-CQ: based on whether src type is aligned use movaps instead
+
+    if (srcInReg)
+    {
+        return INS_movaps;
+    }
+
+    unsigned srcSize = genTypeSize(srcType);
+
+    if (srcSize == 4)
+    {
+        return INS_movss;
+    }
+    else if (srcSize == 8)
+    {
+        return INS_movsd_simd;
     }
     else
     {
-        ins = ins_Load(srcType);
+        assert((srcSize == 12) || (srcSize == 16) || (srcSize == 32) || (srcSize == 64));
+        return INS_movups;
     }
+#elif defined(TARGET_ARM64)
+    return (srcInReg) ? INS_mov : ins_Load(srcType);
+#elif defined(TARGET_ARM)
+    assert(!varTypeIsSIMD(srcType));
+    return INS_vmov;
 #else
     NYI("ins_Move_Extend");
+    return INS_invalid;
 #endif
-    assert(ins != INS_invalid);
-    return ins;
 }
 
 /*****************************************************************************
@@ -1393,135 +1787,162 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
  */
 instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*/)
 {
-    instruction ins = INS_invalid;
-
-    if (varTypeIsSIMD(srcType))
+    if (varTypeUsesIntReg(srcType))
     {
-#if defined(TARGET_XARCH)
-#ifdef FEATURE_SIMD
-        if (srcType == TYP_SIMD8)
-        {
-            return INS_movsdsse2;
-        }
-        else
-#endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
-        {
-            // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
-            // former doesn't require 66h prefix and one byte smaller than the
-            // latter.
-            return (aligned) ? INS_movaps : INS_movups;
-        }
-#elif defined(TARGET_ARM64)
-        return INS_ldr;
-#else
-        assert(!"ins_Load with SIMD type");
-#endif
-    }
-
-    if (varTypeIsFloating(srcType))
-    {
-#if defined(TARGET_XARCH)
-        if (srcType == TYP_DOUBLE)
-        {
-            return INS_movsdsse2;
-        }
-        else if (srcType == TYP_FLOAT)
-        {
-            return INS_movss;
-        }
-        else
-        {
-            assert(!"unhandled floating type");
-        }
-#elif defined(TARGET_ARM64)
-        return INS_ldr;
-#elif defined(TARGET_ARM)
-        return INS_vldr;
-#elif defined(TARGET_LOONGARCH64)
-        if (srcType == TYP_DOUBLE)
-        {
-            return INS_fld_d;
-        }
-        else if (srcType == TYP_FLOAT)
-        {
-            return INS_fld_s;
-        }
-        else
-        {
-            assert(!"unhandled floating type");
-        }
-#else
-        assert(!varTypeIsFloating(srcType));
-#endif
-    }
+        instruction ins = INS_invalid;
 
 #if defined(TARGET_XARCH)
-    if (!varTypeIsSmall(srcType))
-    {
-        ins = INS_mov;
-    }
-    else if (varTypeIsUnsigned(srcType))
-    {
-        ins = INS_movzx;
-    }
-    else
-    {
-        ins = INS_movsx;
-    }
-
+        if (!varTypeIsSmall(srcType))
+        {
+            ins = INS_mov;
+        }
+        else if (varTypeIsUnsigned(srcType))
+        {
+            ins = INS_movzx;
+        }
+        else
+        {
+            ins = INS_movsx;
+        }
 #elif defined(TARGET_ARMARCH)
-    if (!varTypeIsSmall(srcType))
-    {
-        ins = INS_ldr;
-    }
-    else if (varTypeIsByte(srcType))
-    {
-        if (varTypeIsUnsigned(srcType))
-            ins = INS_ldrb;
-        else
-            ins = INS_ldrsb;
-    }
-    else if (varTypeIsShort(srcType))
-    {
-        if (varTypeIsUnsigned(srcType))
-            ins = INS_ldrh;
-        else
-            ins = INS_ldrsh;
-    }
+        if (!varTypeIsSmall(srcType))
+        {
+            ins = INS_ldr;
+        }
+        else if (varTypeIsByte(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ldrb;
+            else
+                ins = INS_ldrsb;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ldrh;
+            else
+                ins = INS_ldrsh;
+        }
 #elif defined(TARGET_LOONGARCH64)
-    if (varTypeIsByte(srcType))
-    {
-        if (varTypeIsUnsigned(srcType))
-            ins = INS_ld_bu;
+        if (varTypeIsByte(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ld_bu;
+            else
+                ins = INS_ld_b;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ld_hu;
+            else
+                ins = INS_ld_h;
+        }
+        else if (TYP_INT == srcType)
+        {
+            ins = INS_ld_w;
+        }
         else
-            ins = INS_ld_b;
-    }
-    else if (varTypeIsShort(srcType))
-    {
-        if (varTypeIsUnsigned(srcType))
-            ins = INS_ld_hu;
+        {
+            ins = INS_ld_d; // default ld_d.
+        }
+#elif defined(TARGET_RISCV64)
+        if (varTypeIsByte(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_lbu;
+            else
+                ins = INS_lb;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_lhu;
+            else
+                ins = INS_lh;
+        }
+        else if (TYP_INT == srcType)
+        {
+            ins = INS_lw;
+        }
         else
-            ins = INS_ld_h;
+        {
+            ins = INS_ld; // default ld.
+        }
+#else
+        NYI("ins_Load");
+#endif
+
+        assert(ins != INS_invalid);
+        return ins;
     }
-    else if (TYP_INT == srcType)
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(srcType))
     {
-        ins = INS_ld_w;
+#if defined(TARGET_XARCH)
+        return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_ldr;
+#endif
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(srcType));
+
+#if defined(TARGET_XARCH)
+    unsigned srcSize = genTypeSize(srcType);
+
+    if (srcSize == 4)
+    {
+        return INS_movss;
+    }
+    else if (srcSize == 8)
+    {
+        return INS_movsd_simd;
     }
     else
     {
-        ins = INS_ld_d; // default ld_d.
+        assert((srcSize == 12) || (srcSize == 16) || (srcSize == 32) || (srcSize == 64));
+
+        // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
+        // former doesn't require 66h prefix and one byte smaller than the
+        // latter.
+
+        return (aligned) ? INS_movaps : INS_movups;
+    }
+#elif defined(TARGET_ARM64)
+    return INS_ldr;
+#elif defined(TARGET_ARM)
+    assert(!varTypeIsSIMD(srcType));
+    return INS_vldr;
+#elif defined(TARGET_LOONGARCH64)
+    assert(!varTypeIsSIMD(srcType));
+
+    if (srcType == TYP_DOUBLE)
+    {
+        return INS_fld_d;
+    }
+    else
+    {
+        assert(srcType == TYP_FLOAT);
+        return INS_fld_s;
+    }
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(srcType));
+
+    if (srcType == TYP_DOUBLE)
+    {
+        return INS_fld;
+    }
+    else
+    {
+        assert(srcType == TYP_FLOAT);
+        return INS_flw;
     }
 #else
     NYI("ins_Load");
 #endif
-
-    assert(ins != INS_invalid);
-    return ins;
 }
 
 /*****************************************************************************
@@ -1534,50 +1955,70 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 instruction CodeGen::ins_Copy(var_types dstType)
 {
     assert(emitTypeActSz[dstType] != 0);
+
+    if (varTypeUsesIntReg(dstType))
+    {
+#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return INS_mov;
+#else
+        NYI("ins_Copy");
+#endif
+    }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(dstType))
+    {
 #if defined(TARGET_XARCH)
+        return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_mov;
+#endif
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(dstType));
+
+#if defined(TARGET_XARCH)
+    return INS_movaps;
+#elif defined(TARGET_ARM64)
     if (varTypeIsSIMD(dstType))
     {
-        return INS_movaps;
-    }
-    else if (varTypeIsFloating(dstType))
-    {
-        // Both float and double copy can use movaps
-        return INS_movaps;
+        return INS_mov;
     }
     else
     {
-        return INS_mov;
-    }
-#elif defined(TARGET_ARM64)
-    if (varTypeIsFloating(dstType))
-    {
+        assert(varTypeIsFloating(dstType));
         return INS_fmov;
-    }
-    else
-    {
-        return INS_mov;
     }
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(dstType));
-    if (varTypeIsFloating(dstType))
-    {
-        return INS_vmov;
-    }
-    else
-    {
-        return INS_mov;
-    }
+    return INS_vmov;
 #elif defined(TARGET_LOONGARCH64)
-    if (varTypeIsFloating(dstType))
+    assert(!varTypeIsSIMD(dstType));
+
+    if (dstType == TYP_DOUBLE)
     {
-        return dstType == TYP_FLOAT ? INS_fmov_s : INS_fmov_d;
+        return INS_fmov_d;
     }
     else
     {
-        return INS_mov;
+        assert(dstType == TYP_FLOAT);
+        return INS_fmov_s;
     }
-#else // TARGET_*
-#error "Unknown TARGET_"
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(dstType));
+
+    if (dstType == TYP_DOUBLE)
+    {
+        return INS_fsgnj_d;
+    }
+    else
+    {
+        assert(dstType == TYP_FLOAT);
+        return INS_fsgnj_s;
+    }
+#else
+    NYI("ins_Copy");
 #endif
 }
 
@@ -1595,53 +2036,115 @@ instruction CodeGen::ins_Copy(var_types dstType)
 //
 instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 {
-    bool dstIsFloatReg = isFloatRegType(dstType);
-    bool srcIsFloatReg = genIsValidFloatReg(srcReg);
-    if (srcIsFloatReg == dstIsFloatReg)
+    assert(srcReg != REG_NA);
+
+    if (varTypeUsesIntReg(dstType))
     {
+        if (genIsValidIntOrFakeReg(srcReg))
+        {
+            // int to int
+            return ins_Copy(dstType);
+        }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
+        if (genIsValidMaskReg(srcReg))
+        {
+            // mask to int
+            return INS_kmovq_gpr;
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
+
+        // float to int
+        assert(genIsValidFloatReg(srcReg));
+
+#if defined(TARGET_XARCH)
+        return INS_movd;
+#elif defined(TARGET_ARM64)
+        return INS_mov;
+#elif defined(TARGET_ARM)
+        // Can't have LONG in a register.
+        assert(dstType == TYP_INT);
+
+        assert(!varTypeIsSIMD(dstType));
+        return INS_vmov_f2i;
+#elif defined(TARGET_LOONGARCH64)
+        assert(!varTypeIsSIMD(dstType));
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
+#elif defined(TARGET_RISCV64)
+        assert(!varTypeIsSIMD(dstType));
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
+#else
+        NYI("ins_Copy");
+#endif
+    }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(dstType))
+    {
+        if (genIsValidMaskReg(srcReg))
+        {
+            // mask to mask
+            return ins_Copy(dstType);
+        }
+
+        // mask to int
+        assert(genIsValidIntOrFakeReg(srcReg));
+#if defined(TARGET_XARCH)
+        return INS_kmovq_gpr;
+#elif defined(TARGET_ARM64)
+        return INS_sve_mov;
+#endif
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(dstType));
+
+    if (genIsValidFloatReg(srcReg))
+    {
+        // float to float
         return ins_Copy(dstType);
     }
+
+    // int to float
+    assert(genIsValidIntOrFakeReg(srcReg));
+
 #if defined(TARGET_XARCH)
     return INS_movd;
 #elif defined(TARGET_ARM64)
-    if (dstIsFloatReg)
-    {
-        return INS_fmov;
-    }
-    else
-    {
-        return INS_mov;
-    }
+    return INS_fmov;
 #elif defined(TARGET_ARM)
-    // No SIMD support yet.
+    // Can't have LONG in a register.
+    assert(dstType == TYP_FLOAT);
+
     assert(!varTypeIsSIMD(dstType));
-    if (dstIsFloatReg)
-    {
-        // Can't have LONG in a register.
-        assert(dstType == TYP_FLOAT);
-        return INS_vmov_i2f;
-    }
-    else
-    {
-        // Can't have LONG in a register.
-        assert(dstType == TYP_INT);
-        return INS_vmov_f2i;
-    }
+    return INS_vmov_i2f;
 #elif defined(TARGET_LOONGARCH64)
-    // TODO-LoongArch64-CQ: supporting SIMD.
     assert(!varTypeIsSIMD(dstType));
-    if (dstIsFloatReg)
+
+    if (dstType == TYP_DOUBLE)
     {
-        assert(!genIsValidFloatReg(srcReg));
-        return dstType == TYP_FLOAT ? INS_movgr2fr_w : INS_movgr2fr_d;
+        return INS_movgr2fr_d;
     }
     else
     {
-        assert(genIsValidFloatReg(srcReg));
-        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
+        assert(dstType == TYP_FLOAT);
+        return INS_movgr2fr_w;
     }
-#else // TARGET*
-#error "Unknown TARGET"
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(dstType));
+    assert(!genIsValidFloatReg(srcReg));
+
+    if (dstType == TYP_DOUBLE)
+    {
+        return INS_fmv_d_x;
+    }
+    else
+    {
+        assert(dstType == TYP_FLOAT);
+        return INS_fmv_w_x;
+    }
+#else
+    NYI("ins_Copy");
 #endif
 }
 
@@ -1656,99 +2159,110 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
-    instruction ins = INS_invalid;
+    if (varTypeUsesIntReg(dstType))
+    {
+        instruction ins = INS_invalid;
 
 #if defined(TARGET_XARCH)
-    if (varTypeIsSIMD(dstType))
-    {
-#ifdef FEATURE_SIMD
-        if (dstType == TYP_SIMD8)
-        {
-            return INS_movsdsse2;
-        }
+        ins = INS_mov;
+#elif defined(TARGET_ARMARCH)
+        if (!varTypeIsSmall(dstType))
+            ins = INS_str;
+        else if (varTypeIsByte(dstType))
+            ins = INS_strb;
+        else if (varTypeIsShort(dstType))
+            ins = INS_strh;
+#elif defined(TARGET_LOONGARCH64)
+        if (varTypeIsByte(dstType))
+            ins = aligned ? INS_stx_b : INS_st_b;
+        else if (varTypeIsShort(dstType))
+            ins = aligned ? INS_stx_h : INS_st_h;
+        else if (TYP_INT == dstType)
+            ins = aligned ? INS_stx_w : INS_st_w;
         else
-#endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
+            ins = aligned ? INS_stx_d : INS_st_d;
+#elif defined(TARGET_RISCV64)
+        if (varTypeIsByte(dstType))
+            ins = INS_sb;
+        else if (varTypeIsShort(dstType))
+            ins = INS_sh;
+        else if (TYP_INT == dstType)
+            ins = INS_sw;
         else
-        {
-            // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
-            // former doesn't require 66h prefix and one byte smaller than the
-            // latter.
-            return (aligned) ? INS_movaps : INS_movups;
-        }
+            ins = INS_sd;
+#else
+        NYI("ins_Store");
+#endif
+        assert(ins != INS_invalid);
+        return ins;
     }
-    else if (varTypeIsFloating(dstType))
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(dstType))
     {
-        if (dstType == TYP_DOUBLE)
-        {
-            return INS_movsdsse2;
-        }
-        else if (dstType == TYP_FLOAT)
-        {
-            return INS_movss;
-        }
-        else
-        {
-            assert(!"unhandled floating type");
-        }
+#if defined(TARGET_XARCH)
+        return INS_kmovq_msk;
+#elif defined(TARGET_ARM64)
+        return INS_sve_str;
+#endif
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(dstType));
+
+#if defined(TARGET_XARCH)
+    unsigned dstSize = genTypeSize(dstType);
+
+    if (dstSize == 4)
+    {
+        return INS_movss;
+    }
+    else if (dstSize == 8)
+    {
+        return INS_movsd_simd;
+    }
+    else
+    {
+        assert((dstSize == 12) || (dstSize == 16) || (dstSize == 32) || (dstSize == 64));
+
+        // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
+        // former doesn't require 66h prefix and one byte smaller than the
+        // latter.
+
+        return (aligned) ? INS_movaps : INS_movups;
     }
 #elif defined(TARGET_ARM64)
-    if (varTypeIsSIMD(dstType) || varTypeIsFloating(dstType))
-    {
-        // All sizes of SIMD and FP instructions use INS_str
-        return INS_str;
-    }
+    return INS_str;
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(dstType));
-    if (varTypeIsFloating(dstType))
-    {
-        return INS_vstr;
-    }
+    return INS_vstr;
 #elif defined(TARGET_LOONGARCH64)
     assert(!varTypeIsSIMD(dstType));
-    if (varTypeIsFloating(dstType))
-    {
-        if (dstType == TYP_DOUBLE)
-        {
-            return aligned ? INS_fstx_d : INS_fst_d;
-        }
-        else if (dstType == TYP_FLOAT)
-        {
-            return aligned ? INS_fstx_s : INS_fst_s;
-        }
-    }
-#else
-    assert(!varTypeIsSIMD(dstType));
-    assert(!varTypeIsFloating(dstType));
-#endif
 
-#if defined(TARGET_XARCH)
-    ins = INS_mov;
-#elif defined(TARGET_ARMARCH)
-    if (!varTypeIsSmall(dstType))
-        ins = INS_str;
-    else if (varTypeIsByte(dstType))
-        ins = INS_strb;
-    else if (varTypeIsShort(dstType))
-        ins = INS_strh;
-#elif defined(TARGET_LOONGARCH64)
-    if (varTypeIsByte(dstType))
-        ins = aligned ? INS_stx_b : INS_st_b;
-    else if (varTypeIsShort(dstType))
-        ins = aligned ? INS_stx_h : INS_st_h;
-    else if (TYP_INT == dstType)
-        ins = aligned ? INS_stx_w : INS_st_w;
+    if (dstType == TYP_DOUBLE)
+    {
+        return aligned ? INS_fstx_d : INS_fst_d;
+    }
     else
-        ins = aligned ? INS_stx_d : INS_st_d;
+    {
+        assert(dstType == TYP_FLOAT);
+        return aligned ? INS_fstx_s : INS_fst_s;
+    }
+#elif defined(TARGET_RISCV64)
+    assert(!varTypeIsSIMD(dstType));
+
+    if (dstType == TYP_DOUBLE)
+    {
+        return INS_fsd;
+    }
+    else
+    {
+        assert(dstType == TYP_FLOAT);
+        return INS_fsw;
+    }
 #else
     NYI("ins_Store");
 #endif
-
-    assert(ins != INS_invalid);
-    return ins;
 }
 
 //------------------------------------------------------------------------
@@ -1766,34 +2280,88 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
 {
     assert(srcReg != REG_NA);
 
-    bool dstIsFloatType = isFloatRegType(dstType);
-    bool srcIsFloatReg  = genIsValidFloatReg(srcReg);
-    if (srcIsFloatReg == dstIsFloatType)
+    if (varTypeUsesIntReg(dstType))
     {
+        if (genIsValidIntOrFakeReg(srcReg))
+        {
+            // int to int
+            return ins_Store(dstType, aligned);
+        }
+
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        if (genIsValidMaskReg(srcReg))
+        {
+            // mask to int, treat as mask so it works on 32-bit
+            return ins_Store(TYP_MASK, aligned);
+        }
+#endif // TARGET_XARCH && FEATURE_SIMD
+
+        // float to int, treat as float to float
+        assert(genIsValidFloatReg(srcReg));
+
+        unsigned dstSize = genTypeSize(dstType);
+
+        if (dstSize == 4)
+        {
+            dstType = TYP_FLOAT;
+        }
+        else
+        {
+#if defined(TARGET_64BIT)
+            assert(dstSize == 8);
+            dstType = TYP_DOUBLE;
+#else
+            unreached();
+#endif
+        }
+
         return ins_Store(dstType, aligned);
+    }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (varTypeUsesMaskReg(dstType))
+    {
+        if (genIsValidMaskReg(srcReg))
+        {
+            // mask to mask
+            return ins_Store(dstType, aligned);
+        }
+
+        // mask to int, keep as mask so it works on 32-bit
+        assert(genIsValidIntOrFakeReg(srcReg));
+        return ins_Store(dstType, aligned);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    assert(varTypeUsesFloatReg(dstType));
+
+    if (genIsValidIntOrFakeReg(srcReg))
+    {
+        // int to float, treat as int to int
+
+        unsigned dstSize = genTypeSize(dstType);
+
+        if (dstSize == 4)
+        {
+            dstType = TYP_INT;
+        }
+        else
+        {
+#if defined(TARGET_64BIT)
+            assert(dstSize == 8);
+            dstType = TYP_LONG;
+#else
+            unreached();
+#endif
+        }
     }
     else
     {
-        // We know that we are writing to memory, so make the destination type same
-        // as the source type.
-        var_types dstTypeForStore = TYP_UNDEF;
-        unsigned  dstSize         = genTypeSize(dstType);
-        switch (dstSize)
-        {
-            case 4:
-                dstTypeForStore = srcIsFloatReg ? TYP_FLOAT : TYP_INT;
-                break;
-#if defined(TARGET_64BIT)
-            case 8:
-                dstTypeForStore = srcIsFloatReg ? TYP_DOUBLE : TYP_LONG;
-                break;
-#endif // TARGET_64BIT
-            default:
-                assert(!"unexpected write to the stack.");
-                break;
-        }
-        return ins_Store(dstTypeForStore, aligned);
+        // float to float
+        assert(genIsValidFloatReg(srcReg));
     }
+
+    return ins_Store(dstType, aligned);
 }
 
 #if defined(TARGET_XARCH)
@@ -1828,7 +2396,10 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
-    // AVX: For now we support only conversion from Int/Long -> float
+    // AVX: Supports following conversions
+    //   srcType = int16/int64                     castToType = float
+    // AVX512: Supports following conversions
+    //   srcType = ulong                           castToType = double/float
 
     switch (from)
     {
@@ -1870,13 +2441,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si32;
                 case TYP_LONG:
-                    return INS_cvttss2si;
+                    return INS_cvttss2si64;
                 case TYP_FLOAT:
                     return ins_Move_Extend(TYP_FLOAT, false);
                 case TYP_DOUBLE:
                     return INS_cvtss2sd;
+                case TYP_ULONG:
+                    return INS_vcvttss2usi64;
+                case TYP_UINT:
+                    return INS_vcvttss2usi32;
                 default:
                     unreached();
             }
@@ -1886,17 +2461,32 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
             switch (to)
             {
                 case TYP_INT:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si32;
                 case TYP_LONG:
-                    return INS_cvttsd2si;
+                    return INS_cvttsd2si64;
                 case TYP_FLOAT:
                     return INS_cvtsd2ss;
                 case TYP_DOUBLE:
                     return ins_Move_Extend(TYP_DOUBLE, false);
+                case TYP_ULONG:
+                    return INS_vcvttsd2usi64;
+                case TYP_UINT:
+                    return INS_vcvttsd2usi32;
                 default:
                     unreached();
             }
             break;
+
+        case TYP_ULONG:
+            switch (to)
+            {
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
+                case TYP_FLOAT:
+                    return INS_vcvtusi2ss64;
+                default:
+                    unreached();
+            }
 
         default:
             unreached();
@@ -2044,6 +2634,8 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
  */
 void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags)
 {
+    assert(genIsValidIntOrFakeReg(reg));
+
 #if defined(TARGET_XARCH)
     GetEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
 #elif defined(TARGET_ARM)
@@ -2052,9 +2644,12 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
+#elif defined(TARGET_RISCV64)
+    GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
 #else
 #error "Unknown TARGET"
 #endif
+
     regSet.verifyRegUsed(reg);
 }
 

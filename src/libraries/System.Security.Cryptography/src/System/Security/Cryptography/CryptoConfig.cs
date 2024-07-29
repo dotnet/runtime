@@ -317,10 +317,7 @@ namespace System.Security.Cryptography
             // throw an exception if we find an invalid name partway through the list.
             foreach (string name in algorithmNames)
             {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentException(SR.Cryptography_AddNullOrEmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name, nameof(names));
             }
 
             // Everything looks valid, so we're safe to add the name mappings.
@@ -340,7 +337,7 @@ namespace System.Security.Cryptography
             switch (name)
             {
 #pragma warning disable SYSLIB0021 // Obsolete: derived cryptographic types
-                // hardcode mapping for SHA* and HMAC* algorithm names from https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
+                // hardcode mapping for SHA* and HMAC* algorithm names from https://learn.microsoft.com/dotnet/api/system.security.cryptography.cryptoconfig?view=net-5.0#remarks
                 case "SHA":
                 case "SHA1":
                 case "System.Security.Cryptography.SHA1":
@@ -512,10 +509,7 @@ namespace System.Security.Cryptography
             // exception if an invalid name is found further down the array.
             foreach (string name in oidNames)
             {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentException(SR.Cryptography_AddNullOrEmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name, nameof(names));
             }
 
             // Everything is valid, so we're good to lock the hash table and add the application mappings

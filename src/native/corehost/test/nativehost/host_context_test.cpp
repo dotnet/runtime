@@ -356,6 +356,211 @@ namespace
         return success;
     }
 
+    bool call_load_assembly(
+        load_assembly_fn load_assembly,
+        const pal::char_t *assembly_path,
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        test_output << log_prefix << _X("calling load_assembly(\"")
+            << assembly_path << _X("\")")
+            << std::endl;
+        int rc = load_assembly(assembly_path,
+                               nullptr /* load_context */,
+                               nullptr /* reserved */);
+        bool success = rc == StatusCode::Success;
+        test_output << log_prefix << _X("load_assembly ") << (success ? _X("succeeded: ") : _X("failed: ")) << std::hex << std::showbase << rc << std::endl;
+        return success;
+    }
+
+    bool call_load_assembly_bytes(
+        load_assembly_bytes_fn load_assembly_bytes,
+        const pal::char_t *assembly_path,
+        const pal::char_t *symbols_path,
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        std::ifstream assembly_file(assembly_path, std::ios::binary);
+        std::vector<char> assembly_bytes { std::istreambuf_iterator<char>(assembly_file), std::istreambuf_iterator<char>() };
+        assembly_file.close();
+
+        std::vector<char> symbols_bytes;
+        if (pal::strcmp(symbols_path, _X("nullptr")) != 0)
+        {
+            std::ifstream symbols_file(symbols_path, std::ios::binary);
+            symbols_bytes = std::vector<char>((std::istreambuf_iterator<char>(symbols_file)), (std::istreambuf_iterator<char>()));
+            symbols_file.close();
+        }
+
+        test_output << log_prefix << _X("calling load_assembly_bytes(")
+            << std::hex << (size_t)(assembly_bytes.data()) << _X(", ") << assembly_bytes.size() << _X(", ")
+            << std::hex << (size_t)(symbols_bytes.data()) << _X(", ") << symbols_bytes.size()
+            << _X(")") << std::endl;
+
+        int rc = load_assembly_bytes(
+            (unsigned char *)assembly_bytes.data(),
+            assembly_bytes.size(),
+            symbols_bytes.empty() ? nullptr : (unsigned char *)symbols_bytes.data(),
+            symbols_bytes.size(),
+            nullptr /* load_context */,
+            nullptr /* reserved */);
+        bool success = rc == StatusCode::Success;
+        test_output << log_prefix << _X("load_assembly_bytes ") << (success ? _X("succeeded: ") : _X("failed: ")) << std::hex << std::showbase << rc << std::endl;
+        return success;
+    }
+
+    bool component_load_assembly_test(
+        const hostfxr_exports &hostfxr,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_config(hostfxr, config_path, &handle, log_prefix, test_output))
+            return false;
+
+        load_assembly_fn load_assembly = nullptr;
+        hostfxr_delegate_type hdt = hostfxr_delegate_type::hdt_load_assembly;
+        bool success = get_runtime_delegate(hostfxr, handle, hdt, (void **)&load_assembly, log_prefix, test_output);
+
+        get_function_pointer_fn get_function_pointer = nullptr;
+        hdt = hostfxr_delegate_type::hdt_get_function_pointer;
+        success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
+        if (success)
+        {
+            for (int i = 0; i <= argc - 3; i += 3)
+            {
+                const pal::char_t *assembly_path = argv[i];
+                success &= call_load_assembly(load_assembly, assembly_path, log_prefix, test_output);
+
+                const pal::char_t *type_name = argv[i + 1];
+                const pal::char_t *method_name = argv[i + 2];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+            }
+        }
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+
+        return success && rcClose == StatusCode::Success;
+    }
+
+    bool app_load_assembly_test(
+        const hostfxr_exports &hostfxr,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_command_line(hostfxr, argc, argv, &handle, log_prefix, test_output))
+            return false;
+
+        load_assembly_fn load_assembly = nullptr;
+        hostfxr_delegate_type hdt = hostfxr_delegate_type::hdt_load_assembly;
+        bool success = get_runtime_delegate(hostfxr, handle, hdt, (void **)&load_assembly, log_prefix, test_output);
+
+        get_function_pointer_fn get_function_pointer = nullptr;
+        hdt = hostfxr_delegate_type::hdt_get_function_pointer;
+        success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
+        if (success)
+        {
+            for (int i = 1; i <= argc - 3; i += 3)
+            {
+                const pal::char_t *assembly_path = argv[i];
+                success &= call_load_assembly(load_assembly, assembly_path, log_prefix, test_output);
+
+                const pal::char_t *type_name = argv[i + 1];
+                const pal::char_t *method_name = argv[i + 2];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+            }
+        }
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+        return success && rcClose == StatusCode::Success;
+    }
+
+    bool component_load_assembly_bytes_test(
+        const hostfxr_exports &hostfxr,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_config(hostfxr, config_path, &handle, log_prefix, test_output))
+            return false;
+
+        load_assembly_bytes_fn load_assembly_bytes = nullptr;
+        hostfxr_delegate_type hdt = hostfxr_delegate_type::hdt_load_assembly_bytes;
+        bool success = get_runtime_delegate(hostfxr, handle, hdt, (void **)&load_assembly_bytes, log_prefix, test_output);
+
+        get_function_pointer_fn get_function_pointer = nullptr;
+        hdt = hostfxr_delegate_type::hdt_get_function_pointer;
+        success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
+        if (success)
+        {
+            for (int i = 0; i <= argc - 4; i += 4)
+            {
+                const pal::char_t *assembly_path = argv[i];
+                const pal::char_t *symbols_path = argv[i + 1];
+                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, log_prefix, test_output);
+
+                const pal::char_t *type_name = argv[i + 2];
+                const pal::char_t *method_name = argv[i + 3];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+            }
+        }
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+
+        return success && rcClose == StatusCode::Success;
+    }
+
+    bool app_load_assembly_bytes_test(
+        const hostfxr_exports &hostfxr,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_command_line(hostfxr, argc, argv, &handle, log_prefix, test_output))
+            return false;
+
+        load_assembly_bytes_fn load_assembly_bytes = nullptr;
+        hostfxr_delegate_type hdt = hostfxr_delegate_type::hdt_load_assembly_bytes;
+        bool success = get_runtime_delegate(hostfxr, handle, hdt, (void **)&load_assembly_bytes, log_prefix, test_output);
+
+        get_function_pointer_fn get_function_pointer = nullptr;
+        hdt = hostfxr_delegate_type::hdt_get_function_pointer;
+        success &= get_runtime_delegate(hostfxr, handle, hdt, (void **)&get_function_pointer, log_prefix, test_output);
+        if (success)
+        {
+            for (int i = 1; i <= argc - 4; i += 4)
+            {
+                const pal::char_t *assembly_path = argv[i];
+                const pal::char_t *symbols_path = argv[i + 1];
+                success &= call_load_assembly_bytes(load_assembly_bytes, assembly_path, symbols_path, log_prefix, test_output);
+
+                const pal::char_t *type_name = argv[i + 2];
+                const pal::char_t *method_name = argv[i + 3];
+                success &= call_get_function_pointer_flavour(get_function_pointer, type_name, method_name, log_prefix, test_output);
+            }
+        }
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+        return success && rcClose == StatusCode::Success;
+    }
+
     bool component_load_assembly_and_get_function_pointer_test(
         const hostfxr_exports &hostfxr,
         const pal::char_t *config_path,
@@ -476,6 +681,49 @@ namespace
                 success &= call_get_function_pointer_flavour(delegate, type_name, method_name, log_prefix, test_output);
             }
         }
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rcClose << std::endl;
+
+        return success && rcClose == StatusCode::Success;
+    }
+
+    bool get_runtime_delegate_for_active_context_test(
+        const hostfxr_exports &hostfxr,
+        const pal::char_t *config_path,
+        hostfxr_delegate_type delegate_type1,
+        hostfxr_delegate_type delegate_type2,
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        if (!init_for_config(hostfxr, config_path, &handle, log_prefix, test_output))
+            return false;
+
+        void *delegate1 = nullptr;
+        // Check that using get_runtime_delegate with the active host context will fail
+        // due to the runtime not being loaded yet.
+        bool success = get_runtime_delegate(hostfxr, nullptr, delegate_type1, &delegate1, log_prefix, test_output);
+        if (success)
+        {
+            test_output << log_prefix << _X("get_runtime_delegate with active context succeeded unexpectedly.") << std::endl;
+            return false;
+        }
+        if (nullptr != delegate1)
+        {
+            test_output << log_prefix << _X("Unexpectedly got a runtime delegate when get_runtime_delegate failed.") << std::endl;
+            return false;
+        }
+
+        // Successfully get first delegate with a defined handle.
+        success = get_runtime_delegate(hostfxr, handle, delegate_type1, &delegate1, log_prefix, test_output);
+
+        // Testing that using the active host context works for get_runtime_delegate
+        // by passing nullptr for handle parameter. The runtime must be loaded for this to succeed;
+        // the first successful call to get_runtime_delegate with a defined handle ensures that it is loaded.
+        void *delegate2;
+        success &= get_runtime_delegate(hostfxr, nullptr, delegate_type2, &delegate2, log_prefix, test_output);
 
         int rcClose = hostfxr.close(handle);
         if (rcClose != StatusCode::Success)
@@ -704,6 +952,52 @@ bool host_context_test::non_context_mixed(
     return success;
 }
 
+bool host_context_test::component_load_assembly(
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *config_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return component_load_assembly_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::app_load_assembly(
+    const pal::string_t &hostfxr_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return app_load_assembly_test(hostfxr, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::component_load_assembly_bytes(
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *config_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return component_load_assembly_bytes_test(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::app_load_assembly_bytes(
+    const pal::string_t &hostfxr_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return app_load_assembly_bytes_test(hostfxr, argc, argv, config_log_prefix, test_output);
+}
+
 bool host_context_test::component_load_assembly_and_get_function_pointer(
     const pal::string_t &hostfxr_path,
     const pal::char_t *config_path,
@@ -748,4 +1042,14 @@ bool host_context_test::app_get_function_pointer(
     hostfxr_exports hostfxr{ hostfxr_path };
 
     return app_get_function_pointer_test(hostfxr, argc, argv, config_log_prefix, test_output);
+}
+
+bool host_context_test::get_runtime_delegate_for_active_context(
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *config_path,
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return get_runtime_delegate_for_active_context_test(hostfxr, config_path, first_delegate_type, secondary_delegate_type, config_log_prefix, test_output);
 }

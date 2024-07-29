@@ -81,7 +81,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
-        public TarEntryFormat Format { get; private set; }
+        public TarEntryFormat Format { get; }
 
         /// <summary>
         /// Disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
@@ -222,6 +222,7 @@ namespace System.Formats.Tar
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateStreamsSeekability(entry);
             WriteEntryInternal(entry);
         }
 
@@ -270,6 +271,7 @@ namespace System.Formats.Tar
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateStreamsSeekability(entry);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
@@ -372,6 +374,14 @@ namespace System.Formats.Tar
             string? actualEntryName = string.IsNullOrEmpty(entryName) ? Path.GetFileName(fileName) : entryName;
 
             return (fullPath, actualEntryName);
+        }
+
+        private void ValidateStreamsSeekability(TarEntry entry)
+        {
+            if (!_archiveStream.CanSeek && entry._header._dataStream != null && !entry._header._dataStream.CanSeek)
+            {
+                throw new IOException(SR.Format(SR.TarStreamSeekabilityUnsupportedCombination, entry.Name));
+            }
         }
 
         private static void ValidateEntryLinkName(TarEntryType entryType, string? linkName)

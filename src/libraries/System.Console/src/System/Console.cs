@@ -235,16 +235,16 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            return TextWriter.Synchronized(outputStream == Stream.Null ?
-                StreamWriter.Null :
-                new StreamWriter(
+            return outputStream == Stream.Null ?
+                TextWriter.Null :
+                TextWriter.Synchronized(new StreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
                     leaveOpen: true)
-                {
-                    AutoFlush = true
-                });
+                    {
+                        AutoFlush = true
+                    });
         }
 
         private static StrongBox<bool>? _isStdInRedirected;
@@ -406,7 +406,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowWidth));
 
                 ConsolePal.WindowWidth = value;
             }
@@ -426,7 +426,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value, nameof(WindowHeight));
 
                 ConsolePal.WindowHeight = value;
             }
@@ -449,8 +449,8 @@ namespace System
                 throw new IOException(SR.InvalidOperation_SetWindowSize);
             }
 
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width, nameof(width));
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height, nameof(height));
 
             ConsolePal.SetWindowSize(width, height);
         }
@@ -696,7 +696,15 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(newOut);
 
-            newOut = TextWriter.Synchronized(newOut);
+            // Ensure all access to the writer is synchronized. If it's the known Null
+            // singleton writer, which may be used if someone wants to suppress all
+            // console output, we needn't add synchronization because all operations
+            // are nops.
+            if (newOut != TextWriter.Null)
+            {
+                newOut = TextWriter.Synchronized(newOut);
+            }
+
             lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
@@ -708,7 +716,12 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(newError);
 
-            newError = TextWriter.Synchronized(newError);
+            // Ensure all access to the writer is synchronized. See comment in SetOut.
+            if (newError != TextWriter.Null)
+            {
+                newError = TextWriter.Synchronized(newError);
+            }
+
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
@@ -852,6 +865,17 @@ namespace System
                 Out.WriteLine(format, arg);
         }
 
+        /// <summary>
+        /// Writes the text representation of the specified span of objects, followed by the current line terminator, to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.WriteLine(format, arg);
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
@@ -877,6 +901,17 @@ namespace System
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
             else
                 Out.Write(format, arg);
+        }
+
+        /// <summary>
+        /// Writes the text representation of the specified span of objects to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.Write(format, arg);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]

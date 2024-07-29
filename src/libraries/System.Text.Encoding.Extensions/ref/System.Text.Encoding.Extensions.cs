@@ -33,6 +33,8 @@ namespace System.Text
         public override int GetMaxByteCount(int charCount) { throw null; }
         public override int GetMaxCharCount(int byteCount) { throw null; }
         public override string GetString(byte[] bytes, int byteIndex, int byteCount) { throw null; }
+        public override bool TryGetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
+        public override bool TryGetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten) { throw null; }
     }
     public partial class UnicodeEncoding : System.Text.Encoding
     {
@@ -153,5 +155,7 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount) { throw null; }
         public override byte[] GetPreamble() { throw null; }
         public override string GetString(byte[] bytes, int index, int count) { throw null; }
+        public override bool TryGetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
+        public override bool TryGetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten) { throw null; }
     }
 }

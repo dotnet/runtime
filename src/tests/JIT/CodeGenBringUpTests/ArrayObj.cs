@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class BringUpTest_ArrayObj
 {
@@ -27,7 +28,8 @@ public class BringUpTest_ArrayObj
         return a[i].field;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (ArrayObj(1) != 1) return Fail;
         return Pass;

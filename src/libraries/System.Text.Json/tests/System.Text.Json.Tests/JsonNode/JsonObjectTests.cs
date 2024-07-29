@@ -105,20 +105,20 @@ namespace System.Text.Json.Nodes.Tests
 
             var jObject = new JsonObject();
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Add(null, 42));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject[null] = 42);
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.ContainsKey(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Remove(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             var iDictionary = (IDictionary<string, JsonNode?>)jObject;
             ex = Assert.Throws<ArgumentNullException>(() => iDictionary.TryGetValue(null, out JsonNode _));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
         }
 
         [Fact]
@@ -291,7 +291,7 @@ namespace System.Text.Json.Nodes.Tests
             const string Json = "{\"myProperty\":42}";
 
             var options = new JsonSerializerOptions();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             JsonObject obj = JsonSerializer.Deserialize<JsonObject>(Json, options);
             string json = obj.ToJsonString();
@@ -565,7 +565,7 @@ namespace System.Text.Json.Nodes.Tests
             var jObject = new JsonObject();
             jObject.Add("Prop", jValue);
             ArgumentException ex = Assert.Throws<ArgumentException>(() => jObject.Add("Prop", jValue));
-            Assert.Contains("Prop", ex.ToString());
+            Assert.Contains("Prop", ex.Message);
         }
 
         [Fact]
@@ -811,7 +811,7 @@ namespace System.Text.Json.Nodes.Tests
             // Exception string sample: "Collection was modified; enumeration operation may not execute"
             Assert.Throws<InvalidOperationException>(() =>
             {
-                foreach(KeyValuePair<string, JsonNode?> node in jObject)
+                foreach (KeyValuePair<string, JsonNode?> node in jObject)
                 {
                     index++;
                     jObject.Add("New_A", index);
@@ -925,10 +925,10 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void TestJsonNodeOptionsSet()
         {
-	        var options = new JsonNodeOptions()
-	        {
-	            PropertyNameCaseInsensitive = true
-	        };
+            var options = new JsonNodeOptions()
+            {
+                PropertyNameCaseInsensitive = true
+            };
 
             // Ctor that takes just options
             var obj1 = new JsonObject(options);
@@ -939,7 +939,7 @@ namespace System.Text.Json.Nodes.Tests
             {
                 new KeyValuePair<string, JsonNode?>("Hello", "World")
             };
-	        var obj2 = new JsonObject(props, options);
+            var obj2 = new JsonObject(props, options);
 
             // Create method
             using JsonDocument doc = JsonDocument.Parse(@"{""Hello"":""World""}");
@@ -968,6 +968,639 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal(0, (int)jObj["prop0"]);
                 Assert.Equal(1, (int)jObj["prop1"]);
             });
+        }
+
+        [Fact]
+        public static void DeepClone()
+        {
+            var array = new JsonArray();
+            array.Add(5);
+            array.Add(7);
+            var nestedJsonObj = new JsonObject()
+            {
+                { "Ten", 10 },
+                { "Name", "xyz"}
+            };
+
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+            jObject["String"] = "ABC";
+            jObject["True"] = true;
+            jObject["False"] = false;
+            jObject["Null"] = null;
+            jObject["value"] = JsonValue.Create(10);
+            jObject["array"] = array;
+            jObject["object"] = nestedJsonObj;
+
+            var clone = jObject.DeepClone().AsObject();
+
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
+
+            Assert.Equal(jObject.Count, clone.Count);
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal(2, clone["Two"].GetValue<int>());
+            Assert.Equal("ABC", clone["String"].GetValue<string>());
+            Assert.True(clone["True"].GetValue<bool>());
+            Assert.False(clone["False"].GetValue<bool>());
+            Assert.Null(clone["Null"]);
+            Assert.Equal(10, clone["value"].GetValue<int>());
+
+            JsonArray clonedArray = clone["array"].AsArray();
+            Assert.Equal(array.Count, clonedArray.Count);
+            Assert.Equal(5, clonedArray[0].GetValue<int>());
+            Assert.Equal(7, clonedArray[1].GetValue<int>());
+
+            JsonObject clonedNestedJObject = clone["object"].AsObject();
+            Assert.Equal(nestedJsonObj.Count, clonedNestedJObject.Count);
+            Assert.Equal(10, clonedNestedJObject["Ten"].GetValue<int>());
+            Assert.Equal("xyz", clonedNestedJObject["Name"].GetValue<string>());
+
+            string originalJson = jObject.ToJsonString();
+            string clonedJson = clone.ToJsonString();
+
+            Assert.Equal(originalJson, clonedJson);
+        }
+
+        [Fact]
+        public static void DeepClone_FromElement()
+        {
+            JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+            var clone = jObject.DeepClone().AsObject();
+
+            JsonNodeTests.AssertDeepEqual(jObject, clone);
+            Assert.Equal(1, clone["One"].GetValue<int>());
+            Assert.Equal("abc", clone["String"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void DeepEquals()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+
+            var sameJObject = new JsonObject();
+            sameJObject["One"] = 1;
+            sameJObject["array"] = new JsonArray() { "a", "b" };
+
+            JsonNodeTests.AssertDeepEqual(jObject, sameJObject);
+            JsonNodeTests.AssertNotDeepEqual(jObject, null);
+
+            var diffJObject = new JsonObject();
+            diffJObject["One"] = 3;
+
+            JsonNodeTests.AssertNotDeepEqual(diffJObject, jObject);
+        }
+
+        [Fact]
+        public static void DeepEquals_JsonObject_With_JsonValuePOCO()
+        {
+            var jObject = new JsonObject();
+            jObject["Id"] = 1;
+            jObject["Name"] = "First";
+            var nestedObject = new JsonObject();
+            nestedObject["Id"] = 2;
+            nestedObject["Name"] = "Last";
+            nestedObject["NestedObject"] = null;
+            jObject["NestedObject"] = nestedObject;
+
+            var poco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 2,
+                    Name = "Last",
+                }
+            };
+
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(poco));
+
+            var diffPoco = new SimpleClass()
+            {
+                Id = 1,
+                Name = "First",
+                NestedObject = new SimpleClass()
+                {
+                    Id = 3,
+                    Name = "Last",
+                }
+            };
+
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffPoco));
+        }
+
+        [Fact]
+        public static void DeepEquals_JsonObject_With_Dictionary()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["array"] = new JsonArray() { "a", "b" };
+            jObject["obj"] = new JsonObject();
+
+            var dictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "b" } },
+                { "obj", new { } }
+            };
+
+            JsonNodeTests.AssertDeepEqual(jObject, JsonValue.Create(dictionary));
+
+            var diffDictionary = new Dictionary<string, object>()
+            {
+                { "One", 1 },
+                { "array", new string[] { "a", "d" } },
+                { "obj", new { } }
+            };
+
+            JsonNodeTests.AssertNotDeepEqual(jObject, JsonValue.Create(diffDictionary));
+        }
+
+        private class SimpleClass
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+
+            public SimpleClass? NestedObject { get; set; }
+        }
+
+        [Fact]
+        public static void DeepEqualFromElement()
+        {
+            using JsonDocument document = JsonDocument.Parse("{\"One\": 1, \"String\": \"abc\"}");
+            JsonObject jObject = JsonObject.Create(document.RootElement);
+
+            using JsonDocument document2 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc\"}   ");
+            JsonObject jObject2 = JsonObject.Create(document2.RootElement);
+            JsonNodeTests.AssertDeepEqual(jObject, jObject2);
+
+            using JsonDocument document3 = JsonDocument.Parse("{\"One\": 3, \"String\": \"abc\"}");
+            JsonObject jObject3 = JsonObject.Create(document3.RootElement);
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject3);
+
+            using JsonDocument document4 = JsonDocument.Parse("{\"One\":     1, \"String\":     \"abc2\"}   ");
+            JsonObject jObject4 = JsonObject.Create(document4.RootElement);
+            JsonNodeTests.AssertNotDeepEqual(jObject, jObject4);
+        }
+
+        [Fact]
+        public static void UpdateClonedObjectNotAffectOriginal()
+        {
+            var jObject = new JsonObject();
+            jObject["One"] = 1;
+            jObject["Two"] = 2;
+
+            var clone = jObject.DeepClone().AsObject();
+            clone["One"] = 3;
+
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Object, new JsonObject().GetValueKind());
+        }
+
+        [Fact]
+        public static void GetPropertyName()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject.Add("value", jValue);
+
+            Assert.Equal("value", jValue.GetPropertyName());
+            Assert.Equal("value", jObject["value"].GetPropertyName());
+        }
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            var jObject = new JsonObject();
+            var jValue = JsonValue.Create(10);
+            jObject["value"] = jValue;
+            jObject["value"].ReplaceWith(5);
+
+            Assert.Null(jValue.Parent);
+            Assert.Equal("{\"value\":5}", jObject.ToJsonString());
+        }
+
+        // List-based APIs
+
+        [Fact]
+        public static void IntIndexer_Getter_ReturnsExpectedProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            JsonNode? value;
+            value = jObject[0];
+            Assert.Equal(1, value.GetValue<int>());
+
+            value = jObject[1];
+            Assert.Equal("str", value.GetValue<string>());
+
+            value = jObject[2];
+            Assert.Null(value);
+        }
+
+        [Fact]
+        public static void IntIndexer_Setter_UpdatesProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Null(jObject["Three"]);
+            Assert.Equal(3, jObject.Count);
+
+            jObject[2] = -5;
+
+            Assert.Equal(-5, jObject["Three"].GetValue<int>());
+            Assert.Equal(3, jObject.Count);
+        }
+
+        [Fact]
+        public static void IntIndexer_ArgumentOutOfRange_ThrowsException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject[jObject.Count]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject[-1] = 42);
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject[jObject.Count] = 42);
+        }
+
+        [Fact]
+        public static void GetAt_ReturnsExpectedProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            KeyValuePair<string, JsonNode?> kvp;
+            kvp = jObject.GetAt(0);
+            Assert.Equal("One", kvp.Key);
+            Assert.Equal(1, kvp.Value.GetValue<int>());
+
+            kvp = jObject.GetAt(1);
+            Assert.Equal("Two", kvp.Key);
+            Assert.Equal("str", kvp.Value.GetValue<string>());
+
+            kvp = jObject.GetAt(2);
+            Assert.Equal("Three", kvp.Key);
+            Assert.Null(kvp.Value);
+        }
+
+        [Fact]
+        public static void GetAt_InvalidArgument_ThrowsArgumentOutOfRangeException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.GetAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.GetAt(jObject.Count));
+        }
+
+        [Fact]
+        public static void SetAt_UpdatesProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Null(jObject["Three"]);
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, -5);
+
+            Assert.Equal(-5, jObject["Three"].GetValue<int>());
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, "Three", -33);
+
+            Assert.Equal(-33, jObject["Three"].GetValue<int>());
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, "Four", "str");
+
+            Assert.Equal(3, jObject.Count);
+            Assert.DoesNotContain("Three", jObject);
+            Assert.Contains("Four", jObject);
+            Assert.Equal("str", jObject["Four"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void SetAt_CaseInsensitive_UpdatesProperty()
+        {
+            JsonObject jObject = new(new() { PropertyNameCaseInsensitive = true })
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Null(jObject["three"]);
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, -5);
+
+            Assert.Equal(-5, jObject["three"].GetValue<int>());
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, "THREE", -33);
+
+            Assert.Equal(-33, jObject["ThRee"].GetValue<int>());
+            Assert.Equal(3, jObject.Count);
+
+            jObject.SetAt(2, "Four", "str");
+
+            Assert.Equal(3, jObject.Count);
+            Assert.DoesNotContain("Three", jObject);
+            Assert.Contains("FOUR", jObject);
+            Assert.Equal("str", jObject["FoUR"].GetValue<string>());
+        }
+
+        [Fact]
+        public static void SetAt_InvalidArgument_ThrowsArgumentOutOfRangeException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            // Throws exception if the property name is null.
+            Assert.Throws<ArgumentNullException>(() => jObject.SetAt(2, propertyName: null, 5));
+
+            // Throws exception if the index is out of range.
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.SetAt(-1, "Four", 5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.SetAt(jObject.Count, "Four", 5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.SetAt(-1, 5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.SetAt(jObject.Count, 5));
+
+            // Throws exception if the key exists at a different position.
+            Assert.Throws<ArgumentException>(() => jObject.SetAt(2, "One", "str"));
+        }
+
+        [Fact]
+        public static void IndexOf_ReturnsExpectedIndex()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Equal(0, jObject.IndexOf("One"));
+            Assert.Equal(1, jObject.IndexOf("Two"));
+            Assert.Equal(2, jObject.IndexOf("Three"));
+
+            Assert.Equal(-1, jObject.IndexOf("Four"));
+            Assert.Equal(-1, jObject.IndexOf("three"));
+        }
+
+        [Fact]
+        public static void IndexOf_CaseInsensitive_ReturnsExpectedIndex()
+        {
+            JsonObject jObject = new(new() { PropertyNameCaseInsensitive = true })
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Equal(0, jObject.IndexOf("One"));
+            Assert.Equal(1, jObject.IndexOf("Two"));
+            Assert.Equal(2, jObject.IndexOf("Three"));
+
+            Assert.Equal(0, jObject.IndexOf("onE"));
+            Assert.Equal(1, jObject.IndexOf("tWo"));
+            Assert.Equal(2, jObject.IndexOf("THREE"));
+
+            Assert.Equal(-1, jObject.IndexOf("Four"));
+        }
+
+        [Fact]
+        public static void IndexOf_NullPropertyName_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentNullException>(() => jObject.IndexOf(propertyName: null));
+        }
+
+        [Fact]
+        public static void Insert_InsertsProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["Two"] = "str",
+            };
+
+            Assert.Equal(1, jObject.Count);
+
+            jObject.Insert(0, "One", 1);
+
+            Assert.Equal(2, jObject.Count);
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+            Assert.Equal("str", jObject["Two"].GetValue<string>());
+            Assert.Equal(0, jObject.IndexOf("One"));
+            Assert.Equal(1, jObject.IndexOf("Two"));
+
+            jObject.Insert(1, "Three", null);
+
+            Assert.Equal(3, jObject.Count);
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+            Assert.Null(jObject["Three"]);
+            Assert.Equal("str", jObject["Two"].GetValue<string>());
+            Assert.Equal(0, jObject.IndexOf("One"));
+            Assert.Equal(1, jObject.IndexOf("Three"));
+            Assert.Equal(2, jObject.IndexOf("Two"));
+
+            jObject.Insert(jObject.Count, "Four", 4);
+
+            Assert.Equal(4, jObject.Count);
+            Assert.Equal(1, jObject["One"].GetValue<int>());
+            Assert.Null(jObject["Three"]);
+            Assert.Equal("str", jObject["Two"].GetValue<string>());
+            Assert.Equal(4, jObject["Four"].GetValue<int>());
+            Assert.Equal(0, jObject.IndexOf("One"));
+            Assert.Equal(1, jObject.IndexOf("Three"));
+            Assert.Equal(2, jObject.IndexOf("Two"));
+            Assert.Equal(3, jObject.IndexOf("Four"));
+        }
+
+        [Fact]
+        public static void Insert_ExistingKey_ThrowsArgumentException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Equal(3, jObject.Count);
+
+            Assert.Throws<ArgumentException>(() => jObject.Insert(1, "Three", 3));
+
+            Assert.Equal(3, jObject.Count);
+        }
+
+        [Fact]
+        public static void Insert_NullKey_ThrowsArgumentNullException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Equal(3, jObject.Count);
+
+            Assert.Throws<ArgumentNullException>(() => jObject.Insert(1, propertyName: null, 3));
+
+            Assert.Equal(3, jObject.Count);
+        }
+
+        [Fact]
+        public static void Insert_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Equal(3, jObject.Count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.Insert(-1, "Four", 4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.Insert(jObject.Count + 1, "Four", 4));
+
+            Assert.Equal(3, jObject.Count);
+        }
+
+        [Fact]
+        public static void RemoveAt_RemovesProperty()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            jObject.RemoveAt(1);
+
+            Assert.Equal(2, jObject.Count);
+            Assert.Contains("One", jObject);
+            Assert.DoesNotContain("Two", jObject);
+            Assert.Contains("Three", jObject);
+
+            jObject.RemoveAt(1);
+
+            Assert.Equal(1, jObject.Count);
+            Assert.Contains("One", jObject);
+            Assert.DoesNotContain("Two", jObject);
+            Assert.DoesNotContain("Three", jObject);
+
+            jObject.RemoveAt(0);
+
+            Assert.Empty(jObject);
+            Assert.DoesNotContain("One", jObject);
+            Assert.DoesNotContain("Two", jObject);
+            Assert.DoesNotContain("Three", jObject);
+        }
+
+        [Fact]
+        public static void RemoveAt_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.RemoveAt(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => jObject.RemoveAt(jObject.Count));
+        }
+
+        [Fact]
+        public static void JsonObject_IsIList()
+        {
+            JsonObject jObject = new()
+            {
+                ["One"] = 1,
+                ["Two"] = "str",
+                ["Three"] = null,
+            };
+
+            IList<KeyValuePair<string, JsonNode?>> ilist = Assert.IsAssignableFrom<IList<KeyValuePair<string, JsonNode?>>>(jObject);
+
+            // Indexer getter
+            KeyValuePair<string, JsonNode?> kvp = ilist[1];
+            Assert.Equal("Two", kvp.Key);
+            Assert.Equal("str", kvp.Value.GetValue<string>());
+
+            // Indexer setter
+            kvp = new("Four", 4);
+            ilist[1] = kvp;
+            Assert.Contains(kvp, ilist);
+            Assert.DoesNotContain("Two", jObject);
+            Assert.Contains("Four", jObject);
+
+            // IndexOf
+            Assert.Equal(1, ilist.IndexOf(kvp));
+            Assert.Equal(-1, ilist.IndexOf(new("Four", 4))); // Different JsonNode instance
+
+            // Insert
+            ilist.Insert(1, new("Two", "str"));
+            Assert.Equal(4, ilist.Count);
+            Assert.Contains("Two", jObject);
+            Assert.Equal(1, jObject.IndexOf("Two"));
+
+            // RemoveAt
+            ilist.RemoveAt(1);
+            Assert.Equal(3, ilist.Count);
+            Assert.DoesNotContain("Two", jObject);
+            Assert.Equal(-1, jObject.IndexOf("Two"));
         }
     }
 }

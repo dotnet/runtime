@@ -3,34 +3,21 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  platform: ''
-  pgoType: ''
-  runtimeVariant: ''
-  uploadTests: false
-  testFilter: tree nativeaot
-  runSingleFileTests: true
+  testBuildArgs: ''
+  helixQueues: ''
+  liveLibrariesBuildConfig: ''
 
 steps:
-# Can't run arm/arm64 tests on x64 build machines
-- ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
-
-  # Build coreclr native test output
-  - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:BuildNativeAotFrameworkObjects=true
-      displayName: Build tests
-  - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} '${{ parameters.testFilter }}'
-      displayName: Build tests
-
-  - ${{ if eq(parameters.runSingleFileTests, true) }}:
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
-        displayName: Run tests in single file mode
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
-        displayName: Run tests in single file mode
-
-  # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
-  - ${{ if eq(parameters.buildConfig, 'release') }}:
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
-      displayName: Run NativeAot Library Tests
+  # Build coreclr native test output and send to helix
+  - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      runtimeFlavor: coreclr
+      runtimeVariant: ''
+      testBuildArgs: ${{ parameters.testBuildArgs }}
+      nativeAotTest: true
+      helixQueues: ${{ parameters.helixQueues }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}

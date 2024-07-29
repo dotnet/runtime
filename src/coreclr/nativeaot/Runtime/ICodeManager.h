@@ -65,7 +65,28 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
     return returnKind;
 }
 
-#elif defined(TARGET_AMD64) 
+#elif defined(TARGET_LOONGARCH64)
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_R4_IS_GCREF == ((uint64_t)GCRK_Object << 32));
+C_ASSERT(PTFF_R4_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
+C_ASSERT(PTFF_R5_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_R5_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_R4_IS_GCREF | PTFF_R4_IS_BYREF | PTFF_R5_IS_GCREF | PTFF_R5_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_R4) && (transFrameFlags & PTFF_SAVE_R5)));
+    return returnKind;
+}
+
+#elif defined(TARGET_AMD64)
 
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
 C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
@@ -88,6 +109,46 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 #else
     ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
 #endif
+    return returnKind;
+}
+
+#elif defined(TARGET_X86)
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
+C_ASSERT(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
+
+inline uintptr_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uintptr_t)returnKind << 16);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uintptr_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF)) >> 16);
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
+    return returnKind;
+}
+
+#elif defined(TARGET_ARM)
+
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_R0_IS_GCREF == ((uint64_t)GCRK_Object << 14));
+C_ASSERT(PTFF_R0_IS_BYREF == ((uint64_t)GCRK_Byref << 14));
+
+inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 14);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_R0_IS_GCREF | PTFF_R0_IS_BYREF)) >> 14);
+    ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_R0));
     return returnKind;
 }
 
@@ -157,12 +218,23 @@ enum class ClasslibFunctionId
     ObjectiveCMarshalTryGetTaggedMemory = 10,
     ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
     ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
+    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
 };
 
 enum class AssociatedDataFlags : unsigned char
 {
     None = 0,
     HasUnboxingStubTarget = 1,
+};
+
+enum UnwindStackFrameFlags
+{
+    USFF_None = 0,
+    // If this is a reverse P/Invoke frame, do not continue the unwind
+    // after extracting the saved transition frame.
+    USFF_StopUnwindOnTransitionFrame = 1,
+    // Registers not containing GC roots can be omitted.
+    USFF_GcUnwind = 2,
 };
 
 class ICodeManager
@@ -178,6 +250,11 @@ public:
     virtual PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                                      REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
 
+#ifdef TARGET_X86
+    virtual uintptr_t GetResumeSp(MethodInfo *   pMethodInfo,
+                                  REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
+#endif
+
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
@@ -185,6 +262,7 @@ public:
                             bool            isActiveStackFrame) PURE_VIRTUAL
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                                  uint32_t        flags,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
                                   PInvokeTransitionFrame**      ppPreviousTransitionFrame) PURE_VIRTUAL   // out
 

@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -66,30 +65,35 @@ namespace System.Net.Test.Common
             _cert.Dispose();
         }
 
-        private async Task<Http3LoopbackConnection> EstablishHttp3ConnectionAsync()
+        private async Task<Http3LoopbackConnection> EstablishHttp3ConnectionAsync(params SettingsEntry[] settingsEntries)
         {
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
             Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
 
-            await connection.EstablishControlStreamAsync();
+            await connection.EstablishControlStreamAsync(settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
         public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
         {
-            return await EstablishHttp3ConnectionAsync();
+            return await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
+        }
+
+        public Task<Http3LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
+        {
+            return EstablishHttp3ConnectionAsync(settingsEntries);
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
             await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             await funcAsync(con).ConfigureAwait(false);
-            await con.ShutdownAsync();
+            await con.ShutdownAsync().ConfigureAwait(false);
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            await using Http3LoopbackConnection con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
@@ -105,10 +109,10 @@ namespace System.Net.Test.Common
             return new Http3LoopbackServer(CreateOptions(options));
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = LoopbackServerTimeoutMilliseconds, GenericLoopbackOptions options = null)
         {
             using GenericLoopbackServer server = CreateServer(options);
-            await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
+            await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout)).ConfigureAwait(false);
         }
 
         public override Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)

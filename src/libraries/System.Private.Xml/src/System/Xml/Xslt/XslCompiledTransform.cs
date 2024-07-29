@@ -35,6 +35,7 @@ namespace System.Xml.Xsl
     //      results, resultsFile        - cannot be null
     //----------------------------------------------------------------------------------------------------
 
+    [RequiresDynamicCode("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed class XslCompiledTransform
     {
         // Version for GeneratedCodeAttribute
@@ -228,7 +229,7 @@ namespace System.Xml.Xsl
 
             Delegate delExec = executeMethod is DynamicMethod dm
                 ? dm.CreateDelegate(typeof(ExecuteDelegate))
-                : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
+                : executeMethod.CreateDelegate<ExecuteDelegate>();
 
             _command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
             OutputSettings = _command.StaticData.DefaultWriterSettings;
@@ -405,7 +406,7 @@ namespace System.Xml.Xsl
         {
             if (LocalAppContextSwitches.AllowDefaultResolver)
             {
-                return new XmlUrlResolver();
+                return XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return XmlResolver.ThrowingResolver;

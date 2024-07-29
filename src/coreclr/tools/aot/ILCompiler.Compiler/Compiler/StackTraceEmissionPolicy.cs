@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -10,14 +11,14 @@ namespace ILCompiler
     /// </summary>
     public abstract class StackTraceEmissionPolicy
     {
-        public abstract bool ShouldIncludeMethod(MethodDesc method);
+        public abstract MethodStackTraceVisibilityFlags GetMethodVisibility(MethodDesc method);
     }
 
     public class NoStackTraceEmissionPolicy : StackTraceEmissionPolicy
     {
-        public override bool ShouldIncludeMethod(MethodDesc method)
+        public override MethodStackTraceVisibilityFlags GetMethodVisibility(MethodDesc method)
         {
-            return false;
+            return default;
         }
     }
 
@@ -27,9 +28,26 @@ namespace ILCompiler
     /// </summary>
     public class EcmaMethodStackTraceEmissionPolicy : StackTraceEmissionPolicy
     {
-        public override bool ShouldIncludeMethod(MethodDesc method)
+        public override MethodStackTraceVisibilityFlags GetMethodVisibility(MethodDesc method)
         {
-            return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod;
+            MethodStackTraceVisibilityFlags result = 0;
+
+            if (method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
+                || (method.OwningType is MetadataType mdType && mdType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")))
+            {
+                result |= MethodStackTraceVisibilityFlags.IsHidden;
+            }
+
+            return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod
+                ? result | MethodStackTraceVisibilityFlags.HasMetadata
+                : result;
         }
+    }
+
+    [Flags]
+    public enum MethodStackTraceVisibilityFlags
+    {
+        HasMetadata = 0x1,
+        IsHidden = 0x2,
     }
 }

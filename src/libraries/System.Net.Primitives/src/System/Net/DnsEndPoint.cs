@@ -18,10 +18,8 @@ namespace System.Net
         {
             ArgumentException.ThrowIfNullOrEmpty(host);
 
-            if (port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(port, IPEndPoint.MinPort);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(port, IPEndPoint.MaxPort);
 
             if (addressFamily != AddressFamily.InterNetwork &&
                 addressFamily != AddressFamily.InterNetworkV6 &&
@@ -35,52 +33,24 @@ namespace System.Net
             _family = addressFamily;
         }
 
-        public override bool Equals([NotNullWhen(true)] object? comparand)
-        {
-            DnsEndPoint? dnsComparand = comparand as DnsEndPoint;
+        public override bool Equals([NotNullWhen(true)] object? comparand) =>
+            comparand is DnsEndPoint dnsComparand &&
+            _family == dnsComparand._family &&
+            _port == dnsComparand._port &&
+            StringComparer.OrdinalIgnoreCase.Equals(_host, dnsComparand._host);
 
-            if (dnsComparand == null)
-            {
-                return false;
-            }
+        public override int GetHashCode() =>
+            HashCode.Combine(
+                (int)_family,
+                _port,
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_host));
 
-            return (_family == dnsComparand._family &&
-                    _port == dnsComparand._port &&
-                    _host == dnsComparand._host);
-        }
+        public override string ToString() => $"{_family}/{_host}:{_port}";
 
-        public override int GetHashCode()
-        {
-            return StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
-        }
+        public string Host => _host;
 
-        public override string ToString()
-        {
-            return _family + "/" + _host + ":" + _port;
-        }
+        public override AddressFamily AddressFamily => _family;
 
-        public string Host
-        {
-            get
-            {
-                return _host;
-            }
-        }
-
-        public override AddressFamily AddressFamily
-        {
-            get
-            {
-                return _family;
-            }
-        }
-
-        public int Port
-        {
-            get
-            {
-                return _port;
-            }
-        }
+        public int Port => _port;
     }
 }

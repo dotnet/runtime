@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'hanoi2' // as "hanoi"
+.assembly ASSEMBLY_NAME // as "hanoi"
 {
 }
 .assembly extern xunit.core {}

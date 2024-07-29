@@ -148,7 +148,7 @@ DumpWriter::WriteDump()
     // Write all the thread's state and registers
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
-        if (!WriteThread(*thread, SIGABRT)) {
+        if (!WriteThread(*thread)) {
             return false;
         }
     }
@@ -176,28 +176,37 @@ DumpWriter::WriteDump()
         size_t size = memoryRegion.Size();
         total += size;
 
-        while (size > 0)
+        if (address == SpecialDiagInfoAddress)
         {
-            size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
-            size_t read = 0;
-
-            if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+            if (!WriteDiagInfo(size)) {
                 return false;
             }
+        }
+        else
+        {
+            while (size > 0)
+            {
+                size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
+                size_t read = 0;
 
-            // This can happen if the target process dies before createdump is finished
-            if (read == 0) {
-                printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
-                return false;
+                if (!m_crashInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+                    return false;
+                }
+
+                // This can happen if the target process dies before createdump is finished
+                if (read == 0) {
+                    printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+                    return false;
+                }
+
+                if (!WriteData(m_tempBuffer, read)) {
+                    return false;
+                }
+
+                address += read;
+                size -= read;
             }
-
-            if (!WriteData(m_tempBuffer, read)) {
-                return false;
-            }
-
-            address += read;
-            size -= read;
         }
     }
 
@@ -281,7 +290,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
     size += count;
 
     // File name storage needed
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings()) {
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings()) {
         size += image.FileName().length();
     }
     // Notes must end on 4 byte alignment
@@ -329,7 +338,7 @@ DumpWriter::WriteNTFileInfo()
         return false;
     }
 
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
     {
         struct NTFileEntry entry { (unsigned long)image.StartAddress(), (unsigned long)image.EndAddress(), (unsigned long)(image.Offset() / pageSize) };
         if (!WriteData(&entry, sizeof(entry))) {
@@ -337,7 +346,7 @@ DumpWriter::WriteNTFileInfo()
         }
     }
 
-    for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
     {
         if (!WriteData(image.FileName().c_str(), image.FileName().length()) ||
             !WriteData("\0", 1)) {
@@ -358,13 +367,20 @@ DumpWriter::WriteNTFileInfo()
 }
 
 bool
-DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
+DumpWriter::WriteThread(const ThreadInfo& thread)
 {
     prstatus_t pr;
     memset(&pr, 0, sizeof(pr));
+    const siginfo_t* siginfo = nullptr;
 
-    pr.pr_info.si_signo = fatal_signal;
-    pr.pr_cursig = fatal_signal;
+    if (m_crashInfo.Signal() != 0 && thread.IsCrashThread())
+    {
+        siginfo = m_crashInfo.SigInfo();
+        pr.pr_info.si_signo = siginfo->si_signo;
+        pr.pr_info.si_code = siginfo->si_code;
+        pr.pr_info.si_errno = siginfo->si_errno;
+        pr.pr_cursig = siginfo->si_signo;
+    }
     pr.pr_pid = thread.Tid();
     pr.pr_ppid = thread.Ppid();
     pr.pr_pgrp = thread.Tgid();
@@ -395,9 +411,8 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
         return false;
     }
 
-    nhdr.n_namesz = 6;
-
 #if defined(__i386__)
+    nhdr.n_namesz = 6;
     nhdr.n_descsz = sizeof(user_fpxregs_struct);
     nhdr.n_type = NT_PRXFPREG;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
@@ -408,6 +423,7 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
 #endif
 
 #if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    nhdr.n_namesz = 6;
     nhdr.n_descsz = sizeof(user_vfpregs_struct);
     nhdr.n_type = NT_ARM_VFP;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
@@ -417,5 +433,19 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
     }
 #endif
 
+    if (siginfo != nullptr)
+    {
+        TRACE("Writing NT_SIGINFO tid %04x signo %d (%04x) code %04x errno %04x addr %p\n",
+            thread.Tid(), siginfo->si_signo, siginfo->si_signo, siginfo->si_code, siginfo->si_errno, siginfo->si_addr);
+
+        nhdr.n_namesz = 5;
+        nhdr.n_descsz = sizeof(siginfo_t);
+        nhdr.n_type = NT_SIGINFO;
+        if (!WriteData(&nhdr, sizeof(nhdr)) ||
+            !WriteData("CORE\0SIG", 8) ||
+            !WriteData(siginfo, sizeof(siginfo_t))) {
+            return false;
+        }
+    }
     return true;
 }

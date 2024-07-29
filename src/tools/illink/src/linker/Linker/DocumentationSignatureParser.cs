@@ -24,7 +24,7 @@ namespace Mono.Linker
 	/// This API instead works with the Cecil OM. It can be used to refer to IL definitions
 	/// where the signature of a member can contain references to instantiated generics.
 	///
-	public static class DocumentationSignatureParser
+	internal static class DocumentationSignatureParser
 	{
 		[Flags]
 		public enum MemberType
@@ -147,7 +147,7 @@ namespace Mono.Linker
 				(name, arity) = ParseTypeOrNamespaceName (id, ref index, nameBuilder);
 				// if we are at the end of the dotted name and still haven't resolved it to
 				// a type, there are no results.
-				if (String.IsNullOrEmpty (name))
+				if (string.IsNullOrEmpty (name))
 					return;
 
 				// no more dots, so don't loop any more
@@ -161,7 +161,7 @@ namespace Mono.Linker
 				var typeOrNamespaceName = nameBuilder.ToString ();
 				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results, resolver);
 				Debug.Assert (results.Count <= 1);
-				if (results.Any ()) {
+				if (results.Count > 0) {
 					// the name resolved to a type
 					var result = results.Single ();
 					Debug.Assert (result is TypeDefinition);
@@ -376,7 +376,7 @@ namespace Mono.Linker
 			// loop for dotted names
 			while (true) {
 				var name = ParseName (id, ref index);
-				if (String.IsNullOrEmpty (name))
+				if (string.IsNullOrEmpty (name))
 					return;
 
 				nameBuilder.Append (name);
@@ -505,7 +505,7 @@ namespace Mono.Linker
 				return;
 
 			foreach (var nestedType in declaringType.NestedTypes) {
-				Debug.Assert (String.IsNullOrEmpty (nestedType.Namespace));
+				Debug.Assert (string.IsNullOrEmpty (nestedType.Namespace));
 				if (nestedType.Name != name)
 					continue;
 

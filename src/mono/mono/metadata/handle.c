@@ -246,36 +246,6 @@ mono_handle_stack_free (HandleStack *stack)
 	free_handle_stack (stack);
 }
 
-void
-mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
-{
-	/* Called by the GC while clearing out objects of the given domain from the heap. */
-	/* If there are no handles-related bugs, there is nothing to do: if a
-	 * thread accessed objects from the domain it was aborted, so any
-	 * threads left alive cannot have any handles that point into the
-	 * unloading domain.  However if there is a handle leak, the handle stack is not */
-	if (!stack)
-		return;
-	/* Root domain only unloaded when mono is shutting down, don't need to check anything */
-	if (domain == mono_get_root_domain () || mono_runtime_is_shutting_down ())
-		return;
-	HandleChunk *cur = stack->bottom;
-	HandleChunk *last = stack->top;
-	if (!cur)
-		return;
-	while (cur) {
-		for (int idx = 0; idx < cur->size; ++idx) {
-			HandleChunkElem *elem = &cur->elems[idx];
-			if (!elem->o)
-				continue;
-			g_assert (mono_object_domain (elem->o) != domain);
-		}
-		if (cur == last)
-			break;
-		cur = cur->next;
-	}
-}
-
 static void
 check_handle_stack_monotonic (HandleStack *stack)
 {

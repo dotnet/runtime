@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.Caching.Configuration;
-using System.Runtime.Caching.Resources;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Caching.Configuration;
+using System.Runtime.Caching.Resources;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
-using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -40,7 +40,8 @@ namespace System.Runtime.Caching
         private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
-#if NETCOREAPP
+        private int _inUnhandledExceptionHandler;
+#if NET
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else
@@ -238,14 +239,19 @@ namespace System.Runtime.Caching
             Dispose();
         }
 
+        internal bool InUnhandledExceptionHandler => _inUnhandledExceptionHandler > 0;
         private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
         {
+            Interlocked.Increment(ref _inUnhandledExceptionHandler);
+
             // if the CLR is terminating, dispose the cache.
             // This will dispose the perf counters
             if (eventArgs.IsTerminating)
             {
                 Dispose();
             }
+
+            Interlocked.Decrement(ref _inUnhandledExceptionHandler);
         }
 
         private static void ValidatePolicy(CacheItemPolicy policy)

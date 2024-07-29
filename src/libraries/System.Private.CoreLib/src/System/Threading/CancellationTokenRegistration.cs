@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.Threading
 {
     /// <summary>
-    /// Represents a callback delegate that has been registered with a <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+    /// Represents a callback delegate that has been registered with a <see cref="CancellationToken">CancellationToken</see>.
     /// </summary>
     /// <remarks>
     /// To unregister a callback, dispose the corresponding Registration instance.
@@ -25,7 +25,7 @@ namespace System.Threading
 
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+        /// <see cref="CancellationToken">CancellationToken</see>.
         /// If the target callback is currently executing, this method will wait until it completes, except
         /// in the degenerate cases where a callback method unregisters itself.
         /// </summary>
@@ -61,7 +61,7 @@ namespace System.Threading
 
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+        /// <see cref="CancellationToken">CancellationToken</see>.
         /// The returned <see cref="ValueTask"/> will complete once the associated callback
         /// is unregistered without having executed or once it's finished executing, except
         /// in the degenerate case where the callback itself is unregistering itself.
@@ -104,14 +104,14 @@ namespace System.Threading
 
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+        /// <see cref="CancellationToken">CancellationToken</see>.
         /// </summary>
         public bool Unregister() =>
             _node is CancellationTokenSource.CallbackNode node && node.Registrations.Unregister(_id, node);
 
         /// <summary>
         /// Determines whether two <see
-        /// cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see>
+        /// cref="CancellationTokenRegistration">CancellationTokenRegistration</see>
         /// instances are equal.
         /// </summary>
         /// <param name="left">The first instance.</param>
@@ -120,7 +120,7 @@ namespace System.Threading
         public static bool operator ==(CancellationTokenRegistration left, CancellationTokenRegistration right) => left.Equals(right);
 
         /// <summary>
-        /// Determines whether two <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are not equal.
+        /// Determines whether two <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> instances are not equal.
         /// </summary>
         /// <param name="left">The first instance.</param>
         /// <param name="right">The second instance.</param>
@@ -128,33 +128,33 @@ namespace System.Threading
         public static bool operator !=(CancellationTokenRegistration left, CancellationTokenRegistration right) => !left.Equals(right);
 
         /// <summary>
-        /// Determines whether the current <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the
+        /// Determines whether the current <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> instance is equal to the
         /// specified <see cref="object"/>.
         /// </summary>
         /// <param name="obj">The other object to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="obj"/> are equal. False, otherwise.
-        /// Two <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
+        /// Two <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
         /// they both refer to the output of a single call to the same Register method of a
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+        /// <see cref="CancellationToken">CancellationToken</see>.
         /// </returns>
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is CancellationTokenRegistration other && Equals(other);
 
         /// <summary>
-        /// Determines whether the current <see cref="System.Threading.CancellationToken">CancellationToken</see> instance is equal to the
+        /// Determines whether the current <see cref="CancellationToken">CancellationToken</see> instance is equal to the
         /// specified <see cref="object"/>.
         /// </summary>
-        /// <param name="other">The other <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> to which to compare this instance.</param>
+        /// <param name="other">The other <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> to which to compare this instance.</param>
         /// <returns>True, if both this and <paramref name="other"/> are equal. False, otherwise.
-        /// Two <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
+        /// Two <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> instances are equal if
         /// they both refer to the output of a single call to the same Register method of a
-        /// <see cref="System.Threading.CancellationToken">CancellationToken</see>.
+        /// <see cref="CancellationToken">CancellationToken</see>.
         /// </returns>
         public bool Equals(CancellationTokenRegistration other) => _node == other._node && _id == other._id;
 
         /// <summary>
-        /// Serves as a hash function for a <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration.</see>.
+        /// Serves as a hash function for a <see cref="CancellationTokenRegistration">CancellationTokenRegistration.</see>.
         /// </summary>
-        /// <returns>A hash code for the current <see cref="System.Threading.CancellationTokenRegistration">CancellationTokenRegistration</see> instance.</returns>
+        /// <returns>A hash code for the current <see cref="CancellationTokenRegistration">CancellationTokenRegistration</see> instance.</returns>
         public override int GetHashCode() => _node != null ? _node.GetHashCode() ^ _id.GetHashCode() : _id.GetHashCode();
     }
 }

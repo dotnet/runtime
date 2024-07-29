@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 {
-#if !NETCOREAPP
+#if !NET
 	[SetupLinkerKeepDebugMembers ("true")]
 #endif
 	public class DebuggerDisplayOnTypeWithCallToMethodOnFieldType
@@ -20,8 +20,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
 
 		//TODO : DebuggerDisplay supports calling methods on members.
-		//However, robustly handling this case in the linker would require some non-trivial work.
-		//For now let's at least make sure that the linker doesn't crash.
+		//However, robustly handling this case in the ILLink would require some non-trivial work.
+		//For now let's at least make sure that the ILLink doesn't crash.
 		[DebuggerDisplay ("Count = {Field.Count()}")]
 		class Foo
 		{

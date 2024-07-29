@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
@@ -19,6 +19,89 @@ namespace System.Security.Cryptography
         {
             IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
             return new LiteHmac(algorithm, key);
+        }
+
+        internal static LiteXof CreateXof(string hashAlgorithmId)
+        {
+            IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
+            return new LiteXof(algorithm);
+        }
+    }
+
+    internal readonly struct LiteXof : ILiteHash
+    {
+        private readonly SafeEvpMdCtxHandle _ctx;
+        private readonly IntPtr _algorithm;
+
+        public int HashSizeInBytes => throw new NotSupportedException();
+
+        internal LiteXof(IntPtr algorithm)
+        {
+            Debug.Assert(algorithm != IntPtr.Zero);
+            _algorithm = algorithm;
+
+            _ctx = Interop.Crypto.EvpMdCtxCreate(algorithm);
+            Interop.Crypto.CheckValidOpenSslHandle(_ctx);
+        }
+
+        private LiteXof(SafeEvpMdCtxHandle ctx, IntPtr algorithm)
+        {
+            _ctx = ctx;
+            _algorithm = algorithm;
+        }
+
+        public void Append(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
+        }
+
+        public void Reset()
+        {
+            Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithm));
+        }
+
+        public int Finalize(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestFinalXOF(_ctx, destination));
+            return destination.Length;
+        }
+
+        public void Current(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestCurrentXOF(_ctx, destination));
+        }
+
+        public LiteXof Clone()
+        {
+            SafeEvpMdCtxHandle clone = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteXof(clone, _algorithm);
+        }
+
+        public void Read(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestSqueeze(_ctx, destination));
+        }
+
+        public void Dispose()
+        {
+            _ctx.Dispose();
+        }
+
+        private static void Check(int result)
+        {
+            const int Success = 1;
+
+            if (result != Success)
+            {
+                Debug.Assert(result == 0);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
         }
     }
 
@@ -45,6 +128,13 @@ namespace System.Security.Cryptography
 
             _ctx = Interop.Crypto.EvpMdCtxCreate(algorithm);
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
+        }
+
+        private LiteHash(SafeEvpMdCtxHandle ctx, IntPtr algorithm, int hashSizeInBytes)
+        {
+            _ctx = ctx;
+            _algorithm = algorithm;
+            _hashSizeInBytes = hashSizeInBytes;
         }
 
         public void Append(ReadOnlySpan<byte> data)
@@ -79,6 +169,13 @@ namespace System.Security.Cryptography
             Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
             Debug.Assert(length == _hashSizeInBytes);
             return _hashSizeInBytes;
+        }
+
+        public LiteHash Clone()
+        {
+            SafeEvpMdCtxHandle clone = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteHash(clone, _algorithm, _hashSizeInBytes);
         }
 
         public void Dispose()
@@ -120,6 +217,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
         }
 
+        private LiteHmac(SafeHmacCtxHandle ctx, int hashSizeInBytes)
+        {
+            _ctx = ctx;
+            _hashSizeInBytes = hashSizeInBytes;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -153,6 +256,13 @@ namespace System.Security.Cryptography
         public void Reset()
         {
             Check(Interop.Crypto.HmacReset(_ctx));
+        }
+
+        public LiteHmac Clone()
+        {
+            SafeHmacCtxHandle clone = Interop.Crypto.HmacCopy(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteHmac(clone, _hashSizeInBytes);
         }
 
         public void Dispose()

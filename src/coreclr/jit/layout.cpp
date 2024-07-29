@@ -15,12 +15,14 @@ class ClassLayoutTable
     // Each layout is assigned a number, starting with TYP_UNKNOWN + 1. This way one could use a single
     // unsigned value to represent the notion of type - values below TYP_UNKNOWN are var_types and values
     // above it are struct layouts.
-    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
+    static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
-    union {
+    union
+    {
         // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
         // Most methods need no more than 2 layouts.
         ClassLayout* m_layoutArray[3];
@@ -36,21 +38,39 @@ class ClassLayoutTable
     unsigned m_layoutCount;
     // The capacity of m_layoutLargeArray (when more than 3 layouts are stored).
     unsigned m_layoutLargeCapacity;
+    // We furthermore fast-path the 0-sized block layout which is used for
+    // block locals that may grow (e.g. the outgoing arg area in every non-x86
+    // compilation).
+    ClassLayout m_zeroSizedBlockLayout;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0)
+    ClassLayoutTable()
+        : m_layoutCount(0)
+        , m_layoutLargeCapacity(0)
+        , m_zeroSizedBlockLayout(0)
     {
     }
 
-    // Get the layout number (FirstLayoutNum-based) of the specified layout.
+    // Get a number that uniquely identifies the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const
     {
+        if (layout == &m_zeroSizedBlockLayout)
+        {
+            return ZeroSizedBlockLayoutNum;
+        }
+
         return GetLayoutIndex(layout) + FirstLayoutNum;
     }
 
-    // Get the layout having the specified layout number (FirstLayoutNum-based)
+    // Get the layout that corresponds to the specified identifier number.
     ClassLayout* GetLayoutByNum(unsigned num) const
     {
+        if (num == ZeroSizedBlockLayoutNum)
+        {
+            // Fine to cast away const as ClassLayout is immutable
+            return const_cast<ClassLayout*>(&m_zeroSizedBlockLayout);
+        }
+
         assert(num >= FirstLayoutNum);
         return GetLayoutByIndex(num - FirstLayoutNum);
     }
@@ -58,12 +78,22 @@ public:
     // Get the layout having the specified size but no class handle.
     ClassLayout* GetBlkLayout(Compiler* compiler, unsigned blockSize)
     {
+        if (blockSize == 0)
+        {
+            return &m_zeroSizedBlockLayout;
+        }
+
         return GetLayoutByIndex(GetBlkLayoutIndex(compiler, blockSize));
     }
 
-    // Get the number of a layout having the specified size but no class handle.
+    // Get a number that uniquely identifies a layout having the specified size but no class handle.
     unsigned GetBlkLayoutNum(Compiler* compiler, unsigned blockSize)
     {
+        if (blockSize == 0)
+        {
+            return ZeroSizedBlockLayoutNum;
+        }
+
         return GetBlkLayoutIndex(compiler, blockSize) + FirstLayoutNum;
     }
 
@@ -73,7 +103,7 @@ public:
         return GetLayoutByIndex(GetObjLayoutIndex(compiler, classHandle));
     }
 
-    // Get the number of a layout for the specified class handle.
+    // Get a number that uniquely identifies a layout for the specified class handle.
     unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
         return GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
@@ -102,6 +132,7 @@ private:
     unsigned GetLayoutIndex(ClassLayout* layout) const
     {
         assert(layout != nullptr);
+        assert(layout != &m_zeroSizedBlockLayout);
 
         if (HasSmallCapacity())
         {
@@ -128,6 +159,9 @@ private:
 
     unsigned GetBlkLayoutIndex(Compiler* compiler, unsigned blockSize)
     {
+        // The 0-sized block layout has its own fast path.
+        assert(blockSize != 0);
+
         if (HasSmallCapacity())
         {
             for (unsigned i = 0; i < m_layoutCount; i++)
@@ -384,6 +418,58 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
     }
 
     INDEBUG(m_gcPtrsInitialized = true;)
+}
+
+//------------------------------------------------------------------------
+// IsStackOnly: does the layout represent a block that can never be on the heap?
+//
+// Parameters:
+//   comp - The Compiler object
+//
+// Return value:
+//    true if the block is stack only
+//
+bool ClassLayout::IsStackOnly(Compiler* comp) const
+{
+    // Byref-like structs are stack only
+    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByrefLike(m_classHandle))
+    {
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IntersectsGCPtr: check if the specified interval intersects with a GC
+// pointer.
+//
+// Parameters:
+//   offset - The start offset of the interval
+//   size   - The size of the interval
+//
+// Return value:
+//   True if it does.
+//
+bool ClassLayout::IntersectsGCPtr(unsigned offset, unsigned size) const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned startSlot = offset / TARGET_POINTER_SIZE;
+    unsigned endSlot   = (offset + size - 1) / TARGET_POINTER_SIZE;
+    assert((startSlot < GetSlotCount()) && (endSlot < GetSlotCount()));
+
+    for (unsigned i = startSlot; i <= endSlot; i++)
+    {
+        if (IsGCPtr(i))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

@@ -5,10 +5,11 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class CMPXCHG
 {
     public static int g_static = -1;
-    public static void Function(int bit, bool value)
+    internal static void Function(int bit, bool value)
     {
         for (; ;)
         {
@@ -33,7 +34,8 @@ public class CMPXCHG
             }
         }
     }
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 10; ++i)
         {
@@ -46,9 +48,10 @@ public class CMPXCHG
                 Function(11, false);
             }
             if (g_static < 8)
+            {
                 Function(12, false);
+            }
         }
-        return 100;
         //If we dont reach here, we have a problem!
     }
 }

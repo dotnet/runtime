@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public struct AA
 {
@@ -25,7 +26,8 @@ public struct AA
 [StructLayout(LayoutKind.Sequential)]
 public class App
 {
-    private static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -37,7 +39,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static bool m_bFwd5;
     public static AA m_xFwd6;

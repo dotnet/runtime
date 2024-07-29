@@ -14,10 +14,10 @@ namespace System.Threading
 
 #pragma warning disable IDE0060
         private void Create(int maximumSignalCount)
+#pragma warning restore IDE0060
         {
             lifo_semaphore = InitInternal();
         }
-#pragma warning restore IDE0060
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void DeleteInternal(IntPtr semaphore);

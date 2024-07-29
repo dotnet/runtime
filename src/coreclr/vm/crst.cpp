@@ -92,7 +92,7 @@ void CrstBase::Destroy()
         DeleteCriticalSection(&m_criticalsection);
     }
 
-    LOG((LF_SYNC, INFO3, "Deleting 0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
 #ifdef _DEBUG
     DebugDestroy();
 #endif
@@ -392,7 +392,7 @@ void CrstBase::PreEnter()
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     // Are we in the shutdown sequence and in phase 2 of it?
-    if (g_fProcessDetach && (g_fEEShutDown & ShutDown_Phase2))
+    if (IsAtProcessExit() && (g_fEEShutDown & ShutDown_Phase2))
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to take a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");
@@ -569,7 +569,7 @@ void CrstBase::PreLeave()
     }
 
     // Are we in the shutdown sequence and in phase 2 of it?
-    if (g_fProcessDetach && (g_fEEShutDown & ShutDown_Phase2))
+    if (IsAtProcessExit() && (g_fEEShutDown & ShutDown_Phase2))
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to leave a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");
@@ -616,7 +616,7 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
 
     // @todo - Any Crst w/ CRST_DEBUGGER_THREAD must be on a special blessed list. Check that here.
 
-    LOG((LF_SYNC, INFO3, "ConstructCrst with this:0x%x\n", this));
+    LOG((LF_SYNC, INFO3, "CrstBase::DebugInit %p\n", this));
 
     for (int i = 0; i < crstDebugInfoCount; i++)
     {

@@ -55,6 +55,80 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
+        public static void Reset_DoesNotAffect_ConformanceMode()
+        {
+            var reader = new CborReader(Array.Empty<byte>());
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
+
+            reader.Reset(Array.Empty<byte>());
+            Assert.Equal(CborConformanceMode.Strict, reader.ConformanceMode);
+
+            foreach(var mode in new[] { CborConformanceMode.Canonical, CborConformanceMode.Ctap2Canonical, CborConformanceMode.Lax, CborConformanceMode.Strict })
+            {
+                reader = new CborReader(Array.Empty<byte>(), mode);
+                Assert.Equal(mode, reader.ConformanceMode);
+
+                reader.Reset(Array.Empty<byte>());
+                Assert.Equal(mode, reader.ConformanceMode);
+            }
+        }
+
+        [Fact]
+        public static void Reset_DoesNotAffect_AllowMultipleRootLevelValues()
+        {
+            var reader = new CborReader(Array.Empty<byte>(),  allowMultipleRootLevelValues: false);
+            Assert.False(reader.AllowMultipleRootLevelValues);
+
+            reader.Reset(Array.Empty<byte>());
+            Assert.False(reader.AllowMultipleRootLevelValues);
+
+            reader = new CborReader(Array.Empty<byte>(), allowMultipleRootLevelValues: true);
+            Assert.True(reader.AllowMultipleRootLevelValues);
+
+            reader.Reset(Array.Empty<byte>());
+            Assert.True(reader.AllowMultipleRootLevelValues);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        [InlineData(7)]
+        public static void ResetInDepth_ShouldReturnExpectedValue(int depth)
+        {
+            byte[] encoding = Enumerable.Repeat<byte>(0x81, depth).Append<byte>(0x01).ToArray();
+
+            var reader = new CborReader(encoding);
+            for (int i = 0; i < depth; i++)
+            {
+                Assert.Equal(i, reader.CurrentDepth);
+                reader.ReadStartArray();
+            }
+            
+            reader.Reset(encoding);
+            Assert.Equal(0, reader.CurrentDepth);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+
+            for (int i = 0; i < depth; i++)
+            {
+                Assert.Equal(i, reader.CurrentDepth);
+                reader.ReadStartArray();
+            }
+
+            Assert.Equal(depth, reader.CurrentDepth);
+            reader.ReadInt32();
+            Assert.Equal(depth, reader.CurrentDepth);
+
+            for (int i = depth - 1; i >= 0; i--)
+            {
+                reader.ReadEndArray();
+                Assert.Equal(i, reader.CurrentDepth);
+            }
+
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Fact]
         public static void BytesRemaining_NoReads_ShouldReturnTotalLength()
         {
             var reader = new CborReader(new byte[10]);

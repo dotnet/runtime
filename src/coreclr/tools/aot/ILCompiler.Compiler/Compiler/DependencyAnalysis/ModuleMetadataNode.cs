@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
-
+using Internal.TypeSystem.Ecma;
 using Debug = System.Diagnostics.Debug;
 using EcmaAssembly = Internal.TypeSystem.Ecma.EcmaAssembly;
 
@@ -37,8 +37,21 @@ namespace ILCompiler.DependencyAnalysis
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
             dependencies.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
+            if (_module is EcmaModule ecmaModule
+                && ecmaModule.EntryPoint is MethodDesc entrypoint
+                && !factory.MetadataManager.IsReflectionBlocked(entrypoint))
+            {
+                dependencies.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
+            }
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
+            EcmaAssembly ecmaAssembly = (EcmaAssembly)_module;
+
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ecmaAssembly);
+
+            foreach (EcmaModule satelliteModule in ((UsageBasedMetadataManager)factory.MetadataManager).GetSatelliteAssemblies(ecmaAssembly))
+            {
+                dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
+            }
 
             return dependencies;
         }

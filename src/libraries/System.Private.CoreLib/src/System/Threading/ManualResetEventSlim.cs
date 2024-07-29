@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Threading
@@ -20,7 +21,7 @@ namespace System.Threading
     //     eagerly, instead of waiting for finalization.
 
     /// <summary>
-    /// Provides a slimmed down version of <see cref="System.Threading.ManualResetEvent"/>.
+    /// Provides a slimmed down version of <see cref="ManualResetEvent"/>.
     /// </summary>
     /// <remarks>
     /// All public and protected members of <see cref="ManualResetEventSlim"/> are thread-safe and may be used
@@ -35,7 +36,7 @@ namespace System.Threading
         // These are the default spin counts we use on single-proc and MP machines.
         private const int DEFAULT_SPIN_SP = 1;
 
-        private volatile object? m_lock;
+        private object? m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
 
         private volatile ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
@@ -63,10 +64,10 @@ namespace System.Threading
         // ----------- //
 
         /// <summary>
-        /// Gets the underlying <see cref="System.Threading.WaitHandle"/> object for this <see
+        /// Gets the underlying <see cref="Threading.WaitHandle"/> object for this <see
         /// cref="ManualResetEventSlim"/>.
         /// </summary>
-        /// <value>The underlying <see cref="System.Threading.WaitHandle"/> event object fore this <see
+        /// <value>The underlying <see cref="Threading.WaitHandle"/> event object fore this <see
         /// cref="ManualResetEventSlim"/>.</value>
         /// <remarks>
         /// Accessing this property forces initialization of an underlying event object if one hasn't
@@ -169,7 +170,7 @@ namespace System.Threading
         /// to nonsignaled.</param>
         /// <param name="spinCount">The number of spin waits that will occur before falling back to a true
         /// wait.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="spinCount"/> is less than
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="spinCount"/> is less than
         /// 0 or greater than the maximum allowed value.</exception>
         public ManualResetEventSlim(bool initialState, int spinCount)
         {
@@ -199,13 +200,13 @@ namespace System.Threading
         /// <summary>
         /// Helper to ensure the lock object is created before first use.
         /// </summary>
+        [MemberNotNull(nameof(m_lock))]
         private void EnsureLockObjectCreated()
         {
-            if (m_lock != null)
-                return;
-
-            object newObj = new object();
-            Interlocked.CompareExchange(ref m_lock, newObj, null); // failure is benign. Someone else set the value.
+            if (m_lock is null)
+            {
+                Interlocked.CompareExchange(ref m_lock, new object(), null); // failure is benign. Someone else set the value.
+            }
         }
 
         /// <summary>
@@ -265,7 +266,7 @@ namespace System.Threading
         /// Private helper to actually perform the Set.
         /// </summary>
         /// <param name="duringCancellation">Indicates whether we are calling Set() during cancellation.</param>
-        /// <exception cref="System.OperationCanceledException">The object has been canceled.</exception>
+        /// <exception cref="OperationCanceledException">The object has been canceled.</exception>
         private void Set(bool duringCancellation)
         {
             // We need to ensure that IsSet=true does not get reordered past the read of m_eventObj
@@ -337,14 +338,16 @@ namespace System.Threading
         /// <summary>
         /// Blocks the current thread until the current <see cref="ManualResetEventSlim"/> is set.
         /// </summary>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
         /// <remarks>
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void Wait()
         {
             Wait(Timeout.Infinite, CancellationToken.None);
@@ -352,20 +355,22 @@ namespace System.Threading
 
         /// <summary>
         /// Blocks the current thread until the current <see cref="ManualResetEventSlim"/> receives a signal,
-        /// while observing a <see cref="System.Threading.CancellationToken"/>.
+        /// while observing a <see cref="CancellationToken"/>.
         /// </summary>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> to
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to
         /// observe.</param>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-        /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was
+        /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was
         /// canceled.</exception>
         /// <remarks>
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void Wait(CancellationToken cancellationToken)
         {
             Wait(Timeout.Infinite, cancellationToken);
@@ -373,59 +378,61 @@ namespace System.Threading
 
         /// <summary>
         /// Blocks the current thread until the current <see cref="ManualResetEventSlim"/> is set, using a
-        /// <see cref="System.TimeSpan"/> to measure the time interval.
+        /// <see cref="TimeSpan"/> to measure the time interval.
         /// </summary>
-        /// <param name="timeout">A <see cref="System.TimeSpan"/> that represents the number of milliseconds
-        /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// <param name="timeout">A <see cref="TimeSpan"/> that represents the number of milliseconds
+        /// to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
-        /// <returns>true if the <see cref="System.Threading.ManualResetEventSlim"/> was set; otherwise,
+        /// <returns>true if the <see cref="ManualResetEventSlim"/> was set; otherwise,
         /// false.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, CancellationToken.None);
         }
 
         /// <summary>
         /// Blocks the current thread until the current <see cref="ManualResetEventSlim"/> is set, using a
-        /// <see cref="System.TimeSpan"/> to measure the time interval, while observing a <see
-        /// cref="System.Threading.CancellationToken"/>.
+        /// <see cref="TimeSpan"/> to measure the time interval, while observing a <see
+        /// cref="CancellationToken"/>.
         /// </summary>
-        /// <param name="timeout">A <see cref="System.TimeSpan"/> that represents the number of milliseconds
-        /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// <param name="timeout">A <see cref="TimeSpan"/> that represents the number of milliseconds
+        /// to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> to
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to
         /// observe.</param>
-        /// <returns>true if the <see cref="System.Threading.ManualResetEventSlim"/> was set; otherwise,
+        /// <returns>true if the <see cref="ManualResetEventSlim"/> was set; otherwise,
         /// false.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
-        /// <exception cref="System.OperationCanceledException"><paramref
+        /// <exception cref="OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, cancellationToken);
         }
@@ -436,14 +443,16 @@ namespace System.Threading
         /// </summary>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
         /// cref="Timeout.Infinite"/>(-1) to wait indefinitely.</param>
-        /// <returns>true if the <see cref="System.Threading.ManualResetEventSlim"/> was set; otherwise,
+        /// <returns>true if the <see cref="ManualResetEventSlim"/> was set; otherwise,
         /// false.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -452,28 +461,34 @@ namespace System.Threading
         /// <summary>
         /// Blocks the current thread until the current <see cref="ManualResetEventSlim"/> is set, using a
         /// 32-bit signed integer to measure the time interval, while observing a <see
-        /// cref="System.Threading.CancellationToken"/>.
+        /// cref="CancellationToken"/>.
         /// </summary>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
         /// cref="Timeout.Infinite"/>(-1) to wait indefinitely.</param>
-        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> to
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to
         /// observe.</param>
-        /// <returns>true if the <see cref="System.Threading.ManualResetEventSlim"/> was set; otherwise,
+        /// <returns>true if the <see cref="ManualResetEventSlim"/> was set; otherwise,
         /// false.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
-        /// <exception cref="System.OperationCanceledException"><paramref
+        /// <exception cref="OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
 
             if (!IsSet)
             {
@@ -524,7 +539,7 @@ namespace System.Threading
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.UnsafeRegister(s_cancellationTokenCallback, this))
                 {
-                    lock (m_lock!)
+                    lock (m_lock)
                     {
                         // Loop to cope with spurious wakeups from other waits being canceled
                         while (!IsSet)

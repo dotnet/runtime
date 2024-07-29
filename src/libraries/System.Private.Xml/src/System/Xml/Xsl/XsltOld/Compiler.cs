@@ -91,7 +91,7 @@ namespace System.Xml.Xsl.XsltOld
         private int _rtfCount;
 
         // Used to load Built In templates
-        public static XmlQualifiedName BuiltInMode = new XmlQualifiedName("*", string.Empty);
+        public static readonly XmlQualifiedName BuiltInMode = new XmlQualifiedName("*", string.Empty);
 
         internal KeywordsTable Atoms
         {
@@ -431,7 +431,7 @@ namespace System.Xml.Xsl.XsltOld
         // the value is ignored iff forwards-compatible mode is on.
         private string[]? ResolvePrefixes(string tokens)
         {
-            if (tokens == null || tokens.Length == 0)
+            if (string.IsNullOrEmpty(tokens))
             {
                 return null;
             }

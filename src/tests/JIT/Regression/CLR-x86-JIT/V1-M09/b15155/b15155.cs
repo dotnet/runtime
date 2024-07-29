@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -42,7 +43,8 @@ namespace DefaultNamespace
 
     public class bug
     {
-        public static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             int size = 32;
@@ -54,9 +56,6 @@ namespace DefaultNamespace
             for (int i = 0; i < size; i++)
                 if (!tmpV3Array[i].Validate())
                     throw new Exception("tmpV3Array[" + i + "] didn't validate correctly!  got: " + tmpV3Array[i] + "  expected: " + VarArray[i]);
-
-            return 100;
-
         }
     }
 }

@@ -44,7 +44,9 @@ namespace ILLink.CodeFix
 				syntaxGenerator.LiteralExpression (diagnostic.Descriptor.Category));
 
 			// Identifier of the analysis rule the attribute applies to
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers - https://github.com/dotnet/linker/issues/3197
 			var ruleTitle = diagnostic.Descriptor.Title.ToString (CultureInfo.CurrentUICulture);
+#pragma warning restore RS1035 // Do not use APIs banned for analyzers
 			var ruleId = syntaxGenerator.AttributeArgument (
 				syntaxGenerator.LiteralExpression (
 					string.IsNullOrWhiteSpace (ruleTitle) ? diagnostic.Id : $"{diagnostic.Id}:{ruleTitle}"));

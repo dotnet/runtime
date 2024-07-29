@@ -3,14 +3,16 @@
 //
 
 using System;
+using Xunit;
 
-class Test_test_noalloca
+public class Test_test_noalloca
 {
 #pragma warning disable 0414
     static int x = 25;
 #pragma warning restore 0414
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         String s1 = "a";
         String s2 = "b";
@@ -31,7 +33,7 @@ class Test_test_noalloca
         return (100);
     }
 
-    public static void foo(String s1, String s2, String s3, String s4, String s5, String s6, String s7, String s8, String s9, String s10)
+    internal static void foo(String s1, String s2, String s3, String s4, String s5, String s6, String s7, String s8, String s9, String s10)
     {
         Console.WriteLine(s10);
     }

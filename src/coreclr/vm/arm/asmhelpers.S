@@ -71,6 +71,7 @@ LOCAL_LABEL(LNoFloatingPoint):
         // Note that remoting expect target in r4.
         ldr     r4, [r5,#CallDescrData__pTarget]
         blx     r4
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
         ldr     r3, [r5,#CallDescrData__fpReturnSize]
 
@@ -125,6 +126,10 @@ LOCAL_LABEL(LReturnDone):
 
         EPILOG_STACK_RESTORE_OFFSET   r7, #8
         EPILOG_POP              "{r4,r5,r7,pc}"
+
+CallDescrWorkerInternalReturnAddressOffset:
+    .global CallDescrWorkerInternalReturnAddressOffset
+    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
 
         NESTED_END CallDescrWorkerInternal,_TEXT
 
@@ -205,24 +210,6 @@ LOCAL_LABEL(LNullThis):
 
         NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------
-        NESTED_ENTRY ThePreStubCompactARM, _TEXT, NoHandler
-
-        // r12 - address of compact entry point + PC_REG_RELATIVE_OFFSET
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        mov         r0, r12
-
-        bl          C_FUNC(PreStubGetMethodDescForCompactEntryPoint)
-
-        mov         r12, r0                                          // pMethodDesc
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-
-        b           C_FUNC(ThePreStub)
-
-        NESTED_END ThePreStubCompactARM, _TEXT
 // ------------------------------------------------------------------
 // This method does nothing. It's just a fixed function for the debugger to put a breakpoint on.
         LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -338,11 +325,8 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
     bx lr
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
 // size of profiler data structure plus alignment padding
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 104+4
+#define PADDED_SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA  SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA+4
 
 // typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 // {
@@ -381,23 +365,23 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
 
     // set the other args, starting with functionID
-    str         r0, [sp, #80]
+    str         r0, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId]
 
     // probeSp is the original sp when this stub was called
-    add         r2, sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA+20
-    str         r2, [sp, #84] 
+    add         r2, sp, PADDED_SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA+20
+    str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp]
 
     // get the address of the arguments from the frame pointer, store in profiledSp
     add         r2, r11, #8
-    str         r2, [sp, #88]
+    str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp]
 
     // clear hiddenArg
     movw        r2, #0
-    str         r2, [sp, #92]
+    str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg]
     
     // set the flag to indicate what hook this is
     movw        r2, \flags
-    str         r2, [sp, #96]
+    str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags]
 
     // sp is the address of PROFILE_PLATFORM_SPECIFIC_DATA, then call to C++
     mov         r1, sp
@@ -584,71 +568,6 @@ LOCAL_LABEL(stackProbe_loop):
     NESTED_END JIT_RareDisableHelper, _TEXT
 
 
-#ifdef FEATURE_CORECLR
-//
-// JIT Static access helpers for single appdomain case
-//
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper1)
-
-    bx      lr
-
-LOCAL_LABEL(CallCppHelper1):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    bx lr
-    LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-    // If class is not initialized, bail to C++ helper
-    add     r2, r0, #DomainLocalModule__m_pDataBlob
-    ldrb    r2, [r2, r1]
-    tst     r2, #1
-    beq     LOCAL_LABEL(CallCppHelper3)
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-
-LOCAL_LABEL(CallCppHelper3):
-    // Tail call Jit_GetSharedGCStaticBase_Helper
-    b     C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-    LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-    ldr     r0, [r0, #DomainLocalModule__m_pGCStatics]
-    bx lr
-    LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-#endif
-
-
 #define __wbScratch r3
 #define pShadow r7
 
@@ -826,9 +745,13 @@ g_rgWriteBarrierDescriptors:
     LEAF_ENTRY JIT_WriteBarrier_Callable
 
     // Branch to the write barrier
+#if defined(__clang__)
     ldr     r2, =JIT_WriteBarrier_Loc-(1f+4) // or R3? See targetarm.h
 1:
     add     r2, pc
+#else
+    ldr     r2, =JIT_WriteBarrier_Loc
+#endif
     ldr     pc, [r2]
 
     LEAF_END JIT_WriteBarrier_Callable

@@ -7,7 +7,7 @@
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StaticCs.Closed]
-	enum IntrinsicId
+	internal enum IntrinsicId
 	{
 		None = 0,
 		/// <summary>
@@ -53,6 +53,10 @@ namespace ILLink.Shared.TrimAnalysis
 		// Anything above this marker will require the method to be run through
 		// the reflection body scanner.
 		RequiresReflectionBodyScanner_Sentinel = 1000,
+		/// <summary>
+		/// <see cref="System.Array.CreateInstance(System.Type, int)"/>
+		/// </summary>
+		Array_CreateInstance,
 		/// <summary>
 		/// <see cref="System.Type.MakeGenericType(System.Type[])"/>
 		/// </summary>
@@ -128,8 +132,8 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetProperties__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetEvent(string)"/></item>
-		///	<item><see cref="System.Type.GetEvent(string, System.Reflection.BindingFlags)"/></item>
+		/// <item><see cref="System.Type.GetEvent(string)"/></item>
+		/// <item><see cref="System.Type.GetEvent(string, System.Reflection.BindingFlags)"/></item>
 		/// </list>
 		/// </summary>
 		Type_GetEvent,
@@ -139,9 +143,9 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetEvents__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetNestedType(string)"/></item>
-		///	<item><see cref="System.Type.GetNestedType(string, System.Reflection.BindingFlags)"/></item>
-		///	</list>
+		/// <item><see cref="System.Type.GetNestedType(string)"/></item>
+		/// <item><see cref="System.Type.GetNestedType(string, System.Reflection.BindingFlags)"/></item>
+		/// </list>
 		/// </summary>
 		Type_GetNestedType,
 		/// <summary>
@@ -150,10 +154,10 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetNestedTypes__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetMember(string)"/></item>
-		///	<item><see cref="System.Type.GetMember(string, System.Reflection.BindingFlags)"/></item>
-		///	<item><see cref="System.Type.GetMember(string, System.Reflection.MemberTypes, System.Reflection.BindingFlags)"/></item>
-		///	</list>
+		/// <item><see cref="System.Type.GetMember(string)"/></item>
+		/// <item><see cref="System.Type.GetMember(string, System.Reflection.BindingFlags)"/></item>
+		/// <item><see cref="System.Type.GetMember(string, System.Reflection.MemberTypes, System.Reflection.BindingFlags)"/></item>
+		/// </list>
 		/// </summary>
 		Type_GetMember,
 		/// <summary>
@@ -180,7 +184,7 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Type_get_BaseType,
 		/// <summary>
-		///	<see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
+		/// <see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
 		/// </summary>
 		Expression_Call,
 		/// <summary>
@@ -288,6 +292,31 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Assembly_CreateInstance,
 		/// <summary>
+		/// <see cref="System.Reflection.Assembly.Location"/>
+		/// </summary>
+		Assembly_get_Location,
+		/// <summary>
+		/// <see cref="System.Reflection.Assembly.GetFile(string)"/>
+		/// </summary>
+		Assembly_GetFile,
+		/// <summary>
+		/// <see cref="System.Reflection.Assembly.GetFiles()"/>
+		/// <see cref="System.Reflection.Assembly.GetFiles(bool)"/>
+		/// </summary>
+		Assembly_GetFiles,
+		/// <summary>
+		/// <see cref="System.Reflection.AssemblyName.CodeBase"/>
+		/// </summary>
+		AssemblyName_get_CodeBase,
+		/// <summary>
+		/// <see cref="System.Reflection.AssemblyName.EscapedCodeBase"/>
+		/// </summary>
+		AssemblyName_get_EscapedCodeBase,
+		/// <summary>
+		/// <see cref="System.Reflection.RuntimeReflectionExtensions.GetMethodInfo(System.Delegate)"/>
+		/// </summary>
+		RuntimeReflectionExtensions_GetMethodInfo,
+		/// <summary>
 		/// <see cref="System.Reflection.RuntimeReflectionExtensions.GetRuntimeEvent(System.Type, string)"/>
 		/// </summary>
 		RuntimeReflectionExtensions_GetRuntimeEvent,
@@ -314,6 +343,10 @@ namespace ILLink.Shared.TrimAnalysis
 		/// <summary>
 		/// <see cref="System.Nullable.GetUnderlyingType(System.Type)"/>
 		/// </summary>
-		Nullable_GetUnderlyingType
+		Nullable_GetUnderlyingType,
+		/// <summary>
+		/// <see cref="System.Delegate.Method"/>
+		/// </summary>
+		Delegate_get_Method,
 	}
 }

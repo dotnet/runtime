@@ -75,21 +75,19 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
 
         LONG64 trial = (LONG64)SecondCount - (LONG64)FirstCount;
         if (trial < 0){
-            printf("Negative value %llu measured", trial);
+            printf("Negative value %" PRIu64 " measured", trial);
         }
         Actual += (trial);
 
     }
 
-
-
     if(llabs(Expected - Actual) > Delta)
     {
-        Fail("ERROR: The measured time (%llu millisecs) was not within Delta %llu "
-            "of the expected time (%llu millisecs).\n",
+        Fail("ERROR: The measured time (%" PRIu64 " millisecs) was not within Delta %" PRIu64 " "
+            "of the expected time (%" PRIu64 " millisecs).\n",
              (Actual / MSEC_TO_NSEC), (Delta / MSEC_TO_NSEC), (Expected / MSEC_TO_NSEC));
     }
-    //printf("%llu, %llu\n", Expected, Actual);
+    //printf("%" PRIu64 ", %" PRIu64 "\n", Expected, Actual);
     PAL_Terminate();
     ret = PASS;
     }

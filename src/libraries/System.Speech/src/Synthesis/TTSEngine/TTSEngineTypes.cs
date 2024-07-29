@@ -166,7 +166,7 @@ namespace System.Speech.Synthesis.TtsEngine
 
     #region Public Types
     [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("{State.Action} {TextToSpeak!=null?TextToSpeak:\"\"}")]
+    [DebuggerDisplay("{State.Action} = {TextToSpeak!=null?TextToSpeak:\"\"}")]
     public class TextFragment
     {
         public TextFragment()

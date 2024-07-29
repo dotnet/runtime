@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization.DataContracts;
-using System.Xml;
 using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {

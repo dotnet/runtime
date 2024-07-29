@@ -123,12 +123,10 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            IDictionary? copyOfTableAsIDictionary = _table;  // Avoid a race with Dispose
-            if (copyOfTableAsIDictionary == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            Dictionary<object, object?> table = _table ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);  // Avoid a race with Dispose
 
-             // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
-            return copyOfTableAsIDictionary.GetEnumerator();
+            // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
+            return ((IDictionary)table).GetEnumerator();
         }
 
         // Look up a string value for a resource given its name.
@@ -203,10 +201,7 @@ namespace System.Resources
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
-
-            if (copyOfTable == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            Dictionary<object, object?> copyOfTable = _table ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);  // Avoid a race with Dispose
 
             copyOfTable.TryGetValue(name, out object? value);
             return value;
@@ -214,10 +209,7 @@ namespace System.Resources
 
         private object? GetCaseInsensitiveObjectInternal(string name)
         {
-            Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
-
-            if (copyOfTable == null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
+            Dictionary<object, object?> copyOfTable = _table ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);  // Avoid a race with Dispose
 
             Dictionary<string, object?>? caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
             if (caseTable == null)

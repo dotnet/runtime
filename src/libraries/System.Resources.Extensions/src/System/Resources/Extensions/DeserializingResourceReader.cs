@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.IO;
+using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -10,8 +11,9 @@ namespace System.Resources.Extensions
 {
     public partial class DeserializingResourceReader
     {
+        private static readonly bool s_useBinaryFormatter = AppContext.TryGetSwitch("System.Resources.Extensions.UseBinaryFormatter", out bool isEnabled) && isEnabled;
+
         private bool _assumeBinaryFormatter;
-        private BinaryFormatter? _formatter;
 
         private bool ValidateReaderType(string readerType)
         {
@@ -33,18 +35,25 @@ namespace System.Resources.Extensions
             return false;
         }
 
-// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
-#pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
-            _formatter ??= new BinaryFormatter()
+            if (!s_useBinaryFormatter)
             {
-                Binder = new UndoTruncatedTypeNameSerializationBinder()
-            };
+                BinaryFormattedObject binaryFormattedObject = new(_store.BaseStream);
 
-            return _formatter.Deserialize(_store.BaseStream);
-        }
+                return binaryFormattedObject.Deserialize();
+            }
+            else
+            {
+#pragma warning disable SYSLIB0011
+                BinaryFormatter? formatter = new()
+                {
+                    Binder = new UndoTruncatedTypeNameSerializationBinder()
+                };
+                return formatter.Deserialize(_store.BaseStream);
 #pragma warning restore SYSLIB0011
+            }
+        }
 
         internal sealed class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {
@@ -59,7 +68,7 @@ namespace System.Resources.Extensions
                     // incorrect ResXSerialization binder.
                     typeName = typeName + ", " + assemblyName;
 
-                    type = Type.GetType(typeName, throwOnError: false, ignoreCase:false);
+                    type = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
                 }
 
                 // if type is null we'll fall back to the default type binder which is preferable
@@ -223,6 +232,5 @@ namespace System.Resources.Extensions
 
             return value;
         }
-
     }
 }

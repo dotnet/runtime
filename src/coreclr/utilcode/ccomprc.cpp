@@ -136,7 +136,7 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile)
         {
             NewArrayHolder<WCHAR> pwszResourceFile(NULL);
 
-            DWORD lgth = (DWORD) wcslen(pResourceFile) + 1;
+            DWORD lgth = (DWORD) u16_strlen(pResourceFile) + 1;
             pwszResourceFile = new(nothrow) WCHAR[lgth];
             if (pwszResourceFile)
             {
@@ -512,7 +512,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
         // Now that we have the proper dll handle, load the string
         _ASSERTE(hInst != NULL);
 
-        length = ::WszLoadString(hInst, iResourceID, szBuffer, iMax);
+        length = ::LoadString(hInst, iResourceID, szBuffer, iMax);
         if(length > 0)
         {
             if(pcwchUsed)
@@ -555,7 +555,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
         dwLoadLibraryFlags = 0;
     }
 
-    if((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
+    if((*pHInst = WszLoadLibrary(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
     {
         return HRESULT_FROM_GetLastError();
     }
@@ -618,7 +618,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 
             PathString rcPathName(rcPath);
 
-            if (!rcPathName.EndsWith(W("\\")))
+            if (!rcPathName.EndsWith(SL(W("\\"))))
             {
                 rcPathName.Append(W("\\"));
             }

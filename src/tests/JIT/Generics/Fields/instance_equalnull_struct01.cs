@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -48,7 +49,8 @@ public class Test_instance_equalnull_struct01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         int _int = 0;

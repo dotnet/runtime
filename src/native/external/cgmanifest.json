@@ -26,7 +26,7 @@
         "Type": "git",
         "Git": {
           "RepositoryUrl": "https://github.com/llvm/llvm-project",
-          "CommitHash": "f28c006a5895fc0e329fe15fead81e37457cb1d1"
+          "CommitHash": "18ddebe1a1a9bde349441631365f0472e9693520"
         }
       },
       "DevelopmentDependency": false
@@ -45,8 +45,8 @@
       "Component": {
         "Type": "git",
         "Git": {
-          "RepositoryUrl": "https://github.com/madler/zlib",
-          "CommitHash": "21767c654d31d2dccdde4330529775c6c5fd5389"
+          "RepositoryUrl": "https://github.com/zlib-ng/zlib-ng",
+          "CommitHash": "74253725f884e2424a0dd8ae3f69896d5377f325"
         }
       },
       "DevelopmentDependency": false
@@ -55,8 +55,8 @@
       "Component": {
         "Type": "git",
         "Git": {
-          "RepositoryUrl": "https://github.com/jtkukunas/zlib",
-          "CommitHash": "bf55d56b068467329f5a6f29bee31bc80d694023"
+          "RepositoryUrl": "https://github.com/microsoft/LinuxTracepoints",
+          "CommitHash": "a817b91dfb08b2929ec6d48a211644e3394bf1c7"
         }
       },
       "DevelopmentDependency": false

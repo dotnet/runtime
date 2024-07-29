@@ -4,12 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point a = new Point(11, 13, 8, 4);
             Point b = new Point(11, 13, 2, 1);

@@ -74,6 +74,10 @@ namespace Internal.TypeSystem
         // will provide an implementation that adds the flag if necessary.
         partial void AddComputedIntrinsicFlag(ref TypeFlags flags);
 
+        // Type system implementations that support the notion of inline arrays
+        // will provide an implementation that adds the flag if necessary.
+        partial void AddComputedInlineArrayFlag(ref TypeFlags flags);
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
@@ -105,6 +109,8 @@ namespace Internal.TypeSystem
 
                 if (_typeDef.IsByRefLike)
                     flags |= TypeFlags.IsByRefLike;
+
+                AddComputedInlineArrayFlag(ref flags);
 
                 AddComputedIntrinsicFlag(ref flags);
             }
@@ -148,6 +154,14 @@ namespace Internal.TypeSystem
         public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature, substitution);
+            if (typicalMethodDef == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
+        }
+
+        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            MethodDesc typicalMethodDef = _typeDef.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (typicalMethodDef == null)
                 return null;
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);

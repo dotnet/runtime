@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -18,7 +17,7 @@
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
-    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'" />
     <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="SafeMemoryMappedViewHandleTests.cs" />

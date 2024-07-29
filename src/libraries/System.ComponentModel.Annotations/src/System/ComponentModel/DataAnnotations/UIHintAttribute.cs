@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -159,9 +159,9 @@ namespace System.ComponentModel.DataAnnotations
             /// <returns>
             ///     Dictionary of control parameters.
             /// </returns>
-            private IDictionary<string, object?> BuildControlParametersDictionary()
+            private Dictionary<string, object?> BuildControlParametersDictionary()
             {
-                IDictionary<string, object?> controlParameters = new Dictionary<string, object?>();
+                var controlParameters = new Dictionary<string, object?>();
 
                 object?[]? inputControlParameters = _inputControlParameters;
 

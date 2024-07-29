@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 internal class MCell<T>
 {
     private T _t;
@@ -29,13 +30,13 @@ internal class MPair<R, S> : MCell<R>
     public MPair(R r, S s) : base(r) { _s = s; }
 }
 
-internal class M
+public class M
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         MCell<int> c = new MCell<int>(1);
         MPair<int, string> p = c.GetMPair<string>("2");
         c.Gather<float, long>((float)0.5, (long)0);
-        return 100;
     }
 }

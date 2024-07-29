@@ -4,6 +4,7 @@
 //testing more than 32 (>33) objref's on the stack and as function arguments
 
 using System;
+using Xunit;
 
 internal class ratnl
 {
@@ -35,9 +36,9 @@ internal class ratnl
     }
 }
 
-internal class Test33objref
+public class Test33objref
 {
-    public static ratnl f1(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
+    private static ratnl f1(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
         ratnl a11, ratnl a12, ratnl a13, ratnl a14, ratnl a15, ratnl a16, ratnl a17, ratnl a18, ratnl a19, ratnl a20,
         ratnl a21, ratnl a22, ratnl a23, ratnl a24, ratnl a25, ratnl a26, ratnl a27, ratnl a28, ratnl a29, ratnl a30,
         ratnl a31, ratnl a32, ratnl a33)
@@ -49,7 +50,7 @@ internal class Test33objref
         return result;
     }
 
-    public static long f2(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
+    private static long f2(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
         ratnl a11, ratnl a12, ratnl a13, ratnl a14, ratnl a15, ratnl a16, ratnl a17, ratnl a18, ratnl a19, ratnl a20,
         ratnl a21, ratnl a22, ratnl a23, ratnl a24, ratnl a25, ratnl a26, ratnl a27, ratnl a28, ratnl a29, ratnl a30,
         ratnl a31, ratnl a32, ratnl a33)
@@ -60,7 +61,7 @@ internal class Test33objref
             (a33.p_nmr - a30.p_nmr) * (a31.p_nmr + a32.p_nmr);
     }
 
-    public static long f3(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
+    private static long f3(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
         ratnl a11, ratnl a12, ratnl a13, ratnl a14, ratnl a15, ratnl a16, ratnl a17, ratnl a18, ratnl a19, ratnl a20,
         ratnl a21, ratnl a22, ratnl a23, ratnl a24, ratnl a25, ratnl a26, ratnl a27, ratnl a28, ratnl a29, ratnl a30,
         ratnl a31, ratnl a32, ratnl a33)
@@ -71,7 +72,7 @@ internal class Test33objref
             (a33.p_dnm - a30.p_dnm) * (a31.p_dnm + a32.p_dnm);
     }
 
-    public static long f4(ref long a1, ref long a2, ref long a3, ref long a4, ref long a5, ref long a6, ref long a7, ref long a8, ref long a9, ref long a10,
+    private static long f4(ref long a1, ref long a2, ref long a3, ref long a4, ref long a5, ref long a6, ref long a7, ref long a8, ref long a9, ref long a10,
         ref long a11, ref long a12, ref long a13, ref long a14, ref long a15, ref long a16, ref long a17, ref long a18, ref long a19, ref long a20,
         ref long a21, ref long a22, ref long a23, ref long a24, ref long a25, ref long a26, ref long a27, ref long a28, ref long a29, ref long a30,
         ref long a31, ref long a32, ref long a33)
@@ -82,7 +83,8 @@ internal class Test33objref
             (a33 - a30) * (a31 + a32);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
 

@@ -80,15 +80,10 @@ int _getwc_nolock( miniFILE* inStream );
 int _ungetc_nolock( char inChar, miniFILE* inStream );
 int _ungetwc_nolock( char16_t inChar, miniFILE* inStream );
 
-errno_t _safecrt_cfltcvt(double *arg, char *buffer, size_t sizeInBytes, int type, int precision, int flags);
-
 void _safecrt_fassign(int flag, void* argument, char * number );
 void _safecrt_wfassign(int flag, void* argument, char16_t * number );
 
 int _minimal_chartowchar( char16_t* outWChar, const char* inChar );
-
-int _output_s( miniFILE* outfile, const char* _Format, va_list _ArgList);
-int _output( miniFILE *outfile, const char* _Format, va_list _ArgList);
 
 int __tinput_s( miniFILE* inFile, const unsigned char * inFormat, va_list inArgList );
 int __twinput_s( miniFILE* inFile, const char16_t * inFormat, va_list inArgList );

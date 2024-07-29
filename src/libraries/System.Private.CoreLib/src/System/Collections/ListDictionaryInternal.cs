@@ -1,23 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: List for exceptions.
-**
-**
-===========================================================*/
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections
 {
-    ///    This is a simple implementation of IDictionary using a singly linked list. This
-    ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
-    ///    This should not be used if performance is important for large numbers of elements.
+    /// <summary>
+    /// Implements <see cref="IDictionary"/> using a singly linked list.
+    /// Recommended for collections that typically include fewer than 10 items.
+    /// </summary>
+    [DebuggerDisplay("Count = {count}")]
+    [DebuggerTypeProxy(typeof(ListDictionaryInternalDebugView))]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
     public class ListDictionaryInternal : IDictionary
     {
@@ -410,6 +406,32 @@ namespace System.Collections
             public object key = null!;
             public object? value;
             public DictionaryNode? next;
+        }
+
+        private sealed class ListDictionaryInternalDebugView
+        {
+            private readonly ListDictionaryInternal _list;
+
+            public ListDictionaryInternalDebugView(ListDictionaryInternal list)
+            {
+                ArgumentNullException.ThrowIfNull(list);
+                _list = list;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public DebugViewDictionaryItem<object, object?>[] Items
+            {
+                get
+                {
+                    var array = new DebugViewDictionaryItem<object, object?>[_list.count];
+                    int index = 0;
+                    for (DictionaryNode? node = _list.head; node != null; node = node.next)
+                    {
+                        array[index++] = new DebugViewDictionaryItem<object, object?>(node.key, node.value);
+                    }
+                    return array;
+                }
+            }
         }
     }
 }

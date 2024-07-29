@@ -15,6 +15,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Inlining
 {
@@ -92,7 +93,8 @@ public class InlineGCStruct
         return (result == 22);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool withFormat = WithFormatBase();
         bool withoutFormat = WithoutFormatBase();

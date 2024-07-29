@@ -73,7 +73,7 @@ namespace System.Formats.Tar.Tests
             using FileStream archiveStream = File.OpenRead(destinationArchive);
             Exception exception = Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archiveStream, destinationDirectoryName, overwriteFiles: true));
 
-            Assert.Equal(SR.Format(SR.TarExtractingResultsLinkOutside, symlinkTargetPath, destinationDirectoryName), exception.Message);
+            Assert.Equal(SR.Format(SR.TarExtractingResultsLinkOutside, symlinkTargetPath, $"{destinationDirectoryName}{Path.DirectorySeparatorChar}"), exception.Message);
         }
     }
 }

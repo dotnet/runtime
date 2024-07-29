@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private class ImportTable : ArrayOfEmbeddedDataNode<Import>
         {
-            public ImportTable(string startSymbol, string endSymbol) : base(startSymbol, endSymbol, nodeSorter: new EmbeddedObjectNodeComparer(CompilerComparer.Instance)) {}
+            public ImportTable(string symbol) : base(symbol, nodeSorter: new EmbeddedObjectNodeComparer(CompilerComparer.Instance)) {}
 
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
 
@@ -44,8 +44,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _emitPrecode = emitPrecode;
             _emitGCRefMap = emitGCRefMap;
 
-            _imports = new ImportTable(_name + "_ImportBegin", _name + "_ImportEnd");
-            _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", _name + "_SigEnd", new EmbeddedObjectNodeComparer(CompilerComparer.Instance));
+            _imports = new ImportTable(_name + "_ImportBegin");
+            _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", new EmbeddedObjectNodeComparer(CompilerComparer.Instance));
             _signatureList = new List<Signature>();
             _gcRefMap = _emitGCRefMap ? new GCRefMapNode(this) : null;
         }
@@ -101,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (!_imports.ShouldSkipEmittingObjectNode(factory))
             {
-                dataBuilder.EmitReloc(_imports.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
+                dataBuilder.EmitReloc(_imports, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
             }
             else
             {
@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                dataBuilder.EmitReloc(_imports.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE);
+                dataBuilder.EmitReloc(_imports, RelocType.IMAGE_REL_SYMBOL_SIZE);
                 dataBuilder.EmitShort((short)_flags);
                 dataBuilder.EmitByte((byte)_type);
                 dataBuilder.EmitByte(_entrySize);
@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_signatures.ShouldSkipEmittingObjectNode(factory))
             {
-                dataBuilder.EmitReloc(_signatures.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
+                dataBuilder.EmitReloc(_signatures, RelocType.IMAGE_REL_BASED_ADDR32NB, 0);
             }
             else
             {

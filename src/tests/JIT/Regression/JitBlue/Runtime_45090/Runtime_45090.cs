@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 #pragma warning disable CS0649
 
@@ -261,7 +262,7 @@ namespace Runtime_45090
         }
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void TestSkipAllocFrame(AllocFrame scenario)
@@ -269,7 +270,8 @@ namespace Runtime_45090
             scenario.VirtMethodEspBasedFrame();
         }
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             TestSkipAllocFrame(new PushReg());
             TestSkipAllocFrame(new SubSp());
@@ -279,8 +281,6 @@ namespace Runtime_45090
             TestSkipAllocFrame(new ProbeBeforeSubSp3());
             TestSkipAllocFrame(new ProbeBeforeSubSp4());
             TestSkipAllocFrame(new ProbeBeforeSubSp5());
-
-            return 100;
         }
     }
 }

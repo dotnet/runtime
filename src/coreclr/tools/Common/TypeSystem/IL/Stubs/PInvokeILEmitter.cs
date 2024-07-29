@@ -300,16 +300,16 @@ namespace Internal.IL.Stubs
 
             if (!_pInvokeILEmitterConfiguration.GenerateDirectCall(_targetMethod, out _))
             {
+                MethodSignature nativeSig = new MethodSignature(
+                    MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
+                    _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
+
                 MetadataType lazyHelperType = context.GetHelperType("InteropHelpers");
-                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod);
+                FieldDesc lazyDispatchCell = _interopStateManager.GetPInvokeLazyFixupField(_targetMethod, nativeSig);
 
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, emitter.NewToken(lazyHelperType
                     .GetKnownMethod("ResolvePInvoke", null)));
-
-                MethodSignature nativeSig = new MethodSignature(
-                    MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes,
-                    _targetMethod.GetPInvokeMethodCallingConventions().EncodeAsEmbeddedSignatureData(context));
 
                 ILLocalVariable vNativeFunctionPointer = emitter.NewLocal(context
                     .GetWellKnownType(WellKnownType.IntPtr));
@@ -375,7 +375,7 @@ namespace Internal.IL.Stubs
             callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
         }
 
-        private MethodIL EmitIL()
+        private PInvokeILStubMethodIL EmitIL()
         {
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
                 throw new NotSupportedException();

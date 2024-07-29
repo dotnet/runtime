@@ -436,88 +436,35 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	GString *sbuf = g_string_new (NULL);
 	int num_sregs, j;
 	int sregs [MONO_MAX_SRC_REGS];
+	char spec_dest = (char)0, spec_src1 = (char)0, spec_src2 = (char)0, spec_src3 = (char)0;
 
 	if (i != -1)
-		g_string_append_printf (sbuf, "\t%-2d %s", i, mono_inst_name (ins->opcode));
+		g_string_append_printf (sbuf, "\t%-2d " M_PRI_INST "", i, mono_inst_name (ins->opcode));
 	else
-		g_string_append_printf (sbuf, " %s", mono_inst_name (ins->opcode));
-	if (spec == (gpointer)/*FIXME*/MONO_ARCH_CPU_SPEC) {
-		gboolean dest_base = FALSE;
-		switch (ins->opcode) {
-		case OP_STOREV_MEMBASE:
-			dest_base = TRUE;
-			break;
-		default:
-			break;
-		}
-
+		g_string_append_printf (sbuf, " " M_PRI_INST "", mono_inst_name (ins->opcode));
+	if (spec == (gpointer)MONO_ARCH_CPU_SPEC) {
 		/* This is a lowered opcode */
 		if (ins->dreg != -1) {
-			if (dest_base)
-				g_string_append_printf (sbuf, " [R%d + 0x%lx] <-", ins->dreg, (long)ins->inst_offset);
+			if (MONO_IS_STORE_MEMBASE (ins))
+				spec_dest = 'b';
 			else
-				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
+				spec_dest = 'i';
 		}
 		if (ins->sreg1 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg1);
+			spec_src1 = 'i';
 		if (ins->sreg2 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg2);
+			spec_src2 = 'i';
 		if (ins->sreg3 != -1)
-			g_string_append_printf (sbuf, " R%d", ins->sreg3);
-
-		switch (ins->opcode) {
-		case OP_LBNE_UN:
-		case OP_LBEQ:
-		case OP_LBLT:
-		case OP_LBLT_UN:
-		case OP_LBGT:
-		case OP_LBGT_UN:
-		case OP_LBGE:
-		case OP_LBGE_UN:
-		case OP_LBLE:
-		case OP_LBLE_UN:
-			if (!ins->inst_false_bb)
-				g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
-			else
-				g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
-			break;
-		case OP_PHI:
-		case OP_VPHI:
-		case OP_XPHI:
-		case OP_FPHI: {
-			g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
-			for (j = 0; j < ins->inst_phi_args [0]; j++) {
-				if (j)
-					g_string_append_printf (sbuf, ", ");
-				g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [j + 1]);
-			}
-			g_string_append_printf (sbuf, ")]");
-			break;
-		}
-		case OP_LDADDR:
-		case OP_OUTARG_VTRETADDR:
-			g_string_append_printf (sbuf, " R%d", ((MonoInst*)ins->inst_p0)->dreg);
-			break;
-		case OP_REGOFFSET:
-		case OP_GSHAREDVT_ARG_REGOFFSET:
-			g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
-			break;
-		case OP_ISINST:
-		case OP_CASTCLASS:
-			g_string_append_printf (sbuf, " %s", m_class_get_name (ins->klass));
-			break;
-		default:
-			break;
-		}
-
-		//g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
-		return sbuf;
+			spec_src3 = 'i';
+	} else {
+		spec_dest = spec [MONO_INST_DEST];
+		spec_src1 = spec [MONO_INST_SRC1];
 	}
 
-	if (spec [MONO_INST_DEST]) {
+	if (spec_dest) {
 		int bank = dreg_bank (spec);
 		if (is_soft_reg (ins->dreg, bank)) {
-			if (spec [MONO_INST_DEST] == 'b') {
+			if (spec_dest == 'b') {
 				if (ins->inst_offset == 0)
 					g_string_append_printf (sbuf, " [R%d] <-", ins->dreg);
 				else
@@ -525,7 +472,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			}
 			else
 				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
-		} else if (spec [MONO_INST_DEST] == 'b') {
+		} else if (spec_dest == 'b') {
 			if (ins->inst_offset == 0)
 				g_string_append_printf (sbuf, " [%s] <-", mono_arch_regname (ins->dreg));
 			else
@@ -533,25 +480,32 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		} else
 			g_string_append_printf (sbuf, " %s <-", mono_regname_full (ins->dreg, bank));
 	}
-	if (spec [MONO_INST_SRC1]) {
+	if (spec_src1) {
 		int bank = sreg1_bank (spec);
 		if (is_soft_reg (ins->sreg1, bank)) {
-			if (spec [MONO_INST_SRC1] == 'b')
+			if (spec_src1 == 'b')
 				g_string_append_printf (sbuf, " [R%d + 0x%lx]", ins->sreg1, (long)ins->inst_offset);
 			else
 				g_string_append_printf (sbuf, " R%d", ins->sreg1);
-		} else if (spec [MONO_INST_SRC1] == 'b')
+		} else if (spec_src1 == 'b')
 			g_string_append_printf (sbuf, " [%s + 0x%lx]", mono_arch_regname (ins->sreg1), (long)ins->inst_offset);
 		else
 			g_string_append_printf (sbuf, " %s", mono_regname_full (ins->sreg1, bank));
 	}
-	num_sregs = mono_inst_get_src_registers (ins, sregs);
-	for (j = 1; j < num_sregs; ++j) {
-		int bank = sreg_bank (j, spec);
-		if (is_soft_reg (sregs [j], bank))
-			g_string_append_printf (sbuf, " R%d", sregs [j]);
-		else
-			g_string_append_printf (sbuf, " %s", mono_regname_full (sregs [j], bank));
+	if (spec != (gpointer)MONO_ARCH_CPU_SPEC) {
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		for (j = 1; j < num_sregs; ++j) {
+			int bank = sreg_bank (j, spec);
+			if (is_soft_reg (sregs [j], bank))
+				g_string_append_printf (sbuf, " R%d", sregs [j]);
+			else
+				g_string_append_printf (sbuf, " %s", mono_regname_full (sregs [j], bank));
+		}
+	} else {
+		if (spec_src2)
+			g_string_append_printf (sbuf, " R%d", ins->sreg2);
+		if (spec_src3)
+			g_string_append_printf (sbuf, " R%d", ins->sreg3);
 	}
 
 	switch (ins->opcode) {
@@ -594,6 +548,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
+	case OP_XCALL:
+	case OP_XCALL_REG:
+	case OP_XCALL_MEMBASE:
 	case OP_VCALL2:
 	case OP_VCALL2_REG:
 	case OP_VCALL2_MEMBASE:
@@ -683,10 +640,16 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_LBGE_UN:
 	case OP_LBLE:
 	case OP_LBLE_UN:
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+	case OP_RISCV_BNE:
+	case OP_RISCV_BEQ:
+	case OP_RISCV_BGE:
+#endif
 		if (!ins->inst_false_bb)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
-			g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+			                        ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
@@ -728,6 +691,43 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_COND_EXC_INC:
 		g_string_append_printf (sbuf, " %s", (const char*)ins->inst_p1);
 		break;
+	case OP_PHI:
+	case OP_VPHI:
+	case OP_XPHI:
+	case OP_FPHI: {
+		g_string_append_printf (sbuf, " [%d (", (int)ins->inst_c0);
+		for (j = 0; j < ins->inst_phi_args [0]; j++) {
+			if (j)
+				g_string_append_printf (sbuf, ", ");
+			g_string_append_printf (sbuf, "R%d", ins->inst_phi_args [j + 1]);
+		}
+		g_string_append_printf (sbuf, ")]");
+		break;
+	}
+	case OP_LDADDR:
+	case OP_OUTARG_VTRETADDR:
+		g_string_append_printf (sbuf, " R%d", ((MonoInst*)ins->inst_p0)->dreg);
+		break;
+	case OP_REGOFFSET:
+	case OP_GSHAREDVT_ARG_REGOFFSET:
+		g_string_append_printf (sbuf, " + 0x%lx", (long)ins->inst_offset);
+		break;
+	case OP_ISINST:
+	case OP_CASTCLASS:
+		g_string_append_printf (sbuf, " %s", m_class_get_name (ins->klass));
+		break;
+	case OP_XZERO:
+	case OP_XMOVE:
+	case OP_XBINOP:
+	case OP_LOADX_MEMBASE:
+	case OP_STOREX_MEMBASE: {
+		if (ins->klass) {
+			char *s = mono_class_full_name (ins->klass);
+			g_string_append_printf (sbuf, " [%s]", s);
+			g_free (s);
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -1095,6 +1095,9 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 #if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		/* On arm64, rgctx_reg is a global hreg, and it is used to pass an argument */
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && (hreg == AMD64_R12 || hreg == AMD64_R13)))
+#endif
 		g_assert (! is_global_ireg (hreg));
 #endif
 
@@ -1157,11 +1160,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ispec = INS_INFO (i);
 
 			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 		}
 #endif
 	}
@@ -1246,7 +1249,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		spec_dest = spec [MONO_INST_DEST];
 
 		if (G_UNLIKELY (spec == (gpointer)/*FIXME*/MONO_ARCH_CPU_SPEC)) {
-			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
+			g_error ("Opcode '" M_PRI_INST "' missing from machine description file.", mono_inst_name (ins->opcode));
 		}
 
 		DEBUG (mono_print_ins_index (i, ins));
@@ -1827,7 +1830,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					sreg_masks [0] &= ~(regmask (hreg));
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_arch_regname (hreg), reg));
+					DEBUG (printf ("\tassigned arg ireg %s to R%d\n", mono_arch_regname (hreg), reg));
 
 					list = g_slist_next (list);
 				}
@@ -1845,7 +1848,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					assign_reg (cfg, rs, reg, hreg, 1);
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_regname_full (hreg, 1), reg));
+					DEBUG (printf ("\tassigned arg freg %s to R%d\n", mono_regname_full (hreg, 1), reg));
 
 					list = g_slist_next (list);
 				}
@@ -2168,8 +2171,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 MONO_RESTORE_WARNING
 
+/* Returns -1 if opcode is not a conditional */
 CompRelation
-mono_opcode_to_cond (int opcode)
+mono_opcode_to_cond_unchecked (int opcode)
 {
 	switch (opcode) {
 	case OP_CEQ:
@@ -2289,10 +2293,21 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LGT_UN:
 		return CMP_GT_UN;
 	default:
-		printf ("%s\n", mono_inst_name (opcode));
+		return (CompRelation)-1;
+	}
+}
+
+CompRelation
+mono_opcode_to_cond (int opcode)
+{
+	CompRelation rel = mono_opcode_to_cond_unchecked (opcode);
+
+	if (rel == (CompRelation)-1) {
+		printf ("" M_PRI_INST "\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return (CompRelation)0;
 	}
+	return rel;
 }
 
 CompRelation
@@ -2352,7 +2367,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 			return CMP_TYPE_L;
 		}
 	} else {
-		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
+		g_error ("Unknown opcode '" M_PRI_INST "' in opcode_to_type", mono_inst_name (opcode));
 		return (CompType)0;
 	}
 }

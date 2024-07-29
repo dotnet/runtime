@@ -9,7 +9,7 @@ namespace System.Collections.Concurrent
 {
     /// <summary>Provides a thread-safe object pool.</summary>
     /// <typeparam name="T">Specifies the type of the elements stored in the pool.</typeparam>
-    [DebuggerDisplay("Count={Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(IProducerConsumerCollection_DebugView<>))]
     public sealed class ObjectPool<T> : ProducerConsumerCollectionBase<T>
     {

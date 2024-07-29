@@ -48,8 +48,6 @@ RhpNewFast_RarePath
         b           RhpNewObject
     LEAF_END RhpNewFast
 
-    INLINE_GETTHREAD_CONSTANT_POOL
-
 ;; Allocate non-array object with finalizer.
 ;;  x0 == MethodTable
     LEAF_ENTRY RhpNewFinalizable
@@ -149,9 +147,6 @@ StringSizeOverflow
         b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhNewString
 
-    INLINE_GETTHREAD_CONSTANT_POOL
-
-
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  x0 == MethodTable
 ;;  x1 == element count
@@ -212,8 +207,6 @@ ArraySizeOverflow
         mov         x1, #1                  ; Indicate that we should throw OverflowException
         b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhpNewArray
-
-    INLINE_GETTHREAD_CONSTANT_POOL
 
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable

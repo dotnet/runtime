@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchI
 {
@@ -91,7 +92,8 @@ public class Permutate
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = TestBase();
         return (result ? 100 : -1);

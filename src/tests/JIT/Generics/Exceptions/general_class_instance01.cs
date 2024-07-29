@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -79,7 +80,8 @@ public class Test_general_class_instance01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Eval(new Gen<int>().ExceptionTest(true));
         Eval(new Gen<double>().ExceptionTest(true));

@@ -964,7 +964,7 @@ void DebugInfoRequest::InitFromStartingAddr(MethodDesc * pMD, PCODE addrCode)
     CONTRACTL_END;
 
     _ASSERTE(pMD != NULL);
-    _ASSERTE(addrCode != NULL);
+    _ASSERTE(addrCode != (PCODE)NULL);
 
     this->m_pMD       = pMD;
     this->m_addrStart = addrCode;
@@ -1036,7 +1036,7 @@ void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlag
     CONTRACTL_END;
 
     PCODE addrCode = pMD->GetNativeCode();
-    if (addrCode == NULL)
+    if (addrCode == (PCODE)NULL)
     {
         return;
     }

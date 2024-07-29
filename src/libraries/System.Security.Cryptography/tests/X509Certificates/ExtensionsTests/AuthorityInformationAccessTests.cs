@@ -272,8 +272,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
                 Assert.Throws<ArgumentNullException>("accessMethodOid", () => aia.EnumerateUris((string)null));
                 Assert.Throws<ArgumentNullException>("accessMethodOid", () => aia.EnumerateUris((Oid)null));
-                Assert.Throws<ArgumentException>("accessMethodOid", () => aia.EnumerateUris(new Oid(null, "potato")));
-                Assert.Throws<ArgumentException>("accessMethodOid", () => aia.EnumerateUris(new Oid("", "potato")));
+                Assert.Throws<ArgumentNullException>("accessMethodOid.Value", () => aia.EnumerateUris(new Oid(null, "potato")));
+                Assert.Throws<ArgumentException>("accessMethodOid.Value", () => aia.EnumerateUris(new Oid("", "potato")));
             }
         }
 

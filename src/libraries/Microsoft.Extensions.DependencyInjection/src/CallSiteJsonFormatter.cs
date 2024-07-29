@@ -7,9 +7,9 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    internal sealed class CallSiteJsonFormatter: CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object?>
+    internal sealed class CallSiteJsonFormatter : CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object?>
     {
-        internal static CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
+        internal static readonly CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
 
         private CallSiteJsonFormatter()
         {
@@ -159,7 +159,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     _firstItem = false;
                 }
-                Builder.AppendFormat("\"{0}\":", name);
+
+                Builder.Append('"').Append(name).Append("\":");
             }
 
             public void StartArrayItem()
@@ -179,11 +180,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 StartProperty(name);
                 if (value != null)
                 {
-                    Builder.AppendFormat(" \"{0}\"", value);
+                    Builder.Append(" \"").Append(value).Append('"');
                 }
                 else
                 {
-                    Builder.Append( "null");
+                    Builder.Append("null");
                 }
             }
 

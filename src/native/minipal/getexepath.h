@@ -30,21 +30,15 @@ extern "C" {
 static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
-    uint32_t path_length = 0;
-    if (_NSGetExecutablePath(NULL, &path_length) != -1)
+    uint32_t len = PATH_MAX;
+    char pathBuf[PATH_MAX];
+    if (_NSGetExecutablePath(pathBuf, &len) != 0)
     {
         errno = EINVAL;
         return NULL;
     }
 
-    char path_buf[path_length];
-    if (_NSGetExecutablePath(path_buf, &path_length) != 0)
-    {
-        errno = EINVAL;
-        return NULL;
-    }
-
-    return realpath(path_buf, NULL);
+    return realpath(pathBuf, NULL);
 #elif defined(__FreeBSD__)
     static const int name[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
     char path[PATH_MAX];
@@ -92,7 +86,7 @@ static inline char* minipal_getexepath(void)
     // fallback to AT_EXECFN, which does not work properly in rare cases
     // when .NET process is set as interpreter (shebang).
     const char* exePath = (const char *)(getauxval(AT_EXECFN));
-    if (exePath && !errno)
+    if (exePath)
     {
         return realpath(exePath, NULL);
     }

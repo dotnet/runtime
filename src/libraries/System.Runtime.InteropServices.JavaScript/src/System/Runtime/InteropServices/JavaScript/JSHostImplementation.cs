@@ -1,12 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using System.Reflection;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -14,71 +15,22 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private const string TaskGetResultName = "get_Result";
         private static MethodInfo? s_taskGetResultMethodInfo;
-        // we use this to maintain identity of JSHandle for a JSObject proxy
-        public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
-        // we use this to maintain identity of GCHandle for a managed object
-        public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseCSOwnedObject(nint jsHandle)
+        public static bool GetTaskResultDynamic(Task task, out object? value)
         {
-            if (jsHandle != IntPtr.Zero)
+            var type = task.GetType();
+            if (type == typeof(Task))
             {
-                lock (s_csOwnedObjects)
-                {
-                    s_csOwnedObjects.Remove((int)jsHandle);
-                }
-                Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                value = null;
+                return false;
             }
-        }
-
-        public static object? GetTaskResultDynamic(Task task)
-        {
-            MethodInfo method = GetTaskResultMethodInfo(task.GetType());
+            MethodInfo method = GetTaskResultMethodInfo(type);
             if (method != null)
             {
-                return method.Invoke(task, null);
+                value = method.Invoke(task, null);
+                return true;
             }
             throw new InvalidOperationException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseInFlight(object obj)
-        {
-            JSObject? jsObj = obj as JSObject;
-            jsObj?.ReleaseInFlight();
-        }
-
-        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
-        // The managed side maintains a strong reference to the object, while the JS side
-        //  maintains a weak reference and notifies the managed side if the JS wrapper object
-        //  has been reclaimed by the JS GC. At that point, the managed side will release its
-        //  strong references, allowing the managed object to be collected.
-        // This ensures that things like delegates and promises will never 'go away' while JS
-        //  is expecting to be able to invoke or await them.
-        public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
-        {
-            if (obj == null)
-                return IntPtr.Zero;
-
-            IntPtr result;
-            lock (s_gcHandleFromJSOwnedObject)
-            {
-                IntPtr gcHandle;
-                if (s_gcHandleFromJSOwnedObject.TryGetValue(obj, out gcHandle))
-                    return gcHandle;
-
-                result = (IntPtr)GCHandle.Alloc(obj, handleType);
-                s_gcHandleFromJSOwnedObject[obj] = result;
-                return result;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
-        {
-            var temp = new IntPtrAndHandle { ptr = ptr };
-            return temp.methodHandle;
         }
 
         /// <summary>
@@ -112,7 +64,9 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
@@ -121,37 +75,61 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw ex;
             }
-            throw new InvalidProgramException();
+            throw new InvalidOperationException();
         }
 
         public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
-            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
-            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
-            return await wrappedTask.ConfigureAwait(true);
+            var wrappedTask = CancellationHelper(modulePromise, cancellationToken);
+            return await wrappedTask.ConfigureAwait(
+                ConfigureAwaitOptions.ContinueOnCapturedContext |
+                ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
-        public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
                 return jsTask.Result;
             }
-            using (var receiveRegistration = cancellationToken.Register(() =>
+            using (var receiveRegistration = cancellationToken.Register(static s =>
             {
-                CancelablePromise.CancelPromise(jsTask);
-            }))
+                CancelablePromise.CancelPromise((Task<JSObject>)s!);
+            }, jsTask))
             {
-                return await jsTask.ConfigureAwait(true);
+                return await jsTask.ConfigureAwait(false);
             }
         }
 
         // res type is first argument
-        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName)
         {
             int argsCount = types.Length - 1;
             int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+
+            int functionNameBytes = 0;
+            int functionNameOffset = 0;
+            if (functionName != null)
+            {
+                functionNameOffset = size;
+                size += 4;
+                functionNameBytes = functionName.Length * 2;
+                size += functionNameBytes;
+            }
+            int moduleNameBytes = 0;
+            int moduleNameOffset = 0;
+            if (moduleName != null)
+            {
+                moduleNameOffset = size;
+                size += 4;
+                moduleNameBytes = moduleName.Length * 2;
+                size += moduleNameBytes;
+            }
+
             // this is never unallocated
             IntPtr buffer = Marshal.AllocHGlobal(size);
 
@@ -161,33 +139,263 @@ namespace System.Runtime.InteropServices.JavaScript
                 Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
             };
 
-            signature.Version = 1;
+            signature.Version = 2;
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
+#if FEATURE_WASM_MANAGED_THREADS
+            signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
+#else
+            signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
+#endif
+
+#if DEBUG
+            signature.FunctionName = functionName;
+#endif
             for (int i = 0; i < argsCount; i++)
             {
-                signature.Sigs[i] = types[i + 1]._signatureType;
+                var type = signature.Sigs[i] = types[i + 1]._signatureType;
+            }
+            signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+            signature.IsDiscardNoWait = types[0]._signatureType.Type == MarshalerType.DiscardNoWait;
+
+            signature.Header[0].ImportHandle = signature.ImportHandle;
+            signature.Header[0].FunctionNameLength = functionNameBytes;
+            signature.Header[0].FunctionNameOffset = functionNameOffset;
+            signature.Header[0].ModuleNameLength = moduleNameBytes;
+            signature.Header[0].ModuleNameOffset = moduleNameOffset;
+            if (functionNameBytes != 0)
+            {
+                fixed (void* fn = functionName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + functionNameOffset, fn, (uint)functionNameBytes);
+                }
+            }
+            if (moduleNameBytes != 0)
+            {
+                fixed (void* mn = moduleName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + moduleNameOffset, mn, (uint)moduleNameBytes);
+                }
+
             }
 
             return signature;
         }
 
-        public static JSObject CreateCSOwnedProxy(nint jsHandle)
+        public static unsafe void FreeMethodSignatureBuffer(JSFunctionBinding signature)
         {
-            JSObject? res = null;
+            Marshal.FreeHGlobal((nint)signature.Header);
+            signature.Header = null;
+            signature.Sigs = null;
+        }
 
-            lock (s_csOwnedObjects)
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadLazyAssembly(byte[] dllBytes, byte[]? pdbBytes)
+        {
+            if (pdbBytes == null)
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+            else
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadSatelliteAssembly(byte[] dllBytes)
+        {
+            AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+        }
+
+        public static unsafe Task<int>? CallEntrypoint(IntPtr assemblyNamePtr, string?[]? args, bool waitForDebugger)
+        {
+            try
             {
-                if (!s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
-                    res.IsDisposed)
+                void* ptr;
+                Interop.Runtime.AssemblyGetEntryPoint(assemblyNamePtr, waitForDebugger ? 1 : 0, &ptr);
+                RuntimeMethodHandle methodHandle = GetMethodHandleFromIntPtr((IntPtr)ptr);
+                // this would not work for generic types. But Main() could not be generic, so we are fine.
+                MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
+                if (method == null)
                 {
-                    res = new JSObject(jsHandle);
-                    s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
                 }
+
+                object[] argsToPass = System.Array.Empty<object>();
+                Task<int>? result = null;
+                var parameterInfos = method.GetParameters();
+                if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
+                {
+                    argsToPass = new object[] { args ?? System.Array.Empty<string>() };
+                }
+                if (method.ReturnType == typeof(void))
+                {
+                    method.Invoke(null, argsToPass);
+#if FEATURE_WASM_MANAGED_THREADS
+                    result = Task.FromResult(0);
+#endif
+                }
+                else if (method.ReturnType == typeof(int))
+                {
+                    int intResult = (int)method.Invoke(null, argsToPass)!;
+                    result = Task.FromResult(intResult);
+                }
+                else if (method.ReturnType == typeof(Task))
+                {
+                    Task methodResult = (Task)method.Invoke(null, argsToPass)!;
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    result = tcs.Task;
+                    methodResult.ContinueWith((t) =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            tcs.SetException(t.Exception!);
+                        }
+                        else
+                        {
+                            tcs.SetResult(0);
+                        }
+                    }, TaskScheduler.Default);
+                }
+                else if (method.ReturnType == typeof(Task<int>))
+                {
+                    result = (Task<int>)method.Invoke(null, argsToPass)!;
+                }
+                else
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
+                }
+                return result;
             }
-            return res;
+            catch (Exception ex)
+            {
+                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
+                    ex = refEx.InnerException;
+                return Task.FromException<int>(ex);
+            }
+        }
+
+        public static unsafe Task BindAssemblyExports(string? assemblyName)
+        {
+            Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
+            return Task.CompletedTask;
+        }
+
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
+        {
+            var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
+
+            var dllName = assemblyName + ".dll";
+
+            IntPtr monoMethod;
+            Interop.Runtime.GetAssemblyExport(
+                // FIXME: Pass UTF-16 through directly so C can work with it, doing the conversion
+                //  in C# pulls in a bunch of dependencies we don't need this early in startup.
+                // I tested removing the UTF8 conversion from this specific call, but other parts
+                //  of startup I can't identify still pull in UTF16->UTF8 conversion, so it's not
+                //  worth it to do that yet.
+                Marshal.StringToCoTaskMemUTF8(dllName),
+                Marshal.StringToCoTaskMemUTF8(nameSpace),
+                Marshal.StringToCoTaskMemUTF8(shortClassName),
+                Marshal.StringToCoTaskMemUTF8(methodName),
+                signatureHash,
+                &monoMethod);
+
+            if (monoMethod == IntPtr.Zero)
+            {
+                Environment.FailFast($"Can't find {nameSpace}{shortClassName}{methodName} in {assemblyName}.dll");
+            }
+
+            var signature = GetMethodSignature(signatures, null, null);
+
+            // this will hit JS side possibly on another thread, depending on JSProxyContext.CurrentThreadContext
+            JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
+
+            FreeMethodSignatureBuffer(signature);
+
+            return signature;
+        }
+
+#if FEATURE_WASM_MANAGED_THREADS
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
+        private static extern ref bool GetThreadExternalEventloop(Thread @this);
+
+        public static void SetHasExternalEventLoop(Thread thread)
+        {
+            GetThreadExternalEventloop(thread) = true;
+        }
+#endif
+
+#if !DEBUG
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
+        {
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.methodHandle;
+        }
+
+        // The BCL implementations of IndexOf/LastIndexOf/Trim are vectorized & fast,
+        //  but they pull in a bunch of code that is otherwise not necessarily
+        //  useful during early app startup, so we use simple scalar implementations
+        private static int SmallIndexOf (string s, char ch, int direction = 1) {
+            if (s.Length < 1)
+                return -1;
+            int start_index = (direction > 0) ? 0 : s.Length - 1,
+                end_index = (direction > 0) ? s.Length - 1 : 0;
+            for (int i = start_index; i != end_index; i += direction) {
+                if (s[i] == ch)
+                    return i;
+            }
+            return -1;
+        }
+
+        private static string SmallTrim (string s) {
+            if (s.Length < 1)
+                return s;
+            int head = 0, tail = s.Length - 1;
+            while (head < s.Length) {
+                if (s[head] == ' ')
+                    head++;
+                else
+                    break;
+            }
+            while (tail >= 0) {
+                if (s[tail] == ' ')
+                    tail--;
+                else
+                    break;
+            }
+            if ((head > 0) || (tail < s.Length - 1))
+                return s.Substring(head, tail - head + 1);
+            else
+                return s;
+        }
+
+        public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
+        {
+            var assembly = fqn.Substring(SmallIndexOf(fqn, '[') + 1, SmallIndexOf(fqn, ']') - 1);
+            fqn = SmallTrim(fqn);
+            fqn = fqn.Substring(SmallIndexOf(fqn, ']') + 1);
+            fqn = SmallTrim(fqn);
+            var methodName = fqn.Substring(SmallIndexOf(fqn, ':') + 1);
+            var className = fqn.Substring(0, SmallIndexOf(fqn, ':'));
+            className = SmallTrim(className);
+
+            var nameSpace = "";
+            var shortClassName = className;
+            var idx = SmallIndexOf(fqn, '.', -1);
+            if (idx != -1)
+            {
+                nameSpace = fqn.Substring(0, idx);
+                shortClassName = className.Substring(idx + 1);
+            }
+
+            if (string.IsNullOrEmpty(assembly))
+                throw new InvalidOperationException("No assembly name specified " + fqn);
+            if (string.IsNullOrEmpty(className))
+                throw new InvalidOperationException("No class name specified " + fqn);
+            if (string.IsNullOrEmpty(methodName))
+                throw new InvalidOperationException("No method name specified " + fqn);
+            return (assembly, nameSpace, shortClassName, methodName);
         }
     }
 }

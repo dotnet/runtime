@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix)
-                .Append("__InterfaceDispatchCell_")
+                .Append("__InterfaceDispatchCell_"u8)
                 .Append(nameMangler.GetMangledMethodName(_targetMethod));
 
             if (_callSiteIdentifier != null)
@@ -54,58 +54,60 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList result = new DependencyList();
 
-            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            if (!factory.VTable(_targetMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
             }
 
             factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
 
-            TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM)
-            {
-                result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
-            }
-            else
-            {
-                result.Add(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"), "Initial interface dispatch stub");
-            }
+            result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
 
-            result.Add(factory.NecessaryTypeSymbol(_targetMethod.OwningType), "Interface type");
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            result.Add(factory.ConstructedTypeSymbol(_targetMethod.OwningType), "Interface type");
 
             return result;
         }
 
         public override void EncodeData(ref ObjectDataBuilder objData, NodeFactory factory, bool relocsOnly)
         {
-            TargetArchitecture targetArchitecture = factory.Target.Architecture;
-            if (targetArchitecture == TargetArchitecture.ARM)
+            objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
+
+            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            // see a RuntimeTypeHandle representing this interface.
+            IEETypeNode interfaceType = factory.ConstructedTypeSymbol(_targetMethod.OwningType);
+            if (factory.Target.SupportsRelativePointers)
             {
-                objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
+                if (interfaceType.RepresentsIndirectionCell)
+                {
+                    objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
+                }
+                else
+                {
+                    objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                        (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
+                }
+
+                if (objData.TargetPointerSize == 8)
+                {
+                    // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer
+                    // width there since a pointer to the cache will be written into the cell. Emit additional
+                    // 32 bits on targets whose pointer size is 64 bit.
+                    objData.EmitInt(0);
+                }
             }
             else
             {
-                objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
-            }
-
-            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
-            if (interfaceType.RepresentsIndirectionCell)
-            {
-                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
-            }
-            else
-            {
-                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
-                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
-            }
-
-            if (objData.TargetPointerSize == 8)
-            {
-                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer
-                // width there since a pointer to the cache will be written into the cell. Emit additional
-                // 32 bits on targets whose pointer size is 64 bit.
-                objData.EmitInt(0);
+                // There are no free bits in the cache flags, but we could support the indirection cell case
+                // by repurposing "CachePointerIsIndirectedInterfaceRelativePointer" to mean "relative indirect
+                // if the target supports it, simple indirect otherwise".
+                Debug.Assert(!interfaceType.RepresentsIndirectionCell);
+                objData.EmitPointerReloc(interfaceType,
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfacePointerOrMetadataToken);
             }
         }
 

@@ -121,7 +121,7 @@ struct _EventPipeSequencePoint {
 #else
 struct _EventPipeSequencePoint_Internal {
 #endif
-	ep_rt_thread_sequence_number_hash_map_t thread_sequence_numbers;
+	dn_umap_t *thread_sequence_numbers;
 	ep_timestamp_t timestamp;
 };
 
@@ -131,7 +131,7 @@ struct _EventPipeSequencePoint {
 };
 #endif
 
-EP_DEFINE_GETTER_REF(EventPipeSequencePoint *, sequence_point, ep_rt_thread_sequence_number_hash_map_t *, thread_sequence_numbers)
+EP_DEFINE_GETTER(EventPipeSequencePoint *, sequence_point, dn_umap_t *, thread_sequence_numbers)
 EP_DEFINE_GETTER(EventPipeSequencePoint *, sequence_point, ep_timestamp_t, timestamp)
 EP_DEFINE_SETTER(EventPipeSequencePoint *, sequence_point, ep_timestamp_t, timestamp)
 

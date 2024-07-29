@@ -12,23 +12,23 @@ namespace System.IO
     {
         private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
 
-        public static char[] GetInvalidFileNameChars() => new char[]
-        {
+        public static char[] GetInvalidFileNameChars() =>
+        [
             '\"', '<', '>', '|', '\0',
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31, ':', '*', '?', '\\', '/'
-        };
+        ];
 
-        public static char[] GetInvalidPathChars() => new char[]
-        {
+        public static char[] GetInvalidPathChars() =>
+        [
             '|', '\0',
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31
-        };
+        ];
 
         private static bool ExistsCore(string fullPath, out bool isDirectory)
         {
@@ -49,7 +49,7 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            // Embedded null characters are the only invalid character case we trully care about.
+            // Embedded null characters are the only invalid character case we truly care about.
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
             if (path.Contains('\0'))
@@ -89,7 +89,7 @@ namespace System.IO
                 // Drive relative paths
                 Debug.Assert(length == 2 || !PathInternal.IsDirectorySeparator(path[2]));
 
-                if (GetVolumeName(path.AsSpan()).EqualsOrdinal(GetVolumeName(basePath.AsSpan())))
+                if (GetVolumeName(path.AsSpan()).EqualsOrdinalIgnoreCase(GetVolumeName(basePath.AsSpan())))
                 {
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
@@ -245,7 +245,7 @@ namespace System.IO
                 span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
                 span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
 
-                string path = string.Concat(Path.GetTempPath(), span);
+                string path = string.Concat(GetTempPath(), span);
 
                 try
                 {
@@ -334,7 +334,7 @@ namespace System.IO
             }
 
             ReadOnlySpan<char> pathToTrim = root.Slice(startOffset);
-            return Path.EndsInDirectorySeparator(pathToTrim) ? pathToTrim.Slice(0, pathToTrim.Length - 1) : pathToTrim;
+            return EndsInDirectorySeparator(pathToTrim) ? pathToTrim.Slice(0, pathToTrim.Length - 1) : pathToTrim;
         }
 
         /// <summary>
@@ -349,8 +349,8 @@ namespace System.IO
             if (!isDevice && path.Slice(0, 2).EqualsOrdinal(@"\\".AsSpan()))
                 return 2;
             else if (isDevice && path.Length >= 8
-                && (path.Slice(0, 8).EqualsOrdinal(PathInternal.UncExtendedPathPrefix.AsSpan())
-                || path.Slice(5, 4).EqualsOrdinal(@"UNC\".AsSpan())))
+                && (path.Slice(0, 8).EqualsOrdinalIgnoreCase(PathInternal.UncExtendedPathPrefix.AsSpan())
+                || path.Slice(5, 4).EqualsOrdinalIgnoreCase(@"UNC\".AsSpan())))
                 return 8;
 
             return -1;

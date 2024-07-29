@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class TestClassWithNull
     {
-        public string MyString { get; set; }
+        public string? MyString { get; set; }
         public static readonly string s_json =
                 @"{" +
                 @"""MyString"" : null" +
@@ -145,31 +145,31 @@ namespace System.Text.Json.Serialization.Tests
 
     public class TestClassWithInitializedProperties
     {
-        public string MyString { get; set; } = "Hello";
+        public string? MyString { get; set; } = "Hello";
         public int? MyInt { get; set; } = 1;
         public DateTime? MyDateTime { get; set; } = new DateTime(1995, 4, 16);
-        public int[] MyIntArray { get; set; } = new int[] { 1 };
-        public List<int> MyIntList { get; set; } = new List<int> { 1 };
-        public List<int?> MyNullableIntList { get; set; } = new List<int?> { 1 };
-        public List<object> MyObjectList { get; set; } = new List<object> { 1 };
-        public List<List<object>> MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
-        public List<Dictionary<string, string>> MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
+        public int[]? MyIntArray { get; set; } = new int[] { 1 };
+        public List<int>? MyIntList { get; set; } = new List<int> { 1 };
+        public List<int?>? MyNullableIntList { get; set; } = new List<int?> { 1 };
+        public List<object>? MyObjectList { get; set; } = new List<object> { 1 };
+        public List<List<object>>? MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
+        public List<Dictionary<string, string>>? MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
             new Dictionary<string, string> { ["key"] = "value" }
         };
-        public Dictionary<string, string> MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
-        public Dictionary<string, DateTime?> MyNullableDateTimeDictionary { get; set; } = new Dictionary<string, DateTime?> { ["key"] = new DateTime(1995, 04, 16) };
-        public Dictionary<string, object> MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
-        public Dictionary<string, Dictionary<string, string>> MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
+        public Dictionary<string, string>? MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
+        public Dictionary<string, DateTime?>? MyNullableDateTimeDictionary { get; set; } = new Dictionary<string, DateTime?> { ["key"] = new DateTime(1995, 04, 16) };
+        public Dictionary<string, object>? MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
+        public Dictionary<string, Dictionary<string, string>>? MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
         {
             ["key"] = new Dictionary<string, string>
             {
                 ["key"] = "value"
             }
         };
-        public Dictionary<string, List<object>> MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
+        public Dictionary<string, List<object>>? MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
             ["key"] = new List<object> { "value" }
         };
-        public Dictionary<string, Dictionary<string, object>> MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        public Dictionary<string, Dictionary<string, object>>? MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
         {
             ["key"] = new Dictionary<string, object>
             {
@@ -461,7 +461,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -510,7 +514,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -561,7 +569,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -686,7 +698,7 @@ namespace System.Text.Json.Serialization.Tests
     public class SimpleClassWithDictionary
     {
         public int MyInt { get; set; }
-        public Dictionary<string, string> MyDictionary { get; set; }
+        public Dictionary<string, string>? MyDictionary { get; set; }
     }
     public class OuterClassHavingPropertiesDefinedAfterClassWithDictionary
     {
@@ -1720,9 +1732,9 @@ namespace System.Text.Json.Serialization.Tests
 
     public class BasicCompany : ITestClass
     {
-        public List<BasicJsonAddress> sites { get; set; }
-        public BasicJsonAddress mainSite { get; set; }
-        public string name { get; set; }
+        public List<BasicJsonAddress>? sites { get; set; }
+        public BasicJsonAddress? mainSite { get; set; }
+        public string? name { get; set; }
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
             "{\n" +
@@ -1800,7 +1812,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ClassWithExtensionProperty
     {
-        public SimpleTestClass MyNestedClass { get; set; }
+        public SimpleTestClass? MyNestedClass { get; set; }
         public int MyInt { get; set; }
 
         [JsonExtensionData]
@@ -1809,7 +1821,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ClassWithExtensionField
     {
-        public SimpleTestClass MyNestedClass { get; set; }
+        public SimpleTestClass? MyNestedClass { get; set; }
         public int MyInt { get; set; }
 
         [JsonInclude]
@@ -1882,79 +1894,92 @@ namespace System.Text.Json.Serialization.Tests
         {
             throw new NotImplementedException("Converter was called");
         }
+
+        // In source-gen, internal converters are not used as fallbacks when custom converters don't provide an implementation.
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        public override int ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => int.Parse(reader.GetString());
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            => writer.WritePropertyName(value.ToString());
+#endif
     }
 
-    public class SimpleSnakeCasePolicy : JsonNamingPolicy
+    public static class ReflectionExtensions
     {
-        public override string ConvertName(string name)
-        {
-            return string.Concat(name.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString())).ToLower();
-        }
+#if NET
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public static Type WithConstructors(
+            [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+            this Type type) => type;
+#else
+        public static Type WithConstructors(this Type type) => type;
+#endif
     }
 
     public static class CollectionTestTypes
     {
         public static IEnumerable<Type> EnumerableTypes<TElement>()
         {
-            yield return typeof(TElement[]); // ArrayConverter
-            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
-            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
-            yield return typeof(WrapperForIEnumerable); // IEnumerableConverter
-            yield return typeof(WrapperForIReadOnlyCollectionOfT<TElement>); // IEnumerableOfTConverter
-            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
-            yield return typeof(WrapperForIList); // IListConverter
-            yield return typeof(Collection<TElement>); // IListOfTConverter
-            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
-            yield return typeof(HashSet<TElement>); // ISetOfTConverter
-            yield return typeof(List<TElement>); // ListOfTConverter
-            yield return typeof(Queue<TElement>); // QueueOfTConverter
+            yield return typeof(TElement[]).WithConstructors(); // ArrayConverter
+            yield return typeof(ConcurrentQueue<TElement>).WithConstructors(); // ConcurrentQueueOfTConverter
+            yield return typeof(GenericICollectionWrapper<TElement>).WithConstructors(); // ICollectionOfTConverter
+            yield return typeof(WrapperForIEnumerable).WithConstructors(); // IEnumerableConverter
+            yield return typeof(WrapperForIReadOnlyCollectionOfT<TElement>).WithConstructors(); // IEnumerableOfTConverter
+            yield return typeof(Queue).WithConstructors(); // IEnumerableWithAddMethodConverter
+            yield return typeof(WrapperForIList).WithConstructors(); // IListConverter
+            yield return typeof(Collection<TElement>).WithConstructors(); // IListOfTConverter
+            yield return typeof(ImmutableList<TElement>).WithConstructors(); // ImmutableEnumerableOfTConverter
+            yield return typeof(HashSet<TElement>).WithConstructors(); // ISetOfTConverter
+            yield return typeof(List<TElement>).WithConstructors(); // ListOfTConverter
+            yield return typeof(Queue<TElement>).WithConstructors(); // QueueOfTConverter
         }
 
         public static IEnumerable<Type> DeserializableGenericEnumerableTypes<TElement>()
         {
-            yield return typeof(TElement[]); // ArrayConverter
-            yield return typeof(ConcurrentQueue<TElement>); // ConcurrentQueueOfTConverter
-            yield return typeof(GenericICollectionWrapper<TElement>); // ICollectionOfTConverter
-            yield return typeof(IEnumerable<TElement>); // IEnumerableConverter
-            yield return typeof(Collection<TElement>); // IListOfTConverter
-            yield return typeof(ImmutableList<TElement>); // ImmutableEnumerableOfTConverter
-            yield return typeof(HashSet<TElement>); // ISetOfTConverter
-            yield return typeof(List<TElement>); // ListOfTConverter
-            yield return typeof(Queue<TElement>); // QueueOfTConverter
+            yield return typeof(TElement[]).WithConstructors(); // ArrayConverter
+            yield return typeof(ConcurrentQueue<TElement>).WithConstructors(); // ConcurrentQueueOfTConverter
+            yield return typeof(GenericICollectionWrapper<TElement>).WithConstructors(); // ICollectionOfTConverter
+            yield return typeof(IEnumerable<TElement>).WithConstructors(); // IEnumerableConverter
+            yield return typeof(Collection<TElement>).WithConstructors(); // IListOfTConverter
+            yield return typeof(ImmutableList<TElement>).WithConstructors(); // ImmutableEnumerableOfTConverter
+            yield return typeof(HashSet<TElement>).WithConstructors(); // ISetOfTConverter
+            yield return typeof(List<TElement>).WithConstructors(); // ListOfTConverter
+            yield return typeof(Queue<TElement>).WithConstructors(); // QueueOfTConverter
         }
 
         public static IEnumerable<Type> DeserializableNonGenericEnumerableTypes()
         {
-            yield return typeof(Queue); // IEnumerableWithAddMethodConverter
-            yield return typeof(WrapperForIList); // IListConverter
+            yield return typeof(Queue).WithConstructors(); // IEnumerableWithAddMethodConverter
+            yield return typeof(WrapperForIList).WithConstructors(); // IListConverter
         }
 
         public static IEnumerable<Type> DictionaryTypes<TElement>()
         {
-            yield return typeof(Dictionary<string, TElement>); // DictionaryOfStringTValueConverter
-            yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(ConcurrentDictionary<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(GenericIDictionaryWrapper<string, TElement>); // IDictionaryOfStringTValueConverter
-            yield return typeof(ImmutableDictionary<string, TElement>); // ImmutableDictionaryOfStringTValueConverter
-            yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>); // IReadOnlyDictionaryOfStringTValueConverter
+            yield return typeof(Dictionary<string, TElement>).WithConstructors(); // DictionaryOfStringTValueConverter
+            yield return typeof(Hashtable).WithConstructors(); // IDictionaryConverter
+            yield return typeof(ConcurrentDictionary<string, TElement>).WithConstructors(); // IDictionaryOfStringTValueConverter
+            yield return typeof(GenericIDictionaryWrapper<string, TElement>).WithConstructors(); // IDictionaryOfStringTValueConverter
+            yield return typeof(ImmutableDictionary<string, TElement>).WithConstructors(); // ImmutableDictionaryOfStringTValueConverter
+            yield return typeof(GenericIReadOnlyDictionaryWrapper<string, TElement>).WithConstructors(); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
         public static IEnumerable<Type> DeserializableDictionaryTypes<TKey, TValue>()
         {
-            yield return typeof(Dictionary<TKey, TValue>); // DictionaryOfStringTValueConverter
-            yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(IDictionary); // IDictionaryConverter
-            yield return typeof(ConcurrentDictionary<TKey, TValue>); // IDictionaryOfStringTValueConverter
-            yield return typeof(IDictionary<TKey, TValue>); // IDictionaryOfStringTValueConverter
-            yield return typeof(GenericIDictionaryWrapper<TKey, TValue>); // IDictionaryOfStringTValueConverter
-            yield return typeof(ImmutableDictionary<TKey, TValue>); // ImmutableDictionaryOfStringTValueConverter
-            yield return typeof(IReadOnlyDictionary<TKey, TValue>); // IReadOnlyDictionaryOfStringTValueConverter
+            yield return typeof(Dictionary<TKey, TValue>).WithConstructors(); // DictionaryOfStringTValueConverter
+            yield return typeof(Hashtable).WithConstructors(); // IDictionaryConverter
+            yield return typeof(IDictionary).WithConstructors(); // IDictionaryConverter
+            yield return typeof(ConcurrentDictionary<TKey, TValue>).WithConstructors(); // IDictionaryOfStringTValueConverter
+            yield return typeof(IDictionary<TKey, TValue>).WithConstructors(); // IDictionaryOfStringTValueConverter
+            yield return typeof(GenericIDictionaryWrapper<TKey, TValue>).WithConstructors(); // IDictionaryOfStringTValueConverter
+            yield return typeof(ImmutableDictionary<TKey, TValue>).WithConstructors(); // ImmutableDictionaryOfStringTValueConverter
+            yield return typeof(IReadOnlyDictionary<TKey, TValue>).WithConstructors(); // IReadOnlyDictionaryOfStringTValueConverter
         }
 
         public static IEnumerable<Type> DeserializableNonGenericDictionaryTypes()
         {
-            yield return typeof(Hashtable); // IDictionaryConverter
-            yield return typeof(SortedList); // IDictionaryConverter
+            yield return typeof(Hashtable).WithConstructors(); // IDictionaryConverter
+            yield return typeof(SortedList).WithConstructors(); // IDictionaryConverter
         }
     }
 
@@ -2264,5 +2289,22 @@ namespace System.Text.Json.Serialization.Tests
         {
             Document.Dispose();
         }
+    }
+
+    public class ClassWithRecursiveCollectionTypes
+    {
+        public ClassWithRecursiveCollectionTypes? Nested { get; set; }
+        public List<ClassWithRecursiveCollectionTypes>? List { get; set; }
+        public IReadOnlyDictionary<string, ClassWithRecursiveCollectionTypes>? Dictionary { get; set; }
+    }
+
+    internal class MemoryOfTClass<T>
+    {
+        public Memory<T> Memory { get; set; }
+    }
+
+    internal class ReadOnlyMemoryOfTClass<T>
+    {
+        public ReadOnlyMemory<T> ReadOnlyMemory { get; set; }
     }
 }

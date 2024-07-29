@@ -1,15 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Xml.XPath;
-using System.Xml.Xsl;
-using System.Xml.Schema;
-using System.Diagnostics;
 using System.ComponentModel;
-using System.Reflection;
+using System.Diagnostics;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -25,37 +21,6 @@ namespace System.Xml.Xsl.Runtime
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static class XsltConvert
     {
-        internal static readonly Type BooleanType = typeof(bool);
-        internal static readonly Type ByteArrayType = typeof(byte[]);
-        internal static readonly Type ByteType = typeof(byte);
-        internal static readonly Type DateTimeType = typeof(DateTime);
-        internal static readonly Type DecimalType = typeof(decimal);
-        internal static readonly Type DoubleType = typeof(double);
-        internal static readonly Type ICollectionType = typeof(ICollection);
-        internal static readonly Type IEnumerableType = typeof(IEnumerable);
-        internal static readonly Type IListType = typeof(IList);
-        internal static readonly Type Int16Type = typeof(short);
-        internal static readonly Type Int32Type = typeof(int);
-        internal static readonly Type Int64Type = typeof(long);
-        internal static readonly Type IXPathNavigableType = typeof(IXPathNavigable);
-        internal static readonly Type ObjectType = typeof(object);
-        internal static readonly Type SByteType = typeof(sbyte);
-        internal static readonly Type SingleType = typeof(float);
-        internal static readonly Type StringType = typeof(string);
-        internal static readonly Type TimeSpanType = typeof(TimeSpan);
-        internal static readonly Type UInt16Type = typeof(ushort);
-        internal static readonly Type UInt32Type = typeof(uint);
-        internal static readonly Type UInt64Type = typeof(ulong);
-        internal static readonly Type UriType = typeof(Uri);
-        internal static readonly Type VoidType = typeof(void);
-        internal static readonly Type XmlAtomicValueType = typeof(XmlAtomicValue);
-        internal static readonly Type XmlQualifiedNameType = typeof(XmlQualifiedName);
-        internal static readonly Type XPathItemType = typeof(XPathItem);
-        internal static readonly Type XPathNavigatorArrayType = typeof(XPathNavigator[]);
-        internal static readonly Type XPathNavigatorType = typeof(XPathNavigator);
-        internal static readonly Type XPathNodeIteratorType = typeof(XPathNodeIterator);
-
-
         //------------------------------------------------------------------------
         // ToBoolean (internal type to internal type)
         //------------------------------------------------------------------------
@@ -69,11 +34,11 @@ namespace System.Xml.Xsl.Runtime
 
             Type itemType = item.ValueType;
 
-            if (itemType == StringType)
+            if (itemType == typeof(string))
             {
                 return item.Value.Length != 0;
             }
-            else if (itemType == DoubleType)
+            else if (itemType == typeof(double))
             {
                 // (x < 0 || 0 < x)  ==  (x != 0) && !Double.IsNaN(x)
                 double dbl = item.ValueAsDouble;
@@ -81,7 +46,7 @@ namespace System.Xml.Xsl.Runtime
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
+                Debug.Assert(itemType == typeof(bool), $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean;
             }
         }
@@ -115,17 +80,17 @@ namespace System.Xml.Xsl.Runtime
 
             Type itemType = item.ValueType;
 
-            if (itemType == StringType)
+            if (itemType == typeof(string))
             {
                 return XPathConvert.StringToDouble(item.Value);
             }
-            else if (itemType == DoubleType)
+            else if (itemType == typeof(double))
             {
                 return item.ValueAsDouble;
             }
             else
             {
-                Debug.Assert(itemType == BooleanType, $"Unexpected type of atomic sequence {itemType}");
+                Debug.Assert(itemType == typeof(bool), $"Unexpected type of atomic sequence {itemType}");
                 return item.ValueAsBoolean ? 1d : 0d;
             }
         }
@@ -211,7 +176,7 @@ namespace System.Xml.Xsl.Runtime
             XsltLibrary.CheckXsltValue(item);
 
             // Use XPath 1.0 rules to convert double to string
-            if (!item.IsNode && item.ValueType == DoubleType)
+            if (!item.IsNode && item.ValueType == typeof(double))
                 return XPathConvert.DoubleToString(item.ValueAsDouble);
 
             return item.Value;
@@ -318,7 +283,7 @@ namespace System.Xml.Xsl.Runtime
                             return new XmlAtomicValue(destinationType.SchemaType, ToDouble(value));
 
                         case XmlTypeCode.Decimal:
-                            return new XmlAtomicValue(destinationType.SchemaType, ToDouble((decimal)value.ValueAs(DecimalType, null)));
+                            return new XmlAtomicValue(destinationType.SchemaType, ToDouble((decimal)value.ValueAs(typeof(decimal), null)));
 
                         case XmlTypeCode.Int:
                         case XmlTypeCode.Long:
@@ -382,26 +347,26 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal static XmlQueryType InferXsltType(Type clrType)
         {
-            if (clrType == BooleanType) return XmlQueryTypeFactory.BooleanX;
-            if (clrType == ByteType) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == DecimalType) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == DateTimeType) return XmlQueryTypeFactory.StringX;
-            if (clrType == DoubleType) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == Int16Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == Int32Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == Int64Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == IXPathNavigableType) return XmlQueryTypeFactory.NodeNotRtf;
-            if (clrType == SByteType) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == SingleType) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == StringType) return XmlQueryTypeFactory.StringX;
-            if (clrType == UInt16Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == UInt32Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == UInt64Type) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == XPathNavigatorArrayType) return XmlQueryTypeFactory.NodeSDod;
-            if (clrType == XPathNavigatorType) return XmlQueryTypeFactory.NodeNotRtf;
-            if (clrType == XPathNodeIteratorType) return XmlQueryTypeFactory.NodeSDod;
+            if (clrType == typeof(bool)) return XmlQueryTypeFactory.BooleanX;
+            if (clrType == typeof(byte)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(decimal)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(DateTime)) return XmlQueryTypeFactory.StringX;
+            if (clrType == typeof(double)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(short)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(int)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(long)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(IXPathNavigable)) return XmlQueryTypeFactory.NodeNotRtf;
+            if (clrType == typeof(sbyte)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(float)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(string)) return XmlQueryTypeFactory.StringX;
+            if (clrType == typeof(ushort)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(uint)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(ulong)) return XmlQueryTypeFactory.DoubleX;
+            if (clrType == typeof(XPathNavigator[])) return XmlQueryTypeFactory.NodeSDod;
+            if (clrType == typeof(XPathNavigator)) return XmlQueryTypeFactory.NodeNotRtf;
+            if (clrType == typeof(XPathNodeIterator)) return XmlQueryTypeFactory.NodeSDod;
             if (clrType.IsEnum) return XmlQueryTypeFactory.DoubleX;
-            if (clrType == VoidType) return XmlQueryTypeFactory.Empty;
+            if (clrType == typeof(void)) return XmlQueryTypeFactory.Empty;
 
             return XmlQueryTypeFactory.ItemS;
         }

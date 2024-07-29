@@ -2,17 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Globalization;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
+using System.Reflection;
 using Xunit;
 
 using Sdt = SdtEventSources;
@@ -58,7 +49,6 @@ namespace BasicEventSourceTests
         /// For NuGet EventSources we validate both "runtime" and "validation" behavior
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/runtime/issues/21421")]
         public void Test_GenerateManifest_InvalidEventSources()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -94,11 +84,6 @@ namespace BasicEventSourceTests
                     GetResourceString("EventSource_IllegalKeywordsValue", "Kwd1", "0x100000000000"),
                     GetResourceString("EventSource_KeywordCollision", "Session3", "Kwd1", "0x100000000000")),
                 e);
-
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
-                () => EventSource.GenerateManifest(typeof(Sdt.TooManyChannelsEventSource), string.Empty));
-#endif
 
             if (PlatformDetection.IsWindows)
             {

@@ -135,7 +135,7 @@ namespace System.Net.WebSockets
                         break;
                     }
                     catch (HttpRequestException ex) when
-                        ((ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") || ex.Data.Contains("HTTP2_ENABLED"))
+                        ((ex.HttpRequestError == HttpRequestError.ExtendedConnectNotSupported || ex.Data.Contains("HTTP2_ENABLED"))
                         && tryDowngrade
                         && (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower))
                     {
@@ -179,9 +179,9 @@ namespace System.Net.WebSockets
 
                 if (options.DangerousDeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out IEnumerable<string>? extensions))
                 {
-                    foreach (ReadOnlySpan<char> extension in extensions)
+                    foreach (string extension in extensions)
                     {
-                        if (extension.TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
+                        if (extension.AsSpan().TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
                         {
                             negotiatedDeflateOptions = ParseDeflateOptions(extension, options.DangerousDeflateOptions);
                             break;

@@ -14,10 +14,12 @@
 
 // <Code> 
 using System;
+using Xunit;
 
 public class MyClass
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
 
         float f1 = float.Epsilon;
@@ -30,8 +32,6 @@ public class MyClass
         {
             Console.WriteLine("epsilon * 0.5 failed");
         }
-
-        return 100;
     }
 }
 // </Code>

@@ -15,25 +15,21 @@ namespace System.Globalization
         private const double MeanSpeedOfSun = MeanTropicalYearInDays / FullCircleOfArc;
         private const double LongitudeSpring = 0.0;
         private const double TwoDegreesAfterSpring = 2.0;
-        private const int SecondsPerDay = 24 * 60 * 60; // 24 hours * 60 minutes * 60 seconds
-
         private const int DaysInUniformLengthCentury = 36525;
-        private const int SecondsPerMinute = 60;
-        private const int MinutesPerDegree = 60;
 
         private static readonly long s_startOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
         private static readonly long s_startOf1900Century = GetNumberOfDays(new DateTime(1900, 1, 1));
 
-        private static readonly double[] s_coefficients1900to1987 = new double[] { -0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591 };
-        private static readonly double[] s_coefficients1800to1899 = new double[] { -0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794 };
-        private static readonly double[] s_coefficients1700to1799 = new double[] { 8.118780842, -0.005092142, 0.003336121, -0.0000266484 };
-        private static readonly double[] s_coefficients1620to1699 = new double[] { 196.58333, -4.0675, 0.0219167 };
-        private static readonly double[] s_lambdaCoefficients = new double[] { 280.46645, 36000.76983, 0.0003032 };
-        private static readonly double[] s_anomalyCoefficients = new double[] { 357.52910, 35999.05030, -0.0001559, -0.00000048 };
-        private static readonly double[] s_eccentricityCoefficients = new double[] { 0.016708617, -0.000042037, -0.0000001236 };
-        private static readonly double[] s_coefficients = new double[] { Angle(23, 26, 21.448), Angle(0, 0, -46.8150), Angle(0, 0, -0.00059), Angle(0, 0, 0.001813) };
-        private static readonly double[] s_coefficientsA = new double[] { 124.90, -1934.134, 0.002063 };
-        private static readonly double[] s_coefficientsB = new double[] { 201.11, 72001.5377, 0.00057 };
+        private static ReadOnlySpan<double> Coefficients1900to1987 => [-0.00002, 0.000297, 0.025184, -0.181133, 0.553040, -0.861938, 0.677066, -0.212591];
+        private static ReadOnlySpan<double> Coefficients1800to1899 => [-0.000009, 0.003844, 0.083563, 0.865736, 4.867575, 15.845535, 31.332267, 38.291999, 28.316289, 11.636204, 2.043794];
+        private static ReadOnlySpan<double> Coefficients1700to1799 => [8.118780842, -0.005092142, 0.003336121, -0.0000266484];
+        private static ReadOnlySpan<double> Coefficients1620to1699 => [196.58333, -4.0675, 0.0219167];
+        private static ReadOnlySpan<double> LambdaCoefficients => [280.46645, 36000.76983, 0.0003032];
+        private static ReadOnlySpan<double> AnomalyCoefficients => [357.52910, 35999.05030, -0.0001559, -0.00000048];
+        private static ReadOnlySpan<double> EccentricityCoefficients => [0.016708617, -0.000042037, -0.0000001236];
+        private static ReadOnlySpan<double> CoefficientsA => [124.90, -1934.134, 0.002063];
+        private static ReadOnlySpan<double> CoefficientsB => [201.11, 72001.5377, 0.00057];
+        private static ReadOnlySpan<double> Coefficients => [23.43929111111111, -0.013004166666666667, -1.638888888888889E-07, 5.03611111111111E-07];
 
         private static double RadiansFromDegrees(double degree)
         {
@@ -49,29 +45,25 @@ namespace System.Globalization
         {
             return Math.Cos(RadiansFromDegrees(degree));
         }
+
         private static double TanOfDegree(double degree)
         {
             return Math.Tan(RadiansFromDegrees(degree));
         }
 
-        public static double Angle(int degrees, int minutes, double seconds)
-        {
-            return ((seconds / SecondsPerMinute + minutes) / MinutesPerDegree) + degrees;
-        }
-
         private static double Obliquity(double julianCenturies)
         {
-            return PolynomialSum(s_coefficients, julianCenturies);
+            return PolynomialSum(Coefficients, julianCenturies);
         }
 
         internal static long GetNumberOfDays(DateTime date)
         {
-            return date.Ticks / GregorianCalendar.TicksPerDay;
+            return date.Ticks / TimeSpan.TicksPerDay;
         }
 
         private static int GetGregorianYear(double numberOfDays)
         {
-            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * GregorianCalendar.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
+            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * TimeSpan.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
         }
 
         private enum CorrectionAlgorithm
@@ -84,7 +76,7 @@ namespace System.Globalization
             Year1620to1699
         }
 
-        private struct EphemerisCorrectionAlgorithmMap
+        private readonly struct EphemerisCorrectionAlgorithmMap
         {
             public EphemerisCorrectionAlgorithmMap(int year, CorrectionAlgorithm algorithm)
             {
@@ -92,12 +84,12 @@ namespace System.Globalization
                 _algorithm = algorithm;
             }
 
-            internal int _lowestYear;
-            internal CorrectionAlgorithm _algorithm;
+            internal readonly int _lowestYear;
+            internal readonly CorrectionAlgorithm _algorithm;
         }
 
-        private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]
-        {
+        private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable =
+        [
             // lowest year that starts algorithm, algorithm to use
             new EphemerisCorrectionAlgorithmMap(2020, CorrectionAlgorithm.Default),
             new EphemerisCorrectionAlgorithmMap(1988, CorrectionAlgorithm.Year1988to2019),
@@ -106,7 +98,7 @@ namespace System.Globalization
             new EphemerisCorrectionAlgorithmMap(1700, CorrectionAlgorithm.Year1700to1799),
             new EphemerisCorrectionAlgorithmMap(1620, CorrectionAlgorithm.Year1620to1699),
             new EphemerisCorrectionAlgorithmMap(int.MinValue, CorrectionAlgorithm.Default) // default must be last
-        };
+        ];
 
         private static double Reminder(double divisor, double dividend)
         {
@@ -129,7 +121,7 @@ namespace System.Globalization
             return longitude / FullCircleOfArc;
         }
 
-        private static double PolynomialSum(double[] coefficients, double indeterminate)
+        private static double PolynomialSum(ReadOnlySpan<double> coefficients, double indeterminate)
         {
             double sum = coefficients[0];
             double indeterminateRaised = 1;
@@ -155,41 +147,41 @@ namespace System.Globalization
             long january1stOfYear = GetNumberOfDays(new DateTime(gregorianYear, 1, 1));
             double daysSinceStartOf1810 = january1stOfYear - s_startOf1810;
             double x = TwelveHours + daysSinceStartOf1810;
-            return ((Math.Pow(x, 2) / 41048480) - 15) / SecondsPerDay;
+            return ((Math.Pow(x, 2) / 41048480) - 15) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1988to2019(int gregorianYear)
         {
             Debug.Assert(1988 <= gregorianYear && gregorianYear <= 2019);
-            return (double)(gregorianYear - 1933) / SecondsPerDay;
+            return (double)(gregorianYear - 1933) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1900to1987(int gregorianYear)
         {
             Debug.Assert(1900 <= gregorianYear && gregorianYear <= 1987);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
-            return PolynomialSum(s_coefficients1900to1987, centuriesFrom1900);
+            return PolynomialSum(Coefficients1900to1987, centuriesFrom1900);
         }
 
         private static double EphemerisCorrection1800to1899(int gregorianYear)
         {
             Debug.Assert(1800 <= gregorianYear && gregorianYear <= 1899);
             double centuriesFrom1900 = CenturiesFrom1900(gregorianYear);
-            return PolynomialSum(s_coefficients1800to1899, centuriesFrom1900);
+            return PolynomialSum(Coefficients1800to1899, centuriesFrom1900);
         }
 
         private static double EphemerisCorrection1700to1799(int gregorianYear)
         {
             Debug.Assert(1700 <= gregorianYear && gregorianYear <= 1799);
             double yearsSince1700 = gregorianYear - 1700;
-            return PolynomialSum(s_coefficients1700to1799, yearsSince1700) / SecondsPerDay;
+            return PolynomialSum(Coefficients1700to1799, yearsSince1700) / TimeSpan.SecondsPerDay;
         }
 
         private static double EphemerisCorrection1620to1699(int gregorianYear)
         {
             Debug.Assert(1620 <= gregorianYear && gregorianYear <= 1699);
             double yearsSince1600 = gregorianYear - 1600;
-            return PolynomialSum(s_coefficients1620to1699, yearsSince1600) / SecondsPerDay;
+            return PolynomialSum(Coefficients1620to1699, yearsSince1600) / TimeSpan.SecondsPerDay;
         }
 
         // ephemeris-correction: correction to account for the slowing down of the rotation of the earth
@@ -233,9 +225,9 @@ namespace System.Globalization
         private static double EquationOfTime(double time)
         {
             double julianCenturies = JulianCenturies(time);
-            double lambda = PolynomialSum(s_lambdaCoefficients, julianCenturies);
-            double anomaly = PolynomialSum(s_anomalyCoefficients, julianCenturies);
-            double eccentricity = PolynomialSum(s_eccentricityCoefficients, julianCenturies);
+            double lambda = PolynomialSum(LambdaCoefficients, julianCenturies);
+            double anomaly = PolynomialSum(AnomalyCoefficients, julianCenturies);
+            double eccentricity = PolynomialSum(EccentricityCoefficients, julianCenturies);
 
             double epsilon = Obliquity(julianCenturies);
             double tanHalfEpsilon = TanOfDegree(epsilon / 2);
@@ -345,8 +337,8 @@ namespace System.Globalization
 
         private static double Nutation(double julianCenturies)
         {
-            double a = PolynomialSum(s_coefficientsA, julianCenturies);
-            double b = PolynomialSum(s_coefficientsB, julianCenturies);
+            double a = PolynomialSum(CoefficientsA, julianCenturies);
+            double b = PolynomialSum(CoefficientsB, julianCenturies);
             return (-0.004778 * SinOfDegree(a)) - (0.0003667 * SinOfDegree(b));
         }
 

@@ -5,12 +5,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {
         public static StringComparer InvariantCulture => CultureAwareComparer.InvariantCaseSensitiveInstance;
@@ -87,10 +88,12 @@ namespace System
             {
                 case StringComparer stringComparer:
                     return stringComparer.IsWellKnownOrdinalComparerCore(out ignoreCase);
-                case GenericEqualityComparer<string>:
-                    // special-case EqualityComparer<string>.Default, which is Ordinal-equivalent
+
+                case StringEqualityComparer: // EqualityComparer<string>.Default
+                case GenericEqualityComparer<string>: // EqualityComparer<string>.Default serialized
                     ignoreCase = false;
                     return true;
+
                 default:
                     // unknown comparer
                     ignoreCase = default;
@@ -208,8 +211,8 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class CultureAwareComparer : StringComparer, ISerializable
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class CultureAwareComparer : StringComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>, ISerializable
     {
         internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
         internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
@@ -247,7 +250,7 @@ namespace System
 
         public override int Compare(string? x, string? y)
         {
-            if (object.ReferenceEquals(x, y)) return 0;
+            if (ReferenceEquals(x, y)) return 0;
             if (x == null) return -1;
             if (y == null) return 1;
             return _compareInfo.Compare(x, y, _options);
@@ -255,7 +258,7 @@ namespace System
 
         public override bool Equals(string? x, string? y)
         {
-            if (object.ReferenceEquals(x, y)) return true;
+            if (ReferenceEquals(x, y)) return true;
             if (x == null || y == null) return false;
             return _compareInfo.Compare(x, y, _options) == 0;
         }
@@ -266,6 +269,23 @@ namespace System
 
             return _compareInfo.GetHashCode(obj, _options);
         }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            _compareInfo.GetHashCode(span, _options);
+
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in OrdinalComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return _compareInfo.Compare(span, target, _options) == 0;
+        }
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -297,8 +317,8 @@ namespace System
     }
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class OrdinalComparer : StringComparer
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public class OrdinalComparer : StringComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
     {
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
 
@@ -318,7 +338,7 @@ namespace System
 
             if (_ignoreCase)
             {
-                return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+                return Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
             }
 
             return string.CompareOrdinal(x, y);
@@ -337,7 +357,7 @@ namespace System
                 {
                     return false;
                 }
-                return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+                return Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
             }
             return x.Equals(y);
         }
@@ -357,10 +377,39 @@ namespace System
             return obj.GetHashCode();
         }
 
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // Dictionary<string, TValue> does not permit null keys, but it does permit string.Empty keys,
+            // so we'd like for ReadOnlySpan<char>.Empty (which contains a null ref) to map to string.Empty.
+            // However, HashSet<string> permits both string.Empty and null string keys, and ReadOnlySpan<char>.Empty
+            // shouldn't map to both, as that would break HashSet<string> lookups (e.g. the HashSet<string> could contain
+            // both null and empty strings, which are not equal to each other, yet removing a
+            // ReadOnlySpan<char>.Empty would only remove one of them?). That means we need to pick whether
+            // ReadOnlySpan<char>.Empty is equivalent to string empty or null, and because of dictionary, we
+            // should pick empty. That means if the span is empty (whether or not is has a null reference),
+            // this should return false if the target string is null.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return _ignoreCase?
+                span.EqualsOrdinalIgnoreCase(target) :
+                span.SequenceEqual(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            _ignoreCase ?
+                string.GetHashCodeOrdinalIgnoreCase(span) :
+                string.GetHashCode(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
+
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is OrdinalComparer comparer))
+            if (obj is not OrdinalComparer comparer)
             {
                 return false;
             }
@@ -381,7 +430,7 @@ namespace System
     }
 
     [Serializable]
-    internal sealed class OrdinalCaseSensitiveComparer : OrdinalComparer, ISerializable
+    internal sealed class OrdinalCaseSensitiveComparer : OrdinalComparer, ISerializable, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
     {
         internal static readonly OrdinalCaseSensitiveComparer Instance = new OrdinalCaseSensitiveComparer();
 
@@ -402,6 +451,23 @@ namespace System
             return obj.GetHashCode();
         }
 
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in OrdinalComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.SequenceEqual(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            string.GetHashCode(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(OrdinalComparer));
@@ -410,7 +476,7 @@ namespace System
     }
 
     [Serializable]
-    internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, ISerializable
+    internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>, ISerializable
     {
         internal static readonly OrdinalIgnoreCaseComparer Instance = new OrdinalIgnoreCaseComparer();
 
@@ -418,7 +484,25 @@ namespace System
         {
         }
 
-        public override int Compare(string? x, string? y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+        public override int Compare(string? x, string? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return 0;
+            }
+
+            if (x == null)
+            {
+                return -1;
+            }
+
+            if (y == null)
+            {
+                return 1;
+            }
+
+            return Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
+        }
 
         public override bool Equals(string? x, string? y)
         {
@@ -437,7 +521,7 @@ namespace System
                 return false;
             }
 
-            return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+            return Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
         }
 
         public override int GetHashCode(string obj)
@@ -448,6 +532,23 @@ namespace System
             }
             return obj.GetHashCodeOrdinalIgnoreCase();
         }
+
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in OrdinalComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.EqualsOrdinalIgnoreCase(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            string.GetHashCodeOrdinalIgnoreCase(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {

@@ -7,12 +7,7 @@ namespace System.Text.Json.Serialization
     /// The generation mode for the System.Text.Json source generator.
     /// </summary>
     [Flags]
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-    enum JsonSourceGenerationMode
+    public enum JsonSourceGenerationMode
     {
         /// <summary>
         /// When specified on <see cref="JsonSourceGenerationOptionsAttribute.GenerationMode"/>, indicates that both type-metadata initialization logic

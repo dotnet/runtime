@@ -1,0 +1,5 @@
+﻿{
+  "workloads/wasm-tools/description": "Strumenti di compilazione WebAssembly .NET",
+  "workloads/wasm-experimental/description": "Strumenti sperimentali di .NET WebAssembly",
+  "workloads/runtimes-windows/description": "Pacchetti di Windows Runtime"
+}

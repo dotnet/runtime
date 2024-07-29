@@ -34,7 +34,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit TestCase
+.class public auto ansi beforefieldinit TestCase
        extends [mscorlib]System.Object
 {
   .method private hidebysig specialname rtspecialname 

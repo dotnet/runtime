@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct Pad
 {
@@ -85,9 +86,9 @@ struct S
     }
 }
 
-class Test_structret6_2
+public class Test_structret6_2
 {
-    public static S c(S s1, S s2, S s3, S s4, S s5)
+    private static S c(S s1, S s2, S s3, S s4, S s5)
     {
         S r;
         s1.str = s1.str + s2.str + s3.str + s4.str + s5.str;
@@ -95,7 +96,8 @@ class Test_structret6_2
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
@@ -104,6 +106,5 @@ class Test_structret6_2
         S sM5 = new S("test5");
 
         Console.WriteLine(c(sM, sM2, sM3, sM4, sM5));
-        return 100;
     }
 }

@@ -1,7 +1,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
-.assembly legacy library calli2 { }
-.class private auto ansi beforefieldinit calli2
+.assembly legacy library ASSEMBLY_NAME { }
+.class public auto ansi beforefieldinit calli2
        extends [mscorlib]System.Object
 {
   .field private static int32 a

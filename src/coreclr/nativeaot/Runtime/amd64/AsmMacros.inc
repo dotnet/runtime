@@ -214,32 +214,14 @@ Name label proc
 PUBLIC Name
         endm
 
-EXPORT_POINTER_TO_ADDRESS macro Name
-
-        local   AddressToExport
-
-AddressToExport  label   proc
-
-        .const
-
-        align   8
-
-Name    dq      offset AddressToExport
-
-        public  Name
-
-        .code
-
-        endm
-
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
-;; __declspec(thread) version
+;; __declspec(thread) variable
 ;;
-INLINE_GETTHREAD macro destReg, trashReg
+INLINE_GET_TLS_VAR macro destReg, trashReg, variable
     EXTERN _tls_index : DWORD
-    EXTERN tls_CurrentThread:DWORD
+    EXTERN variable:DWORD
 
 ;;
 ;; construct 'eax' from 'rax' so that the register size and data size match
@@ -255,9 +237,16 @@ endif
     mov         destRegDWORD, [_tls_index]
     mov         trashReg, gs:[_tls_array]
     mov         trashReg, [trashReg + destReg * 8]
-    mov         destRegDWORD, SECTIONREL tls_CurrentThread
+    mov         destRegDWORD, SECTIONREL variable
     add         destReg, trashReg
 
+endm
+
+;;
+;; __declspec(thread) tls_CurrentThread
+;;
+INLINE_GETTHREAD macro destReg, trashReg
+    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
 endm
 
 INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
@@ -384,7 +373,6 @@ STATUS_REDHAWK_THREAD_ABORT      equ 43h
 ;;
 
 ifdef FEATURE_GC_STRESS
-REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SAXXZ
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
 endif ;; FEATURE_GC_STRESS
 
@@ -402,7 +390,7 @@ EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
 EXTERN RhpGcPoll2                               : PROC
 ifdef FEATURE_GC_STRESS
-EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
+EXTERN RhpStressGc                              : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
 endif ;; FEATURE_GC_STRESS
 
@@ -420,4 +408,3 @@ endif
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 EXTERN g_write_watch_table  : QWORD
 endif
-

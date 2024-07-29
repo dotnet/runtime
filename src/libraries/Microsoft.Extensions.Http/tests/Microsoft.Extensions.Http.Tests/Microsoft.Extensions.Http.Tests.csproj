@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,11 +21,15 @@
              Link="tests\DI.Common\Common\src\TestLoggerFactory.cs" />
     <Compile Include="$(CommonPath)..\tests\Extensions\SingleThreadedSynchronizationContext.cs"
              Link="Shared\SingleThreadedSynchronizationContext.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="tests\System\Net\RemoteExecutorExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Http\src\Microsoft.Extensions.Http.csproj" SkipUseReferenceAssembly="true" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
+  	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
   	<ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>

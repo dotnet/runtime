@@ -6,12 +6,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// The <see cref="Json.JsonNamingPolicy"/> to be used at run time.
     /// </summary>
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-    enum JsonKnownNamingPolicy
+    public enum JsonKnownNamingPolicy
     {
         /// <summary>
         /// Specifies that JSON property names should not be converted.

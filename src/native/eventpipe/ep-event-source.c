@@ -14,12 +14,14 @@
 
 #if defined(HOST_WINDOWS) || defined(HOST_WIN32)
 const ep_char8_t* _ep_os_info = "Windows";
+#elif defined(HOST_TVOS)
+const ep_char8_t* _ep_os_info = "tvOS";
 #elif defined(HOST_IOS)
 const ep_char8_t* _ep_os_info = "iOS";
 #elif defined(HOST_WATCHOS)
-const ep_char8_t* _ep_os_info = "WatchOS";
-#elif defined(HOST_TVOS)
-const ep_char8_t* _ep_os_info = "tvOS";
+const ep_char8_t* _ep_os_info = "watchOS";
+#elif defined(HOST_MACCAT)
+const ep_char8_t* _ep_os_info = "MacCatalyst";
 #elif defined(__APPLE__)
 const ep_char8_t* _ep_os_info = "macOS";
 #elif defined(HOST_ANDROID)
@@ -46,6 +48,8 @@ const ep_char8_t* _ep_arch_info = "s390x";
 const ep_char8_t* _ep_arch_info = "loongarch64";
 #elif defined(TARGET_POWERPC64)
 const ep_char8_t* _ep_arch_info = "ppc64le";
+#elif defined(TARGET_RISCV64)
+const ep_char8_t* _ep_arch_info = "riscv64";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif
@@ -98,7 +102,7 @@ ep_event_source_init (EventPipeEventSource *event_source)
 
 	EP_ASSERT (event_source != NULL);
 
-	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL, NULL);
+	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL);
 	ep_raise_error_if_nok (event_source->provider != NULL);
 
 	event_source->provider_name = ep_provider_get_default_name_utf8 ();
@@ -108,19 +112,19 @@ ep_event_source_init (EventPipeEventSource *event_source)
 	uint32_t params_len;
 	params_len = (uint32_t)ARRAY_SIZE (params);
 
-	command_line_arg_utf16 = ep_rt_utf8_to_utf16le_string ("CommandLine", -1);
+	command_line_arg_utf16 = ep_rt_utf8_to_utf16le_string ("CommandLine");
 	ep_raise_error_if_nok (command_line_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[0], EP_PARAMETER_TYPE_STRING, command_line_arg_utf16);
 
-	os_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("OSInformation", -1);
+	os_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("OSInformation");
 	ep_raise_error_if_nok (os_info_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[1], EP_PARAMETER_TYPE_STRING, os_info_arg_utf16);
 
-	arch_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("ArchInformation", -1);
+	arch_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("ArchInformation");
 	ep_raise_error_if_nok (arch_info_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[2], EP_PARAMETER_TYPE_STRING, arch_info_arg_utf16);
 
-	event_name_utf16 = ep_rt_utf8_to_utf16le_string ("ProcessInfo", -1);
+	event_name_utf16 = ep_rt_utf8_to_utf16le_string ("ProcessInfo");
 	ep_raise_error_if_nok (event_name_utf16 != NULL);
 
 	size_t metadata_len;
@@ -215,9 +219,9 @@ ep_event_source_send_process_info (
 	ep_char16_t *os_info_utf16 = NULL;
 	ep_char16_t *arch_info_utf16 = NULL;
 
-	command_line_utf16 = ep_rt_utf8_to_utf16le_string (command_line, -1);
-	os_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
-	arch_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
+	command_line_utf16 = ep_rt_utf8_to_utf16le_string (command_line);
+	os_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info ());
+	arch_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info ());
 
 	EventData data [3] = { { 0 } };
 	if (command_line_utf16)

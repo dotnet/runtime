@@ -8,8 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.Logging
 {
-
-    public sealed partial class DocumentationSignatureGenerator
+    internal sealed partial class DocumentationSignatureGenerator
     {
         /// <summary>
         ///  A visitor that generates the part of the documentation comment after the initial type
@@ -88,8 +87,10 @@ namespace ILCompiler.Logging
                 if (method.HasGenericParameters)
                     builder.Append("``").Append(method.GenericParameters.Count);
 
-                if (method.HasParameters || (method.CallingConvention == MethodCallingConvention.VarArg))
+                if (method.HasMetadataParameters() || (method.CallingConvention == MethodCallingConvention.VarArg))
+#pragma warning disable RS0030 // MethodReference.Parameters is banned. This generates documentation signatures, so it's okay to use it here
                     VisitParameters(method.Parameters, method.CallingConvention == MethodCallingConvention.VarArg, builder);
+#pragma warning restore RS0030
 
                 if (method.Name == "op_Implicit" || method.Name == "op_Explicit")
                 {

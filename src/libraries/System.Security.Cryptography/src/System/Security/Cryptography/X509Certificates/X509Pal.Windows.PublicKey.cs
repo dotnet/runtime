@@ -6,11 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-
+using static Interop.Crypt32;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
-
-using static Interop.Crypt32;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -56,14 +54,14 @@ namespace System.Security.Cryptography.X509Certificates
                 case AlgId.CALG_RSA_KEYX:
                 case AlgId.CALG_RSA_SIGN:
                     {
-                        RSA rsa = new RSABCrypt();
+                        var rsa = new RSABCrypt();
                         rsa.ImportRSAPublicKey(encodedKeyValue, out _);
                         return rsa;
                     }
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
-                        DSACryptoServiceProvider dsa = new DSACryptoServiceProvider();
+                        var dsa = new DSACryptoServiceProvider();
                         dsa.ImportCspBlob(keyBlob);
                         return dsa;
                     }

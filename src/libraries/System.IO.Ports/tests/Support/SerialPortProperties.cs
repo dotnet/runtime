@@ -251,7 +251,7 @@ namespace Legacy.Support
                     sb.AppendLine($"{key}={badProps[key]} expected {GetProperty((string)key)}");
                 }
 
-                Assert.True(false, sb.ToString());
+                Assert.Fail(sb.ToString());
             }
         }
 

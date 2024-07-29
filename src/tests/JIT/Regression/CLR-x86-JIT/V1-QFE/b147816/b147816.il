@@ -3,6 +3,7 @@
 
 
 .assembly 'b147816' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -14,8 +15,12 @@
 
 .field public static int32 a at D_a
 
+.class public auto ansi Test_b147816 extends [mscorlib] System.Object {
 .method static public int32 main() cil managed
 { .entrypoint
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .maxstack  3
   .locals (int32* V_0)
   ldsflda    int32 a
@@ -40,4 +45,5 @@ Label_Exit:
   call void [System.Console]System.Console::WriteLine(class System.String)
   ldc.i4 100
   ret
+}
 }

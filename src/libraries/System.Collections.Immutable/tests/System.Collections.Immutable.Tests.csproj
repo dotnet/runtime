@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>0436</NoWarn>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
@@ -11,7 +12,10 @@
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
+    <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
+    <Compile Include="Frozen\KeyAnalyzerTests.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
+    <Compile Include="ImmutableCollectionsMarshal.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTest.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <Compile Include="ImmutableArrayTestBase.cs" />
@@ -40,7 +44,7 @@
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
     <!-- Frozen Collections Tests -->
     <Compile Include="Frozen\FrozenSetTests.cs" />
-    <Compile Include="Frozen\FrozenDictionaryTest.cs" />
+    <Compile Include="Frozen\FrozenDictionaryTests.cs" />
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DelegateEqualityComparer.cs" Link="Common\System\Collections\DelegateEqualityComparer.cs" />
@@ -58,9 +62,6 @@
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs" Link="Common\System\Collections\DebugView.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs" Link="Common\System\Collections\TestingTypes.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
@@ -82,7 +83,12 @@
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="Frozen\FrozenDictionaryAlternateLookupTests.cs" />
+    <Compile Include="Frozen\FrozenSetAlternateLookupTests.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>

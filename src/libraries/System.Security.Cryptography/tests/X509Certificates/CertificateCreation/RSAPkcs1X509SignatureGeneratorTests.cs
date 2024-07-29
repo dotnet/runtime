@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
 using Xunit;
 
@@ -57,10 +58,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_StableNotSame(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_StableNotSame(HashAlgorithmName hashAlgorithm)
         {
             using (RSA rsa = RSA.Create())
             {
@@ -68,8 +67,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 rsa.ImportParameters(parameters);
 
                 var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
-
-                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
 
                 byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
                 byte[] sigAlg2 = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
@@ -101,14 +98,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void SignatureAlgorithm_Encoding(string hashAlgorithmName)
+        [MemberData(nameof(SignatureDigestAlgorithms))]
+        public static void SignatureAlgorithm_Encoding(HashAlgorithmName hashAlgorithm)
         {
             string expectedOid;
 
-            switch (hashAlgorithmName)
+            switch (hashAlgorithm.Name)
             {
                 case "MD5":
                     expectedOid = "06092A864886F70D010104";
@@ -125,8 +120,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 case "SHA512":
                     expectedOid = "06092A864886F70D01010D";
                     break;
+                case "SHA3-256":
+                    expectedOid = "060960864801650304030E";
+                    break;
+                case "SHA3-384":
+                    expectedOid = "060960864801650304030F";
+                    break;
+                case "SHA3-512":
+                    expectedOid = "0609608648016503040310";
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+                    throw new ArgumentOutOfRangeException(nameof(hashAlgorithm));
             }
 
             string expectedHex = $"30{(expectedOid.Length / 2 + 2):X2}{expectedOid}0500";
@@ -136,11 +140,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSAParameters parameters = TestData.RsaBigExponentParams;
                 rsa.ImportParameters(parameters);
 
-                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
                 X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
                 byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
                 Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());
+            }
+        }
+
+        public static IEnumerable<object[]> SignatureDigestAlgorithms
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+                yield return new object[] { HashAlgorithmName.SHA3_256 };
+                yield return new object[] { HashAlgorithmName.SHA3_384 };
+                yield return new object[] { HashAlgorithmName.SHA3_512 };
             }
         }
     }

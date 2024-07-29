@@ -26,27 +26,32 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                try
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                    return new CollectionBasedLoader(
+                        X509CertificateLoader.LoadPkcs12Collection(
+                            rawData,
+                            password.DangerousGetSpan(),
+                            keyStorageFlags,
+                            X509Certificate.GetPkcs12Limits(readingFromFile, password)));
                 }
-
-                bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
-
-                bool persist =
-                    (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
-
-                SafeKeychainHandle keychain = persist
-                    ? Interop.AppleCrypto.SecKeychainCopyDefault()
-                    : Interop.AppleCrypto.CreateTemporaryKeychain();
-
-                return ImportPkcs12(rawData, password, exportable, ephemeralSpecified: false, keychain);
+                catch (Pkcs12LoadLimitExceededException e)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
+                }
             }
 
             SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(
@@ -59,34 +64,12 @@ namespace System.Security.Cryptography.X509Certificates
             return new AppleCertLoader(certs, null);
         }
 
-        private static ILoaderPal ImportPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool exportable,
-            bool ephemeralSpecified,
-            SafeKeychainHandle keychain)
-        {
-            ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
-
-            try
-            {
-                reader.Decrypt(password, ephemeralSpecified);
-                return new ApplePkcs12CertLoader(reader, keychain, password, exportable);
-            }
-            catch
-            {
-                reader.Dispose();
-                keychain.Dispose();
-                throw;
-            }
-        }
-
         internal static partial ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
             byte[] fileBytes = File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal static partial IExportPal FromCertificate(ICertificatePalCore cert)
@@ -135,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
-        private static IStorePal FromCustomKeychainStore(string storeName, OpenFlags openFlags)
+        private static AppleKeychainStore FromCustomKeychainStore(string storeName, OpenFlags openFlags)
         {
             string storePath;
 

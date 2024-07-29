@@ -24,6 +24,9 @@ namespace System.Security.Cryptography
         internal const string RsaPkcs1Sha256 = "1.2.840.113549.1.1.11";
         internal const string RsaPkcs1Sha384 = "1.2.840.113549.1.1.12";
         internal const string RsaPkcs1Sha512 = "1.2.840.113549.1.1.13";
+        internal const string RsaPkcs1Sha3_256 = "2.16.840.1.101.3.4.3.14";
+        internal const string RsaPkcs1Sha3_384 = "2.16.840.1.101.3.4.3.15";
+        internal const string RsaPkcs1Sha3_512 = "2.16.840.1.101.3.4.3.16";
         internal const string Esdh = "1.2.840.113549.1.9.16.3.5";
         internal const string EcDiffieHellman = "1.3.132.1.12";
         internal const string DiffieHellman = "1.2.840.10046.2.1";
@@ -38,6 +41,7 @@ namespace System.Security.Cryptography
         internal const string SigningCertificate = "1.2.840.113549.1.9.16.2.12";
         internal const string SigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
         internal const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
+        internal const string Pkcs9FriendlyName = "1.2.840.113549.1.9.20";
         internal const string LocalKeyId = "1.2.840.113549.1.9.21";
         internal const string EnrollCertTypeExtension = "1.3.6.1.4.1.311.20.2";
         internal const string UserPrincipalName = "1.3.6.1.4.1.311.20.2.3";
@@ -47,6 +51,8 @@ namespace System.Security.Cryptography
         internal const string OcspEndpoint = "1.3.6.1.5.5.7.48.1";
         internal const string CertificateAuthorityIssuers = "1.3.6.1.5.5.7.48.2";
         internal const string Pkcs9ExtensionRequest = "1.2.840.113549.1.9.14";
+        internal const string MsPkcs12KeyProviderName = "1.3.6.1.4.1.311.17.1";
+        internal const string MsPkcs12MachineKeySet = "1.3.6.1.4.1.311.17.2";
 
         // Key wrap algorithms
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
@@ -65,6 +71,9 @@ namespace System.Security.Cryptography
         internal const string Sha256 = "2.16.840.1.101.3.4.2.1";
         internal const string Sha384 = "2.16.840.1.101.3.4.2.2";
         internal const string Sha512 = "2.16.840.1.101.3.4.2.3";
+        internal const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
+        internal const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
+        internal const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
 
         // DSA CMS uses the combined signature+digest OID
         internal const string DsaWithSha1 = "1.2.840.10040.4.3";
@@ -83,6 +92,10 @@ namespace System.Security.Cryptography
         internal const string ECDsaWithSha256 = "1.2.840.10045.4.3.2";
         internal const string ECDsaWithSha384 = "1.2.840.10045.4.3.3";
         internal const string ECDsaWithSha512 = "1.2.840.10045.4.3.4";
+
+        internal const string ECDsaWithSha3_256 = "2.16.840.1.101.3.4.3.10";
+        internal const string ECDsaWithSha3_384 = "2.16.840.1.101.3.4.3.11";
+        internal const string ECDsaWithSha3_512 = "2.16.840.1.101.3.4.3.12";
 
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";

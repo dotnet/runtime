@@ -1,4 +1,4 @@
-import { dotnet } from './dotnet.js'
+import { dotnet } from './_framework/dotnet.js'
 
 try {
     const { getAssemblyExports } = await dotnet
@@ -8,7 +8,7 @@ try {
     const exports = await getAssemblyExports("WasmDelta.dll");
     const update = exports.Sample.Test.Update;
     const testMeaning = exports.Sample.Test.TestMeaning;
-    
+
     const outElement = document.getElementById("out");
     document.getElementById("update").addEventListener("click", function () {
         update();

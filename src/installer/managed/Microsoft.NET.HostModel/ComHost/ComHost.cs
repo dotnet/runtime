@@ -4,14 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.NET.HostModel.ComHost
 {
     public class ComHost
     {
-        private const int E_INVALIDARG = unchecked((int)0x80070057);
         // These need to match RESOURCEID_CLSIDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
         private const int ClsidmapResourceType = 1024;
@@ -19,10 +17,10 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <summary>
         /// Create a ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
         /// </summary>
-        /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
+        /// <param name="comHostSourceFilePath">The path of the comhost library</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="clsidmapFilePath">The path to the *.clsidmap file.</param>
-        /// <param name="typeLibraries">Resource ids for tlbs and paths to the tlb files to be embedded.</param>
+        /// <param name="typeLibraries">Resource IDs for tlbs and paths to the tlb files to be embedded.</param>
         public static void Create(
             string comHostSourceFilePath,
             string comHostDestinationFilePath,
@@ -35,13 +33,8 @@ namespace Microsoft.NET.HostModel.ComHost
                 Directory.CreateDirectory(destinationDirectory);
             }
 
-            // Copy apphost to destination path so it inherits the same attributes/permissions.
+            // Copy comhost to destination path so it inherits the same attributes/permissions.
             File.Copy(comHostSourceFilePath, comHostDestinationFilePath, overwrite: true);
-
-            if (!ResourceUpdater.IsSupportedOS())
-            {
-                throw new ComHostCustomizationUnsupportedOSException();
-            }
 
             string clsidMap = File.ReadAllText(clsidmapFilePath);
             byte[] clsidMapBytes = Encoding.UTF8.GetBytes(clsidMap);
@@ -61,15 +54,14 @@ namespace Microsoft.NET.HostModel.ComHost
                         try
                         {
                             byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
-                            updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
+                            if (tlbFileBytes.Length == 0)
+                                throw new InvalidTypeLibraryException(typeLibrary.Value);
+
+                            updater.AddResource(tlbFileBytes, "TYPELIB", (IntPtr)typeLibrary.Key);
                         }
                         catch (FileNotFoundException ex)
                         {
                             throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
-                        }
-                        catch (HResultException hr) when (hr.Win32HResult == E_INVALIDARG)
-                        {
-                            throw new InvalidTypeLibraryException(typeLibrary.Value, hr);
                         }
                     }
                 }

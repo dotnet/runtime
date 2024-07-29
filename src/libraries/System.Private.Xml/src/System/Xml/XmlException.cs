@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Resources;
-using System.Text;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
+using System.Resources;
 using System.Runtime.Serialization;
+using System.Text;
+using System.Threading;
 
 namespace System.Xml
 {
@@ -30,6 +31,8 @@ namespace System.Xml
         // message == null for V2 or higher exceptions; the exception message is stored on the base class (Exception._message)
         private readonly string? _message;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected XmlException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _res = (string)info.GetValue("res", typeof(string))!;
@@ -65,6 +68,8 @@ namespace System.Xml
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -234,7 +239,7 @@ namespace System.Xml
             if (XmlCharType.IsHighSurrogate(invChar) && nextChar != 0)
             {
                 int combinedChar = XmlCharType.CombineSurrogateChar(nextChar, invChar);
-                aStringList[0] = new string(stackalloc char[] { invChar, nextChar });
+                aStringList[0] = new string([invChar, nextChar]);
                 aStringList[1] = $"0x{combinedChar:X2}";
             }
             else

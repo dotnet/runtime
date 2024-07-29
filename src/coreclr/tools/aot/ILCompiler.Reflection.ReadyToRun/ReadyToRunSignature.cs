@@ -1672,6 +1672,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BYREF_WRITE_BARRIER");
                     break;
 
+                case ReadyToRunHelper.BulkWriteBarrier:
+                    builder.Append("BULK_WRITE_BARRIER");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");
@@ -1685,8 +1689,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("MEM_SET");
                     break;
 
+                case ReadyToRunHelper.MemZero:
+                    builder.Append("MEM_ZERO");
+                    break;
+
                 case ReadyToRunHelper.MemCpy:
                     builder.Append("MEM_CPY");
+                    break;
+
+                case ReadyToRunHelper.NativeMemSet:
+                    builder.Append("NATIVE_MEM_SET");
                     break;
 
                 // PInvoke helpers
@@ -1753,6 +1765,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("UNBOX_NULLABLE");
                     break;
 
+                case ReadyToRunHelper.Unbox_TypeTest:
+                    builder.Append("UNBOX_TYPETEST");
+                    break;
+
                 case ReadyToRunHelper.NewMultiDimArr:
                     builder.Append("NEW_MULTI_DIM_ARR");
                     break;
@@ -1772,6 +1788,14 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.NewArray:
                     builder.Append("NEW_ARRAY");
+                    break;
+
+                case ReadyToRunHelper.NewMaybeFrozenArray:
+                    builder.Append("NEW_MAYBEFROZEN_ARRAY");
+                    break;
+
+                case ReadyToRunHelper.NewMaybeFrozenObject:
+                    builder.Append("NEW_MAYBEFROZEN_OBJECT");
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:

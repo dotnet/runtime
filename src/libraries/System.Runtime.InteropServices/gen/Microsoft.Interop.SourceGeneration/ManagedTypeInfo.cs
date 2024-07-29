@@ -4,9 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -17,6 +14,19 @@ namespace Microsoft.Interop
     {
         private TypeSyntax? _syntax;
         public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
+
+        public virtual bool Equals(ManagedTypeInfo? other)
+        {
+            return other is not null
+                && Syntax.IsEquivalentTo(other.Syntax)
+                && FullTypeName == other.FullTypeName
+                && DiagnosticFormattedName == other.DiagnosticFormattedName;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(FullTypeName, DiagnosticFormattedName);
+        }
 
         protected ManagedTypeInfo(ManagedTypeInfo original)
         {
@@ -70,11 +80,15 @@ namespace Microsoft.Interop
     public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
         public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
+        public static readonly SpecialTypeInfo SByte = new("sbyte", "sbyte", SpecialType.System_SByte);
+        public static readonly SpecialTypeInfo Int16 = new("short", "short", SpecialType.System_Int16);
+        public static readonly SpecialTypeInfo UInt16 = new("ushort", "ushort", SpecialType.System_UInt16);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
+        public static readonly SpecialTypeInfo UInt32 = new("uint", "uint", SpecialType.System_UInt32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
         public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
         public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
-        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
+        public static readonly SpecialTypeInfo IntPtr = new("nint", "nint", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {

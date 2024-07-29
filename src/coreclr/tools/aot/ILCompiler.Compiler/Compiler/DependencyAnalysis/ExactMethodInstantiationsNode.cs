@@ -13,23 +13,22 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all exact (non-canonical) generic method instantiations compiled in the module.
     /// </summary>
-    public sealed class ExactMethodInstantiationsNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class ExactMethodInstantiationsNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ExactMethodInstantiationsNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__exact_method_instantiations_End", true);
             _externalReferences = externalReferences;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations"u8);
         }
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -51,15 +50,13 @@ namespace ILCompiler.DependencyAnalysis
             nativeSection.Place(hashtable);
 
 
-            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            foreach (MethodDesc method in factory.MetadataManager.GetExactMethodHashtableEntries())
             {
-                if (!IsMethodEligibleForTracking(factory, method))
-                    continue;
-
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+                // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+                IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
                 Vertex methodPointer = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
 
                 // Get native layout vertices for the declaring type
@@ -99,21 +96,19 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!IsMethodEligibleForTracking(factory, method))
-                return;
-
             dependencies ??= new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+            // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
             dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
 
             // Get native layout dependencies for the declaring type
@@ -126,35 +121,6 @@ namespace ILCompiler.DependencyAnalysis
             // Get native layout dependencies for the method signature.
             NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
-        }
-
-        private static bool IsMethodEligibleForTracking(NodeFactory factory, MethodDesc method)
-        {
-            // Runtime determined methods should never show up here.
-            Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
-
-            if (method.IsAbstract)
-                return false;
-
-            if (!method.HasInstantiation)
-                return false;
-
-            // This hashtable is only for method instantiations that don't use generic dictionaries,
-            // so check if the given method is shared before proceeding
-            if (method.IsSharedByGenericInstantiations || method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                return false;
-
-            // The hashtable is used to find implementations of generic virtual methods at runtime
-            if (method.IsVirtual)
-                return true;
-
-            // The hashtable is also used for reflection
-            if (!factory.MetadataManager.IsReflectionBlocked(method))
-                return true;
-
-            // The rest of the entries are potentially only useful for the universal
-            // canonical type loader.
-            return factory.TypeSystemContext.SupportsUniversalCanon;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

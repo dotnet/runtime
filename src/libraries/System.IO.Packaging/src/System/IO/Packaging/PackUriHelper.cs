@@ -139,9 +139,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
-            return ((ValidatedPartUri)partUri).NormalizedPartUri;
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
+
+            return validatedUri.NormalizedPartUri;
         }
 
         /// <summary>
@@ -187,10 +187,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
-            return ((ValidatedPartUri)partUri).IsRelationshipPartUri;
+            return validatedUri.IsRelationshipPartUri;
         }
 
         /// <summary>
@@ -450,6 +449,14 @@ namespace System.IO.Packaging
             if (!string.Equals(partUri.OriginalString, wellFormedPartName, StringComparison.OrdinalIgnoreCase))
                 return new ArgumentException(SR.InvalidPartUri);
 
+            // Check to ensure that it isn't possible to create a part with the same URI as a part piece.
+            // This check isn't part of the OPC specification; it prevents callers from treating a part piece
+            // as a part.
+            if (ZipPackagePartPiece.TryParseName(partName, out _, out _, out _, out _))
+            {
+                return new ArgumentException(SR.UnexpectedPartPieceUri);
+            }
+
             //if we get here, the partUri is valid and so we return null, as there is no exception.
             partUriString = partName;
             return null;
@@ -667,14 +674,14 @@ namespace System.IO.Packaging
 
             #endregion IComparable Methods
 
-            #region IEqualityComparer Methods
+            #region IEquatable Methods
 
             bool IEquatable<ValidatedPartUri>.Equals(ValidatedPartUri? otherPartUri)
             {
                 return Compare(otherPartUri) == 0;
             }
 
-            #endregion IEqualityComparer Methods
+            #endregion IEquatable Methods
 
             #region Internal Properties
 
@@ -806,7 +813,7 @@ namespace System.IO.Packaging
                 Debug.Assert(segments.Length > 0 && segments[0].Length == 0);
 
                 //If the extension was not equal to .rels, we would have exited early.
-                Debug.Assert(string.CompareOrdinal((Path.GetExtension(segments[segments.Length - 1])), RelationshipPartUpperCaseExtension) == 0);
+                Debug.Assert(Path.GetExtension(segments[segments.Length - 1]) == RelationshipPartUpperCaseExtension);
 
                 // must be at least two segments and the last one must end with .RELs
                 // and the length of the segment should be greater than just the extension.
@@ -814,7 +821,7 @@ namespace System.IO.Packaging
                     (segments[segments.Length - 1].Length > RelationshipPartExtensionName.Length))
                 {
                     // look for "_RELS" segment which must be second last segment
-                    result = (string.CompareOrdinal(segments[segments.Length - 2], RelationshipPartUpperCaseSegmentName) == 0);
+                    result = segments[segments.Length - 2] == RelationshipPartUpperCaseSegmentName;
                 }
 
                 // In addition we need to make sure that the relationship is not created by taking another relationship
@@ -824,7 +831,7 @@ namespace System.IO.Packaging
                     if ((segments[segments.Length - 1]).EndsWith(RelsrelsUpperCaseExtension, StringComparison.Ordinal))
                     {
                         // look for "_rels" segment in the third last segment
-                        if (string.CompareOrdinal(segments[segments.Length - 3], RelationshipPartUpperCaseSegmentName) == 0)
+                        if (segments[segments.Length - 3] == RelationshipPartUpperCaseSegmentName)
                             throw new ArgumentException(SR.NotAValidRelationshipPartUri);
                     }
                 }
@@ -852,8 +859,8 @@ namespace System.IO.Packaging
                     return this;
                 else
                     return new ValidatedPartUri(_normalizedPartUriString!,
-                                                true /*isNormalized*/,
-                                                false /*computeIsRelationship*/,
+                                                isNormalized: true,
+                                                computeIsRelationship: false,
                                                 IsRelationshipPartUri);
             }
 
@@ -864,7 +871,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(this.NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------

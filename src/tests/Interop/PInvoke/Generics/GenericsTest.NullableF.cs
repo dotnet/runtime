@@ -25,9 +25,10 @@ unsafe partial class GenericsNative
     public static extern float? AddNullableFs(in float? pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestNullableF()
+    [Fact]
+    public static void TestNullableF()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetNullableF(true, 1.0f));
 

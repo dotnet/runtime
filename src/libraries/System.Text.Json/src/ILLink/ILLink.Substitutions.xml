@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Text.Json">
+    <type fullname="System.Text.Json.JsonSerializer">
+      <method signature="System.Boolean get_IsReflectionEnabledByDefault()" body="stub" value="false" 
+              feature="System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault" featurevalue="false"/>
+    </type>
+  </assembly>
+</linker>

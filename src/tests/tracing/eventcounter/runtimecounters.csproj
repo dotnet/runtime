@@ -1,15 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- This test is timing sensitive and JIT timing affects the results of the test -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="runtimecounters.cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/tracing_common.csproj" />
   </ItemGroup>
+
+  <!-- Hack to get NativeAOT assemblies into IlcReference
+       In CoreCLR tests, these assemblies get copied to CORE_ROOT, which NativeAOT doesn't use
+  -->
+  <!-- Get all the *.dll files that has IsNative != "true"-->
+  <Target Name="GetRequiredNativeAOTAssemblies"
+      DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+      BeforeTargets="ComputeIlcCompileInputs"
+      Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <ItemGroup>
+      <IlcReference Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(LibrariesRuntimeFiles.IsNative)' != 'true'"/>
+    </ItemGroup>
+  </Target>  
 </Project>

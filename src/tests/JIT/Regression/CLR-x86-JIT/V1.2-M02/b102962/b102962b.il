@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -32,9 +33,13 @@
   IL_0012:  ret
 } // end of global method PtrToStringChars
 
+.class public auto ansi Test_b102962b extends [mscorlib] System.Object {
 .method public static int32  
         main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       21 (0x15)
   .maxstack  1
@@ -49,4 +54,5 @@
   IL_0012:  stloc.1
   IL_0013:  ldc.i4 100
   IL_0014:  ret
+}
 }

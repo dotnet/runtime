@@ -63,7 +63,6 @@ PALTEST(c_runtime__vsnprintf_s_test19_paltest_vsnprintf_test19, "c_runtime/_vsnp
 
 
     DoArgumentPrecTest("%.*s", 2, (void*)"bar", "bar", "ba", "ba");
-    DoArgumentPrecTest("%.*S", 2, (void*)convert("bar"), "bar", "ba", "ba");
     DoArgumentPrecTest("%.*c", 0, (void*)'a', "a", "a", "a");
     DoArgumentPrecTest("%.*c", 4, (void*)'a', "a", "a", "a");
     DoArgumentPrecTest("%.*C", 0, (void*)'a', "a", "a", "a");

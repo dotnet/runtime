@@ -32,4 +32,19 @@ internal static partial class QuicDefaults
     /// Max value for application error codes that can be sent by QUIC, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#integer-encoding"/>.
     /// </summary>
     public const long MaxErrorCodeValue = (1L << 62) - 1;
+
+    /// <summary>
+    /// Default handshake timeout.
+    /// </summary>
+    public static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Default initial_max_data value.
+    /// </summary>
+    public const int DefaultConnectionMaxData = 16 * 1024 * 1024;
+
+    /// <summary>
+    /// Default initial_max_stream_data_* value.
+    /// </summary>
+    public const int DefaultStreamMaxData = 64 * 1024;
 }

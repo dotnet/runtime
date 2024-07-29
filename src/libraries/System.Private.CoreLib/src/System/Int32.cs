@@ -23,7 +23,9 @@ namespace System
           IEquatable<int>,
           IBinaryInteger<int>,
           IMinMaxValue<int>,
-          ISignedNumber<int>
+          ISignedNumber<int>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<int>
     {
         private readonly int m_value; // Do not rename (binary serialization)
 
@@ -44,6 +46,12 @@ namespace System
 
         /// <summary>Represents the number negative one (-1).</summary>
         private const int NegativeOne = -1;
+
+        /// <summary>Produces the full product of two 32-bit numbers.</summary>
+        /// <param name="left">The first number to multiply.</param>
+        /// <param name="right">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        public static long BigMul(int left, int right) => Math.BigMul(left, right);
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -128,85 +136,56 @@ namespace System
             return Number.TryFormatInt32(m_value, ~0, format, provider, destination, out charsWritten);
         }
 
-        public static int Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt32(m_value, ~0, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static int Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static int Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        // Parses an integer from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
-        public static int Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static int Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses an integer from a String in the given style.  If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
+        public static int Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
+
         public static int Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<char, int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
-        public static bool TryParse([NotNullWhen(true)] string? s, out int result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out int result)
-        {
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its 32-bit signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the 32-bit signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out int result) => TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
 
-        // Parses an integer from a String in the given style. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -318,18 +297,23 @@ namespace System
         public static (int Quotient, int Remainder) DivRem(int left, int right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static int LeadingZeroCount(int value) => BitOperations.LeadingZeroCount((uint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static int PopCount(int value) => BitOperations.PopCount((uint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static int RotateLeft(int value, int rotateAmount) => (int)BitOperations.RotateLeft((uint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static int RotateRight(int value, int rotateAmount) => (int)BitOperations.RotateRight((uint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static int TrailingZeroCount(int value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -358,7 +342,7 @@ namespace System
 
                 if (source.Length > sizeof(int))
                 {
-                    if (source[..^sizeof(int)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(int)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -440,7 +424,7 @@ namespace System
 
                 if (source.Length > sizeof(int))
                 {
-                    if (source[sizeof(int)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(int)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -564,6 +548,8 @@ namespace System
         public static bool IsPow2(int value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Log2(int value)
         {
             if (value < 0)
@@ -930,6 +916,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static int INumberBase<int>.MinMagnitudeNumber(int x, int y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static int INumberBase<int>.MultiplyAddEstimate(int left, int right, int addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1426,5 +1415,49 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static int IUnaryPlusOperators<int, int>.operator +(int value) => +value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static int Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseBinaryInteger<byte, int>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out int result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseBinaryInteger(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static int Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out int result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxDigitCount => 10; // 2_147_483_647
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxHexDigitCount => 8; // 0x7FFF_FFFF
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<int>.OverflowMessage => SR.Overflow_Int32;
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsGreaterThanAsUnsigned(int left, int right) => (uint)(left) > (uint)(right);
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy10(int value) => value * 10;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy16(int value) => value * 16;
     }
 }

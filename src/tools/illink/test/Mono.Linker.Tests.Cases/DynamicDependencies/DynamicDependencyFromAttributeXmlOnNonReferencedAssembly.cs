@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	[KeptAssembly ("field_library.dll")]
 	[KeptMemberInAssembly ("method_library.dll", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyFromAttributeXmlOnNonReferencedAssemblyLibrary_Method", "Method()")]
 	[KeptMemberInAssembly ("field_library.dll", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyFromAttributeXmlOnNonReferencedAssemblyLibrary_Field", "Method()")]
-#if NETCOREAPP
+#if NET
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXmlOnNonReferencedAssembly.netcore.Attributes.xml")]
 #else
 	[SetupLinkAttributesFile ("DynamicDependencyFromAttributeXmlOnNonReferencedAssembly.mono.Attributes.xml")]

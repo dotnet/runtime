@@ -7,6 +7,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="refarg_i4_d.il" />
     <Compile Include="refarg_i4.il" />
   </ItemGroup>
 </Project>

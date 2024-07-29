@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyStruct<Atom> s = default;
 

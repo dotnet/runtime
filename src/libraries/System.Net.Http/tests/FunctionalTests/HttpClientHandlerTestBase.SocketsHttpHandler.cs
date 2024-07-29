@@ -3,14 +3,31 @@
 
 using System.IO;
 using System.Net.Quic;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        protected static async Task<Stream> DefaultConnectCallback(EndPoint endPoint, CancellationToken cancellationToken)
+        {
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(endPoint, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
+
         protected static bool IsWinHttpHandler => false;
 
         public static bool IsQuicSupported
@@ -37,13 +54,6 @@ namespace System.Net.Http.Functional.Tests
             // Browser doesn't support ServerCertificateCustomValidationCallback
             if (allowAllCertificates && PlatformDetection.IsNotBrowser)
             {
-                // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
-                // The public keys of our self-signed certificates that are used by the loopback server are part of the System.Net.TestData
-                // package and they can be included in a the Android test apk by adding the following property to the test's .csproj:
-                //
-                //    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
-                //
-
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
@@ -86,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
         {
             return useVersion.Major switch
             {
-#if NETCOREAPP
+#if NET
 #if HTTP3
                 3 => Http3LoopbackServerFactory.Singleton,
 #endif

@@ -36,7 +36,7 @@ namespace System.Resources.Extensions
         // a collection of primitive types in a dictionary, indexed by type name
         // using a comparer which handles type name comparisons similar to what
         // is done by reflection
-        private static readonly IReadOnlyDictionary<string, Type> s_primitiveTypes = new Dictionary<string, Type>(16, TypeNameComparer.Instance)
+        private static readonly Dictionary<string, Type> s_primitiveTypes = new Dictionary<string, Type>(16, TypeNameComparer.Instance)
         {
             { typeof(string).FullName!, typeof(string) },
             { typeof(int).FullName!, typeof(int) },
@@ -152,6 +152,7 @@ namespace System.Resources.Extensions
         /// <param name="name">Resource name</param>
         /// <param name="value">Value of the resource in byte[] form understood by BinaryFormatter</param>
         /// <param name="typeName">Assembly qualified type name of the resource</param>
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null)
         {
             if (name is null)

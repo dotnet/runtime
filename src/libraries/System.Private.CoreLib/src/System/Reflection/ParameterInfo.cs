@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
+#pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
+        , IObjectReference
+#pragma warning restore SA1001
+#pragma warning restore SYSLIB0050
     {
         protected ParameterInfo() { }
 
@@ -42,11 +48,15 @@ namespace System.Reflection
             return Array.Empty<object>();
         }
 
+        public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
+
         public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
         public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetRealObject(StreamingContext context)
         {
             // Once all the serializable fields have come in we can set up the real
@@ -55,7 +65,7 @@ namespace System.Reflection
             if (MemberImpl == null)
                 throw new SerializationException(SR.Serialization_InsufficientState);
 
-            ParameterInfo[] args;
+            ReadOnlySpan<ParameterInfo> args;
             switch (MemberImpl.MemberType)
             {
                 case MemberTypes.Constructor:
@@ -69,9 +79,9 @@ namespace System.Reflection
                     }
                     else
                     {
-                        args = ((MethodBase)MemberImpl).GetParametersNoCopy();
+                        args = ((MethodBase)MemberImpl).GetParametersAsSpan();
 
-                        if (args != null && PositionImpl < args.Length)
+                        if (PositionImpl < args.Length)
                             return args[PositionImpl];
                         else
                             throw new SerializationException(SR.Serialization_BadParameterInfo);
@@ -80,7 +90,7 @@ namespace System.Reflection
                 case MemberTypes.Property:
                     args = ((PropertyInfo)MemberImpl).GetIndexParameters();
 
-                    if (args != null && PositionImpl > -1 && PositionImpl < args.Length)
+                    if (PositionImpl > -1 && PositionImpl < args.Length)
                         return args[PositionImpl];
                     else
                         throw new SerializationException(SR.Serialization_BadParameterInfo);

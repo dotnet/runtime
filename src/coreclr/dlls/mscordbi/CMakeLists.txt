@@ -45,16 +45,17 @@ else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded new/delete operators defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+    endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
+set_target_properties(mscordbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mscordbi PRIVATE $<$<COMPILE_LANGUAGE:CXX>:stdafx.h>)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -90,7 +91,7 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_VCRT_LIB}
     )
 
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES})
 
 elseif(CLR_CMAKE_HOST_UNIX)
 
@@ -100,10 +101,27 @@ elseif(CLR_CMAKE_HOST_UNIX)
         mscordaccore
     )
 
+    if(CLR_CMAKE_HOST_HAIKU)
+        list(APPEND COREDBI_LIBRARIES
+            network
+        )
+    endif(CLR_CMAKE_HOST_HAIKU)
+
+    # Before llvm 16, lld was setting `--undefined-version` by default. The default was
+    # flipped to `--no-undefined-version` in lld 16, so we will explicitly set it to
+    # `--undefined-version` for our use-case.
+    include(CheckLinkerFlag OPTIONAL)
+    if(COMMAND check_linker_flag)
+        check_linker_flag(CXX -Wl,--undefined-version LINKER_SUPPORTS_UNDEFINED_VERSION)
+        if (LINKER_SUPPORTS_UNDEFINED_VERSION)
+            add_linker_flag(-Wl,--undefined-version)
+        endif(LINKER_SUPPORTS_UNDEFINED_VERSION)
+    endif(COMMAND check_linker_flag)
+
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
     # if they are defined after they are used. Having all libs twice makes sure that ld will actually
     # find all symbols.
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
 
     add_dependencies(mscordbi mscordaccore)
 
@@ -114,4 +132,4 @@ elseif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
-install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT debug)

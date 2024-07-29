@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Internal.Reflection.Core.Execution
@@ -12,11 +12,9 @@ namespace Internal.Reflection.Core.Execution
     //
     // This class abstracts the underlying Redhawk (or whatever execution engine) runtime that sets and gets fields.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class FieldAccessor
     {
-        protected FieldAccessor() { }
         public abstract object GetField(object obj);
         public abstract object GetFieldDirect(TypedReference typedReference);
 

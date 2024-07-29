@@ -3,12 +3,12 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -71,7 +71,8 @@ namespace System.Data.SqlTypes
         private const byte s_cNumeDivScaleMin = 6;     // Minimum result scale of numeric division
 
         // Array of multipliers for lAdjust and Ceiling/Floor.
-        private static readonly uint[] s_rgulShiftBase = new uint[9] {
+        private static ReadOnlySpan<uint> RgulShiftBase => // 9
+        [
             10,
             10 * 10,
             10 * 10 * 10,
@@ -81,7 +82,7 @@ namespace System.Data.SqlTypes
             10 * 10 * 10 * 10 * 10 * 10 * 10,
             10 * 10 * 10 * 10 * 10 * 10 * 10 * 10,
             10 * 10 * 10 * 10 * 10 * 10 * 10 * 10 * 10
-        };
+        ];
 
         #region DecimalHelperTableGenerator
         /*
@@ -130,7 +131,8 @@ namespace System.Data.SqlTypes
         #endregion
 
         #region DecimalHelperTable
-        private static readonly uint[] s_decimalHelpersLo = {
+        private static ReadOnlySpan<uint> DecimalHelpersLo =>
+        [
             0x0000000a, // precision:2, value:10
             0x00000064, // precision:3, value:100
             0x000003e8, // precision:4, value:1000
@@ -169,9 +171,10 @@ namespace System.Data.SqlTypes
             0x00000000, // precision:37, value:1000000000000000000000000000000000000
             0x00000000, // precision:38, value:10000000000000000000000000000000000000
             0x00000000, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static readonly uint[] s_decimalHelpersMid = {
+        private static ReadOnlySpan<uint> DecimalHelpersMid =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -210,9 +213,10 @@ namespace System.Data.SqlTypes
             0xb34b9f10, // precision:37, value:1000000000000000000000000000000000000
             0x00f436a0, // precision:38, value:10000000000000000000000000000000000000
             0x098a2240, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static readonly uint[] s_decimalHelpersHi = {
+        private static ReadOnlySpan<uint> DecimalHelpersHi =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -251,9 +255,10 @@ namespace System.Data.SqlTypes
             0x7bc90715, // precision:37, value:1000000000000000000000000000000000000
             0xd5da46d9, // precision:38, value:10000000000000000000000000000000000000
             0x5a86c47a, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static readonly uint[] s_decimalHelpersHiHi = {
+        private static ReadOnlySpan<uint> DecimalHelpersHiHi =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -292,7 +297,7 @@ namespace System.Data.SqlTypes
             0x00c097ce, // precision:37, value:1000000000000000000000000000000000000
             0x0785ee10, // precision:38, value:10000000000000000000000000000000000000
             0x4b3b4ca8, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
         #endregion
 
         // note that the algorithm covers a range from -5 to +4 from the initial index
@@ -313,31 +318,31 @@ namespace System.Data.SqlTypes
         {
             int tableIndex;
             byte precision;
-            uint[] decimalHelpers;
+            ReadOnlySpan<uint> decimalHelpers;
             uint decimalPart;
 
             if (_data4 != 0)
             {
                 tableIndex = HelperTableStartIndexHiHi;
-                decimalHelpers = s_decimalHelpersHiHi;
+                decimalHelpers = DecimalHelpersHiHi;
                 decimalPart = _data4;
             }
             else if (_data3 != 0)
             {
                 tableIndex = HelperTableStartIndexHi;
-                decimalHelpers = s_decimalHelpersHi;
+                decimalHelpers = DecimalHelpersHi;
                 decimalPart = _data3;
             }
             else if (_data2 != 0)
             {
                 tableIndex = HelperTableStartIndexMid;
-                decimalHelpers = s_decimalHelpersMid;
+                decimalHelpers = DecimalHelpersMid;
                 decimalPart = _data2;
             }
             else
             {
                 tableIndex = HelperTableStartIndexLo;
-                decimalHelpers = s_decimalHelpersLo;
+                decimalHelpers = DecimalHelpersLo;
                 decimalPart = _data1;
             }
 
@@ -429,25 +434,25 @@ namespace System.Data.SqlTypes
             Debug.Assert(precision <= MaxPrecision, "Precision > MaxPrecision");
 
             int tableIndex = checked((precision - 1));
-            if (_data4 < s_decimalHelpersHiHi[tableIndex])
+            if (_data4 < DecimalHelpersHiHi[tableIndex])
             {
                 return true;
             }
-            else if (_data4 == s_decimalHelpersHiHi[tableIndex])
+            else if (_data4 == DecimalHelpersHiHi[tableIndex])
             {
-                if (_data3 < s_decimalHelpersHi[tableIndex])
+                if (_data3 < DecimalHelpersHi[tableIndex])
                 {
                     return true;
                 }
-                else if (_data3 == s_decimalHelpersHi[tableIndex])
+                else if (_data3 == DecimalHelpersHi[tableIndex])
                 {
-                    if (_data2 < s_decimalHelpersMid[tableIndex])
+                    if (_data2 < DecimalHelpersMid[tableIndex])
                     {
                         return true;
                     }
-                    else if (_data2 == s_decimalHelpersMid[tableIndex])
+                    else if (_data2 == DecimalHelpersMid[tableIndex])
                     {
-                        if (_data1 < s_decimalHelpersLo[tableIndex])
+                        if (_data1 < DecimalHelpersLo[tableIndex])
                         {
                             return true;
                         }
@@ -754,9 +759,9 @@ namespace System.Data.SqlTypes
                 {
                     ulLenDelta = (ulLen >= 9) ? 9 : ulLen;
 
-                    dFrac *= s_rgulShiftBase[(int)ulLenDelta - 1];
+                    dFrac *= RgulShiftBase[(int)ulLenDelta - 1];
                     ulLen -= ulLenDelta;
-                    MultByULong(s_rgulShiftBase[(int)ulLenDelta - 1]);
+                    MultByULong(RgulShiftBase[(int)ulLenDelta - 1]);
                     AddULong((uint)dFrac);
                     dFrac -= Math.Floor(dFrac);
                 }
@@ -922,7 +927,7 @@ namespace System.Data.SqlTypes
             AssertValid();
 
             // Make local copy of data to avoid modifying input.
-            Span<uint> rgulNumeric = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rgulNumeric = [_data1, _data2, _data3, _data4];
             int culLen = _bLen;
             Span<char> pszTmp = stackalloc char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
             pszTmp.Clear();                                                     //the decimal digits, from the
@@ -1157,10 +1162,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
             }
 
-            if (destination.Length < 4)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destination));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 4, nameof(destination));
 
             destination[0] = _data1;
             destination[1] = _data2;
@@ -1275,7 +1277,7 @@ namespace System.Data.SqlTypes
             // negate all operands including result.
             if (!fMySignPos)
             {
-                fMySignPos = !fMySignPos;
+                // fMySignPos = !fMySignPos;
                 fOpSignPos = !fOpSignPos;
                 fResSignPos = !fResSignPos;
             }
@@ -1284,8 +1286,8 @@ namespace System.Data.SqlTypes
             culOp1 = x._bLen;
             culOp2 = y._bLen;
 
-            Span<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            Span<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rglData1 = [x._data1, x._data2, x._data3, x._data4];
+            Span<uint> rglData2 = [y._data1, y._data2, y._data3, y._data4];
 
             if (fOpSignPos)
             {
@@ -1470,8 +1472,8 @@ namespace System.Data.SqlTypes
 
             // II) Perform multiplication
 
-            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            ReadOnlySpan<uint> rglData1 = [x._data1, x._data2, x._data3, x._data4];
+            ReadOnlySpan<uint> rglData2 = [y._data1, y._data2, y._data3, y._data4];
 
             //Local buffer to hold the result of multiplication.
             //Longer than CReNumeBuf because full precision of multiplication is carried out
@@ -1542,12 +1544,12 @@ namespace System.Data.SqlTypes
                     {
                         if (lScaleAdjust <= -9)
                         {
-                            ulShiftBase = s_rgulShiftBase[8];
+                            ulShiftBase = RgulShiftBase[8];
                             lScaleAdjust += 9;
                         }
                         else
                         {
-                            ulShiftBase = s_rgulShiftBase[-lScaleAdjust - 1];
+                            ulShiftBase = RgulShiftBase[-lScaleAdjust - 1];
                             lScaleAdjust = 0;
                         }
                         MpDiv1(rgulRes, ref culRes, ulShiftBase, out ulRem);
@@ -1704,8 +1706,8 @@ namespace System.Data.SqlTypes
 
             // Step2: Actual Computation
 
-            Span<uint> rgulData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            Span<uint> rgulData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rgulData1 = [x._data1, x._data2, x._data3, x._data4];
+            Span<uint> rgulData2 = [y._data1, y._data2, y._data3, y._data4];
 
             // Buffers for arbitrary precision divide
             Span<uint> rgulR = stackalloc uint[s_cNumeMax + 1];
@@ -1812,7 +1814,7 @@ namespace System.Data.SqlTypes
             Debug.Assert(CLenFromPrec(_bPrec) >= _bLen, "CLenFromPrec(m_bPrec) >= m_bLen", "In AssertValid");
             Debug.Assert(_bLen <= s_cNumeMax, "m_bLen <= x_cNumeMax", "In AssertValid");
 
-            ReadOnlySpan<uint> rglData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            ReadOnlySpan<uint> rglData = [_data1, _data2, _data3, _data4];
 
             // highest UI4 is non-0 unless value "zero"
             if (rglData[_bLen - 1] == 0)
@@ -1898,12 +1900,12 @@ namespace System.Data.SqlTypes
         //    10-19          2
         //    20-28          3
         //    29-38          4
-        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
-        {
+        private static ReadOnlySpan<byte> RgCLenFromPrec =>
+        [
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
             2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
             4, 4, 4, 4, 4, 4
-        };
+        ];
 
         private static byte CLenFromPrec(byte bPrec)
         {
@@ -2071,7 +2073,7 @@ namespace System.Data.SqlTypes
 
             int ciulU = _bLen;
             int Prec;
-            uint ulRem;
+            // uint ulRem;
 
             if (ciulU == 1)
             {
@@ -2083,11 +2085,11 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                Span<uint> rgulU = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+                Span<uint> rgulU = [_data1, _data2, _data3, _data4];
                 Prec = 0;
                 do
                 {
-                    MpDiv1(rgulU, ref ciulU, 1000000000, out ulRem);
+                    MpDiv1(rgulU, ref ciulU, 1000000000, out _ /* ulRem */);
                     Prec += 9;
                 }
                 while (ciulU > 2);
@@ -2114,7 +2116,7 @@ namespace System.Data.SqlTypes
             int iData;                  // which UI4 in this we are on
             int iDataMax = _bLen; // # of UI4s in this
 
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             // Add, starting at the LS UI4 until out of UI4s or no carry
             iData = 0;
@@ -2156,10 +2158,10 @@ namespace System.Data.SqlTypes
             int iDataMax = _bLen; // How many UI4s currently in *this
 
             ulong dwlAccum = 0;       // accumulated sum
-            ulong dwlNextAccum = 0;   // accumulation past dwlAccum
+            ulong dwlNextAccum;       // accumulation past dwlAccum
             int iData;              // which UI4 in *This we are on.
 
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             for (iData = 0; iData < iDataMax; iData++)
             {
@@ -2210,7 +2212,7 @@ namespace System.Data.SqlTypes
         {
             ulong dwlDivisor = iDivisor;
             ulong dwlAccum = 0;           //Accumulated sum
-            uint ulQuotientCur = 0;      // Value of the current UI4 of the quotient
+            uint ulQuotientCur;          // Value of the current UI4 of the quotient
             bool fAllZero = true;    // All of the quotient (so far) has been 0
             int iData;              //Which UI4 currently on
 
@@ -2219,7 +2221,7 @@ namespace System.Data.SqlTypes
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             // Copy into array, so that we can iterate through the data
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             // Start from the MS UI4 of quotient, divide by divisor, placing result
             //        in quotient and carrying the remainder.
@@ -2304,12 +2306,12 @@ namespace System.Data.SqlTypes
                     //if lAdjust>=9, downshift by 10^9 each time, otherwise by the full amount
                     if (lAdjust >= 9)
                     {
-                        ulShiftBase = s_rgulShiftBase[8];
+                        ulShiftBase = RgulShiftBase[8];
                         lAdjust -= 9;
                     }
                     else
                     {
-                        ulShiftBase = s_rgulShiftBase[lAdjust - 1];
+                        ulShiftBase = RgulShiftBase[lAdjust - 1];
                         lAdjust = 0;
                     }
                     MultByULong(ulShiftBase);
@@ -2321,12 +2323,12 @@ namespace System.Data.SqlTypes
                 {
                     if (lAdjust <= -9)
                     {
-                        ulShiftBase = s_rgulShiftBase[8];
+                        ulShiftBase = RgulShiftBase[8];
                         lAdjust += 9;
                     }
                     else
                     {
-                        ulShiftBase = s_rgulShiftBase[-lAdjust - 1];
+                        ulShiftBase = RgulShiftBase[-lAdjust - 1];
                         lAdjust = 0;
                     }
                     ulRem = DivByULong(ulShiftBase);
@@ -2429,8 +2431,8 @@ namespace System.Data.SqlTypes
             if (culOp != culThis)
                 return (culThis > culOp) ? 1 : -1;
 
-            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
-            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4 };
+            ReadOnlySpan<uint> rglData1 = [_data1, _data2, _data3, _data4];
+            ReadOnlySpan<uint> rglData2 = [snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4];
 
             // Loop through numeric value checking each byte for differences.
             iData = culOp - 1;
@@ -3051,12 +3053,12 @@ namespace System.Data.SqlTypes
             {
                 if (iAdjust >= 9)
                 {
-                    ulRem = DivByULong(s_rgulShiftBase[8]);
+                    ulRem = DivByULong(RgulShiftBase[8]);
                     iAdjust -= 9;
                 }
                 else
                 {
-                    ulRem = DivByULong(s_rgulShiftBase[iAdjust - 1]);
+                    ulRem = DivByULong(RgulShiftBase[iAdjust - 1]);
                     iAdjust = 0;
                 }
 
@@ -3189,14 +3191,14 @@ namespace System.Data.SqlTypes
             {
                 if (lAdjust >= 9)
                 {
-                    ulRem = n.DivByULong(s_rgulShiftBase[8]);
-                    ulLastDivBase = s_rgulShiftBase[8];
+                    ulRem = n.DivByULong(RgulShiftBase[8]);
+                    ulLastDivBase = RgulShiftBase[8];
                     lAdjust -= 9;
                 }
                 else
                 {
-                    ulRem = n.DivByULong(s_rgulShiftBase[lAdjust - 1]);
-                    ulLastDivBase = s_rgulShiftBase[lAdjust - 1];
+                    ulRem = n.DivByULong(RgulShiftBase[lAdjust - 1]);
+                    ulLastDivBase = RgulShiftBase[lAdjust - 1];
                     lAdjust = 0;
                 }
             }

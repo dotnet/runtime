@@ -14,8 +14,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-
-    internal sealed class Http3LoopbackStream : IAsyncDisposable
+    public sealed class Http3LoopbackStream : IAsyncDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -58,18 +57,16 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendSettingsFrameAsync(ICollection<(long settingId, long settingValue)> settings = null)
+        public async Task SendSettingsFrameAsync(SettingsEntry[] settingsEntries)
         {
-            settings ??= Array.Empty<(long settingId, long settingValue)>();
-
-            var buffer = new byte[settings.Count * MaximumVarIntBytes * 2];
+            var buffer = new byte[settingsEntries.Length * MaximumVarIntBytes * 2];
 
             int bytesWritten = 0;
 
-            foreach ((long settingId, long settingValue) in settings)
+            foreach (SettingsEntry setting in settingsEntries)
             {
-                bytesWritten += EncodeHttpInteger(settingId, buffer.AsSpan(bytesWritten));
-                bytesWritten += EncodeHttpInteger(settingValue, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger((int)setting.SettingId, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger(setting.Value, buffer.AsSpan(bytesWritten));
             }
 
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
@@ -127,7 +124,7 @@ namespace System.Net.Test.Common
         {
             Memory<byte> payload = ConstructHeadersPayload(statusCode, headers);
 
-            await SendFrameHeaderAsync(HeadersFrame, payload.Length);
+            await SendFrameHeaderAsync(HeadersFrame, payload.Length).ConfigureAwait(false);
 
             // Slice off final byte so the payload is not complete
             payload = payload.Slice(0, payload.Length - 1);
@@ -147,7 +144,7 @@ namespace System.Net.Test.Common
             int bytesWritten = 0;
 
             bytesWritten += EncodeHttpInteger(firstInvalidStreamId, buffer);
-            await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten));
+            await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
         private async Task SendFrameHeaderAsync(long frameType, int payloadLength)
@@ -199,7 +196,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public async Task<byte[]> ReadRequestBodyAsync()
+        public async Task<byte[]> ReadRequestBodyAsync(int minimumBytes = -1)
         {
             var buffer = new MemoryStream();
 
@@ -214,6 +211,10 @@ namespace System.Net.Test.Common
                         break;
                     case null:
                         return buffer.ToArray();
+                }
+                if (minimumBytes >= 0 && buffer.Length >= minimumBytes)
+                {
+                    return buffer.ToArray();
                 }
             }
         }
@@ -366,11 +367,11 @@ namespace System.Net.Test.Common
                 {
                     if (ignoreIncomingData)
                     {
-                        await DrainResponseData();
+                        await DrainResponseData().ConfigureAwait(false);
                     }
                     else
                     {
-                        int bytesRead = await _stream.ReadAsync(new byte[1]);
+                        int bytesRead = await _stream.ReadAsync(new byte[1]).ConfigureAwait(false);
                         if (bytesRead != 0)
                         {
                             throw new Exception($"Unexpected data received while waiting for client cancllation.");
@@ -387,7 +388,7 @@ namespace System.Net.Test.Common
             {
                 try
                 {
-                    await _stream.WritesClosed;
+                    await _stream.WritesClosed.ConfigureAwait(false);
                 }
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
@@ -395,7 +396,7 @@ namespace System.Net.Test.Common
                 }
             }
 
-            await Task.WhenAll(WaitForReadCancellation(), WaitForWriteCancellation());
+            await Task.WhenAll(WaitForReadCancellation(), WaitForWriteCancellation()).ConfigureAwait(false);
 
             if (!readCanceled && !writeCanceled)
             {

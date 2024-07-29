@@ -1,19 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-** Attribute: ReferenceAssemblyAttribute
-**
-** Purpose: Identifies an assembly as being a "reference
-**    assembly", meaning it contains public surface area but
-**    no usable implementation.  Reference assemblies
-**    should be loadable for introspection, but not execution.
-**
-============================================================*/
-
 namespace System.Runtime.CompilerServices
 {
+    /// <summary>
+    /// Identifies an assembly as a reference assembly, which contains metadata but no executable code.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed class ReferenceAssemblyAttribute : Attribute
     {

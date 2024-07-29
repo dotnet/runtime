@@ -31,15 +31,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System
 {
-    [Serializable]
     public struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         private readonly IntPtr value;
@@ -54,11 +54,6 @@ namespace System
         {
         }
 
-        private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public IntPtr Value
         {
             get
@@ -67,6 +62,8 @@ namespace System
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -146,7 +143,7 @@ namespace System
         internal static Type GetGenericTypeDefinition(RuntimeType type)
         {
             Type? res = null;
-            GetGenericTypeDefinition_impl(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create (ref res));
+            GetGenericTypeDefinition_impl(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
             if (res == null)
                 // The icall returns null if TYPE is a gtd
                 return type;
@@ -171,6 +168,12 @@ namespace System
         {
             CorElementType corElemType = GetCorElementType(type);
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
+        }
+
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool IsArray(RuntimeType type)
@@ -203,9 +206,6 @@ namespace System
         internal static extern bool HasInstantiation(QCallTypeHandle type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsComObject(QCallTypeHandle type);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(QCallTypeHandle type, [NotNullWhen(true)] object? o);
 
         internal static bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o)
@@ -228,13 +228,16 @@ namespace System
 
         internal static bool HasInstantiation(RuntimeType type)
         {
-            return HasInstantiation (new QCallTypeHandle(ref type));
+            return HasInstantiation(new QCallTypeHandle(ref type));
         }
 
+#pragma warning disable IDE0060
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
-            return isGenericCOM ? false : IsComObject(new QCallTypeHandle(ref type));
+            // Mono runtime doesn't support built-in COM.
+            return false;
         }
+#pragma warning restore IDE0060
 
 #pragma warning disable IDE0060
         internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
@@ -243,11 +246,6 @@ namespace System
             return false;
         }
 #pragma warning restore IDE0060
-
-        internal static bool IsInterface(RuntimeType type)
-        {
-            return (type.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetArrayRank(QCallTypeHandle type);
@@ -266,7 +264,7 @@ namespace System
 
         internal static int GetArrayRank(RuntimeType type)
         {
-            return GetArrayRank(new QCallTypeHandle (ref type));
+            return GetArrayRank(new QCallTypeHandle(ref type));
         }
 
         internal static RuntimeAssembly GetAssembly(RuntimeType type)
@@ -381,9 +379,9 @@ namespace System
                 internal_from_name(
                                    namePtr.Value,
                                    ref stackMark,
-                                   ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
+                                   ObjectHandleOnStack.Create(ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException("Error loading '" + typeName + "'");
+                    throw new TypeLoadException(SR.Arg_TypeLoadException);
             }
             return t;
         }

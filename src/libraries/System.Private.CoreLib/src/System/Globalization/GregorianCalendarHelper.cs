@@ -35,6 +35,7 @@ namespace System.Globalization
             this.yearOffset = yearOffset;
             this.minEraYear = minEraYear;
             this.maxEraYear = maxEraYear;
+            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - A DateTime object is created using values obtained from the machine configuration.
             this.ticks = new DateTime(startYear, startMonth, startDay).Ticks;
             this.eraName = eraName;
             this.abbrevEraName = abbrevEraName;
@@ -52,16 +53,6 @@ namespace System.Globalization
         // is derived from DateTime class.
         //
         internal int MaxYear => m_maxYear;
-
-        internal static readonly int[] DaysToMonth365 =
-        {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365
-        };
-
-        internal static readonly int[] DaysToMonth366 =
-        {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
-        };
 
         private readonly int m_maxYear;
         private readonly int m_minYear;
@@ -175,46 +166,6 @@ namespace System.Globalization
             return GetYearOffset(year, era, throwOnError: false) >= 0;
         }
 
-        /*=================================GetAbsoluteDate==========================
-        **Action: Gets the absolute date for the given Gregorian date.  The absolute date means
-        **       the number of days from January 1st, 1 A.D.
-        **Returns:  the absolute date
-        **Arguments:
-        **      year    the Gregorian year
-        **      month   the Gregorian month
-        **      day     the day
-        **Exceptions:
-        **      ArgumentOutOfRangException  if year, month, day value is valid.
-        **Note:
-        **      This is an internal method used by DateToTicks() and the calculations of Hijri and Hebrew calendars.
-        **      Number of Days in Prior Years (both common and leap years) +
-        **      Number of Days in Prior Months of Current Year +
-        **      Number of Days in Current Month
-        **
-        ============================================================================*/
-
-        internal static long GetAbsoluteDate(int year, int month, int day)
-        {
-            if (year >= 1 && year <= 9999 && month >= 1 && month <= 12)
-            {
-                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
-                if (day >= 1 && (day <= days[month] - days[month - 1]))
-                {
-                    int y = year - 1;
-                    int absoluteDate = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
-                    return absoluteDate;
-                }
-            }
-            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
-        }
-
-        // Returns the tick count corresponding to the given year, month, and day.
-        // Will check the if the parameters are valid.
-        internal static long DateToTicks(int year, int month, int day)
-        {
-            return GetAbsoluteDate(year, month, day) * TimeSpan.TicksPerDay;
-        }
-
         internal void CheckTicksRange(long ticks)
         {
             if (ticks < m_Cal.MinSupportedDateTime.Ticks || ticks > m_Cal.MaxSupportedDateTime.Ticks)
@@ -271,14 +222,14 @@ namespace System.Globalization
                 m = 12 + (i + 1) % 12;
                 y += (i - 11) / 12;
             }
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int days = (daysArray[m] - daysArray[m - 1]);
 
             if (d > days)
             {
                 d = days;
             }
-            long ticks = DateToTicks(y, m, d) + time.TimeOfDay.Ticks;
+            long ticks = GregorianCalendar.DateToTicks(y, m, d) + time.TimeOfDay.Ticks;
             Calendar.CheckAddResult(ticks, m_Cal.MinSupportedDateTime, m_Cal.MaxSupportedDateTime);
             return new DateTime(ticks);
         }
@@ -338,7 +289,7 @@ namespace System.Globalization
             {
                 ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
-            int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365);
+            ReadOnlySpan<int> days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365);
             return days[month] - days[month - 1];
         }
 
@@ -510,7 +461,7 @@ namespace System.Globalization
         public DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
         {
             year = GetGregorianYear(year, era);
-            long ticks = DateToTicks(year, month, day) + Calendar.TimeToTicks(hour, minute, second, millisecond);
+            long ticks = GregorianCalendar.DateToTicks(year, month, day) + Calendar.TimeToTicks(hour, minute, second, millisecond);
             CheckTicksRange(ticks);
             return new DateTime(ticks);
         }

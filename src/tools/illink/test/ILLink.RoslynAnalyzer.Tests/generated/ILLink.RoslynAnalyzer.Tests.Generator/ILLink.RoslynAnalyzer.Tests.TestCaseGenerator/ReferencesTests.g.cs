@@ -10,6 +10,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "References";
 
 		[Fact]
+		public Task AssemblyOnlyUsedByUsingSaveAction ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AssemblyOnlyUsedByUsingSaveActionWithSymbols ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task AssemblyOnlyUsedByUsingWithCsc ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -41,6 +53,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task CopyWithLinkedWillHaveMethodDepsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task MissingReferenceInUnusedCodePath ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task MissingReferenceInUsedCodePath ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

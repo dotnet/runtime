@@ -4,8 +4,9 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
-partial class VectorTest
+public partial class VectorTest
 {
     const int Pass = 100;
     const int Fail = -1;
@@ -146,8 +147,9 @@ partial class VectorTest
             int returnVal = Pass;
             for (int i = 0; i < Vector<Single>.Count; i++)
             {
-                Int32 int32Val = (Int32)A[i];
+                Int32 int32Val = float.ConvertToInteger<int>(A[i]);
                 Single cvtSglVal = (Single)int32Val;
+
                 if (B[i] != int32Val)
                 {
                     Console.WriteLine("B[" + i + "] = " + B[i] + ", int32Val = " + int32Val);
@@ -170,8 +172,9 @@ partial class VectorTest
             int returnVal = Pass;
             for (int i = 0; i < Vector<Single>.Count; i++)
             {
-                UInt32 uint32Val = (UInt32)A[i];
+                UInt32 uint32Val = float.ConvertToInteger<uint>(A[i]);
                 Single cvtSglVal = (Single)uint32Val;
+
                 if ((B[i] != uint32Val) || (C[i] != cvtSglVal))
                 {
                     Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint32Val = {4}, cvtSglVal = {5}",
@@ -190,8 +193,9 @@ partial class VectorTest
             int returnVal = Pass;
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                Int64 int64Val = (Int64)A[i];
+                Int64 int64Val = double.ConvertToInteger<long>(A[i]);
                 Double cvtDblVal = (Double)int64Val;
+
                 if (B[i] != int64Val)
                 {
                     Console.WriteLine("B[" + i + "] = " + B[i] + ", int64Val = " + int64Val);
@@ -214,8 +218,9 @@ partial class VectorTest
             int returnVal = Pass;
             for (int i = 0; i < Vector<Double>.Count; i++)
             {
-                UInt64 uint64Val = (UInt64)A[i];
+                UInt64 uint64Val = double.ConvertToInteger<ulong>(A[i]);
                 Double cvtDblVal = (Double)uint64Val;
+
                 if ((B[i] != uint64Val) || (C[i] != cvtDblVal))
                 {
                     Console.WriteLine("A[{0}] = {1}, B[{0}] = {2}, C[{0}] = {3}, uint64Val = {4}, cvtDblVal = {5}",
@@ -339,7 +344,7 @@ partial class VectorTest
             }
             return returnVal;
         }
-        
+
         public static int VectorConvertInt16And8(Vector<Int16> A1, Vector<Int16> A2)
         {
             Vector<SByte> B = Vector.Narrow(A1, A2);
@@ -377,7 +382,7 @@ partial class VectorTest
             }
             return returnVal;
         }
-        
+
         public static int VectorConvertUInt64And32(Vector<UInt64> A1, Vector<UInt64> A2)
         {
             Vector<UInt32> B = Vector.Narrow(A1, A2);
@@ -453,7 +458,7 @@ partial class VectorTest
             }
             return returnVal;
         }
-        
+
         public static int VectorConvertUInt16And8(Vector<UInt16> A1, Vector<UInt16> A2)
         {
             Vector<Byte> B = Vector.Narrow(A1, A2);
@@ -493,7 +498,9 @@ partial class VectorTest
         }
     }
 
-    static int Main()
+    [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+    public static int TestEntryPoint()
     {
         int returnVal = Pass;
 
@@ -506,7 +513,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Single> singleVector = getRandomVector<Single>(singles, i);
@@ -516,7 +523,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
@@ -526,7 +533,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector = getRandomVector<Double>(doubles, i);
@@ -536,7 +543,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Double> doubleVector1 = getRandomVector<Double>(doubles, i);
@@ -547,7 +554,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Int64> int64Vector1 = getRandomVector<Int64>(int64s, i);
@@ -558,7 +565,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Int32> int32Vector1 = getRandomVector<Int32>(int32s, i);
@@ -569,7 +576,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<Int16> int16Vector1 = getRandomVector<Int16>(int16s, i);
@@ -580,7 +587,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<UInt64> uint64Vector1 = getRandomVector<UInt64>(uint64s, i);
@@ -591,7 +598,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<UInt32> uint32Vector1 = getRandomVector<UInt32>(uint32s, i);
@@ -602,7 +609,7 @@ partial class VectorTest
                 returnVal = Fail;
             }
         }
-        
+
         for (int i = 0; i < 10; i++)
         {
             Vector<UInt16> uint16Vector1 = getRandomVector<UInt16>(uint16s, i);
@@ -614,9 +621,9 @@ partial class VectorTest
             }
         }
 
-        JitLog jitLog = new JitLog();       
+        JitLog jitLog = new JitLog();
         // SIMD conversions from floating point to unsigned are not supported on x86 or x64
-   
+
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt32(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:ConvertToSingle(struct):struct")) returnVal = Fail;
         // SIMD Conversion to Int64 is not supported on x86

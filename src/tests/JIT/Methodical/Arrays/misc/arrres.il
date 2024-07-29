@@ -16,7 +16,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'arrres'// as "arrres"
+.assembly arrres_il_r
 {
 }
 .assembly extern xunit.core {}

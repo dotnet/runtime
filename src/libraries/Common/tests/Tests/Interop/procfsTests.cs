@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Common.Tests
 {
-    public class procfsTests
+    public class procfsTests : FileCleanupTestBase
     {
         [Theory]
         [InlineData("1 (systemd) S 0 1 1 0 -1 4194560 11536 2160404 55 593 70 169 4213 1622 20 0 1 0 4 189767680 1491 18446744073709551615 1 1 0 0 0 0 671173123 4096 1260 0 0 0 17 4 0 0 25 0 0 0 0 0 0 0 0 0 0", 1, "systemd", 'S', 1, 70, 169, 0, 4, 189767680, 1491, 18446744073709551615)]
@@ -33,33 +33,29 @@ namespace Common.Tests
         [InlineData("5955 (a(((b) S 1806 5955 5955 34823 5955 4194304 1426 5872 0 3 16 3 16 4 20 0 1 0 674762 32677888 1447 18446744073709551615 4194304 5192652 140725672538992 140725672534152 140236068968880 0 0 3670020 1266777851 1 0 0 17 4 0 0 0 0 0 7290352 7326856 21204992 140725672540419 140725672540424 140725672540424 140725672542190 0", 5955, "a(((b", 'S', 5955, 16, 3, 0, 674762, 32677888, 1447, 18446744073709551615)]
         [InlineData("5955 (a)( ) b (() () S 1806 5955 5955 34823 5955 4194304 1426 5872 0 3 16 3 16 4 20 0 1 0 674762 32677888 1447 18446744073709551615 4194304 5192652 140725672538992 140725672534152 140236068968880 0 0 3670020 1266777851 1 0 0 17 4 0 0 0 0 0 7290352 7326856 21204992 140725672540419 140725672540424 140725672540424 140725672542190 0", 5955, "a)( ) b (() (", 'S', 5955, 16, 3, 0, 674762, 32677888, 1447, 18446744073709551615)]
         [InlineData("5955 (has\\backslash) S 1806 5955 5955 34823 5955 4194304 1426 5872 0 3 16 3 16 4 20 0 1 0 674762 32677888 1447 18446744073709551615 4194304 5192652 140725672538992 140725672534152 140236068968880 0 0 3670020 1266777851 1 0 0 17 4 0 0 0 0 0 7290352 7326856 21204992 140725672540419 140725672540424 140725672540424 140725672542190 0", 5955, "has\\backslash", 'S', 5955, 16, 3, 0, 674762, 32677888, 1447, 18446744073709551615)]
-        public static void ParseValidStatFiles_Success(
+        public void ParseValidStatFiles_Success(
             string statFileText,
             int expectedPid, string expectedComm, char expectedState, int expectedSession,
             ulong expectedUtime, ulong expectedStime, long expectedNice, ulong expectedStarttime,
             ulong expectedVsize, long expectedRss, ulong expectedRsslim)
         {
-            string path = Path.GetTempFileName();
-            try
-            {
-                File.WriteAllText(path, statFileText);
+            string path = GetTestFilePath();
+            File.WriteAllText(path, statFileText);
 
-                Interop.procfs.ParsedStat result;
-                Assert.True(Interop.procfs.TryParseStatFile(path, out result));
+            Interop.procfs.ParsedStat result;
+            Assert.True(Interop.procfs.TryParseStatFile(path, out result));
 
-                Assert.Equal(expectedPid, result.pid);
-                Assert.Equal(expectedComm, result.comm);
-                Assert.Equal(expectedState, result.state);
-                Assert.Equal(expectedSession, result.session);
-                Assert.Equal(expectedUtime, result.utime);
-                Assert.Equal(expectedStime, result.stime);
-                Assert.Equal(expectedNice, result.nice);
-                Assert.Equal(expectedStarttime, result.starttime);
-                Assert.Equal(expectedVsize, result.vsize);
-                Assert.Equal(expectedRss, result.rss);
-                Assert.Equal(expectedRsslim, result.rsslim);
-            }
-            finally { File.Delete(path); }
+            Assert.Equal(expectedPid, result.pid);
+            Assert.Equal(expectedComm, result.comm);
+            Assert.Equal(expectedState, result.state);
+            Assert.Equal(expectedSession, result.session);
+            Assert.Equal(expectedUtime, result.utime);
+            Assert.Equal(expectedStime, result.stime);
+            Assert.Equal(expectedNice, result.nice);
+            Assert.Equal(expectedStarttime, result.starttime);
+            Assert.Equal(expectedVsize, result.vsize);
+            Assert.Equal(expectedRss, result.rss);
+            Assert.Equal(expectedRsslim, result.rsslim);
         }
     }
 }

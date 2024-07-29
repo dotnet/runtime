@@ -391,7 +391,7 @@ struct ResolveHolder
          _stub._resolveWorkerTarget = resolveWorkerTarget;
 
          _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
-         _ASSERTE(patcherTarget == NULL);
+         _ASSERTE(patcherTarget == (PCODE)NULL);
 
 #undef DATA_OFFSET
 #undef PC_REL_OFFSET
@@ -577,55 +577,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 }
 
 #endif // DACCESS_COMPILE
-
-VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
-{
-
-    SUPPORTS_DAC;
-#ifdef DACCESS_COMPILE
-
-    return SK_BREAKPOINT;  // Dac always uses the slower lookup
-
-#else
-
-    StubKind stubKind = SK_UNKNOWN;
-    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
-
-    EX_TRY
-    {
-        // If stubStartAddress is completely bogus, then this might AV,
-        // so we protect it with SEH. An AV here is OK.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        DWORD firstDword = *((DWORD*) pInstr);
-
-        if (firstDword == DISPATCH_STUB_FIRST_DWORD) // assembly of first instruction of DispatchStub : ldr x13, [x0]
-        {
-            stubKind = SK_DISPATCH;
-        }
-        else if (firstDword == RESOLVE_STUB_FIRST_DWORD) // assembly of first instruction of ResolveStub : ldr x12, [x0,#Object.m_pMethTab ]
-        {
-            stubKind = SK_RESOLVE;
-        }
-        else if (firstDword == VTABLECALL_STUB_FIRST_DWORD) // assembly of first instruction of VTableCallStub : ldr x9, [x0]
-        {
-            stubKind = SK_VTABLECALL;
-        }
-        else if (firstDword == 0x10000089) // assembly of first instruction of LookupStub : adr x9, _resolveWorkerTarget
-        {
-            stubKind = SK_LOOKUP;
-        }
-    }
-    EX_CATCH
-    {
-        stubKind = SK_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return stubKind;
-
-#endif // DACCESS_COMPILE
-}
 
 #endif //DECLARE_DATA
 

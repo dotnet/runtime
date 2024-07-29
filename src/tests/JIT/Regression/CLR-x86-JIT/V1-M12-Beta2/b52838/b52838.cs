@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
-    class CC
+    public class CC
     {
         static sbyte m_sb;
         static void Finally() { }
@@ -28,7 +29,8 @@ namespace Test
                 Finally();
             }
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

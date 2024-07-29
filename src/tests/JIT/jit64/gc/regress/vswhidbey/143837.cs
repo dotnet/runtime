@@ -3,22 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_143837
 {
     public static TestClass static_TestClass;
     public static DerivedClass static_DerivedClass;
 
-    public static int Main()
-    {
-        if (Test1() != 100) return 1;
-
-        if (Test2() != 100) return 1;
-
-        Console.WriteLine("Pass");
-        return 100;
-    }
-
+    [Fact]
     public static int Test1()
     {
         try
@@ -52,6 +44,7 @@ public class Test_143837
         return -1;
     }
 
+    [Fact]
     public static int Test2()
     {
         try

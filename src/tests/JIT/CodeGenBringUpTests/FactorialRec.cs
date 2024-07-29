@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FactorialRec
 {
     const int Pass = 100;
@@ -24,7 +25,8 @@ public class BringUpTest_FactorialRec
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int s = FactorialRec(5);
         if (s != 120) return Fail;

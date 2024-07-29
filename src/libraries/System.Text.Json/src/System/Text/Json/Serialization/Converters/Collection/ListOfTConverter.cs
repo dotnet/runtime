@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.Generic.List{TElement}</cref>.
     internal sealed class ListOfTConverter<TCollection, TElement>
         : IEnumerableDefaultConverter<TCollection, TElement>
-        where TCollection: List<TElement>
+        where TCollection : List<TElement>
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Add(value);
@@ -17,6 +20,11 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             if (state.Current.JsonTypeInfo.CreateObject == null)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
@@ -54,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.EndCollectionElement();
 
-                    if (ShouldFlush(writer, ref state))
+                    if (ShouldFlush(ref state, writer))
                     {
                         state.Current.EnumeratorIndex = ++index;
                         return false;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace GCTest_arrres_cs
@@ -9,12 +10,12 @@ namespace GCTest_arrres_cs
     public class Test
     {
         private int _indx;
-        public bool m_die = false;
+        public bool m_die;
         private static Test[] s_arr = new Test[50];
 
         public Test(int indx) { _indx = indx; }
 
-        public virtual void CheckValid()
+        internal virtual void CheckValid()
         {
             if (s_arr[_indx] != this)
                 throw new Exception();
@@ -34,7 +35,8 @@ namespace GCTest_arrres_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             Test1();
             Test2();
@@ -43,23 +45,25 @@ namespace GCTest_arrres_cs
             Test5();
             Test6();
             Console.WriteLine("Test passed.");
-            return 100;
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CollectAndFinalize()
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test1()
         {
             for (int i = 0; i < 50; i++)
                 s_arr[i] = new Test(i);
             CollectAndFinalize();
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test2()
         {
             for (int i = 0; i < 50; i++)
@@ -69,7 +73,8 @@ namespace GCTest_arrres_cs
                 s_arr[i] = null;
             }
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test3()
         {
             CollectAndFinalize();
@@ -80,7 +85,8 @@ namespace GCTest_arrres_cs
                 s_arr[i] = null;
             }
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test4()
         {
             CollectAndFinalize();
@@ -91,7 +97,8 @@ namespace GCTest_arrres_cs
                 s_arr[i] = null;
             }
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test5()
         {
             CollectAndFinalize();
@@ -102,7 +109,8 @@ namespace GCTest_arrres_cs
                 s_arr[i] = null;
             }
         }
-        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test6()
         {
             CollectAndFinalize();

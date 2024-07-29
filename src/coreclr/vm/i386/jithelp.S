@@ -109,7 +109,7 @@ PATCH_LABEL JIT_DebugWriteBarrier\rg
     mov     [edx], edx
     cmp     ecx, [edx]
     pop     edx
-    ja      LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
+    jae     LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -281,7 +281,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     mov     eax, [eax]
     cmp     edx, [eax]
     pop     eax
-    ja      LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
+    jae     LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -552,87 +552,6 @@ LOCAL_LABEL(LRszMORE32):
 LEAF_END JIT_LRsz, _TEXT
 
 // *********************************************************************/
-//  JIT_Dbl2LngP4x87
-//
-// Purpose:
-//   converts a double to a long truncating toward zero (C semantics)
-//
-// uses stdcall calling conventions
-//
-//   This code is faster on a P4 than the Dbl2Lng code above, but is
-//   slower on a PIII.  Hence we choose this code when on a P4 or above.
-//
-LEAF_ENTRY JIT_Dbl2LngP4x87, _TEXT
-    // get some local space
-    sub 	esp, 8
-
-    #define arg1 [esp + 0x0C]
-    fld     QWORD PTR arg1          // fetch arg
-    fnstcw  WORD PTR arg1           // store FPCW
-    movzx   eax, WORD PTR arg1      // zero extend - wide
-    or      ah, 0x0C                // turn on OE and DE flags
-    mov     DWORD PTR [esp], eax    // store new FPCW bits
-    fldcw   WORD PTR  [esp]         // reload FPCW with new bits
-    fistp   QWORD PTR [esp]         // convert
-
-    // reload FP result
-    mov	    eax, DWORD PTR [esp]
-    mov	    edx, DWORD PTR [esp + 4]
-
-    // reload original FPCW value
-    fldcw   WORD PTR arg1
-    #undef arg1
-
-    // restore stack
-    add     esp, 8
-
-    ret
-LEAF_END JIT_Dbl2LngP4x87, _TEXT
-
-// *********************************************************************/
-//  JIT_Dbl2LngSSE3
-//
-// Purpose:
-//    converts a double to a long truncating toward zero (C semantics)
-//
-//  uses stdcall calling conventions
-//
-//    This code is faster than the above P4 x87 code for Intel processors
-//    equal or later than Core2 and Atom that have SSE3 support
-//
-LEAF_ENTRY JIT_Dbl2LngSSE3, _TEXT
-    // get some local space
-    sub     esp, 8
-
-    fld     QWORD PTR [esp + 0x0C]   // fetch arg
-    fisttp  QWORD PTR [esp]         // convert
-    mov     eax, DWORD PTR [esp]    // reload FP result
-    mov     edx, DWORD PTR [esp + 4]
-
-    // restore stack
-    add     esp, 8
-
-    ret
-LEAF_END JIT_Dbl2LngSSE3, _TEXT
-
-// *********************************************************************/
-// JIT_Dbl2IntSSE2
-//
-// Purpose:
-//  converts a double to a long truncating toward zero (C semantics)
-//
-// uses stdcall calling conventions
-//
-// This code is even faster than the P4 x87 code for Dbl2LongP4x87,
-// but only returns a 32 bit value (only good for int).
-//
-LEAF_ENTRY JIT_Dbl2IntSSE2, _TEXT
-    movsd     xmm0, [esp + 4]
-    cvttsd2si eax, xmm0
-    ret
-LEAF_END JIT_Dbl2IntSSE2, _TEXT
-
-// *********************************************************************/
 // JIT_StackProbe
 //
 // Purpose:
@@ -679,7 +598,7 @@ NESTED_END JIT_StackProbe, _TEXT
 //  the compares just for EAX, which won't work for other registers.
 //
 //  READ THIS!!!!!!
-//  it is imperative that the addresses of of the values that we overwrite
+//  it is imperative that the addresses of the values that we overwrite
 //  (card table, ephemeral region ranges, etc) are naturally aligned since
 //  there are codepaths that will overwrite these values while the EE is running.
 //

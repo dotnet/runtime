@@ -222,7 +222,7 @@ Unknown_AddRef_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             return 1;
 
         ULONG cbRef = pOuter->AddRef();
@@ -284,7 +284,7 @@ Unknown_Release_Internal(IUnknown* pUnk)
     if (pSimpleWrap  && (pOuter = pSimpleWrap->GetOuter()) != NULL)
     {
         // If we are in process detach, we cannot safely call release on our outer.
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             cbRef = 1;
 
         cbRef = SafeReleasePreemp(pOuter);
@@ -611,6 +611,43 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     return S_OK;
 } // HRESULT GetITypeLibForAssembly()
 
+// .NET Framework's mscorlib TLB GUID.
+static const GUID s_MscorlibGuid = { 0xBED7F4EA, 0x1A96, 0x11D2, { 0x8F, 0x08, 0x00, 0xA0, 0xC9, 0xA6, 0x18, 0x6D } };
+
+// Hard-coded GUID for System.Guid.
+static const GUID s_GuidForSystemGuid = { 0x9C5923E9, 0xDE52, 0x33EA, { 0x88, 0xDE, 0x7E, 0xBC, 0x86, 0x33, 0xB9, 0xCC } };
+
+// There are types that are helpful to provide that facilitate porting from
+// .NET Framework to .NET 8+. This function is used to acquire their ITypeInfo.
+// This should be used narrowly. Types at a minimum should be blittable.
+static bool TryDeferToMscorlib(MethodTable* pClass, ITypeInfo** ppTI)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pClass != NULL);
+        PRECONDITION(pClass->IsBlittable());
+        PRECONDITION(ppTI != NULL);
+    }
+    CONTRACTL_END;
+
+    // Marshalling of System.Guid is a common scenario that impacts many teams porting
+    // code to .NET 8+. Try to load the .NET Framework's TLB to support this scenario.
+    if (pClass == CoreLibBinder::GetClass(CLASS__GUID))
+    {
+        SafeComHolder<ITypeLib> pMscorlibTypeLib = NULL;
+        if (SUCCEEDED(::LoadRegTypeLib(s_MscorlibGuid, 2, 4, 0, &pMscorlibTypeLib)))
+        {
+            if (SUCCEEDED(pMscorlibTypeLib->GetTypeInfoOfGuid(s_GuidForSystemGuid, ppTI)))
+                return true;
+        }
+    }
+
+    return false;
+}
+
 HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClassInfo)
 {
     CONTRACTL
@@ -625,6 +662,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     GUID clsid;
     GUID ciid;
     ComMethodTable *pComMT              = NULL;
+    MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
     SafeComHolder<ITypeLib> pITLB       = NULL;
     SafeComHolder<ITypeInfo> pTI        = NULL;
@@ -770,11 +808,67 @@ ErrExit:
     {
         if (!FAILED(hr))
             hr = E_FAIL;
+
+        if (pOriginalClass->IsValueType() && pOriginalClass->IsBlittable())
+        {
+            if (TryDeferToMscorlib(pOriginalClass, ppTI))
+                hr = S_OK;
+        }
     }
 
 ReturnHR:
     return hr;
 } // HRESULT GetITypeInfoForEEClass()
+
+// Only a narrow set of types are supported.
+// See TryDeferToMscorlib() above.
+MethodTable* GetMethodTableForRecordInfo(IRecordInfo* recInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(recInfo != NULL);
+    }
+    CONTRACTL_END;
+
+    HRESULT hr;
+
+    // Verify the associated TypeLib attribute
+    SafeComHolder<ITypeInfo> typeInfo;
+    hr = recInfo->GetTypeInfo(&typeInfo);
+    if (FAILED(hr))
+        return NULL;
+
+    SafeComHolder<ITypeLib> typeLib;
+    UINT index;
+    hr = typeInfo->GetContainingTypeLib(&typeLib, &index);
+    if (FAILED(hr))
+        return NULL;
+
+    TLIBATTR* attrs;
+    hr = typeLib->GetLibAttr(&attrs);
+    if (FAILED(hr))
+        return NULL;
+
+    GUID libGuid = attrs->guid;
+    typeLib->ReleaseTLibAttr(attrs);
+    if (s_MscorlibGuid != libGuid)
+        return NULL;
+
+    // Verify the Guid of the associated type
+    GUID typeGuid;
+    hr = recInfo->GetGuid(&typeGuid);
+    if (FAILED(hr))
+        return NULL;
+
+    // Check for supported types.
+    if (s_GuidForSystemGuid == typeGuid)
+        return CoreLibBinder::GetClass(CLASS__GUID);
+
+    return NULL;
+}
 
 // Returns a NON-ADDREF'd ITypeInfo.
 HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
@@ -1266,7 +1360,7 @@ InternalDispatchImpl_GetIDsOfNames (
         if (pDispMemberInfo)
         {
             // Get the DISPID of the member.
-            rgdispid[0] = pDispMemberInfo->m_DispID;
+            rgdispid[0] = pDispMemberInfo->GetDISPID();
 
             // Get the ID's of the named arguments.
             if (cNames > 1)
@@ -1487,7 +1581,7 @@ HRESULT __stdcall   DispatchEx_GetIDsOfNames (
         if (pDispMemberInfo)
         {
             // Get the DISPID of the member.
-            rgdispid[0] = pDispMemberInfo->m_DispID;
+            rgdispid[0] = pDispMemberInfo->GetDISPID();
 
             // Get the ID's of the named arguments.
             if (cNames > 1)
@@ -1661,7 +1755,7 @@ HRESULT __stdcall   DispatchEx_GetDispID (
 
         // Set the return DISPID if the member has been found.
         if (pDispMemberInfo)
-            *pid = pDispMemberInfo->m_DispID;
+            *pid = pDispMemberInfo->GetDISPID();
     }
     END_EXTERNAL_ENTRYPOINT;
 
@@ -1714,7 +1808,7 @@ HRESULT __stdcall   DispatchEx_GetMemberName (
         else
         {
             // Copy the name into the output string.
-            *pbstrName = SysAllocString(pDispMemberInfo->m_strName);
+            *pbstrName = SysAllocString(pDispMemberInfo->GetName().GetUnicode());
         }
     }
     END_EXTERNAL_ENTRYPOINT;
@@ -1936,7 +2030,7 @@ HRESULT __stdcall   DispatchEx_GetNextDispID (
         // If we have found a member that has not been deleted then return its DISPID.
         if (pNextMember)
         {
-            *pid = pNextMember->m_DispID;
+            *pid = pNextMember->GetDISPID();
             hr = S_OK;
         }
         else

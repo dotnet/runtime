@@ -112,7 +112,7 @@ int32_t local_X509_get_version(const X509* x509)
 
 X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509)
 {
-    if (x509)
+    if (x509 && x509->cert_info)
     {
         return x509->cert_info->key;
     }
@@ -123,13 +123,28 @@ X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509)
 int32_t local_X509_PUBKEY_get0_param(
     ASN1_OBJECT** palgOid, const uint8_t** pkeyBytes, int* pkeyBytesLen, X509_ALGOR** palg, X509_PUBKEY* pubkey)
 {
+    if (!pubkey)
+    {
+        return 0;
+    }
+
     if (palgOid)
     {
+        if (!pubkey->algor)
+        {
+            return 0;
+        }
+
         *palgOid = pubkey->algor->algorithm;
     }
 
     if (pkeyBytes)
     {
+        if (!pubkey->public_key)
+        {
+            return 0;
+        }
+
         *pkeyBytes = pubkey->public_key->data;
         *pkeyBytesLen = pubkey->public_key->length;
     }
@@ -440,6 +455,14 @@ void local_RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM
             *iqmp = rsa->iqmp;
         }
     }
+}
+
+int local_RSA_get_multi_prime_extra_count(const RSA* rsa)
+{
+    (void)rsa;
+    // OpenSSL before 1.1 does not support multi-prime RSA, so it implicitly
+    // has zero extra primes.
+    return 0;
 }
 
 int32_t local_RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d)
@@ -809,6 +832,12 @@ void local_SSL_set_security_level(SSL* ssl, int32_t level)
     (void)level;
 }
 
+void local_SSL_CTX_set_keylog_callback(SSL_CTX *ctx, SSL_CTX_keylog_cb_func cb)
+{
+    (void)ctx;
+    (void)cb;
+}
+
 int local_BIO_up_ref(BIO *bio)
 {
     if (!bio)
@@ -901,6 +930,21 @@ int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
 int local_BN_is_zero(const BIGNUM* a)
 {
     return a->top == 0;
+}
+
+int local_BN_is_one(const BIGNUM* a)
+{
+    return BN_abs_is_word(a, 1) && !a->neg;
+}
+
+int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w)
+{
+    return ((a->top == 1) && (a->d[0] == w)) || ((w == 0) && (a->top == 0));
+}
+
+int local_BN_is_odd(const BIGNUM* a)
+{
+    return (a->top > 0) && (a->d[0] & 1);
 }
 
 #endif

@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static IChainPal? BuildChainCore(
+        private static OpenSslX509ChainProcessor? BuildChainCore(
             bool useMachineContext,
             ICertificatePal cert,
             X509Certificate2Collection? extraStore,
@@ -193,8 +193,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (chainPal.ChainElements!.Length > 0)
             {
                 X509Certificate2 reportedLeaf = chainPal.ChainElements[0].Certificate;
-                Debug.Assert(reportedLeaf != null, "reportedLeaf != null");
-                Debug.Assert(!ReferenceEquals(cert, reportedLeaf.Pal), "!ReferenceEquals(cert, reportedLeaf.Pal)");
+                Debug.Assert(reportedLeaf != null);
+                Debug.Assert(!ReferenceEquals(cert, reportedLeaf.Pal));
             }
 #endif
             return chainPal;

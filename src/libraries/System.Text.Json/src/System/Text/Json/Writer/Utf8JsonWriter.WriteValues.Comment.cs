@@ -53,6 +53,10 @@ namespace System.Text.Json
             }
 
             WriteCommentByOptions(value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
@@ -101,13 +105,13 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<char> value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
-            Debug.Assert(value.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 4 - s_newLineLength);
+            Debug.Assert(value.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 4 - _newLineLength);
 
             // All ASCII, /*...*/ => escapedValue.Length + 4
             // Optionally, 1-2 bytes for new line, and up to 3x growth when transcoding
-            int maxRequired = indent + (value.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + 4 + s_newLineLength;
+            int maxRequired = indent + (value.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + 4 + _newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -116,13 +120,12 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.None)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
                 WriteNewLine(output);
+                WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
             }
-
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
-            BytesPending += indent;
 
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -165,6 +168,10 @@ namespace System.Text.Json
             }
 
             WriteCommentByOptions(utf8Value);
+            if (_tokenType is JsonTokenType.PropertyName or JsonTokenType.None)
+            {
+                _commentAfterNoneOrPropertyName = true;
+            }
         }
 
         private void WriteCommentByOptions(ReadOnlySpan<byte> utf8Value)
@@ -205,12 +212,12 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<byte> utf8Value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
-            Debug.Assert(utf8Value.Length < int.MaxValue - indent - 4 - s_newLineLength);
+            Debug.Assert(utf8Value.Length < int.MaxValue - indent - 4 - _newLineLength);
 
             int minRequired = indent + utf8Value.Length + 4; // /*...*/
-            int maxRequired = minRequired + s_newLineLength; // Optionally, 1-2 bytes for new line
+            int maxRequired = minRequired + _newLineLength; // Optionally, 1-2 bytes for new line
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -219,13 +226,11 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
-            if (_tokenType != JsonTokenType.PropertyName)
+            if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
-                if (_tokenType != JsonTokenType.None)
-                {
-                    WriteNewLine(output);
-                }
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteNewLine(output);
+
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 

@@ -1,5 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#include "Crst.h"
+
 class Thread;
 class CLREventStatic;
 class RuntimeInstance;
@@ -21,18 +24,18 @@ class ThreadStore
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
-    ReaderWriterLock    m_Lock;
+    Crst                m_Lock;
 
 private:
     ThreadStore();
 
+public:
     void                    LockThreadStore();
     void                    UnlockThreadStore();
 
 public:
     class Iterator
     {
-        ReaderWriterLock::ReadHolder    m_readHolder;
         PTR_Thread                      m_pCurrentPosition;
     public:
         Iterator();
@@ -48,7 +51,7 @@ public:
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
-    static void             DetachCurrentThread(bool shutdownStarted);
+    static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
     void                    InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort);
@@ -56,7 +59,6 @@ public:
 #else
     static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif
-    bool                    GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pWrittenCountOut);
 
     void        Destroy();
     void        SuspendAllThreads(bool waitForGCEvent);

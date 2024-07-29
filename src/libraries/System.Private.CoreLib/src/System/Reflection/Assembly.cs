@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Globalization;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Runtime.Loader;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -31,11 +32,7 @@ namespace System.Reflection
                 TypeInfo[] typeinfos = new TypeInfo[types.Length];
                 for (int i = 0; i < types.Length; i++)
                 {
-                    TypeInfo typeinfo = types[i].GetTypeInfo();
-                    if (typeinfo == null)
-                        throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
-
-                    typeinfos[i] = typeinfo;
+                    typeinfos[i] = types[i].GetTypeInfo() ?? throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
                 }
                 return typeinfos;
             }
@@ -104,11 +101,11 @@ namespace System.Reflection
         public virtual AssemblyName GetName() => GetName(copiedName: false);
         public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name) => GetType(name, throwOnError: false, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name, bool throwOnError) => GetType(name, throwOnError: throwOnError, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
         public virtual bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
@@ -164,6 +161,8 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override string ToString()
@@ -214,13 +213,36 @@ namespace System.Reflection
             return type.Module?.Assembly;
         }
 
-        // internal test hook
-        private static bool s_forceNullEntryPoint;
+        private static object? s_overriddenEntryAssembly;
+
+        /// <summary>
+        /// Sets the application's entry assembly to the provided assembly object.
+        /// </summary>
+        /// <param name="assembly">
+        /// Assembly object that represents the application's new entry assembly.
+        /// </param>
+        /// <remarks>
+        /// The assembly passed to this function has to be a runtime defined Assembly
+        /// type object. Otherwise, an exception will be thrown.
+        /// </remarks>
+        public static void SetEntryAssembly(Assembly? assembly)
+        {
+            if (assembly is null)
+            {
+                s_overriddenEntryAssembly = string.Empty;
+                return;
+            }
+
+            if (assembly is not RuntimeAssembly)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+
+            s_overriddenEntryAssembly = assembly;
+        }
 
         public static Assembly? GetEntryAssembly()
         {
-            if (s_forceNullEntryPoint)
-                return null;
+            if (s_overriddenEntryAssembly is not null)
+                return s_overriddenEntryAssembly as Assembly;
 
             return GetEntryAssemblyInternal();
         }
@@ -265,10 +287,10 @@ namespace System.Reflection
                     return result;
 
                 // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
                 if (!File.Exists(normalizedPath))
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_LoadFile, normalizedPath), normalizedPath);
-#endif // !TARGET_BROWSER
+#endif // !TARGET_BROWSER && !TARGET_WASI
 
                 AssemblyLoadContext alc = new IndividualAssemblyLoadContext($"Assembly.LoadFile({normalizedPath})");
                 result = alc.LoadFromAssemblyPath(normalizedPath);
@@ -329,12 +351,22 @@ namespace System.Reflection
 #endif // CORECLR
             try
             {
+                // Avoid a first-chance exception by checking for file presence first.
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER && !TARGET_WASI
+                if (!File.Exists(requestedAssemblyPath))
+                {
+                    return null;
+                }
+#endif // !TARGET_BROWSER && !TARGET_WASI
+
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
-                return Assembly.LoadFrom(requestedAssemblyPath);
+                return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
                 // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                // This is necessary even with the above exists check since a file might be removed between the check and the load.
                 return null;
             }
         }
@@ -372,6 +404,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [Obsolete(Obsoletions.LoadFromHashAlgorithmMessage, DiagnosticId = Obsoletions.LoadFromHashAlgorithmDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Assembly LoadFrom(string assemblyFile, byte[]? hashValue, AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);

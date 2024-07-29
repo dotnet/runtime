@@ -13,9 +13,9 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private readonly string _blobName;
         private readonly NodeFactory _nodeFactory;
 
@@ -25,11 +25,10 @@ namespace ILCompiler.DependencyAnalysis
         public ExternalReferencesTableNode(string blobName, NodeFactory nodeFactory)
         {
             _blobName = blobName;
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__external_" + blobName + "_references_End", true);
             _nodeFactory = nodeFactory;
         }
 
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -103,10 +102,9 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
+            _size = builder.CountBytes;
 
             builder.AddSymbol(this);
-            builder.AddSymbol(_endSymbol);
 
             return builder.ToObjectData();
         }

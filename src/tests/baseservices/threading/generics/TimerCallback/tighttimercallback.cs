@@ -3,6 +3,7 @@
 using System;
 using System.Threading;
 using System.Diagnostics;
+using Xunit;
 
 //namespace TimerCallbackTests ////////////// added this namesp
 
@@ -62,7 +63,8 @@ public class Test
 	public static bool result = true;
 	public static int timeToRun = 5000;
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.ThreadPoolTest();
 		Gen<double>.ThreadPoolTest();

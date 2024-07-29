@@ -63,9 +63,9 @@ namespace System.Text.Json
         private void WriteNumberValueIndented(decimal value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
-            int maxRequired = indent + JsonConstants.MaximumFormatDecimalLength + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
+            int maxRequired = indent + JsonConstants.MaximumFormatDecimalLength + 1 + _newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -85,7 +85,7 @@ namespace System.Text.Json
                 {
                     WriteNewLine(output);
                 }
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 

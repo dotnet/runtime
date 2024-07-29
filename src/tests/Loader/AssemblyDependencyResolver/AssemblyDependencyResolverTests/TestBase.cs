@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace AssemblyDependencyResolverTests
 {
-    class TestBase
+    public class TestBase
     {
         protected string TestBasePath { get; private set; }
         protected string BinaryBasePath { get; private set; }

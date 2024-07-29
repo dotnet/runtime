@@ -40,7 +40,7 @@ namespace System.Threading.Tasks.Dataflow
 #if DEBUG
                 // Task returned from ProcessMessageAsync is explicitly ignored.
                 // That function handles all exceptions.
-                t.ContinueWith(t => Debug.Assert(t.IsCompletedSuccessfully), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                t.ContinueWith(static t => Debug.Assert(t.IsCompletedSuccessfully), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 #endif
             }, dataflowBlockOptions, ref _source, ref _target, ref _reorderingBuffer, TargetCoreOptions.UsesAsyncCompletion);
         }

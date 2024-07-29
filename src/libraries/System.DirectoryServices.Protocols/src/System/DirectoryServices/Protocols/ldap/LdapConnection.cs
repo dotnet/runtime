@@ -173,30 +173,7 @@ namespace System.DirectoryServices.Protocols
 
         internal void Init()
         {
-            string hostname = null;
-            string[] servers = ((LdapDirectoryIdentifier)_directoryIdentifier)?.Servers;
-            if (servers != null && servers.Length != 0)
-            {
-                var temp = new StringBuilder(200);
-                for (int i = 0; i < servers.Length; i++)
-                {
-                    if (servers[i] != null)
-                    {
-                        temp.Append(servers[i]);
-                        if (i < servers.Length - 1)
-                        {
-                            temp.Append(' ');
-                        }
-                    }
-                }
-
-                if (temp.Length != 0)
-                {
-                    hostname = temp.ToString();
-                }
-            }
-
-            InternalInitConnectionHandle(hostname);
+            InternalInitConnectionHandle();
 
             // Create a WeakReference object with the target of ldapHandle and put it into our handle table.
             lock (s_objectLock)
@@ -567,7 +544,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // Build server control.
                 managedServerControls = BuildControlArray(request.Controls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
+                int structSize = Marshal.SizeOf<LdapControl>();
 
                 if (managedServerControls != null)
                 {
@@ -681,7 +658,7 @@ namespace System.DirectoryServices.Protocols
                     addModCount = (modifications == null ? 1 : modifications.Length + 1);
                     modArray = Utility.AllocHGlobalIntPtrArray(addModCount);
                     void** pModArray = (void**)modArray;
-                    int modStructSize = Marshal.SizeOf(typeof(LdapMod));
+                    int modStructSize = Marshal.SizeOf<LdapMod>();
                     int i = 0;
                     for (i = 0; i < addModCount - 1; i++)
                     {
@@ -941,12 +918,12 @@ namespace System.DirectoryServices.Protocols
             var list = new ArrayList();
             if (CAs != IntPtr.Zero)
             {
-                SecPkgContext_IssuerListInfoEx trustedCAs = (SecPkgContext_IssuerListInfoEx)Marshal.PtrToStructure(CAs, typeof(SecPkgContext_IssuerListInfoEx));
+                SecPkgContext_IssuerListInfoEx trustedCAs = *(SecPkgContext_IssuerListInfoEx*)CAs;
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * (nint)i);
-                    CRYPTOAPI_BLOB info = (CRYPTOAPI_BLOB)Marshal.PtrToStructure(tempPtr, typeof(CRYPTOAPI_BLOB));
+                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + sizeof(CRYPTOAPI_BLOB) * (nint)i);
+                    CRYPTOAPI_BLOB info = *(CRYPTOAPI_BLOB*)tempPtr;
                     int dataLength = info.cbData;
 
                     byte[] context = new byte[dataLength];
@@ -1037,7 +1014,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Throw if user wants to do anonymous bind but specifies credentials.
-            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || string.IsNullOrEmpty(newCredential.UserName))))
+            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || !string.IsNullOrEmpty(newCredential.UserName))))
             {
                 throw new InvalidOperationException(SR.InvalidAuthCredential);
             }
@@ -1086,7 +1063,7 @@ namespace System.DirectoryServices.Protocols
             else if (AuthType == AuthType.Basic)
             {
                 var tempDomainName = new StringBuilder(100);
-                if (domainName != null && domainName.Length != 0)
+                if (!string.IsNullOrEmpty(domainName))
                 {
                     tempDomainName.Append(domainName);
                     tempDomainName.Append('\\');
@@ -1100,7 +1077,7 @@ namespace System.DirectoryServices.Protocols
                 var cred = new SEC_WINNT_AUTH_IDENTITY_EX()
                 {
                     version = Interop.SEC_WINNT_AUTH_IDENTITY_VERSION,
-                    length = Marshal.SizeOf(typeof(SEC_WINNT_AUTH_IDENTITY_EX)),
+                    length = Marshal.SizeOf<SEC_WINNT_AUTH_IDENTITY_EX>(),
                     flags = Interop.SEC_WINNT_AUTH_IDENTITY_UNICODE
                 };
                 if (AuthType == AuthType.Kerberos)
@@ -1365,7 +1342,7 @@ namespace System.DirectoryServices.Protocols
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
                     void** pAttributesValues = (void**)attributes[i].values;
-                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    int structSize = Marshal.SizeOf<BerVal>();
                     IntPtr controlPtr;
 
                     int m;

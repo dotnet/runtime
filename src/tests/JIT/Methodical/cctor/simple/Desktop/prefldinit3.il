@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'prefldinit3' {}
+.assembly prefldinit3_r {}
 .assembly extern xunit.core {}
 .namespace Test_prefldinit3_Desktop_il
 {

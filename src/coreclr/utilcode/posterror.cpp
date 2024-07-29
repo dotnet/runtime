@@ -142,14 +142,14 @@ static HRESULT FormatRuntimeErrorVA(
     // find the text for it.
     else
     {
-        if (WszFormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+        if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
                 0, hrRpt, 0,
                 rcMsg, cchMsg, 0/*<TODO>@todo: marker</TODO>*/))
         {
             hr = S_OK;
 
             // System messages contain a trailing \r\n, which we don't want normally.
-            size_t iLen = wcslen(rcMsg);
+            size_t iLen = u16_strlen(rcMsg);
             if (iLen > 3 && rcMsg[iLen - 2] == '\r' && rcMsg[iLen - 1] == '\n')
                 rcMsg[iLen - 2] = '\0';
         }

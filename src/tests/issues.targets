@@ -5,14 +5,17 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">
             <Issue>timeout</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
-            <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
             <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
             <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/ExposedLocalsNumbering/**">
+            <Issue>https://github.com/dotnet/runtime/issues/105187</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/SSA/MemorySsa/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86112</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -23,6 +26,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
+            <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
@@ -60,6 +66,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>CoreCLR does not implement the mono embedding API</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
+            <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
+          <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftInvalidCallConv/*">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -74,8 +89,11 @@
 
     <!-- All Unix targets  on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -220,9 +238,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
           <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
         </ExcludeList>
@@ -247,6 +262,9 @@
 
     <!-- Windows x86 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x86' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84911</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/Allocation/largeexceptiontest/*">
             <Issue>https://github.com/dotnet/runtime/issues/5200 Test is useful to have because it can be run manually when making changes to the GC that can have effects in OOM scenarios, but not appropriate to run on our current test infrastructure.</Issue>
         </ExcludeList>
@@ -277,225 +295,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_34094/Test34094/*">
             <Issue>https://github.com/dotnet/runtime/issues/57458</Issue>
         </ExcludeList>
-    </ItemGroup>
-
-    <!-- Windows arm32 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
-            <Issue>https://github.com/dotnet/runtime/issues/49184</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitivesInALC/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Dispatch/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Lifetime/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Licensing/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/DefaultInterfaces/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/IDispatch/NETClientIDispatch/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Aggregation/NETClientAggregation/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Licensing/NETClientLicense/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/ConsumeNETServer/ConsumeNETServer/*">
-            <Issue>https://github.com/dotnet/runtime/issues/11360</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
-            <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>Native member function calling conventions not supported on Windows ARM32.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/b37646/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist_Target_ARM/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41391/b41391/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i00/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i70/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i32/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i51/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist_Target_ARM/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i82/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i80/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/gc/misc/funclet/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i61/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i60/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i31/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i50/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i62/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b36472/b36472/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i72/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b37598/b37598/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b46867/b46867/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i30/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16423/b16423/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist_Target_ARM/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_d/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Coverage/arglist_pos/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31746/b31746/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i12/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i52/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i81/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i11/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b41852/b41852/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i02/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i01/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i71/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31745/b31745/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist_Target_ARM/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
-            <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
-            <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
-            <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
-            <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
+            <Issue>https://github.com/dotnet/runtime/issues/75244</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/0582/csgen.1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/102296</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -529,28 +333,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashWorkerThreads/*">
             <Issue>https://github.com/dotnet/runtime/issues/57621</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_d/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress1_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress3_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress1_do/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress3_do/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress1_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/stress3_ro/*">
             <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41391/*">
@@ -609,11 +404,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
             <Issue>https://github.com/dotnet/runtime/issues/68690</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57856</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/multiple/multiple/*">
             <Issue>https://github.com/dotnet/runtime/issues/57875</Issue>
@@ -625,10 +420,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>https://github.com/dotnet/runtime/issues/66174</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX x64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashMainThread/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX arm64 on CoreCLR Runtime -->
@@ -745,10 +549,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Coverage/arglist_pos/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_d/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_il_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_r/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/*">
@@ -847,17 +651,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
             <Issue>https://github.com/dotnet/runtime/issues/38096</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
-            <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
             <Issue>https://github.com/dotnet/runtime/issues/43461</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/*">
-            <Issue>https://github.com/dotnet/runtime/issues/56148</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -866,17 +664,52 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74555</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85747</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
-            <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
+    </ItemGroup>
+
+    <!-- Crossgen2 arm32/arm64 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
+        </ExcludeList>
+    </ItemGroup>
+    
+    <!-- Crossgen2 win-arm64 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'windows'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
+            <Issue>https://github.com/dotnet/runtime/issues/104927</Issue>
         </ExcludeList>
     </ItemGroup>
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/EventListenerThreadPool/**">
+            <Issue>https://github.com/dotnet/runtime/issues/105556</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/beta2/437017/**">
+            <Issue>https://github.com/dotnet/runtime/issues/102544</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91381</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Regression/GetInterfaceMapWithStaticVirtualsAndConstraints/**">
+            <Issue>https://github.com/dotnet/runtime/issues/89157</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88690</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
         </ExcludeList>
@@ -886,23 +719,23 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfigTester/*">
+            <Issue>Test expects being run with corerun</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
+            <Issue>Test expects being run with corerun</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dd52/**">
+            <Issue>https://github.com/dotnet/runtime/issues/102741</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/tester/*">
             <Issue>Just-in-time compilation test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_r/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128/Vector128_ro/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_r/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_ro/*">
-            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
             <Issue>Not compatible with multifile testing.</Issue>
@@ -916,19 +749,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: BinaryFormatter</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
             <Issue>Specific to CoreCLR</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/coverage/OSThreadId/osthreadid/*">
-            <Issue>Accessing a reflection blocked internal detail</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/Finalize2/*">
@@ -943,23 +776,20 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTestsBuiltInComDisabled/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: AssemblyLoadContext.LoadFromAssemblyPath</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/FunctionPtrTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/164</Issue>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81676</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: LCID marshalling</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsLPArray/AsLPArrayTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81674</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81673</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
@@ -967,22 +797,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/166</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/206</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsDefault/AsDefaultTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/176: VARIANT marshalling</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/ArrayWithOffset/ArrayWithOffsetTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/170</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/AsAny/AsAnyTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/169</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionNegativeTest/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/**/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/172</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/BestFitMapping/**/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/172</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CriticalHandles/**/*">
@@ -1002,12 +829,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/CopyCtorTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: C++/CLI</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/SafeHandleTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/168</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/**/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/167</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
@@ -1048,7 +869,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/throwbox/fault/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/Runtime_87393/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/throwbox/fault_throwbox/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throws</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/throwbox/filter/*">
@@ -1078,6 +902,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/Vector256_1_ro/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_r/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_ro/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/190</Issue>
         </ExcludeList>
@@ -1093,41 +923,26 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/inl/caninline_ro/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/183</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_il_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_il_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_d/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_r/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_il_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_il_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_il_d/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_il_r/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw2dimarray_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
-            <Issue>Need to pass flag to enable object stack allocation in RyuJIT</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/1136</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fasta/fasta-1/*">
             <Issue>Multimodule incompatible (GVM)</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/*">
-            <Issue>Needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regex-redux-1/*">
             <Issue>Needs triage</Issue>
@@ -1150,9 +965,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/*">
             <Issue>Needs xunit.performance</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b68872/b68872/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71120/b71120/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
         </ExcludeList>
@@ -1161,9 +973,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.2/ddb/b429039/b429039/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19444/GitHub_19444/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/197</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_22583/GitHub_22583/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
@@ -1177,32 +986,17 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35384/GitHub_35384/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/198</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_4044/GitHub_4044/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_71375/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/**">
             <Issue>CoreCLR test</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.Basic/*">
-            <Issue>AOT incompatible</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.ResolutionFlow/*">
-            <Issue>AOT incompatible</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/154</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test3/*">
             <Issue>Won't fix https://github.com/dotnet/corert/issues/2396</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Instantiation/Negative/abstract01/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/207</Issue>
@@ -1234,23 +1028,17 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/**/*">
-            <Issue>CoreCLR test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/**/*">
-            <Issue>CoreCLR test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/201</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected\EmittingIgnoresAccessChecksToAttributeIsRespected/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Ref emit</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/**/*">
-            <Issue>EventPipe</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051: not supported in net8</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051: not supported in net8</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/90021</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/208</Issue>
@@ -1260,6 +1048,24 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_754566/DevDiv_754566/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Complext tail calls</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Regressions/Regression3/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Regressions/Regression4/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: varargs</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection\DefaultInterfaceMethods\Emit\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
@@ -1276,6 +1082,30 @@
         <ExcludeList Include="$(XunitTestBinBase)\Interop\PInvoke\Variant\VariantTestComWrappers\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/306</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_d\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\thiscall\thisnull_r\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: instance method called with null this</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\opt\Regressions\Regression3_Regressions\*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_d/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/stubs_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
+        </ExcludeList>
 
         <!-- Complex constrained calls -->
         <!-- https://github.com/dotnet/runtimelab/issues/1431 -->
@@ -1283,44 +1113,57 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrainedcall\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2_gm\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/dev10_568786/4_Misc/**" />
 
         <!-- Arrays with non-zero lower bounds -->
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_i4_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_objref_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r4_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_struct_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_i4_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_objref_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r4_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_struct_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_i4_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_objref_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r4_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_r8_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge\huge_struct_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge\huge_struct\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_u8_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\address_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\arrres_il_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\gcarr_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array2_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_il_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_il_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_il_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\gcarr_il_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\misc\ldelem_get_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range1_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\float64_range2_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_1_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_m1_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_neg_range_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range1_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\range\int32_range2_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\int64\arrays\hugedim_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\refany\array3_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\tailcall\deep_array_nz_r\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_d\*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/MDBenchI/MDGeneralArray/MDGeneralArray/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_93597/GitHub_93597/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59899/b59899/*" />
 
         <!-- Covariant returns -->
         <!-- https://github.com/dotnet/runtimelab/issues/205 -->
@@ -1335,8 +1178,46 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\CompatibleWithTest\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest_GVM\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTestDelegates\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\OverrideMoreDerivedReturn\*" />
+
+        <!-- Requires Debug build -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\*" />
+
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- NativeAOT arm32 specific -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm'">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalAllocatedBytes/**">
+            <Issue>https://github.com/dotnet/runtime/issues/103333</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- NativeAOT x86 specific -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/perf/doublealign/Arrays/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101284</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/tailcall/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayValid/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101363</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M10/b08944/b08944b/**">
+            <Issue>https://github.com/dotnet/runtime/issues/101364</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1351,35 +1232,26 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_62692/Runtime_62692_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100368</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88689</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
+            <Issue>https://github.com/dotnet/runtime/issues/90308</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
-            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/69399</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/DynamicPgo/**">
-            <Issue>Mono doesn't have a dynamic pgo or tiered compilation infrastructure</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/ShiftOperations/*">
           <Issue>There is a known undefined behavior with shifts and 0xFFFFFFFF overflows, so skip the test for mono.</Issue>
@@ -1408,6 +1280,19 @@
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_d1/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_do/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_r1/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_ro/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
 
@@ -1440,6 +1325,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/CompatibleWithTest/**">
             <Issue>Doesn't pass after LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/**">
+            <Issue>https://github.com/dotnet/runtime/issues/80350</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
             <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
@@ -1548,6 +1436,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlcollect/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
@@ -1585,9 +1476,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/ByValArray/MarshalArrayByValTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
         </ExcludeList>
@@ -1597,43 +1485,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/IDynamicInterfaceCastable/IDynamicInterfaceCastable/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/MultipleALCs/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
             <Issue>https://github.com/dotnet/runtime/issues/34072</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/Primitives/ICustomMarshaler_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/34374</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/LayoutClass/LayoutClassTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/FunctionPointer/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/AssemblyLoadContext/ResolveUnmanagedDllTests/**">
             <Issue>https://github.com/dotnet/runtime/issues/41180</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ObjectiveC/ObjectiveCMarshalAPI/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsByValArray/AsByValArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsField/AsLPArray/AsLPArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsDefault/AsDefaultTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsLPArray/AsLPArrayTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/ArrayWithOffset/ArrayWithOffsetTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/AsAny/AsAnyTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CriticalHandles/ArrayTest/**">
@@ -1645,29 +1509,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CriticalHandles/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/DateTime/DateTimeTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Decimal/DecimalTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Delegate/DelegateTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/GenericsTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/**">
-            <Issue>https://github.com/dotnet/runtime/issues/69531</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SafeHandles/**">
             <Issue>https://github.com/dotnet/runtime/issues/48084</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/Invalid/InvalidParamIndex/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/PassingByOut/PassingByOutTest/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/PInvoke/PassingByRef/PassingByRefTest/**">
             <Issue>needs triage</Issue>
@@ -1678,17 +1521,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SizeParamIndex/ReversePInvoke/PassingByRef/PassingByRefTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/LPSTR/LPSTRTest/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutSeq/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/ReversePInvoke/ReversePInvokeTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructPacking/StructPacking/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
@@ -1696,14 +1533,17 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/compiler/FilterToHandler/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_il_d/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_il_r/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/more_tailcalls/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_87393/**">
+            <Issue>FSharp Test</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/mutual_recursion/**">
             <Issue>FSharp Test</Issue>
@@ -1720,13 +1560,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_small/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_dynamic_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_large_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh05_small_il/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh06_dynamic/**">
@@ -1759,28 +1599,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/KeepAliveBoxOpt/**">
             <Issue>Relies on precise finalization and thus precise GC</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray3_cs_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/lcs_il_r/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/lcs_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/67756</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
@@ -1809,9 +1634,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
@@ -1960,15 +1782,12 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16355/variance/**">
-            <Issue>needs triage</Issue>
+            <Issue>ldtoken in default interface methods does not appear to work in minijit or interp</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/20616/UnicodeBug/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/22021/consumer/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/gcdump/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
@@ -2022,6 +1841,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>Requires COM support, disabled on all Mono platforms.</Issue>
         </ExcludeList>
@@ -2060,9 +1885,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTestComWrappers/*">
             <Issue>Requires COM support, disabled on all Mono platforms</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/IEnumerator/IEnumeratorTest/*">
-            <Issue>PInvoke IEnumerator/IEnumarable marshalling not supported on Mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
@@ -2106,15 +1928,24 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88499</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
+            <Issue>https://github.com/dotnet/runtime/issues/90374</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
+            <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsWindows)' == 'true'" >
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/65698</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Vectorization/StackallocBlkTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84398</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
@@ -2149,12 +1980,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i87/*">
             <Issue>https://github.com/dotnet/runtime/issues/65702</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/65704</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
             <Issue>Triggers OOM issue on CI, pass on local test run</Issue>
         </ExcludeList>
@@ -2182,10 +2007,13 @@
         <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/InstallEHCallback/*">
           <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter' ">
+    <ItemGroup Condition="('$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'monointerpreter') or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
@@ -2200,21 +2028,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">
-            <Issue>https://github.com/dotnet/runtime/issues/37955</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow04_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
@@ -2240,9 +2053,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30869/b30869/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/volatilstind_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b60142/b60142/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2255,22 +2065,13 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b25701/b25701/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/volatilstind_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30892/b30892/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/volatilstind/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28597/b28597/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71120/b71120/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/refany/indcall_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b50027/b50027/**">
@@ -2282,12 +2083,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/b102844/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_conv_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/casts/coverage/castclass_calli_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_362706/DevDiv_362706/**">
             <Issue>https://github.com/dotnet/runtime/issues/54391</Issue>
         </ExcludeList>
@@ -2297,116 +2092,35 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_578214/DevDiv_578214/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/ptr_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_ind_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/casts/coverage/castclass_calli_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/instftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/valftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_ind_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-RTM/b530694/b530694/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/deep/deep1_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/valftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/deep/deep1_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/instftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/flowgraph/dev10_bug679955/volatileLocal2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/virtftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/virtftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/ftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/ptr_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/ftn_t_il_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_24846/GitHub_24846/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow03_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_ro/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b00722/b00722/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Coverage/b39946/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_487699/DevDiv_487699/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinclassconstructor_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorMatrix_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_d/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_405852/DevDiv_405852/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
@@ -2414,134 +2128,23 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_544983/DevDiv_544983/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinclassconstructor_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b13452/b13452/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/deep/deep1_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/instftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/flowgraph/dev10_bug679955/volatileLocal2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/virtftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/virtftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/ftn_t_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/ptr_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/fptr/ftn_t_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_il_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow03_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Coverage/b39946/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinclassconstructor_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructresur/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/finalnstruct/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow01_div/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/b353858/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorMatrix_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinclassconstructor_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/catchrettoinnertry_cs_d/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/diamondshape/diamondshape_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54399</Issue>
@@ -2549,13 +2152,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b25459/b25459/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/init_struct/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54373</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinclassconstructor_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/pinvoke/tail/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**">
             <Issue>https://github.com/dotnet/runtime/issues/54373</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b39946/b39946/**">
@@ -2570,20 +2167,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/diamondshape/diamondshape_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/54399</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/volatilldind_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b84909/b84909/**">
             <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/volatilldind_il_r/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/volatilldind/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Burgers/Burgers/**">
             <Issue>https://github.com/dotnet/runtime/issues/54358</Issue>
@@ -2594,29 +2179,32 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/MainProgramHandle/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/47624</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/47624</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot' ">
-        <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_il_r/**">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
+        <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/nullabletypes/isinstvaluetype_do/**">
@@ -2628,9 +2216,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/**">
             <Issue>https://github.com/dotnet/runtime/issues/54113</Issue>
@@ -2638,9 +2223,6 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventactivityidcontrol/eventactivityidcontrol/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
 
 
@@ -2743,7 +2325,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case1/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -2780,20 +2362,20 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/Validate/**">
             <Issue>expected failure: unsupported type with ByRefLike parameters currently fails at AOT compile time, not runtime</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/DivRem*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base.X64/X86Base.X64*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/70490</Issue>
@@ -2801,188 +2383,18 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/57362</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/70492</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/70492</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/70492</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/70492</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/57369</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/deadcode/deadoponerrorinfunclet_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/57369</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)JIT/Methodical/ELEMENT_TYPE_IU/u_conv_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/57369</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/DelegatePInvoke/DelegatePInvokeTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/HandleRef/HandleRefTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/EmptyThisCallTest/*">
             <Issue>Tests that 'thiscall' with an empty signature results in InvalidProgramException</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/pinvoke/tail/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_il_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_*_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_*_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper4_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper5_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/localloc/verify/verify01_small/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/localloc/verify/verify01_large/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/localloc/verify/verify01_dynamic/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_*_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_*_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_*_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25020/GitHub_25020/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_79354/Runtime_79354/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25027/GitHub_25027/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b13452/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/WPF_3226/CSharpRepro/WPF_3226/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23861/GitHub_23861/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_279829/DevDiv_279829/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/OverrideSameSigAsDecl/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/ImplicitOverrideSameSigAsDecl/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/16354/notimplemented/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Deserialize/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh07_large/**">
             <Issue>llvmfullaot: EH problem</Issue>
         </ExcludeList>
@@ -3010,21 +2422,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/DisabledRuntimeMarshalling_Disabled_NativeAssemblyEnabled/**">
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
         </ExcludeList>
-
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
-        </ExcludeList>
-
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
@@ -3076,47 +2473,53 @@
         <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/PInvokeDetach/*">
           <Issue>Needs coreclr build</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
-            <Issue>Needs coreclr build</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
-        
+
+        <ExcludeList Include = "$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/**">
+            <Issue>Reflection.Emit is not supported on fullaot</Issue>
+        </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'minifullaot' or '$(TargetsAppleMobile)' == 'true')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.1-M1-Beta1/b143840/b143840/*">
             <Issue>https://github.com/dotnet/runtime/issues/48914</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
-            <Issue>Fuzzlyn</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/90372</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/Pause*/**">
             <Issue>https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/DivRem*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base.X64/X86Base.X64*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/enabledisable/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/simpleprovidervalidation/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverseouter/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/config/name_config_with_pid/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/config/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/name_config_with_pid/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsvalidation/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
@@ -3125,19 +2528,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processenvironment/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
-            <Issue> needs triage </Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/**">
@@ -3161,16 +2552,167 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/InlineArray/InlineArrayInvalid/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86327</Issue>
+        </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot') and '$(TargetArchitecture)' == 'arm64'">
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot'">
+        <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper4_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper5_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16354/notimplemented/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b13452/b13452/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/b353858/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/zeroinit/tail_zeroinit/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/ValidateNegative/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test13/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/ImplicitOverrideSameSigAsDecl/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/OverrideSameSigAsDecl/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/DynamicObjects/**" />
+
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetArchitecture)' == 'x64'">
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <!-- DllImportSearchPaths and NativeLibrary tests use the same test helpers that fail here -->
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/SetLastErrorTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/HandleRef/HandleRefTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/InstallEHCallback/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/Thunks/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/PInvokeDetach/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/DelegatePInvoke/DelegatePInvokeTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
+            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/90605</Issue>
         </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/nopiatestil/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox002/**">
@@ -3183,12 +2725,6 @@
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b44657/b44657/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3201,28 +2737,28 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_487699/DevDiv_487699/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/flowgraph/dev10_bug679955/volatileLocal2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r8nanconv_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b36302/b36302/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/NaN/r4nanconv_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b53980/b53980/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_mutual_rec_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_mutual_rec_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b27873/b27873/**">
@@ -3240,7 +2776,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b73207/b73207/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_switch_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_switch_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b25701/b25701/**">
@@ -3255,7 +2791,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30892/b30892/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_switch_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_switch_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b32614/b32614/**">
@@ -3270,7 +2806,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b49435/b49435/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_mutual_rec_il_d/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_mutual_rec_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30862/b30862/**">
@@ -3316,10 +2852,22 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92727</Issue>
+        </ExcludeList>
     </ItemGroup>
 
+    <!-- These are known failures on mono-arm64 on OSX -->
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true' and '$(RuntimeVariant)' == 'monointerpreter'" >
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
+        </ExcludeList>
+    </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
         </ExcludeList>
@@ -3330,6 +2878,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
@@ -3380,6 +2931,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/NestedStruct/**">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
@@ -3436,17 +2990,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/VolatileTest_op_mul/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_ro/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_do/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/switchinfinally_r/**">
-            <Issue>needs triage</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/cctor/misc/threads1_cs_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
@@ -3454,13 +2999,17 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b99969/b99969/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps4_il_r/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
+            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <!-- all JIT.performance disabled for now, due to https://github.com/dotnet/runtime/issues/86772 -->
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/**">
+            <Issue>https://github.com/dotnet/runtime/issues/86772</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps4_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps4_il_d/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps4_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
@@ -3487,9 +3036,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
         </ExcludeList>
@@ -3507,6 +3053,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-7/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/API/GCHandleCollector/Usage/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84786</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/regression-25709/**">
+            <Issue>https://github.com/dotnet/runtime/issues/84786</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Regressions/v2.0-beta2/452950/452950/**">
             <Issue>needs triage</Issue>
@@ -3601,6 +3153,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/enabledisable/**">
+            <Issue> needs triage </Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3631,9 +3186,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Bytemark/Bytemark/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3646,11 +3198,33 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_66624/Runtime_66624/*">
             <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Apple mobile NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsAppleMobile)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/TrimmingBehaviors/**">
+            <Issue>https://github.com/dotnet/runtime/issues/100226</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
@@ -3667,6 +3241,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorTwoThreadsThreeCC/**">
+            <Issue>System.Threading.Thread.ThrowIfNoThreadStart: PlatformNotSupportedException</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3677,6 +3254,9 @@
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
+            <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo3/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
@@ -3706,9 +3286,24 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
             <Issue>WASM doesn't support diagnostics tracing</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleprovidervalidation/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
+            <Issue>needs native libraries</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android'" >
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
@@ -3766,9 +3361,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/73539</Issue>
         </ExcludeList>
@@ -3802,24 +3394,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
             <Issue>https://github.com/dotnet/runtime/issues/54905</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/switch/switch5/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_void_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/recurse_ep_void_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/recurse_ep_void_il_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/switch/switch6/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/test_void_il_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54911</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/reverse-complement-6/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
@@ -3841,17 +3415,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/readytorun/multifolder/multifolder/**">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
@@ -3860,9 +3428,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fasta/fasta-1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/regex-redux/regex-redux-5/**">
@@ -3876,9 +3441,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/53077</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/**">
-            <Issue>https://github.com/dotnet/runtime/issues/53350</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/DelegatePInvoke/DelegatePInvokeTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/53351</Issue>
@@ -3904,15 +3466,27 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
             <Issue>https://github.com/dotnet/runtime/issues/67359</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/NestedStruct/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/MainProgramHandle/MainProgramHandleTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92723</Issue>
+        </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-5/**">
             <Issue>https://github.com/dotnet/runtime/issues/52781</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' " >
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'" >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -3959,9 +3533,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.assert, Version=2.4.1.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c' or one of its dependencies.</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
-            <Issue>System.DllNotFoundException: GCPollNative</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
             <Issue>System.DllNotFoundException: CrossplatVirtualAlloc</Issue>
         </ExcludeList>
@@ -4002,20 +3573,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/LargeMemory/API/gc/gettotalmemory/**">
             <Issue>System.ArgumentOutOfRangeException: Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')</Issue>
         </ExcludeList>
-
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
-            <Issue>System.DllNotFoundException: ThisCallNative</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
-        </ExcludeList>
-
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/SpanBench/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>
@@ -4046,22 +3603,11 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/reverse-complement-6/**">
             <Issue>((null) error) * Assertion at runtime/src/mono/mono/metadata/assembly.c:2049, condition `is_ok (error)' not met, function:mono_assembly_load_friends, Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>((null) error) * Assertion at runtime/src/mono/mono/metadata/assembly.c:2049, condition `is_ok (error)' not met, function:mono_assembly_load_friends, Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Deserialize/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Span/Indexer/**">
             <Issue>System.IO.FileNotFoundException: Could not load file or assembly 'xunit.performance.core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=67066efe964d3b03' or one of its dependencies.</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
-            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>Could not load file or assembly 'System.Drawing.Common, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' or one of its dependencies.</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
@@ -4085,9 +3631,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41126/b41126/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_DefaultMode_R2r/*">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -4103,28 +3646,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTest_QuickJitOn_R2r/*">
             <Issue>missing assembly</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/bigevent/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processenvironment/processenvironment/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/processinfo2/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/diagnosticport/**">
@@ -4134,9 +3659,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverseouter/reverseouter/**">
-            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo/processinfo/**">
             <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
@@ -4169,20 +3691,218 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/PrimitiveABI/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator')">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'tvos'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Regression/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/empty/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
+   </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/*">
+            <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/ReversePInvokeManaged/ReversePInvokeTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/65695</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/**">
+            <Issue> The function size is Huge(about 6MB), out of the ability of inst jal, can't jump to thunk area </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/**">
+            <Issue> The function size is Huge(about 6MB), out of the ability of inst jal, can't jump to thunk area </Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
+            <Issue>timeout</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**">
+            <Issue> Did not find ilasm or ildasm in CORE_ROOT directory </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**">
+            <Issue> Did not find ilasm or ildasm in CORE_ROOT directory </Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/bigevent/bigevent/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/buffersize/buffersize/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/enabledisable/enabledisable/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/gcdump/gcdump/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo/processinfo/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/processinfo2/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo3/processinfo3/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/providervalidation/providervalidation/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/rundownvalidation/**">
+            <Issue>Can't find file dotnet-diagnostic-{pid}-*-socket</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverse/reverse/**">
+           <Issue> Process has start correctly, but EventPipeClient.ListAvailablePorts() still contain this PID</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processenvironment/processenvironment/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/diagnosticport/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/pauseonstart/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/reverseouter/reverseouter/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74891</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail_zeroinit/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper4_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper5_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/16354/notimplemented/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/Vector3Interop_r.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/Vector3Interop_ro.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b13452/b13452/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/b353858/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/Comparer_get_Default.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test13/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/CustomAttributes/DynamicObjects/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/ReturnTypeValidation/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/UnitTest/UnitTest_GVM/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/StringMarshalling/AnsiBSTR/AnsiBStrTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/StringMarshalling/BSTR/BSTRTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/StringMarshalling/LPTSTR/LPTSTRTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_ro/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/System/Runtime/CompilerServices/MethodImplOptionsTests/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/ilasm/PortablePdb/IlasmPortablePdbTests/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/ByRefLike/**" />
+    </ItemGroup>
+
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList
-                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
+                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>

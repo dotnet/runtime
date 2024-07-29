@@ -1,4 +1,5 @@
 set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
+set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
 set(SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe/")
 set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
 set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
@@ -7,6 +8,9 @@ set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
 set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
+
+add_subdirectory(${SHARED_CONTAINERS_SOURCE_PATH} containers)
+add_subdirectory(${SHARED_EVENTPIPE_SOURCE_PATH} eventpipe)
 
 # a list of every component.
 set(components "")
@@ -24,6 +28,10 @@ list(APPEND components
 set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger.c
   ${MONO_COMPONENT_PATH}/debugger.h
+  ${MONO_COMPONENT_PATH}/debugger-networking.c
+  ${MONO_COMPONENT_PATH}/debugger-networking.h
+  ${MONO_COMPONENT_PATH}/debugger-poll.c
+  ${MONO_COMPONENT_PATH}/debugger-poll.h
   ${MONO_COMPONENT_PATH}/debugger-agent.c
   ${MONO_COMPONENT_PATH}/debugger-agent.h
   ${MONO_COMPONENT_PATH}/debugger-engine.c
@@ -57,7 +65,7 @@ list(APPEND components
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}
 )
 
-include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
+include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/eventpipe.cmake)
 
 include_directories(
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
@@ -149,13 +157,15 @@ endif()
 foreach(component IN LISTS components)
   if(NOT DISABLE_COMPONENT_OBJECTS)
     add_library("${component}-objects" OBJECT "${${component}-sources}")
-    target_link_libraries("${component}-objects" component_base)
+    target_link_libraries("${component}-objects" PRIVATE component_base)
+    target_link_libraries("${component}-objects" PUBLIC eglib_api)
     foreach(dependency IN LISTS "${component}-dependencies")
       add_dependencies("${component}-objects" "${dependency}")
     endforeach()
   endif()
   add_library("${component}-stub-objects" OBJECT "${${component}-stub-sources}")
-  target_link_libraries("${component}-stub-objects" component_base)
+  target_link_libraries("${component}-stub-objects" PRIVATE component_base)
+  target_link_libraries("${component}-stub-objects" PUBLIC eglib_api)
 endforeach()
 
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
@@ -177,7 +187,7 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     # FIXME: this is bad for things like the g_log_set_default_handler/g_logv
     # which use global state - we should move those functions into
     # monosgen-shared and get them via dynamic linking.
-    target_sources("mono-component-${component}" PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+    target_link_libraries("mono-component-${component}" PRIVATE eglib_objects)
     if(NOT DISABLE_SHARED_LIBS)
       # If we disable shared libs, but build dynamic components we would need
       # to enable allowing undefined symbols here (presumably to be resolved
@@ -186,7 +196,7 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
       target_link_libraries("mono-component-${component}" PRIVATE monosgen-shared)
     endif()
     target_link_libraries("mono-component-${component}" PRIVATE ${OS_LIBS})
-    install(TARGETS "mono-component-${component}" LIBRARY)
+    install_with_stripped_symbols("mono-component-${component}" TARGETS lib)
   endforeach()
 
   #define a library for each component and component stub
@@ -203,6 +213,35 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
     list(APPEND mono-components-objects $<TARGET_OBJECTS:${component}-objects>)
   endforeach()
 
+endif()
+
+if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST components_to_build)
+    # Build EventPipe and DiagnosticServer with the Mono runtime implementation as unity-builds.
+    add_library(eventpipe-mono-objects OBJECT)
+    set_target_properties(
+        eventpipe-mono-objects
+        PROPERTIES
+        UNITY_BUILD ON
+        UNITY_BUILD_BATCH_SIZE 0
+    )
+    target_link_libraries(eventpipe-mono-objects PRIVATE component_base eglib_api dn-eventpipe dn-diagnosticserver dn-diagnosticserver-pal)
+    # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
+    if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
+        target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        # If we are going to link the diagnostics component via mono-components-objects, link in the supporting object libraries as well.
+        string(REPLACE
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>"
+          "$<TARGET_OBJECTS:${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects>;$<TARGET_OBJECTS:eventpipe-mono-objects>;$<TARGET_OBJECTS:dn-containers>"
+          mono-components-objects "${mono-components-objects}")
+    endif()
+    if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static)
+        # We don't add dn-containers here as any scenario that uses this target will also use the monosgen-static target,
+        # which will also have dn-containers linked into it.
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects>)
+    endif()
+    if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+    endif()
 endif()
 
 # define a list of mono-components-stubs objects that will be linked into

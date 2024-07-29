@@ -1,15 +1,21 @@
 <Project>
   <PropertyGroup>
-    <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
+    <!-- Enabling this rule will cause build failures on undocumented public APIs.
+         We cannot add it in eng/Versions.props because src/coreclr does not have access to UseCompilerGeneratedDocXmlFile, which ensures
+         we only enable it in specific projects. so to avoid duplicating this property in coreclr, we can first scope it to src/libraries.
+         This property needs to be declared before the ..\..\Directory.Build.props import. -->
+    <SkipArcadeNoWarnCS1591>true</SkipArcadeNoWarnCS1591>
+
+    <!-- Prevent native-binplace.proj from being treated as a source project, to avoid importing illink targets
+         and thereby avoid hitting a static graph restore bug: https://github.com/dotnet/runtime/issues/92194 -->
+    <IsSourceProject Condition="'$(MSBuildProjectFile)' == 'native-binplace.proj'">false</IsSourceProject>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
-    <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
-    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
 
@@ -19,7 +25,7 @@
   </ItemGroup>
 
   <Import Project="NetCoreAppLibrary.props" />
-  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsTrimmingTestProject)' == 'true'" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->
@@ -44,11 +50,9 @@
     <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
+    <!-- EnableAOTAnalyzer is enabled by default for src projects. -->
+    <EnableAOTAnalyzer Condition="'$(EnableAOTAnalyzer)' == '' and '$(IsSourceProject)' == 'true'">true</EnableAOTAnalyzer>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
-    <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
-    <EditorConfigFiles Include="$(RepositoryEngineeringDir)CodeAnalysis.test.globalconfig" />
-  </ItemGroup>
 
   <!-- Set up common paths -->
   <PropertyGroup>
@@ -80,23 +84,13 @@
     <EnableCoverageSupport Condition="'$(ContinuousIntegrationBuild)' != 'true'">true</EnableCoverageSupport>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
+  </PropertyGroup>
+
   <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
   <PropertyGroup>
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
-    <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
-
-    <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
-    <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
-
-    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
-    <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
-
-    <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
-    <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

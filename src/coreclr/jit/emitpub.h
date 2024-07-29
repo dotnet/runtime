@@ -16,22 +16,25 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-               );
+);
 
 void emitEndFN();
 
 void emitComputeCodeSizes();
 
-unsigned emitEndCodeGen(Compiler* comp,
-                        bool      contTrkPtrLcls,
-                        bool      fullyInt,
-                        bool      fullPtrMap,
-                        unsigned  xcptnsCount,
-                        unsigned* prologSize,
-                        unsigned* epilogSize,
-                        void**    codeAddr,
-                        void**    coldCodeAddr,
-                        void** consAddr DEBUGARG(unsigned* instrCount));
+unsigned emitEndCodeGen(Compiler*         comp,
+                        bool              contTrkPtrLcls,
+                        bool              fullyInt,
+                        bool              fullPtrMap,
+                        unsigned          xcptnsCount,
+                        unsigned*         prologSize,
+                        unsigned*         epilogSize,
+                        void**            codeAddr,
+                        void**            codeAddrRW,
+                        void**            coldCodeAddr,
+                        void**            coldCodeAddrRW,
+                        void**            consAddr,
+                        void** consAddrRW DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */
@@ -64,6 +67,7 @@ void emitFinishPrologEpilogGeneration();
 
 void*    emitCurBlock();
 unsigned emitCurOffset();
+unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
 UNATIVE_OFFSET emitCodeOffset(void* blockPtr, unsigned codeOffs);
 
@@ -98,41 +102,19 @@ UNATIVE_OFFSET emitDataSize();
 /************************************************************************/
 
 #ifdef TARGET_XARCH
-static bool instrIs3opImul(instruction ins);
-static bool instrIsExtendedReg3opImul(instruction ins);
-static bool instrHasImplicitRegPairDest(instruction ins);
-static void      check3opImulValues();
-static regNumber inst3opImulReg(instruction ins);
+static bool        instrIs3opImul(instruction ins);
+static bool        instrIsExtendedReg3opImul(instruction ins);
+static bool        instrHasImplicitRegPairDest(instruction ins);
+static void        check3opImulValues();
+static regNumber   inst3opImulReg(instruction ins);
 static instruction inst3opImulForReg(regNumber reg);
-#endif
-
-/************************************************************************/
-/*                   Emit PDB offset translation information            */
-/************************************************************************/
-
-#ifdef TRANSLATE_PDB
-
-static void SetILBaseOfCode(BYTE* pTextBase);
-static void SetILMethodBase(BYTE* pMethodEntry);
-static void SetILMethodStart(BYTE* pMethodCode);
-static void SetImgBaseOfCode(BYTE* pTextBase);
-
-void SetIDBaseToProlog();
-void SetIDBaseToOffset(int methodOffset);
-
-static void DisablePDBTranslation();
-static bool IsPDBEnabled();
-
-static void InitTranslationMaps(int ilCodeSize);
-static void DeleteTranslationMaps();
-static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADER** rgpHeader, int numSections);
 #endif
 
 /************************************************************************/
 /*                   Interface for generating unwind information        */
 /************************************************************************/
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 bool emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFragment = NULL);
 
@@ -144,7 +126,7 @@ void emitSplit(emitLocation*         startLoc,
 
 void emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp);
 
-#endif // TARGET_ARMARCH || defined(TARGET_LOONGARCH64)
+#endif // TARGET_ARMARCH || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_ARM)
 

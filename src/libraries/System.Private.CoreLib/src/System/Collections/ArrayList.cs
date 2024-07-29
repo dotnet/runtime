@@ -1,31 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-** Class:  ArrayList
-**
-** Purpose: Implements a dynamically sized List as an array,
-**          and provides many convenience methods for treating
-**          an array as an IList.
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections
 {
-    // Implements a variable-size List that uses an array of objects to store the
-    // elements. A ArrayList has a capacity, which is the allocated length
-    // of the internal array. As elements are added to a ArrayList, the capacity
-    // of the ArrayList is automatically increased as required by reallocating the
-    // internal array.
-    //
-    [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
+    /// <summary>
+    /// Implements the <see cref="IList" /> interface using an array whose size is dynamically increased as required.
+    /// </summary>
+    [DebuggerTypeProxy(typeof(ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
         private object?[] _items; // Do not rename (binary serialization)
@@ -2339,8 +2327,8 @@ namespace System.Collections
 
             public override IEnumerator GetEnumerator(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2350,8 +2338,8 @@ namespace System.Collections
 
             public override ArrayList GetRange(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2372,8 +2360,7 @@ namespace System.Collections
 
             public override int IndexOf(object? value, int startIndex)
             {
-                if (startIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
                 if (startIndex > _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
@@ -2443,8 +2430,7 @@ namespace System.Collections
 
                 if (startIndex >= _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
-                if (startIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
                 int i = _baseList.LastIndexOf(value, _baseIndex + startIndex, count);
                 if (i >= 0) return i - _baseIndex;
@@ -2465,8 +2451,8 @@ namespace System.Collections
 
             public override void RemoveRange(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2483,8 +2469,8 @@ namespace System.Collections
 
             public override void Reverse(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2506,8 +2492,8 @@ namespace System.Collections
 
             public override void Sort(int index, int count, IComparer? comparer)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 

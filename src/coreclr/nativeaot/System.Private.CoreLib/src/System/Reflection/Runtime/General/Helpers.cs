@@ -1,23 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Reflection.Runtime.TypeInfos;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 using Internal.LowLevelLinq;
-using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Extensions.NonPortable;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.General
 {
@@ -29,21 +29,6 @@ namespace System.Reflection.Runtime.General
             return h.Equals(default(RuntimeTypeHandle));
         }
 
-        // Clones a Type[] array for the purpose of returning it from an api.
-        public static Type[] CloneTypeArray(this Type[] types)
-        {
-            int count = types.Length;
-            if (count == 0)
-                return Array.Empty<Type>();  // Ok not to clone empty arrays - those are immutable.
-
-            Type[] clonedTypes = new Type[count];
-            for (int i = 0; i < count; i++)
-            {
-                clonedTypes[i] = types[i];
-            }
-            return clonedTypes;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type[] GetGenericTypeParameters(this Type type)
         {
@@ -51,34 +36,29 @@ namespace System.Reflection.Runtime.General
             return type.GetGenericArguments();
         }
 
-        public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
+        public static Type[] ToTypeArray(this RuntimeTypeInfo[] typeInfos)
         {
-            int count = types.Length;
-            RuntimeTypeInfo[] typeInfos = new RuntimeTypeInfo[count];
+            int count = typeInfos.Length;
+            if (count == 0)
+                return Array.Empty<Type>();
+
+            Type[] types = new Type[count];
             for (int i = 0; i < count; i++)
             {
-                typeInfos[i] = types[i].CastToRuntimeTypeInfo();
+                types[i] = typeInfos[i].ToType();
             }
-            return typeInfos;
-        }
-
-        public static string LastResortString(this RuntimeTypeHandle typeHandle)
-        {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetLastResortString(typeHandle);
+            return types;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
+        public static RuntimeTypeInfo ToRuntimeTypeInfo(this Type type)
         {
-            Debug.Assert(type is RuntimeNamedTypeInfo);
-            return (RuntimeNamedTypeInfo)type;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
-        {
-            Debug.Assert(type == null || type is RuntimeTypeInfo);
-            return (RuntimeTypeInfo)type!;
+            if (type is RuntimeType runtimeType)
+            {
+                return runtimeType.GetRuntimeTypeInfo();
+            }
+            Debug.Assert(false);
+            return null;
         }
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
@@ -93,25 +73,6 @@ namespace System.Reflection.Runtime.General
             if (accessor.IsPublic)
                 return accessor;
             return null;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Calling Assembly.GetType on a third-party Assembly class.")]
-        public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
-        {
-            if (assembly is RuntimeAssemblyInfo runtimeAssembly)
-            {
-                // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
-                return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
-            }
-            else
-            {
-                // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
-                // method. This is wasteful because it'll probably reparse a type string that we've already parsed
-                // but it can't be helped.
-                string escapedName = name.EscapeTypeNameIdentifier();
-                return assembly.GetType(escapedName, throwOnError: false, ignoreCase: ignoreCase);
-            }
         }
 
         public static TypeLoadException CreateTypeLoadException(string typeName, Assembly assemblyIfAny)
@@ -133,7 +94,12 @@ namespace System.Reflection.Runtime.General
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
+
+            // We're avoiding calling into MemoryExtensions here as it has paths that lead to reflection,
+            // and that would lead to an infinite loop given that this is the implementation of reflection.
+#pragma warning disable CA1870 // Use a cached 'SearchValues' instance
             if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
+#pragma warning restore CA1870
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)
@@ -155,18 +121,18 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Delegates always generate metadata for the Invoke method")]
         public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
             Debug.Assert(delegateType.IsDelegate);
 
-            MethodInfo? invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo? invokeMethod = delegateType.ToType().GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             if (invokeMethod == null)
             {
                 // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
                 // a missing Invoke method.
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(delegateType);
+                throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(delegateType.ToType());
             }
             return (RuntimeMethodInfo)invokeMethod;
         }
@@ -185,22 +151,26 @@ namespace System.Reflection.Runtime.General
             Justification = "Array.CreateInstance is only used with reference types here and is therefore safe.")]
         public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
-            LowLevelList<object> attributes = new LowLevelList<object>();
+            ArrayBuilder<object> attributes = default;
             foreach (CustomAttributeData cad in cads)
             {
                 object instantiatedAttribute = cad.Instantiate();
                 attributes.Add(instantiatedAttribute);
             }
 
-            // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the
-            // exact attribute type requested except in two cases: when the passed in type is an open type and when
-            // it is a value type. In these two cases, it returns an array of type Object[].
-            bool useObjectArray = actualElementType.ContainsGenericParameters || actualElementType.IsValueType;
-            int count = attributes.Count;
-            object[] result = useObjectArray ? new object[count] : (object[])Array.CreateInstance(actualElementType, count);
-
-            attributes.CopyTo(result, 0);
-            return result;
+            if (actualElementType.ContainsGenericParameters || actualElementType.IsValueType)
+            {
+                // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the
+                // exact attribute type requested except in two cases: when the passed in type is an open type and when
+                // it is a value type. In these two cases, it returns an array of type Object[].
+                return attributes.ToArray();
+            }
+            else
+            {
+                object[] result = (object[])Array.CreateInstance(actualElementType, attributes.Count);
+                attributes.CopyTo(result);
+                return result;
+            }
         }
 
         private static object? GetRawDefaultValue(IEnumerable<CustomAttributeData> customAttributes)

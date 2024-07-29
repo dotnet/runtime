@@ -436,6 +436,20 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     // NULL out / initialize members of the global profapi structure
     g_profControlBlock.Init();
 
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics config.\n"));
+
+        return S_OK;
+    }
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics_Profiler) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics_Profiler config.\n"));
+
+        return S_OK;
+    }
+
+
     AttemptLoadProfilerForStartup();
     AttemptLoadDelayedStartupProfilers();
     AttemptLoadProfilerList();
@@ -493,11 +507,10 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 //    corresponding CLSID structure.
 //
 // Arguments:
-//    * wszClsid - [in / out] CLSID string to convert. This may also be a progid. This
+//    * wszClsid - [in] CLSID string to convert. This may also be a progid. This
 //        ensures our behavior is backward-compatible with previous CLR versions. I don't
 //        know why previous versions allowed the user to set a progid in the environment,
-//        but well whatever. On [out], this string is normalized in-place (e.g.,
-//        double-quotes around progid are removed).
+//        but well whatever. For back-compatibility, we also strip all double-quotes from the passed in ProgId.
 //    * pClsid - [out] CLSID structure corresponding to wszClsid
 //
 // Return Value:
@@ -509,7 +522,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 // static
 HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
-    __inout_z LPWSTR wszClsid,
+    __in_z LPCWSTR wszClsid,
     CLSID * pClsid)
 {
     CONTRACTL
@@ -538,27 +551,15 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     else
     {
 #ifndef TARGET_UNIX
-        WCHAR *szFrom, *szTo;
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26000) // "espX thinks there is an overflow here, but there isn't any"
-#endif
-        for (szFrom=szTo=wszClsid;  *szFrom;  )
+        SString progId{wszClsid};
+        for (auto it = progId.Begin(); it != progId.End(); ++it)
         {
-            if (*szFrom == W('"'))
+            while (it != progId.End() && *it == W('"'))
             {
-                ++szFrom;
-                continue;
+                progId.Delete(it, 1);
             }
-            *szTo++ = *szFrom++;
         }
-        *szTo = 0;
-        hr = CLSIDFromProgID(wszClsid, pClsid);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
-
+        hr = CLSIDFromProgID(progId.GetUnicode(), pClsid);
 #else // !TARGET_UNIX
         // ProgID not supported on TARGET_UNIX
         hr = E_INVALIDARG;
@@ -673,7 +674,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return S_FALSE;
     }
 
-    if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
+    if ((wszProfilerDLL != NULL) && (u16_strlen(wszProfilerDLL) >= MAX_LONGPATH))
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but CORECLR_PROFILER_PATH was not set properly.\n"));
 
@@ -759,7 +760,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> wszProfilerList(NULL);
+    CLRConfigStringHolder wszProfilerList(NULL);
 
 #if defined(TARGET_ARM64)
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
@@ -792,23 +793,26 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         return S_OK;
     }
 
-    WCHAR *pOuter = NULL;
-    WCHAR *pInner = NULL;
-    WCHAR *currentSection = NULL;
-    WCHAR *currentPath = NULL;
-    WCHAR *currentGuid = NULL;
+    SString profilerList{wszProfilerList};
 
     HRESULT storedHr = S_OK;
-    // Get each semicolon delimited config
-    currentSection = wcstok_s(wszProfilerList, W(";"), &pOuter);
-    for (;currentSection != NULL; currentSection = wcstok_s(NULL, W(";"), &pOuter))
+    for (SString::Iterator sectionStart = profilerList.Begin(), sectionEnd = profilerList.Begin();
+        profilerList.Find(sectionEnd, W(';'));
+        sectionStart = ++sectionEnd)
     {
-        // Parse this config "path={guid}"
-        currentPath = wcstok_s(currentSection, W("="), &pInner);
-        currentGuid = wcstok_s(NULL, W("="), &pInner);
+        SString::Iterator pathEnd = sectionStart;
+        if (!profilerList.Find(pathEnd, W('=')) || pathEnd > sectionEnd)
+        {
+            ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_PATH);
+            storedHr = E_FAIL;
+            continue;
+        }
+        SString::Iterator clsidStart = pathEnd + 1;
 
+        PathString path{profilerList, sectionStart, pathEnd};
+        StackSString clsidString{profilerList, clsidStart, sectionEnd};
         CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(currentGuid, &clsid);
+        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
         if (FAILED(hr))
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
@@ -822,7 +826,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             kStartupLoad,
             &clsid,
             (LPCSTR)clsidUtf8,
-            currentPath,
+            path.GetUnicode(),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))
@@ -931,7 +935,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         if (profilerCompatibilityFlag == kPreventLoad)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
                  "Profiler will not be loaded.\n"));
 
             MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
@@ -1014,7 +1018,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     {
         if (profilerCompatibilityFlag == kDisableV2Profiler)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
                  "V2 profilers are not allowed, so that the configured V2 profiler is going to be unloaded.\n"));
 
             LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, szClsid);
@@ -1023,7 +1027,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         _ASSERTE(profilerCompatibilityFlag == kEnableV2Profiler);
 
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
         MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);

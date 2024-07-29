@@ -15,12 +15,14 @@ namespace System.Collections.Tests
     public abstract class HashSet_Generic_Tests<T> : ISet_Generic_Tests<T>
     {
         #region ISet<T> Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
 
         protected override bool ResetImplemented => true;
 
-        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorThrows : (base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear));
+        protected override ModifyOperation ModifyEnumeratorThrows => base.ModifyEnumeratorAllowed & ~(ModifyOperation.Remove | ModifyOperation.Clear);
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsNetFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Overwrite | ModifyOperation.Remove | ModifyOperation.Clear;
 
         protected override ISet<T> GenericISetFactory()
         {
@@ -124,6 +126,33 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(enumerable));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void HashSet_CreateWithCapacity_CapacityAtLeastPassedValue(int capacity)
+        {
+            var hashSet = new HashSet<T>(capacity);
+            Assert.True(capacity <= hashSet.Capacity);
+        }
+
+        #endregion
+
+        #region Properties
+
+        [Fact]
+        public void HashSetResized_CapacityChanged()
+        {
+            var hashSet = (HashSet<T>)GenericISetFactory(3);
+            int initialCapacity = hashSet.Capacity;
+
+            int seed = 85877;
+            hashSet.Add(CreateT(seed++));
+
+            int afterCapacity = hashSet.Capacity;
+
+            Assert.True(afterCapacity > initialCapacity);
+        }
+
         #endregion
 
         #region RemoveWhere
@@ -172,6 +201,51 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void HashSet_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            HashSet<T> hashSet = (HashSet<T>)GenericISetFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
+        }
+
+        [Theory]
+        [InlineData(0, 20, 7)]
+        [InlineData(10, 20, 10)]
+        [InlineData(10, 20, 13)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimReducesSize(int initialCount, int initialCapacity, int trimCapacity)
+        {
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+            HashSet<T> clone = new(set, set.Comparer);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            set.TrimExcess(trimCapacity);
+
+            Assert.True(trimCapacity <= set.Capacity && set.Capacity < initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+            Assert.Equal(clone, set);
+        }
+
+        [Theory]
+        [InlineData(10, 20, 0)]
+        [InlineData(10, 20, 7)]
+        public void HashHet_Generic_TrimExcess_LargePopulatedHashSet_TrimCapacityIsLessThanCount_ThrowsArgumentOutOfRangeException(int initialCount, int initialCapacity, int trimCapacity)
+        {
+            HashSet<T> set = CreateHashSetWithCapacity(initialCount, initialCapacity);
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => set.TrimExcess(trimCapacity));
+
+            Assert.True(set.Capacity >= initialCapacity);
+            Assert.Equal(initialCount, set.Count);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -438,7 +512,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 
@@ -453,7 +529,9 @@ namespace System.Collections.Tests
             Assert.Equal(value, actualValue);
             if (!typeof(T).IsValueType)
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)value, (object)actualValue);
+#pragma warning restore xUnit2005
             }
         }
 
@@ -685,24 +763,24 @@ namespace System.Collections.Tests
                 var bf = new BinaryFormatter();
                 var s = new MemoryStream();
 
-                var dict = new HashSet<TCompared>(equalityComparer);
+                var set = new HashSet<TCompared>(equalityComparer);
 
-                Assert.Same(equalityComparer, dict.Comparer);
+                Assert.Same(equalityComparer, set.Comparer);
 
-                bf.Serialize(s, dict);
+                bf.Serialize(s, set);
                 s.Position = 0;
-                dict = (HashSet<TCompared>)bf.Deserialize(s);
+                set = (HashSet<TCompared>)bf.Deserialize(s);
 
                 if (internalTypeName == null)
                 {
-                    Assert.IsType(equalityComparer.GetType(), dict.Comparer);
+                    Assert.IsType(equalityComparer.GetType(), set.Comparer);
                 }
                 else
                 {
-                    Assert.Equal(internalTypeName, dict.Comparer.GetType().ToString());
+                    Assert.Equal(internalTypeName, set.Comparer.GetType().ToString());
                 }
 
-                Assert.True(equalityComparer.Equals(dict.Comparer));
+                Assert.True(equalityComparer.Equals(set.Comparer));
             }
         }
 

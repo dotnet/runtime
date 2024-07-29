@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -11,7 +12,7 @@ namespace Test
         public static bool m_bStatic1 = true;
     }
 
-    struct BB
+    public struct BB
     {
         public int Method1()
         {
@@ -26,10 +27,10 @@ namespace Test
             }
             return 0;
         }
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             new BB().Method1();
-            return 100;
         }
     }
 }

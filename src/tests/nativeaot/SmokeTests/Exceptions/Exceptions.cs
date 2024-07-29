@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 public class BringUpTest
@@ -24,6 +26,10 @@ public class BringUpTest
 
     public static int Main()
     {
+        // This test also doubles as server GC test
+        if (!System.Runtime.GCSettings.IsServerGC)
+            return 42;
+
         if (string.Empty.Length > 0)
         {
             // Just something to make sure we generate reflection metadata for the type
@@ -153,6 +159,10 @@ public class BringUpTest
             return Fail;
         }
 
+        TestFirstChanceExceptionEvent();
+
+        TestUnwindInFunclet();
+
         throw new Exception("UnhandledException");
 
         return Fail;
@@ -241,6 +251,43 @@ public class BringUpTest
         }
     }
 
+    static void TestFirstChanceExceptionEvent()
+    {
+        bool didInvokeHandler = false;
+        Exception exception = new Exception();
+        EventHandler<FirstChanceExceptionEventArgs> handler = (_, e) =>
+        {
+            Console.WriteLine("Exception triggered FirstChanceException event handler");
+            if (e.Exception != exception)
+            {
+                Console.WriteLine("Unexpected exception!");
+                Environment.Exit(Fail);
+            }
+
+            didInvokeHandler = true;
+        };
+        Func<Exception, bool> check = e =>
+        {
+            if (!didInvokeHandler)
+            {
+                Console.WriteLine("Did not invoke FirstChanceException event handler!");
+                Environment.Exit(Fail);
+            }
+
+            return e == exception;
+        };
+
+        AppDomain.CurrentDomain.FirstChanceException += handler;
+        try
+        {
+            throw exception;
+        }
+        catch (Exception e) when (check(e))
+        {
+        }
+        AppDomain.CurrentDomain.FirstChanceException -= handler;
+    }
+
     static bool FilterWithStackTrace(Exception e)
     {
         var stackTrace = new StackTrace(0, true);
@@ -255,6 +302,28 @@ public class BringUpTest
         GC.Collect();
         CreateSomeGarbage();
         return true;
+    }
+
+    static void TestUnwindInFunclet()
+    {
+        try
+        {
+            throw new Exception();
+        }
+        catch (Exception e)
+        {
+            // x86 pushes the call arguments on the stack and moves the stack pointer.
+            // We use a non-inlined call with enough parameters to force this to happen,
+            // so we can verify that the unwinder can walk through this funclet. The
+            // unwinding is triggered by the GC.Collect call.
+            MultiparameterCallWithGC(0, 1, 2, 3, 4);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MultiparameterCallWithGC(nint a, nint b, nint c, nint d, nint f)
+    {
+        GC.Collect();
     }
 }
 

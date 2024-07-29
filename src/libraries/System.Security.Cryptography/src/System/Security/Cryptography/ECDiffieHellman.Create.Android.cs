@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
 
         public static partial ECDiffieHellman Create(ECParameters parameters)
         {
-            ECDiffieHellman ecdh = new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid();
+            var ecdh = new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid();
 
             try
             {

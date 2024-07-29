@@ -32,6 +32,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => _embeddedSignatureData;
 
+        public override bool HasEmbeddedSignatureData => _embeddedSignatureData != null;
+
         public override bool IsStatic => throw new NotImplementedException();
 
         public override bool IsInitOnly => throw new NotImplementedException();

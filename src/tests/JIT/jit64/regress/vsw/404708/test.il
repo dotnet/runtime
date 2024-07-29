@@ -9,11 +9,11 @@
   .ver 4:0:0:0
 }
 
-.assembly 'test' {}
+.assembly 'test_404708' {}
 
 .namespace Test
 {
-  .class private auto ansi beforefieldinit Class1 extends [mscorlib]System.Object
+  .class public auto ansi beforefieldinit Class1 extends [mscorlib]System.Object
   {
 
     .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed

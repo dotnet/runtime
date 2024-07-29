@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	readonly partial struct MethodProxy
+	internal readonly partial struct MethodProxy
 	{
 		public MethodProxy (IMethodSymbol method) => Method = method;
 
@@ -45,6 +45,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
 			return builder.ToImmutableArray ();
 		}
+
+		internal partial bool IsConstructor () => Method.IsConstructor ();
 
 		internal partial bool IsStatic () => Method.IsStatic;
 

@@ -232,7 +232,7 @@
 .class interface private abstract auto ansi I4Reabstract
        implements I4
 {
-  .method private hidebysig abstract
+  .method private hidebysig virtual abstract
           static int32  Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -758,7 +758,7 @@
 
 } // end of class ResolutionAtRuntimeMethodParam
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Negative() cil managed

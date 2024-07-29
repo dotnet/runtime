@@ -4,6 +4,7 @@
 #if !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES)
 
 #define EP_IMPL_BLOCK_GETTER_SETTER
+#include "ep.h"
 #include "ep-block.h"
 #include "ep-event-instance.h"
 #include "ep-file.h"
@@ -828,7 +829,7 @@ sequence_point_get_block_size (EventPipeSequencePoint *sequence_point)
 		sizeof (uint64_t) + //thread id
 		sizeof (uint32_t); //sequence number
 
-	const uint32_t thread_count = ep_rt_thread_sequence_number_map_count (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
+	const uint32_t thread_count = dn_umap_size (ep_sequence_point_get_thread_sequence_numbers (sequence_point));
 
 	return (int32_t)(ep_sequence_point_sizeof_timestamp (sequence_point) +
 		sizeof (uint32_t) + //thread count
@@ -897,24 +898,23 @@ ep_sequence_point_block_init (
 		sequence_point_get_block_size (sequence_point),
 		EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
+	dn_umap_t *map = ep_sequence_point_get_thread_sequence_numbers (sequence_point);
+
 	const ep_timestamp_t timestamp = ep_sequence_point_get_timestamp (sequence_point);
 	ep_write_buffer_timestamp (&sequence_point_block->block.write_pointer, timestamp);
 
-	const uint32_t thread_count = ep_rt_thread_sequence_number_map_count (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
+	const uint32_t thread_count = dn_umap_size (map);
 	ep_write_buffer_uint32_t (&sequence_point_block->block.write_pointer, thread_count);
 
-	for (ep_rt_thread_sequence_number_hash_map_iterator_t iterator = ep_rt_thread_sequence_number_map_iterator_begin (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
-		!ep_rt_thread_sequence_number_map_iterator_end (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator);
-		ep_rt_thread_sequence_number_map_iterator_next (&iterator)) {
+	DN_UMAP_FOREACH_BEGIN (const EventPipeThreadSessionState *, key, uint32_t, sequence_number, map) {
+		ep_write_buffer_uint64_t (
+			&sequence_point_block->block.write_pointer,
+			ep_thread_get_os_thread_id (ep_thread_session_state_get_thread (key)));
 
-		const EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
-
-		const uint64_t thread_id = ep_thread_get_os_thread_id (ep_thread_session_state_get_thread (key));
-		ep_write_buffer_uint64_t (&sequence_point_block->block.write_pointer, thread_id);
-
-		const uint32_t sequence_number = ep_rt_thread_sequence_number_map_iterator_value (&iterator);
-		ep_write_buffer_uint32_t (&sequence_point_block->block.write_pointer, sequence_number);
-	}
+		ep_write_buffer_uint32_t (
+			&sequence_point_block->block.write_pointer,
+			sequence_number);
+	} DN_UMAP_FOREACH_END;
 
 	return sequence_point_block;
 }

@@ -1,29 +1,29 @@
 #!/usr/bin/env bash
 
-OSName=$(uname -s)
+OSName=$(uname -s | tr '[:upper:]' '[:lower:]')
 case $OSName in
-    Darwin)
-        OS=OSX
+    darwin)
+        OS=osx
         ;;
 
-    FreeBSD)
-        OS=FreeBSD
+    freeBSD)
+        OS=freebsd
         ;;
 
-    Linux)
-        OS=Linux
+    linux)
+        OS=linux
         ;;
 
-    NetBSD)
-        OS=NetBSD
+    netbsd)
+        OS=netbsd
         ;;
 
-    SunOS)
-        OS=SunOS
+    sunos)
+        OS=sunos
         ;;
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        OS=Linux
+        OS=linux
         ;;
 esac
 

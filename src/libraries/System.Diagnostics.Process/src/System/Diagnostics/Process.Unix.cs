@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -612,10 +612,16 @@ namespace System.Diagnostics
         {
             var envp = new string[psi.Environment.Count];
             int index = 0;
-            foreach (var pair in psi.Environment)
+            foreach (KeyValuePair<string, string?> pair in psi.Environment)
             {
-                envp[index++] = pair.Key + "=" + pair.Value;
+                // Ignore null values for consistency with Environment.SetEnvironmentVariable
+                if (pair.Value != null)
+                {
+                    envp[index++] = pair.Key + "=" + pair.Value;
+                }
             }
+            // Resize the array in case we skipped some entries
+            Array.Resize(ref envp, index);
             return envp;
         }
 
@@ -837,7 +843,7 @@ namespace System.Diagnostics
         /// <param name="fd">The file descriptor.</param>
         /// <param name="direction">The pipe direction.</param>
         /// <returns>The opened stream.</returns>
-        private static Stream OpenStream(int fd, PipeDirection direction)
+        private static AnonymousPipeClientStream OpenStream(int fd, PipeDirection direction)
         {
             Debug.Assert(fd >= 0);
             return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));

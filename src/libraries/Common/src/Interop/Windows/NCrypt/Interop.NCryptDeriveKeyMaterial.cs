@@ -5,8 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using Internal.NativeCrypto;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -140,7 +140,7 @@ internal static partial class Interop
                     out int keySize,
                     flags);
 
-                if (error != ErrorCode.ERROR_SUCCESS && error != ErrorCode.NTE_BUFFER_TOO_SMALL)
+                if (error != ErrorCode.ERROR_SUCCESS && !error.IsBufferTooSmall())
                 {
                     throw error.ToCryptographicException();
                 }
@@ -218,28 +218,44 @@ internal static partial class Interop
             byte[] seed,
             SecretAgreementFlags flags)
         {
-            Span<NCryptBuffer> buffers = stackalloc NCryptBuffer[2];
-
             fixed (byte* pLabel = label, pSeed = seed)
             {
                 NCryptBuffer labelBuffer = default;
                 labelBuffer.cbBuffer = label.Length;
                 labelBuffer.BufferType = BufferType.KdfTlsLabel;
                 labelBuffer.pvBuffer = new IntPtr(pLabel);
-                buffers[0] = labelBuffer;
 
                 NCryptBuffer seedBuffer = default;
                 seedBuffer.cbBuffer = seed.Length;
                 seedBuffer.BufferType = BufferType.KdfTlsSeed;
                 seedBuffer.pvBuffer = new IntPtr(pSeed);
-                buffers[1] = seedBuffer;
 
                 return DeriveKeyMaterial(
                     secretAgreement,
                     BCryptNative.KeyDerivationFunction.Tls,
-                    buffers,
+                    [labelBuffer, seedBuffer],
                     flags);
             }
+        }
+
+        internal static unsafe byte[] DeriveKeyMaterialTruncate(
+            SafeNCryptSecretHandle secretAgreement,
+            SecretAgreementFlags flags)
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            byte[] result = DeriveKeyMaterial(
+                secretAgreement,
+                BCryptNative.KeyDerivationFunction.Raw,
+                ReadOnlySpan<NCryptBuffer>.Empty,
+                flags);
+
+            // Win32 returns the result as little endian. So we need to flip it to big endian.
+            Array.Reverse(result);
+            return result;
         }
     }
 }

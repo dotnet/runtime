@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -62,6 +62,66 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_DeserializeUnableToAssignNull(Type declaredType)
         {
             throw new InvalidOperationException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_PropertyGetterDisallowNull(string propertyName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.PropertyGetterDisallowNull, propertyName, declaringType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_PropertySetterDisallowNull(string propertyName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.PropertySetterDisallowNull, propertyName, declaringType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_ConstructorParameterDisallowNull(string parameterName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.ConstructorParameterDisallowNull, parameterName, declaringType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPopulateNotSupportedByConverter(JsonPropertyInfo propertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPopulateNotSupportedByConverter, propertyInfo.Name, propertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPropertyMustHaveAGetter(JsonPropertyInfo propertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPropertyMustHaveAGetter, propertyInfo.Name, propertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPropertyValueTypeMustHaveASetter(JsonPropertyInfo propertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPropertyValueTypeMustHaveASetter, propertyInfo.Name, propertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization(JsonPropertyInfo propertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization, propertyInfo.Name, propertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReadOnlyMember(JsonPropertyInfo propertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPropertyCannotAllowReadOnlyMember, propertyInfo.Name, propertyInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling()
+        {
+            throw new InvalidOperationException(SR.ObjectCreationHandlingPropertyCannotAllowReferenceHandling);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors()
+        {
+            throw new NotSupportedException(SR.ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors);
         }
 
         [DoesNotReturn]
@@ -139,6 +199,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled()
+        {
+            throw new InvalidOperationException(SR.JsonSerializerIsReflectionDisabled);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(Type classType, MemberInfo? memberInfo)
         {
             string location = classType.ToString();
@@ -174,9 +240,15 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
+        public static void ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable()
         {
-            throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
+            throw new InvalidOperationException(SR.DefaultTypeInfoResolverImmutable);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeInfoResolverChainImmutable()
+        {
+            throw new InvalidOperationException(SR.TypeInfoResolverChainImmutable);
         }
 
         [DoesNotReturn]
@@ -186,9 +258,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_PropertyInfoImmutable()
+        public static void ThrowInvalidOperationException_InvalidChainedResolver()
         {
-            throw new InvalidOperationException(SR.PropertyInfoImmutable);
+            throw new InvalidOperationException(SR.SerializerOptions_InvalidChainedResolver);
         }
 
         [DoesNotReturn]
@@ -221,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 50;
+            const int CutOffLength = 60;
 
-            for (int propertyIdx = 0; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = parent.PropertyCache.List[propertyIdx].Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
@@ -241,7 +309,9 @@ namespace System.Text.Json
                     listOfMissingPropertiesBuilder.Append(' ');
                 }
 
+                listOfMissingPropertiesBuilder.Append('\'');
                 listOfMissingPropertiesBuilder.Append(property.Name);
+                listOfMissingPropertiesBuilder.Append('\'');
                 first = false;
 
                 if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
@@ -300,9 +370,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(string memberName, Type declaringType)
+        public static void ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(string memberName, Type declaringType)
         {
-            throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnNonPublicInvalid, memberName, declaringType));
+            throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnInaccessibleProperty, memberName, declaringType));
         }
 
         [DoesNotReturn]
@@ -321,7 +391,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(Type runtimePropertyType, JsonConverter jsonConverter)
         {
-            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertMultipleTypes, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
+            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertMultipleTypes, jsonConverter.GetType(), jsonConverter.Type, runtimePropertyType));
         }
 
         [DoesNotReturn]
@@ -345,6 +415,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.OnDeserializingCallbacksNotSupported, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.CreateObjectConverterNotCompatible, type));
@@ -359,10 +435,10 @@ namespace System.Text.Json
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
-#if NETCOREAPP
+#if NET
             int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
 #else
-            int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.InvariantCulture);
+            int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);
 #endif
             if (iPos >= 0)
             {
@@ -464,9 +540,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type classType, JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataConflictsWithUnmappedMemberHandling, classType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonPropertyInfo.PropertyType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PropertyTypeNotNullable(JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.PropertyTypeNotNullable, jsonPropertyInfo.PropertyType));
         }
 
         [DoesNotReturn]
@@ -476,9 +564,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, NotSupportedException ex)
+        public static void ThrowNotSupportedException(scoped ref ReadStack state, in Utf8JsonReader reader, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -500,13 +588,13 @@ namespace System.Text.Json
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
             message += $" Path: {state.JsonPath()} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -526,17 +614,29 @@ namespace System.Text.Json
 
             message += $" Path: {state.PropertyPath()}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_DeserializeNoConstructor(Type type, ref Utf8JsonReader reader, scoped ref ReadStack state)
+        public static void ThrowNotSupportedException_DeserializeNoConstructor(JsonTypeInfo typeInfo, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
+            Type type = typeInfo.Type;
             string message;
 
-            if (type.IsInterface)
+            if (type.IsInterface || type.IsAbstract)
             {
-                message = SR.Format(SR.DeserializePolymorphicInterface, type);
+                if (typeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators is true)
+                {
+                    message = SR.Format(SR.DeserializationMustSpecifyTypeDiscriminator, type);
+                }
+                else if (typeInfo.Kind is JsonTypeInfoKind.Enumerable or JsonTypeInfoKind.Dictionary)
+                {
+                    message = SR.Format(SR.CannotPopulateCollection, type);
+                }
+                else
+                {
+                    message = SR.Format(SR.DeserializeInterfaceOrAbstractType, type);
+                }
             }
             else
             {
@@ -591,16 +691,22 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
+        {
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, unmappedPropertyName, type));
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
         {
             ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataIdIsNotFirstProperty(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
+        public static void ThrowJsonException_MetadataIdCannotBeCombinedWithRef(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.MetadataIdIsNotFirstProperty);
+            ThrowJsonException(SR.MetadataIdCannotBeCombinedWithRef);
         }
 
         [DoesNotReturn]
@@ -633,9 +739,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataDuplicateTypeProperty()
+        public static void ThrowJsonException_DuplicateMetadataProperty(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ThrowJsonException(SR.MetadataDuplicateTypeProperty);
+            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, JsonHelpers.Utf8GetString(utf8PropertyName)));
         }
 
         [DoesNotReturn]
@@ -681,8 +787,8 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(JsonPropertyInfo propertyInfo)
         {
-            Debug.Assert(propertyInfo.ParentTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
-            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.ParentTypeInfo.Type.FullName));
+            Debug.Assert(propertyInfo.DeclaringTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.DeclaringTypeInfo.Type.FullName));
         }
 
         [DoesNotReturn]
@@ -706,9 +812,13 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowNotSupportedException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
-            throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
+            throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.ToString() ?? "<null>"));
         }
 
+        public static NotSupportedException GetNotSupportedException_AmbiguousMetadataForType(Type type, Type match1, Type match2)
+        {
+            return new NotSupportedException(SR.Format(SR.AmbiguousMetadataForType, type, match1, match2));
+        }
 
         [DoesNotReturn]
         public static void ThrowNotSupportedException_ConstructorContainsNullParameterNames(Type declaringType)
@@ -719,24 +829,18 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForType, type, resolver?.ToString() ?? "<null>"));
         }
 
         public static Exception GetInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
-            return new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.GetType().FullName ?? "<null>", type));
+            return new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, resolver?.ToString() ?? "<null>", type));
         }
 
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw GetInvalidOperationException_NoMetadataForTypeProperties(resolver, type);
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
-        {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
         }
 
         [DoesNotReturn]
@@ -806,9 +910,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType, string enumName)
+        public static void ThrowInvalidOperationException_UnsupportedEnumIdentifier(Type enumType, string? enumName)
         {
-            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name, enumName));
+            throw new InvalidOperationException(SR.Format(SR.UnsupportedEnumIdentifier, enumType.Name, enumName));
         }
 
         [DoesNotReturn]
@@ -821,6 +925,30 @@ namespace System.Text.Json
         public static void ThrowArgumentException_JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo(string parameterName)
         {
             throw new ArgumentException(SR.JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo, paramName: parameterName);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeWriteCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeWriterCanceled);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_JsonSchemaExporterDoesNotSupportReferenceHandlerPreserve()
+        {
+            throw new NotSupportedException(SR.JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSchemaExporterDepthTooLarge()
+        {
+            throw new InvalidOperationException(SR.JsonSchemaExporter_DepthTooLarge);
         }
     }
 }

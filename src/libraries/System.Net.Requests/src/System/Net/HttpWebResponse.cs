@@ -8,6 +8,8 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -35,6 +37,7 @@ namespace System.Net
         }
 
         [Obsolete("Serialization has been deprecated for HttpWebResponse.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -272,7 +275,7 @@ namespace System.Net
                     string srchString = contentType.ToLowerInvariant();
 
                     //media subtypes of text type has a default as specified by rfc 2616
-                    if (srchString.Trim().StartsWith("text/", StringComparison.Ordinal))
+                    if (srchString.AsSpan().Trim().StartsWith("text/", StringComparison.Ordinal))
                     {
                         _characterSet = "ISO-8859-1";
                     }
@@ -336,7 +339,14 @@ namespace System.Net
             CheckDisposed();
             if (_httpResponseMessage.Content != null)
             {
-                return _httpResponseMessage.Content.ReadAsStream();
+                Stream contentStream = _httpResponseMessage.Content.ReadAsStream();
+                int maxErrorResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
+                if (maxErrorResponseLength < 0 || StatusCode < HttpStatusCode.BadRequest)
+                {
+                    return contentStream;
+                }
+
+                return new TruncatedReadStream(contentStream, (long)maxErrorResponseLength * 1024);
             }
 
             return Stream.Null;
@@ -370,5 +380,57 @@ namespace System.Net
         }
 
         private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
+
+        internal sealed class TruncatedReadStream(Stream innerStream, long maxSize) : Stream
+        {
+            private long _maxRemainingLength = maxSize;
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            public override void Flush() => throw new NotSupportedException();
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return Read(new Span<byte>(buffer, offset, count));
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                int readBytes = innerStream.Read(buffer.Slice(0, (int)Math.Min(buffer.Length, _maxRemainingLength)));
+                _maxRemainingLength -= readBytes;
+                return readBytes;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, (int)Math.Min(buffer.Length, _maxRemainingLength)), cancellationToken)
+                    .ConfigureAwait(false);
+                _maxRemainingLength -= readBytes;
+                return readBytes;
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            public override ValueTask DisposeAsync() => innerStream.DisposeAsync();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    innerStream.Dispose();
+                }
+            }
+        }
     }
 }

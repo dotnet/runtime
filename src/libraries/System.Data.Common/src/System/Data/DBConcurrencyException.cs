@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
@@ -20,21 +21,24 @@ namespace System.Data
         {
         }
 
-        public DBConcurrencyException(string? message, Exception? inner) : base(message, inner)
+        public DBConcurrencyException(string? message, Exception? inner) : base(message ?? SR.ADP_DBConcurrencyExceptionMessage, inner)
         {
             HResult = HResults.DBConcurrency;
         }
 
-        public DBConcurrencyException(string? message, Exception? inner, DataRow[]? dataRows) : base(message, inner)
+        public DBConcurrencyException(string? message, Exception? inner, DataRow[]? dataRows) : base(message ?? SR.ADP_DBConcurrencyExceptionMessage, inner)
         {
             HResult = HResults.DBConcurrency;
             _dataRows = dataRows;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private DBConcurrencyException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

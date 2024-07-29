@@ -7,12 +7,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
     {
         ECDiffieHellman Create();
         ECDiffieHellman Create(int keySize);
-#if NETCOREAPP
+#if NET
         ECDiffieHellman Create(ECCurve curve);
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
         bool CanDeriveNewPublicKey { get; }
+        bool SupportsRawDerivation { get; }
+        bool SupportsSha3 { get; }
     }
 
     public static partial class ECDiffieHellmanFactory
@@ -27,7 +29,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             return s_provider.Create(keySize);
         }
 
-#if NETCOREAPP
+#if NET
         public static ECDiffieHellman Create(ECCurve curve)
         {
             return s_provider.Create(curve);
@@ -42,5 +44,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
 
         public static bool CanDeriveNewPublicKey => s_provider.CanDeriveNewPublicKey;
+
+        public static bool SupportsRawDerivation => s_provider.SupportsRawDerivation;
+
+        public static bool SupportsSha3 => s_provider.SupportsSha3;
     }
 }

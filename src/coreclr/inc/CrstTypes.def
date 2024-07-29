@@ -159,6 +159,7 @@ End
 Crst DebuggerMutex
     AcquiredBefore AvailableParamTypes
                    DynamicIL LoaderHeap ModuleLookupTable
+                   MethodDescBackpatchInfoTracker JitInlineTrackingMap CodeVersioning
 
     // Disabled per bug 581892
     // AcquiredBefore DebuggerController
@@ -184,7 +185,7 @@ End
 Crst DelegateToFPtrHash
 End
 
-Crst DomainLocalBlock
+Crst GenericDictionaryExpansion
     AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
 
@@ -192,7 +193,7 @@ Crst DynamicIL
 End
 
 Crst DynamicMT
-    AcquiredBefore IbcProfile
+    AcquiredBefore IbcProfile CodeVersioning
 End
 
 Crst EventStore
@@ -264,7 +265,7 @@ Crst InstMethodHashTable
 End
 
 Crst Interop
-    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
+    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection GenericDictionaryExpansion
                    HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
@@ -314,7 +315,7 @@ End
 
 Crst LoaderAllocator
     AcquiredBefore PinnedHeapHandleTable HandleTable UniqueStack ThreadStore
-    AcquiredAfter DomainLocalBlock
+    AcquiredAfter GenericDictionaryExpansion
 End
 
 Crst LoaderAllocatorReferences
@@ -363,10 +364,10 @@ End
 Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
-                   DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
+                   GenericDictionaryExpansion Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
-                   Module ModuleLookupTable PEImage SecurityStackwalkCache
+                   Module ModuleLookupTable PEImage
                    SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
@@ -393,18 +394,15 @@ End
 Crst RCWCleanupList
 End
 
-Crst ExternalObjectContextCache
-End
-
 Crst Reflection
     AcquiredBefore LoaderHeap UnresolvedClassLock
 End
 
 // Used to synchronize all rejit information stored in a given AppDomain.
 Crst CodeVersioning
-    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
+    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs PerfMap
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
-                ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx COMWrapperCache
+                ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx COMWrapperCache InteropData
 End
 
 // Used to synchronize all global requests (which may span multiple AppDomains) which add
@@ -426,9 +424,6 @@ Crst SavedExceptionInfo
 End
 
 Crst SaveModuleProfileData
-End
-
-Crst SecurityStackwalkCache
 End
 
 Crst SigConvert
@@ -481,6 +476,10 @@ End
 Crst SystemDomainDelayedUnloadList
 End
 
+Crst ThreadLocalStorageLock
+    AcquiredBefore ModuleLookupTable
+End
+
 Crst ThreadIdDispenser
 End
 
@@ -489,6 +488,7 @@ Crst ThreadStore
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
+                   JitInlineTrackingMap
 End
 
 Crst TypeIDMap
@@ -540,12 +540,12 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
+    AcquiredBefore CodeVersioning MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe
     AcquiredAfter PendingTypeLoadEntry
-    AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
+    AcquiredBefore ThreadIdDispenser ThreadStore GenericDictionaryExpansion InstMethodHashTable
 End
 
 Crst NotifyGdb
@@ -578,6 +578,6 @@ Crst PgoData
     AcquiredBefore LoaderHeap
 End
 
-Crst StaticBoxInit
-    AcquiredBefore LoaderHeap FrozenObjectHeap AssemblyLoader
+Crst PerfMap
+    AcquiredAfter CodeVersioning AssemblyList
 End

@@ -188,7 +188,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 if (sUri[0] == '#')
                 {
                     bool uriFound = false;
-                    if (sUri.IndexOf("#grammar:dictation", StringComparison.Ordinal) == 0 || sUri.IndexOf("#grammar:dictation#spelling", StringComparison.Ordinal) == 0)
+                    if (sUri.StartsWith("#grammar:dictation", StringComparison.Ordinal))
                     {
                         uriFound = true;
                     }
@@ -220,13 +220,13 @@ namespace System.Speech.Recognition.SrgsGrammar
             StringBuilder sb = new("SrgsRuleRef");
             if (_uri != null)
             {
-                sb.Append(" uri='");
+                sb.Append(" uri = '");
                 sb.Append(_uri.ToString());
                 sb.Append('\'');
             }
             else
             {
-                sb.Append(" special='");
+                sb.Append(" special = '");
                 sb.Append(_type.ToString());
                 sb.Append('\'');
             }

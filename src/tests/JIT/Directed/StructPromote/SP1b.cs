@@ -4,8 +4,9 @@
 
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
-class SP1b
+public class SP1b
 {
 
     // Struct in reg (2 ints)
@@ -30,7 +31,8 @@ class SP1b
         return Foo(i1, i0, s);  // r0 <= r1; r1 <= r0; r2 <= r3; r3 <= r2
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = M(1, 2, 3, 4);
         Console.WriteLine("M(1, 2, 3, 4) is {0}.", res);

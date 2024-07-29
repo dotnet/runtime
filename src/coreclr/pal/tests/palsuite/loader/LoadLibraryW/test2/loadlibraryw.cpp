@@ -6,7 +6,7 @@
 ** Source: loadlibraryw.c
 **
 ** Purpose: Negative test the LoadLibraryW API.
-**          Call LoadLibraryW with a not exist module Name 
+**          Call LoadLibraryW with a not exist module Name
 **
 **
 **============================================================*/
@@ -26,20 +26,20 @@ PALTEST(loader_LoadLibraryW_test2_paltest_loadlibraryw_test2, "loader/LoadLibrar
     {
         return FAIL;
     }
-    
+
     /* convert a normal string to a wide one */
     pwModuleName = convert((char *)pModuleName);
 
 
     /*try to load a not exist module */
-    ModuleHandle = LoadLibraryW(pwModuleName);
-    
+    ModuleHandle = LoadLibraryExW(pwModuleName);
+
     /* free the memory */
     free(pwModuleName);
-    
+
     if(NULL != ModuleHandle)
     {
-        Trace("Failed to call LoadLibraryW with a not exist mudule name, "
+        Trace("Failed to call LoadLibraryExW with a not exist mudule name, "
             "a NULL module handle is expected, but no NULL module handle "
             "is returned, error code=%u\n", GetLastError());
 

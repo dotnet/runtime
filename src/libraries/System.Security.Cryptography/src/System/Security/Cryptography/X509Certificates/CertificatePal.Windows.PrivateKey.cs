@@ -62,9 +62,21 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
+            static ECDiffieHellmanCng? FromCngKey(CngKey cngKey)
+            {
+                if (cngKey.AlgorithmGroup == CngAlgorithmGroup.ECDiffieHellman)
+                {
+                    return new ECDiffieHellmanCng(cngKey, transferOwnership: true);
+                }
+
+                // We might be getting an ECDSA key here. CNG allows ECDH to be either ECDH or ECDSA, however if
+                // the AlgorithmGroup is ECDSA, then it cannot be used for ECDH, even though both of them are ECC keys.
+                return null;
+            }
+
             return GetPrivateKey<ECDiffieHellman>(
                 csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
-                cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true)
+                FromCngKey
             );
         }
 
@@ -199,7 +211,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T?> createCng) where T : AsymmetricAlgorithm
         {
             using (SafeCertContextHandle certContext = GetCertContext())
             {
@@ -207,7 +219,15 @@ namespace System.Security.Cryptography.X509Certificates
                 if (ncryptKey != null)
                 {
                     CngKey cngKey = CngKey.OpenNoDuplicate(ncryptKey, cngHandleOptions);
-                    return createCng(cngKey);
+                    T? result = createCng(cngKey);
+
+                    // Dispose of cngKey if its ownership did not transfer to the underlying algorithm.
+                    if (result is null)
+                    {
+                        cngKey.Dispose();
+                    }
+
+                    return result;
                 }
             }
 
@@ -238,9 +258,8 @@ namespace System.Security.Cryptography.X509Certificates
             SafeCertContextHandle certificateContext,
             out CngKeyHandleOpenOptions handleOptions)
         {
-            Debug.Assert(certificateContext != null, "certificateContext != null");
-            Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid,
-                         "!certificateContext.IsClosed && !certificateContext.IsInvalid");
+            Debug.Assert(certificateContext != null);
+            Debug.Assert(!certificateContext.IsClosed && !certificateContext.IsInvalid);
 
             IntPtr privateKeyPtr;
 
@@ -353,7 +372,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private unsafe ICertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
+        private unsafe CertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
         {
             if (string.IsNullOrEmpty(cngKey.KeyName))
             {
@@ -550,7 +569,7 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
-        private unsafe ICertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
+        private unsafe CertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
             {
@@ -585,7 +604,7 @@ namespace System.Security.Cryptography.X509Certificates
             return pal;
         }
 
-        private ICertificatePal CopyWithEphemeralKey(CngKey cngKey)
+        private CertificatePal CopyWithEphemeralKey(CngKey cngKey)
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 

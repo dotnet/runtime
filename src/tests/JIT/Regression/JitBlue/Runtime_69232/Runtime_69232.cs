@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_69232
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem(new(1, 1, 1, 1)) ? 101 : 100;
     }

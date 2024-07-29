@@ -37,7 +37,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async void Write_To_UnseekableStream_Async()
+        public async Task Write_To_UnseekableStream_Async()
         {
             await using (MemoryStream inner = new MemoryStream())
             {

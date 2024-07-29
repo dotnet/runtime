@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.IO;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -45,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
-#if NET6_0_OR_GREATER
+#if NET
             yield return WrapArgs(DateOnly.MaxValue, 1, expectedJson: $@"{{""{DateOnly.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeOnly.MaxValue, 1, expectedJson: $@"{{""{TimeOnly.MaxValue:O}"":1}}");
 #endif
@@ -65,6 +66,11 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(ushort.MaxValue, 1);
             yield return WrapArgs(uint.MaxValue, 1);
             yield return WrapArgs(ulong.MaxValue, 1);
+#if NET
+            yield return WrapArgs(Half.MinValue, 1);
+            yield return WrapArgs(Int128.MinValue, 1);
+            yield return WrapArgs(UInt128.MaxValue, 1);
+#endif
 
             static object[] WrapArgs<TKey, TValue>(TKey key, TValue value, string? expectedJson = null)
             {
@@ -333,7 +339,15 @@ namespace System.Text.Json.Serialization.Tests
                     MyEnum.Bar, typeof(Dictionary<MyEnum, int>) },
                 new object[] { @"\u0042\u0061\u0072\u002c\u0042\u0061\u007a",
                     MyEnumFlags.Bar | MyEnumFlags.Baz, typeof(Dictionary<MyEnumFlags, int>) },
-                new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) }
+                new object[] { @"\u002b", '+', typeof(Dictionary<char, int>) },
+#if NET
+                new object[] { @"\u0033\u002e\u0031\u0032\u0035\u0065\u0034",
+                    (Half)3.125e4, typeof(Dictionary<Half, int>) },
+                new object[] { @"\u002D\u0031\u0037\u0030\u0031\u0034\u0031\u0031\u0038\u0033\u0034\u0036\u0030\u0034\u0036\u0039\u0032\u0033\u0031\u0037\u0033\u0031\u0036\u0038\u0037\u0033\u0030\u0033\u0037\u0031\u0035\u0038\u0038\u0034\u0031\u0030\u0035\u0037\u0032\u0038",
+                    Int128.MinValue, typeof(Dictionary<Int128, int>) },
+                new object[] { @"\u0033\u0034\u0030\u0032\u0038\u0032\u0033\u0036\u0036\u0039\u0032\u0030\u0039\u0033\u0038\u0034\u0036\u0033\u0034\u0036\u0033\u0033\u0037\u0034\u0036\u0030\u0037\u0034\u0033\u0031\u0037\u0036\u0038\u0032\u0031\u0031\u0034\u0035\u0035",
+                    UInt128.MaxValue, typeof(Dictionary<UInt128, int>) },
+#endif
             };
 
         public class MyPublicClass { }
@@ -366,7 +380,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class UnsupportedDictionaryWrapper
         {
-            public Dictionary<int[], int> Dictionary { get; set; }
+            public Dictionary<int[], int>? Dictionary { get; set; }
         }
 
         public class FixedNamingPolicy : JsonNamingPolicy
@@ -518,6 +532,40 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
+        public void NullKeyReturnedFromDictionary_ThrowsArgumentNullException()
+        {
+            // Via JsonSerializer.Serialize
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<object>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<string>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Uri>()));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(new NullKeyDictionary<Version>()));
+
+            // Via converter directly
+            var writer = new Utf8JsonWriter(Stream.Null);
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.ObjectConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.StringConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.UriConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+            Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.VersionConverter.WriteAsPropertyName(writer, null, JsonSerializerOptions.Default));
+        }
+
+        private sealed class NullKeyDictionary<TKey> : IReadOnlyDictionary<TKey, int> where TKey : class?
+        {
+            public int Count => 1;
+
+            public IEnumerator<KeyValuePair<TKey, int>> GetEnumerator()
+            {
+                yield return new KeyValuePair<TKey, int>(null!, 0);
+            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public IEnumerable<TKey> Keys => throw new NotImplementedException();
+            public IEnumerable<int> Values => throw new NotImplementedException();
+            public int this[TKey key] => throw new NotImplementedException();
+            public bool ContainsKey(TKey key) => throw new NotImplementedException();
+            public bool TryGetValue(TKey key, out int value) => throw new NotImplementedException();
+        }
+
         private class ComplexKeyConverter : JsonConverter<ClassWithIDictionary>
         {
             public override ClassWithIDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -527,4 +575,4 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 #endif
-        }
+}

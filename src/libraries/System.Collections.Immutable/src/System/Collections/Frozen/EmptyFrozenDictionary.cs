@@ -11,7 +11,7 @@ namespace System.Collections.Frozen
     internal sealed class EmptyFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
         where TKey : notnull
     {
-        internal EmptyFrozenDictionary() : base(EqualityComparer<TKey>.Default) { }
+        internal EmptyFrozenDictionary(IEqualityComparer<TKey> comparer) : base(comparer) { }
 
         /// <inheritdoc />
         private protected override TKey[] KeysCore => Array.Empty<TKey>();

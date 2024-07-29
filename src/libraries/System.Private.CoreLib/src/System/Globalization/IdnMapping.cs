@@ -410,9 +410,7 @@ namespace System.Globalization
                 else
                 {
                     // If it has some non-basic code points the input cannot start with xn--
-                    if (unicode.Length - iAfterLastDot >= c_strAcePrefix.Length &&
-                        unicode.Substring(iAfterLastDot, c_strAcePrefix.Length).Equals(
-                            c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
+                    if (unicode.AsSpan(iAfterLastDot).StartsWith(c_strAcePrefix, StringComparison.OrdinalIgnoreCase))
                         throw new ArgumentException(SR.Argument_IdnBadPunycode, nameof(unicode));
 
                     // Need to do ACE encoding
@@ -802,8 +800,8 @@ namespace System.Globalization
             }
 
             // Throw if we're too long
-            if (output.Length > c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1))
-                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[output.Length - 1]) ? 0 : 1)), nameof(ascii));
+            if (output.Length > c_defaultNameLimit - (IsDot(output[^1]) ? 0 : 1))
+                throw new ArgumentException(SR.Format(SR.Argument_IdnBadNameSize, c_defaultNameLimit - (IsDot(output[^1]) ? 0 : 1)), nameof(ascii));
 
             // Return our output string
             return output.ToString();

@@ -10,6 +10,29 @@
  *
  */
 
+#include "common.h"
+#include "gcenv.h"
+#include "../gc/env/gcenv.ee.h"
+#include "threadsuspend.h"
+#include "interoplibinterface.h"
+
+#ifdef FEATURE_COMINTEROP
+#include "runtimecallablewrapper.h"
+#include "comcallablewrapper.h"
+#endif // FEATURE_COMINTEROP
+
+#include "gctoclreventsink.h"
+#include "configuration.h"
+#include "genanalysis.h"
+#include "eventpipeadapter.h"
+
+// Finalizes a weak reference directly.
+extern void FinalizeWeakReference(Object* obj);
+
+extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+extern bool g_gcHeapHardLimitInfoSpecified;
+
+#include <generatedumpflags.h>
 #include "gcrefmap.h"
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
@@ -114,16 +137,28 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
+#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
-    if ((pTopFrame != ((Frame*)-1))
-        && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
-        // It is an InlinedCallFrame. Get SP from it.
+    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
+    {
+        // It is an InlinedCallFrame with active call. Get SP from it.
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
+#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
+#ifdef USE_FEF
+    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
+    // FEF, the code above would have to check if hardware exception is being handled and get the limit
+    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
+    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
+#else // USE_FEF
+    // It should be set to 0 in the ScanContext constructor
+    _ASSERTE(sc->stack_limit == 0);
+#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
@@ -256,22 +291,26 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
-
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            pThread->GetAllocContext(), sc->thread_number))
+        gc_alloc_context* palloc_context = pThread->GetAllocContext();
+        if (palloc_context != nullptr
+            && GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                palloc_context, sc->thread_number))
         {
+            STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
+
             sc->thread_under_crawl = pThread;
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif // FEATURE_EVENT_TRACE
             ScanStackRoots(pThread, fn, sc);
             ScanTailCallArgBufferRoots(pThread, fn, sc);
+            ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
             sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
+
+            STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
         }
-        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
     }
 
     // In server GC, we should be competing for marking the statics
@@ -399,13 +438,12 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThreadNULLOk();
-    if (!pThread)
+    if (!::GetThreadNULLOk())
     {
         return nullptr;
     }
 
-    return pThread->GetAllocContext();
+    return &t_runtime_thread_locals.alloc_context;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -422,7 +460,11 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            fn(pThread->GetAllocContext(), param);
+            gc_alloc_context* palloc_context = pThread->GetAllocContext();
+            if (palloc_context != nullptr)
+            {
+                fn(palloc_context, param);
+            }
         }
     }
     else
@@ -584,6 +626,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
 #endif // FEATURE_EVENT_TRACE
         ScanStackRoots(pThread, fn, sc);
         ScanTailCallArgBufferRoots(pThread, fn, sc);
+        ScanThreadStaticRoots(pThread, fn, sc);
 #ifdef FEATURE_EVENT_TRACE
         sc->dwEtwRootKind = kEtwGCRootKindOther;
 #endif // FEATURE_EVENT_TRACE
@@ -927,7 +970,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -939,7 +982,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         // Need to reupdate for changes to g_highest_address g_lowest_address
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
 
@@ -979,7 +1022,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //       (we care only about managed threads and suspend/resume will do full fences - good enough for us).
         //
 
-#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
         if (!is_runtime_suspended)
         {
@@ -1078,9 +1121,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     }
 }
 
-void GCToEEInterface::EnableFinalization(bool foundFinalizers)
+void GCToEEInterface::EnableFinalization(bool gcHasWorkForFinalizerThread)
 {
-    if (foundFinalizers || FinalizerThread::HaveExtraWorkForFinalizer())
+    if (gcHasWorkForFinalizerThread || FinalizerThread::HaveExtraWorkForFinalizer())
     {
         FinalizerThread::EnableFinalization();
     }
@@ -1185,10 +1228,16 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
       GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (strcmp(privateKey, "GCLOHThreshold") == 0)
+    if (g_gcHeapHardLimitInfoSpecified)
     {
-        *value = g_pConfig->GetGCLOHThreshold();
-        return true;
+        if ((g_gcHeapHardLimitInfo.heapHardLimit != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOH != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOH; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitSOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitSOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitLOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitLOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOHPercent; return true; }
+        if ((g_gcHeapHardLimitInfo.heapHardLimitPOHPercent != UINT64_MAX) && strcmp(privateKey, "GCHeapHardLimitPOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOHPercent; return true; }
     }
 
     WCHAR configKey[MaxConfigKeyLength];
@@ -1214,7 +1263,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
         WCHAR *end;
         uint64_t result;
         errno = 0;
-        result = _wcstoui64(out, &end, 16);
+        result = u16_strtoui64(out, &end, 16);
         // errno is ERANGE if the number is out of range, and end is set to pvalue if
         // no valid conversion exists.
         if (errno == ERANGE || end == out)
@@ -1341,7 +1390,7 @@ struct SuspendableThreadStubArguments
 {
     void* Argument;
     void (*ThreadStart)(void*);
-    Thread* Thread;
+    class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
 };
@@ -1685,20 +1734,20 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // To do this, we manaully check for events that are enabled via different provider/keywords/level.
     // Ex 1. GCJoin_V2 is what we use to check whether the GC keyword is enabled in verbose level in the public provider
     // Ex 2. SetGCHandle is what we use to check whether the GCHandle keyword is enabled in informational level in the public provider
-    // Refer to the comments in src/vm/gcenv.ee.h next to the EXTERN C definitions to see which events are enabled.
+    // Refer to the comments in src/gc/gcevents.h see which events are enabled.
 
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
-    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
-    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+    BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2() || UserEventsEventEnabledGCJoin_V2();
+    BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart();
 
-    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
-    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
-    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle();
+    BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange() || UserEventsEventEnabledGCGenerationRange();
+    BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle() || UserEventsEventEnabledSetGCHandle();
+    BOOL keyword_gchandle_prv_informational = EventXplatEnabledPrvSetGCHandle() || EventPipeEventEnabledPrvSetGCHandle() || UserEventsEventEnabledPrvSetGCHandle();
 
-    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
-    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
+    BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin() || UserEventsEventEnabledBGCBegin();
+    BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime() || UserEventsEventEnabledPinPlugAtGCTime();
 
-    int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose : 
+    int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
                                  ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);
     int publicProviderKeywords = (keyword_gc_informational ? GCEventKeyword_GC : GCEventKeyword_None) |
                                  (keyword_gchandle_informational ? GCEventKeyword_GCHandle : GCEventKeyword_None) |

@@ -9,6 +9,10 @@
 #include "gcinfo.h"
 #endif
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif // _MSC_VER
+
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
@@ -22,35 +26,33 @@
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
-
-//--------------------------------------------------------------------------------
-// It turns out, that ((size_t)x) << y == x, when y is not a literal
-//      and its value is BITS_PER_SIZE_T
-// I guess the processor only shifts of the right operand modulo BITS_PER_SIZE_T
-// In many cases, we want the above operation to yield 0,
-//      hence the following macros
-//--------------------------------------------------------------------------------
-__forceinline size_t SAFE_SHIFT_LEFT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x << 1) << (count - 1);
-}
-__forceinline size_t SAFE_SHIFT_RIGHT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x >> 1) >> (count - 1);
-}
-
 inline UINT32 CeilOfLog2(size_t x)
 {
+    // it is ok to use bsr or clz unconditionally
     _ASSERTE(x > 0);
-    UINT32 result = (x & (x - 1)) ? 1 : 0;
-    while (x != 1)
-    {
-        result++;
-        x >>= 1;
-    }
-    return result;
+
+    x = (x << 1) - 1;
+
+#ifdef TARGET_64BIT
+#ifdef _MSC_VER
+    DWORD result;
+    _BitScanReverse64(&result, (unsigned long)x);
+    return (UINT32)result;
+#else // _MSC_VER
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 63 ^ LZCNT here is equivalent to 63 - LZCNT since the LZCNT result is always between 0 and 63.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+    return (UINT32)63 ^ (UINT32)__builtin_clzl((unsigned long)x);
+#endif // _MSC_VER
+#else // TARGET_64BIT
+#ifdef _MSC_VER
+    DWORD result;
+    _BitScanReverse(&result, (unsigned int)x);
+    return (UINT32)result;
+#else // _MSC_VER
+    return (UINT32)31 ^ (UINT32)__builtin_clz((unsigned int)x);
+#endif // _MSC_VER
+#endif
 }
 
 enum GcSlotFlags
@@ -156,7 +158,7 @@ struct GcStackSlot
 // 10    RT_ByRef
 // 11    RT_Unset
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 // Slim Header:
 
@@ -783,8 +785,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
 #define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
 #define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x)^22) // Encode Frame pointer fp=$22 as zero
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^22)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 22 ? 0 : 1) // Encode Frame pointer fp=$22 as zero
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 22 : 3)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 0
@@ -804,8 +806,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define CODE_LENGTH_ENCBASE 8
 #define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
 #define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
-////TODO for LOONGARCH64.
-// FP/SP encoded as 0 or 2 ??
+// FP/SP encoded as 0 or 1.
 #define STACK_BASE_REGISTER_ENCBASE 2
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
@@ -828,6 +829,63 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define POINTER_SIZE_ENCBASE 3
 #define LIVESTATE_RLE_RUN_ENCBASE 2
 #define LIVESTATE_RLE_SKIP_ENCBASE 4
+
+#elif defined(TARGET_RISCV64)
+#ifndef TARGET_POINTER_SIZE
+#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#endif
+#define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
+#define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
+#define NORMALIZE_STACK_SLOT(x) ((x)>>3)   // GC Pointers are 8-bytes aligned
+#define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
+#define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
+#define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 8 ? 0 : 1) // Encode Frame pointer X8 as zero, sp/x2 as 1
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8 : 2)
+#define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
+#define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
+#define CODE_OFFSETS_NEED_NORMALIZATION 0
+#define NORMALIZE_CODE_OFFSET(x) (x)   // Instructions are 4 bytes long, but the safe-point
+#define DENORMALIZE_CODE_OFFSET(x) (x) // offsets are encoded with a -1 adjustment.
+#define NORMALIZE_REGISTER(x) (x)
+#define DENORMALIZE_REGISTER(x) (x)
+#define NORMALIZE_NUM_SAFE_POINTS(x) (x)
+#define DENORMALIZE_NUM_SAFE_POINTS(x) (x)
+#define NORMALIZE_NUM_INTERRUPTIBLE_RANGES(x) (x)
+#define DENORMALIZE_NUM_INTERRUPTIBLE_RANGES(x) (x)
+
+#define PSP_SYM_STACK_SLOT_ENCBASE 6
+#define GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE 6
+#define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
+#define GS_COOKIE_STACK_SLOT_ENCBASE 6
+#define CODE_LENGTH_ENCBASE 8
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
+#define STACK_BASE_REGISTER_ENCBASE 2
+// FP encoded as 0, SP as 1
+#define SIZE_OF_STACK_AREA_ENCBASE 3
+#define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
+#define SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE 4
+#define REVERSE_PINVOKE_FRAME_ENCBASE 6
+#define NUM_REGISTERS_ENCBASE 3
+#define NUM_STACK_SLOTS_ENCBASE 2
+#define NUM_UNTRACKED_SLOTS_ENCBASE 1
+#define NORM_PROLOG_SIZE_ENCBASE 5
+#define NORM_EPILOG_SIZE_ENCBASE 3
+#define NORM_CODE_OFFSET_DELTA_ENCBASE 3
+#define INTERRUPTIBLE_RANGE_DELTA1_ENCBASE 6
+#define INTERRUPTIBLE_RANGE_DELTA2_ENCBASE 6
+#define REGISTER_ENCBASE 3
+#define REGISTER_DELTA_ENCBASE 2
+#define STACK_SLOT_ENCBASE 6
+#define STACK_SLOT_DELTA_ENCBASE 4
+#define NUM_SAFE_POINTS_ENCBASE 3
+#define NUM_INTERRUPTIBLE_RANGES_ENCBASE 1
+#define NUM_EH_CLAUSES_ENCBASE 2
+#define POINTER_SIZE_ENCBASE 3
+#define LIVESTATE_RLE_RUN_ENCBASE 2
+#define LIVESTATE_RLE_SKIP_ENCBASE 4
+
 
 #else
 

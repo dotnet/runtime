@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.Compiler.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -17,7 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
@@ -43,5 +42,6 @@
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
+    <Compile Include="SwiftLoweringTests.cs" />
   </ItemGroup>
 </Project>

@@ -144,11 +144,10 @@ namespace System.Net
             throw new FormatException(SR.bad_endpoint_string);
         }
 
-        public override string ToString()
-        {
-            string format = (_address.AddressFamily == AddressFamily.InterNetworkV6) ? "[{0}]:{1}" : "{0}:{1}";
-            return string.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
-        }
+        public override string ToString() =>
+            _address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                string.Create(NumberFormatInfo.InvariantInfo, $"[{_address}]:{_port}") :
+                string.Create(NumberFormatInfo.InvariantInfo, $"{_address}:{_port}");
 
         public override SocketAddress Serialize() => new SocketAddress(Address, Port);
 
@@ -156,9 +155,9 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(socketAddress);
 
-            if (socketAddress.Family != AddressFamily)
+            if (socketAddress.Family is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6))
             {
-                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName, AddressFamily.ToString()), nameof(socketAddress));
+                throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName), nameof(socketAddress));
             }
 
             int minSize = AddressFamily == AddressFamily.InterNetworkV6 ? SocketAddress.IPv6AddressSize : SocketAddress.IPv4AddressSize;

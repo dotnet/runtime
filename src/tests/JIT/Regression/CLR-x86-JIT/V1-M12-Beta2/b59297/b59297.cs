@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class PerfNotIf
 {
@@ -41,9 +42,9 @@ public class PerfNotIf
         return i;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new PerfNotIf();
-        return 100;
     }
 }

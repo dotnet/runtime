@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
-    class TestClass
+    public class TestClass
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
-
             try
             {
                 throw new Exception();
@@ -37,7 +38,7 @@ namespace DefaultNamespace
                 }
                 return 100;
             }
+            return 101;
         }
-    };
-};
-
+    }
+}

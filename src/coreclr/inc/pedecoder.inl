@@ -200,9 +200,9 @@ inline void PEDecoder::Reset()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    m_base=NULL;
-    m_flags=NULL;
-    m_size=NULL;
+    m_base=(TADDR)0;
+    m_flags=0;
+    m_size=0;
     m_pNTHeaders=NULL;
     m_pCorHeader=NULL;
     m_pReadyToRunHeader=NULL;
@@ -383,36 +383,6 @@ inline DWORD PEDecoder::GetCheckSum() const
     return VAL32(FindNTHeaders()->OptionalHeader.CheckSum);
 }
 
-inline DWORD PEDecoder::GetFileAlignment() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //even though some data in OptionalHeader is different for 32 and 64,  this field is the same
-    return VAL32(FindNTHeaders()->OptionalHeader.FileAlignment);
-}
-
-inline DWORD PEDecoder::GetSectionAlignment() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //even though some data in OptionalHeader is different for 32 and 64,  this field is the same
-    return VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment);
-}
-
 inline WORD PEDecoder::GetMachine() const
 {
     CONTRACTL
@@ -440,42 +410,6 @@ inline WORD PEDecoder::GetCharacteristics() const
 
     return VAL16(FindNTHeaders()->FileHeader.Characteristics);
 }
-
-inline SIZE_T PEDecoder::GetSizeOfStackReserve() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfStackReserve);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfStackReserve);
-}
-
-
-inline SIZE_T PEDecoder::GetSizeOfStackCommit() const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (Has32BitNTHeaders())
-        return (SIZE_T) VAL32(GetNTHeaders32()->OptionalHeader.SizeOfStackCommit);
-    else
-        return (SIZE_T) VAL64(GetNTHeaders64()->OptionalHeader.SizeOfStackCommit);
-}
-
 
 inline SIZE_T PEDecoder::GetSizeOfHeapReserve() const
 {

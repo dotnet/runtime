@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static char[, , , ,][, ,] Static1(char param1, int param2, bool[,] param3,
@@ -18,7 +19,8 @@ public struct AA
 
 public class App
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         try
         {
@@ -35,7 +37,6 @@ public class App
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
     public static int m1;
     public static byte[,][, , ,] m2;

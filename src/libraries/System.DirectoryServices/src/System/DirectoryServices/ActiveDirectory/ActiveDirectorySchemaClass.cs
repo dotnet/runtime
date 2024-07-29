@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.ComponentModel;
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
+using System.Text;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -1082,7 +1082,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // This method retrieves all the values of a property (single valued) from the values
         // that were retrieved from the server.
         //
-        private ICollection GetValuesFromCache(string propertyName)
+        private ArrayList GetValuesFromCache(string propertyName)
         {
             // retrieve the properties from the server if necessary
             InitializePropertiesFromSchemaContainer();
@@ -1268,7 +1268,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // This method searches in the schema container for all non-defunct classes of the
         // specified name (ldapDisplayName).
         //
-        private ArrayList GetClasses(ICollection ldapDisplayNames)
+        private ArrayList GetClasses(ArrayList ldapDisplayNames)
         {
             ArrayList classes = new ArrayList();
             SearchResultCollection? resCol = null;
@@ -1340,7 +1340,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // This method searches in the schema container for all non-defunct properties of the
         // specified name (ldapDisplayName).
         //
-        private ArrayList GetProperties(ICollection ldapDisplayNames)
+        private ArrayList GetProperties(ArrayList ldapDisplayNames)
         {
             ArrayList properties = new ArrayList();
             SearchResultCollection? resCol = null;
@@ -1429,7 +1429,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // get the properties of the auxiliary classes
                 foreach (string auxSchemaClassName in GetValuesFromCache(PropertyManager.AuxiliaryClass))
                 {
-                    ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
+                    using ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
 
                     foreach (string property in auxSchemaClass.GetPropertyValuesRecursively(propertyNames))
                     {
@@ -1441,8 +1441,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 foreach (string auxSchemaClassName in GetValuesFromCache(PropertyManager.SystemAuxiliaryClass))
                 {
-                    ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
-
+                    using ActiveDirectorySchemaClass auxSchemaClass = new ActiveDirectorySchemaClass(_context, auxSchemaClassName, (DirectoryEntry?)null, null);
                     foreach (string property in auxSchemaClass.GetPropertyValuesRecursively(propertyNames))
                     {
                         if (!values.Contains(property))

@@ -22,13 +22,16 @@
 #define THUNK_SIZE  20
 #elif TARGET_ARM64
 #define THUNK_SIZE  16
+#elif TARGET_LOONGARCH64
+#define THUNK_SIZE  16
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
-#define THUNKS_MAP_SIZE 0x8000     // 32 K
+// 32 K or OS page
+#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -54,46 +57,52 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 }
 #endif
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
+FCIMPL0(int, RhpGetNumThunkBlocksPerMapping)
 {
-    static_assert((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
+    ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ())
+FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
     return min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
         (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
     );
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ())
+FCIMPL0(int, RhpGetThunkSize)
 {
     return THUNK_SIZE;
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* pThunkStubAddress))
+FCIMPL1(void*, RhpGetThunkDataBlockAddress, void* pThunkStubAddress)
 {
     return (void*)(((uintptr_t)pThunkStubAddress & ~(OS_PAGE_SIZE - 1)) + THUNKS_MAP_SIZE);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddress))
+FCIMPL1(void*, RhpGetThunkStubsBlockAddress, void* pThunkDataAddress)
 {
     return (void*)(((uintptr_t)pThunkDataAddress & ~(OS_PAGE_SIZE - 1)) - THUNKS_MAP_SIZE);
 }
+FCIMPLEND
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
+FCIMPL0(int, RhpGetThunkBlockSize)
 {
     return OS_PAGE_SIZE;
 }
+FCIMPLEND
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
 #ifdef WIN32
 
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -107,7 +116,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
     // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
     // changed anymore.
-    void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
+    void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
         return NULL;
 
@@ -117,12 +126,18 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     if (!PalVirtualProtect(pDataSection, THUNKS_MAP_SIZE, PAGE_READWRITE) ||
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+    RhFailFast(); // we don't expect to get here on these platforms
+#elif defined(HOST_OSX)
     pthread_jit_write_protect_np(0);
+#else
+    #error "Unknown OS"
+#endif
 #endif
 #endif
 
@@ -218,6 +233,28 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD43E0000;
             pCurrentThunkAddress += 4;
+
+#elif TARGET_LOONGARCH64
+
+            //pcaddi    $t7, <delta PC to thunk data address>
+            //pcaddi    $t8, -
+            //ld.d      $t8, $t8, <delta to get to last qword in data page>
+            //jirl      $r0, $t8, 0
+
+            int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            *((uint32_t*)pCurrentThunkAddress) = 0x18000013 | (((delta & 0x3FFFFC) >> 2) << 5);
+            pCurrentThunkAddress += 4;
+
+            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            *((uint32_t*)pCurrentThunkAddress) = 0x18000014 | (((delta & 0x3FFFFC) >> 2) << 5);
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x28C00294;
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x4C000280;
+            pCurrentThunkAddress += 4;
+
 #else
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
@@ -226,12 +263,18 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         }
     }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
+#if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+    RhFailFast(); // we don't expect to get here on these platforms
+#elif defined(HOST_OSX)
     pthread_jit_write_protect_np(1);
+#else
+    #error "Unknown OS"
+#endif
 #else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
-        PalVirtualFree(pNewMapping, 0, MEM_RELEASE);
+        PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
         return NULL;
     }
 #endif
@@ -247,13 +290,13 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
 
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
-COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* addr));
-COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* addr));
+FCDECL0(int, RhpGetThunkBlockCount);
+FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL0(int, RhpGetThunkBlockSize);
+FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
+FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
     static int nextThunkDataMapping = 0;
 
@@ -275,7 +318,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     {
         int thunkDataSize = thunkDataMappingSize * thunkDataMappingCount;
 
-        g_pThunkStubData = (uintptr_t)PalVirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
+        g_pThunkStubData = (uintptr_t)VirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
 
         if (g_pThunkStubData == NULL)
         {
@@ -285,7 +328,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
     void* pThunkDataBlock = (int8_t*)g_pThunkStubData + nextThunkDataMapping * thunkDataMappingSize;
 
-    if (PalVirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
+    if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
         return NULL;
     }
@@ -300,13 +343,13 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
 #else // FEATURE_FIXED_POOL_THUNKS
 
-COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunksPerBlock, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkSize, ());
-COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
+FCDECL0(void*, RhpGetThunksBase);
+FCDECL0(int, RhpGetNumThunkBlocksPerMapping);
+FCDECL0(int, RhpGetNumThunksPerBlock);
+FCDECL0(int, RhpGetThunkSize);
+FCDECL0(int, RhpGetThunkBlockSize);
 
-EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
     static void* pThunksTemplateAddress = NULL;
 
@@ -316,6 +359,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
     int thunkBlockSize = RhpGetThunkBlockSize();
     int templateSize = thunkBlocksPerMapping * thunkBlockSize;
 
+#ifndef TARGET_APPLE // Apple platforms cannot use the initial template
     if (pThunksTemplateAddress == NULL)
     {
         // First, we use the thunks directly from the thunks template sections in the module until all
@@ -324,12 +368,13 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         pThunkMap = pThunksTemplateAddress;
     }
     else
+#endif
     {
         // We've already used the thunks template in the module for some previous thunks, and we
         // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have
         // more thunks
 
-        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
+        uint8_t* pModuleBase = (uint8_t*)PalGetModuleHandleFromPointer(RhpGetThunksBase());
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
@@ -344,7 +389,7 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         thunkBlocksPerMapping))
     {
         if (pThunkMap != pThunksTemplateAddress)
-            PalFreeThunksFromTemplate(pThunkMap);
+            PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
         return NULL;
     }

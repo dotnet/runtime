@@ -6,15 +6,14 @@
 
 namespace System.Net
 {
+    [System.ObsoleteAttribute("AuthenticationManager is not supported. Methods will no-op or throw PlatformNotSupportedException.", DiagnosticId="SYSLIB0009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public partial class AuthenticationManager
     {
         internal AuthenticationManager() { }
         public static System.Net.ICredentialPolicy? CredentialPolicy { get { throw null; } set { } }
         public static System.Collections.Specialized.StringDictionary CustomTargetNameDictionary { get { throw null; } }
         public static System.Collections.IEnumerator RegisteredModules { get { throw null; } }
-        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? Authenticate(string challenge, System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
-        [System.ObsoleteAttribute("The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0009", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.Authorization? PreAuthenticate(System.Net.WebRequest request, System.Net.ICredentials credentials) { throw null; }
         public static void Register(System.Net.IAuthenticationModule authenticationModule) { }
         public static void Unregister(System.Net.IAuthenticationModule authenticationModule) { }
@@ -34,6 +33,7 @@ namespace System.Net
     public partial class FileWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
         [System.ObsoleteAttribute("Serialization has been deprecated for FileWebRequest.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected FileWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string? ConnectionGroupName { get { throw null; } set { } }
         public override long ContentLength { get { throw null; } set { } }
@@ -63,6 +63,7 @@ namespace System.Net
     public partial class FileWebResponse : System.Net.WebResponse, System.Runtime.Serialization.ISerializable
     {
         [System.ObsoleteAttribute("Serialization has been deprecated for FileWebResponse.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected FileWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override long ContentLength { get { throw null; } }
         public override string ContentType { get { throw null; } }
@@ -178,6 +179,7 @@ namespace System.Net
     public partial class HttpWebRequest : System.Net.WebRequest, System.Runtime.Serialization.ISerializable
     {
         [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected HttpWebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? Accept { get { throw null; } set { } }
         public System.Uri Address { get { throw null; } }
@@ -252,6 +254,7 @@ namespace System.Net
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HttpWebResponse() { }
         [System.ObsoleteAttribute("Serialization has been deprecated for HttpWebResponse.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected HttpWebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public string? CharacterSet { get { throw null; } }
         public string ContentEncoding { get { throw null; } }
@@ -295,14 +298,20 @@ namespace System.Net
     public partial class ProtocolViolationException : System.InvalidOperationException, System.Runtime.Serialization.ISerializable
     {
         public ProtocolViolationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ProtocolViolationException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public ProtocolViolationException(string? message) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class WebException : System.InvalidOperationException, System.Runtime.Serialization.ISerializable
     {
         public WebException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WebException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public WebException(string? message) { }
         public WebException(string? message, System.Exception? innerException) { }
@@ -310,6 +319,8 @@ namespace System.Net
         public WebException(string? message, System.Net.WebExceptionStatus status) { }
         public System.Net.WebResponse? Response { get { throw null; } }
         public System.Net.WebExceptionStatus Status { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
@@ -342,6 +353,7 @@ namespace System.Net
         [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WebRequest() { }
         [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WebRequest(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public System.Net.Security.AuthenticationLevel AuthenticationLevel { get { throw null; } set { } }
         public virtual System.Net.Cache.RequestCachePolicy? CachePolicy { get { throw null; } set { } }
@@ -423,6 +435,7 @@ namespace System.Net
     {
         protected WebResponse() { }
         [System.ObsoleteAttribute("Serialization has been deprecated for WebResponse.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WebResponse(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public virtual long ContentLength { get { throw null; } set { } }
         public virtual string ContentType { get { throw null; } set { } }
@@ -439,6 +452,63 @@ namespace System.Net
         public virtual System.IO.Stream GetResponseStream() { throw null; }
         [System.ObsoleteAttribute("Serialization has been deprecated for WebResponse.")]
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
+    }
+    public delegate System.Net.IPEndPoint BindIPEndPoint(System.Net.ServicePoint servicePoint, System.Net.IPEndPoint remoteEndPoint, int retryCount);
+    [System.FlagsAttribute]
+    public enum SecurityProtocolType
+    {
+        SystemDefault = 0,
+        [System.ObsoleteAttribute("SecurityProtocolType.Ssl3 has been deprecated and is not supported.")]
+        Ssl3 = 48,
+        Tls = 192,
+        Tls11 = 768,
+        Tls12 = 3072,
+        Tls13 = 12288,
+    }
+    public partial class ServicePoint
+    {
+        internal ServicePoint() { }
+        public System.Uri Address { get { throw null; } }
+        public System.Net.BindIPEndPoint? BindIPEndPointDelegate { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate? Certificate { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X509Certificate? ClientCertificate { get { throw null; } }
+        public int ConnectionLeaseTimeout { get { throw null; } set { } }
+        public int ConnectionLimit { get { throw null; } set { } }
+        public string ConnectionName { get { throw null; } }
+        public int CurrentConnections { get { throw null; } }
+        public bool Expect100Continue { get { throw null; } set { } }
+        public System.DateTime IdleSince { get { throw null; } }
+        public int MaxIdleTime { get { throw null; } set { } }
+        public virtual System.Version ProtocolVersion { get { throw null; } }
+        public int ReceiveBufferSize { get { throw null; } set { } }
+        public bool SupportsPipelining { get { throw null; } }
+        public bool UseNagleAlgorithm { get { throw null; } set { } }
+        public bool CloseConnectionGroup(string connectionGroupName) { throw null; }
+        public void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { }
+    }
+    [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public partial class ServicePointManager
+    {
+        internal ServicePointManager() { }
+        public const int DefaultNonPersistentConnectionLimit = 4;
+        public const int DefaultPersistentConnectionLimit = 2;
+        public static bool CheckCertificateRevocationList { get { throw null; } set { } }
+        public static int DefaultConnectionLimit { get { throw null; } set { } }
+        public static int DnsRefreshTimeout { get { throw null; } set { } }
+        public static bool EnableDnsRoundRobin { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        public static System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } }
+        public static bool Expect100Continue { get { throw null; } set { } }
+        public static int MaxServicePointIdleTime { get { throw null; } set { } }
+        public static int MaxServicePoints { get { throw null; } set { } }
+        public static bool ReusePort { get { throw null; } set { } }
+        public static System.Net.SecurityProtocolType SecurityProtocol { get { throw null; } set { } }
+        public static System.Net.Security.RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get { throw null; } set { } }
+        public static bool UseNagleAlgorithm { get { throw null; } set { } }
+        public static System.Net.ServicePoint FindServicePoint(string uriString, System.Net.IWebProxy? proxy) { throw null; }
+        public static System.Net.ServicePoint FindServicePoint(System.Uri address) { throw null; }
+        public static System.Net.ServicePoint FindServicePoint(System.Uri address, System.Net.IWebProxy? proxy) { throw null; }
+        public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { }
     }
 }
 namespace System.Net.Cache

@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Security;
-using System.Threading;
-using System.Xml.Schema;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -934,12 +934,12 @@ namespace System.Xml
             _ps.appendMode = true;
             await ReadDataAsync().ConfigureAwait(false);
         }
-        private Task InitTextReaderInputAsync(string baseUriStr, TextReader input)
+        private Task<int> InitTextReaderInputAsync(string baseUriStr, TextReader input)
         {
             return InitTextReaderInputAsync(baseUriStr, null, input);
         }
 
-        private Task InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
+        private Task<int> InitTextReaderInputAsync(string baseUriStr, Uri? baseUri, TextReader input)
         {
             Debug.Assert(_ps.charPos == 0 && _ps.charsUsed == 0 && _ps.stream == null);
             Debug.Assert(baseUriStr != null);

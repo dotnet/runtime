@@ -2,11 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
-    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
-
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
@@ -18,20 +16,62 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <NoWarn>$(NoWarn);IL1005;IL3002</NoWarn>
+    <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
+    <NoWarn>$(NoWarn);IL1005;IL2122;IL3000;IL3001;IL3002;IL3003;IL3050;IL3051;IL3052;IL3053</NoWarn>
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
-    <!-- Forced by ILLink targets; we should fix the SDK -->
+    <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
+  <Target Name="_FixIlcTargetTriple"
+          AfterTargets="SetupOSSpecificProps"
+          Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">
+    <!-- Compute CrossCompileRid, and copy the downstream logic as-is. -->
+    <PropertyGroup>
+      <CrossCompileRid>$(RuntimeIdentifier)</CrossCompileRid>
+
+      <CrossCompileArch />
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
+
+      <TargetTriple />
+      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetOS)' != 'osx' and '$(TargetTriple)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true'">
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <DefineConstants>$(DefineConstants);TEST_READY_TO_RUN_COMPILED</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
@@ -39,11 +79,10 @@
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
 
-    <!-- Tests are doing private reflection. -->
-    <IlcArg Include="--nometadatablocking" />
-
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <TrimmerRootAssembly Include="TestUtilities" />
   </ItemGroup>
 
   <ItemGroup>
@@ -71,6 +110,114 @@
     </ItemGroup>
   </Target>
 
+  <!--
+      For TestReadyToRun, we need the whole framework to be R2R-compiled besides
+      the actual test assembly. However, this is a very lengthy process and it's
+      unnecessary in this case because we already have an R2R-compiled framework.
+      So, we have to tell the build that we already have these binaries so that it
+      doesn't build them again for each test.
+  -->
+  <Target Name="ExcludeExistingR2RBinaries"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsObjDir)Microsoft.NETCore.App.Bundle/</ArtifactsNetCoreAppBundlePath>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)$(Configuration)/$(NetCoreAppCurrent)/$(OutputRID)/output/</ArtifactsNetCoreAppBundlePath>
+      <ArtifactsNetCoreAppBundlePath>$(ArtifactsNetCoreAppBundlePath)shared/$(MicrosoftNetCoreAppFrameworkName)/$(PackageVersion)/</ArtifactsNetCoreAppBundlePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+      For TestReadyToRun, each crossgen'd assembly needs to reference the whole
+      framework. For this, it looks at the contents of the same list that contains
+      all the assemblies we're going to R2R-compile. However, since we removed those
+      belonging to the framework we have ready to use in the previous target, then
+      the references list generated in _PrepareForReadyToRunCompilation is incomplete.
+      So, we add those missing assemblies only to the references list in this target.
+  -->
+  <Target Name="AddExistingR2RBinariesReferencesForCrossgen2"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <_ReadyToRunAssembliesToReference Include="@(_BundleAssembliesToCopy)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+      For TestReadyToRun, debugging binaries bloat the test sizes way too much and
+      makes the Helix machines run out of disk. Since we don't need them for the
+      TestReadyToRun test runs, we remove them from the list that is later on copied
+      to the final location.
+  -->
+  <Target Name="RemoveDbgBinsFromTestR2ROutput"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="_CopyFilesMarkedCopyLocal">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths
+          Remove="@(ReferenceCopyLocalPaths->WithMetadataValue('Extension', '.dbg'))" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+      Very similarly to the previous target, we need to get rid of the debugging
+      binaries from the publishing directory as well.
+  -->
+  <Target Name="RemoveDbgBinsFromTestR2RPublish"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          BeforeTargets="_CopyResolvedFilesToPublishPreserveNewest">
+    <ItemGroup>
+      <_ResolvedFileToPublishPreserveNewest
+          Remove="@(_ResolvedFileToPublishPreserveNewest->WithMetadataValue('Extension', '.dbg'))" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+      As explained in Target 'ExcludeExistingR2RBinaries' up above, for TestReadyToRun
+      we need the fully R2R-compiled framework, but we already have it elsewhere. So,
+      once the test's specific stuff is constructed, we copy the R2R-compiled framework
+      to the test's self-contained directory so the test can use it when called.
+  -->
+  <Target Name="CopyExistingR2RBinaries"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="_CopyResolvedFilesToPublishAlways">
+
+    <Copy SourceFiles="@(_BundleAssembliesToCopy)"
+          DestinationFolder="$(PublishDir)"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForPublishFilesIfPossible)"
+          UseSymboliclinksIfPossible="$(CreateSymbolicLinksForPublishFilesIfPossible)" />
+
+  </Target>
+
+  <!--
+      There are a few tests that need a 'live-ref-pack', which is missing from the
+      publish directory in TestReadyToRun builds. This target copies it there.
+  -->
+  <Target Name="CopyLiveRefPackIfPresent"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="CopyExistingR2RBinaries">
+
+    <ItemGroup>
+      <OutDirLiveRefPackFiles Include="$(OutDir)live-ref-pack/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(OutDirLiveRefPackFiles)"
+          DestinationFolder="$(PublishDir)live-ref-pack"
+          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(CreateHardLinksForPublishFilesIfPossible)"
+          UseSymboliclinksIfPossible="$(CreateSymbolicLinksForPublishFilesIfPossible)" />
+
+  </Target>
+
   <Target Name="__UpdateExcludedAssembliesFromSingleFile"
           Inputs="ExcludeFromSingleFile"
           Outputs="ResolvedFileToPublish"
@@ -92,16 +239,22 @@
   <Target Name="LocateNativeCompiler"
           Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      </PropertyGroup>
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    </PropertyGroup>
 
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="true"
-            ConsoleToMsBuild="true"
-            StandardOutputImportance="Low">
-        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
-      </Exec>
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
+    </Exec>
+
+    <PropertyGroup>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
+    </PropertyGroup>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // taking address of managed types
-
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdNetworkInterface : UnixNetworkInterface
@@ -31,7 +29,7 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                _operationalStatus = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceHasLink) != 0 ?  OperationalStatus.Up : OperationalStatus.Down;
+                _operationalStatus = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceHasLink) != 0 ? OperationalStatus.Up : OperationalStatus.Down;
             }
 
             _supportsMulticast = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceSupportsMulticast) != 0;

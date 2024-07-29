@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [RuntimeExport("ObjectiveCMarshalTryGetTaggedMemory")]
-        static bool TryGetTaggedMemory(IntPtr pObj, IntPtr* tagged)
+        private static bool TryGetTaggedMemory(IntPtr pObj, IntPtr* tagged)
         {
             // We are paused in the GC, so this is safe.
             object obj = Unsafe.AsRef<object>((void*)&pObj);
@@ -71,15 +71,37 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [RuntimeExport("ObjectiveCMarshalGetIsTrackedReferenceCallback")]
-        static delegate* unmanaged[SuppressGCTransition]<void*, int> GetIsTrackedReferenceCallback()
+        private static delegate* unmanaged[SuppressGCTransition]<void*, int> GetIsTrackedReferenceCallback()
         {
             return s_IsTrackedReferenceCallback;
         }
 
         [RuntimeExport("ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback")]
-        static delegate* unmanaged[SuppressGCTransition]<void*, void> GetOnEnteredFinalizerQueueCallback()
+        private static delegate* unmanaged[SuppressGCTransition]<void*, void> GetOnEnteredFinalizerQueueCallback()
         {
             return s_OnEnteredFinalizerQueueCallback;
+        }
+
+        [RuntimeExport("ObjectiveCMarshalGetUnhandledExceptionPropagationHandler")]
+#pragma warning disable IDE0060
+        private static IntPtr ObjectiveCMarshalGetUnhandledExceptionPropagationHandler(object exceptionObj, IntPtr ip, out IntPtr context)
+#pragma warning restore IDE0060
+        {
+            if (s_unhandledExceptionPropagationHandler == null)
+            {
+                context = IntPtr.Zero;
+                return IntPtr.Zero;
+            }
+
+            Exception? ex = exceptionObj as Exception;
+            if (ex == null)
+                Environment.FailFast("Exceptions must derive from the System.Exception class");
+
+            // TODO: convert IP to RuntimeMethodHandle.
+            // https://github.com/dotnet/runtime/issues/80985
+            RuntimeMethodHandle lastMethod = default;
+
+            return (IntPtr)s_unhandledExceptionPropagationHandler(ex, lastMethod, out context);
         }
 
         private static bool TryInitializeReferenceTracker(
@@ -109,7 +131,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
             }
 
-            if (!obj.GetEETypePtr().IsTrackedReferenceWithFinalizer)
+            if (!obj.GetMethodTable()->IsTrackedReferenceWithFinalizer)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
             }
@@ -120,14 +142,14 @@ namespace System.Runtime.InteropServices.ObjectiveC
             return RuntimeImports.RhHandleAllocRefCounted(obj);
         }
 
-        class ObjcTrackingInformation
+        internal class ObjcTrackingInformation
         {
             // This matches the CoreCLR implementation. See
             // InteropSyncBlockInfo::m_taggedAlloc in syncblk.h .
-            const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+            private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
 
             internal IntPtr _memory;
-            IntPtr _longWeakHandle;
+            private IntPtr _longWeakHandle;
 
             public ObjcTrackingInformation()
             {

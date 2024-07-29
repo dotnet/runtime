@@ -45,12 +45,17 @@ namespace System.Formats.Asn1
     public partial class AsnContentException : System.Exception
     {
         public AsnContentException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected AsnContentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AsnContentException(string? message) { }
         public AsnContentException(string? message, System.Exception? inner) { }
     }
     public static partial class AsnDecoder
     {
+        public static int? DecodeLength(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int bytesConsumed) { throw null; }
         public static byte[] ReadBitString(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int unusedBitCount, out int bytesConsumed, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static bool ReadBoolean(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int bytesConsumed, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static string ReadCharacterString(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.UniversalTagNumber encodingType, out int bytesConsumed, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
@@ -70,6 +75,7 @@ namespace System.Formats.Asn1
         public static void ReadSequence(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int contentOffset, out int contentLength, out int bytesConsumed, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static void ReadSetOf(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int contentOffset, out int contentLength, out int bytesConsumed, bool skipSortOrderValidation = false, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static System.DateTimeOffset ReadUtcTime(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int bytesConsumed, int twoDigitYearMax = 2049, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
+        public static bool TryDecodeLength(System.ReadOnlySpan<byte> source, System.Formats.Asn1.AsnEncodingRules ruleSet, out int? decodedLength, out int bytesConsumed) { throw null; }
         public static bool TryReadBitString(System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.Formats.Asn1.AsnEncodingRules ruleSet, out int unusedBitCount, out int bytesConsumed, out int bytesWritten, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static bool TryReadCharacterString(System.ReadOnlySpan<byte> source, System.Span<char> destination, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.UniversalTagNumber encodingType, out int bytesConsumed, out int charsWritten, System.Formats.Asn1.Asn1Tag? expectedTag = default(System.Formats.Asn1.Asn1Tag?)) { throw null; }
         public static bool TryReadCharacterStringBytes(System.ReadOnlySpan<byte> source, System.Span<byte> destination, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.Asn1Tag expectedTag, out int bytesConsumed, out int bytesWritten) { throw null; }
@@ -96,6 +102,7 @@ namespace System.Formats.Asn1
         public AsnReader(System.ReadOnlyMemory<byte> data, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.AsnReaderOptions options = default(System.Formats.Asn1.AsnReaderOptions)) { }
         public bool HasData { get { throw null; } }
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
+        public System.Formats.Asn1.AsnReader Clone() { throw null; }
         public System.ReadOnlyMemory<byte> PeekContentBytes() { throw null; }
         public System.ReadOnlyMemory<byte> PeekEncodedValue() { throw null; }
         public System.Formats.Asn1.Asn1Tag PeekTag() { throw null; }

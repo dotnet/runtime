@@ -36,9 +36,9 @@ int ns::GetFullLength(                  // Number of chars in full name.
 
     int iLen = 1;                       // Null terminator.
     if (szNameSpace)
-        iLen += (int)wcslen(szNameSpace);
+        iLen += (int)u16_strlen(szNameSpace);
     if (szName)
-        iLen += (int)wcslen(szName);
+        iLen += (int)u16_strlen(szName);
     if (szNameSpace && *szNameSpace && szName && *szName)
         ++iLen;
     return iLen;
@@ -81,7 +81,7 @@ WCHAR *ns::FindSep(                     // Pointer to separator or null.
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(szPath);
-    WCHAR *ptr = (WCHAR*)wcsrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
+    WCHAR *ptr = (WCHAR*)u16_strrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
     if((ptr == NULL) || (ptr == szPath)) return NULL;
     if(*(ptr - 1) == NAMESPACE_SEPARATOR_WCHAR) // here ptr is at least szPath+1
         --ptr;
@@ -229,7 +229,7 @@ int ns::SplitPath(                      // true ok, false trunction.
             ++ptr;
         else
             ptr = szPath;
-        iLen = (int)wcslen(ptr);
+        iLen = (int)u16_strlen(ptr);
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;
@@ -403,11 +403,11 @@ int ns::MakePath(                       // true ok, false truncation.
         int count;
 
         // We use cBuffer - 2 to account for the '.' and at least a 1 character name below.
-        count = WszMultiByteToWideChar(CP_UTF8, 0, szNamespace, -1, szOut, cchChars-2);
+        count = MultiByteToWideChar(CP_UTF8, 0, szNamespace, -1, szOut, cchChars-2);
         if (count == 0)
             return false; // Supply a bigger buffer!
 
-        // buffer access is bounded: WszMultiByteToWideChar returns 0 if access doesn't fit in range
+        // buffer access is bounded: MultiByteToWideChar returns 0 if access doesn't fit in range
 #ifdef _PREFAST_
         #pragma warning( suppress: 26015 )
 #endif
@@ -417,7 +417,7 @@ int ns::MakePath(                       // true ok, false truncation.
     }
 
     if (((cchChars == 0) && (szName != NULL) && (*szName != '\0')) ||
-        (WszMultiByteToWideChar(CP_UTF8, 0, szName, -1, szOut, cchChars) == 0))
+        (MultiByteToWideChar(CP_UTF8, 0, szName, -1, szOut, cchChars) == 0))
         return false; // supply a bigger buffer!
     return true;
 }   // int ns::MakePath()
@@ -473,9 +473,9 @@ int ns::MakePath(                       // true ok, false out of memory
 
     int iLen = 2;
     if (szNameSpace)
-        iLen += (int)wcslen(szNameSpace);
+        iLen += (int)u16_strlen(szNameSpace);
     if (szName)
-        iLen += (int)wcslen(szName);
+        iLen += (int)u16_strlen(szName);
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));
     if (!szOut)
         return false;
@@ -529,7 +529,7 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
 
     int iCopyMax = 0;
     _ASSERTE(pBuffer);
-    *pBuffer = NULL;
+    *pBuffer = W('\0');
 
     if (szTypeName && *szTypeName != W('\0'))
     {
@@ -586,9 +586,9 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
     int iTypeName = 0;
     int iAssemblyName = 0;
     if (szTypeName)
-        iTypeName = (int)wcslen(szTypeName);
+        iTypeName = (int)u16_strlen(szTypeName);
     if (szAssemblyName)
-        iAssemblyName = (int)wcslen(szAssemblyName);
+        iAssemblyName = (int)u16_strlen(szAssemblyName);
 
     int iLen = ASSEMBLY_SEPARATOR_LEN + iTypeName + iAssemblyName + 1; // Space for null terminator
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));

@@ -28,30 +28,40 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
+        static partial void TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite, ref bool cloned);
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             long fileLength;
             UnixFileMode filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
+
+            // Try to clone the file first.
+            bool cloned = false;
+            TryCloneFile(sourceFullPath, destFullPath, overwrite, ref cloned);
+            if (cloned)
+            {
+                return;
+            }
+
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                                             FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
-                                            CreateOpenException);
+                                            CreateOpenExceptionForCopyFile);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
-
-            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
-            {
-                // If the destination path points to a directory, we throw to match Windows behaviour.
-                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
-                {
-                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
-                }
-
-                return null; // Let SafeFileHandle create the exception for this error.
-            }
         }
 
-#pragma warning disable IDE0060
+        private static Exception? CreateOpenExceptionForCopyFile(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+        {
+            // If the destination path points to a directory, we throw to match Windows behaviour.
+            if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+            {
+                return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+            }
+
+            return null; // Let SafeFileHandle create the exception for this error.
+        }
+
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -61,7 +71,6 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
-#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {

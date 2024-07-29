@@ -11,32 +11,6 @@
 class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
-struct EETypeRef;
-
-#if !defined(USE_PORTABLE_HELPERS)
-#define SUPPORTS_WRITABLE_DATA 1
-#endif
-
-//-------------------------------------------------------------------------------------------------
-// Array of these represents the interfaces implemented by a type
-
-class EEInterfaceInfo
-{
-  public:
-    MethodTable * GetInterfaceEEType()
-    {
-        return ((UIntTarget)m_pInterfaceEEType & ((UIntTarget)1)) ?
-               *(MethodTable**)((UIntTarget)m_ppInterfaceEETypeViaIAT & ~((UIntTarget)1)) :
-               m_pInterfaceEEType;
-    }
-
-  private:
-    union
-    {
-        MethodTable *    m_pInterfaceEEType;         // m_uFlags == InterfaceFlagNormal
-        MethodTable **   m_ppInterfaceEETypeViaIAT;  // m_uFlags == InterfaceViaIATFlag
-    };
-};
 
 //-------------------------------------------------------------------------------------------------
 // The subset of TypeFlags that Redhawk knows about at runtime
@@ -75,6 +49,7 @@ enum EETypeElementType : uint8_t
     ElementType_SzArray = 0x18,
     ElementType_ByRef = 0x19,
     ElementType_Pointer = 0x1A,
+    ElementType_FunctionPointer = 0x1B,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -85,7 +60,6 @@ enum EETypeElementType : uint8_t
 // GetFieldOffset() APIs.
 enum EETypeField
 {
-    ETF_InterfaceMap,
     ETF_TypeManagerIndirection,
     ETF_WritableData,
     ETF_Finalizer,
@@ -118,15 +92,9 @@ private:
         {
             // Kinds.CanonicalEEType
             MethodTable*     m_pBaseType;
-            MethodTable**    m_ppBaseTypeViaIAT;
-
-            // Kinds.ClonedEEType
-            MethodTable** m_pCanonicalType;
-            MethodTable** m_ppCanonicalTypeViaIAT;
 
             // Kinds.ParameterizedEEType
             MethodTable*  m_pRelatedParameterType;
-            MethodTable** m_ppRelatedParameterTypeViaIAT;
         };
     };
 
@@ -147,7 +115,7 @@ private:
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
 
     // after the m_usNumVtableSlots vtable slots, we have m_usNumInterfaces slots of
-    // EEInterfaceInfo, and after that a couple of additional pointers based on whether the type is
+    // MethodTable*, and after that a couple of additional pointers based on whether the type is
     // finalizable (the address of the finalizer code) or has optional fields (pointer to the compacted
     // fields).
 
@@ -158,26 +126,23 @@ private:
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
 
-        // This flag is set when m_pRelatedType is in a different module.  In that case, m_pRelatedType
-        // actually points to a 'fake' MethodTable whose m_pRelatedType field lines up with an IAT slot in this
-        // module, which then points to the desired MethodTable.  In other words, there is an extra indirection
-        // through m_pRelatedType to get to the related type in the other module.
-        RelatedTypeViaIATFlag   = 0x00040000,
+        // This type has optional fields present.
+        OptionalFieldsFlag      = 0x00040000,
+
+        // GC depends on this bit, this bit must be zero
+        CollectibleFlag         = 0x00200000,
 
         IsDynamicTypeFlag       = 0x00080000,
 
-        // This MethodTable represents a type which requires finalization
+        // GC depends on this bit, this type requires finalization
         HasFinalizerFlag        = 0x00100000,
 
-        // This type contain gc pointers
-        HasPointersFlag         = 0x00200000,
+        // GC depends on this bit, this type contain gc pointers
+        HasPointersFlag         = 0x01000000,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
         GenericVarianceFlag     = 0x00800000,
-
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x01000000,
 
         // This type is generic.
         IsGenericFlag           = 0x02000000,
@@ -193,6 +158,7 @@ private:
     enum ExtendedFlags
     {
         HasEagerFinalizerFlag = 0x0001,
+        // GC depends on this bit, this type has a critical finalizer
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
     };
@@ -202,25 +168,15 @@ public:
     enum Kinds
     {
         CanonicalEEType         = 0x00000000,
-        ClonedEEType            = 0x00010000,
+        // unused               = 0x00010000,
         ParameterizedEEType     = 0x00020000,
         GenericTypeDefEEType    = 0x00030000,
     };
 
-    uint32_t get_BaseSize()
+    uint32_t GetBaseSize()
         { return m_uBaseSize; }
 
-    PTR_Code get_Slot(uint16_t slotNumber);
-
-    PTR_PTR_Code get_SlotPtr(uint16_t slotNumber);
-
-    Kinds get_Kind();
-
-    bool IsCloned()
-        { return get_Kind() == ClonedEEType; }
-
-    bool IsRelatedTypeViaIAT()
-        { return (m_uFlags & RelatedTypeViaIATFlag) != 0; }
+    Kinds GetKind();
 
     bool IsArray()
     {
@@ -232,27 +188,14 @@ public:
         { return GetElementType() == ElementType_SzArray; }
 
     bool IsParameterizedType()
-        { return (get_Kind() == ParameterizedEEType); }
-
-    bool IsGenericTypeDefinition()
-        { return (get_Kind() == GenericTypeDefEEType); }
-
-    bool IsCanonical()
-        { return get_Kind() == CanonicalEEType; }
+        { return (GetKind() == ParameterizedEEType); }
 
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
 
-    MethodTable * get_CanonicalEEType();
+    MethodTable * GetRelatedParameterType();
 
-    MethodTable * get_RelatedParameterType();
-
-    // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
-    // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
-    // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
-    uint32_t get_ParameterizedTypeShape() { return m_uBaseSize; }
-
-    bool get_IsValueType()
+    bool IsValueType()
         { return GetElementType() < ElementType_Class; }
 
     bool HasFinalizer()
@@ -298,36 +241,6 @@ public:
         return (m_uFlags & HasPointersFlag) != 0;
     }
 
-    bool HasOptionalFields()
-    {
-        return (m_uFlags & OptionalFieldsFlag) != 0;
-    }
-
-    bool IsEquivalentTo(MethodTable * pOtherEEType)
-    {
-        if (this == pOtherEEType)
-            return true;
-
-        MethodTable * pThisEEType = this;
-
-        if (pThisEEType->IsCloned())
-            pThisEEType = pThisEEType->get_CanonicalEEType();
-
-        if (pOtherEEType->IsCloned())
-            pOtherEEType = pOtherEEType->get_CanonicalEEType();
-
-        if (pThisEEType == pOtherEEType)
-            return true;
-
-        if (pThisEEType->IsParameterizedType() && pOtherEEType->IsParameterizedType())
-        {
-            return pThisEEType->get_RelatedParameterType()->IsEquivalentTo(pOtherEEType->get_RelatedParameterType()) &&
-                pThisEEType->get_ParameterizedTypeShape() == pOtherEEType->get_ParameterizedTypeShape();
-        }
-
-        return false;
-    }
-
     // How many vtable slots are there?
     uint16_t GetNumVtableSlots()
         { return m_usNumVtableSlots; }
@@ -335,13 +248,6 @@ public:
     // How many entries are in the interface map after the vtable slots?
     uint16_t GetNumInterfaces()
         { return m_usNumInterfaces; }
-
-    // Does this class (or its base classes) implement any interfaces?
-    bool HasInterfaces()
-        { return GetNumInterfaces() != 0; }
-
-    bool IsGeneric()
-        { return (m_uFlags & IsGenericFlag) != 0; }
 
     TypeManagerHandle* GetTypeManagerPtr();
 
@@ -351,11 +257,6 @@ public:
     // not query them and the rest of the runtime will never hold a reference to free object.
     inline void InitializeAsGcFreeType();
 
-#ifdef DACCESS_COMPILE
-    bool DacVerify();
-    static bool DacVerifyWorker(MethodTable* pThis);
-#endif // DACCESS_COMPILE
-
     // Mark or determine that a type is generic and one or more of it's type parameters is co- or
     // contra-variant. This only applies to interface and delegate types.
     bool HasGenericVariance()
@@ -364,15 +265,9 @@ public:
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_uFlags & ElementTypeMask) >> ElementTypeShift); }
 
-    // Determine whether a type is an instantiation of Nullable<T>.
-    bool IsNullable()
-        { return GetElementType() == ElementType_Nullable; }
-
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
         { return (m_uFlags & IsDynamicTypeFlag) != 0; }
-
-    uint32_t GetHashCode();
 
     // Helper methods that deal with MethodTable topology (size and field layout). These are useful since as we
     // optimize for pay-for-play we increasingly want to customize exactly what goes into an MethodTable on a
@@ -394,12 +289,9 @@ public:
 
 public:
     // Methods expected by the GC
-    uint32_t GetBaseSize() { return get_BaseSize(); }
-    uint32_t ContainsPointers() { return HasReferenceFields(); }
-    uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
-    bool IsValueType() { return get_IsValueType(); }
+    uint32_t ContainsGCPointers() { return HasReferenceFields(); }
+    uint32_t ContainsGCPointersOrCollectible() { return HasReferenceFields(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
 };
 
 #pragma warning(pop)
-

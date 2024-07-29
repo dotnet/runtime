@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.InteropServices;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.ComponentModel.Design.Serialization;
+using System.Runtime.InteropServices;
 using System.Security;
 using Microsoft.Win32;
 
@@ -290,7 +290,9 @@ namespace System.Management
         static WmiNetUtilsHelper()
         {
             RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
-            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
+            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue(RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+                "InstallRootArm64" :
+                "InstallRoot");
 
             if (netFrameworkInstallRoot == null)
             {

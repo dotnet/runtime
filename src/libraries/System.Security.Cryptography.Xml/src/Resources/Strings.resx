@@ -136,7 +136,7 @@
     <value>A Cipher Data element should have either a CipherValue or a CipherReference element.</value>
   </data>
   <data name="Cryptography_Xml_CreateHashAlgorithmFailed" xml:space="preserve">
-    <value>Could not create hash algorithm object.</value>
+    <value>Could not create hash algorithm object. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>
   <data name="Cryptography_Xml_CreateTransformFailed" xml:space="preserve">
     <value>Could not create the XML transformation identified by the URI {0}.</value>
@@ -184,7 +184,7 @@
     <value>Signing key is not loaded.</value>
   </data>
   <data name="Cryptography_Xml_MissingAlgorithm" xml:space="preserve">
-    <value>Symmetric algorithm is not specified.</value>
+    <value>Symmetric algorithm is not specified. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>
   <data name="Cryptography_Xml_MissingCipherData" xml:space="preserve">
     <value>Cipher data is not specified.</value>
@@ -395,5 +395,8 @@
   </data>
   <data name="Cryptography_Xml_EntityResolutionNotSupported" xml:space="preserve">
     <value>External entity resolution is not supported.</value>
+  </data>
+  <data name="Cryptography_Xml_XsltRequiresDynamicCode" xml:space="preserve">
+    <value>Xslts are only supported when dynamic code is supported.</value>
   </data>
 </root>

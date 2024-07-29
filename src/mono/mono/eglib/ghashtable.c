@@ -648,7 +648,7 @@ g_direct_equal (gconstpointer v1, gconstpointer v2)
 guint
 g_direct_hash (gconstpointer v1)
 {
-	return GPOINTER_TO_UINT (v1);
+	return GCONSTPOINTER_TO_UINT (v1);
 }
 
 gboolean
@@ -673,7 +673,7 @@ guint
 g_str_hash (gconstpointer v1)
 {
 	guint hash = 0;
-	char *p = (char *) v1;
+	unsigned char *p = (unsigned char *) v1;
 
 	while (*p++)
 		hash = (hash << 5) - (hash + *p);

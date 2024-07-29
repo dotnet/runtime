@@ -66,8 +66,18 @@ typedef enum
     CalendarData_AbbrevEraNames = 14,
 } CalendarDataType;
 
+#define GREGORIAN_NAME "gregorian"
+#define JAPANESE_NAME "japanese"
+#define BUDDHIST_NAME "buddhist"
+#define HEBREW_NAME "hebrew"
+#define DANGI_NAME "dangi"
+#define PERSIAN_NAME "persian"
+#define ISLAMIC_NAME "islamic"
+#define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
+#define ROC_NAME "roc"
+
 // the function pointer definition for the callback used in EnumCalendarInfo
-typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
+typedef void (PAL_CALLBACK_CALLTYPE *EnumCalendarInfoCallback)(const UChar*, const void*);
 
 PALEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
                                                    CalendarId* calendars,
@@ -91,3 +101,19 @@ PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startYear,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);
+#if defined(APPLE_HYBRID_GLOBALIZATION)
+PALEXPORT const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName,
+                                                                CalendarId calendarId,
+                                                                CalendarDataType dataType);
+
+PALEXPORT int32_t GlobalizationNative_GetCalendarsNative(const char* localeName,
+                                                         CalendarId* calendars,
+                                                         int32_t calendarsCapacity);
+
+PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEraNative(void);
+
+PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era,
+                                                                    int32_t* startYear,
+                                                                    int32_t* startMonth,
+                                                                    int32_t* startDay);
+#endif

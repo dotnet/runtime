@@ -10,7 +10,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     {
         private readonly ExpressionResolverBuilder _expressionResolverBuilder;
 
-        [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
         public ExpressionsServiceProviderEngine(ServiceProvider serviceProvider)
         {
             _expressionResolverBuilder = new ExpressionResolverBuilder(serviceProvider);

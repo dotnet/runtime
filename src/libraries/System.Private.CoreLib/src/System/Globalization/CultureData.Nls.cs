@@ -4,11 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-#pragma warning disable 8500 // taking address of managed type
+using System.Text;
 
 namespace System.Globalization
 {
@@ -90,7 +88,7 @@ namespace System.Globalization
         internal static bool NlsIsEnsurePredefinedLocaleName(string name)
         {
             Debug.Assert(GlobalizationMode.UseNls);
-            return CultureData.GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
+            return GetLocaleInfoExInt(name, Interop.Kernel32.LOCALE_ICONSTRUCTEDLOCALE) != 1;
         }
 
         private string? NlsGetTimeFormatString()
@@ -289,12 +287,12 @@ namespace System.Globalization
             // None of these cases make any sense
             if (string.IsNullOrEmpty(win32Str))
             {
-                return new int[] { 3 };
+                return [3];
             }
 
             if (win32Str.StartsWith('0'))
             {
-                return new int[] { 0 };
+                return [0];
             }
 
             // Since its in n;n;n;n;n format, we can always get the length quickly
@@ -318,7 +316,7 @@ namespace System.Globalization
                 // Note that this # shouldn't ever be zero, 'cause 0 is only at end
                 // But we'll test because its registry that could be anything
                 if (!char.IsBetween(win32Str[i], '1', '9'))
-                    return new int[] { 3 };
+                    return [3];
 
                 values[j] = (int)(win32Str[i] - '0');
             }

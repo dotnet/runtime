@@ -7,10 +7,10 @@ namespace System.Collections.Frozen
 {
     /// <summary>Provides the default <see cref="FrozenSet{T}"/> implementation to use when no other special-cases apply.</summary>
     /// <typeparam name="T">The type of the values in the set.</typeparam>
-    internal sealed class DefaultFrozenSet<T> : ItemsFrozenSet<T, DefaultFrozenSet<T>.GSW>
+    internal sealed partial class DefaultFrozenSet<T> : ItemsFrozenSet<T, DefaultFrozenSet<T>.GSW>
     {
-        internal DefaultFrozenSet(HashSet<T> source, IEqualityComparer<T> comparer) :
-            base(source, comparer)
+        internal DefaultFrozenSet(HashSet<T> source)
+            : base(source)
         {
         }
 

@@ -42,5 +42,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             return assertion.HaveStdOutContaining($"{assemblyName}: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
         }
+
+        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteWithLocation(this CommandResultAssertions assertion, string assemblyName, string location)
+        {
+            return assertion.HaveStdOutContaining($"{assemblyName}: Location = '{location}'");
+        }
     }
 }

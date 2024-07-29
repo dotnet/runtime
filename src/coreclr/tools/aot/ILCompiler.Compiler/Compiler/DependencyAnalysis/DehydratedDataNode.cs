@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 using Internal.Text;
@@ -28,14 +29,9 @@ namespace ILCompiler.DependencyAnalysis
     /// * Generate N bytes of zeros.
     /// * Generate a relocation to Nth entry in the lookup table that supplements the dehydrated stream.
     /// </remarks>
-    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
-
-        public DehydratedDataNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__dehydrated_data_End", true);
-        }
+        private int? _size;
 
         public override bool IsShareable => false;
 
@@ -47,11 +43,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -79,15 +75,14 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode target = reloc.Target;
                     if (target is ISymbolNodeWithLinkage withLinkage)
                         target = withLinkage.NodeForLinkage(factory);
-                    relocOccurences.TryGetValue(target, out int num);
-                    relocOccurences[target] = ++num;
+                    CollectionsMarshal.GetValueRefOrAddDefault(relocOccurences, target, out _)++;
                 }
             }
 
             if (firstSymbol != null)
                 builder.EmitReloc(firstSymbol, RelocType.IMAGE_REL_BASED_RELPTR32, -firstSymbol.Offset);
             else
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Sort the reloc targets and create reloc lookup table.
             KeyValuePair<ISymbolNode, int>[] relocSort = new List<KeyValuePair<ISymbolNode, int>>(relocOccurences).ToArray();
@@ -123,7 +118,10 @@ namespace ILCompiler.DependencyAnalysis
                     int oldPosition = dehydratedSegmentPosition;
                     dehydratedSegmentPosition = dehydratedSegmentPosition.AlignUp(o.Alignment);
                     if (dehydratedSegmentPosition > oldPosition)
-                        builder.EmitByte(DehydratedDataCommand.EncodeShort(DehydratedDataCommand.ZeroFill, dehydratedSegmentPosition - oldPosition));
+                    {
+                        int written = DehydratedDataCommand.Encode(DehydratedDataCommand.ZeroFill, dehydratedSegmentPosition - oldPosition, buff);
+                        builder.EmitBytes(buff, 0, written);
+                    }
                 }
 
                 int currentReloc = 0;
@@ -230,7 +228,8 @@ namespace ILCompiler.DependencyAnalysis
                             // Reloc goes through the lookup table
                             int relocCommand = reloc.RelocType switch
                             {
-                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc,
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc, // 64-bit platforms
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => DehydratedDataCommand.PtrReloc, // 32-bit platforms
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.RelPtr32Reloc,
                                 _ => throw new NotSupportedException(),
                             };
@@ -296,7 +295,8 @@ namespace ILCompiler.DependencyAnalysis
                             // Now update the byte we reserved with the command to emit for the run
                             int relocCommand = reloc.RelocType switch
                             {
-                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc,
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc, // 64-bit platforms
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => DehydratedDataCommand.InlinePtrReloc, // 32-bit platforms
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.InlineRelPtr32Reloc,
                                 _ => throw new NotSupportedException(),
                             };
@@ -309,8 +309,7 @@ namespace ILCompiler.DependencyAnalysis
                 dehydratedSegmentPosition += o.Data.Length;
             }
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.AddSymbol(_endSymbol);
+            _size = builder.CountBytes;
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)

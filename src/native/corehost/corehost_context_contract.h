@@ -28,6 +28,8 @@ enum class coreclr_delegate_type
     com_unregister,
     load_assembly_and_get_function_pointer,
     get_function_pointer,
+    load_assembly,
+    load_assembly_bytes,
 
     __last, // Sentinel value for determining the last known delegate type
 };

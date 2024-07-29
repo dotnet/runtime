@@ -42,11 +42,6 @@ namespace Mono.Linker.Steps
 			}
 
 			switch (rootMode) {
-			case AssemblyRootMode.Default:
-				if (assembly.MainModule.Kind == ModuleKind.Dll)
-					goto case AssemblyRootMode.AllMembers;
-				else
-					goto case AssemblyRootMode.EntryPoint;
 			case AssemblyRootMode.EntryPoint:
 				var ep = assembly.MainModule.EntryPoint;
 				if (ep == null) {
@@ -83,7 +78,8 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.RemoveLinkAttributes |
 					CodeOptimizations.RemoveSubstitutions |
 					CodeOptimizations.RemoveDynamicDependencyAttribute |
-					CodeOptimizations.OptimizeTypeHierarchyAnnotations, assembly.Name.Name);
+					CodeOptimizations.OptimizeTypeHierarchyAnnotations |
+					CodeOptimizations.SubstituteFeatureGuards, assembly.Name.Name);
 
 				// Enable EventSource special handling
 				Context.DisableEventSourceSpecialHandling = false;
@@ -92,7 +88,8 @@ namespace Mono.Linker.Steps
 				Context.MetadataTrimming = MetadataTrimming.None;
 				break;
 			case AssemblyRootMode.AllMembers:
-				Context.Annotations.SetAction (assembly, AssemblyAction.Copy);
+				Annotations.SetRootAssembly (assembly);
+				Annotations.Mark (assembly.MainModule, di, origin);
 				return;
 			}
 		}
@@ -103,12 +100,6 @@ namespace Mono.Linker.Steps
 
 			if (File.Exists (fileName)) {
 				assembly = Context.Resolver.GetAssembly (fileName);
-				AssemblyDefinition? loaded = Context.GetLoadedAssembly (assembly.Name.Name);
-
-				// The same assembly could be already loaded if there are multiple inputs pointing to same file
-				if (loaded != null)
-					return loaded;
-
 				Context.Resolver.CacheAssembly (assembly);
 				return assembly;
 			}

@@ -34,7 +34,7 @@ namespace Internal.Runtime
 
                 // Would be surprising to get these here though.
                 Debug.Assert(elementType != EETypeElementType.SystemArray);
-                Debug.Assert(elementType <= EETypeElementType.Pointer);
+                Debug.Assert(elementType <= EETypeElementType.FunctionPointer);
 
                 return elementType;
 
@@ -43,8 +43,13 @@ namespace Internal.Runtime
 
         public static uint ComputeFlags(TypeDesc type)
         {
-            uint flags = type.IsParameterizedType ?
-                (uint)EETypeKind.ParameterizedEEType : (uint)EETypeKind.CanonicalEEType;
+            uint flags;
+            if (type.IsParameterizedType)
+                flags = (uint)EETypeKind.ParameterizedEEType;
+            else if (type.IsFunctionPointer)
+                flags = (uint)EETypeKind.FunctionPointerEEType;
+            else
+                flags = (uint)EETypeKind.CanonicalEEType;
 
             // 5 bits near the top of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             EETypeElementType elementType = ComputeEETypeElementType(type);
@@ -53,6 +58,11 @@ namespace Internal.Runtime
             if (type.IsArray || type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            }
+
+            if (type.HasVariance)
+            {
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
             if (type.IsGenericDefinition)
@@ -86,11 +96,6 @@ namespace Internal.Runtime
             if (type.HasInstantiation)
             {
                 flags |= (uint)EETypeFlags.IsGenericFlag;
-
-                if (type.HasVariance)
-                {
-                    flags |= (uint)EETypeFlags.GenericVarianceFlag;
-                }
             }
 
             return flags;
@@ -113,9 +118,14 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
-            if (type.Context.Target.IsOSX && IsTrackedReferenceWithFinalizer(type))
+            if (type.Context.Target.IsApplePlatform && IsTrackedReferenceWithFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
+            }
+
+            if (type.IsIDynamicInterfaceCastable)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
             }
 
             return flagsEx;
@@ -183,15 +193,7 @@ namespace Internal.Runtime
             if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
-            uint alignmentLog2 = 0;
-            Debug.Assert(alignment != 0);
-
-            while ((alignment & 1) == 0)
-            {
-                alignmentLog2++;
-                alignment >>= 1;
-            }
-            Debug.Assert(alignment == 1);
+            uint alignmentLog2 = uint.TrailingZeroCount(alignment);
 
             Debug.Assert(ValueTypePaddingMax >= padding);
 

@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.NonPortable;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -17,50 +19,41 @@ namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
-        public bool IsInterface => (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-
         [Intrinsic]
-        public static Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromEETypePtr(handle.ToEETypePtr());
+        public static unsafe Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromMethodTable(handle.ToMethodTable());
 
-        internal static Type GetTypeFromEETypePtr(EETypePtr eeType)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {
-            // If we support the writable data section on EETypes, the runtime type associated with the MethodTable
-            // is cached there. If writable data is not supported, we need to do a lookup in the runtime type
-            // unifier's hash table.
-            if (Internal.Runtime.MethodTable.SupportsWritableData)
-            {
-                ref GCHandle handle = ref eeType.GetWritableData<GCHandle>();
-                if (handle.IsAllocated)
-                {
-                    return Unsafe.As<Type>(handle.Target);
-                }
-                else
-                {
-                    return GetTypeFromEETypePtrSlow(eeType, ref handle);
-                }
-            }
-            else
-            {
-                return RuntimeTypeUnifier.GetRuntimeTypeForEEType(eeType);
-            }
+            ref RuntimeType? type = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+            return type ?? GetTypeFromMethodTableSlow(pMT);
+        }
+
+        private static class AllocationLockHolder
+        {
+            public static readonly Lock AllocationLock = new Lock(useTrivialWaits: true);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Type GetTypeFromEETypePtrSlow(EETypePtr eeType, ref GCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(eeType);
-            GCHandle tempHandle = GCHandle.Alloc(result);
-
-            // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<GCHandle, IntPtr>(ref handle), (IntPtr)tempHandle, default) != default)
+            // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
+            using (AllocationLockHolder.AllocationLock.EnterScope())
             {
-                tempHandle.Free();
-            }
+                ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
+                if (runtimeTypeCache != null)
+                    return runtimeTypeCache;
 
-            return result;
+                RuntimeType? type = FrozenObjectHeapManager.Instance.TryAllocateObject<RuntimeType>();
+                if (type == null)
+                    throw new OutOfMemoryException();
+
+                type.DangerousSetUnderlyingEEType(pMT);
+
+                runtimeTypeCache = type;
+
+                return type;
+            }
         }
 
         [Intrinsic]
@@ -71,7 +64,10 @@ namespace System
         public static Type GetType(string typeName, bool throwOnError) => GetType(typeName, throwOnError: throwOnError, ignoreCase: false);
         [Intrinsic]
         [RequiresUnreferencedCode("The type might be removed")]
-        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase) => GetType(typeName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
+        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase)
+        {
+            return TypeNameResolver.GetType(typeName, throwOnError: throwOnError, ignoreCase: ignoreCase);
+        }
 
         [Intrinsic]
         [RequiresUnreferencedCode("The type might be removed")]
@@ -81,6 +77,9 @@ namespace System
         public static Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError) => GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: false);
         [Intrinsic]
         [RequiresUnreferencedCode("The type might be removed")]
-        public static Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase) => RuntimeAugments.Callbacks.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase, defaultAssembly: null);
+        public static Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase)
+        {
+            return TypeNameResolver.GetType(typeName, assemblyResolver, typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
+        }
     }
 }

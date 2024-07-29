@@ -64,7 +64,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(sc.Count, 1, "AE");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -225,7 +225,7 @@ namespace System.Xml.XmlSchemaTests
                 _output.WriteLine(e.ToString());
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ namespace System.Xml.XmlSchemaTests
                 _output.WriteLine(e.ToString());
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -560,7 +560,7 @@ namespace System.Xml.XmlSchemaTests
             settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             settings.ValidationType = ValidationType.Schema;
             settings.Schemas = set;
-            XmlReader reader = XmlReader.Create(xmlFile, settings);
+            using XmlReader reader = XmlReader.Create(xmlFile, settings);
             while (reader.Read()) { }
 
             CError.Compare(bWarningCallback, false, "Warning count mismatch");
@@ -581,8 +581,8 @@ namespace System.Xml.XmlSchemaTests
             bErrorCallback = false;
             _output.WriteLine("Second validation ***************");
             settings.Schemas = set;
-            reader = XmlReader.Create(xmlFile, settings);
-            while (reader.Read()) { }
+            using XmlReader reader2 = XmlReader.Create(xmlFile, settings);
+            while (reader2.Read()) { }
 
             CError.Compare(bWarningCallback, false, "Warning count mismatch");
             CError.Compare(bErrorCallback, false, "Error count mismatch");
@@ -606,8 +606,8 @@ namespace System.Xml.XmlSchemaTests
 
             _output.WriteLine("Third validation, Expecting errors ***************");
             settings.Schemas = set;
-            reader = XmlReader.Create(xmlFile, settings);
-            while (reader.Read()) { }
+            using XmlReader reader3 = XmlReader.Create(xmlFile, settings);
+            while (reader3.Read()) { }
 
             CError.Compare(bWarningCallback, false, "Warning count mismatch");
             CError.Compare(bErrorCallback, true, "Error count mismatch");
@@ -623,7 +623,7 @@ namespace System.Xml.XmlSchemaTests
             _output.WriteLine("Correct uri: " + correctUri);
             using (Stream s = new FileStream(Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read, 1))
             {
-                XmlReader r = XmlReader.Create(s, new XmlReaderSettings(), includeUri);
+                using XmlReader r = XmlReader.Create(s, new XmlReaderSettings(), includeUri);
                 _output.WriteLine("Reader uri: " + r.BaseURI);
                 using (r)
                 {

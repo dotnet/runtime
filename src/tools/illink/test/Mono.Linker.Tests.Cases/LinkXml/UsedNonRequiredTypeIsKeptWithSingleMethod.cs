@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -32,16 +31,24 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			}
 		}
 
+		// NativeAOT should generate conditional dependencies for the tag required
+		// https://github.com/dotnet/runtime/issues/80464
+		[Kept (By = Tool.NativeAot)]
 		class ReallyUnused
 		{
+			[Kept (By = Tool.NativeAot)]
 			private void PreservedMethod ()
 			{
 				new SecondLevelUnused (2);
 			}
 		}
 
+		// NativeAOT should generate conditional dependencies for the tag required
+		// https://github.com/dotnet/runtime/issues/80464
+		[Kept (By = Tool.NativeAot)]
 		class SecondLevelUnused
 		{
+			[Kept (By = Tool.NativeAot)]
 			public SecondLevelUnused (int arg)
 			{
 			}

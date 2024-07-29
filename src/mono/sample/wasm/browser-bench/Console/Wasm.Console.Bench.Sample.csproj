@@ -2,15 +2,12 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+    <WasmMainJSPath>$(BrowserProjectRoot)\test-main.js</WasmMainJSPath>
     <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Console.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasm.Console.Bench.Sample.dll</_SampleAssembly>
     <SignAssembly>False</SignAssembly>
   </PropertyGroup>
 

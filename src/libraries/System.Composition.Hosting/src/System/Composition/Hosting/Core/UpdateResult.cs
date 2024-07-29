@@ -14,7 +14,7 @@ namespace System.Composition.Hosting.Core
         private static readonly ExportDescriptorPromise[] s_noPromises = Array.Empty<ExportDescriptorPromise>();
 
         private readonly Queue<ExportDescriptorProvider> _remainingProviders;
-        private readonly IList<ExportDescriptorPromise> _providedDescriptors = new List<ExportDescriptorPromise>();
+        private readonly List<ExportDescriptorPromise> _providedDescriptors = new List<ExportDescriptorPromise>();
         private ExportDescriptorPromise[] _results;
 
         public UpdateResult(IEnumerable<ExportDescriptorProvider> providers)

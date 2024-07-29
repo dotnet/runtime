@@ -3,9 +3,8 @@
 
 
 using System;
-using System.Text;
-
 using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
@@ -116,13 +115,15 @@ namespace Internal.Runtime.TypeLoader
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
         {
-            TypeReferenceHandle typeRefHandle;
+            QTypeDefinition qTypeDefinition;
             MetadataReader reader;
 
-            // Try to get the name from diagnostic metadata
-            if (TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(rtth, out reader, out typeRefHandle))
+            // Try to get the name from metadata
+            if (TypeLoaderEnvironment.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
-                return typeRefHandle.GetFullName(reader);
+                reader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
+                return typeDefHandle.GetFullName(reader);
             }
 
             // Fallback implementation when no metadata available

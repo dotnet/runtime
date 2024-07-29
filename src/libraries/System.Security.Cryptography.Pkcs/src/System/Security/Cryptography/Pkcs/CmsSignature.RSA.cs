@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Pkcs
             lookup.Add(Oids.RsaPkcs1Sha256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha256, HashAlgorithmName.SHA256));
             lookup.Add(Oids.RsaPkcs1Sha384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha384, HashAlgorithmName.SHA384));
             lookup.Add(Oids.RsaPkcs1Sha512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha512, HashAlgorithmName.SHA512));
+#if NET8_0_OR_GREATER
+            lookup.Add(Oids.RsaPkcs1Sha3_256, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_256, HashAlgorithmName.SHA3_256));
+            lookup.Add(Oids.RsaPkcs1Sha3_384, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_384, HashAlgorithmName.SHA3_384));
+            lookup.Add(Oids.RsaPkcs1Sha3_512, new RSAPkcs1CmsSignature(Oids.RsaPkcs1Sha3_512, HashAlgorithmName.SHA3_512));
+#endif
             lookup.Add(Oids.RsaPss, new RSAPssCmsSignature());
         }
 
@@ -40,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             internal override bool VerifySignature(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> valueHash,
                 ReadOnlyMemory<byte> signature,
 #else
@@ -76,7 +81,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 return publicKey.VerifyHash(
                     valueHash,
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                     signature.Span,
 #else
                     signature,
@@ -92,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs
                 int digestValueLength);
 
             private protected static bool SignCore(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -117,7 +122,7 @@ namespace System.Security.Cryptography.Pkcs
                     return false;
                 }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 byte[] signature = new byte[privateKey.KeySize / 8];
 
                 bool signed = privateKey.TrySignHash(
@@ -142,7 +147,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 #endif
                 signatureValue = privateKey.SignHash(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                     dataHash.ToArray(),
 #else
                     dataHash,
@@ -181,9 +186,7 @@ namespace System.Security.Cryptography.Pkcs
                     return RSASignaturePadding.Pkcs1;
                 }
 
-                Span<byte> expectedParameters = stackalloc byte[2];
-                expectedParameters[0] = 0x05;
-                expectedParameters[1] = 0x00;
+                ReadOnlySpan<byte> expectedParameters = [0x05, 0x00];
 
                 if (expectedParameters.SequenceEqual(signatureParameters.Value.Span))
                 {
@@ -194,7 +197,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -314,7 +317,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,

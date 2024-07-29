@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
-using System.Reflection;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -102,7 +102,19 @@ namespace ILCompiler.IBC
                         using (var zipFile = new ZipArchive(fsMibcFile, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
                         {
                             disposeOnException = false;
-                            var mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
+                            ZipArchiveEntry mibcDataEntry = zipFile.GetEntry(Path.GetFileName(filename) + ".dll");
+
+                            if (mibcDataEntry == null)
+                            {
+                                // Input may have been renamed at some point; look for a single .dll inside the ZIP.
+                                mibcDataEntry = zipFile.Entries.Count == 1 ? zipFile.Entries[0] : null;
+
+                                if (mibcDataEntry == null || !mibcDataEntry.Name.EndsWith(".dll"))
+                                {
+                                    throw new InvalidDataException("Could not find input assembly in compressed MIBC file (expected archive to contain a single .dll file)");
+                                }
+                            }
+
                             using (var mibcDataStream = mibcDataEntry.Open())
                             {
                                 peData = new byte[mibcDataEntry.Length];
@@ -341,7 +353,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
+        private static List<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
@@ -357,6 +369,7 @@ namespace ILCompiler.IBC
             Dictionary<MethodDesc, int> weights = null;
             List<long> instrumentationDataLongs = null;
             PgoSchemaElem[] pgoSchemaData = null;
+            var methodProfileData = new List<MethodProfileData>();
 
             while (ilReader.HasNext)
             {
@@ -540,8 +553,7 @@ namespace ILCompiler.IBC
                             if (methodInProgress != null)
                             {
                                 // If the method being loaded didn't have meaningful input, skip
-                                MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
-                                yield return mibcData;
+                                methodProfileData.Add(new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData));
                             }
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
@@ -596,6 +608,8 @@ namespace ILCompiler.IBC
                     }
                 }
             }
+
+            return methodProfileData;
         }
 
         /// <summary>
@@ -642,14 +656,14 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                public AssemblyName GetName()
+                public AssemblyNameInfo GetName()
                 {
-                    return new AssemblyName("System.Private.Canon");
+                    return new AssemblyNameInfo("System.Private.Canon");
                 }
             }
 
             private CanonModule _canonModule;
-            private AssemblyName _canonModuleName;
+            private AssemblyNameInfo _canonModuleName;
             private IModuleResolver _wrappedResolver;
 
             public CustomCanonResolver(TypeSystemContext wrappedContext)
@@ -659,7 +673,7 @@ namespace ILCompiler.IBC
                 _wrappedResolver = wrappedContext;
             }
 
-            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
+            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
             {
                 if (name.Name == _canonModuleName.Name)
                     return _canonModule;

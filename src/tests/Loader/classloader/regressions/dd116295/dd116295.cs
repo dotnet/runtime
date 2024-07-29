@@ -4,10 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ConsoleApplication1
 {
-    class Program
+    public class Program
     {
         public struct A
         {
@@ -24,26 +25,10 @@ namespace ConsoleApplication1
             public B[] b;
         }
 
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
-            try
-            {
-                M();
-                Console.WriteLine("PASS");
-                return 100;
-            }
-            catch(TypeLoadException)
-            {
-                Console.WriteLine("Caught TypeLoadException, FAIL");
-                return 99;
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Caught unexpected exception");
-                Console.WriteLine(e);
-                Console.WriteLine("\nFAIL");
-                return 99;
-            }
+            M();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

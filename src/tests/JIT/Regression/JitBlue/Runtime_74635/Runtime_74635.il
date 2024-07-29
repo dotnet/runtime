@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly extern System.Console { }
 
-.assembly Runtime_74635.dll { }
+.assembly Runtime_74635 { }
 
 #define TRUE "1"
 #define FALSE "0"
@@ -13,10 +14,13 @@
 #define EXPECTED "0"
 #define THRASHED "1"
 
-.class Runtime_74635 extends [System.Runtime]System.Object
+.class public Runtime_74635 extends [System.Runtime]System.Object
 {
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     call bool .this::ProblemWithDevirtualization()
@@ -27,9 +31,6 @@
 
     call bool .this::ProblemWithLocAlloc()
     brtrue LOCALLOC_FAILED
-
-    call bool .this::ProblemWithCapturingCtors()
-    brtrue CAPTURING_CTORS_FAILED
 
     ldc.i4 100
     ret
@@ -44,10 +45,6 @@
 
   LOCALLOC_FAILED:
     ldc.i4 103
-    ret
-
-  CAPTURING_CTORS_FAILED:
-    ldc.i4 104
     ret
   }
 
@@ -114,29 +111,6 @@
     ldarg pLocAlloc
     ldc.i4 THRASHED
     stind.i4
-    ret
-  }
-
-  .method private static bool ProblemWithCapturingCtors() noinlining
-  {
-    .locals (valuetype Closure closure)
-
-    ldc.i4 EXPECTED
-    ldloca closure
-    newobj instance void Struct::.ctor(int32, valuetype Closure&)
-    ldloc closure
-    ldfld valuetype Struct& Closure::StructRef
-    ldc.i4 THRASHED
-    stfld int32 Struct::Value
-    ldfld int32 Struct::Value
-    ldc.i4 EXPECTED
-    bne.un FAILED
-
-    ldc.i4 FALSE
-    ret
-
-  FAILED:
-    ldc.i4 TRUE
     ret
   }
 }

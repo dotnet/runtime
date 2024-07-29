@@ -21,9 +21,9 @@ namespace System.Collections.Tests
             return new Queue<T>();
         }
 
-        protected Queue<T> GenericQueueFactory(int count)
+        protected Queue<T> GenericQueueFactory(int count, int? capacity = null)
         {
-            Queue<T> queue = new Queue<T>(count);
+            Queue<T> queue = new Queue<T>(capacity ?? count);
             int seed = count * 34;
             for (int i = 0; i < count; i++)
                 queue.Enqueue(CreateT(seed++));
@@ -50,8 +50,9 @@ namespace System.Collections.Tests
         protected override bool Contains(IEnumerable<T> enumerable, T value) => ((Queue<T>)enumerable).Contains(value);
         protected override void CopyTo(IEnumerable<T> enumerable, T[] array, int index) => ((Queue<T>)enumerable).CopyTo(array, index);
         protected override bool Remove(IEnumerable<T> enumerable) => ((Queue<T>)enumerable).TryDequeue(out _);
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
-
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
         #endregion
@@ -94,6 +95,15 @@ namespace System.Collections.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue<T>(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue<T>(int.MinValue));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Queue_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var queue = new Queue<T>(capacity);
+            Assert.Equal(capacity, queue.Capacity);
         }
 
         #endregion
@@ -201,6 +211,34 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void Queue_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            Queue<T> queue = GenericQueueFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => queue.TrimExcess(newCapacity));
+        }
+
+        [Fact]
+        public void Queue_TrimAccessCurrentCount_ReducesToCount()
+        {
+            var queue = GenericQueueFactory(20, capacity: 30);
+            Assert.Equal(30, queue.Capacity);
+            Assert.Equal(20, queue.Count);
+
+            queue.TrimExcess(queue.Count);
+
+            Assert.Equal(20, queue.Capacity);
+            Assert.Equal(20, queue.Count);
+
+            queue.TrimExcess(queue.Count);
+
+            Assert.Equal(20, queue.Capacity);
+            Assert.Equal(20, queue.Count);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -464,6 +502,18 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(copiedList[i], queue.Dequeue());
             }
+        }
+
+        [Fact]
+        public void QueueResized_CapacityUpdates()
+        {
+            var queue = GenericQueueFactory(1);
+
+            int initialCapacity = queue.Capacity;
+
+            queue.Enqueue(CreateT(85877));
+
+            Assert.True(initialCapacity < queue.Capacity);
         }
     }
 }

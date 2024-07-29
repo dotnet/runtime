@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
-#include <evntprov.h>
 
 #include "holder.h"
 
@@ -24,15 +23,16 @@
 
 #define PalRaiseFailFastException RaiseFailFastException
 
-uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
-{
-    return EventWrite(arg1, arg2, arg3, arg4);
-}
-
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 
+#include "thread.h"
+#include "threadstore.h"
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#include <versionhelpers.h>
+#endif
 
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
@@ -56,6 +56,16 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     }
 }
 
+static HMODULE LoadKernel32dll()
+{
+    return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+}
+
+static HMODULE LoadNtdlldll()
+{
+    return LoadLibraryExW(L"ntdll.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+}
+
 void InitializeCurrentProcessCpuCount()
 {
     DWORD count;
@@ -64,12 +74,12 @@ void InitializeCurrentProcessCpuCount()
     // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
-    uint32_t configValue;
+    uint64_t configValue;
 
-    if (g_pRhConfig->ReadConfigValue(_T("PROCESSOR_COUNT"), &configValue, true /* decimal */) &&
+    if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
-        count = configValue;
+        count = (DWORD)configValue;
     }
     else
     {
@@ -163,10 +173,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     return true;
 }
 
-// Attach thread to PAL.
-// It can be called multiple times for the same thread.
-// It fails fast if a different thread was already registered with the current fiber
-// or if the thread was already registered with a different fiber.
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
 // Parameters:
 //  thread        - thread to attach
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
@@ -185,8 +193,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
     FlsSetValue(g_flsIndex, thread);
 }
 
-// Detach thread from PAL.
-// It fails fast if some other thread value was attached to PAL.
+// Detach thread from OS notifications.
+// It fails fast if some other thread value was attached to the current fiber.
 // Parameters:
 //  thread        - thread to detach
 // Return:
@@ -208,11 +216,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
         ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
         RhFailFast();
     }
-    
-    if (g_threadExitCallback != NULL)
-    {
-        g_threadExitCallback();
-    }
 
     FlsSetValue(g_flsIndex, NULL);
     return true;
@@ -228,7 +231,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
     return GetCurrentThreadId();
 }
@@ -265,7 +268,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -314,6 +317,11 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     }
 }
 
+REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+{
+    return CreateMemoryResourceNotification(LowMemoryResourceNotification);
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 {
     return Sleep(milliseconds);
@@ -329,10 +337,160 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
+{
+#if defined(TARGET_AMD64)
+    // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
+    // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
+    // same from any thread.
+    return _rdsspq() != 0;
+#else
+    // When implementing AreShadowStacksEnabled() on other architectures, review all the places where this is used.
+    return false;
+#endif
+}
+
+
+#ifdef TARGET_X86
+
+#define EXCEPTION_HIJACK  0xe0434f4e    // 0xe0000000 | 'COM'+1
+
+PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
+{
+    return (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0);
+}
+
+VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
+{
+    __writefsdword(0, (DWORD)pSEH);
+}
+
+VOID PopSEHRecords(LPVOID pTargetSP)
+{
+    PEXCEPTION_REGISTRATION_RECORD currentContext = GetCurrentSEHRecord();
+    // The last record in the chain is EXCEPTION_CHAIN_END which is defined as maxiumum
+    // pointer value so it cannot satisfy the loop condition.
+    while (currentContext < pTargetSP)
+    {
+        currentContext = currentContext->Next;
+    }
+    SetCurrentSEHRecord(currentContext);
+}
+
+// This will check who caused the exception.  If it was caused by the redirect function,
+// the reason is to resume the thread back at the point it was redirected in the first
+// place.  If the exception was not caused by the function, then it was caused by the call
+// out to the I[GC|Debugger]ThreadControl client and we need to determine if it's an
+// exception that we can just eat and let the runtime resume the thread, or if it's an
+// uncatchable exception that we need to pass on to the runtime.
+int RtlRestoreContextFallbackExceptionFilter(PEXCEPTION_POINTERS pExcepPtrs, CONTEXT *pCtx, Thread *pThread)
+{
+    if (pExcepPtrs->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    // Get the thread handle
+    _ASSERTE(pExcepPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_HIJACK);
+
+    // Copy everything in the saved context record into the EH context.
+    // Historically the EH context has enough space for every enabled context feature.
+    // That may not hold for the future features beyond AVX, but this codepath is
+    // supposed to be used only on OSes that do not have RtlRestoreContext.
+    CONTEXT* pTarget = pExcepPtrs->ContextRecord;
+    if (!CopyContext(pTarget, pCtx->ContextFlags, pCtx))
+    {
+        PalPrintFatalError("Could not set context record.\n");
+        RhFailFast();
+    }
+
+    DWORD espValue = pCtx->Esp;
+
+    // NOTE: Ugly, ugly workaround.
+    // We need to resume the thread into the managed code where it was redirected,
+    // and the corresponding ESP is below the current one.  But C++ expects that
+    // on an EXCEPTION_CONTINUE_EXECUTION that the ESP will be above where it has
+    // installed the SEH handler.  To solve this, we need to remove all handlers
+    // that reside above the resumed ESP, but we must leave the OS-installed
+    // handler at the top, so we grab the top SEH handler, call
+    // PopSEHRecords which will remove all SEH handlers above the target ESP and
+    // then link the OS handler back in with SetCurrentSEHRecord.
+
+    // Get the special OS handler and save it until PopSEHRecords is done
+    EXCEPTION_REGISTRATION_RECORD *pCurSEH = GetCurrentSEHRecord();
+
+    // Unlink all records above the target resume ESP
+    PopSEHRecords((LPVOID)(size_t)espValue);
+
+    // Link the special OS handler back in to the top
+    pCurSEH->Next = GetCurrentSEHRecord();
+
+    // Register the special OS handler as the top handler with the OS
+    SetCurrentSEHRecord(pCurSEH);
+
+    // Resume execution at point where thread was originally redirected
+    return EXCEPTION_CONTINUE_EXECUTION;
+}
+
+EXTERN_C VOID __cdecl RtlRestoreContextFallback(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord)
+{
+    Thread *pThread = ThreadStore::GetCurrentThread();
+
+    // A counter to avoid a nasty case where an
+    // up-stack filter throws another exception
+    // causing our filter to be run again for
+    // some unrelated exception.
+    int filter_count = 0;
+
+    __try
+    {
+        // Save the instruction pointer where we redirected last.  This does not race with the check
+        // against this variable because the GC will not attempt to redirect the thread until the
+        // instruction pointer of this thread is back in managed code.
+        pThread->SetPendingRedirect(ContextRecord->Eip);
+        RaiseException(EXCEPTION_HIJACK, 0, 0, NULL);
+    }
+    __except (++filter_count == 1
+            ? RtlRestoreContextFallbackExceptionFilter(GetExceptionInformation(), ContextRecord, pThread)
+            : EXCEPTION_CONTINUE_SEARCH)
+    {
+        _ASSERTE(!"Reached body of __except in RtlRestoreContextFallback");
+    }
+}
+
+#endif // TARGET_X86
+
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 
+#ifdef TARGET_ARM64
+// Mirror the XSTATE_ARM64_SVE flags from winnt.h
+
+#ifndef XSTATE_ARM64_SVE
+#define XSTATE_ARM64_SVE (2)
+#endif // XSTATE_ARM64_SVE
+
+#ifndef XSTATE_MASK_ARM64_SVE
+#define XSTATE_MASK_ARM64_SVE (1ui64 << (XSTATE_ARM64_SVE))
+#endif // XSTATE_MASK_ARM64_SVE
+
+#ifndef CONTEXT_ARM64_XSTATE
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#endif // CONTEXT_ARM64_XSTATE
+
+#ifndef CONTEXT_XSTATE
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
+#endif // CONTEXT_XSTATE
+
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+PSETXSTATEFEATURESMASK pfnSetXStateFeaturesMask = NULL;
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
+EXTERN_C VOID __cdecl RtlRestoreContextFallback(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
 PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
 
@@ -346,7 +504,7 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
 {
     CONTEXT* pOSContext = NULL;
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     DWORD context = CONTEXT_COMPLETE;
 
     if (pfnInitializeContext2 == NULL)
@@ -358,25 +516,61 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
         }
     }
 
+#if defined(TARGET_ARM64)
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        if (hm != NULL)
+        {
+            pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hm, "GetEnabledXStateFeatures");
+        }
+    }
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
     if (pfnRtlRestoreContext == NULL)
     {
         HMODULE hm = GetModuleHandleW(_T("ntdll.dll"));
         pfnRtlRestoreContext = (PRTLRESTORECONTEXT)GetProcAddress(hm, "RtlRestoreContext");
+        if (pfnRtlRestoreContext == NULL)
+        {
+            // Fallback to the internal implementation if OS doesn't provide one.
+            pfnRtlRestoreContext = RtlRestoreContextFallback;
+        }
     }
 #endif //TARGET_X86
 
-    // Determine if the processor supports AVX so we could
-    // retrieve extended registers
-    DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    if ((FeatureMask & XSTATE_MASK_AVX) != 0)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
+#elif defined(TARGET_ARM64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | xStateFeatureMask;
+#endif
+
+    // Determine if the processor supports extended features so we could retrieve those registers
+    DWORD64 FeatureMask = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    FeatureMask = GetEnabledXStateFeatures();
+#elif defined(TARGET_ARM64)
+    if (pfnGetEnabledXStateFeatures != NULL)
+    {
+        FeatureMask = pfnGetEnabledXStateFeatures();
+    }
+#endif
+
+    if ((FeatureMask & xStateFeatureMask) != 0)
     {
         context = context | CONTEXT_XSTATE;
     }
 
+    // the context does not need XSTATE_MASK_CET_U because we should not be using
+    // redirection when CET is enabled and should not be here.
+    _ASSERTE(!PalAreShadowStacksEnabled());
+
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX;
     // The initialize call should fail but return contextSize
     BOOL success = pfnInitializeContext2 ?
         pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
@@ -424,15 +618,32 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
 {
     _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Make sure that AVX feature mask is set, if supported. This should not normally fail.
-    // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
-    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX))
+#if defined(TARGET_ARM64)
+    if (pfnSetXStateFeaturesMask == NULL)
     {
-        _ASSERTE(!"Could not apply XSTATE_MASK_AVX");
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        if (hm != NULL)
+        {
+            pfnSetXStateFeaturesMask = (PSETXSTATEFEATURESMASK)GetProcAddress(hm, "SetXStateFeaturesMask");
+        }
+    }
+#endif // TARGET_ARM64
+
+    // This should not normally fail.
+    // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512))
+    {
+        _ASSERTE(!"Could not apply XSTATE_MASK_AVX | XSTATE_MASK_AVX512");
         return FALSE;
     }
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_ARM64)
+    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
+    {
+        _ASSERTE(!"Could not apply XSTATE_MASK_ARM64_SVE");
+        return FALSE;
+    }
+#endif
 
     return GetThreadContext(hThread, pCtx);
 }
@@ -444,10 +655,68 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HAND
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 {
+    __asan_handle_no_return();
+#ifdef TARGET_X86
+    _ASSERTE(pfnRtlRestoreContext != NULL);
+    pfnRtlRestoreContext(pCtx, NULL);
+#else
     RtlRestoreContext(pCtx, NULL);
+#endif //TARGET_X86
+}
+
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CONTEXT ctx;
+
+    RtlCaptureContext(&ctx);
+
+    pContext->SegCs = ctx.SegCs;
+    pContext->SegSs = ctx.SegSs;
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 }
 
 static PalHijackCallback g_pHijackCallback;
+
+// These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
+// SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
+// become available in the Windows SDK headers, the prefixed declarations below can be removed in favor of the SDK ones.
+
+enum CLONE_QUEUE_USER_APC_FLAGS
+{
+    CLONE_QUEUE_USER_APC_FLAGS_NONE = 0x0,
+    CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC = 0x1,
+    CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = 0x10000
+};
+
+struct CLONE_APC_CALLBACK_DATA
+{
+    ULONG_PTR Parameter;
+    PCONTEXT ContextRecord;
+    ULONG_PTR Reserved0;
+    ULONG_PTR Reserved1;
+};
+typedef CLONE_APC_CALLBACK_DATA* CLONE_PAPC_CALLBACK_DATA;
+
+typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, CLONE_QUEUE_USER_APC_FLAGS Flags);
+
+#define QUEUE_USER_APC2_UNINITIALIZED (QueueUserAPC2Proc)-1
+static QueueUserAPC2Proc g_pfnQueueUserAPC2Proc = QUEUE_USER_APC2_UNINITIALIZED;
+
+static const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (CLONE_QUEUE_USER_APC_FLAGS)
+                                    (CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
+                                     CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
+
+static void* g_returnAddressHijackTarget = NULL;
+
+static void NTAPI ActivationHandler(ULONG_PTR parameter)
+{
+    CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
+    g_pHijackCallback(data->ContextRecord, NULL);
+
+    Thread* pThread = (Thread*)data->Parameter;
+    pThread->SetActivationPending(false);
+}
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
@@ -457,9 +726,110 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     return true;
 }
 
+void InitHijackingAPIs()
+{
+    HMODULE hKernel32 = LoadKernel32dll();
+
+#ifdef HOST_AMD64
+    typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
+
+    IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");
+    USHORT processMachine, hostMachine;
+    if (pfnIsWow64Process2Proc != nullptr &&
+        (*pfnIsWow64Process2Proc)(GetCurrentProcess(), &processMachine, &hostMachine) &&
+        (hostMachine == IMAGE_FILE_MACHINE_ARM64) &&
+        !IsWindowsVersionOrGreater(10, 0, 26100))
+    {
+        // Special user-mode APCs are broken on WOW64 processes (x64 running on Arm64 machine) with Windows older than 11.0.26100 (24H2)
+        g_pfnQueueUserAPC2Proc = NULL;
+    }
+    else
+#endif // HOST_AMD64
+    {
+        g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
+    }
+
+    if (PalAreShadowStacksEnabled())
+    {
+        // When shadow stacks are enabled, support for special user-mode APCs is required
+        _ASSERTE(g_pfnQueueUserAPC2Proc != NULL);
+
+        HMODULE hModNtdll = LoadNtdlldll();
+        typedef void* (*PFN_RtlGetReturnAddressHijackTarget)(void);
+
+        void* rtlGetReturnAddressHijackTarget = GetProcAddress(hModNtdll, "RtlGetReturnAddressHijackTarget");
+        if (rtlGetReturnAddressHijackTarget != NULL)
+        {
+            g_returnAddressHijackTarget = ((PFN_RtlGetReturnAddressHijackTarget)rtlGetReturnAddressHijackTarget)();
+        }
+
+        if (g_returnAddressHijackTarget == NULL)
+        {
+            _ASSERTE(!"RtlGetReturnAddressHijackTarget must provide a target when shadow stacks are enabled");
+        }
+    }
+}
+
+REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+{
+    return g_returnAddressHijackTarget ? (HijackFunc*)g_returnAddressHijackTarget : defaultHijackTarget;
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+    // initialize g_pfnQueueUserAPC2Proc on demand.
+    // Note that only one thread at a time may perform suspension (guaranteed by the thread store lock)
+    // so simple condition check is ok.
+    if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
+    {
+        InitHijackingAPIs();
+    }
+
+    if (g_pfnQueueUserAPC2Proc)
+    {
+        Thread* pThread = (Thread*)pThreadToHijack;
+
+        // An APC can be interrupted by another one, do not queue more if one is pending.
+        if (pThread->IsActivationPending())
+        {
+            return;
+        }
+
+        pThread->SetActivationPending(true);
+        BOOL success = g_pfnQueueUserAPC2Proc(
+            &ActivationHandler,
+            hThread,
+            (ULONG_PTR)pThreadToHijack,
+            SpecialUserModeApcWithContextFlags);
+
+        if (success)
+        {
+            return;
+        }
+
+        // queuing an APC failed
+        pThread->SetActivationPending(false);
+
+        DWORD lastError = GetLastError();
+        if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
+        {
+            // An unexpected failure has happened. It is a concern.
+            ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
+
+            // maybe it will work next time.
+            return;
+        }
+
+        // the flags that we passed are not supported.
+        // we will not try again
+        g_pfnQueueUserAPC2Proc = NULL;
+    }
+#endif
+
     if (SuspendThread(hThread) == (DWORD)-1)
     {
         return;
@@ -470,16 +840,41 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (GetThreadContext(hThread, &win32ctx))
     {
+        bool isSafeToRedirect = true;
+
+#ifdef TARGET_X86
+        // Workaround around WOW64 problems. Only do this workaround if a) this is x86, and b) the OS does
+        // not support trap frame reporting.
+        if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) == 0)
+        {
+            // This code fixes a race between GetThreadContext and NtContinue.  If we redirect managed code
+            // at the same place twice in a row, we run the risk of reading a bogus CONTEXT when we redirect
+            // the second time.  This leads to access violations on x86 machines.  To fix the problem, we
+            // never redirect at the same instruction pointer that we redirected at on the previous GC.
+            if (((Thread*)pThreadToHijack)->CheckPendingRedirect(win32ctx.Eip))
+            {
+                isSafeToRedirect = false;
+            }
+        }
+#else
+        // In some cases Windows will not set the CONTEXT_EXCEPTION_REPORTING flag if the thread is executing
+        // in kernel mode (i.e. in the middle of a syscall or exception handling). Therefore, we should treat
+        // the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that it is not safe to
+        // manipulate with the current state of the thread context.
+        isSafeToRedirect = (win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0;
+#endif
+
         // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
         // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
         // this case (which should force our caller to resume the thread and try again -- since this is a fairly
         // narrow window we're highly likely to succeed next time).
-        // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
-        // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
-        // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
-        // it is not safe to manipulate with the current state of the thread context.
         if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0 &&
-            ((win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)) == 0))
+            ((win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)) != 0))
+        {
+            isSafeToRedirect = false;
+        }
+
+        if (isSafeToRedirect)
         {
             g_pHijackCallback(&win32ctx, pThreadToHijack);
         }
@@ -521,14 +916,9 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
-    return !!EventEnabled(regHandle, eventDescriptor);
-}
-
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
-{
-    TerminateProcess(GetCurrentProcess(), arg2);
+    return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -548,61 +938,6 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return (HANDLE)module;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
-{
-    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
-    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
-
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (hMod == NULL)
-        return FALSE;
-
-    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
-
-    if (pfnGetEnabledXStateFeatures == NULL)
-    {
-        return FALSE;
-    }
-
-    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
-    if ((FeatureMask & XSTATE_MASK_AVX) == 0)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
-{
-    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
-    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
-
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (hMod == NULL)
-        return FALSE;
-
-    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
-
-    if (pfnGetEnabledXStateFeatures == NULL)
-    {
-        return FALSE;
-    }
-
-    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
-    if ((FeatureMask & XSTATE_MASK_AVX512) == 0)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
-{
-    return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
-}
-
 REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
@@ -611,22 +946,54 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)strlen(message), &dwBytesWritten, NULL);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
+REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
-    return VirtualAlloc(pAddress, size, allocationType, protect);
+    int len = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return nullptr;
+
+    char* converted = new (nothrow) char[len];
+    int written = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, converted, len, nullptr, nullptr);
+    assert(len == written);
+    return converted;
 }
 
-#pragma warning (push)
-#pragma warning (disable:28160) // warnings about invalid potential parameter combinations that would cause VirtualFree to fail - those are asserted for below
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType)
+REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
 {
-    assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
-    assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
-    assert(freeType != 0);
+    assert(moduleName);
+    size_t len = strlen(moduleName);
+    wchar_t* moduleNameWide = new (nothrow)wchar_t[len + 1];
+    if (moduleNameWide == nullptr)
+    {
+        return 0;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)(len + 1)) == 0)
+    {
+        return 0;
+    }
+    moduleNameWide[len] = '\0';
 
-    return VirtualFree(pAddress, size, freeType);
+    HANDLE result = LoadLibraryExW(moduleNameWide, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    delete[] moduleNameWide;
+    return result;
 }
-#pragma warning (pop)
+
+REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    assert(module);
+    assert(functionName);
+    return GetProcAddress((HMODULE)module, functionName);
+}
+
+REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
+{
+    return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);
+}
+
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size)
+{
+    VirtualFree(pAddress, 0, MEM_RELEASE);
+}
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {
@@ -639,39 +1006,3 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return InterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
-#if defined(HOST_ARM64)
-
-#include "IntrinsicConstants.h"
-
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
-{
-    *flags = 0;
-
-    // FP and SIMD support are enabled by default
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
-
-    if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
-    {
-        *flags |= ARM64IntrinsicConstants_Aes;
-        *flags |= ARM64IntrinsicConstants_Sha1;
-        *flags |= ARM64IntrinsicConstants_Sha256;
-    }
-
-    if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
-    {
-        *flags |= ARM64IntrinsicConstants_Crc32;
-    }
-
-    if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
-    {
-        *flags |= ARM64IntrinsicConstants_Atomics;
-    }
-}
-
-#endif

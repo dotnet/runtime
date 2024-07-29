@@ -62,7 +62,7 @@ namespace TLens.Analyzers
 			PrintHeader ("User operators used for null checks");
 
 			foreach (var e in entries) {
-				Console.WriteLine ($"User operator '{e.Key.ToDisplay ()}' was called {e.Value.Redundant} [{e.Value.Ratio.ToString ("0%")}] times with null values");
+				Console.WriteLine ($"User operator '{e.Key.ToDisplay ()}' was called {e.Value.Redundant} [{e.Value.Ratio:0%}] times with null values");
 			}
 		}
 	}

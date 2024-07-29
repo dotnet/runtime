@@ -131,7 +131,7 @@ NativeImage *NativeImage::Open(
         }
     }
 
-    SString path = componentModule->GetPath();
+    SString path{ componentModule->GetPath() };
     SString::Iterator lastPathSeparatorIter = path.End();
     size_t pathDirLength = 0;
     if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -142,7 +142,7 @@ NativeImage *NativeImage::Open(
     SString compositeImageFileName(SString::Utf8, nativeImageFileName);
     SString fullPath;
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
-    fullPath += compositeImageFileName;
+    fullPath.Append(compositeImageFileName);
     LPWSTR searchPathsConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
 
@@ -194,7 +194,7 @@ NativeImage *NativeImage::Open(
                 }
 
                 fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
-                fullPath += compositeImageFileName;
+                fullPath.Append(compositeImageFileName);
 
                 EX_TRY
                 {
@@ -212,10 +212,13 @@ NativeImage *NativeImage::Open(
         if (peLoadedImage.IsNull())
         {
             // Failed to locate the native composite R2R image
-            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%S'\n",
+#ifdef LOGGING
+            SString searchPaths(searchPathsConfig != nullptr ? searchPathsConfig : W("<use DOTNET_NativeImageSearchPaths to set>"));
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%s'\n",
                 nativeImageFileName,
                 path.GetUTF8(),
-                searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
+                searchPaths.GetUTF8()));
+#endif // LOGGING
             RaiseFailFastException(nullptr, nullptr, 0);
         }
     }
@@ -258,7 +261,7 @@ NativeImage *NativeImage::Open(
 #endif
 
 #ifndef DACCESS_COMPILE
-Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly)
+Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly)
 {
     STANDARD_VM_CONTRACT;
 

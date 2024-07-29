@@ -14,7 +14,7 @@
 //------------------------------------------------------
 //	This test ensures that fault handlers are called in
 //	the correct order.
-.class TEST
+.class public TEST
 {
 	.field public static int32 result
 	

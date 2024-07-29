@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public class Common
@@ -410,10 +411,10 @@ public struct ManyInts
 
 
 [StructLayout(LayoutKind.Sequential)]
+[InlineArray(2)]
 public struct MultipleBool
 {
-    public bool b1;
-    public bool b2;
+    public bool b;
 }
 
 [StructLayout(LayoutKind.Explicit)]
@@ -458,6 +459,32 @@ public unsafe struct FixedBufferClassificationTest
     public NonBlittableFloat f;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct InlineArrayClassificationTest
+{
+    [InlineArray(3)]
+    public struct IntArray3
+    {
+        public int i;
+    }
+
+    public IntArray3 arr;
+    public float f;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct InlineArrayWithWrappedIntClassificationTest
+{
+    [InlineArray(3)]
+    public struct IntWrapperArray3
+    {
+        public Int32Wrapper i;
+    }
+
+    public IntWrapperArray3 arr;
+    public float f;
+}
+
 // A non-blittable wrapper for a float value.
 // Used to force a type with a float field to be non-blittable
 // and take a different code path.
@@ -475,9 +502,9 @@ public struct NonBlittableFloat
     public float F => arr[0];
 }
 
-public struct Int32Wrapper
+public struct Int32Wrapper(int i)
 {
-    public int i;
+    public int i = i;
 }
 
 [StructLayout(LayoutKind.Sequential)]

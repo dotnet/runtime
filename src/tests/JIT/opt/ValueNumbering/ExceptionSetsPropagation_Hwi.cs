@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // We're testing whether HWI nodes with > 2 operands propagate exception sets correctly.
 //
-class ExceptionSetsPropagation_Hwi
+public class ExceptionSetsPropagation_Hwi
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

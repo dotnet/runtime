@@ -19,11 +19,13 @@ namespace ILCompiler
     {
         private EcmaModule _module;
         private IEnumerable<MethodDesc> _profileData;
+        private InstructionSetSupport _instructionSetSupport;
 
         public ReadyToRunProfilingRootProvider(EcmaModule module, ProfileDataManager profileDataManager)
         {
             _module = module;
             _profileData = profileDataManager.GetInputProfileDataMethodsForModule(module);
+            _instructionSetSupport = ((ReadyToRunCompilerContext)module.Context).InstructionSetSupport;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -61,7 +63,7 @@ namespace ILCompiler
                     if (containsSignatureVariables)
                         continue;
 
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(_instructionSetSupport, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");

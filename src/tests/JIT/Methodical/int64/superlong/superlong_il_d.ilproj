@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="superlong_d.il" />
     <Compile Include="superlong.il" />
   </ItemGroup>
 </Project>

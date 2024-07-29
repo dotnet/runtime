@@ -2,9 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.DataFlow.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -26,6 +24,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		// The code below marks methods which have RUC on them, it's not the point of this test to validate these here
 		[UnconditionalSuppressMessage ("test", "IL2026")]
+		// The code below marks methods which have RDC on them, it's not the point of this test to validate these here
+		[UnconditionalSuppressMessage ("test", "IL3050")]
 		public static void Main ()
 		{
 			// The test uses data flow annotation to mark all public methods on the specified types
@@ -49,6 +49,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (ImplementationOfTwoInterfacesWithOneMethod));
 			StaticInterfaceMethods.Test ();
 			BaseInPreservedScope.Test ();
+			DirectCall.Test ();
+			RequiresAndDynamicallyAccessedMembersValidation.Test ();
 		}
 
 		static void RequirePublicMethods ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -562,7 +564,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_ () { }
 		}
 
-
 		interface IBaseImplementedInterface
 		{
 			Type ReturnValueBaseWithInterfaceWithout ();
@@ -573,17 +574,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class BaseImplementsInterfaceViaDerived
 		{
-			[LogContains (
-				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
-				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
-				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public virtual Type ReturnValueBaseWithInterfaceWithout () => null;
 
-			[ExpectedWarning ("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
 			public virtual void RequiresUnreferencedCodeBaseWithoutInterfaceWith () { }
 		}
 
+		[ExpectedWarning ("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
+		[LogContains (
+			"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
+			"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
+			"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 		class DerivedWithInterfaceImplementedByBase : BaseImplementsInterfaceViaDerived, IBaseImplementedInterface
 		{
 		}
@@ -629,22 +630,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIDamOnAllMissing : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				// So it doesn't matter that the annotations are not in-sync since the access will validate
+				// the annotations on the implementation method - it doesn't even see the base method in this case.
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				public static Type AbstractMethod<T> (Type type) => null;
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				public static Type VirtualMethod<T> (Type type) => null;
 			}
 
 			class ImplIDamOnAllMismatch : IDamOnAll
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -653,9 +659,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					Type type)
 				{ return null; }
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -698,9 +705,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIDamOnNoneMismatch : IDamOnNone
 			{
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type AbstractMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -709,9 +717,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					Type type)
 				{ return null; }
 
-				[ExpectedWarning ("IL2092")]
-				[ExpectedWarning ("IL2093")]
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				public static Type VirtualMethod
 					<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -739,7 +748,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			class ImplIAnnotatedMethodsMismatch : Library.IAnnotatedMethods
 			{
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				public static void GenericWithMethodsStatic<T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -760,7 +770,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class ImplIUnannotatedMethodsMismatch : Library.IUnannotatedMethods
 			{
-				[ExpectedWarning ("IL2095")]
+				// NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
 				public static void GenericStatic<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
 
 				[ExpectedWarning ("IL2092")]
@@ -859,6 +870,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
+				// https://github.com/dotnet/linker/issues/3133
+				// Access the interfaces as well - otherwise NativeAOT can decide
+				// to not look for overrides since it knows it's making a direct access
+				// to a method and it doesn't need to know about the base method
+				// which leads to some warnings not being generated.
+				// The goal of this test is to validate the generated diagnostics
+				// so we're forcing the checks to happen with this.
+				typeof (Library.IAnnotatedMethods).RequiresAll ();
+				typeof (Library.IUnannotatedMethods).RequiresAll ();
+
 				typeof (ImplIUnannotatedMethodsMismatch).RequiresPublicMethods ();
 				typeof (ImplIAnnotatedMethodsMismatch).RequiresPublicMethods ();
 				typeof (DerivedFromAnnotatedMismatch).RequiresPublicMethods ();
@@ -867,6 +888,191 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (ImplIAnnotatedMethodsMatch).RequiresPublicMethods ();
 				typeof (DerivedFromAnnotatedMatch).RequiresPublicMethods ();
 				typeof (DerivedFromUnannotatedMatch).RequiresPublicMethods ();
+			}
+		}
+
+		// This is mostly for Native AOT - in that compiler it matters how a method
+		// is referenced as it will take a different code path to do some of these validations
+		// The above tests all rely on reflection marking so this test also uses direct calls
+		class DirectCall
+		{
+			abstract class Base
+			{
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public abstract Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public virtual Type NonGenericVirtual ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
+
+				public abstract void GenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ();
+
+				public virtual void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
+
+				public abstract Type UnannotatedAbstract (Type type);
+
+				public abstract void UnannotatedGenericAbstract<T> ();
+			}
+
+			class Derived : Base
+			{
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				public override Type NonGenericAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+				public override Type NonGenericVirtual (Type type) => null;
+
+				[ExpectedWarning ("IL2095")]
+				public override void GenericAbstract<T> () { }
+
+				[ExpectedWarning ("IL2095")]
+				public override void GenericVirtual<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public override Type UnannotatedAbstract ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+
+				[ExpectedWarning ("IL2095")]
+				public override void UnannotatedGenericAbstract<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> () { }
+			}
+
+			interface IBaseWithDefault
+			{
+				void DefaultMethod (Type type);
+			}
+
+			interface IDerivedWithDefault : IBaseWithDefault
+			{
+				[ExpectedWarning ("IL2092")]
+				[UnexpectedWarning ("IL2092", Tool.Analyzer, "https://github.com/dotnet/linker/issues/3121")]
+				void IBaseWithDefault.DefaultMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
+			}
+
+			class ImplDerivedWithDefault : IDerivedWithDefault
+			{
+			}
+
+			interface IGvmBase
+			{
+				Type UnannotatedGvm<T> (Type type);
+				Type UnannotatedGvmCalledThroughBase<T> (Type type);
+
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				static abstract Type AnnotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type);
+
+				static virtual Type UnannotatedStaticGvm<T> (Type type) => null;
+			}
+
+			class ImplIGvmBase : IGvmBase
+			{
+				// NativeAOT doesn't validate overrides when it can resolve them as direct calls
+				[ExpectedWarning ("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type UnannotatedGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public Type UnannotatedGvmCalledThroughBase<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				public static Type AnnotatedStaticGvm<T> (Type type) => null;
+
+				[ExpectedWarning ("IL2092")]
+				[ExpectedWarning ("IL2093")]
+				[ExpectedWarning ("IL2095")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static Type UnannotatedStaticGvm<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type) => null;
+			}
+
+			static void CallStaticGvm<TGvmBase> () where TGvmBase : IGvmBase
+			{
+				TGvmBase.AnnotatedStaticGvm<string> (typeof (string));
+				TGvmBase.UnannotatedStaticGvm<string> (typeof (string));
+			}
+
+			public static void Test ()
+			{
+				Base instance = new Derived ();
+				instance.NonGenericAbstract (typeof (string));
+				instance.NonGenericVirtual (typeof (string));
+				instance.GenericAbstract<string> ();
+				instance.GenericVirtual<string> ();
+				instance.UnannotatedAbstract (typeof (string));
+				instance.UnannotatedGenericAbstract<string> ();
+
+				((IBaseWithDefault) (new ImplDerivedWithDefault ())).DefaultMethod (typeof (string));
+
+				ImplIGvmBase impl = new ImplIGvmBase ();
+				impl.UnannotatedGvm<string> (typeof (string));
+
+				IGvmBase ibase = (IGvmBase) impl;
+				ibase.UnannotatedGvmCalledThroughBase<string> (typeof (string));
+
+				CallStaticGvm<ImplIGvmBase> ();
+			}
+		}
+
+		class RequiresAndDynamicallyAccessedMembersValidation
+		{
+			// These tests have both DynamicallyAccessedMembers annotations and Requires annotations.
+			// This is to reproduce a bug where the virtual method annotations would be validated due to
+			// the presence of DynamicallyAccessedMembers, but the logic for checking Requires annotations
+			// was incorrect. The bug didn't manifest with just Requires annotations because the methods wouldn't
+			// be validated at all for Requires on type.
+
+			class BaseMethodWithRequires
+			{
+				[RequiresUnreferencedCode (nameof (MethodWithRequires))]
+				[RequiresDynamicCode (nameof (MethodWithRequires))]
+				public virtual void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			[RequiresDynamicCode (nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			class DerivedTypeWithRequires_BaseMethodWithRequires : BaseMethodWithRequires
+			{
+				public override void MethodWithRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires))]
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires))]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires), Tool.NativeAot | Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3050", nameof (DerivedTypeWithRequires_BaseMethodWithRequires.MethodWithRequires), Tool.NativeAot | Tool.Analyzer, "")]
+			static void Test_DerivedTypeWithRequires_BaseMethodWithRequires ()
+			{
+				new DerivedTypeWithRequires_BaseMethodWithRequires ().MethodWithRequires (typeof (int));
+			}
+
+			class BaseMethodWithoutRequires
+			{
+				public virtual void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[RequiresUnreferencedCode (nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+			class DerivedTypeWithRequires_BaseMethodWithoutRequires : BaseMethodWithoutRequires
+			{
+				public override void MethodWithoutRequires ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) {}
+			}
+
+			[ExpectedWarning ("IL2026", nameof (DerivedTypeWithRequires_BaseMethodWithoutRequires))]
+			static void Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ()
+			{
+				new DerivedTypeWithRequires_BaseMethodWithoutRequires ().MethodWithoutRequires (typeof (int));
+			}
+
+			public static void Test ()
+			{
+				Test_DerivedTypeWithRequires_BaseMethodWithRequires ();
+				Test_DerivedTypeWithRequires_BaseMethodWithoutRequires ();
 			}
 		}
 	}

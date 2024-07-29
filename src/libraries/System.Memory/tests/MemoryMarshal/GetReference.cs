@@ -100,5 +100,21 @@ namespace System.SpanTests
                 Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>(null), ref pinnableReference));
             }
         }
+
+        [Fact]
+        public static void ReadOnlySpanGetReferenceAndReadInteger()
+        {
+            Assert.Equal(BitConverter.IsLittleEndian ?
+                0x65_00_68 :
+                0x68_00_65,
+                Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
+                    ref MemoryMarshal.GetReference("hello world 1".AsSpan())), 0)));
+
+            Assert.Equal(BitConverter.IsLittleEndian ?
+                0x6F_00_6C_00_6C_00_65_00 :
+                0x68_00_65_00_6C_00_6C_00,
+                Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
+                    ref MemoryMarshal.GetReference("hello world 2".AsSpan())), 1)));
+        }
     }
 }

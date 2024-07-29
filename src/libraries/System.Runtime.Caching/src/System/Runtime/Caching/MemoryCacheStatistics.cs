@@ -37,7 +37,7 @@ namespace System.Runtime.Caching
         private CacheMemoryMonitor _cacheMemoryMonitor;
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _configSupported => !OperatingSystem.IsBrowser();
 #else
@@ -153,7 +153,7 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = ConfigUtil.GetIntValue(config, ConfigUtil.CacheMemoryLimitMegabytes, _configCacheMemoryLimitMegabytes, true, int.MaxValue);
                 _configPhysicalMemoryLimitPercentage = ConfigUtil.GetIntValue(config, ConfigUtil.PhysicalMemoryLimitPercentage, _configPhysicalMemoryLimitPercentage, true, 100);
             }
-#if !NETCOREAPP
+#if !NET
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _configPhysicalMemoryLimitPercentage > 0)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_PhysicalMemoryLimitPercentage);
@@ -340,8 +340,19 @@ namespace System.Runtime.Caching
                     GCHandleRef<Timer> timerHandleRef = _timerHandleRef;
                     if (timerHandleRef != null && Interlocked.CompareExchange(ref _timerHandleRef, null, timerHandleRef) == timerHandleRef)
                     {
-                        timerHandleRef.Dispose();
-                        Dbg.Trace("MemoryCacheStats", "Stopped CacheMemoryTimers");
+                        // If inside an unhandled exception handler, Timers may be succeptible to deadlocks. Use a safer approach.
+                        if (_memoryCache.InUnhandledExceptionHandler)
+                        {
+                            // This does not stop/dispose the timer. But the callback on the timer is protected by _disposed, which we have already
+                            // set above.
+                            timerHandleRef.FreeHandle();
+                            Dbg.Trace("MemoryCacheStats", "Freed CacheMemoryTimers");
+                        }
+                        else
+                        {
+                            timerHandleRef.Dispose();
+                            Dbg.Trace("MemoryCacheStats", "Stopped CacheMemoryTimers");
+                        }
                     }
                 }
                 while (_inCacheManagerThread != 0)

@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CompareResultsAgainstSerializer()
         {
-            List<Order> obj = JsonTestHelper.PopulateLargeObject(2);
+            List<Order> obj = Order.PopulateLargeObject(2);
             string expected = await Serializer.SerializeWrapper(obj);
 
             JsonArray jArray = await Serializer.DeserializeWrapper<JsonArray>(expected);
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class Poco
         {
-            public string MyString { get; set; }
+            public string? MyString { get; set; }
             public JsonNode Node { get; set; }
             public JsonArray Array { get; set; }
             public JsonValue Value { get; set; }

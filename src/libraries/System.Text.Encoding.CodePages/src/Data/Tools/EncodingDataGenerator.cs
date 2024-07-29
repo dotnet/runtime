@@ -40,35 +40,35 @@ namespace EncodingDataGenerator
 
             while (paramIndex < args.Length - 1)
             {
-                if (args[paramIndex] ==  "--IanaMapping" || args[paramIndex] ==  "-i" )
+                if (args[paramIndex] == "--IanaMapping" || args[paramIndex] == "-i")
                 {
                     IanaMappings = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--PreferredIANANames" || args[paramIndex] ==  "-p" )
+                if (args[paramIndex] == "--PreferredIANANames" || args[paramIndex] == "-p")
                 {
                     PreferredIANANames = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--Output" || args[paramIndex] ==  "-o" )
+                if (args[paramIndex] == "--Output" || args[paramIndex] == "-o")
                 {
                     OutputDataTable = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--Namespace" || args[paramIndex] ==  "-n" )
+                if (args[paramIndex] == "--Namespace" || args[paramIndex] == "-n")
                 {
                     Namespace = args[paramIndex + 1];
                     paramIndex += 2;
                     continue;
                 }
 
-                if (args[paramIndex] ==  "--ClassName" || args[paramIndex] ==  "-c" )
+                if (args[paramIndex] == "--ClassName" || args[paramIndex] == "-c")
                 {
                     ClassName = args[paramIndex + 1];
                     paramIndex += 2;
@@ -319,13 +319,13 @@ namespace {2}
         // Ordered by alphabetized IANA name
         private const string EncodingNames =
 @"
-        // s_encodingNames is the concatenation of all supported IANA names for each codepage.
+        // EncodingNames is the concatenation of all supported IANA names for each codepage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        // Using indices from s_encodingNamesIndices, we binary search this string when mapping
+        // Using indices from EncodingNamesIndices, we binary search this string when mapping
         // an encoding name to a codepage. Note that these names are all lowercase and are
         // sorted alphabetically.
-        private const string s_encodingNames =|
+        private const string EncodingNames =|
             ""{0}"" + // {1:D}|
             """";
 ";
@@ -338,14 +338,14 @@ namespace {2}
         // Ordered by alphabetized IANA name
         private const string EncodingNameIndices =
 @"
-        // s_encodingNameIndices contains the start index of every encoding name in the string
-        // s_encodingNames. We infer the length of each string by looking at the start index
+        // EncodingNameIndices contains the start index of every encoding name in the string
+        // EncodingNames. We infer the length of each string by looking at the start index
         // of the next string.
-        private static readonly int[] s_encodingNameIndices = new int[]
-        {
+        private static ReadOnlySpan<int> EncodingNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         // The format is:
@@ -354,14 +354,14 @@ namespace {2}
         // Ordered by alphabetized IANA name
         private const string CodePagesByName =
 @"
-        // s_codePagesByName contains the list of supported codepages which match the encoding
-        // names listed in s_encodingNames. The way mapping works is we binary search
-        // s_encodingNames using s_encodingNamesIndices until we find a match for a given name.
-        // The index of the entry in s_encodingNamesIndices will be the index of codepage in s_codePagesByName.
-        private static readonly ushort[] s_codePagesByName = new ushort[]
-        {|
+        // CodePagesByName contains the list of supported codepages which match the encoding
+        // names listed in EncodingNames. The way mapping works is we binary search
+        // EncodingNames using EncodingNamesIndices until we find a match for a given name.
+        // The index of the entry in EncodingNamesIndices will be the index of codepage in CodePagesByName.
+        private static ReadOnlySpan<ushort> CodePagesByName =>
+        [|
             {0:D}, // {1}|
-        };
+        ];
 ";
 
         // The format is:
@@ -375,11 +375,11 @@ namespace {2}
         // we perform a linear search on s_mappedCodePages to find the index of the
         // given codepage. This is used to index WebNameIndices to get the start
         // index of the web name in the string WebNames, and to index
-        // s_englishNameIndices to get the start of the English name in s_englishNames.
-        private static readonly ushort[] s_mappedCodePages = new ushort[]
-        {|
+        // EnglishNameIndices to get the start of the English name in EnglishNames.
+        private static ReadOnlySpan<ushort> s_mappedCodePages =>
+        [|
             {0:D}, // {1}|
-        };
+        ];
 ";
 
         // The format is:
@@ -388,12 +388,12 @@ namespace {2}
         // Ordered by codepage
         private const string WebNames =
 @"
-        // s_webNames is a concatenation of the default encoding names
+        // WebNames is a concatenation of the default encoding names
         // for each code page. It is used in retrieving the value for
         // System.Text.Encoding.WebName given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        private const string s_webNames =|
+        private const string WebNames =|
             ""{0}"" + // {1:D}|
             """";
 ";
@@ -406,14 +406,14 @@ namespace {2}
         // Ordered by codepage
         private const string WebNameIndices =
 @"
-        // s_webNameIndices contains the start index of each code page's default
-        // web name in the string s_webNames. It is indexed by an index into
+        // WebNameIndices contains the start index of each code page's default
+        // web name in the string WebNames. It is indexed by an index into
         // s_mappedCodePages.
-        private static readonly int[] s_webNameIndices = new int[]
-        {
+        private static ReadOnlySpan<int> WebNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         // The format is:
@@ -422,12 +422,12 @@ namespace {2}
         // Ordered by codepage
         private const string EnglishNames =
 @"
-        // s_englishNames is the concatenation of the English names for each codepage.
+        // EnglishNames is the concatenation of the English names for each codepage.
         // It is used in retrieving the value for System.Text.Encoding.EncodingName
         // given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        private const string s_englishNames =|
+        private const string EnglishNames =|
             ""{0}"" + // {1:D}|
             """";
 ";
@@ -440,13 +440,13 @@ namespace {2}
         // Ordered by codepage
         private const string EnglishNameIndices =
 @"
-        // s_englishNameIndices contains the start index of each code page's English
-        // name in the string s_englishNames. It is indexed by an index into s_mappedCodePages.
-        private static readonly int[] s_englishNameIndices = new int[]
-        {
+        // EnglishNameIndices contains the start index of each code page's English
+        // name in the string EnglishNames. It is indexed by an index into s_mappedCodePages.
+        private static ReadOnlySpan<int> EnglishNameIndices =>
+        [
             0|, // {0} ({1:D})
             {2:D}|
-        };
+        ];
 ";
 
         private const string Footer =

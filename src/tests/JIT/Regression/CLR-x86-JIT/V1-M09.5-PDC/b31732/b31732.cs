@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public object m_xField2 = null;
         public static float Method1(bool[] param1)
@@ -29,10 +30,10 @@ namespace Test
             }
             return 0.0f;
         }
-        static int Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Method1(new bool[3]);
-            return 100;
         }
     }
 }

@@ -7,6 +7,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class X
 {
@@ -53,7 +54,7 @@ sealed class DS : B
     public override void incCount() { ds_count *= 41; }
 }
 
-class mainMethod
+public class mainMethod
 {
     public static bool failed = false;
     public static void checkGetType(System.Object x)
@@ -350,7 +351,8 @@ class mainMethod
         Console.WriteLine("-----------{0}", i++);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         callCheckGetType();
         callCheckIs();

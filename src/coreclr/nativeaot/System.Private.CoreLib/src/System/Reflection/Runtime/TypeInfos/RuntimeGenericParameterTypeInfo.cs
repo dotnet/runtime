@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.CustomAttributes;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -22,19 +22,7 @@ namespace System.Reflection.Runtime.TypeInfos
             _position = position;
         }
 
-        public sealed override bool IsTypeDefinition => false;
-        public sealed override bool IsGenericTypeDefinition => false;
-        protected sealed override bool HasElementTypeImpl() => false;
-        protected sealed override bool IsArrayImpl() => false;
-        public sealed override bool IsSZArray => false;
-        public sealed override bool IsVariableBoundArray => false;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
-        public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => true;
-        public abstract override bool IsGenericTypeParameter { get; }
-        public abstract override bool IsGenericMethodParameter { get; }
-        public sealed override bool IsByRefLike => false;
 
         public sealed override Assembly Assembly
         {
@@ -58,7 +46,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type[] GetGenericParameterConstraints()
         {
-            return ConstraintInfos.CloneTypeArray();
+            return ConstraintInfos.ToTypeArray();
         }
 
         public sealed override string FullName
@@ -71,15 +59,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // Unlike most other MemberInfo objects, generic parameter types never get cloned due to containing generic types being instantiated.
             // That is, their DeclaringType is always the generic type definition. As a Type, the ReflectedType property is always equal to the DeclaringType.
             //
             // Because of these conditions, we can safely implement both the method token equivalence and the "is this type from the same implementor"
             // check as our regular Equals() method.
-            return Equals(other);
+            return ToType().Equals(other);
         }
 
         public sealed override int GenericParameterPosition
@@ -111,10 +98,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return Name;
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            return TypeAttributes.Public;
-        }
+        public sealed override TypeAttributes Attributes => TypeAttributes.Public;
 
         internal sealed override string InternalFullNameOfAssembly
         {
@@ -146,16 +130,16 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
+                RuntimeTypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    TypeInfo constraintInfo = constraintInfos[i];
+                    RuntimeTypeInfo constraintInfo = constraintInfos[i];
                     if (constraintInfo.IsInterface)
                         continue;
                     return constraints[i];
                 }
 
-                RuntimeNamedTypeInfo objectTypeInfo = typeof(object).CastToRuntimeNamedTypeInfo();
+                RuntimeNamedTypeInfo objectTypeInfo = (RuntimeNamedTypeInfo)(typeof(object).ToRuntimeTypeInfo());
                 return objectTypeInfo.TypeDefinitionQHandle;
             }
         }
@@ -168,9 +152,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> result = new LowLevelList<QTypeDefRefOrSpec>();
                 QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
+                ArrayBuilder<QTypeDefRefOrSpec> result = new ArrayBuilder<QTypeDefRefOrSpec>(constraints.Length);
+                RuntimeTypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
                 {
                     if (constraintInfos[i].IsInterface)
@@ -182,14 +166,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected abstract QTypeDefRefOrSpec[] Constraints { get; }
 
-        private TypeInfo[] ConstraintInfos
+        private RuntimeTypeInfo[] ConstraintInfos
         {
             get
             {
                 QTypeDefRefOrSpec[] constraints = Constraints;
                 if (constraints.Length == 0)
-                    return Array.Empty<TypeInfo>();
-                TypeInfo[] constraintInfos = new TypeInfo[constraints.Length];
+                    return Array.Empty<RuntimeTypeInfo>();
+                RuntimeTypeInfo[] constraintInfos = new RuntimeTypeInfo[constraints.Length];
                 for (int i = 0; i < constraints.Length; i++)
                 {
                     constraintInfos[i] = constraints[i].Resolve(TypeContext);

@@ -10,7 +10,7 @@
 .assembly 'b66425' {}
 .assembly extern xunit.core {}
 
-.class TestClass{
+.class public TestClass{
 
 //+desc: leave from inner try{} to outside
 .method public static void test_21_try(){

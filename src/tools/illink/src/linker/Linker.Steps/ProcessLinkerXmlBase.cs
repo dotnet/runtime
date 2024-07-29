@@ -71,7 +71,7 @@ namespace Mono.Linker.Steps
 			try {
 				XPathNavigator nav = _document.CreateNavigator ();
 
-				// Initial structure check - ignore XML document which don't look like linker XML format
+				// Initial structure check - ignore XML document which don't look like ILLink XML format
 				if (!nav.MoveToChild (LinkerElementName, XmlNamespace))
 					return;
 
@@ -162,7 +162,7 @@ namespace Mono.Linker.Steps
 
 				string fullname = GetFullName (typeNav);
 
-				if (fullname.IndexOf ("*") != -1) {
+				if (fullname.Contains ('*')) {
 					if (ProcessTypePattern (fullname, assembly, typeNav))
 						continue;
 				}
@@ -251,7 +251,7 @@ namespace Mono.Linker.Steps
 		protected virtual void ProcessField (TypeDefinition type, XPathNavigator nav)
 		{
 			string signature = GetSignature (nav);
-			if (!String.IsNullOrEmpty (signature)) {
+			if (!string.IsNullOrEmpty (signature)) {
 				FieldDefinition? field = GetField (type, signature);
 				if (field == null) {
 					LogWarning (nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName ());
@@ -262,7 +262,7 @@ namespace Mono.Linker.Steps
 			}
 
 			string name = GetName (nav);
-			if (!String.IsNullOrEmpty (name)) {
+			if (!string.IsNullOrEmpty (name)) {
 				bool foundMatch = false;
 				if (type.HasFields) {
 					foreach (FieldDefinition field in type.Fields) {
@@ -305,7 +305,7 @@ namespace Mono.Linker.Steps
 		protected virtual void ProcessMethod (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
-			if (!String.IsNullOrEmpty (signature)) {
+			if (!string.IsNullOrEmpty (signature)) {
 				MethodDefinition? method = GetMethod (type, signature);
 				if (method == null) {
 					LogWarning (nav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName ());
@@ -316,7 +316,7 @@ namespace Mono.Linker.Steps
 			}
 
 			string name = GetAttribute (nav, NameAttributeName);
-			if (!String.IsNullOrEmpty (name)) {
+			if (!string.IsNullOrEmpty (name)) {
 				bool foundMatch = false;
 				if (type.HasMethods) {
 					foreach (MethodDefinition method in type.Methods) {
@@ -349,7 +349,7 @@ namespace Mono.Linker.Steps
 		protected virtual void ProcessEvent (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
-			if (!String.IsNullOrEmpty (signature)) {
+			if (!string.IsNullOrEmpty (signature)) {
 				EventDefinition? @event = GetEvent (type, signature);
 				if (@event == null) {
 					LogWarning (nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName ());
@@ -360,7 +360,7 @@ namespace Mono.Linker.Steps
 			}
 
 			string name = GetAttribute (nav, NameAttributeName);
-			if (!String.IsNullOrEmpty (name)) {
+			if (!string.IsNullOrEmpty (name)) {
 				bool foundMatch = false;
 				foreach (EventDefinition @event in type.Events) {
 					if (@event.Name == name) {
@@ -401,7 +401,7 @@ namespace Mono.Linker.Steps
 		protected virtual void ProcessProperty (TypeDefinition type, XPathNavigator nav, object? customData)
 		{
 			string signature = GetSignature (nav);
-			if (!String.IsNullOrEmpty (signature)) {
+			if (!string.IsNullOrEmpty (signature)) {
 				PropertyDefinition? property = GetProperty (type, signature);
 				if (property == null) {
 					LogWarning (nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName ());
@@ -412,7 +412,7 @@ namespace Mono.Linker.Steps
 			}
 
 			string name = GetAttribute (nav, NameAttributeName);
-			if (!String.IsNullOrEmpty (name)) {
+			if (!string.IsNullOrEmpty (name)) {
 				bool foundMatch = false;
 				foreach (PropertyDefinition property in type.Properties) {
 					if (property.Name == name) {

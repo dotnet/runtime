@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization.DataContracts;
 using System.Xml;
@@ -13,7 +14,7 @@ namespace System.Runtime.Serialization
 
         internal KnownTypeDataContractResolver(XmlObjectSerializerContext context)
         {
-            Fx.Assert(context != null, "KnownTypeDataContractResolver should not be instantiated with a null context");
+            Debug.Assert(context != null, "KnownTypeDataContractResolver should not be instantiated with a null context");
             _context = context;
         }
 

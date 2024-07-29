@@ -11,6 +11,14 @@
 #ifndef __MONO_MONO_CONTEXT_H__
 #define __MONO_MONO_CONTEXT_H__
 
+/* 
+ * Handle non-gnu libc versions with nothing in features.h 
+ * We have no idea what they're compatible with, so always fail.
+ */
+#ifndef __GLIBC_PREREQ
+# define __GLIBC_PREREQ(x,y) 0
+#endif
+
 #include "mono-compiler.h"
 #include "mono-sigcontext.h"
 #include "mono-machine.h"
@@ -21,19 +29,34 @@
 
 #if defined(TARGET_X86)
 #if defined(__APPLE__)
-#define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x86 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 #elif defined(TARGET_AMD64)
 #if defined(__APPLE__)
 #define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x64 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #elif defined(__linux__) && defined(__GLIBC__)
 #define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 typedef struct _libc_xmmreg MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x64 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #elif defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
 //#define MONO_HAVE_SIMD_REG_AVX
+#include <intrin.h>
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
 #elif defined(HOST_ANDROID)
@@ -41,8 +64,13 @@ typedef __m128d MonoContextSimdReg;
 typedef struct _libc_xmmreg MonoContextSimdReg;
 #elif defined(__linux__) || defined(__OpenBSD__)
 #define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x64 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 #elif defined(TARGET_ARM64)
 /* We need a definition for MonoContextSimdReg even when cross-compiling
@@ -50,6 +78,7 @@ typedef __m128d MonoContextSimdReg;
    a stand-in. This is not expected to work for Windows ARM64 native builds. */
 #if defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
+#include <intrin.h>
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
 #else
@@ -480,7 +509,7 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
-#elif (defined(__aarch64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
+#elif ((defined(_M_ARM64) || defined(__aarch64__)) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_ARM64))
 
 #include <mono/arch/arm64/arm64-codegen.h>
 
@@ -836,7 +865,7 @@ typedef struct ucontext MonoContext;
 
 typedef struct {
 	host_mgreg_t gregs [RISCV_N_GREGS]; // [0] contains pc since x0 is hard-wired to zero anyway.
-	double fregs [RISCV_N_FREGS * 2 + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
+	double fregs [RISCV_N_FREGS + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx, ip) do { (ctx)->gregs [RISCV_ZERO] = (host_mgreg_t) (ip); } while (0)

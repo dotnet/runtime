@@ -30,7 +30,10 @@ namespace ILCompiler
             _rootAdder(methodEntryPoint, reason);
 
             if (exportName != null)
+            {
+                exportName = _factory.NameMangler.NodeMangler.ExternMethod(exportName, method);
                 _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
 
             if (canonMethod != method && method.HasInstantiation)
                 _rootAdder(_factory.MethodGenericDictionary(method), reason);
@@ -41,16 +44,36 @@ namespace ILCompiler
             _rootAdder(_factory.MaximallyConstructableType(type), reason);
         }
 
+        public void AddReflectionRoot(TypeDesc type, string reason)
+        {
+            TypeDesc lookedAtType = type;
+            do
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(lookedAtType);
+                lookedAtType = (lookedAtType as MetadataType)?.ContainingType;
+            }
+            while (lookedAtType != null);
+
+            _rootAdder(_factory.ReflectedType(type), reason);
+        }
+
         public void AddReflectionRoot(MethodDesc method, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
-                _rootAdder(_factory.ReflectableMethod(method), reason);
+            {
+                _factory.TypeSystemContext.EnsureLoadableMethod(method);
+                _rootAdder(_factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), reason);
+            }
         }
 
         public void AddReflectionRoot(FieldDesc field, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
-                _rootAdder(_factory.ReflectableField(field), reason);
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(field.OwningType);
+                _factory.TypeSystemContext.EnsureLoadableType(field.FieldType);
+                _rootAdder(_factory.ReflectedField(field), reason);
+            }
         }
 
         public void AddCompilationRoot(object o, string reason)
@@ -121,6 +144,7 @@ namespace ILCompiler
         {
             var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
             _rootAdder(blob, reason);
+            exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
             _factory.NodeAliases.Add(blob, exportName);
         }
 

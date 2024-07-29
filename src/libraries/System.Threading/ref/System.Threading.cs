@@ -14,31 +14,49 @@ namespace System.Threading
         public long CurrentPhaseNumber { get { throw null; } }
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public long AddParticipant() { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public long AddParticipants(int participantCount) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void RemoveParticipant() { }
         public void RemoveParticipants(int participantCount) { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void SignalAndWait() { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void SignalAndWait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool SignalAndWait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class BarrierPostPhaseException : System.Exception
     {
         public BarrierPostPhaseException() { }
         public BarrierPostPhaseException(System.Exception? innerException) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public BarrierPostPhaseException(string? message) { }
         public BarrierPostPhaseException(string? message, System.Exception? innerException) { }
@@ -60,17 +78,29 @@ namespace System.Threading
         public bool Signal(int signalCount) { throw null; }
         public bool TryAddCount() { throw null; }
         public bool TryAddCount(int signalCount) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait() { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class HostExecutionContext : System.IDisposable
@@ -130,6 +160,8 @@ namespace System.Threading
     {
         public AbandonedMutexException() { }
         public AbandonedMutexException(int location, System.Threading.WaitHandle? handle) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AbandonedMutexException(string? message) { }
         public AbandonedMutexException(string? message, System.Exception? inner) { }
@@ -194,6 +226,8 @@ namespace System.Threading
         public static System.Threading.ExecutionContext? Capture() { throw null; }
         public System.Threading.ExecutionContext CreateCopy() { throw null; }
         public void Dispose() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
         public static void Restore(System.Threading.ExecutionContext executionContext) { }
@@ -216,6 +250,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong And(ref ulong location1, ulong value) { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand) { throw null; }
+        public static short CompareExchange(ref short location1, short value, short comparand) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand) { throw null; }
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
@@ -229,7 +269,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) { throw null; }
         public static int Decrement(ref int location) { throw null; }
         public static long Decrement(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -237,6 +277,12 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Decrement(ref ulong location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
+        public static byte Exchange(ref byte location1, byte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Exchange(ref sbyte location1, sbyte value) { throw null; }
+        public static short Exchange(ref short location1, short value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Exchange(ref ushort location1, ushort value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
@@ -250,7 +296,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
+        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) { throw null; }
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -265,9 +311,9 @@ namespace System.Threading
         public static uint Or(ref uint location1, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Or(ref ulong location1, ulong value) { throw null; }
-        public static long Read(ref long location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
     }
     public static partial class LazyInitializer
     {
@@ -280,6 +326,8 @@ namespace System.Threading
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public LockRecursionException(string? message) { }
         public LockRecursionException(string? message, System.Exception? innerException) { }
@@ -305,17 +353,29 @@ namespace System.Threading
         protected virtual void Dispose(bool disposing) { }
         public void Reset() { }
         public void Set() { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait() { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public static partial class Monitor
@@ -333,15 +393,25 @@ namespace System.Threading
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken) { }
         public static bool TryEnter(object obj, System.TimeSpan timeout) { throw null; }
         public static void TryEnter(object obj, System.TimeSpan timeout, ref bool lockTaken) { }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout, bool exitContext) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, System.TimeSpan timeout) { throw null; }
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static bool Wait(object obj, System.TimeSpan timeout, bool exitContext) { throw null; }
     }
     public sealed partial class Mutex : System.Threading.WaitHandle
@@ -398,6 +468,8 @@ namespace System.Threading
     public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SemaphoreFullException(string? message) { }
         public SemaphoreFullException(string? message, System.Exception? innerException) { }
@@ -478,6 +550,8 @@ namespace System.Threading
     public partial class SynchronizationLockException : System.SystemException
     {
         public SynchronizationLockException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SynchronizationLockException(string? message) { }
         public SynchronizationLockException(string? message, System.Exception? innerException) { }
@@ -499,26 +573,27 @@ namespace System.Threading
     }
     public static partial class Volatile
     {
-        public static bool Read(ref bool location) { throw null; }
-        public static byte Read(ref byte location) { throw null; }
-        public static double Read(ref double location) { throw null; }
-        public static short Read(ref short location) { throw null; }
-        public static int Read(ref int location) { throw null; }
-        public static long Read(ref long location) { throw null; }
-        public static System.IntPtr Read(ref System.IntPtr location) { throw null; }
+        public static bool Read(ref readonly bool location) { throw null; }
+        public static byte Read(ref readonly byte location) { throw null; }
+        public static double Read(ref readonly double location) { throw null; }
+        public static short Read(ref readonly short location) { throw null; }
+        public static int Read(ref readonly int location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
+        public static System.IntPtr Read(ref readonly System.IntPtr location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte Read(ref sbyte location) { throw null; }
-        public static float Read(ref float location) { throw null; }
+        public static sbyte Read(ref readonly sbyte location) { throw null; }
+        public static float Read(ref readonly float location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort Read(ref ushort location) { throw null; }
+        public static ushort Read(ref readonly ushort location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Read(ref uint location) { throw null; }
+        public static uint Read(ref readonly uint location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
+        public static System.UIntPtr Read(ref readonly System.UIntPtr location) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref T location) where T : class? { throw null; }
+        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref readonly T location) where T : class? { throw null; }
+
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }
@@ -542,6 +617,8 @@ namespace System.Threading
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public WaitHandleCannotBeOpenedException(string? message) { }
         public WaitHandleCannotBeOpenedException(string? message, System.Exception? innerException) { }

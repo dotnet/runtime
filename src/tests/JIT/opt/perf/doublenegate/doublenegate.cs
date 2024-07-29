@@ -1,14 +1,16 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace coreclr_test_13647
 {
-    class doublenegate
+    public class doublenegate
     {
         static int _dummyValueInt = 6;
         static double _dummyValueDouble = 6.0;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Test1() && Test2() && Test3()) {
                 Console.WriteLine("PASSED");

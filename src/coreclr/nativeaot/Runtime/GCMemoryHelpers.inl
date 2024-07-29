@@ -7,6 +7,21 @@
 // Unmanaged GC memory helpers
 //
 
+// A 'clump' is defined as the size of memory covered by 1 byte in the card table.
+#ifdef HOST_64BIT
+#define CLUMP_SIZE 0x800
+#define LOG2_CLUMP_SIZE 11
+#else
+#define CLUMP_SIZE 0x400
+#define LOG2_CLUMP_SIZE 10
+#endif
+
+// Global data cells exported by the GC.
+extern "C" unsigned char* g_ephemeral_low;
+extern "C" unsigned char* g_ephemeral_high;
+extern "C" unsigned char* g_lowest_address;
+extern "C" unsigned char* g_highest_address;
+
 #if defined(HOST_64BIT)
 static const int card_byte_shift = 11;
 static const int card_bundle_byte_shift = 21;
@@ -19,32 +34,33 @@ static const int card_byte_shift = 10;
 #endif
 
 
-// This function fills a piece of memory in a GC safe way.  It makes the guarantee
-// that it will fill memory in at least pointer sized chunks whenever possible.
+// This function clears a piece of memory in a GC safe way.
+// Object-aligned memory is zeroed with no smaller than pointer-size granularity.
+// We must make this guarantee whenever we clear memory in the GC heap that could contain object
+// references.  The GC or other user threads can read object references at any time, clearing them bytewise can result
+// in a read on another thread getting incorrect data.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
-// We must make this guarantee whenever we clear memory in the GC heap that could contain
-// object references.  The GC or other user threads can read object references at any time,
-// clearing them bytewise can result in a read on another thread getting incorrect data.
-FORCEINLINE void InlineGCSafeFillMemory(void * mem, size_t size, size_t pv)
+// USAGE:  The caller is responsible for null-checking the reference.
+FORCEINLINE void InlineGcSafeZeroMemory(void * mem, size_t size)
 {
     uint8_t * memBytes = (uint8_t *)mem;
     uint8_t * endBytes = &memBytes[size];
 
     // handle unaligned bytes at the beginning
     while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
-        *memBytes++ = (uint8_t)pv;
+        *memBytes++ = 0;
 
     // now write pointer sized pieces
     // volatile ensures that this doesn't get optimized back into a memset call
     size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
     volatile uintptr_t* memPtr = (uintptr_t*)memBytes;
     for (size_t i = 0; i < nPtrs; i++)
-        *memPtr++ = pv;
+        *memPtr++ = 0;
 
     // handle remaining bytes at the end
     memBytes = (uint8_t*)memPtr;
     while (memBytes < endBytes)
-        *memBytes++ = (uint8_t)pv;
+        *memBytes++ = 0;
 }
 
 // These functions copy memory in a GC safe way.  They makes the guarantee
@@ -156,6 +172,8 @@ static const uint32_t INVALIDGCVALUE = 0xcccccccd;
 
 FORCEINLINE void InlineWriteBarrier(void * dst, void * ref)
 {
+    ASSERT(((uint8_t*)dst >= g_lowest_address) && ((uint8_t*)dst < g_highest_address))
+
     if (((uint8_t*)ref >= g_ephemeral_low) && ((uint8_t*)ref < g_ephemeral_high))
     {
         // volatile is used here to prevent fetch of g_card_table from being reordered
@@ -210,14 +228,9 @@ FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
 
 FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 {
-    // Check whether the writes were even into the heap. If not there's no card update required.
-    // Also if the size is smaller than a pointer, no write barrier is required.
-    // This case can occur with universal shared generic code where the size
-    // is not known at compile time.
-    if (pMemStart < g_lowest_address || (pMemStart >= g_highest_address) || (cbMemSize < sizeof(uintptr_t)))
-    {
-        return;
-    }
+    // Caller is expected to check whether the writes were even into the heap
+    ASSERT(cbMemSize >= sizeof(uintptr_t));
+    ASSERT((pMemStart >= g_lowest_address) && (pMemStart < g_highest_address));
 
 #ifdef WRITE_BARRIER_CHECK
     // Perform shadow heap updates corresponding to the gc heap updates that immediately preceded this helper

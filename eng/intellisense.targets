@@ -1,0 +1,62 @@
+<Project>
+
+  <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
+    <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
+    <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
+    <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+
+    <IntermediateDocFileItemFromIntellisensePackage>$(IntermediateOutputPath)$(TargetName).intellisense-package.xml</IntermediateDocFileItemFromIntellisensePackage>
+
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors when the intellisense package xml file is used. -->
+    <NoWarn Condition="'$(SkipIntellisenseNoWarnCS1591)' != 'true'">$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <!-- Flow these properties to consuming projects for Microsoft.Internal.Runtime.DotNetApiDocs.Transport.proj to only
+       include the source of truth compiler generated documentation files. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <UseCompilerGeneratedDocXmlFile>$(UseCompilerGeneratedDocXmlFile)</UseCompilerGeneratedDocXmlFile>
+      <IsPartialFacadeAssembly>$(IsPartialFacadeAssembly)</IsPartialFacadeAssembly>
+      <IsPlatformNotSupportedAssembly Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+  </ItemGroup>
+
+  <!-- Prepare the intellisense package xml file by copying it to the project's intermediate folder and update its file timestamp.
+       This is necessary so that all project outputs are newer than all project inputs. Directly copying from the intellisense package
+       would violate that and break fast up-to-date check. -->
+  <Target Name="PrepareIntellisensePackageXmlFile"
+          Inputs="$(IntellisensePackageXmlFilePath)"
+          Outputs="$(IntermediateDocFileItemFromIntellisensePackage)">
+    <Copy SourceFiles="$(IntellisensePackageXmlFilePath)"
+          DestinationFiles="$(IntermediateDocFileItemFromIntellisensePackage)" />
+
+    <Touch Files="$(IntermediateDocFileItemFromIntellisensePackage)" />
+  </Target>
+
+  <!-- Replace the compiler generated xml file in the obj folder with the one that comes from the intellisense package. -->
+  <Target Name="ChangeDocumentationFileForPackaging"
+          DependsOnTargets="PrepareIntellisensePackageXmlFile"
+          BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
+          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != ''">
+    <ItemGroup>
+      <DocFileItem Remove="@(DocFileItem)" />
+      <DocFileItem Include="$(IntermediateDocFileItemFromIntellisensePackage)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Allow P2Ps to retrieve the DocFileItem path. -->
+  <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithDocFileItem"
+          DependsOnTargets="ChangeDocumentationFileForPackaging"
+          AfterTargets="GetTargetPathWithTargetPlatformMoniker">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker DocFileItem="@(DocFileItem)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

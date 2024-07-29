@@ -50,7 +50,7 @@ MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 
 MonoCustomAttrInfo*
-mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error);
+mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error, gboolean respect_cattr_visibility);
 
 MonoArrayHandle
 mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *error);
@@ -65,6 +65,8 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, gboolean ignore_missing, MonoError *error);
 MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_method_checked   (MonoMethod *method, MonoError *error);
+gboolean
+mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kind, char **member_name, MonoError *error);
 MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
 MONO_COMPONENT_API MonoCustomAttrInfo*

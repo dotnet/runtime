@@ -11,7 +11,7 @@ namespace System.Management.Tests
         private static readonly bool s_isElevated = AdminHelpers.IsProcessElevated();
         private static readonly bool s_isWmiSupported =
                                             PlatformDetection.IsWindows &&
-                                            PlatformDetection.IsNotArmNorArm64Process &&
+                                            PlatformDetection.IsNotArmProcess &&
                                             PlatformDetection.IsNotWindowsNanoServer &&
                                             PlatformDetection.IsNotWindowsIoTCore &&
                                             !PlatformDetection.IsInAppContainer;

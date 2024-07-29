@@ -15,11 +15,13 @@
     <DOTNETVariables>
       DOTNET_TieredCompilation;
       DOTNET_DbgEnableMiniDump;
+      DOTNET_EnableCrashReport;
       DOTNET_DbgEnableElfDumpOnMacOS;
       DOTNET_DbgMiniDumpName;
       DOTNET_EnableAES;
       DOTNET_EnableAVX;
       DOTNET_EnableAVX2;
+      DOTNET_EnableAVX512F;
       DOTNET_EnableBMI1;
       DOTNET_EnableBMI2;
       DOTNET_EnableFMA;
@@ -35,7 +37,9 @@
       DOTNET_EnableSSE41;
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
-      DOTNET_JitForceEVEXEncoding;
+      DOTNET_JitStressEvexEncoding;
+      DOTNET_PreferredVectorBitWidth;
+      DOTNET_MaxVectorTBitWidth;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -49,7 +53,6 @@
       DOTNET_JitStressRegs;
       DOTNET_TailcallStress;
       DOTNET_ReadyToRun;
-      DOTNET_ZapDisable;
       DOTNET_TC_OnStackReplacement;
       DOTNET_TC_QuickJitForLoops;
       DOTNET_TC_OnStackReplacement_InitialCounter;
@@ -68,9 +71,20 @@
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
       DOTNET_JitRandomlyCollect64BitCounts;
+      DOTNET_JitStressModeNames;
+      DOTNET_JitGuardedDevirtualizationMaxTypeChecks;
+      DOTNET_JitProfileCasts;
+      DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized;
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
-      RunningIlasmRoundTrip
+      RunningIlasmRoundTrip;
+      DOTNET_JitSynthesizeCounts;
+      DOTNET_JitCheckSynthesizedCounts;
+      DOTNET_JitRLCSEGreedy;
+      DOTNET_JitEnableOptRepeat;
+      DOTNET_JitOptRepeat;
+      DOTNET_JitOptRepeatCount;
+      DOTNET_JitDoReversePostOrderLayout;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -82,8 +96,8 @@
     <TestEnvironment>
       <TieredCompilation>0</TieredCompilation>
       <DbgEnableMiniDump Condition="'$(TargetsWindows)' != 'true'">1</DbgEnableMiniDump> <!-- Enable minidumps for all scenarios -->
-      <DbgEnableElfDumpOnMacOS Condition="'$(TargetsOSX)' == 'true'">1</DbgEnableElfDumpOnMacOS> <!-- Enable minidumps for OSX -->
       <DbgMiniDumpName Condition="'$(TargetsWindows)' != 'true'">$HELIX_DUMP_FOLDER/coredump.%d.dmp</DbgMiniDumpName>
+      <EnableCrashReport Condition="'$(TargetsWindows)' != 'true'">1</EnableCrashReport>
     </TestEnvironment>
   </ItemDefinitionGroup>
 
@@ -101,9 +115,11 @@
     <TestEnvironment Include="jitstress2_tiered" JitStress="2" TieredCompilation="1" />
     <TestEnvironment Include="jitstress_isas_incompletehwintrinsic" EnableIncompleteISAClass="1"  />
     <TestEnvironment Include="jitstress_isas_nohwintrinsic" EnableHWIntrinsic="0" />
+    <TestEnvironment Include="jitstress_isas_x86_evex" JitStressEvexEncoding="1" PreferredVectorBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_x86_noaes" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_x86_noavx" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_x86_noavx2" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_x86_noavx512" EnableAVX512F="0" /> <!-- Depends on AVX2 -->
     <TestEnvironment Include="jitstress_isas_x86_nobmi1" EnableBMI1="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_x86_nobmi2" EnableBMI2="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_x86_nofma" EnableFMA="0" /> <!-- Depends on AVX -->
@@ -118,9 +134,12 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_x86_vectort128" JitStressEvexEncoding="1" MaxVectorTBitWidth="128" />
+    <TestEnvironment Include="jitstress_isas_x86_vectort512" JitStressEvexEncoding="1" MaxVectorTBitWidth="512" />
     <TestEnvironment Include="jitstress_isas_1_x86_noaes" JitStress="1" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx" JitStress="1" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_1_x86_noavx2" JitStress="1" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_1_x86_noavx512" JitStress="1" EnableAVX512F="0" /> <!-- Depends on AVX2 -->
     <TestEnvironment Include="jitstress_isas_1_x86_nobmi1" JitStress="1" EnableBMI1="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_1_x86_nobmi2" JitStress="1" EnableBMI2="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_1_x86_nofma" JitStress="1" EnableFMA="0" /> <!-- Depends on AVX -->
@@ -138,6 +157,7 @@
     <TestEnvironment Include="jitstress_isas_2_x86_noaes" JitStress="2" EnableAES="0" /> <!-- Depends on SSE2 -->
     <TestEnvironment Include="jitstress_isas_2_x86_noavx" JitStress="2" EnableAVX="0" /> <!-- Depends on SSE42 -->
     <TestEnvironment Include="jitstress_isas_2_x86_noavx2" JitStress="2" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_2_x86_noavx512" JitStress="2" EnableAVX512F="0" /> <!-- Depends on AVX2 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nobmi1" JitStress="2" EnableBMI1="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_2_x86_nobmi2" JitStress="2" EnableBMI2="0" /> <!-- No dependencies -->
     <TestEnvironment Include="jitstress_isas_2_x86_nofma" JitStress="2" EnableFMA="0" /> <!-- Depends on AVX -->
@@ -152,7 +172,7 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
-    <TestEnvironment Include="jitstress_isas_avx512_forceevex" JitForceEVEXEncoding="1" /> <!-- Depends on AVX512 -->
+    <TestEnvironment Include="jitstress_isas_arm64_sve" AltJitName="clrjit_universal_arm64_x64.dll" AltJit="*" MaxVectorTBitWidth="128" EnableAVX="0" /> <!-- Trigger Sve code paths-->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
@@ -161,6 +181,7 @@
     <TestEnvironment Include="jitstressregs0x10_x86_noavx" JitStressRegs="0x10" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs0x80_x86_noavx" JitStressRegs="0x80" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs0x1000_x86_noavx" JitStressRegs="0x1000" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs0x2000_x86_noavx" JitStressRegs="0x2000" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs1" JitStressRegs="1" />
     <TestEnvironment Include="jitstressregs2" JitStressRegs="2" />
     <TestEnvironment Include="jitstressregs3" JitStressRegs="3" />
@@ -169,6 +190,7 @@
     <TestEnvironment Include="jitstressregs0x10" JitStressRegs="0x10" />
     <TestEnvironment Include="jitstressregs0x80" JitStressRegs="0x80" />
     <TestEnvironment Include="jitstressregs0x1000" JitStressRegs="0x1000" />
+    <TestEnvironment Include="jitstressregs0x2000" JitStressRegs="0x2000" />
     <TestEnvironment Include="jitstress2_jitstressregs1" JitStress="2" JitStressRegs="1" />
     <TestEnvironment Include="jitstress2_jitstressregs2" JitStress="2" JitStressRegs="2" />
     <TestEnvironment Include="jitstress2_jitstressregs3" JitStress="2" JitStressRegs="3" />
@@ -177,6 +199,7 @@
     <TestEnvironment Include="jitstress2_jitstressregs0x10" JitStress="2" JitStressRegs="0x10" />
     <TestEnvironment Include="jitstress2_jitstressregs0x80" JitStress="2" JitStressRegs="0x80" />
     <TestEnvironment Include="jitstress2_jitstressregs0x1000" JitStress="2" JitStressRegs="0x1000" />
+    <TestEnvironment Include="jitstress2_jitstressregs0x2000" JitStress="2" JitStressRegs="0x2000" />
     <!-- There are multiple cases of `jitstress_random_*` so a single pipeline can run random JitStress multiple times without fear
          of a problem due to repeating the same scenario name. Note that this file is invoked with only one of these at a time.
     -->
@@ -188,11 +211,11 @@
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
     <TestEnvironment Include="gcstress0xf" GCStress="0xF" />
-    <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
+    <TestEnvironment Include="disabler2r" ReadyToRun="0" />
     <TestEnvironment Include="heapverify1" HeapVerify="1" />
-    <TestEnvironment Include="gcstress0xc_zapdisable" GCStress="0xC" ZapDisable="1" ReadyToRun="0" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_jitstress2" GCStress="0xC" ZapDisable="1" ReadyToRun="0" JitStress="2" />
-    <TestEnvironment Include="gcstress0xc_zapdisable_heapverify1" GCStress="0xC" ZapDisable="1" ReadyToRun="0" HeapVerify="1" />
+    <TestEnvironment Include="gcstress0xc_disabler2r" GCStress="0xC" ReadyToRun="0" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_jitstress2" GCStress="0xC" ReadyToRun="0" JitStress="2" />
+    <TestEnvironment Include="gcstress0xc_disabler2r_heapverify1" GCStress="0xC" ReadyToRun="0" HeapVerify="1" />
     <TestEnvironment Include="gcstress0xc_jitstress1" GCStress="0xC" JitStress="1" />
     <TestEnvironment Include="gcstress0xc_jitstress2" GCStress="0xC" JitStress="2" />
     <TestEnvironment Include="gcstress0xc_tailcallstress" GCStress="0xC" TailcallStress="1" />
@@ -203,6 +226,8 @@
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
+    <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
@@ -210,11 +235,17 @@
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
-    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitProfileCasts="1"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
+    <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" JitGuardedDevirtualizationMaxTypeChecks="3" JitProfileCasts="1" />
     <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
+    <TestEnvironment Include="syntheticpgo" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="1" JitCheckSynthesizedCounts="1" />
+    <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedCounts="1" />
+    <TestEnvironment Include="jitrlcse" JitRLCSEGreedy="1" />
+    <TestEnvironment Include="jitoptrepeat" JitEnableOptRepeat="1" JitOptRepeat="*" JitOptRepeatCount="2"/>
+    <TestEnvironment Include="jitoldlayout" JitDoReversePostOrderLayout="0"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
@@ -252,7 +283,7 @@
 
        2) Otherwise, the test scenario defines such DOTNET_* environment variable and the specified value
           of this variable can be extracted by using Metadata() item function.
-      
+
        3) This is where we process a pseudo-value of "random" in the DOTNET table into an actual random number.
       -->
 
@@ -291,12 +322,14 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
+
       <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
       <!-- FIXME: temporarily disable LLVM JIT and use mini JIT until LLVM JIT support is brought back -->
       <_TestEnvFileLine Condition="'false' == 'true' and '$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
-      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
 

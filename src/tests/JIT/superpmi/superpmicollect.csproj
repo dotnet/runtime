@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- This test uses very custom execution logic including explicit Main -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <!-- ilasm round-trip testing works, but is not interesting for this test:
          we already get round-trip testing for the referenced projects, so doing
          it here only adds round-trip testing of the harness, as well as doing
@@ -12,7 +17,7 @@
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
-    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'OSX'">true</JitOptimizationSensitive>
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
@@ -25,14 +30,10 @@
   <ItemGroup>
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
-    <!-- The reference to 10w5d_cs_do.csproj is commented out due to https://github.com/dotnet/runtime/issues/76421: 
-        merged tests (those built with BuildAsStandalone=false) don't get .cmd/.sh files, which are needed to
-        run the test by the superpmicollect driver.
-    -->
-    <!--
-    <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
-    -->
-    <ProjectReference Include="@(_SpmiTestProjects)">
+    <_SpmiTestProjects Include="..\Methodical\cctor\xassem\xprecise1_cs_do.csproj" />
+    <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" />
+
+    <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>
       <TargetPath>%(FileName)</TargetPath>

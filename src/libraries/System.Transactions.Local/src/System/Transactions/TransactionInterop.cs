@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Transactions.DtcProxyShim;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
 using System.Transactions.Oletx;
@@ -278,14 +279,21 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, $"{nameof(TransactionInterop)}.{nameof(GetDtcTransaction)}");
             }
 
-            IDtcTransaction? transactionNative;
+            IDtcTransaction? transactionComObject;
 
             // First, make sure we are working with an OletxTransaction.
             OletxTransaction oletxTx = ConvertToOletxTransaction(transaction);
 
             try
             {
-                oletxTx.RealOletxTransaction.TransactionShim.GetITransactionNative(out transactionNative);
+                oletxTx.RealOletxTransaction.TransactionShim.GetITransactionNative(out ITransaction transactionNative);
+
+                ComWrappers.TryGetComInstance(transactionNative, out IntPtr transactionNativePtr);
+
+                transactionComObject = (IDtcTransaction)Marshal.GetObjectForIUnknown(transactionNativePtr);
+                Marshal.SetComObjectData(transactionComObject, typeof(ITransaction), transactionNative);
+
+                Marshal.Release(transactionNativePtr);
             }
             catch (COMException comException)
             {
@@ -298,6 +306,17 @@ namespace System.Transactions
                 etwLog.MethodExit(TraceSourceType.TraceSourceOleTx, $"{nameof(TransactionInterop)}.{nameof(GetDtcTransaction)}");
             }
 
+            return transactionComObject;
+        }
+
+        internal static IDtcTransaction GetDtcTransaction(ITransaction transaction)
+        {
+            ComWrappers.TryGetComInstance(transaction, out IntPtr transactionNativePtr);
+
+            var transactionNative = (IDtcTransaction)Marshal.GetObjectForIUnknown(transactionNativePtr);
+            Marshal.SetComObjectData(transactionNative, typeof(ITransaction), transaction);
+
+            Marshal.Release(transactionNativePtr);
             return transactionNative;
         }
 
@@ -320,12 +339,9 @@ namespace System.Transactions
             RealOletxTransaction? realTx = null;
             OletxTransaction? oleTx = null;
 
-            // Let's get the guid of the transaction from the proxy to see if we already have an object.
-            if (transactionNative is not ITransaction myTransactionNative)
-            {
-                throw new ArgumentException(SR.InvalidArgument, nameof(transactionNative));
-            }
+            ITransaction myTransactionNative = GetITransactionFromIDtcTransaction(transactionNative);
 
+            // Let's get the guid of the transaction from the proxy to see if we already have an object.
             OletxXactTransInfo xactInfo;
             try
             {
@@ -417,6 +433,31 @@ namespace System.Transactions
             }
 
             return transaction;
+        }
+
+        internal static ITransaction GetITransactionFromIDtcTransaction(IDtcTransaction transactionNative)
+        {
+            if (Marshal.GetComObjectData(transactionNative, typeof(ITransaction)) is not ITransaction myTransactionNative)
+            {
+                unsafe
+                {
+                    nint unknown = Marshal.GetIUnknownForObject(transactionNative);
+                    if (Marshal.QueryInterface(unknown, Guids.IID_ITransaction_Guid, out IntPtr transactionNativePtr) == 0)
+                    {
+                        Marshal.Release(unknown);
+                        myTransactionNative = ComInterfaceMarshaller<ITransaction>.ConvertToManaged((void*)transactionNativePtr)!;
+                        Marshal.SetComObjectData(transactionNative, typeof(ITransaction), myTransactionNative);
+                        Marshal.Release(transactionNativePtr);
+                    }
+                    else
+                    {
+                        Marshal.Release(unknown);
+                        throw new ArgumentException(SR.InvalidArgument, nameof(transactionNative));
+                    }
+                }
+            }
+
+            return myTransactionNative;
         }
 
         public static byte[] GetWhereabouts()

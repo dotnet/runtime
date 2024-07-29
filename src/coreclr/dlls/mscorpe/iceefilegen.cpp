@@ -35,38 +35,15 @@ HRESULT ICeeFileGen::CreateCeeFile (HCEEFILE *ceeFile)
 
 HRESULT ICeeFileGen::CreateCeeFileEx (HCEEFILE *ceeFile, DWORD createFlags)
 {
-    return CreateCeeFileEx2(ceeFile, createFlags, NULL);
-}
-
-//
-// Seed file is used as the base file. The new file data will be "appended" to the seed file
-//
-
-HRESULT ICeeFileGen::CreateCeeFileEx2 (HCEEFILE *ceeFile, DWORD createFlags, LPCWSTR seedFileName)
-{
     if (!ceeFile)
         return E_POINTER;
 
     CeeFileGenWriter *gen = NULL;
     HRESULT hr;
-    IfFailRet(CeeFileGenWriter::CreateNewInstanceEx(NULL, gen, createFlags, seedFileName));
+    IfFailRet(CeeFileGenWriter::CreateNewInstance(gen, createFlags));
     TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
     *ceeFile = gen;
 
-    return S_OK;
-}
-
-HRESULT ICeeFileGen::CreateCeeFileFromICeeGen(ICeeGenInternal *pICeeGen, HCEEFILE *ceeFile, DWORD createFlags)
-{
-    if (!ceeFile)
-        return E_POINTER;
-    CCeeGen *genFrom = reinterpret_cast<CCeeGen*>(pICeeGen);
-    CeeFileGenWriter *gen = NULL;
-    HRESULT hr = CeeFileGenWriter::CreateNewInstance(genFrom, gen, createFlags);
-    if (FAILED(hr))
-        return hr;
-    TESTANDRETURN(gen != NULL, E_OUTOFMEMORY);
-    *ceeFile = gen;
     return S_OK;
 }
 
@@ -262,12 +239,6 @@ HRESULT ICeeFileGen::SetSubsystem(HCEEFILE ceeFile, DWORD subsystem, DWORD major
     return S_OK;
 }
 
-HRESULT ICeeFileGen::GetIMapTokenIface(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken)
-{
-    _ASSERTE(!"This is an obsolete function!");
-    return E_NOTIMPL;
-}
-
 HRESULT ICeeFileGen::GetMethodRVA(HCEEFILE ceeFile, ULONG codeOffset, ULONG *codeRVA)
 {
     TESTANDRETURNARG(ceeFile != 0);
@@ -392,25 +363,6 @@ HRESULT ICeeFileGen::EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter, H
     CeeSection* sec = reinterpret_cast<CeeSection*>(section);
 
     return(gen->emitMetaData(emitter, sec, offset, buffer, buffLen));
-}
-
-HRESULT ICeeFileGen::GetIMapTokenIfaceEx(HCEEFILE ceeFile, IMetaDataEmit *emitter, IUnknown **pIMapToken)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(pIMapToken);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->getMapTokenIface(pIMapToken);
-}
-
-HRESULT ICeeFileGen::AddNotificationHandler(HCEEFILE ceeFile,
-                                            IUnknown *pHandler)
-{
-    TESTANDRETURNPOINTER(ceeFile);
-    TESTANDRETURNPOINTER(pHandler);
-
-    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
-    return gen->addNotificationHandler(pHandler);
 }
 
 HRESULT ICeeFileGen::SetManifestEntry(HCEEFILE ceeFile, ULONG size, ULONG offset)

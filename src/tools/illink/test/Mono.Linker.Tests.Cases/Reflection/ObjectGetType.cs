@@ -2,12 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -61,6 +60,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			PrivateMembersOnBaseTypesAppliedToDerived.Test ();
 
 			IsInstOf.Test ();
+
+			UsedByDerived.Test ();
 		}
 
 		[Kept]
@@ -195,9 +196,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptMember (".cctor()")]
 				class Generic<
+					[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
 					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-				TWithMethods> where TWithMethods : new()
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+					TWithMethods
+				> where TWithMethods : new()
 				{
 					[Kept]
 					static TWithMethods ReturnAnnotated () { return new TWithMethods (); }
@@ -288,16 +291,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			struct BasicAnnotatedStruct
 			{
 				// Handle boxing and unboxing operations
-				// https://github.com/dotnet/linker/issues/1951
+				// https://github.com/dotnet/runtime/issues/93718
 				// [Kept]
 				public void UsedMethod () { }
 				public void UnusedMethod () { }
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/1951
-			// This should not warn
-			[ExpectedWarning ("IL2075", "GetMethod")]
+			[UnexpectedWarning ("IL2075", "GetMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93718")]
 			static void TestStruct (BasicAnnotatedStruct instance)
 			{
 				instance.GetType ().GetMethod ("UsedMethod");
@@ -1032,7 +1033,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test ()
 			{
-				var i = typeof (ICommon); // Explicitely keep the interface (otherwise linker would remove it as it's not used)
+				var i = typeof (ICommon); // Explicitely keep the interface (otherwise trimming tools would remove it as it's not used)
 				GetInstance ().GetType ().GetMethod ("InterfaceMethod");
 			}
 		}
@@ -1399,7 +1400,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptMember (".ctor()")]
 			class Derived : AnnotatedBase
 			{
-				// https://github.com/dotnet/linker/issues/2027
+				// https://github.com/dotnet/runtime/issues/93719
 				// [Kept]
 				public void Method () { }
 			}
@@ -1408,8 +1409,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			static IEnumerable<AnnotatedBase> GetInstances () => new AnnotatedBase[] { new Derived () };
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2027
-			[ExpectedWarning ("IL2075", nameof (Type.GetType))]
+			[UnexpectedWarning ("IL2075", nameof (Type.GetType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93719")]
 			public static void Test ()
 			{
 				foreach (var instance in GetInstances ()) {
@@ -1455,11 +1455,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void Test ()
 			{
 				// Call GetType, but don't use it for any data flow related stuff (no reflection or annotations)
-				// Linker has an optimization which avoids marking the type for type hierarchy annotations in this case
+				// trimming tools have an optimization which avoids marking the type for type hierarchy annotations in this case
 				var name = GetInstance ().GetType ().Name;
 
 				// Using GetType and isinst should not mark the type or apply the annotation either
-				// This is a specific test for a pattern we want the linker to trim correctly
+				// This is a specific test for a pattern we want the trimming tools to trim correctly
 				// that is the type which is only referenced in the isinst in a condition like this should not be kept
 				if (GetBaseInstance ().GetType () is DerivedFromAnnotatedBase) {
 					Console.WriteLine ("Never get here");
@@ -1584,8 +1584,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2819
-			[ExpectedWarning ("IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[UnexpectedWarning ("IL2072", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93720")]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
@@ -1598,6 +1597,133 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				var target = new Target ();
 				TestIsInstOf (target);
+			}
+		}
+
+		[Kept]
+		class UsedByDerived
+		{
+			class AnnotatedBase
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				class Base
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptBaseType (typeof (Base))]
+				class Derived : Base
+				{
+				}
+
+				[Kept]
+				static Derived derivedInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					derivedInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedDerived
+			{
+				[Kept]
+				class Base
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptBaseType (typeof (Base))]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				class Derived : Base
+				{
+				}
+
+				[Kept]
+				static Derived derivedInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					derivedInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedInterface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				interface IBase
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptInterface (typeof (IBase))]
+				class Implementation : IBase
+				{
+				}
+
+				[Kept]
+				static Implementation implementationInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					implementationInstance = new Implementation ();
+					var a = implementationInstance as IBase;
+					implementationInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			class AnnotatedImplementation
+			{
+				[Kept]
+				interface IBase
+				{
+					[Kept]
+					public void Method () { }
+				}
+
+				[Kept]
+				[KeptMember (".ctor()")]
+				[KeptInterface (typeof (IBase))]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+				class Implementation : IBase
+				{
+				}
+
+				[Kept]
+				static Implementation implementationInstance;
+
+				[Kept]
+				public static void Test ()
+				{
+					implementationInstance = new Implementation ();
+					var a = implementationInstance as IBase;
+					implementationInstance.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				AnnotatedBase.Test (); ;
+				AnnotatedDerived.Test ();
+				AnnotatedInterface.Test ();
+				AnnotatedImplementation.Test ();
 			}
 		}
 	}

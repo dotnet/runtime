@@ -112,7 +112,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public static NameValueHeaderValue Parse(string? input)
+        public static NameValueHeaderValue Parse(string input)
         {
             int index = 0;
             return (NameValueHeaderValue)GenericHeaderParser.SingleValueNameValueParser.ParseValue(
@@ -345,7 +345,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckNameValueFormat(string name, string? value)
         {
-            HeaderUtilities.CheckValidToken(name, nameof(name));
+            HeaderUtilities.CheckValidToken(name);
             CheckValueFormat(value);
         }
 

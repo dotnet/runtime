@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BadMax1
 {
@@ -67,7 +68,7 @@ namespace BadMax1
     }
 
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int RunRepro()
@@ -109,7 +110,8 @@ namespace BadMax1
         }
 
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return App.RunRepro();
         }

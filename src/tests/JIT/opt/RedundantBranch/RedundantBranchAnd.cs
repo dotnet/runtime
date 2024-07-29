@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class RedundantBranchAnd
+public class RedundantBranchAnd
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int And_00(int a, int b)
@@ -116,7 +117,8 @@ class RedundantBranchAnd
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Func<int, int, int>[] funcs = {And_00, And_01, And_02, And_03, And_04, And_05, And_06};
         int funcNum = 0;

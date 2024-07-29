@@ -4,6 +4,9 @@ parameters:
   isWasmOnlyBuild: false
   browser: 'chrome'
   shouldContinueOnError: false
+  runOnlyOnWasmOnlyPipelines: false
+  extraBuildArgs: ''
+  nameSuffix: ''
   platforms: []
 
 jobs:
@@ -25,13 +28,18 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths_outputs['DarcDependenciesChanged.Microsoft_DotNet_HotReload_Utils_Generator_BuildTool'], true),
+            eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
+      ${{ if eq(parameters.nameSuffix, '') }}:
+        nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      ${{ else }}:
+        nameSuffix: ${{ parameters.nameSuffix }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }} ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -41,11 +49,14 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
-        scenarios:
-        - wasmdebuggertests
+          and(
+            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']),
+            eq(${{ parameters.isWasmOnlyBuild }}, ${{ parameters.runOnlyOnWasmOnlyPipelines }})))
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
+            scenarios:
+            - wasmdebuggertests

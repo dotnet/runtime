@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class JavaScriptTestHelper
     {
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
         [JSImport("globalThis.window.location.toString")]
@@ -27,10 +28,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial string ReboundMemberEcho(string message);
 
         [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
         }
+
+        [JSImport("delay", "JavaScriptTestHelper")]
+        public static partial Task Delay(int ms);
+
+        [JSImport("reject", "JavaScriptTestHelper")]
+        public static partial Task Reject([JSMarshalAs<JSType.Any>] object what);
+
+        [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
+        public static partial void IntentionallyMissingImport();
+
+        [JSImport("intentionallyMissingImportAsync", "JavaScriptTestHelper")]
+        public static partial Task IntentionallyMissingImportAsync();
 
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
@@ -68,10 +82,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static void Optimized1V(int a1)
         {
-            optimizedReached+= a1;
+            optimizedReached += a1;
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        public static void Optimized1O(int a1)
+        {
+            optimizedReached += a1;
+        }
+        [JSImport("invoke1O", "JavaScriptTestHelper")]
+        public static partial void invoke1O(int a1);
 
         [JSExport]
         public static int Optimized1R(int a1)
@@ -85,8 +108,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSExport]
         public static int Optimized2R(int a1, int a2)
         {
-            optimizedReached += a1+ a2;
-            return a1 + a2 +1;
+            optimizedReached += a1 + a2;
+            return a1 + a2 + 1;
         }
         [JSImport("invoke2R", "JavaScriptTestHelper")]
         public static partial int invoke2R(int a1, int a2);
@@ -261,6 +284,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("store1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Void>]
         internal static partial void store1_Int32([JSMarshalAs<JSType.Number>] int value);
+
+        [JSImport("store1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        internal static partial void store1DiscardNoWait_Int32([JSMarshalAs<JSType.Number>] int value);
+
         [JSImport("retrieve1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int retrieve1_Int32();
@@ -449,6 +477,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
         internal static partial Func<int, int, int> backback_FuncIntIntFuncIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
 
+        [JSImport("backbackAsync", "JavaScriptTestHelper")]
+        internal static partial Task<int> backback_FuncIntIntFuncIntIntAsync([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
+
         [JSImport("back3", "JavaScriptTestHelper")]
         internal static partial void back3_ActionInt([JSMarshalAs<JSType.Function<JSType.Number>>] Action<int>? action, [JSMarshalAs<JSType.Number>] int a);
 
@@ -465,6 +496,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int back3_FunctionIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>] Func<int, int>? fun, [JSMarshalAs<JSType.Number>] int a);
 
+        [JSImport("back4", "JavaScriptTestHelper")]
+        internal static partial void back4_ActionIntLongDouble([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Action<int, long, double>? action, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] long b, [JSMarshalAs<JSType.Number>] double c);
 
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number>>]
@@ -500,6 +533,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool invoke1_Boolean([JSMarshalAs<JSType.Boolean>] bool value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSImport("invoke1Async", "JavaScriptTestHelper")]
+        internal static partial Task<bool> invoke1_BooleanAsync(bool value, string name);
+
         [JSExport]
         [return: JSMarshalAs<JSType.Boolean>]
         public static bool EchoBoolean([JSMarshalAs<JSType.Boolean>] bool arg1)
@@ -982,6 +1019,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        
+        [JSImport("callJavaScriptLibrary", "JavaScriptTestHelper")]
+        public static partial Task<int> callJavaScriptLibrary(int a, int b);
 
         [JSImport("echopromise", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Object>>]
@@ -991,16 +1031,33 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("setup", "JavaScriptTestHelper")]
         internal static partial Task Setup();
 
+        [JSImport("INTERNAL.forceDisposeProxies")]
+        internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
+
         static JSObject _module;
         public static async Task InitializeAsync()
         {
             if (_module == null)
             {
-                // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
                 await Setup();
-                // Log("JavaScriptTestHelper.mjs imported");
             }
+
+#if FEATURE_WASM_MANAGED_THREADS
+            // are we in the UI thread ?
+            if (Environment.CurrentManagedThreadId == 1)
+#endif
+            {
+                // this gives browser chance to serve UI thread event loop before every test
+                await Task.Yield();
+            }
+        }
+
+        public static Task DisposeAsync()
+        {
+            _module?.Dispose();
+            _module = null;
+            return Task.CompletedTask;
         }
     }
 }
@@ -1010,7 +1067,7 @@ namespace JavaScriptTestHelperNamespace
     public partial class JavaScriptTestHelper
     {
         [System.Runtime.InteropServices.JavaScript.JSExport]
-        public static string EchoString(string message) 
+        public static string EchoString(string message)
         {
             return message + "11";
         }
@@ -1019,7 +1076,7 @@ namespace JavaScriptTestHelperNamespace
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
-        
+
             private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]

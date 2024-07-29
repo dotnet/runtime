@@ -51,11 +51,27 @@ PALEXPORT int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, ui
 
 /*
 Function:
+EvpDigestFinalXOF
+
+Direct shim to DigestFinalXOF.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len);
+
+/*
+Function:
 EvpDigestCurrent
 
 Shims EVP_DigestFinal_ex on a duplicated value of ctx.
 */
 PALEXPORT int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s);
+
+/*
+Function:
+EvpDigestCurrentXOF
+
+Shims EVP_DigestFinalXOF on a duplicated value of ctx.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t len);
 
 /*
 Function:
@@ -67,11 +83,36 @@ PALEXPORT int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* 
 
 /*
 Function:
+EvpDigestXOFOneShot
+
+Combines EVP_MD_CTX_create, EVP_DigestUpdate, and EVP_DigestFinalXOF in to a single operation.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source, int32_t sourceSize, uint8_t* md, uint32_t len);
+
+/*
+Function:
+EvpMdCtxCopyEx
+
+Creates a new EVP_MD_CTX and copies the ctx input using EVP_MD_CTX_copy_ex. Returns NULL on error.
+*/
+PALEXPORT EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx);
+
+/*
+Function:
 EvpMdSize
 
 Direct shim to EVP_MD_size.
 */
 PALEXPORT int32_t CryptoNative_EvpMdSize(const EVP_MD* md);
+
+/*
+Function:
+EvpDigestSqueeze
+
+Calls EVP_DigestSqueeze. If the function is not available, haveFeature is set to zero and the return value should
+be ignored. If the function is available, haveFeature is set to one and the operation result is returned.
+*/
+PALEXPORT int32_t CryptoNative_EvpDigestSqueeze(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len, int32_t* haveFeature);
 
 /*
 Function:
@@ -112,6 +153,46 @@ EvpSha512
 Direct shim to EVP_sha512.
 */
 PALEXPORT const EVP_MD* CryptoNative_EvpSha512(void);
+
+/*
+Function:
+EvpSha3_256
+
+Direct shim to EVP_sha3_256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_256(void);
+
+/*
+Function:
+EvpSha3_384
+
+Direct shim to EVP_sha3_384.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_384(void);
+
+/*
+Function:
+EvpSha3_512
+
+Direct shim to EVP_sha3_512.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpSha3_512(void);
+
+/*
+Function:
+EvpShake128
+
+Direct shim to EVP_shake128.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpShake128(void);
+
+/*
+Function:
+EvpShake256
+
+Direct shim to EVP_shake256.
+*/
+PALEXPORT const EVP_MD* CryptoNative_EvpShake256(void);
 
 /*
 Function:
