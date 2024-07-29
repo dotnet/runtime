@@ -267,6 +267,7 @@ export function mono_wasm_heapshot_stats (
 }
 
 export function mono_wasm_heapshot_end (): void {
+    heapshotCounter("snapshot/version", formatVersion);
     heapshotCounter("snapshot/num-strings", stringTable.size);
     heapshotCounter("snapshot/num-objects", totalObjects);
     heapshotCounter("snapshot/num-refs", totalRefs);

@@ -781,8 +781,10 @@ mono_wasm_on_gc_event (
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_perform_heapshot () {
-    if (mono_wasm_heapshot_parachute)
+    if (mono_wasm_heapshot_parachute) {
         free(mono_wasm_heapshot_parachute);
+        mono_wasm_heapshot_parachute = NULL;
+    }
 	if (!heapshot_profiler_handle) {
 		memset (&heapshot_profiler, 0, sizeof(MonoProfiler));
 		heapshot_profiler_handle = mono_profiler_create (&heapshot_profiler);

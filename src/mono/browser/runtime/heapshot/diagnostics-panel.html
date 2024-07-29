@@ -23,8 +23,12 @@
                 for (let i = 0; i < 4; i++)
                     headerArray[i] = chunkId.charCodeAt(i);
                 headerView.setUint32(4, chunk.length, true);
-                tabObj.blobParts.push(headerArray.slice());
-                tabObj.blobParts.push(chunk);
+                if (chunkId === "CNTR") {
+                    tabObj.blobParts.splice(0, 0, headerArray.slice(), chunk);
+                } else {
+                    tabObj.blobParts.push(headerArray.slice());
+                    tabObj.blobParts.push(chunk);
+                }
             }
 
             function downloadBlob (blob, name) {
