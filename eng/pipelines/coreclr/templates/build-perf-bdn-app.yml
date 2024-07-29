@@ -17,7 +17,7 @@ parameters:
   archiveType: ''
   tarCompression: ''
   framework: 'net9.0' # Framework version to get versions for and build for
-  perfRepo: 'main' # Perf repo to pull for the PerfLabExporter
+  perfBranch: 'UpdateMauiVersionRetrievalFlow' # Perf repo to pull for the PerfLabExporter
 
 
 steps:
@@ -70,7 +70,7 @@ steps:
   - script: |
       set -x
       pwd
-      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfRepo}} --single-branch
+      git clone https://github.com/LoopedBard3/performance.git --depth 1 -b ${{parameters.perfBranch}} --single-branch
     displayName:  Clone performance
     workingDirectory: $(Build.SourcesDirectory)
 

@@ -42,12 +42,12 @@ extends:
     - stage: Build
       jobs:
 
-      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-        parameters:
-          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-          #  runProfile: 'non-v8'
-          ${{ if ne(variables['System.TeamProject'], 'public') }}:
-            runProfile: 'v8'
+      # - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      #   parameters:
+      #     collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+      #     #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+      #     #  runProfile: 'non-v8'
+      #     ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      #       runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
