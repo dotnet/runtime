@@ -331,7 +331,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             // if arm32, set the thumb bit
             Data.PrecodeMachineDescriptor precodeMachineDescriptor = _target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(_target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor));
-            pCode = (TargetCodePointer)(pCode.Value | precodeMachineDescriptor.CodePointerToInstrPointerMask.Value);
+            pCode = (TargetCodePointer)(pCode.Value | ~precodeMachineDescriptor.CodePointerToInstrPointerMask.Value);
 
             return pCode;
         }
