@@ -136,15 +136,10 @@ namespace System.Buffers
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
+                
                 var mmf = MemoryMappedFile.CreateNew(null, (long)allocationSize, MemoryMappedFileAccess.ReadWrite);
                 var view = mmf.CreateViewAccessor();
-
                 IntPtr buffer = view.SafeMemoryMappedViewHandle.DangerousGetHandle();
-
-                if (buffer == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException($"Memory allocation failed with error {Marshal.GetLastPInvokeError()}.");
-                }
 
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
                 // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
