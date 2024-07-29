@@ -89,7 +89,7 @@ namespace System.Net.Http.Headers
                     return true;
                 }
 
-                if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked, lastValueOnly:true))
                 {
                     return true;
                 }
@@ -117,8 +117,14 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _transferEncodingChunkedSet = true;
-                    if (!_parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+                    if (!_parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked, lastValueOnly: true))
                     {
+                        if (_parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked, lastValueOnly: false))
+                        {
+                            // According to https://www.rfc-editor.org/rfc/rfc7230.html#section-3.3.1 "chunked" must be the last value in the Transfer-Encoding header.
+                            // We have to remove it and add it as last.
+                            _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
+                        }
                         _parent.AddParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
                     }
                 }

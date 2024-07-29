@@ -2638,6 +2638,49 @@ namespace System.Net.Http.Tests
             Assert.True(expectedValues.SequenceEqual(values));
         }
 
+        [Theory]
+        [InlineData(new object[] { "chunked" }, true)]
+        [InlineData(new object[] { "gzip", "chunked" }, true)]
+        [InlineData(new object[] { "gzip", "chunked", "deflate", "chunked" }, true)]
+        [InlineData(new object[] { true }, true)]
+        [InlineData(new object[] { true, null, true }, true)]
+        [InlineData(new object[] { "gzip", true }, true)]
+        [InlineData(new object[] { "gzip", true, "deflate", true }, true)]
+        [InlineData(new object[] { true, "deflate", true }, true)]
+        [InlineData(new object[] { false, "deflate", true }, true)]
+        [InlineData(new object[] { false }, false)]
+        [InlineData(new object[] { false, null, false }, false)]
+        [InlineData(new object[] { "gzip", false }, false)]
+        [InlineData(new object[] { false, "gzip" }, false)]
+        [InlineData(new object[] { "gzip", true, false }, false)]
+        [InlineData(new object[] { "gzip", true, "deflate" }, false)]
+        [InlineData(new object[] { "gzip", true, "deflate", false }, false)]
+        [InlineData(new object[] { }, null)]
+        [InlineData(new object[] { null }, null)]
+        [InlineData(new object[] { "gzip" }, null)]
+        [InlineData(new object[] { "chunked", "gzip" }, null)]
+        [InlineData(new object[] { "gzip", "deflate" }, null)]
+        [InlineData(new object[] { "gzip", "chunked", "gzip" }, null)]
+        [InlineData(new object[] { "gzip", true, null}, null)]
+        public void AddTransferEncoding_SetValues_ChunkedAsExpected(object?[] values, bool? expected)
+        {
+            var headers = new HttpRequestHeaders();
+
+            foreach (object value in values)
+            {
+                if (value is bool? || value is null)
+                {
+                    headers.TransferEncodingChunked = (bool?)value;
+                }
+                else
+                {
+                    headers.TransferEncoding.ParseAdd((string)value);
+                }
+            }
+
+            Assert.Equal(expected, headers.TransferEncodingChunked);
+        }
+
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
         {
             for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
