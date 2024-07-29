@@ -56,6 +56,7 @@ PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 // Function to check if an activation can be safely injected at a specified context
 PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION g_safeExceptionCheckFunction = NULL;
 
+PHANDLE_SINGLE_STEP_AFTER_EXCEPTION_HANDLER g_handleSingleStepAfterExceptionHandler = NULL;
 PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode = NULL;
 
 // Return address of the SEHProcessException, which is used to enable walking over
@@ -132,7 +133,17 @@ PAL_SetHardwareExceptionHandler(
 {
     g_hardwareExceptionHandler = exceptionHandler;
     g_safeExceptionCheckFunction = exceptionCheckFunction;
+    
 }
+
+PALIMPORT
+VOID 
+PAL_SetHandleSingleStepAfterExceptionHandler (
+    IN PHANDLE_SINGLE_STEP_AFTER_EXCEPTION_HANDLER handleSingleStepAfterExceptionHandler)
+{
+    g_handleSingleStepAfterExceptionHandler = handleSingleStepAfterExceptionHandler;
+}
+    
 
 /*++
 Function:
@@ -262,6 +273,8 @@ SEHProcessException(PAL_SEHException* exception)
             _ASSERTE(g_safeExceptionCheckFunction != NULL);
             // Check if it is safe to handle the hardware exception (the exception happened in managed code
             // or in a jitter helper or it is a debugger breakpoint)
+            if (g_handleSingleStepAfterExceptionHandler)
+                g_handleSingleStepAfterExceptionHandler(contextRecord, exceptionRecord);
             if (g_safeExceptionCheckFunction(contextRecord, exceptionRecord))
             {
                 EnsureExceptionRecordsOnHeap(exception);

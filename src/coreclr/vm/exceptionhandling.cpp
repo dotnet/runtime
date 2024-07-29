@@ -163,6 +163,9 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #ifdef TARGET_UNIX
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
+#ifdef FEATURE_EMULATE_SINGLESTEP
+BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
+#endif // FEATURE_EMULATE_SINGLESTEP
 #endif // TARGET_UNIX
 
 static ExceptionTracker* GetTrackerMemory()
@@ -239,7 +242,9 @@ void InitializeExceptionHandling()
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
-
+#ifdef FEATURE_EMULATE_SINGLESTEP
+    PAL_SetHandleSingleStepAfterExceptionHandler(HandleSingleStepAfterException);
+#endif
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
@@ -5422,6 +5427,20 @@ BOOL IsSafeToCallExecutionManager()
     return ((pThread != NULL) && pThread->PreemptiveGCDisabled()) ||
            GCStress<cfg_instr_jit>::IsEnabled() ||
            GCStress<cfg_instr_ngen>::IsEnabled();
+}
+
+BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
+{
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread && pThread->IsSingleStepEnabled() &&
+        exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
+        exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
+        exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
+    {
+        pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
