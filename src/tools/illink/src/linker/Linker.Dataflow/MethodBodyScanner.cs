@@ -54,8 +54,6 @@ namespace Mono.Linker.Dataflow
 			this.InterproceduralStateLattice = new InterproceduralStateLattice (default, default, context);
 		}
 
-		internal MultiValue ReturnValue { get; private set; }
-
 		protected virtual void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
 		{
 		}
@@ -289,7 +287,6 @@ namespace Mono.Linker.Dataflow
 
 			BasicBlockIterator blockIterator = new BasicBlockIterator (methodIL);
 
-			ReturnValue = default;
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
@@ -655,10 +652,12 @@ namespace Mono.Linker.Dataflow
 							WarnAboutInvalidILInMethod (methodBody, operation.Offset);
 						}
 						if (hasReturnValue) {
-							StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+							StackSlot retValueSlot = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 							// If the return value is a reference, treat it as the value itself for now
 							// We can handle ref return values better later
-							ReturnValue = MultiValueLattice.Meet (ReturnValue, DereferenceValue (retValue.Value, locals, ref interproceduralState));
+							MultiValue retValue = DereferenceValue (retValueSlot.Value, locals, ref interproceduralState);
+							var methodReturnValue = GetReturnValue (methodBody.Method);
+							HandleReturnValue (thisMethod, methodReturnValue, operation, retValue);
 							ValidateNoReferenceToReference (locals, methodBody.Method, operation.Offset);
 						}
 						ClearStack (ref currentStack);
@@ -873,7 +872,7 @@ namespace Mono.Linker.Dataflow
 					break;
 				case MethodReturnValue methodReturnValue:
 					// Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
-					HandleStoreMethodReturnValue (method, methodReturnValue, operation, source);
+					HandleReturnValue (method, methodReturnValue, operation, source);
 					break;
 				case FieldValue fieldValue:
 					HandleStoreField (method, fieldValue, operation, DereferenceValue (source, locals, ref ipState));
@@ -896,6 +895,8 @@ namespace Mono.Linker.Dataflow
 		}
 
 		protected abstract MultiValue GetFieldValue (FieldDefinition field);
+
+		protected abstract MethodReturnValue GetReturnValue (MethodDefinition method);
 
 		private void ScanLdfld (
 			Instruction operation,
@@ -934,7 +935,7 @@ namespace Mono.Linker.Dataflow
 		{
 		}
 
-		protected virtual void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue thisParameter, Instruction operation, MultiValue sourceValue)
+		protected virtual void HandleReturnValue (MethodDefinition method, MethodReturnValue thisParameter, Instruction operation, MultiValue valueToReturn)
 		{
 		}
 
