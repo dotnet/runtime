@@ -429,8 +429,14 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtuals(RuntimeType type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals")]
+        private static partial int GetNumVirtualsAndStaticVirtuals(QCallTypeHandle type);
+
+        internal static int GetNumVirtualsAndStaticVirtuals(RuntimeType type)
+        {
+            Debug.Assert(type != null);
+            return GetNumVirtualsAndStaticVirtuals(new QCallTypeHandle(ref type));
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_VerifyInterfaceIsImplemented")]
         private static partial void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);

@@ -2624,7 +2624,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     }
     CONTRACT_END;
 
-    MethodDesc *  pMD = NULL;
+    MethodDesc* pMD = NULL;
 
     // Otherwise this must be some kind of precode
     //
@@ -2633,10 +2633,9 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
-        RETURN(pMD);
     }
 
-    RETURN(NULL); // Not found
+    RETURN(pMD);
 }
 
 //*******************************************************************************

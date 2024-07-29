@@ -120,6 +120,8 @@ namespace ILLink.Shared.TrimAnalysis
 						// currently it won't do.
 
 						TypeReference? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+						if (staticType?.IsByReference == true)
+							staticType = ((ByReferenceType) staticType).ElementType;
 						TypeDefinition? staticTypeDef = staticType?.ResolveToTypeDefinition (_context);
 						if (staticType is null || staticTypeDef is null) {
 							DynamicallyAccessedMemberTypes annotation = default;
@@ -153,6 +155,8 @@ namespace ILLink.Shared.TrimAnalysis
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
 							AddReturnValue (new SystemTypeValue (staticType));
+						} else if (staticTypeDef.IsTypeOf ("System", "Enum")) {
+							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
 							// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
 							// This should already be true for most cases (method params, fields, ...), but just in case
