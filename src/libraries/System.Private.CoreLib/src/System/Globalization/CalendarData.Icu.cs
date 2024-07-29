@@ -405,8 +405,7 @@ namespace System.Globalization
             // So for other calendars, only return the latest era.
             if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames?.Length > 0)
             {
-                string[] latestEraName = new string[] { eraNames![eraNames.Length - 1] };
-                eraNames = latestEraName;
+                eraNames = [eraNames![^1]];
             }
 
             return result;

@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
-        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="translated">Dieser Typ implementiert mindestens einen Typ mit dem GeneratedComInterfaceAttribute-Attribut. Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe dieses Typs an COM zu ermöglichen und die COM-Schnittstellen für die Typen mit dem GeneratedComInterfaceAttribute aus Objekten dieses Typs verfügbar zu machen.</target>
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="needs-review-translation">Dieser Typ implementiert mindestens einen Typ mit dem GeneratedComInterfaceAttribute-Attribut. Fügen Sie "GeneratedComClassAttribute" hinzu, um die Übergabe dieses Typs an COM zu ermöglichen und die COM-Schnittstellen für die Typen mit dem GeneratedComInterfaceAttribute aus Objekten dieses Typs verfügbar zu machen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">

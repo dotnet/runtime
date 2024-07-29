@@ -119,10 +119,10 @@ namespace System.Net.Sockets
                 Canceled
             }
 
-            private int _state; // Actually AsyncOperation.State.
+            private volatile AsyncOperation.State _state;
 
 #if DEBUG
-            private int _callbackQueued; // When non-zero, the callback has been queued.
+            private bool _callbackQueued; // When true, the callback has been queued.
 #endif
 
             public readonly SocketAsyncContext AssociatedContext;
@@ -141,11 +141,11 @@ namespace System.Net.Sockets
 
             public void Reset()
             {
-                _state = (int)State.Waiting;
+                _state = State.Waiting;
                 Event = null;
                 Next = this;
 #if DEBUG
-                _callbackQueued = 0;
+                _callbackQueued = false;
 #endif
             }
 
@@ -154,34 +154,34 @@ namespace System.Net.Sockets
                 TraceWithContext(context, "Enter");
 
                 // Set state to Running, unless we've been canceled
-                int oldState = Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                if (oldState == (int)State.Canceled)
+                State oldState = Interlocked.CompareExchange(ref _state, State.Running, State.Waiting);
+                if (oldState == State.Canceled)
                 {
                     TraceWithContext(context, "Exit, Previously canceled");
                     return OperationResult.Cancelled;
                 }
 
-                Debug.Assert(oldState == (int)State.Waiting, $"Unexpected operation state: {(State)oldState}");
+                Debug.Assert(oldState == State.Waiting, $"Unexpected operation state: {(State)oldState}");
 
                 // Try to perform the IO
                 if (DoTryComplete(context))
                 {
-                    Debug.Assert((State)Volatile.Read(ref _state) is State.Running or State.RunningWithPendingCancellation, "Unexpected operation state");
+                    Debug.Assert(_state is State.Running or State.RunningWithPendingCancellation, "Unexpected operation state");
 
-                    Volatile.Write(ref _state, (int)State.Complete);
+                    _state = State.Complete;
 
                     TraceWithContext(context, "Exit, Completed");
                     return OperationResult.Completed;
                 }
 
                 // Set state back to Waiting, unless we were canceled, in which case we have to process cancellation now
-                int newState;
+                State newState;
                 while (true)
                 {
-                    int state = Volatile.Read(ref _state);
-                    Debug.Assert(state is (int)State.Running or (int)State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
+                    State state = _state;
+                    Debug.Assert(state is State.Running or State.RunningWithPendingCancellation, $"Unexpected operation state: {(State)state}");
 
-                    newState = (state == (int)State.Running ? (int)State.Waiting : (int)State.Canceled);
+                    newState = (state == State.Running ? State.Waiting : State.Canceled);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -190,7 +190,7 @@ namespace System.Net.Sockets
                     // Race to update the state. Loop and try again.
                 }
 
-                if (newState == (int)State.Canceled)
+                if (newState == State.Canceled)
                 {
                     ProcessCancellation();
                     TraceWithContext(context, "Exit, Newly cancelled");
@@ -208,16 +208,16 @@ namespace System.Net.Sockets
                 // Note we could be cancelling because of socket close. Regardless, we don't need the registration anymore.
                 CancellationRegistration.Dispose();
 
-                int newState;
+                State newState;
                 while (true)
                 {
-                    int state = Volatile.Read(ref _state);
-                    if (state is (int)State.Complete or (int)State.Canceled or (int)State.RunningWithPendingCancellation)
+                    State state = _state;
+                    if (state is State.Complete or State.Canceled or State.RunningWithPendingCancellation)
                     {
                         return false;
                     }
 
-                    newState = (state == (int)State.Waiting ? (int)State.Canceled : (int)State.RunningWithPendingCancellation);
+                    newState = (state == State.Waiting ? State.Canceled : State.RunningWithPendingCancellation);
                     if (state == Interlocked.CompareExchange(ref _state, newState, state))
                     {
                         break;
@@ -226,7 +226,7 @@ namespace System.Net.Sockets
                     // Race to update the state. Loop and try again.
                 }
 
-                if (newState == (int)State.RunningWithPendingCancellation)
+                if (newState == State.RunningWithPendingCancellation)
                 {
                     // TryComplete will either succeed, or it will see the pending cancellation and deal with it.
                     return false;
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
             {
                 Trace("Enter");
 
-                Debug.Assert(_state == (int)State.Canceled);
+                Debug.Assert(_state == State.Canceled);
 
                 ErrorCode = SocketError.OperationAborted;
 
@@ -255,7 +255,7 @@ namespace System.Net.Sockets
                 else
                 {
 #if DEBUG
-                    Debug.Assert(Interlocked.CompareExchange(ref _callbackQueued, 1, 0) == 0, $"Unexpected _callbackQueued: {_callbackQueued}");
+                    Debug.Assert(!Interlocked.Exchange(ref _callbackQueued, true), $"Unexpected _callbackQueued: {_callbackQueued}");
 #endif
                     // We've marked the operation as canceled, and so should invoke the callback, but
                     // we can't pool the object, as ProcessQueue may still have a reference to it, due to

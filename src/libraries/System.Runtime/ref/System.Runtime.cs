@@ -2666,6 +2666,13 @@ namespace System
     }
     public static partial class Environment
     {
+        public readonly struct ProcessCpuUsage
+        {
+            public System.TimeSpan UserTime { get { throw null; } }
+            public System.TimeSpan PrivilegedTime { get { throw null; } }
+            public System.TimeSpan TotalTime { get { throw null; } }
+        }
+
         public static string CommandLine { get { throw null; } }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static int CurrentManagedThreadId { get { throw null; } }
@@ -2679,6 +2686,11 @@ namespace System
         public static System.OperatingSystem OSVersion { get { throw null; } }
         public static int ProcessId { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        public static ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string? ProcessPath { get { throw null; } }
         public static string StackTrace { get { throw null; } }
         public static string SystemDirectory { get { throw null; } }

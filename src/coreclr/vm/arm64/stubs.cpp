@@ -448,7 +448,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -634,6 +634,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 
     // Copy the context to regdisplay
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(T_CONTEXT));
+
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~CONTEXT_XSTATE;
 
     pRD->ControlPC = ::GetIP(&m_ctx);
     pRD->SP = ::GetSP(&m_ctx);

@@ -4536,6 +4536,13 @@ void Compiler::fgMoveHotJumps()
                 targetEdge   = block->GetFalseEdge();
                 unlikelyEdge = block->GetTrueEdge();
             }
+
+            // If we aren't sure which successor is hotter, and we already fall into one of them,
+            // do nothing
+            if ((unlikelyEdge->getLikelihood() == 0.5) && block->NextIs(unlikelyEdge->getDestinationBlock()))
+            {
+                continue;
+            }
         }
         else
         {

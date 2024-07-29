@@ -73,7 +73,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                Debug.Assert(false, fieldType.ToString());
+                Debug.Fail(fieldType.ToString());
                 return fieldType.GetElementSize().AsInt;
             }
         }

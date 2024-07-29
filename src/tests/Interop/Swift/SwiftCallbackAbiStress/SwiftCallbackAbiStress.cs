@@ -375,7 +375,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc3()
     {
         Console.Write("Running SwiftCallbackFunc3: ");
@@ -461,7 +460,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc4()
     {
         Console.Write("Running SwiftCallbackFunc4: ");
@@ -590,7 +588,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc5()
     {
         Console.Write("Running SwiftCallbackFunc5: ");
@@ -715,7 +712,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc6()
     {
         Console.Write("Running SwiftCallbackFunc6: ");
@@ -870,7 +866,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc8()
     {
         Console.Write("Running SwiftCallbackFunc8: ");
@@ -1066,7 +1061,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc10()
     {
         Console.Write("Running SwiftCallbackFunc10: ");
@@ -1175,7 +1169,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc11()
     {
         Console.Write("Running SwiftCallbackFunc11: ");
@@ -1258,7 +1251,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc12()
     {
         Console.Write("Running SwiftCallbackFunc12: ");
@@ -1750,7 +1742,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc18()
     {
         Console.Write("Running SwiftCallbackFunc18: ");
@@ -1864,7 +1855,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc19()
     {
         Console.Write("Running SwiftCallbackFunc19: ");
@@ -1970,7 +1960,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc20()
     {
         Console.Write("Running SwiftCallbackFunc20: ");
@@ -2045,7 +2034,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc21()
     {
         Console.Write("Running SwiftCallbackFunc21: ");
@@ -2169,7 +2157,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc22()
     {
         Console.Write("Running SwiftCallbackFunc22: ");
@@ -2428,7 +2415,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc25()
     {
         Console.Write("Running SwiftCallbackFunc25: ");
@@ -2525,7 +2511,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc26()
     {
         Console.Write("Running SwiftCallbackFunc26: ");
@@ -2716,7 +2701,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc28()
     {
         Console.Write("Running SwiftCallbackFunc28: ");
@@ -2844,7 +2828,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc29()
     {
         Console.Write("Running SwiftCallbackFunc29: ");
@@ -2998,7 +2981,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc31()
     {
         Console.Write("Running SwiftCallbackFunc31: ");
@@ -3052,7 +3034,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc32()
     {
         Console.Write("Running SwiftCallbackFunc32: ");
@@ -3432,7 +3413,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc37()
     {
         Console.Write("Running SwiftCallbackFunc37: ");
@@ -3750,7 +3730,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc41()
     {
         Console.Write("Running SwiftCallbackFunc41: ");
@@ -3869,7 +3848,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc43()
     {
         Console.Write("Running SwiftCallbackFunc43: ");
@@ -3974,7 +3952,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc44()
     {
         Console.Write("Running SwiftCallbackFunc44: ");
@@ -4059,7 +4036,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc45()
     {
         Console.Write("Running SwiftCallbackFunc45: ");
@@ -4119,7 +4095,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc46()
     {
         Console.Write("Running SwiftCallbackFunc46: ");
@@ -4236,7 +4211,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc47()
     {
         Console.Write("Running SwiftCallbackFunc47: ");
@@ -4380,7 +4354,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc49()
     {
         Console.Write("Running SwiftCallbackFunc49: ");
@@ -4558,7 +4531,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc51()
     {
         Console.Write("Running SwiftCallbackFunc51: ");
@@ -4632,7 +4604,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc52()
     {
         Console.Write("Running SwiftCallbackFunc52: ");
@@ -4792,7 +4763,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc53()
     {
         Console.Write("Running SwiftCallbackFunc53: ");
@@ -4912,7 +4882,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc54()
     {
         Console.Write("Running SwiftCallbackFunc54: ");
@@ -5011,7 +4980,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc55()
     {
         Console.Write("Running SwiftCallbackFunc55: ");
@@ -5146,7 +5114,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc57()
     {
         Console.Write("Running SwiftCallbackFunc57: ");
@@ -5467,7 +5434,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc62()
     {
         Console.Write("Running SwiftCallbackFunc62: ");
@@ -5594,7 +5560,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc64()
     {
         Console.Write("Running SwiftCallbackFunc64: ");
@@ -5694,7 +5659,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc65()
     {
         Console.Write("Running SwiftCallbackFunc65: ");
@@ -5762,7 +5726,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc66()
     {
         Console.Write("Running SwiftCallbackFunc66: ");
@@ -5970,7 +5933,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc68()
     {
         Console.Write("Running SwiftCallbackFunc68: ");
@@ -6070,7 +6032,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc69()
     {
         Console.Write("Running SwiftCallbackFunc69: ");
@@ -6187,7 +6148,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc70()
     {
         Console.Write("Running SwiftCallbackFunc70: ");
@@ -6300,7 +6260,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc72()
     {
         Console.Write("Running SwiftCallbackFunc72: ");
@@ -6552,7 +6511,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc75()
     {
         Console.Write("Running SwiftCallbackFunc75: ");
@@ -6751,7 +6709,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc77()
     {
         Console.Write("Running SwiftCallbackFunc77: ");
@@ -6910,7 +6867,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc79()
     {
         Console.Write("Running SwiftCallbackFunc79: ");
@@ -7051,7 +7007,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc81()
     {
         Console.Write("Running SwiftCallbackFunc81: ");
@@ -7201,7 +7156,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc83()
     {
         Console.Write("Running SwiftCallbackFunc83: ");
@@ -7428,7 +7382,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc85()
     {
         Console.Write("Running SwiftCallbackFunc85: ");
@@ -7533,7 +7486,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc86()
     {
         Console.Write("Running SwiftCallbackFunc86: ");
@@ -7682,7 +7634,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc88()
     {
         Console.Write("Running SwiftCallbackFunc88: ");
@@ -7752,7 +7703,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc89()
     {
         Console.Write("Running SwiftCallbackFunc89: ");
@@ -7861,7 +7811,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc90()
     {
         Console.Write("Running SwiftCallbackFunc90: ");
@@ -7982,7 +7931,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc91()
     {
         Console.Write("Running SwiftCallbackFunc91: ");
@@ -8076,7 +8024,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc92()
     {
         Console.Write("Running SwiftCallbackFunc92: ");
@@ -8140,7 +8087,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc93()
     {
         Console.Write("Running SwiftCallbackFunc93: ");
@@ -8250,7 +8196,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc94()
     {
         Console.Write("Running SwiftCallbackFunc94: ");
@@ -8340,7 +8285,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc95()
     {
         Console.Write("Running SwiftCallbackFunc95: ");
@@ -8504,7 +8448,6 @@ public unsafe class SwiftCallbackAbiStress
     }
 
     [Fact]
-    [SkipOnMono("Struct lowering for reverse pinvokes returns not supported on Mono")]
     public static void TestSwiftCallbackFunc97()
     {
         Console.Write("Running SwiftCallbackFunc97: ");

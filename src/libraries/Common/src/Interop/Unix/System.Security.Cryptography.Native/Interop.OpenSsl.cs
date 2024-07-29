@@ -458,7 +458,7 @@ internal static partial class Interop
                             SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
                             X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-                            Debug.Assert(certList != null, "certList != null");
+                            Debug.Assert(certList != null);
                             Span<IntPtr> handles = certList.Count <= 256 ?
                                 stackalloc IntPtr[256] :
                                 new IntPtr[certList.Count];
@@ -884,8 +884,8 @@ internal static partial class Interop
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
-            Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
-            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
+            Debug.Assert(certPtr != null && !certPtr.IsInvalid);
+            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid);
 
             int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 

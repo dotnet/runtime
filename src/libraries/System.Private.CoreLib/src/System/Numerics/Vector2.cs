@@ -280,6 +280,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 CopySign(Vector2 value, Vector2 sign) => Vector128.CopySign(value.AsVector128Unsafe(), sign.AsVector128Unsafe()).AsVector2();
 
+        /// <inheritdoc cref="Vector4.Cos(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Cos(Vector2 vector) => Vector128.Cos(vector.AsVector128()).AsVector2();
+
         /// <summary>Creates a new <see cref="Vector2" /> object whose two elements have the same value.</summary>
         /// <param name="value">The value to assign to all two elements.</param>
         /// <returns>A new <see cref="Vector2" /> whose two elements have the same value.</returns>
@@ -361,7 +365,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="Vector4.Exp(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Exp(Vector2 vector) => Vector128.Exp(vector.AsVector128Unsafe()).AsVector2();
+        public static Vector2 Exp(Vector2 vector) => Vector128.Exp(vector.AsVector128()).AsVector2();
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -385,11 +389,11 @@ namespace System.Numerics
 
         /// <inheritdoc cref="Vector4.Log2(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Log(Vector2 vector) => Vector128.Log(vector.AsVector128Unsafe()).AsVector2();
+        public static Vector2 Log(Vector2 vector) => Vector128.Log(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
         /// <inheritdoc cref="Vector4.Log(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Log2(Vector2 vector) => Vector128.Log2(vector.AsVector128Unsafe()).AsVector2();
+        public static Vector2 Log2(Vector2 vector) => Vector128.Log2(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         [Intrinsic]
@@ -506,6 +510,18 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.Round(Vector4, MidpointRounding)" />
         [Intrinsic]
         public static Vector2 Round(Vector2 vector, MidpointRounding mode) => Vector128.Round(vector.AsVector128Unsafe(), mode).AsVector2();
+
+        /// <inheritdoc cref="Vector4.Sin(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Sin(Vector2 vector) => Vector128.Sin(vector.AsVector128()).AsVector2();
+
+        /// <inheritdoc cref="Vector4.SinCos(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector2 Sin, Vector2 Cos) SinCos(Vector2 vector)
+        {
+            (Vector128<float> sin, Vector128<float> cos) = Vector128.SinCos(vector.AsVector128());
+            return (sin.AsVector2(), cos.AsVector2());
+        }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>

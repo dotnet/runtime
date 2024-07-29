@@ -621,7 +621,7 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
-            
+
             if (isClassInitedByUpdatingStaticPointer)
             {
                 oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);
@@ -800,6 +800,102 @@ struct SystemVStructRegisterPassingHelper
 typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHelperPtr;
 
 #endif // UNIX_AMD64_ABI_ITF
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+// StructFloatFieldInfoFlags: used on LoongArch64 and RISC-V architecture as a legacy representation of
+// FpStructInRegistersInfo, returned by FpStructInRegistersInfo::ToOldFlags()
+//
+// `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
+//
+// Otherwise, and only for structs with no more than two fields and a total struct size no larger
+// than two pointers:
+//
+// The lowest four bits denote the floating-point info:
+//   bit 0: `1` means there is only one float or double field within the struct.
+//   bit 1: `1` means only the first field is floating-point type.
+//   bit 2: `1` means only the second field is floating-point type.
+//   bit 3: `1` means the two fields are both floating-point type.
+// The bits[5:4] denoting whether the field size is 8-bytes:
+//   bit 4: `1` means the first field's size is 8.
+//   bit 5: `1` means the second field's size is 8.
+//
+// Note that bit 0 and 3 cannot both be set.
+enum StructFloatFieldInfoFlags
+{
+    STRUCT_NO_FLOAT_FIELD         = 0x0,
+    STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
+    STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
+    STRUCT_FLOAT_FIELD_FIRST      = 0x2,
+    STRUCT_FLOAT_FIELD_SECOND     = 0x4,
+    STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
+    STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
+};
+
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum Flags
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
+struct FpStructInRegistersInfo
+{
+    FpStruct::Flags flags;
+    uint32_t offset1st;
+    uint32_t offset2nd;
+
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
+
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
+    }
+
+    StructFloatFieldInfoFlags ToOldFlags() const
+    {
+        return StructFloatFieldInfoFlags(
+            ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+            ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+            ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
+    }
+};
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 //===============================================================================================
 //
@@ -1058,10 +1154,8 @@ public:
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
 
-#if defined(TARGET_LOONGARCH64)
-    static int GetLoongArch64PassStructInRegisterFlags(TypeHandle th);
-#elif defined(TARGET_RISCV64)
-    static int GetRiscV64PassStructInRegisterFlags(TypeHandle th);
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    static FpStructInRegistersInfo GetFpStructInRegistersInfo(TypeHandle th);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)

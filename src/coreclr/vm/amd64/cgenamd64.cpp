@@ -175,7 +175,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Rip = pRD->ControlPC = pUnwoundState->m_Rip;
         pRD->pCurrentContext->Rsp = pRD->SP        = pUnwoundState->m_Rsp;
@@ -230,6 +230,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     LIMITED_METHOD_DAC_CONTRACT;
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
+
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~CONTEXT_XSTATE;
 
     pRD->ControlPC = m_ctx.Rip;
 

@@ -3,9 +3,6 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -79,7 +76,37 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJitManagerList(uint count, void* managers, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetJumpThunkTarget(void* ctx, ulong* targetIP, ulong* targetMD) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, void* data, uint cRevertedRejitVersions, void* rgRevertedRejitData, uint* pcNeededRevertedRejitData) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
+    {
+        if (methodDesc == 0)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (cRevertedRejitVersions != 0 && rgRevertedRejitData == null)
+        {
+            return HResults.E_INVALIDARG;
+        }
+        if (rgRevertedRejitData != null && pcNeededRevertedRejitData == null)
+        {
+            // If you're asking for reverted rejit data, you'd better ask for the number of
+            // elements we return
+            return HResults.E_INVALIDARG;
+        }
+        try
+        {
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+
+            data->MethodTablePtr = rtsContract.GetMethodTable(methodDescHandle);
+
+            return HResults.E_NOTIMPL;
+        }
+        catch (global::System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
     public unsafe int GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
@@ -308,7 +335,21 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         return HResults.S_OK;
     }
 
-    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.IObject contract = _target.Contracts.Object;
+            string str = contract.GetStringValue(obj);
+            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
@@ -389,7 +430,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
-    public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetUsefulGlobals(DacpUsefulGlobalsData* data)
+    {
+        try
+        {
+            data->ArrayMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
+            data->StringMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+            data->ObjectMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+            data->ExceptionMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
+            data->FreeMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
     public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;
