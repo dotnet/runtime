@@ -2450,6 +2450,9 @@ PhaseStatus Compiler::optOptimizeLayout()
     fgUpdateFlowGraph(/* doTailDuplication */ false);
     fgReorderBlocks(/* useProfile */ true);
 
+    // The RPO-based layout does not introduce new blocks,
+    // so we don't need to run fgUpdateFlowGraph again.
+    //
     if (!JitConfig.JitDoReversePostOrderLayout())
     {
         fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
