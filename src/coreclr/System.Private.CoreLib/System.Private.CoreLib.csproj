@@ -231,6 +231,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />

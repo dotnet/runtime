@@ -5188,7 +5188,7 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
 
 #ifndef DACCESS_COMPILE
 
-void ThrowExceptionForAbstractOverride(
+void ThrowEntryPointNotFoundException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
@@ -5353,7 +5353,7 @@ MethodTable::FindDispatchImpl(
                     {
                         if (throwOnConflict)
                         {
-                            ThrowExceptionForAbstractOverride(this, pIfcMT, pIfcMD);
+                            ThrowEntryPointNotFoundException(this, pIfcMT, pIfcMD);
                         }
                     }
                     else
@@ -5395,13 +5395,7 @@ MethodTable::FindDispatchImpl(
 
 #ifndef DACCESS_COMPILE
 
-struct MatchCandidate
-{
-    MethodTable *pMT;
-    MethodDesc *pMD;
-};
-
-void ThrowExceptionForConflictingOverride(
+void ThrowAmbiguousResolutionException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
@@ -5601,6 +5595,11 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     } CONTRACT_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
+    struct MatchCandidate
+    {
+        MethodTable *pMT;
+        MethodDesc *pMD;
+    };
     bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
@@ -5746,7 +5745,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
 
             if (throwOnConflict)
-                ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
+                ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);

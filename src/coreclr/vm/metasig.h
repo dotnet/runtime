@@ -590,6 +590,7 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_SafeHandle_RetIntPtr, r(C(CLEANUP_
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST_ELEMENT)) j, v))
 
 DEFINE_METASIG(SM(PtrVoid_RetPtrVoid, P(v), P(v)))
+DEFINE_METASIG(SM(PtrVoid_PtrVoid_PtrVoid_RetVoid, P(v) P(v) P(v), v))
 DEFINE_METASIG(IM(PtrVoid_RetVoid, P(v), v))
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 DEFINE_METASIG_T(IM(PtrCopyConstructorCookie_RetVoid, P(g(COPY_CONSTRUCTOR_COOKIE)), v))

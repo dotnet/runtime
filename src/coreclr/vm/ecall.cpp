@@ -194,6 +194,54 @@ void ECall::PopulateManagedHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWARGUMENTEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_ARGUMENTEXCEPTION, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWARGUMENTOUTOFRANGEEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWINDEXOUTOFRANGEEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_RNGCHKFAIL, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWNOTIMPLEMENTEDEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_NOT_IMPLEMENTED, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWPLATFORMNOTSUPPORTEDEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWTYPENOTSUPPORTED));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWOVERFLOWEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_OVERFLOW, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWDIVIDEBYZEROEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROWDIVZERO, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWNULLREFEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROWNULLREF, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWVERIFICATIONEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_VERIFICATION, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWAMBIGUOUSRESOLUTIONEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWENTRYPOINTNOTFOUNDEXCEPTION));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION, pDest);
 }
 
 static CrstStatic gFCallLock;
