@@ -39,8 +39,8 @@ namespace System.IO.Compression
             get => _strategy;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan((int)value, (int) ZLibCompressionStrategy.Default);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan((int)value, (int)ZLibCompressionStrategy.Fixed);
+                ArgumentOutOfRangeException.ThrowIfLessThan((int)value, (int) ZLibCompressionStrategy.Default, nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan((int)value, (int)ZLibCompressionStrategy.Fixed, nameof(value));
 
                 _strategy = value;
             }
