@@ -797,12 +797,16 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_ROL:
         {
+            // Normalize the "rotate by" value
+            arg1 %= (sizeof(TBase) * BITS_PER_BYTE);
             return EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, arg1) |
                    EvaluateBinaryScalarRSZ<TBase>(arg0, (sizeof(TBase) * 8) - arg1);
         }
 
         case GT_ROR:
         {
+            // Normalize the "rotate by" value
+            arg1 %= (sizeof(TBase) * BITS_PER_BYTE);
             return EvaluateBinaryScalarRSZ<TBase>(arg0, arg1) |
                    EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, (sizeof(TBase) * 8) - arg1);
         }

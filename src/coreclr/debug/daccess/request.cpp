@@ -490,20 +490,31 @@ ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum *
 
 HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
 {
-    unsigned int slot = 0;
-
     WORD numVtableSlots = mTable->GetNumVtableSlots();
-    while (slot < numVtableSlots)
+    for (WORD slot = 0; slot < numVtableSlots; slot++)
     {
-        MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
-        SOSMethodData methodData = {0};
-        methodData.MethodDesc = HOST_CDADDR(pMD);
-        methodData.Entrypoint = mTable->GetSlot(slot);
-        methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
-        methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
-        methodData.Token = pMD->GetMemberDef();
+        SOSMethodData methodData = {0, 0, 0, 0, 0, 0};
+        MethodDesc* pMD = nullptr;
 
-        methodData.Slot = slot++;
+        EX_TRY
+        {
+            pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (pMD != nullptr)
+        {
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+        }
+
+        methodData.Entrypoint = mTable->GetSlot(slot);
+        methodData.Slot = slot;
 
         if (!mMethods.Add(methodData))
             return E_OUTOFMEMORY;
@@ -2408,7 +2419,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CL
     }
     else
     {
-        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
+        hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
     }
     SOSDacLeave();
     return hr;
@@ -3535,7 +3546,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
         hr = m_cdacSos->GetUsefulGlobals(globalsData);
         if (FAILED(hr))
         {
-            hr = GetUsefulGlobals(globalsData);
+            hr = GetUsefulGlobalsImpl(globalsData);
         }
 #ifdef _DEBUG
         else
@@ -3554,7 +3565,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
     }
     else
     {
-        hr = GetUsefulGlobals(globalsData);;
+        hr = GetUsefulGlobalsImpl(globalsData);;
     }
 
     SOSDacLeave();

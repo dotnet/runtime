@@ -139,8 +139,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     CRWLock;
-struct    LockEntry;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
@@ -378,16 +376,6 @@ EXTERN_C void ThrowControlForThread(
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
         );
-
-// RWLock state inside TLS
-struct LockEntry
-{
-    LockEntry *pNext;    // next entry
-    LockEntry *pPrev;    // prev entry
-    LONG dwULockID;
-    LONG dwLLockID;         // owning lock
-    WORD wReaderLevel;      // reader nesting level
-};
 
 #if defined(_DEBUG)
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
@@ -951,11 +939,6 @@ public:
     // Unique thread id used for thin locks - kept as small as possible, as we have limited space
     // in the object header to store it.
     DWORD                m_ThreadId;
-
-
-    // RWLock state
-    LockEntry           *m_pHead;
-    LockEntry            m_embeddedEntry;
 
 #ifndef DACCESS_COMPILE
     Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);

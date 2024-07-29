@@ -687,7 +687,18 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                ReadOnlySpan<byte> bell = "\u0007"u8; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+                const string BellString = "\u0007"; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
+                Span<byte> bell = stackalloc byte[10];
+                if (Console.OutputEncoding.TryGetBytes(BellString, bell, out int bytesWritten))
+                {
+                    bell = bell.Slice(0, bytesWritten);
+                }
+                else
+                {
+                    bell = Console.OutputEncoding.GetBytes(BellString);
+                }
+
                 int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
                 if (errorCode == Interop.Errors.ERROR_SUCCESS)
                 {
