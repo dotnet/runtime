@@ -7,7 +7,9 @@
 // Reduced from 290.9 KiB to 0.6 KiB in 00:02:37
 // Debug: Prints 1 line(s)
 // Release: Prints 0 line(s)
+
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
@@ -29,16 +31,32 @@ public class Runtime_105558
     [Fact]
     public static void TestEntryPoint()
     {
-        if (!Sse2.IsSupported)
-            return;
+        if (Sse2.IsSupported)
+        {
+            ShiftRightLogicalTest();
+        }
+        if (Avx512F.IsSupported)
+        {
+            Avx512FRotateRightTest();
+        }
+    }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ShiftRightLogicalTest()
+    {
         var vr17 = Vector128.CreateScalar(2558356441U);
         var vr18 = Vector128.Create(0, 3113514718U, 0, 0);
         var vr19 = Sse2.ShiftRightLogical(vr17, vr18);
-        if (0 >= Sse2.ConvertToUInt32(vr19))
-        {
-            return;
-        }
-        throw new InvalidOperationException();
+        if (Sse2.ConvertToUInt32(vr19) != 0)
+            throw new InvalidOperationException();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Avx512FRotateRightTest()
+    {
+        var vr1 = Vector128.CreateScalar(1);
+        Vector128<int> vr2 = Avx512F.VL.RotateRight(vr1, 84);
+        if (vr2.GetElement(0) != 4096)
+            throw new InvalidOperationException();
     }
 }
