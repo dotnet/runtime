@@ -344,6 +344,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     pPEAssembly->AddRef();
 }
@@ -406,11 +407,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(szName == NULL);
+        PRECONDITION(m_pPEAssembly->IsLoaded());
     }
     CONTRACTL_END;
 
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
+    m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
+    if (m_pPEAssembly->IsReflectionEmit())
+        m_dwTransientFlags |= IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -2239,61 +2244,40 @@ Module::GetAssemblyIfLoaded(
         if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
             pAssembly = NULL;
     }
-#endif //!DACCESS_COMPILE
 
     if (pAssembly == NULL)
     {
-        do
+        IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+
+        //we have to be very careful here.
+        //we are using InitializeSpecInternal so we need to make sure that under no condition
+        //the data we pass to it can outlive the assembly spec.
+        AssemblySpec spec;
+        if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
+                                                pMDImport,
+                                                GetAssembly())))
         {
-            AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
+            return NULL;
+        }
 
-            DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
-            if (pCurAssemblyInExamineDomain == NULL)
-            {
-                continue;
-            }
+        // If we have been passed the binding context for the loaded assembly that is being looked up in the
+        // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
+        if (pBinderForLoadedAssembly != NULL)
+        {
+            _ASSERTE(spec.GetBinder() == NULL);
+            spec.SetBinder(pBinderForLoadedAssembly);
+        }
 
-#ifndef DACCESS_COMPILE
-            {
-                IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+        DomainAssembly * pDomainAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-                //we have to be very careful here.
-                //we are using InitializeSpecInternal so we need to make sure that under no condition
-                //the data we pass to it can outlive the assembly spec.
-                AssemblySpec spec;
-                if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
-                                                       pMDImport,
-                                                       pCurAssemblyInExamineDomain)))
-                {
-                    continue;
-                }
+        if (pDomainAssembly && pDomainAssembly->IsLoaded())
+            pAssembly = pDomainAssembly->GetAssembly();
 
-                // If we have been passed the binding context for the loaded assembly that is being looked up in the
-                // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
-                if (pBinderForLoadedAssembly != NULL)
-                {
-                    _ASSERTE(spec.GetBinder() == NULL);
-                    spec.SetBinder(pBinderForLoadedAssembly);
-                }
-                DomainAssembly * pDomainAssembly = nullptr;
-
-                {
-                    pDomainAssembly = pAppDomainExamine->FindCachedAssembly(&spec, FALSE /*fThrow*/);
-                }
-
-                if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetAssembly();
-
-                // Only store in the rid map if working with the current AppDomain.
-                if (fCanUseRidMap && pAssembly)
-                    StoreAssemblyRef(kAssemblyRef, pAssembly);
-
-                if (pAssembly != NULL)
-                    break;
-            }
-#endif //!DACCESS_COMPILE
-        } while (false);
+        // Only store in the rid map if working with the current AppDomain.
+        if (fCanUseRidMap && pAssembly)
+            StoreAssemblyRef(kAssemblyRef, pAssembly);
     }
+#endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
     _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
@@ -2372,9 +2356,9 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
-        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
+        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
@@ -3765,7 +3749,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
     m_pCeeFileGen = NULL;
-    m_pDynamicMetadata = NULL;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
@@ -3823,8 +3806,8 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete m_pDynamicMetadata;
-    m_pDynamicMetadata = NULL;
+    delete (uint32_t*)m_pDynamicMetadata;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
 }
@@ -3940,17 +3923,19 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewHolder<SBuffer> pBuffer(new SBuffer());
+    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
     _ASSERTE(pBuffer != NULL); // allocation would throw first
+
+    DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
 
     // ReflectionModule is still in a consistent state, and now we're just operating on local data to
     // assemble the new metadata buffer. If this fails, then worst case is that metadata does not include
     // recently generated classes.
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
-    BYTE * pRawData = pBuffer->OpenRawBuffer(numBytes);
+    BYTE * pRawData = &pDynamicMetadata->Data[0];
     hr = pEmitter->SaveToMemory(pRawData, numBytes);
-    pBuffer->CloseRawBuffer();
+    pDynamicMetadata->Size = numBytes;
 
     IfFailThrow(hr);
 
@@ -3958,9 +3943,9 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete m_pDynamicMetadata;
+        delete (uint32_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
     }
 
     //
@@ -3982,7 +3967,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 // Notes:
 //    Only used by the debugger, so only accessible via DAC.
 //    The buffer is updated via code:ReflectionModule.CaptureModuleMetaDataToMemory
-PTR_SBuffer ReflectionModule::GetDynamicMetadataBuffer() const
+TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 {
     SUPPORTS_DAC;
 

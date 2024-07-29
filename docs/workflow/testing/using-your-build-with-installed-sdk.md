@@ -88,7 +88,7 @@ dotnet publish --self-contained
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
     <add key="nuget" value="https://api.nuget.org/v3/index.json" />
-    <add key="dotnet8" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet8/nuget/v3/index.json" />
+    <add key="dotnet9" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet9/nuget/v3/index.json" />
  </packageSources>
 </configuration>
 ```

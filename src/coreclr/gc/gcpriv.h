@@ -141,7 +141,10 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for standalone GC and macOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+// For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
+// to the mmap() calls in unix/gcenv.unix.cpp  More details here:
+//    https://github.com/dotnet/runtime/issues/104211
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
@@ -1465,9 +1468,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-#ifdef FEATURE_64BIT_ALIGNMENT
     friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
-#endif //FEATURE_64BIT_ALIGNMENT
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;

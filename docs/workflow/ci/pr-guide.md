@@ -30,6 +30,7 @@ Anyone with write access can merge a pull request manually when the following co
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system. In case of failures, refer to the [analyzing build failures](failure-analysis.md) doc.
+* The CI results are no more than 1 week old.
 
 Typically, PRs are merged as one commit (squash merges). It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to disect them.
 

@@ -124,7 +124,7 @@ namespace System
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType t)
         {
             // Create the event provider for the specified type.
-            object EvProvider = Activator.CreateInstance(t, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, null, new object[] { this }, null)!;
+            object EvProvider = Activator.CreateInstance(t, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance, null, [this], null)!;
 
             // Attempt to cache the wrapper on the object.
             if (!SetData(t, EvProvider))

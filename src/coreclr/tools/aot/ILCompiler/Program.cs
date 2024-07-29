@@ -65,7 +65,7 @@ namespace ILCompiler
         {
             string outputFilePath = Get(_command.OutputFilePath);
             if (outputFilePath == null)
-                throw new CommandLineException("Output filename must be specified (/out <file>)");
+                throw new CommandLineException("Output filename must be specified (--out <file>)");
 
             var suppressedWarningCategories = new List<string>();
             if (Get(_command.NoTrimWarn))
@@ -542,7 +542,7 @@ namespace ILCompiler
                 // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.
                 if (!Get(_command.NoInlineTls) &&
                     ((targetOS == TargetOS.Linux && targetArchitecture is TargetArchitecture.X64 or TargetArchitecture.ARM64) ||
-                     (targetOS == TargetOS.Windows && targetArchitecture is TargetArchitecture.X64)))
+                     (targetOS == TargetOS.Windows && targetArchitecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }

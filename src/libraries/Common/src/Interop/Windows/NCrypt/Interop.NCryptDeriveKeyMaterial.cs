@@ -218,26 +218,22 @@ internal static partial class Interop
             byte[] seed,
             SecretAgreementFlags flags)
         {
-            Span<NCryptBuffer> buffers = stackalloc NCryptBuffer[2];
-
             fixed (byte* pLabel = label, pSeed = seed)
             {
                 NCryptBuffer labelBuffer = default;
                 labelBuffer.cbBuffer = label.Length;
                 labelBuffer.BufferType = BufferType.KdfTlsLabel;
                 labelBuffer.pvBuffer = new IntPtr(pLabel);
-                buffers[0] = labelBuffer;
 
                 NCryptBuffer seedBuffer = default;
                 seedBuffer.cbBuffer = seed.Length;
                 seedBuffer.BufferType = BufferType.KdfTlsSeed;
                 seedBuffer.pvBuffer = new IntPtr(pSeed);
-                buffers[1] = seedBuffer;
 
                 return DeriveKeyMaterial(
                     secretAgreement,
                     BCryptNative.KeyDerivationFunction.Tls,
-                    buffers,
+                    [labelBuffer, seedBuffer],
                     flags);
             }
         }

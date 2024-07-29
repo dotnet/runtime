@@ -534,7 +534,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
@@ -1251,9 +1252,21 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitPointerReloc(typeDefNode);
 
-                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
-                        ? factory.GenericComposition(_type.Instantiation)
-                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    ISymbolNode compositionNode;
+
+                    if (this == factory.MaximallyConstructableType(_type)
+                        && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.ConstructedGenericComposition(_type.Instantiation)
+                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                    }
+                    else
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.GenericComposition(_type.Instantiation)
+                            : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    }
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);

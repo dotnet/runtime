@@ -5,6 +5,7 @@
 
 // This symbol's implementation is generated during the build
 const char* dotnet_wasi_getentrypointassemblyname();
+char *monoeg_g_getenv(const char *variable);
 
 #ifdef WASI_AFTER_RUNTIME_LOADED_DECLARATIONS
 // This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
@@ -110,6 +111,14 @@ int main(int argc, char * argv[]) {
 		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
-	return ret < 0 ? -ret : ret;
+	ret = ret < 0 ? -ret : ret;
+
+	char* dotnet_wasi_print_exit_code = monoeg_g_getenv ("DOTNET_WASI_PRINT_EXIT_CODE");
+	if (ret != 0 && dotnet_wasi_print_exit_code && strcmp(dotnet_wasi_print_exit_code, "1") == 0)
+	{
+		fprintf(stderr, "WASM EXIT %d\n", ret);
+	}
+
+	return ret;
 }
 #endif

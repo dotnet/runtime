@@ -122,15 +122,19 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Listeners.Add(text);
-            Trace.Assert(true, "Message");
+            bool someSuccessfulCondition = true;
+            Trace.Assert(someSuccessfulCondition, "Message");
             Assert.Equal(0, listener.GetCallCount(Method.WriteLine));
             Assert.Equal(0, listener.GetCallCount(Method.Fail));
             text.Flush();
             Assert.DoesNotContain("Message", text.Output);
-            Trace.Assert(false, "Message");
+            bool someFailureCondition = false;
+            Trace.Assert(someFailureCondition);
+            Trace.Assert(someFailureCondition, "Message");
             Assert.Equal(0, listener.GetCallCount(Method.WriteLine));
-            Assert.Equal(1, listener.GetCallCount(Method.Fail));
+            Assert.Equal(2, listener.GetCallCount(Method.Fail));
             text.Flush();
+            Assert.Contains("someFailureCondition", text.Output);
             Assert.Contains("Message", text.Output);
         }
 
@@ -384,7 +388,13 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.WriteLine("Message end.");
             textTL.Flush();
             newLine = Environment.NewLine;
-            var expected = "Message start." + newLine + "    This message should be indented.This should not be indented." + newLine + "      " + fail + "This failure is reported with a detailed message" + newLine + "      " + fail + newLine + "      " + fail + "This assert is reported" + newLine + "Message end." + newLine;
+            var expected =
+                "Message start." + newLine +
+                "    This message should be indented.This should not be indented." + newLine +
+                "      " + fail + "This failure is reported with a detailed message" + newLine +
+                "      " + fail + "false" + newLine +
+                "      " + fail + "This assert is reported" + newLine +
+                "Message end." + newLine;
             Assert.Equal(expected, textTL.Output);
         }
     }

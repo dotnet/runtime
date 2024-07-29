@@ -238,15 +238,15 @@ namespace Microsoft.Extensions.Logging
                     return null;
                 }
 
-                ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
-                {
+                ReadOnlySpan<LogLevel> logLevels =
+                [
                     LogLevel.Critical,
                     LogLevel.Error,
                     LogLevel.Warning,
                     LogLevel.Information,
                     LogLevel.Debug,
                     LogLevel.Trace,
-                };
+                ];
 
                 LogLevel? minimumLevel = null;
 

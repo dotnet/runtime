@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Security.Cryptography.Pkcs;
 using Test.Cryptography;
 using Xunit;
 
@@ -735,5 +736,153 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes(bool allowDuplicates)
+        {
+            Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
+
+            if (allowDuplicates)
+            {
+                limits = Pkcs12LoaderLimits.DangerousNoLimits;
+            }
+
+            // remove the edit lock
+            limits = new Pkcs12LoaderLimits(limits)
+            {
+                PreserveCertificateAlias = false,
+                PreserveKeyName = false,
+                PreserveStorageProvider = false,
+                PreserveUnknownAttributes = false,
+            };
+
+            Func<X509Certificate2> func =
+                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+
+            if (allowDuplicates)
+            {
+                using (X509Certificate2 cert = func())
+                {
+                    Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                    Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                }
+            }
+            else
+            {
+                Pkcs12LoadLimitExceededException ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+
+#if NET
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes_KeyOnly(bool ignorePrivateKeys)
+        {
+            byte[] pfx;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=No Duplicates Here",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(1)))
+                {
+                    Pkcs12SafeContents contents = new Pkcs12SafeContents();
+                    Pkcs9LocalKeyId keyId = new Pkcs9LocalKeyId(new byte[] { 2, 2, 4 });
+
+                    Pkcs12CertBag certBag = contents.AddCertificate(cert);
+                    certBag.Attributes.Add(keyId);
+
+                    Pkcs12KeyBag keyBag = contents.AddKeyUnencrypted(key);
+                    keyBag.Attributes.Add(keyId);
+                    keyBag.Attributes.Add(keyId);
+
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    builder.AddSafeContentsUnencrypted(contents);
+                    builder.SealWithoutIntegrity();
+                    pfx = builder.Encode();
+                }
+            }
+
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            {
+                IgnorePrivateKeys = ignorePrivateKeys,
+            };
+
+            Exception ex = Assert.Throws<Pkcs12LoadLimitExceededException>(
+                () => LoadPfxNoFile(pfx, loaderLimits: limits));
+
+            Assert.Contains("AllowDuplicateAttributes", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes_EncryptedOnly(bool ignoreEncryptedAuthSafes)
+        {
+            byte[] pfx;
+
+            using (ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=No Duplicates Here",
+                    key,
+                    HashAlgorithmName.SHA256);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(1)))
+                {
+                    Pkcs12SafeContents certSafe = new Pkcs12SafeContents();
+                    Pkcs12SafeContents keySafe = new Pkcs12SafeContents();
+                    Pkcs9LocalKeyId keyId = new Pkcs9LocalKeyId(new byte[] { 2, 2, 4 });
+
+                    Pkcs12CertBag certBag = certSafe.AddCertificate(cert);
+                    certBag.Attributes.Add(keyId);
+
+                    Pkcs12KeyBag keyBag = keySafe.AddKeyUnencrypted(key);
+                    keyBag.Attributes.Add(keyId);
+                    keyBag.Attributes.Add(keyId);
+
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    builder.AddSafeContentsUnencrypted(certSafe);
+
+                    builder.AddSafeContentsEncrypted(
+                        keySafe,
+                        "",
+                        new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 1));
+
+                    builder.SealWithoutIntegrity();
+                    pfx = builder.Encode();
+                }
+            }
+
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            {
+                IgnoreEncryptedAuthSafes = ignoreEncryptedAuthSafes,
+            };
+
+            Func<X509Certificate2> func = () => LoadPfxNoFile(pfx, loaderLimits: limits);
+
+            if (ignoreEncryptedAuthSafes)
+            {
+                // Assert.NoThrow
+                func().Dispose();
+            }
+            else
+            {
+                Exception ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+#endif
     }
 }

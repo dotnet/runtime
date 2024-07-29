@@ -1520,6 +1520,7 @@ void HelperCallProperties::init()
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape    = false; // true if none of the GC ref arguments can escape
+        bool isNoGC        = false; // true is the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1527,6 +1528,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LLSH:
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_LMUL:
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2DBL:
@@ -1538,7 +1541,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBLREM:
             case CORINFO_HELP_FLTROUND:
             case CORINFO_HELP_DBLROUND:
-
                 isPure  = true;
                 noThrow = true;
                 break;
@@ -1729,6 +1731,8 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
@@ -1749,30 +1753,41 @@ void HelperCallProperties::init()
                 nonNullReturn = true;
                 break;
 
+#ifdef TARGET_X86
+            case CORINFO_HELP_ASSIGN_REF_EAX:
+            case CORINFO_HELP_ASSIGN_REF_ECX:
+            case CORINFO_HELP_ASSIGN_REF_EBX:
+            case CORINFO_HELP_ASSIGN_REF_EBP:
+            case CORINFO_HELP_ASSIGN_REF_ESI:
+            case CORINFO_HELP_ASSIGN_REF_EDI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+#endif
             // GC Write barrier support
             // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
+                isNoGC = true;
+                FALLTHROUGH;
+            case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_BULK_WRITEBARRIER:
-
                 mutatesHeap = true;
                 break;
 
             // Accessing fields (write)
-            case CORINFO_HELP_SETFIELD32:
-            case CORINFO_HELP_SETFIELD64:
-            case CORINFO_HELP_SETFIELDOBJ:
-            case CORINFO_HELP_SETFIELDSTRUCT:
-            case CORINFO_HELP_SETFIELDFLOAT:
-            case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
-
                 mutatesHeap = true;
                 break;
 
             // These helper calls always throw an exception
+            case CORINFO_HELP_FAIL_FAST:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_OVERFLOW:
             case CORINFO_HELP_VERIFICATION:
             case CORINFO_HELP_RNGCHKFAIL:
@@ -1785,17 +1800,14 @@ void HelperCallProperties::init()
             case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
             case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
             case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
-            case CORINFO_HELP_FAIL_FAST:
             case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
             case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
             case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-
                 alwaysThrow = true;
                 break;
 
             // These helper calls may throw an exception
             case CORINFO_HELP_MON_EXIT_STATIC:
-
                 break;
 
             // This is a debugging aid; it simply returns a constant address.
@@ -1804,26 +1816,37 @@ void HelperCallProperties::init()
                 noThrow = true;
                 break;
 
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: // Never present on stack at the time of GC.
+            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
+                isNoGC = true;
+                FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
             case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_ENTER_STATIC:
-            case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_GETFIELDADDR:
-            case CORINFO_HELP_INIT_PINVOKE_FRAME:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-
                 noThrow = true;
                 break;
 
-            // Not sure how to handle optimization involving the rest of these  helpers
-            default:
+            case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
+            case CORINFO_HELP_STACK_PROBE:
+            case CORINFO_HELP_CHECK_OBJ:
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_TAILCALL:
+                isNoGC      = true;
+                mutatesHeap = true; // Conservatively.
+                break;
 
-                // The most pessimistic results are returned for these helpers
+            default:
+                // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
                 break;
         }
@@ -1836,6 +1859,7 @@ void HelperCallProperties::init()
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
         m_isNoEscape[helper]    = isNoEscape;
+        m_isNoGC[helper]        = isNoGC;
     }
 }
 

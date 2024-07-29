@@ -20,6 +20,7 @@ set(NATIVECRYPTO_SOURCES
     pal_symmetric.c
     pal_x509.c
     pal_x509chain.c
+    pal_swiftbindings.o
 )
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
@@ -31,7 +32,6 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
 else()
     set(NATIVECRYPTO_SOURCES
         ${NATIVECRYPTO_SOURCES}
-        pal_swiftbindings.o
         pal_keychain_macos.c
         pal_seckey_macos.c
         pal_trust_macos.c
@@ -42,16 +42,44 @@ endif()
 # As of CMake 3.20.2 support for Swift only works with the Ninja and XCode
 # generators so we cannot rely on it. Even with the Ninja generator it doesn't
 # work in combination with other languages within the same library.
-if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
-    set(SWIFT_PLATFORM "macosx")
-    set(SWIFT_PLATFORM_SUFFIX "")
-    set(SWIFT_DEPLOYMENT_TARGET ${CMAKE_OSX_DEPLOYMENT_TARGET})
-    set(SWIFT_COMPILER_TARGET "${CMAKE_OSX_ARCHITECTURES}-apple-${SWIFT_PLATFORM}${SWIFT_DEPLOYMENT_TARGET}${SWIFT_PLATFORM_SUFFIX}")
+if (NOT SWIFT_COMPILER_TARGET)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(SWIFT_OPTIMIZATION_FLAG "-Onone")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(SWIFT_OPTIMIZATION_FLAG "-O")
+    endif()
+
+    if (CLR_CMAKE_TARGET_MACCATALYST)
+        # this is set in configurecompiler.cmake
+        set(SWIFT_COMPILER_TARGET ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
+    else()
+        set(SWIFT_DEPLOYMENT_TARGET ${CMAKE_OSX_DEPLOYMENT_TARGET})
+        set(SWIFT_PLATFORM_SUFFIX "")
+
+        if (CLR_CMAKE_TARGET_OSX)
+            set(SWIFT_PLATFORM "macosx")
+        elseif (CLR_CMAKE_TARGET_IOS)
+            set(SWIFT_PLATFORM "ios")
+            if (CMAKE_OSX_SYSROOT MATCHES iPhoneSimulator)
+                set(SWIFT_PLATFORM_SUFFIX "-simulator")
+            endif()
+        elseif (CLR_CMAKE_TARGET_TVOS)
+            set(SWIFT_PLATFORM "tvos")
+            if (CMAKE_OSX_SYSROOT MATCHES AppleTVSimulator)
+                set(SWIFT_PLATFORM_SUFFIX "-simulator")
+            endif()
+        else()
+            message(FATAL_ERROR "Unknown platform")
+        endif()
+
+        set(SWIFT_COMPILER_TARGET "${CMAKE_OSX_ARCHITECTURES}-apple-${SWIFT_PLATFORM}${SWIFT_DEPLOYMENT_TARGET}${SWIFT_PLATFORM_SUFFIX}")
+    endif()
 endif()
 
 add_custom_command(
     OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution -g -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
     COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )

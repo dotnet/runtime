@@ -16,7 +16,11 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+#if TARGET_ILLUMOS || TARGET_SOLARIS
+        private const string DefaultTimeZoneDirectory = "/usr/share/lib/zoneinfo/";
+#else
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+#endif
 
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data

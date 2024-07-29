@@ -45,6 +45,10 @@ struct REGDISPLAY_BASE {
 
     TADDR SP;
     TADDR ControlPC; // LOONGARCH: use RA for PC
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR SSP;
+#endif
 };
 
 inline PCODE GetControlPC(const REGDISPLAY_BASE *pRD) {
@@ -509,6 +513,12 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     // This will setup the PC and SP
     SyncRegDisplayToCurrentContext(pRD);
+
+#if !defined(DACCESS_COMPILE)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pRD->SSP = GetSSP(pctx);
+#endif
+#endif // !DACCESS_COMPILE
 
     if (fLightUnwind)
         return;
