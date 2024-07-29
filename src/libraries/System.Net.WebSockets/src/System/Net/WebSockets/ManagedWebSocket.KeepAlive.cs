@@ -75,13 +75,16 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception occurred during KeepAlive: {e}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception during Keep-Alive: {e}");
 
-                if (TryTransitionToAborted())
+                lock (StateUpdateLock)
                 {
-                    // We only save the exception in the keep-alive state if we actually triggered the abort
-                    Interlocked.Exchange(ref _keepAlivePingState.Exception, e);
-                    Abort(); // this will also dispose the timer
+                    if (!_disposed)
+                    {
+                        // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
+                        _keepAlivePingState.Exception = e;
+                        Abort();
+                    }
                 }
             }
         }
@@ -332,11 +335,11 @@ namespace System.Net.WebSockets
 
             internal void ThrowIfFaulted()
             {
-                if (Interlocked.Exchange(ref Exception, null) is Exception e)
+                if (Volatile.Read(ref Exception) is Exception e)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Throwing Keep-Alive exception {e.GetType().Name}: {e.Message}");
 
-                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), e);
+                    throw e;
                 }
             }
         }

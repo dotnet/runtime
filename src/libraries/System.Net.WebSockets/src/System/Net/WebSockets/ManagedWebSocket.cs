@@ -243,18 +243,21 @@ namespace System.Net.WebSockets
         private void DisposeCore()
         {
             Debug.Assert(Monitor.IsEntered(StateUpdateLock), $"Expected {nameof(StateUpdateLock)} to be held");
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"{nameof(_disposed)}={_disposed}");
+
             if (!_disposed)
             {
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream.Dispose();
-
-                WebSocketState state = _state;
                 if (_state < WebSocketState.Aborted)
                 {
+                    WebSocketState state = _state;
                     _state = WebSocketState.Closed;
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
                 }
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
 
                 _inflater?.DisposeSafe(_receiveMutex);
                 _deflater?.DisposeSafe(_sendMutex);
@@ -301,7 +304,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
+                ThrowIfInvalidState(s_validSendStates);
             }
             catch (Exception exc)
             {
@@ -338,7 +341,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
+                ThrowIfInvalidState(s_validReceiveStates);
 
                 return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken: cancellationToken).AsTask();
             }
@@ -352,7 +355,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
+                ThrowIfInvalidState(s_validReceiveStates);
 
                 return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken: cancellationToken);
             }
@@ -368,7 +371,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
+                ThrowIfInvalidState(s_validCloseStates);
             }
             catch (Exception exc)
             {
@@ -386,7 +389,7 @@ namespace System.Net.WebSockets
 
         private async Task CloseOutputAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
-            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
+            ThrowIfInvalidState(s_validCloseOutputStates);
 
             await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
@@ -405,26 +408,45 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            TryTransitionToAborted();
-            Dispose(); // forcibly tear down connection
-        }
-
-        private bool TryTransitionToAborted()
-        {
             lock (StateUpdateLock)
             {
-                WebSocketState state = _state;
-                if (state is not WebSocketState.Closed and not WebSocketState.Aborted)
-                {
-                    _state = state is not WebSocketState.None and not WebSocketState.Connecting ?
-                        WebSocketState.Aborted :
-                        WebSocketState.Closed;
-
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
-                    return true;
-                }
-                return false;
+                TransitionToAborted();
+                DisposeCore(); // forcibly tear down connection
             }
+        }
+
+        private void TransitionToAborted()
+        {
+            Debug.Assert(Monitor.IsEntered(StateUpdateLock), $"Expected {nameof(StateUpdateLock)} to be held");
+
+            WebSocketState state = _state;
+            if (state is not WebSocketState.Closed and not WebSocketState.Aborted)
+            {
+                _state = state is not WebSocketState.None and not WebSocketState.Connecting ?
+                    WebSocketState.Aborted :
+                    WebSocketState.Closed;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
+            }
+        }
+
+        private void ThrowIfInvalidState(WebSocketState[] validStates)
+        {
+            // ordering of exceptions:
+            // 1) keep-alive timeout exception (it was the one that triggered the abort/disposal)
+            // 2) disposed
+            // 3) invalid state
+
+            ThrowIfDisposed();
+            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            // Keep-Alive timeout triggers the abort which also disposes the websocket
+            // We only save an exception in the keep-alive state if it actually triggered the abort
+            _keepAlivePingState?.ThrowIfFaulted();
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
         }
 
         /// <summary>Sends a websocket frame to the network.</summary>
@@ -576,7 +598,7 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
-            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+            ThrowIfDisposed();
 
             if (_deflater is not null && !disableCompression)
             {
@@ -747,7 +769,7 @@ namespace System.Net.WebSockets
                     shouldExitMutex = true;
                 }
 
-                ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+                ThrowIfDisposed();
 
                 if (_readAheadState?.ReadAheadTask is not null)
                 {
@@ -963,14 +985,13 @@ namespace System.Net.WebSockets
 
                 if (_state == WebSocketState.Aborted)
                 {
-                    // Keep-Alive timeout triggers the abort which also disposes the websocket
-                    // We only save an exception in the keep-alive state if we actually triggered the abort
-                    _keepAlivePingState?.ThrowIfFaulted();
-
                     throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
                 }
 
-                TryTransitionToAborted();
+                lock (StateUpdateLock)
+                {
+                    TransitionToAborted();
+                }
 
                 if (exc is WebSocketException)
                 {
@@ -985,7 +1006,8 @@ namespace System.Net.WebSockets
 
                 if (shouldExitMutex) // this is a user-issued read
                 {
-                    bool shouldIssueReadAhead = _keepAlivePingState is not null && _readAheadState is not null && // if we are using keep-alive pings
+                    bool shouldIssueReadAhead = _state < WebSocketState.CloseReceived && // if we still can receive
+                        _keepAlivePingState is not null && _readAheadState is not null && // and we are using keep-alive pings
                         _keepAlivePingState.AwaitingPong && // and we are still waiting for the pong response
                         _readAheadState.ReadAheadTask is null && // and we've completely consumed the previous read-ahead
                         _lastReceiveHeader.Processed; // and with the current read we've processed the entire data frame
@@ -1039,7 +1061,10 @@ namespace System.Net.WebSockets
                     _state = WebSocketState.CloseReceived;
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
+                if (NetEventSource.Log.IsEnabled() && state != _state)
+                {
+                    NetEventSource.Info(this, $"State transition from {state} to {_state}");
+                }
             }
 
             WebSocketCloseStatus closeStatus = WebSocketCloseStatus.NormalClosure;
@@ -1495,7 +1520,10 @@ namespace System.Net.WebSockets
                     _state = WebSocketState.CloseSent;
                 }
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"State transition from {state} to {_state}");
+                if (NetEventSource.Log.IsEnabled() && state != _state)
+                {
+                    NetEventSource.Info(this, $"State transition from {state} to {_state}");
+                }
             }
 
             if (!_isServer && _receivedCloseFrame)
@@ -1550,7 +1578,7 @@ namespace System.Net.WebSockets
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
-            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+            ThrowIfDisposed();
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
