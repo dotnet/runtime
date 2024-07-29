@@ -59,8 +59,11 @@ function tabChannel_message (evt: MessageEvent) {
 
     console.log("tabChannel_message", data.cmd);
     switch (data.cmd) {
+        case "queryStats":
+            cwraps.mono_wasm_perform_heapshot(0);
+            break;
         case "takeSnapshot":
-            cwraps.mono_wasm_perform_heapshot();
+            cwraps.mono_wasm_perform_heapshot(1);
             break;
     }
 }
@@ -165,7 +168,7 @@ export function mono_wasm_heapshot_roots (kind: CharPtr, count: number, pAddress
     }
 }
 
-export function mono_wasm_heapshot_start (): void {
+export function mono_wasm_heapshot_start (full: number): void {
     stringTable.clear();
     for (const kvp of incompletePackets)
         kvp[1].clear();
@@ -174,8 +177,9 @@ export function mono_wasm_heapshot_start (): void {
 
     heapshotStartedWhen = performance.now();
     if (tabChannel)
-        tabChannel.postMessage({ cmd: "heapshotStart", version: formatVersion });
-    heapshotLog("heapshot starting");
+        tabChannel.postMessage({ cmd: "heapshotStart", version: formatVersion, full });
+    if (full)
+        heapshotLog("heapshot starting");
 }
 
 function pagesToMegabytes (pages: number) {
@@ -290,7 +294,7 @@ function mono_wasm_heapshot_js_object (handle: number, obj: any) {
     recordObject("JSOB", handle, obj);
 }
 
-export function mono_wasm_heapshot_end (): void {
+export function mono_wasm_heapshot_end (full: number): void {
     heapshotCounter("snapshot/version", formatVersion);
     heapshotCounter("snapshot/num-strings", stringTable.size);
     heapshotCounter("snapshot/num-objects", totalObjects);
@@ -298,12 +302,14 @@ export function mono_wasm_heapshot_end (): void {
     heapshotCounter("snapshot/num-classes", totalClasses);
     heapshotCounter("snapshot/num-assemblies", totalAssemblies);
     try {
-        enumerateProxies(mono_wasm_heapshot_cs_object, mono_wasm_heapshot_js_object);
+        if (full)
+            enumerateProxies(mono_wasm_heapshot_cs_object, mono_wasm_heapshot_js_object);
     } finally {
         flush();
         const elapsedMs = performance.now() - heapshotStartedWhen;
-        heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
+        if (full)
+            heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
         if (tabChannel)
-            tabChannel.postMessage({ cmd: "heapshotEnd" });
+            tabChannel.postMessage({ cmd: "heapshotEnd", full });
     }
 }

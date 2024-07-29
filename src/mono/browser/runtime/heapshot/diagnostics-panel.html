@@ -18,6 +18,12 @@
             const tabList = [];
             const headerArray = new Uint8Array(8);
             const headerView = new DataView(headerArray.buffer);
+            let statsPending = false;
+
+            // setInterval(refreshStats, 5000);
+
+            function processCounters (tabObj, chunk) {
+            }
 
             function writePacket (tabObj, chunkId, chunk) {
                 for (let i = 0; i < 4; i++)
@@ -25,6 +31,7 @@
                 headerView.setUint32(4, chunk.length, true);
                 if (chunkId === "CNTR") {
                     tabObj.blobParts.splice(0, 0, headerArray.slice(), chunk);
+                    processCounters(tabObj, chunk);
                 } else {
                     tabObj.blobParts.push(headerArray.slice());
                     tabObj.blobParts.push(chunk);
@@ -62,8 +69,11 @@
                         writePacket(this, data.chunkId || "", data.chunk);
                         break;
                     case "heapshotEnd":
-                        var blob = new Blob(this.blobParts, { type: "application/octet-stream" });
-                        downloadBlob(blob, `${(new Date).toISOString().replace(":", "-")}.mono-heap`);
+                        if (data.full) {
+                            var blob = new Blob(this.blobParts, { type: "application/octet-stream" });
+                            downloadBlob(blob, `${(new Date).toISOString().replace(":", "-")}.mono-heap`);
+                        } else
+                            statsPending = false;
                         break;
                 }
 
@@ -159,11 +169,21 @@
                 else
                     document.querySelector("#takeSnapshot").setAttribute("disabled", true);
 
-                if (tabObj)
+                if (tabObj) {
                     tabObj.refresh();
+                    refreshStats();
+                }
             }
 
-            function snapshots_change () {
+            function refreshStats () {
+                if (statsPending)
+                    return;
+
+                const tabObj = getSelectedTab();
+                if (tabObj) {
+                    statsPending = true;
+                    tabObj.channel.postMessage({ cmd: "queryStats", sender: tabId });
+                }
             }
         </script>
     </head>
