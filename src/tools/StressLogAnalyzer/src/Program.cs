@@ -57,16 +57,47 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
         CliConfiguration configuration = new(CreateRootCommand());
-        return await configuration.InvokeAsync(args).ConfigureAwait(false);
+        ParseResult parsedArguments = configuration.Parse(args);
+
+        while (true)
+        {
+            int result = await parsedArguments.InvokeAsync().ConfigureAwait(false);
+            if (result != 0 || parsedArguments.GetValue(SingleRunOption))
+            {
+                return result;
+            }
+
+            Console.Write("'q' to quit, 'r[args]' to run again\n>");
+            while (true)
+            {
+                string command = Console.ReadLine()!;
+                if (command.Equals("q", StringComparison.OrdinalIgnoreCase))
+                {
+                    return 0;
+                }
+                else if (command[0] is 'r' or 'R')
+                {
+                    // Parse the remaining string as new arguments for the analyzer.
+                    FileInfo inputFileArgument = parsedArguments.GetValue(InputFileArgument)!;
+                    parsedArguments = configuration.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
+                    break;
+                }
+            }
+        };
     }
+
+    private static readonly CliArgument<FileInfo> InputFileArgument = new CliArgument<FileInfo>("log file")
+    {
+        Description = "The memory-mapped stress log file to analyze",
+    };
+
+    private static readonly CliOption<bool> SingleRunOption = new CliOption<bool>("--single-run")
+    {
+        Description = "Run the analyzer only once",
+    };
 
     public static CliRootCommand CreateRootCommand()
     {
-        var inputFile = new CliArgument<FileInfo>("log file")
-        {
-            Description = "The memory-mapped stress log file to analyze",
-        };
-
         var outputFile = new CliOption<FileInfo>("-output", "-o")
         {
             Description = "Write output to a text file instead of the console",
@@ -263,14 +294,9 @@ public static class Program
             Description = "Print the raw format strings along with the message",
         };
 
-        var singleRun = new CliOption<bool>("--single-run")
-        {
-            Description = "Only run once and do not prompt to run again."
-        };
-
         var rootCommand = new CliRootCommand
         {
-            inputFile,
+            InputFileArgument,
             outputFile,
             valueRanges,
             timeRanges,
@@ -285,7 +311,7 @@ public static class Program
             hexThreadId,
             printFormatStrings,
             formatFilter,
-            singleRun,
+            SingleRunOption,
             new DiagramDirective(),
         };
 
@@ -294,7 +320,7 @@ public static class Program
             ThreadFilter? threads = args.GetValue(threadFilter);
             string[]? formats = args.GetResult(formatFilter) is not null ? args.GetValue(formatFilter) : null;
             Options options = new(
-                args.GetValue(inputFile)!,
+                args.GetValue(InputFileArgument)!,
                 args.GetValue(outputFile),
                 args.GetValue(valueRanges)!,
                 args.GetValue(timeRanges)!,
@@ -308,8 +334,7 @@ public static class Program
                 threads ?? new ThreadFilter([]),
                 PrintFormatStrings: args.GetValue(printFormatStrings) ?? formats is [],
                 args.GetValue(prefixOption),
-                formats,
-                args.GetValue(singleRun));
+                formats);
             return await AnalyzeStressLog(options, ct).ConfigureAwait(false);
         });
 
@@ -335,64 +360,39 @@ public static class Program
             Registry registry = new(globalTarget);
             IStressLog globalStressLogContract = registry.StressLog;
 
-            bool runAgain = false;
-            do
-            {
-                using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
+            using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
 
-                InterestingStringFinder stringFinder = new(globalTarget, moduleTable, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
+            InterestingStringFinder stringFinder = new(globalTarget, moduleTable, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
 
-                IMessageFilter messageFilter = CreateMessageFilter(options, stringFinder);
+            IMessageFilter messageFilter = CreateMessageFilter(options, stringFinder);
 
-                GCThreadMap gcThreadMap = new();
+            GCThreadMap gcThreadMap = new();
 
-                IThreadNameOutput threadNameOutput = options.PrintHexThreadIds
-                    ? new HexThreadNameOutput() : new GCThreadNameOutput(gcThreadMap);
+            IThreadNameOutput threadNameOutput = options.PrintHexThreadIds
+                ? new HexThreadNameOutput() : new GCThreadNameOutput(gcThreadMap);
 
-                TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
+            TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
 
-                var analyzer = new StressLogAnalyzer(
-                    () => new Registry(targetFactory()).StressLog,
-                    stringFinder,
-                    messageFilter,
-                    options.ThreadFilter,
-                    options.EarliestMessageThreads);
+            var analyzer = new StressLogAnalyzer(
+                () => new Registry(targetFactory()).StressLog,
+                stringFinder,
+                messageFilter,
+                options.ThreadFilter,
+                options.EarliestMessageThreads);
 
-                var (numProcessed, numPrinted) = await analyzer.AnalyzeLogsAsync(
-                    logs,
+            var (numProcessed, numPrinted) = await analyzer.AnalyzeLogsAsync(
+                logs,
+                timeTracker,
+                gcThreadMap,
+                new StressMessageWriter(
+                    threadNameOutput,
                     timeTracker,
-                    gcThreadMap,
-                    new StressMessageWriter(
-                        threadNameOutput,
-                        timeTracker,
-                        globalTarget,
-                        options.PrintFormatStrings,
-                        outputFile ?? Console.Out),
-                    token).ConfigureAwait(false);
+                    globalTarget,
+                    options.PrintFormatStrings,
+                    outputFile ?? Console.Out),
+                token).ConfigureAwait(false);
 
-                PrintFooter(accessor.SafeMemoryMappedViewHandle, globalStressLogContract, logs, numProcessed, numPrinted);
-
-                if (options.SingleRun)
-                {
-                    return 0;
-                }
-
-                Console.Write("'q' to quit, 'r' to run again\n>");
-
-                while (true)
-                {
-                    string command = Console.ReadLine()!;
-                    if (command.Equals("q", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return 0;
-                    }
-                    else if (command.Equals("r", StringComparison.OrdinalIgnoreCase))
-                    {
-                        runAgain = true;
-                        break;
-                    }
-                }
-            } while (runAgain);
+            PrintFooter(accessor.SafeMemoryMappedViewHandle, globalStressLogContract, logs, numProcessed, numPrinted);
 
             return 0;
         }
