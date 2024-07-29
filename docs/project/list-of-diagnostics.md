@@ -297,4 +297,5 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 | Diagnostic ID     | Introduced | Removed | Description |
 | :---------------- | ---------: | ------: | :---------- |
 |  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental in .NET 9 |
-|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |
+|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental in .NET 9 |
+|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |

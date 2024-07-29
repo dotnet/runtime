@@ -1049,7 +1049,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         // Overwrite previously cached property since it has [JsonIgnore].
                         state.AddedProperties[propertySpec.EffectiveJsonPropertyName] = (propertySpec, memberInfo, index);
-                        state.Properties[index] = state.Properties.Count;
+                        state.Properties[index] = propertyIndex;
                         state.IsPropertyOrderSpecified |= propertySpec.Order != 0;
                     }
                     else
