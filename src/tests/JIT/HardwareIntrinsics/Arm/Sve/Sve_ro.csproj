@@ -6,6 +6,7 @@
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Program.Sve.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
