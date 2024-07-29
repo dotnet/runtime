@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #endif
 
-#ifdef _WIN32
+#ifndef _WIN32
 extern "C" DLL_EXPORT int GetMapAnonymousFlag()
 {
     return MAP_ANONYMOUS;
