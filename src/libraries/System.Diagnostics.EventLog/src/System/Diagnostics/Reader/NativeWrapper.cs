@@ -482,7 +482,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessage(EventLogHandle handle, uint msgId)
         {
             int bufferNeeded;
-            char[] emptyBuffer = { '\0' };
+            char[] emptyBuffer = { '\0' };  // issue: https://github.com/dotnet/runtime/issues/100198
             bool status = UnsafeNativeMethods.EvtFormatMessage(handle, EventLogHandle.Zero, msgId, 0, null, UnsafeNativeMethods.EvtFormatMessageFlags.EvtFormatMessageId, 0, emptyBuffer, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
@@ -934,7 +934,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessageRenderName(EventLogHandle pmHandle, EventLogHandle eventHandle, UnsafeNativeMethods.EvtFormatMessageFlags flag)
         {
             int bufferNeeded;
-            char[] emptyBuffer = { '\0' };
+            char[] emptyBuffer = { '\0' };  // issue: https://github.com/dotnet/runtime/issues/100198
             bool status = UnsafeNativeMethods.EvtFormatMessage(pmHandle, eventHandle, 0, 0, null, flag, 0, emptyBuffer, out bufferNeeded);
             int error = Marshal.GetLastWin32Error();
 
@@ -987,7 +987,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             IntPtr buffer = IntPtr.Zero;
             int bufferNeeded;
-            char[] emptyBuffer = { '\0' };
+            char[] emptyBuffer = { '\0' }; // issue: https://github.com/dotnet/runtime/issues/100198
 
             try
             {
@@ -1074,7 +1074,7 @@ namespace System.Diagnostics.Eventing.Reader
         public static string EvtFormatMessageFormatDescription(EventLogHandle handle, EventLogHandle eventHandle, string[] values)
         {
             int bufferNeeded;
-            char[] emptyBuffer = { '\0' };
+            char[] emptyBuffer = { '\0' }; // issue: https://github.com/dotnet/runtime/issues/100198
 
             UnsafeNativeMethods.EvtStringVariant[] stringVariants = new UnsafeNativeMethods.EvtStringVariant[values.Length];
             for (int i = 0; i < values.Length; i++)
