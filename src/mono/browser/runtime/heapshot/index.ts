@@ -11,6 +11,8 @@ import { getU32 } from "../memory";
 import { utf8ToString } from "../strings";
 import { BlobBuilder } from "../jiterpreter-support";
 import { enumerateProxies } from "../gc-handles";
+import { JiterpCounter, JiterpCounterNames } from "../jiterpreter-enums";
+import { getCounter } from "../jiterpreter-support";
 import type { VoidPtr, ManagedPointer, CharPtr } from "../types/emscripten";
 
 const packetBuilderCapacity = 65536;
@@ -250,7 +252,8 @@ function heapshotCounter (name: string, value: number) {
     const builder = getBuilder("CNTR");
     // Using the stringtable here would just make the format harder to decode.
     builder.appendName(name);
-    builder.appendLeb(value);
+    // We use F64 because some counters (like jiterpreter counters) are not int32's
+    builder.appendF64(value);
 }
 
 export function mono_wasm_heapshot_stats (
@@ -302,6 +305,9 @@ export function mono_wasm_heapshot_end (full: number): void {
     heapshotCounter("snapshot/num-classes", totalClasses);
     heapshotCounter("snapshot/num-assemblies", totalAssemblies);
     try {
+        for (let i = 0; i < JiterpCounterNames.length; i++)
+            heapshotCounter(`jiterpreter/${JiterpCounterNames[i]}`, getCounter(<JiterpCounter>i));
+
         if (full)
             enumerateProxies(mono_wasm_heapshot_cs_object, mono_wasm_heapshot_js_object);
     } finally {
