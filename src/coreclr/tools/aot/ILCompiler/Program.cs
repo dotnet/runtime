@@ -65,7 +65,7 @@ namespace ILCompiler
         {
             string outputFilePath = Get(_command.OutputFilePath);
             if (outputFilePath == null)
-                throw new CommandLineException("Output filename must be specified (/out <file>)");
+                throw new CommandLineException("Output filename must be specified (--out <file>)");
 
             var suppressedWarningCategories = new List<string>();
             if (Get(_command.NoTrimWarn))

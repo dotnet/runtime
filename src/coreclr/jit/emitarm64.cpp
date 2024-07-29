@@ -14360,6 +14360,7 @@ void emitter::emitDispInsHelp(
             break;
     }
 
+#ifdef DEBUG
     if (id->idIsLclVar())
     {
         printf("\t// ");
@@ -14373,6 +14374,7 @@ void emitter::emitDispInsHelp(
                              asmfm);
         }
     }
+#endif
 
     printf("\n");
 }

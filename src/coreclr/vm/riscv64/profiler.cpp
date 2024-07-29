@@ -112,12 +112,12 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
 
     struct { bool isFloat, is8; } fields[] = {
-        { (bool) (sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE)),
-          (bool) (sir->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) },
-        { (bool) (sir->m_structFields & (STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO)),
-          (bool) (sir->m_structFields & STRUCT_SECOND_FIELD_SIZE_IS8) },
+        { (bool) (sir->m_structFields.flags & (FpStruct::FloatInt | FpStruct::BothFloat | FpStruct::OnlyOne)),
+          (sir->m_structFields.SizeShift1st() == 3) },
+        { (bool) (sir->m_structFields.flags & (FpStruct::IntFloat | FpStruct::BothFloat)),
+          (sir->m_structFields.SizeShift2nd() == 3) },
     };
-    int fieldCount = (sir->m_structFields & STRUCT_FLOAT_FIELD_ONLY_ONE) ? 1 : 2;
+    int fieldCount = (sir->m_structFields.flags & FpStruct::OnlyOne) ? 1 : 2;
     UINT64 bufferPosBegin = m_bufferPos;
     const double *fRegBegin = &pData->floatArgumentRegisters.f[sir->m_idxFloatReg], *fReg = fRegBegin;
     const double *fRegEnd = &pData->floatArgumentRegisters.f[0] + NUM_FLOAT_ARGUMENT_REGISTERS;
@@ -185,7 +185,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         // If both fields are in registers of same kind (either float or general) and both are 8 bytes, no need to copy.
         // We can get away with returning a ptr to argumentRegisters since the struct would have the same layout.
         if ((sir->m_cFloatReg ^ sir->m_cGenReg) != 2 ||
-            (sir->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != STRUCT_HAS_8BYTES_FIELDS_MASK)
+            (sir->m_structFields.SizeShift1st() < 3 || sir->m_structFields.SizeShift2nd() < 3))
         {
             return CopyStructFromRegisters(sir);
         }
@@ -302,11 +302,11 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         return (LPVOID)pData->argumentRegisters.a[0];
     }
 
-    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
-    if (fpReturnSize)
+    FpStructInRegistersInfo info = {(FpStruct::Flags)m_argIterator.GetFPReturnSize()};
+    if (info.flags != FpStruct::UseIntCallConv)
     {
-        if ((fpReturnSize & STRUCT_HAS_8BYTES_FIELDS_MASK) == STRUCT_HAS_8BYTES_FIELDS_MASK ||
-            (fpReturnSize & STRUCT_FLOAT_FIELD_ONLY_ONE))
+        if (((info.flags & FpStruct::BothFloat) && info.SizeShift1st() == 3 && info.SizeShift2nd() == 3) ||
+            (info.flags & FpStruct::OnlyOne))
         {
             return &pData->floatArgumentRegisters.f[0];
         }
@@ -317,7 +317,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         sir.m_cGenReg = -1;
         sir.m_byteStackIndex = 0;
         sir.m_byteStackSize = -1;
-        sir.m_structFields = fpReturnSize;
+        sir.m_structFields = info;
         return CopyStructFromRegisters(&sir);
     }
 

@@ -231,6 +231,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~CONTEXT_XSTATE;
+
     pRD->ControlPC = m_ctx.Rip;
 
     pRD->SP = m_ctx.Rsp;
