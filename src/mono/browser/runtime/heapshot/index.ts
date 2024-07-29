@@ -270,14 +270,15 @@ function recordObject (chunkId: string, handle: number, obj: any) {
     const builder = getBuilder(chunkId);
     builder.appendU32(handle);
     builder.appendULeb(getStringTableIndex(typeof (obj)));
-    let name = obj && obj[Symbol.toStringTag]
-        ? obj[Symbol.toStringTag]
-        : (obj && obj.constructor && obj.constructor.name
-            ? obj.constructor.name
+    // We can't use obj.toString since for certain types it's defined to generate an absolute truckload of text
+    let name = obj && obj.constructor && obj.constructor.name
+        ? obj.constructor.name
+        : (obj && obj[Symbol.toStringTag]
+            ? obj[Symbol.toStringTag]
             : "unknown"
         );
     if ((typeof (obj) === "function") && obj.name)
-        name = obj.name;
+        name = `function ${obj.name}`;
     builder.appendULeb(getStringTableIndex(name));
 }
 
