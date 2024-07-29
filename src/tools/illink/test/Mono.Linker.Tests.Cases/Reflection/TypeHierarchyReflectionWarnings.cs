@@ -1026,7 +1026,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (IteratorStateMachineAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (IteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static IEnumerable<bool> IteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
@@ -1038,7 +1037,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
 			[KeptAttributeAttribute (typeof (DebuggerStepThroughAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (AsyncWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async Task AsyncWithGenericDAM<
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
@@ -1049,7 +1047,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncIteratorStateMachineAttribute))]
-			[ExpectedWarning("IL2119", nameof(AsyncIteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<bool> AsyncIteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()

@@ -1,15 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
-
-// We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
-// and System.Diagnostics.Tracing (Framework), we use this Ifdef make each kind
 
 namespace SdtEventSources
 {
@@ -17,12 +9,7 @@ namespace SdtEventSources
     // so we don't have to fully qualify everything else using it.
     namespace DontPollute
     {
-        public sealed class EventSource :
-#if USE_MDT_EVENTSOURCE
-            Microsoft.Diagnostics.Tracing.EventSource
-#else
-            System.Diagnostics.Tracing.EventSource
-#endif
+        public sealed class EventSource : System.Diagnostics.Tracing.EventSource
         {
             [Event(1)]
             public void EventWrite(int i) { this.WriteEvent(1, i); }

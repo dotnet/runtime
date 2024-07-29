@@ -312,6 +312,13 @@ public:
     }
 
     ValueNumPair m_vnPair;
+
+#ifdef DEBUG
+    // True if this ssa def VN was updated
+    bool m_updated = false;
+    // Originally assigned VN
+    ValueNumPair m_origVNPair;
+#endif
 };
 
 // This class stores information associated with a memory SSA definition.
@@ -554,17 +561,9 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_LOONGARCH64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_RISCV64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
+#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
@@ -3461,7 +3460,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -3648,6 +3647,7 @@ public:
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
     unsigned gtSetEvalOrder(GenTree* tree);
+    unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
 
@@ -4337,6 +4337,10 @@ public:
 #endif // defined(FEATURE_SIMD)
 
     unsigned lvaGSSecurityCookie; // LclVar number
+#ifdef TARGET_ARM64
+    unsigned lvaFfrRegister; // LclVar number
+    unsigned getFFRegisterVarNum();
+#endif
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
@@ -4505,6 +4509,11 @@ protected:
         MakeInlineObservation = 2,
     };
 
+    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
+        GenTree* value);
+    GenTree* impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* nullableClsNode, GenTree* obj);
+    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
+
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
                            const BYTE*             codeEndp,
@@ -4577,6 +4586,7 @@ protected:
 #endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+    GenTree* impGetGenericTypeDefinition(GenTree* type);
 
     // Mirrors StringComparison.cs
     enum StringComparison
@@ -5755,8 +5765,14 @@ public:
 
     // Utility functions for fgValueNumber.
 
+    // Value number a block or blocks in a loop
+    void fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks);
+
     // Perform value-numbering for the trees in "blk".
     void fgValueNumberBlock(BasicBlock* blk);
+
+    // Value number a phi definition
+    void fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* block, bool isUpdate = false);
 
     // Requires that "entryBlock" is the header block of "loop" and that "loop" is the
     // innermost loop of which "entryBlock" is the entry.  Returns the value number that should be
@@ -7629,6 +7645,10 @@ public:
                                          FlowGraphNaturalLoop*   loop,
                                          BasicBlock*             exiting,
                                          LoopLocalOccurrences*   loopLocals);
+    bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
+    bool optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+
+    bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
                            unsigned              lclNum,
                            ScevAddRec*           addRec,
@@ -7644,6 +7664,9 @@ public:
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
+
+    bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum);
 
     // Redundant branch opts
     //
@@ -8235,6 +8258,7 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
@@ -9958,6 +9982,8 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
+        bool canUseTier0Opts;
+        bool canUseAllOpts;
         bool compMinOpts;
         bool compMinOptsIsSet;
 #ifdef DEBUG
@@ -9984,13 +10010,22 @@ public:
         }
 #endif // !DEBUG
 
+        // TODO: we should convert these into a single OptimizationLevel
+
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            assert(compMinOptsIsSet);
+            return !canUseAllOpts;
         }
         bool OptimizationEnabled() const
         {
-            return !OptimizationDisabled();
+            assert(compMinOptsIsSet);
+            return canUseAllOpts;
+        }
+        bool Tier0OptimizationEnabled() const
+        {
+            assert(compMinOptsIsSet);
+            return canUseTier0Opts;
         }
 
         void SetMinOpts(bool val)
@@ -9999,6 +10034,9 @@ public:
             assert(!compMinOptsIsSet || (compMinOpts == val));
             compMinOpts      = val;
             compMinOptsIsSet = true;
+
+            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+            canUseAllOpts   = canUseTier0Opts && !val;
         }
 
         // true if the CLFLG_* for an optimization is set.
@@ -11450,6 +11488,11 @@ public:
     void GetStructTypeOffset(
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_FPSTRUCT_LOWERING*>
+                                     FpStructLoweringMap;
+    FpStructLoweringMap*             m_fpStructLoweringCache;
+    const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);

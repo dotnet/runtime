@@ -897,6 +897,13 @@ if(CLR_CMAKE_HOST_APPLE)
   endif()
 endif()
 
+if(HOST_ANDROID)
+  if(HOST_AMD64 OR HOST_ARM64)
+    # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+    # This applies only to 64-bit binaries
+    add_link_options(LINKER:-z,max-page-size=16384)
+  endif()
+endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")

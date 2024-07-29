@@ -864,7 +864,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.ECDsaP256))
             using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
@@ -885,7 +885,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.", ~TestPlatforms.Browser)]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.Rsa))
+            using (CngKeyWrapper platformKey = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.Rsa))
             using (RSACng rsa = new RSACng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);

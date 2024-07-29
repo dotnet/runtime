@@ -1,4 +1,5 @@
 <Project>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
@@ -6,10 +7,6 @@
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageOverridesFile Include="$(MSBuildThisFileDirectory)PackageOverrides.txt" />
-  </ItemGroup>
 
   <!--
   Native files that are always included in the singlefile bundle can be listed here.
@@ -314,5 +311,9 @@
   <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
     <_hostArch>amd64</_hostArch>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
 
 </Project>

@@ -157,6 +157,7 @@
     <HelixCommandPrefixEnvVarItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWebcil)' == 'false'" Include="TEST_USING_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingFingerprinting)' == 'false'" Include="TEST_USING_FINGERPRINTING=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
@@ -346,7 +347,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil), TestUsingFingerprinting: $(TestUsingFingerprinting)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

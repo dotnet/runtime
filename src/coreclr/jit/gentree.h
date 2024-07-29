@@ -513,18 +513,18 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
     GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0x0A000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0x0B000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0x0C000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0x0D000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
+    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+    GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
+    GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
+    GTF_ICON_PINVKI_HDL         = 0x0B000000, // GT_CNS_INT -- constant is a pinvoke calli handle
+    GTF_ICON_TOKEN_HDL          = 0x0C000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
+    GTF_ICON_TLS_HDL            = 0x0D000000, // GT_CNS_INT -- constant is a TLS ref with offset
+    GTF_ICON_FTN_ADDR           = 0x0E000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0x0F000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0x10000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_STATIC_BOX_PTR     = 0x11000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
+    GTF_ICON_FIELD_SEQ          = 0x12000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
     GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
@@ -4544,7 +4544,7 @@ public:
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // For LoongArch64's and RISC-V 64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
@@ -4824,10 +4824,11 @@ class CallArgs
     // made for this call.
     unsigned m_padStkAlign;
 #endif
-    bool m_hasThisPointer           : 1;
-    bool m_hasRetBuffer             : 1;
-    bool m_isVarArgs                : 1;
-    bool m_abiInformationDetermined : 1;
+    bool m_hasThisPointer              : 1;
+    bool m_hasRetBuffer                : 1;
+    bool m_isVarArgs                   : 1;
+    bool m_abiInformationDetermined    : 1;
+    bool m_newAbiInformationDetermined : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
@@ -4885,8 +4886,10 @@ public:
         PushFront(comp, arg);
     }
 
-    void ResetFinalArgsAndABIInfo();
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
+    void ResetFinalArgsAndABIInfo();
+
+    void DetermineNewABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
@@ -4902,7 +4905,15 @@ public:
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
-    bool AreArgsComplete() const { return m_argsComplete; }
+    bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
+
+    // TODO-Remove: Workaround for bad codegen in MSVC versions < 19.41, see
+    // https://github.com/dotnet/runtime/pull/104370#issuecomment-2222910359
+#ifdef _MSC_VER
+    __declspec(noinline)
+#endif
+        bool AreArgsComplete() const { return m_argsComplete; }
+
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
@@ -5305,8 +5316,6 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
-    bool TreatAsShouldHaveRetBufArg() const;
-
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
     //
@@ -5330,7 +5339,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || TreatAsShouldHaveRetBufArg())
+        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
         {
             return false;
         }

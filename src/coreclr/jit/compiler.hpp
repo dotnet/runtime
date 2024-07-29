@@ -3322,7 +3322,7 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
     if (((tree->gtFlags & GTF_CALL) != 0))
     {
         // if this is not a No-GC helper
-        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        if (!tree->IsHelperCall() || !s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum()))
         {
             // assume that we have a safe point.
             return true;

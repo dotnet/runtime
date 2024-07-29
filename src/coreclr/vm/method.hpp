@@ -333,7 +333,9 @@ public:
     // See the TypeString class for better control over name formatting.
     LPCUTF8 GetName();
 
+#ifndef DACCESS_COMPILE
     LPCUTF8 GetName(USHORT slot);
+#endif // DACCESS_COMPILE
 
     LPCUTF8 GetNameThrowing();
 
@@ -1053,7 +1055,9 @@ public:
 
     PTR_PCODE GetAddrOfSlot();
 
+#ifndef DACCESS_COMPILE
     PTR_MethodDesc GetDeclMethodDesc(UINT32 slotNumber);
+#endif // DACCESS_COMPILE
 
 public:
     mdMethodDef GetMemberDef() const;
@@ -1904,6 +1908,15 @@ private:
 public:
     static void Init();
 #endif
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct cdac_offsets<MethodDesc>
+{
+    static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
+    static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
+    static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2324,6 +2337,17 @@ private:
     UINT16               m_flagsAndTokenRange;
 
     // Followed by array of method descs...
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<MethodDescChunk>
+{
+    static constexpr size_t MethodTable = offsetof(MethodDescChunk, m_methodTable);
+    static constexpr size_t Next = offsetof(MethodDescChunk, m_next);
+    static constexpr size_t Size = offsetof(MethodDescChunk, m_size);
+    static constexpr size_t Count = offsetof(MethodDescChunk, m_count);
 };
 
 inline int MethodDesc::GetMethodDescChunkIndex() const

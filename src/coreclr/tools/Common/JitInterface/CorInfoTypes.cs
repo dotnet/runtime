@@ -1221,47 +1221,6 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
-    // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
-    //
-    // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
-    //
-    // Otherwise, and only for structs with no more than two fields and a total struct size no larger
-    // than two pointers:
-    //
-    // The lowest four bits denote the floating-point info:
-    //   bit 0: `1` means there is only one float or double field within the struct.
-    //   bit 1: `1` means only the first field is floating-point type.
-    //   bit 2: `1` means only the second field is floating-point type.
-    //   bit 3: `1` means the two fields are both floating-point type.
-    // The bits[5:4] denoting whether the field size is 8-bytes:
-    //   bit 4: `1` means the first field's size is 8.
-    //   bit 5: `1` means the second field's size is 8.
-    //
-    // Note that bit 0 and 3 cannot both be set.
-    [Flags]
-    public enum StructFloatFieldInfoFlags
-    {
-        STRUCT_NO_FLOAT_FIELD         = 0x0,
-        STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
-        STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
-        STRUCT_FLOAT_FIELD_FIRST      = 0x2,
-        STRUCT_FLOAT_FIELD_SECOND     = 0x4,
-        STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
-        STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-
-        STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
-        STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
-        STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
-
-        STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
-        STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
-
-        STRUCT_HAS_ONE_FLOAT_MASK     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND),
-        STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
-        STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
-    };
-
     // DEBUGGER DATA
     public enum MappingTypes
     {
@@ -1500,7 +1459,7 @@ namespace Internal.JitInterface
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }
 
-    public struct CORINFO_SWIFT_LOWERING
+    public struct CORINFO_SWIFT_LOWERING : IEquatable<CORINFO_SWIFT_LOWERING>
     {
         private byte _byReference;
         public bool byReference { get => _byReference != 0; set => _byReference = value ? (byte)1 : (byte)0; }
@@ -1529,12 +1488,107 @@ namespace Internal.JitInterface
 
         public nint numLoweredElements;
 
+        public override bool Equals(object obj)
+        {
+            return obj is CORINFO_SWIFT_LOWERING other && Equals(other);
+        }
+
+        public bool Equals(CORINFO_SWIFT_LOWERING other)
+        {
+            if (byReference != other.byReference)
+            {
+                return false;
+            }
+
+            // If both are by-ref, the rest of the bits mean nothing.
+            if (byReference)
+            {
+                return true;
+            }
+
+            return LoweredElements.Slice(0, (int)numLoweredElements).SequenceEqual(other.LoweredElements.Slice(0, (int)other.numLoweredElements))
+                && Offsets.Slice(0, (int)numLoweredElements).SequenceEqual(other.Offsets.Slice(0, (int)other.numLoweredElements));
+        }
+
+        public override int GetHashCode()
+        {
+            HashCode code = default;
+            code.Add(byReference);
+
+            if (byReference)
+            {
+                return code.ToHashCode();
+            }
+
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                code.Add(LoweredElements[i]);
+                code.Add(Offsets[i]);
+            }
+
+            return code.ToHashCode();
+        }
+
         // Override for a better unit test experience
         public override string ToString()
         {
             if (byReference)
             {
                 return "byReference";
+            }
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append('{');
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                if (i != 0)
+                {
+                    stringBuilder.Append(", ");
+                }
+                stringBuilder.Append(LoweredElements[i]);
+                stringBuilder.Append(": ");
+                stringBuilder.Append(Offsets[i]);
+            }
+            stringBuilder.Append('}');
+            return stringBuilder.ToString();
+        }
+    }
+
+    public struct CORINFO_FPSTRUCT_LOWERING
+    {
+        private byte _byIntegerCallConv;
+        public bool byIntegerCallConv { get => _byIntegerCallConv != 0; set => _byIntegerCallConv = value ? (byte)1 : (byte)0; }
+
+        [InlineArray(2)]
+        private struct FpStructLoweredTypes
+        {
+            public CorInfoType type;
+        }
+
+        [InlineArray(2)]
+        private struct LoweredOffsets
+        {
+            public uint offset;
+        }
+
+        private FpStructLoweredTypes _loweredElements;
+
+        [UnscopedRef]
+        public Span<CorInfoType> LoweredElements => _loweredElements;
+
+        private LoweredOffsets _offsets;
+
+        [UnscopedRef]
+        public Span<uint> Offsets => _offsets;
+
+        public nint numLoweredElements;
+
+        // Override for a better unit test experience
+        public override string ToString()
+        {
+            if (byIntegerCallConv)
+            {
+                return "byIntegerCallConv";
             }
 
             var stringBuilder = new StringBuilder();

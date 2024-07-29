@@ -64,6 +64,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");

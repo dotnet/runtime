@@ -260,7 +260,7 @@ namespace Internal.JitInterface
                 // The field can't span past the end of the struct.
                 if ((normalizedFieldOffset + fieldSize) > helper.StructSize)
                 {
-                    Debug.Assert(false, "Invalid struct size. The size of fields and overall size don't agree");
+                    Debug.Fail("Invalid struct size. The size of fields and overall size don't agree");
                     return false;
                 }
 

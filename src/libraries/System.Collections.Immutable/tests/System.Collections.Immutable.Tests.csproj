@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NoWarn>0436</NoWarn>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>

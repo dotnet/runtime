@@ -26,6 +26,75 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable);
+
+internal struct EcmaMetadataSchema
+{
+    public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool variableSizedColumnsAre4BytesLong)
+    {
+        MetadataVersion = metadataVersion;
+        LargeStringHeap = largeStringHeap;
+        LargeBlobHeap = largeBlobHeap;
+        LargeGuidHeap = largeGuidHeap;
+
+        _rowCount = rowCount;
+        _isSorted = isSorted;
+
+        VariableSizedColumnsAreAll4BytesLong = variableSizedColumnsAre4BytesLong;
+    }
+
+    public readonly string MetadataVersion;
+
+    public readonly bool LargeStringHeap;
+    public readonly bool LargeBlobHeap;
+    public readonly bool LargeGuidHeap;
+
+    // Table data, these structures hold MetadataTable.Count entries
+    private readonly int[] _rowCount;
+    public readonly ReadOnlySpan<int> RowCount => _rowCount;
+
+    private readonly bool[] _isSorted;
+    public readonly ReadOnlySpan<bool> IsSorted => _isSorted;
+
+    // In certain scenarios the size of the tables is forced to be the maximum size
+    // Otherwise the size of columns should be computed based on RowSize/the various heap flags
+    public readonly bool VariableSizedColumnsAreAll4BytesLong;
+}
+
+internal class TargetEcmaMetadata
+{
+    public TargetEcmaMetadata(EcmaMetadataSchema schema,
+                        TargetSpan[] tables,
+                        TargetSpan stringHeap,
+                        TargetSpan userStringHeap,
+                        TargetSpan blobHeap,
+                        TargetSpan guidHeap)
+    {
+        Schema = schema;
+        _tables = tables;
+        StringHeap = stringHeap;
+        UserStringHeap = userStringHeap;
+        BlobHeap = blobHeap;
+        GuidHeap = guidHeap;
+    }
+
+    public EcmaMetadataSchema Schema { get; init; }
+
+    private TargetSpan[] _tables;
+    public ReadOnlySpan<TargetSpan> Tables => _tables;
+    public TargetSpan StringHeap { get; init; }
+    public TargetSpan UserStringHeap { get; init; }
+    public TargetSpan BlobHeap { get; init; }
+    public TargetSpan GuidHeap { get; init; }
+}
+
+[Flags]
+internal enum AvailableMetadataType
+{
+    None = 0,
+    ReadOnly = 1,
+    ReadWriteSavedCopy = 2,
+    ReadWrite = 4
+}
 ```
 
 ``` csharp
@@ -36,13 +105,31 @@ TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size);
+AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle);
+TargetPointer GetReadWriteSavedMetadataAddress(ModuleHandle handle, out ulong size);
+TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
 ```
 
 ## Version 1
 
 Data descriptors used:
-- `Module`
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `Module` | `Assembly` | Assembly of the Module |
+| `Module` | `Base` | Pointer to start of PE file in memory |
+| `Module` | `Flags` | Assembly of the Module |
+| `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
+| `Module` | `ThunkHeap` | Pointer to the thunk heap |
+| `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
+| `Module` | `FieldDefToDescMap` | Mapping table |
+| `Module` | `ManifestModuleReferencesMap` | Mapping table |
+| `Module` | `MemberRefToDescMap` | Mapping table |
+| `Module` | `MethodDefToDescMap` | Mapping table |
+| `Module` | `TypeDefToMethodTableMap` | Mapping table |
+| `Module` | `TypeRefToMethodTableMap` | Mapping table |
+| `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
+| `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -92,6 +179,32 @@ TargetPointer GetMetadataAddress(ModuleHandle handle, out ulong size)
     int rva = target.Read<int>(metadataDirectoryAddress);
     size = target.Read<int>(metadataDirectoryAddress + sizeof(int));
     return baseAddress + rva;
+}
+
+AvailableMetadataType ILoader.GetAvailableMetadataType(ModuleHandle handle)
+{
+    Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+    AvailableMetadataType flags = AvailableMetadataType.None;
+
+    TargetPointer dynamicMetadata = target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
+
+    if (dynamicMetadata != TargetPointer.Null)
+        flags |= AvailableMetadataType.ReadWriteSavedCopy;
+    else
+        flags |= AvailableMetadataType.ReadOnly;
+
+    return flags;
+}
+
+TargetPointer ILoader.GetReadWriteSavedMetadataAddress(ModuleHandle handle, out ulong size)
+{
+    Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+    TargetPointer dynamicMetadata = target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
+
+    size = target.Read<uint>(handle.Address + /* DynamicMetadata::Size offset */);
+    TargetPointer result = handle.Address + /* DynamicMetadata::Data offset */;
+    return result;
 }
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)

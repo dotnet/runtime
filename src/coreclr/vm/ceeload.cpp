@@ -344,6 +344,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     pPEAssembly->AddRef();
 }
@@ -3748,7 +3749,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
     m_pCeeFileGen = NULL;
-    m_pDynamicMetadata = NULL;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
@@ -3806,8 +3806,8 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete m_pDynamicMetadata;
-    m_pDynamicMetadata = NULL;
+    delete (uint32_t*)m_pDynamicMetadata;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
 }
@@ -3923,17 +3923,19 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewHolder<SBuffer> pBuffer(new SBuffer());
+    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
     _ASSERTE(pBuffer != NULL); // allocation would throw first
+
+    DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
 
     // ReflectionModule is still in a consistent state, and now we're just operating on local data to
     // assemble the new metadata buffer. If this fails, then worst case is that metadata does not include
     // recently generated classes.
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
-    BYTE * pRawData = pBuffer->OpenRawBuffer(numBytes);
+    BYTE * pRawData = &pDynamicMetadata->Data[0];
     hr = pEmitter->SaveToMemory(pRawData, numBytes);
-    pBuffer->CloseRawBuffer();
+    pDynamicMetadata->Size = numBytes;
 
     IfFailThrow(hr);
 
@@ -3941,9 +3943,9 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete m_pDynamicMetadata;
+        delete (uint32_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
     }
 
     //
@@ -3965,7 +3967,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 // Notes:
 //    Only used by the debugger, so only accessible via DAC.
 //    The buffer is updated via code:ReflectionModule.CaptureModuleMetaDataToMemory
-PTR_SBuffer ReflectionModule::GetDynamicMetadataBuffer() const
+TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 {
     SUPPORTS_DAC;
 

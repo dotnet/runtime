@@ -462,6 +462,14 @@ class Object
 
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<Object>
+{
+    static constexpr size_t m_pMethTab = offsetof(Object, m_pMethTab);
 };
 
 /*
@@ -930,6 +938,15 @@ class StringObject : public Object
 private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<StringObject>
+{
+    static constexpr size_t m_FirstChar = offsetof(StringObject, m_FirstChar);
+    static constexpr size_t m_StringLength = offsetof(StringObject, m_StringLength);
 };
 
 /*================================GetEmptyString================================

@@ -126,7 +126,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(StackFrame frame)
         {
-            _stackFrames = new StackFrame[] { frame };
+            _stackFrames = [frame];
             _numOfFrames = 1;
         }
 
