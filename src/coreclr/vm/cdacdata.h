@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef CDACOFFSETS_H__
-#define CDACOFFSETS_H__
+#ifndef CDACDATA_H__
+#define CDACDATA_H__
 
 // See datadescriptor.h
 //
@@ -22,4 +22,4 @@ struct cdac_data
 {
 };
 
-#endif// CDACOFFSETS_H__
+#endif// CDACDATA_H__
