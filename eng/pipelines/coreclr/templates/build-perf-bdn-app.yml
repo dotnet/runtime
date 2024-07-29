@@ -74,8 +74,8 @@ steps:
     displayName:  Clone performance
     workingDirectory: $(Build.SourcesDirectory)
 
-  - pwsh: |
-      $env:PYTHONPATH+="$(Build.SourcesDirectory)/performance/scripts;$(Build.SourcesDirectory)/performance/src/scenarios"
+  - script: |
+      export PYTHONPATH=$PYTHONPATH:$(Build.SourcesDirectory)/performance/scripts:$(Build.SourcesDirectory)/performance/src/scenarios
       python -c "import mauisharedpython; roll_dict = mauisharedpython.generate_maui_rollback_dict(); mauisharedpython.dump_dict_to_json_file(roll_dict, '$(Build.SourcesDirectory)/rollback.json')
     displayName: Generate rollback.json
     workingDirectory: $(Build.SourcesDirectory)/performance/src/scenarios/shared
