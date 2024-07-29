@@ -63,7 +63,7 @@
                         break;
                     case "heapshotEnd":
                         var blob = new Blob(this.blobParts, { type: "application/octet-stream" });
-                        downloadBlob(blob, `${this.tabId}_${Date.now()}.mono-heap`);
+                        downloadBlob(blob, `${(new Date).toISOString().replace(":", "-")}.mono-heap`);
                         break;
                 }
 
