@@ -52,8 +52,6 @@ namespace ILCompiler.Dataflow
 
         protected readonly FlowAnnotations _annotations;
 
-        internal MultiValue ReturnValue { get; private set; }
-
         protected MethodBodyScanner(FlowAnnotations annotations)
         {
             _annotations = annotations;
@@ -356,7 +354,6 @@ namespace ILCompiler.Dataflow
 
             BasicBlockIterator blockIterator = new BasicBlockIterator(methodBody);
 
-            ReturnValue = default(MultiValue);
             ILReader reader = new ILReader(methodBody.GetILBytes());
             while (reader.HasNext)
             {
@@ -797,10 +794,12 @@ namespace ILCompiler.Dataflow
                             }
                             if (hasReturnValue)
                             {
-                                StackSlot retValue = PopUnknown(currentStack, 1, methodBody, offset);
+                                StackSlot retStackSlot = PopUnknown(currentStack, 1, methodBody, offset);
                                 // If the return value is a reference, treat it as the value itself for now
                                 // We can handle ref return values better later
-                                ReturnValue = MultiValueLattice.Meet(ReturnValue, DereferenceValue(methodBody, offset, retValue.Value, locals, ref interproceduralState));
+                                MultiValue retValue = DereferenceValue(methodBody, offset, retStackSlot.Value, locals, ref interproceduralState);
+                                var methodReturnValue = GetReturnValue(methodBody);
+                                HandleReturnValue(methodBody, offset, methodReturnValue, retValue);
                                 ValidateNoReferenceToReference(locals, methodBody, offset);
                             }
                             ClearStack(ref currentStack);
@@ -870,6 +869,8 @@ namespace ILCompiler.Dataflow
         }
 
         protected abstract SingleValue GetMethodParameterValue(ParameterProxy parameter);
+
+        protected abstract MethodReturnValue GetReturnValue (MethodIL method);
 
         private void ScanLdarg(ILOpcode opcode, int parameterIndex, Stack<StackSlot> currentStack, MethodDesc thisMethod)
         {
@@ -1036,7 +1037,7 @@ namespace ILCompiler.Dataflow
                         break;
                     case MethodReturnValue methodReturnValue:
                         // Ref returns don't have special ReferenceValue values, so assume if the target here is a MethodReturnValue then it must be a ref return value
-                        HandleStoreMethodReturnValue(method, offset, methodReturnValue, source);
+                        HandleReturnValue(method, offset, methodReturnValue, source);
                         break;
                     case FieldValue fieldValue:
                         HandleStoreField(method, offset, fieldValue, DereferenceValue(method, offset, source, locals, ref ipState));
@@ -1115,7 +1116,7 @@ namespace ILCompiler.Dataflow
         {
         }
 
-        protected virtual void HandleStoreMethodReturnValue(MethodIL method, int offset, MethodReturnValue thisParameter, MultiValue sourceValue)
+        protected virtual void HandleReturnValue(MethodIL method, int offset, MethodReturnValue thisParameter, MultiValue sourceValue)
         {
         }
 

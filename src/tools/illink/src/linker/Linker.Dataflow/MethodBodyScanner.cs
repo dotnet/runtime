@@ -652,10 +652,10 @@ namespace Mono.Linker.Dataflow
 							WarnAboutInvalidILInMethod (methodBody, operation.Offset);
 						}
 						if (hasReturnValue) {
-							StackSlot retValueSlot = PopUnknown (currentStack, 1, methodBody, operation.Offset);
+							StackSlot retStackSlot = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 							// If the return value is a reference, treat it as the value itself for now
 							// We can handle ref return values better later
-							MultiValue retValue = DereferenceValue (retValueSlot.Value, locals, ref interproceduralState);
+							MultiValue retValue = DereferenceValue (retStackSlot.Value, locals, ref interproceduralState);
 							var methodReturnValue = GetReturnValue (methodBody.Method);
 							HandleReturnValue (thisMethod, methodReturnValue, operation, retValue);
 							ValidateNoReferenceToReference (locals, methodBody.Method, operation.Offset);
@@ -717,6 +717,8 @@ namespace Mono.Linker.Dataflow
 		}
 
 		protected abstract SingleValue GetMethodParameterValue (ParameterProxy parameter);
+
+		protected abstract MethodReturnValue GetReturnValue (MethodDefinition method);
 
 		private void ScanLdarg (Instruction operation, Stack<StackSlot> currentStack, MethodDefinition thisMethod)
 		{
@@ -895,8 +897,6 @@ namespace Mono.Linker.Dataflow
 		}
 
 		protected abstract MultiValue GetFieldValue (FieldDefinition field);
-
-		protected abstract MethodReturnValue GetReturnValue (MethodDefinition method);
 
 		private void ScanLdfld (
 			Instruction operation,
