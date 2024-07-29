@@ -299,7 +299,7 @@ CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_data<DynamicM
 CDAC_TYPE_END(DynamicMetadata)
 
 CDAC_TYPE_BEGIN(MethodDesc)
-CDAC_TYPE_INDETERMINATE(MethodDesc)
+CDAC_TYPE_SIZE(sizeof(MethodDesc))
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_data<MethodDesc>::ChunkIndex)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_data<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
