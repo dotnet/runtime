@@ -606,7 +606,7 @@ mono_wasm_heapshot_assembly (
 );
 extern void
 mono_wasm_heapshot_class (
-	MonoClass *klass, MonoClass *element_klass, MonoAssembly *assembly,
+	MonoClass *klass, MonoClass *element_klass, MonoClass *nesting_klass, MonoAssembly *assembly,
 	const char *namespace, const char *name, int rank,
 	int kind, int gparam_count, MonoClass **gparams
 );
@@ -673,31 +673,23 @@ mono_wasm_on_gc_class (MonoClass *klass) {
 		if (mono_class_update_heapshot_scratch_byte (info_klass, next_heapshot_scratch_byte))
 			mono_wasm_on_gc_class (info_klass);
 	}
-	// HACK: Nested types have no namespace, so extract it from the class it's nested in
-	MonoClass *nesting_type = mono_class_get_nesting_type (info_klass);
-	const char *namespace = mono_class_get_namespace (info_klass);
-	if (nesting_type) {
-		// We need to construct a fake namespace from {outer.namespace}.{outer.name}
-		// FIXME: Do this more efficiently
-		strncpy (namespace_buffer, mono_class_get_namespace (nesting_type), sizeof(namespace_buffer));
-		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-		// strcat could overrun by 1 byte so just do it manually
-		namespace_buffer[strlen(namespace_buffer)] = '.';
-		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-		// imagine if strlcat was available here
-		strncat (namespace_buffer, mono_class_get_name (nesting_type), sizeof(namespace_buffer) - strlen(namespace_buffer) - 1);
-		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-		namespace = namespace_buffer;
-	}
 
 	MonoClass *gparams[64];
-	int gparam_count = mono_class_get_generic_params (klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
+	int gparam_count = mono_class_get_generic_params (info_klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
 	for (int i = 0; i < gparam_count; i++) {
 		if (mono_class_update_heapshot_scratch_byte (gparams[i], next_heapshot_scratch_byte))
 			mono_wasm_on_gc_class (gparams[i]);
 	}
 
-	mono_wasm_heapshot_class (klass, mono_class_get_element_class (klass), assem, namespace, mono_class_get_name (info_klass), rank, mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL);
+    MonoClass *nesting_klass = mono_class_get_nesting_type (info_klass);
+    if (nesting_klass && mono_class_update_heapshot_scratch_byte (nesting_klass, next_heapshot_scratch_byte))
+        mono_wasm_on_gc_class (nesting_klass);
+
+	mono_wasm_heapshot_class (
+        klass, mono_class_get_element_class (klass), nesting_klass,
+        assem, mono_class_get_namespace (info_klass), mono_class_get_name (info_klass), rank,
+        mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL
+    );
 }
 
 // NOTE: for objects (like arrays) containing more than 128 refs, this will get invoked multiple times

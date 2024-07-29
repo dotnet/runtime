@@ -25,7 +25,7 @@ const formatVersion = 1;
 const nameFromKind = ["unknown", "def", "gtd", "ginst", "gparam", "array", "pointer"];
 const handleTypes = ["weak", "weak_track", "normal", "pinned", "weak_fields"];
 
-let totalObjects = 0, totalRefs = 0, totalClasses = 0, totalAssemblies = 0;
+let totalObjects = 0, totalRefs = 0, totalClasses = 0, totalAssemblies = 0, totalRoots = 0;
 let mostRecentObjectPointer : ManagedPointer = <any>0;
 let heapshotStartedWhen = performance.now();
 
@@ -78,12 +78,13 @@ export function mono_wasm_heapshot_assembly (assembly: VoidPtr, pName: CharPtr) 
     builder.appendName(utf8ToString(pName));
 }
 
-export function mono_wasm_heapshot_class (klass: VoidPtr, elementKlass: VoidPtr, assembly: VoidPtr, pNamespace: CharPtr, pName: CharPtr, rank: number, kind: number, numGps: number, pGp: VoidPtr): void {
+export function mono_wasm_heapshot_class (klass: VoidPtr, elementKlass: VoidPtr, nestingKlass: VoidPtr, assembly: VoidPtr, pNamespace: CharPtr, pName: CharPtr, rank: number, kind: number, numGps: number, pGp: VoidPtr): void {
     const builder = getBuilder("TYPE");
     const kindName = nameFromKind[kind] || "unknown";
     totalClasses += 1;
     builder.appendU32(<any>klass);
     builder.appendU32(<any>elementKlass);
+    builder.appendU32(<any>nestingKlass);
     builder.appendU32(<any>assembly);
     builder.appendULeb(rank);
     builder.appendULeb(getStringTableIndex(kindName));
@@ -162,6 +163,7 @@ export function mono_wasm_heapshot_roots (kind: CharPtr, count: number, pAddress
     const builder = getBuilder("ROOT");
     builder.appendULeb(utf8ToStringTableIndex(kind));
     builder.appendULeb(count);
+    totalRoots += count;
     for (let i = 0; i < count; i++) {
         const addr = getU32(<any>pAddresses + (i * 4));
         const obj = getU32(<any>pObjects + (i * 4));
@@ -174,7 +176,7 @@ export function mono_wasm_heapshot_start (full: number): void {
     stringTable.clear();
     for (const kvp of incompletePackets)
         kvp[1].clear();
-    totalObjects = totalRefs = totalClasses = totalAssemblies = 0;
+    totalObjects = totalRefs = totalClasses = totalAssemblies = totalRoots = 0;
     mostRecentObjectPointer = <any>0;
 
     heapshotStartedWhen = performance.now();
@@ -302,6 +304,7 @@ export function mono_wasm_heapshot_end (full: number): void {
     heapshotCounter("snapshot/num-strings", stringTable.size);
     heapshotCounter("snapshot/num-objects", totalObjects);
     heapshotCounter("snapshot/num-refs", totalRefs);
+    heapshotCounter("snapshot/num-roots", totalRoots);
     heapshotCounter("snapshot/num-classes", totalClasses);
     heapshotCounter("snapshot/num-assemblies", totalAssemblies);
     try {
