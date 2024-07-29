@@ -618,7 +618,9 @@ extern void
 mono_wasm_heapshot_gchandle (MonoObject *obj, int handle_type);
 extern void
 mono_wasm_heapshot_roots (
-	MonoObject **objs, int obj_count, MonoGCRootSource source, int root_type, const char *msg
+	const char *kind, int count,
+    const uint8_t *const *addresses,
+	MonoObject *const *objects
 );
 extern void
 mono_wasm_heapshot_stats (
@@ -725,39 +727,6 @@ mono_wasm_each_gchandle (void *hidden, GCHandleType handle_type, int max_generat
 }
 
 static void
-mono_wasm_each_root (void *_start, void *_end, MonoGCRootSource source, int root_type, const char *msg, void *user)
-{
-	MonoObject *buf[64];
-	int buf_count = 0;
-	memset (buf, 0, sizeof(buf));
-
-	size_t *current = _start, *end = _end;
-	while (current < end) {
-		// the runtime is allowed to use the spare bits (due to object alignment) for any purpose, so we need to
-		//  mask those off, otherwise we'll get random garbage pointers instead of object pointers
-		// once we do this all the pointers we find should be pointers into the gc heap
-		// note that explicitly checking whether these pointers are live can crash for some reason, but that's ok
-		//  since the heap snapshot loader will be checking these "rooted objects" against the objects from the
-		//  heap walk that was performed earlier to serialize the class and object info
-		MonoObject *obj = (MonoObject *)(*current & ~((size_t)7));
-		if (obj) {
-			if (buf_count >= 63) {
-				mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
-				buf_count = 0;
-			}
-
-			buf[buf_count] = obj;
-			buf_count++;
-		}
-		current++;
-	}
-
-	if (buf_count > 0)
-		mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
-	memset (buf, 0, sizeof(buf));
-}
-
-static void
 mono_wasm_on_gc_event (
 	MonoProfiler *prof,
 	MonoProfilerGCEvent gc_event,
@@ -773,10 +742,21 @@ mono_wasm_on_gc_event (
 		in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
 	);
 	mono_gc_walk_heap (0, mono_wasm_on_gc_object, NULL);
-	sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_NORMAL);
-	sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_PINNED);
 	for (int ht = HANDLE_TYPE_MIN; ht < HANDLE_TYPE_MAX; ht++)
 		sgen_gchandle_iterate ((GCHandleType)ht, 2, mono_wasm_each_gchandle, prof);
+}
+
+static void
+mono_wasm_on_gc_roots (
+    MonoProfiler *prof,
+	uint64_t count,
+	const uint8_t *const *addresses,
+	MonoObject *const *objects,
+    const char *kind
+) {
+    mono_wasm_heapshot_roots (
+        kind, count, addresses, objects
+    );
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -793,7 +773,9 @@ mono_wasm_perform_heapshot () {
 	next_heapshot_scratch_byte = (char)((int)next_heapshot_scratch_byte + 1);
 	mono_wasm_heapshot_start ();
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, mono_wasm_on_gc_event);
+    mono_profiler_set_gc_roots_callback (heapshot_profiler_handle, mono_wasm_on_gc_roots);
 	mono_gc_collect (mono_gc_max_generation ());
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, NULL);
+    mono_profiler_set_gc_roots_callback (heapshot_profiler_handle, NULL);
 	mono_wasm_heapshot_end ();
 }

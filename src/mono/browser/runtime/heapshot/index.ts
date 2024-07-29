@@ -10,6 +10,7 @@ import { mono_log_info } from "../logging";
 import { getU32 } from "../memory";
 import { utf8ToString } from "../strings";
 import { BlobBuilder } from "../jiterpreter-support";
+import { enumerateProxies } from "../gc-handles";
 import type { VoidPtr, ManagedPointer, CharPtr } from "../types/emscripten";
 
 const packetBuilderCapacity = 65536;
@@ -152,15 +153,14 @@ function utf8ToStringTableIndex (pText: CharPtr) {
     return getStringTableIndex(text);
 }
 
-export function mono_wasm_heapshot_roots (pObjs: VoidPtr, numObjs: number, source: number, rootType: number, msg: CharPtr): void {
-    const message = msg ? utf8ToString(msg) : "";
+export function mono_wasm_heapshot_roots (kind: CharPtr, count: number, pAddresses: VoidPtr, pObjects: VoidPtr): void {
     const builder = getBuilder("ROOT");
-    builder.appendULeb(utf8ToStringTableIndex(msg));
-    builder.appendULeb(source);
-    builder.appendULeb(rootType);
-    builder.appendULeb(numObjs);
-    for (let i = 0; i < numObjs; i++) {
-        const obj = getU32(<any>pObjs + (i * 4));
+    builder.appendULeb(utf8ToStringTableIndex(kind));
+    builder.appendULeb(count);
+    for (let i = 0; i < count; i++) {
+        const addr = getU32(<any>pAddresses + (i * 4));
+        const obj = getU32(<any>pObjects + (i * 4));
+        builder.appendU32(addr);
         builder.appendU32(obj);
     }
 }
@@ -246,7 +246,7 @@ function heapshotCounter (name: string, value: number) {
     const builder = getBuilder("CNTR");
     // Using the stringtable here would just make the format harder to decode.
     builder.appendName(name);
-    builder.appendF64(value);
+    builder.appendLeb(value);
 }
 
 export function mono_wasm_heapshot_stats (
@@ -266,6 +266,29 @@ export function mono_wasm_heapshot_stats (
     heapshotCounter("sgen/los-size", largeObjectHeapSize);
 }
 
+function recordObject (chunkId: string, handle: number, obj: any) {
+    const builder = getBuilder(chunkId);
+    builder.appendU32(handle);
+    builder.appendULeb(getStringTableIndex(typeof (obj)));
+    let name = obj && obj[Symbol.toStringTag]
+        ? obj[Symbol.toStringTag]
+        : (obj && obj.constructor && obj.constructor.name
+            ? obj.constructor.name
+            : "unknown"
+        );
+    if ((typeof (obj) === "function") && obj.name)
+        name = obj.name;
+    builder.appendULeb(getStringTableIndex(name));
+}
+
+function mono_wasm_heapshot_cs_object (handle: number, proxy: any) {
+    recordObject("CSOB", handle, proxy);
+}
+
+function mono_wasm_heapshot_js_object (handle: number, obj: any) {
+    recordObject("JSOB", handle, obj);
+}
+
 export function mono_wasm_heapshot_end (): void {
     heapshotCounter("snapshot/version", formatVersion);
     heapshotCounter("snapshot/num-strings", stringTable.size);
@@ -273,9 +296,13 @@ export function mono_wasm_heapshot_end (): void {
     heapshotCounter("snapshot/num-refs", totalRefs);
     heapshotCounter("snapshot/num-classes", totalClasses);
     heapshotCounter("snapshot/num-assemblies", totalAssemblies);
-    flush();
-    const elapsedMs = performance.now() - heapshotStartedWhen;
-    heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
-    if (tabChannel)
-        tabChannel.postMessage({ cmd: "heapshotEnd" });
+    try {
+        enumerateProxies(mono_wasm_heapshot_cs_object, mono_wasm_heapshot_js_object);
+    } finally {
+        flush();
+        const elapsedMs = performance.now() - heapshotStartedWhen;
+        heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
+        if (tabChannel)
+            tabChannel.postMessage({ cmd: "heapshotEnd" });
+    }
 }
