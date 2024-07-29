@@ -659,4 +659,37 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #endif
 }
 
+#elif (defined(__loongarch64) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_LOONGARCH64))
+
+#include <mono/utils/mono-context.h>
+#include <mono/utils/ftnptr.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	memcpy (mctx->regs, UCONTEXT_GREGS (sigctx), sizeof (host_mgreg_t) * 32);
+	mctx->pc = UCONTEXT_REG_PC (sigctx);
+	mctx->regs [loongarch_sp] = UCONTEXT_REG_SP (sigctx);
+	union __loongarch_mc_fp_state *fregs = (union __loongarch_mc_fp_state *)UCONTEXT_FPREGS (sigctx);
+	for (int i = 0; i < 32; i++) {
+		mctx->fregs [i] = fregs [i].__val64 [0];
+	}
+#endif
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	memcpy (UCONTEXT_GREGS (sigctx), mctx->regs, sizeof (host_mgreg_t) * 31);
+	UCONTEXT_REG_SET_PC (sigctx, mctx->pc);
+	UCONTEXT_REG_SET_SP (sigctx, mctx->regs [loongarch_sp]);
+#endif
+}
+
 #endif /* #if defined(__i386__) */
