@@ -33,7 +33,6 @@ namespace System
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
         public static bool IsQemuLinux => IsLinux && Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
         public static bool IsNotQemuLinux => !IsQemuLinux;
-        public static bool IsNotAlpine => !IsAlpine;
 
         // OSX family
         public static bool IsApplePlatform => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
