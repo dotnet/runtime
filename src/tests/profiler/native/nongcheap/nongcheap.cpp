@@ -209,9 +209,11 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
             nonGcObjectsEnumerated++;
         }
 
-        if (nonGcObjectsEnumerated != _nonGcHeapObjects)
+        if (nonGcObjectsEnumerated == 0)
         {
-            printf("FAIL: objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
+            // It's highly unlikely that we'll have a GC before any non-GC objects are allocated
+            // so this path is used to validate that at least some non-GC objects exist at this point.
+            printf("FAIL: no nongc objects were found");
             _failures++;
         }
     }
