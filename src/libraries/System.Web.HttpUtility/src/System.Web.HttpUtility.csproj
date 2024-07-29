@@ -10,7 +10,6 @@
     <Compile Include="System\Web\IHtmlString.cs" />
     <Compile Include="System\Web\HttpUtility.cs" />
     <Compile Include="System\Web\Util\HttpEncoder.cs" />
-    <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
     <Compile Include="System\Web\Util\UriUtil.cs" />
     <Compile Include="System\Web\Util\Utf16StringValidator.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"

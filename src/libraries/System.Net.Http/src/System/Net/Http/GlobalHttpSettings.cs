@@ -14,6 +14,11 @@ namespace System.Net.Http
                 "System.Net.Http.EnableActivityPropagation",
                 "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION",
                 true);
+
+            public static bool DisableUriRedaction { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.Http.DisableUriRedaction",
+                "DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION",
+                false);
         }
 
         internal static class SocketsHttpHandler

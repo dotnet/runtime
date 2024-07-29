@@ -147,9 +147,6 @@
   <data name="net_http_headers_invalid_host_header" xml:space="preserve">
     <value>The specified value is not a valid 'Host' header string.</value>
   </data>
-  <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
-    <value>The specified value is not a valid quoted string.</value>
-  </data>
   <data name="net_http_headers_invalid_range" xml:space="preserve">
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
@@ -473,6 +470,9 @@
   </data>
   <data name="net_http_invalid_header_name" xml:space="preserve">
     <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_http3_connection_not_established" xml:space="preserve">
+    <value>An HTTP/3 connection could not be established because the server did not complete the HTTP/3 handshake.</value>
   </data>
   <data name="net_http_http3_connection_error" xml:space="preserve">
     <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>

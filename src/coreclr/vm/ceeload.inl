@@ -146,7 +146,7 @@ void LookupMap<TYPE>::AddElement(ModuleBase * pModule, DWORD rid, TYPE value, TA
     // Once set, the values in LookupMap should be immutable.
     TADDR oldFlags;
     TYPE oldValue = GetValueAt(pElement, &oldFlags, supportedFlags);
-    _ASSERTE(oldValue == NULL || (oldValue == value && oldFlags == flags));
+    _ASSERTE(oldValue == (TYPE)NULL || (oldValue == value && oldFlags == flags));
 #endif
     // Avoid unnecessary writes - do not overwrite existing value
     if (*pElement == 0)
@@ -337,14 +337,6 @@ inline mdAssemblyRef Module::FindAssemblyRef(Assembly *targetAssembly)
 
 #endif //DACCESS_COMPILE
 
-FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return m_ModuleID;
-}
-
 #include "nibblestream.h"
 
 FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList, BOOL mayUsePrecompiledNDirectMethods)
@@ -473,13 +465,6 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
     } // Done with all entries in this table
 
     return TRUE;
-}
-
-inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(m_cDynamicEntries > dynamicClassID);
-    return VolatileLoadWithoutBarrier(&m_pDynamicStaticsInfo)[dynamicClassID].pEnclosingMT;
 }
 
 #ifdef FEATURE_CODE_VERSIONING

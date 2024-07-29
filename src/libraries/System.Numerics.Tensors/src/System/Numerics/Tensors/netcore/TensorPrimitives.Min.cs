@@ -9,6 +9,24 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The minimum element in <paramref name="x"/>.</returns>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
+        /// <remarks>
+        /// <para>
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimum` function. If any value is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>
+        /// is present, the first is returned. Negative 0 is considered smaller than positive 0.
+        /// </para>
+        /// <para>
+        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
+        /// operating systems or architectures.
+        /// </para>
+        /// </remarks>
+        public static T Min<T>(ReadOnlySpan<T> x)
+            where T : INumber<T> =>
+            MinMaxCore<T, MinOperator<T>>(x);
+
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
@@ -32,7 +50,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
             where T : INumber<T> =>
-            InvokeSpanSpanIntoSpan<T, MinPropagateNaNOperator<T>>(x, y, destination);
+            InvokeSpanSpanIntoSpan<T, MinOperator<T>>(x, y, destination);
 
         /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -55,84 +73,10 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Min<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
             where T : INumber<T> =>
-            InvokeSpanScalarIntoSpan<T, MinPropagateNaNOperator<T>>(x, y, destination);
-
-        /// <summary>T.Min(x, y) (but NaNs may not be propagated)</summary>
-        internal readonly struct MinOperator<T> : IAggregationOperator<T>
-            where T : INumber<T>
-        {
-            public static bool Vectorizable => true;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static T Invoke(T x, T y)
-            {
-                if (typeof(T) == typeof(Half) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    return x == y ?
-                        (IsNegative(y) ? y : x) :
-                        (y < x ? y : x);
-                }
-
-                return T.Min(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
-            {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
-                    {
-                        return AdvSimd.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
-                    }
-
-                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
-                    {
-                        return AdvSimd.Arm64.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
-                    }
-
-                    return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(y), y, x),
-                            Vector128.Min(x, y));
-                }
-
-                return Vector128.Min(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
-            {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    return Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                        Vector256.ConditionalSelect(IsNegative(y), y, x),
-                        Vector256.Min(x, y));
-                }
-
-                return Vector256.Min(x, y);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
-            {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
-                {
-                    return Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                        Vector512.ConditionalSelect(IsNegative(y), y, x),
-                        Vector512.Min(x, y));
-                }
-
-                return Vector512.Min(x, y);
-            }
-
-            public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
-            public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
-            public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
-        }
+            InvokeSpanScalarIntoSpan<T, MinOperator<T>>(x, y, destination);
 
         /// <summary>T.Min(x, y)</summary>
-        internal readonly struct MinPropagateNaNOperator<T> : IBinaryOperator<T>
+        internal readonly struct MinOperator<T> : IAggregationOperator<T>
             where T : INumber<T>
         {
             public static bool Vectorizable => true;
@@ -143,27 +87,16 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if !NET9_0_OR_GREATER
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
-                    {
-                        return AdvSimd.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
-                    }
-
-                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
-                    {
-                        return AdvSimd.Arm64.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
-                    }
-
-                    return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, x),
-                            Vector128.ConditionalSelect(Vector128.Equals(y, y),
-                                Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                                    Vector128.ConditionalSelect(IsNegative(x), x, y),
-                                    Vector128.Min(x, y)),
-                                y),
-                            x);
+                    return Vector128.ConditionalSelect(
+                        Vector128.LessThan(x, y) | IsNaN(x) | (Vector128.Equals(x, y) & IsNegative(x)),
+                        x,
+                        y
+                    );
                 }
+#endif
 
                 return Vector128.Min(x, y);
             }
@@ -171,17 +104,16 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if !NET9_0_OR_GREATER
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    return
-                        Vector256.ConditionalSelect(Vector256.Equals(x, x),
-                            Vector256.ConditionalSelect(Vector256.Equals(y, y),
-                                Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                                    Vector256.ConditionalSelect(IsNegative(x), x, y),
-                                    Vector256.Min(x, y)),
-                                y),
-                            x);
+                    return Vector256.ConditionalSelect(
+                        Vector256.LessThan(x, y) | IsNaN(x) | (Vector256.Equals(x, y) & IsNegative(x)),
+                        x,
+                        y
+                    );
                 }
+#endif
 
                 return Vector256.Min(x, y);
             }
@@ -189,20 +121,23 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if !NET9_0_OR_GREATER
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    return
-                        Vector512.ConditionalSelect(Vector512.Equals(x, x),
-                            Vector512.ConditionalSelect(Vector512.Equals(y, y),
-                                Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                                    Vector512.ConditionalSelect(IsNegative(x), x, y),
-                                    Vector512.Min(x, y)),
-                                y),
-                            x);
+                    return Vector512.ConditionalSelect(
+                        Vector512.LessThan(x, y) | IsNaN(x) | (Vector512.Equals(x, y) & IsNegative(x)),
+                        x,
+                        y
+                    );
                 }
+#endif
 
                 return Vector512.Min(x, y);
             }
+
+            public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
+            public static T Invoke(Vector256<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
+            public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MinOperator<T>>(x);
         }
     }
 }

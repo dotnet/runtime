@@ -148,12 +148,26 @@ namespace System.Security.Cryptography
                 _liteHash = LiteHashProvider.CreateHash(hashAlgorithmId);
             }
 
+            private AppleDigestProvider(LiteHash liteHash, bool running)
+            {
+                _liteHash = liteHash;
+                _running = running;
+            }
+
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
                 using (ConcurrencyBlock.Enter(ref _block))
                 {
                     _liteHash.Append(data);
                     _running = true;
+                }
+            }
+
+            public override AppleDigestProvider Clone()
+            {
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return new AppleDigestProvider(_liteHash.Clone(), _running);
                 }
             }
 
@@ -213,6 +227,13 @@ namespace System.Security.Cryptography
                 _key = key.ToArray();
             }
 
+            private AppleHmacProvider(LiteHmac liteHmac, ReadOnlySpan<byte> key, bool running)
+            {
+                _liteHmac = liteHmac;
+                _running = running;
+                _key = key.ToArray();
+            }
+
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
                 using (ConcurrencyBlock.Enter(ref _block))
@@ -253,6 +274,14 @@ namespace System.Security.Cryptography
                     }
 
                     return _liteHmac.Current(destination);
+                }
+            }
+
+            public override AppleHmacProvider Clone()
+            {
+                using (ConcurrencyBlock.Enter(ref _block))
+                {
+                    return new AppleHmacProvider(_liteHmac.Clone(), _key, _running);
                 }
             }
 

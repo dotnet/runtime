@@ -1981,21 +1981,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)     \
     ::GetClrDebugState()->LockReleased((dbgStateLockType), (cExits), (void*) (pvLock))
 
-// Use these only if you need to force multiple entrances or exits in a single
-// line (e.g., to restore the lock to a previous state). CRWLock in vm\rwlock.cpp does this
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                          \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                           \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)              \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)               \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                        \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                         \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_User, cExits, pvLock)
-
 // These are most typically used
 #define EE_LOCK_TAKEN(pvLock)                   \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
@@ -2014,12 +1999,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
 #define LOCK_TAKEN_MULTIPLE(dbgStateLockType, cEntrances, pvLock)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
 #define EE_LOCK_RELEASED(pvLock)
 #define HOST_BREAKABLE_CRST_TAKEN(pvLock)

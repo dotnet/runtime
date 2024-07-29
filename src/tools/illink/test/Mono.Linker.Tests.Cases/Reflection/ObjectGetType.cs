@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -195,9 +196,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptMember (".cctor()")]
 				class Generic<
+					[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
 					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-				TWithMethods> where TWithMethods : new()
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+					TWithMethods
+				> where TWithMethods : new()
 				{
 					[Kept]
 					static TWithMethods ReturnAnnotated () { return new TWithMethods (); }

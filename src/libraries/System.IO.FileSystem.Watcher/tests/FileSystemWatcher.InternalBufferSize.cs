@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -32,26 +34,32 @@ namespace System.IO.Tests
         // it's internal buffer (up to some limit).  Our docs say that limit is 64KB but testing on Win8.1
         // indicates that it is much higher than this: I could grow the buffer up to 128 MB and still see
         // that it had an effect.  The size needed per operation is determined by the struct layout of
-        // FILE_NOTIFY_INFORMATION.  This works out to 16 + 2 * (Path.GetFileName(file.Path).Length + 1) bytes, where filePath
+        // FILE_NOTIFY_INFORMATION.  This works out to 12 + 2 * (Path.GetFileName(file.Path).Length + 1) bytes, where filePath
         // is the path to changed file relative to the path passed into ReadDirectoryChanges.
 
         // At some point we might decide to improve how FSW handles this at which point we'll need
         // a better test for Error (perhaps just a mock), but for now there is some value in forcing this limit.
+        private const int ExcessEventsMultiplier = 200; // 100 does not reliably trigger the error
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
+        [OuterLoop("A little slow")]
         public void FileSystemWatcher_InternalBufferSize(bool setToHigherCapacity)
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
             string file = CreateTestFile(TestDirectory, "file");
             using (FileSystemWatcher watcher = CreateWatcher(TestDirectory, file, unblockHandler))
             {
-                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file);
+                watcher.InternalBufferSize = 4096; // Minimum
+                int internalBufferOperationCapacity = watcher.InternalBufferSize / (12 + 2 * (Path.GetFileName(file).Length + 1));
 
-                // Set the capacity high to ensure no error events arise.
                 if (setToHigherCapacity)
-                    watcher.InternalBufferSize = watcher.InternalBufferSize * 12;
+                {
+                    // Set the capacity high to ensure no error events arise.
+                    watcher.InternalBufferSize = watcher.InternalBufferSize * ExcessEventsMultiplier * 2;
+                }
 
                 Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file);
                 Action cleanup = GetCleanup(unblockHandler);
@@ -65,6 +73,8 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("A little slow")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize_SynchronizingObject()
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
@@ -74,7 +84,8 @@ namespace System.IO.Tests
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                int internalBufferOperationCapacity = CalculateInternalBufferOperationCapacity(watcher.InternalBufferSize, file);
+                watcher.InternalBufferSize = 4096; // Minimum
+                int internalBufferOperationCapacity = watcher.InternalBufferSize / (12 + 2 * (Path.GetFileName(file).Length + 1));
 
                 Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file);
                 Action cleanup = GetCleanup(unblockHandler);
@@ -96,22 +107,29 @@ namespace System.IO.Tests
             return watcher;
         }
 
-        private int CalculateInternalBufferOperationCapacity(int internalBufferSize, string filePath) =>
-            internalBufferSize / (17 + Path.GetFileName(filePath).Length);
-
         private Action GetAction(ManualResetEvent unblockHandler, int internalBufferOperationCapacity, string filePath)
         {
             return () =>
             {
-                // generate enough file change events to overflow the default buffer
-                for (int i = 1; i < internalBufferOperationCapacity * 10; i++)
+                List<Task> tasks = new();
+
+                // Generate enough file change events to overflow the default buffer
+                // For speed, do this on multiple threads
+                for (int i = 1; i < internalBufferOperationCapacity * ExcessEventsMultiplier; i++)
                 {
-                    File.SetLastWriteTime(filePath, DateTime.Now + TimeSpan.FromSeconds(i));
+                    tasks.Add(Task.Run(() =>
+                    {
+                        // Each sets to a different time to ensure it triggers an event
+                        File.SetLastWriteTime(filePath, DateTime.Now + TimeSpan.FromSeconds(i));
+                    }));
                 }
+
+                Task.WaitAll(tasks);
 
                 unblockHandler.Set();
             };
         }
+
 
         private Action GetCleanup(ManualResetEvent unblockHandler) => () => unblockHandler.Reset();
 

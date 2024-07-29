@@ -31,6 +31,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create()
         {
             using (var watcher = new FileSystemWatcher(TestDirectory))
@@ -46,6 +47,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_InNestedDirectory()
         {
             string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
@@ -98,6 +100,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_SynchronizingObject()
         {
             using (var watcher = new FileSystemWatcher(TestDirectory))

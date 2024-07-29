@@ -427,6 +427,11 @@ export async function backbackAsync(arg1, arg2, arg3) {
     return arg1(arg2, arg3);
 }
 
+export async function callJavaScriptLibrary(a, b) {
+    const exports = await App.runtime.getAssemblyExports("JavaScriptLibrary.dll");
+    return exports.JavaScriptLibrary.JavaScriptInterop.ExportedMethod(a, b);
+}
+
 export const instance = {}
 
 globalThis.javaScriptTestHelper = instance;

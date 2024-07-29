@@ -235,65 +235,67 @@ namespace System.Reflection.Emit
             {
                 case CoreTypeId.Void:
                     signature.Builder.WriteByte((byte)SignatureTypeCode.Void);
-                    return;
+                    break;
                 case CoreTypeId.Boolean:
                     signature.Boolean();
-                    return;
+                    break;
                 case CoreTypeId.Byte:
                     signature.Byte();
-                    return;
+                    break;
                 case CoreTypeId.SByte:
                     signature.SByte();
-                    return;
+                    break;
                 case CoreTypeId.Char:
                     signature.Char();
-                    return;
+                    break;
                 case CoreTypeId.Int16:
                     signature.Int16();
-                    return;
+                    break;
                 case CoreTypeId.UInt16:
                     signature.UInt16();
-                    return;
+                    break;
                 case CoreTypeId.Int32:
                     signature.Int32();
-                    return;
+                    break;
                 case CoreTypeId.UInt32:
                     signature.UInt32();
-                    return;
+                    break;
                 case CoreTypeId.Int64:
                     signature.Int64();
-                    return;
+                    break;
                 case CoreTypeId.UInt64:
                     signature.UInt64();
-                    return;
+                    break;
                 case CoreTypeId.Single:
                     signature.Single();
-                    return;
+                    break;
                 case CoreTypeId.Double:
                     signature.Double();
-                    return;
+                    break;
                 case CoreTypeId.IntPtr:
                     signature.IntPtr();
-                    return;
+                    break;
                 case CoreTypeId.UIntPtr:
                     signature.UIntPtr();
-                    return;
+                    break;
                 case CoreTypeId.Object:
                     signature.Object();
-                    return;
+                    break;
                 case CoreTypeId.String:
                     signature.String();
-                    return;
+                    break;
                 case CoreTypeId.TypedReference:
                     signature.TypedReference();
-                    return;
+                    break;
+                default:    // handles null and all other types
+                    EntityHandle typeHandle = module.GetTypeHandle(type);
+                    signature.Type(typeHandle, type.IsValueType);
+                    break;
             }
-
-            EntityHandle typeHandle = module.GetTypeHandle(type);
-            signature.Type(typeHandle, type.IsValueType);
         }
     }
 
+    // The order of the enum values should match with the ModuleBuilderImpl.s_coreTypes array elements order.
     internal enum CoreTypeId
     {
         Void,
@@ -314,5 +316,6 @@ namespace System.Reflection.Emit
         IntPtr,
         UIntPtr,
         TypedReference,
+        ValueType
     }
 }

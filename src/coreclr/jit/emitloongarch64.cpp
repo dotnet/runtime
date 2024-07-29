@@ -2058,10 +2058,10 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     // INS_OPTS_RELOC: placeholders.  2-ins:
     //  case:EA_HANDLE_CNS_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     //  case:EA_PTR_DSP_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   ld_d  reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
@@ -2202,11 +2202,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
     id->idAddr()->iiaBBlabel = dst;
-
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
 
     id->idjShort = false;
 
@@ -3236,21 +3231,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RELOC:
         {
             //  case:EA_HANDLE_CNS_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   addi_d  reg, reg, off-lo-12bits
             //  case:EA_PTR_DSP_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   ld_d  reg, reg, off-lo-12bits
 
             regNumber reg1 = id->idReg1();
 
-            *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
+            *(code_t*)dstRW = 0x1a000000 | (code_t)reg1;
 
             dstRW += 4;
 
 #ifdef DEBUG
-            code = emitInsCode(INS_pcaddu12i);
-            assert(code == 0x1c000000);
+            code = emitInsCode(INS_pcalau12i);
+            assert(code == 0x1a000000);
             code = emitInsCode(INS_addi_d);
             assert(code == 0x02c00000);
             code = emitInsCode(INS_ld_d);

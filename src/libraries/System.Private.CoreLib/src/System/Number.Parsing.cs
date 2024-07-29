@@ -895,16 +895,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.Cast<TChar, char>(span);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.Cast<TChar, char>(value);
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
                 return typedSpan.StartsWith(typedValue, comparisonType);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.Cast<TChar, byte>(span);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.Cast<TChar, byte>(value);
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 return typedSpan.StartsWithUtf8(typedValue, comparisonType);
             }
         }
@@ -915,13 +915,13 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                return MemoryMarshal.Cast<char, TChar>(MemoryMarshal.Cast<TChar, char>(span).Trim());
+                return Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span).Trim());
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                return MemoryMarshal.Cast<byte, TChar>(MemoryMarshal.Cast<TChar, byte>(span).TrimUtf8());
+                return Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span).TrimUtf8());
             }
         }
 
@@ -931,16 +931,16 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                ReadOnlySpan<char> typedSpan = MemoryMarshal.Cast<TChar, char>(span);
-                ReadOnlySpan<char> typedValue = MemoryMarshal.Cast<TChar, char>(value);
+                ReadOnlySpan<char> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span);
+                ReadOnlySpan<char> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(value);
                 return typedSpan.EqualsOrdinalIgnoreCase(typedValue);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
-                ReadOnlySpan<byte> typedSpan = MemoryMarshal.Cast<TChar, byte>(span);
-                ReadOnlySpan<byte> typedValue = MemoryMarshal.Cast<TChar, byte>(value);
+                ReadOnlySpan<byte> typedSpan = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span);
+                ReadOnlySpan<byte> typedValue = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 return typedSpan.EqualsOrdinalIgnoreCaseUtf8(typedValue);
             }
         }
@@ -1053,7 +1053,7 @@ namespace System
                 // It's possible after we check the bytes for validity that they could be concurrently
                 // mutated, but if that's happening, all bets are off, anyway, and it simply impacts
                 // which exception is thrown.
-                ReadOnlySpan<byte> bytes = MemoryMarshal.Cast<TChar, byte>(value);
+                ReadOnlySpan<byte> bytes = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
                 errorMessage = Utf8.IsValid(bytes) ?
                     SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(bytes)) :
                     SR.Format_InvalidString;

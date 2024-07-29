@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;

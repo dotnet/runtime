@@ -206,17 +206,15 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    switch (errorCode)
+                    throw errorCode switch
                     {
-                        case Interop.Errors.ERROR_INVALID_PARAMETER:
-                            // ERROR_INVALID_PARAMETER may be returned for writes
-                            // where the position is too large or for synchronous writes
-                            // to a handle opened asynchronously.
-                            throw new IOException(SR.IO_FileTooLong);
+                        // ERROR_INVALID_PARAMETER may be returned for writes
+                        // where the position is too large or for synchronous writes
+                        // to a handle opened asynchronously.
+                        Interop.Errors.ERROR_INVALID_PARAMETER => new IOException(SR.IO_FileTooLong),
 
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                    }
+                        _ => Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path),
+                    };
                 }
             }
             finally
@@ -279,7 +277,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async ReadFile operation.
                 if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -372,7 +370,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)

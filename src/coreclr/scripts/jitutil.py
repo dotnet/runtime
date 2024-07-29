@@ -537,13 +537,13 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
         Once we've done it once, we don't do it again.
 
         For this to work for cross-module usage, after you call this function, you need to add a line like:
-            from jitutil import BlobClient, AzureCliCredential
+            from jitutil import BlobClient, DefaultAzureCredential
         naming all the types you want to use.
 
         The full set of types this function loads:
-            BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
+            BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
     """
-    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
+    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, DefaultAzureCredential
 
     if azure_storage_libraries_check:
         return
@@ -560,7 +560,7 @@ def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_ide
     azure_identity_import_ok = True
     if need_azure_identity:
         try:
-            from azure.identity import AzureCliCredential
+            from azure.identity import DefaultAzureCredential
         except:
             azure_identity_import_ok = False
 
@@ -608,7 +608,7 @@ def download_with_azure(uri, target_location, fail_if_not_found=True):
     logging.info("Download: %s -> %s", uri, target_location)
 
     ok = True
-    az_credential = AzureCliCredential()
+    az_credential = DefaultAzureCredential()
     blob = BlobClient.from_blob_url(uri, credential=az_credential)
     with open(target_location, "wb") as my_blob:
         try:

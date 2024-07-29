@@ -51,6 +51,7 @@ namespace ILLink.Tasks.Tests
 		static readonly string[] nonOptimizationBooleanProperties = new string[] {
 			"DumpDependencies",
 			"RemoveSymbols",
+			"PreserveSymbolPaths",
 			"TreatWarningsAsErrors",
 			"SingleWarn"
 		};

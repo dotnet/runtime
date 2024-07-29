@@ -27,7 +27,7 @@ namespace System.Net.Http
         /// <summary>Creates a new instance of the <see cref="StringContent"/> class.</summary>
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, MediaTypeHeaderValue mediaType)
+        public StringContent(string content, MediaTypeHeaderValue? mediaType)
             : this(content, DefaultStringEncoding, mediaType)
         {
         }
@@ -45,7 +45,7 @@ namespace System.Net.Http
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="encoding">The encoding to use for the content.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, Encoding? encoding, string mediaType)
+        public StringContent(string content, Encoding? encoding, string? mediaType)
             : base(GetContentByteArray(content, encoding))
         {
             Debug.Assert(DefaultStringEncoding.WebName == "utf-8");
@@ -77,7 +77,7 @@ namespace System.Net.Http
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="encoding">The encoding to use for the content.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue mediaType)
+        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue? mediaType)
             : base(GetContentByteArray(content, encoding))
         {
             Headers.ContentType = mediaType;

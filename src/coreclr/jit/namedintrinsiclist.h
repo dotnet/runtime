@@ -13,6 +13,8 @@ enum NamedIntrinsic : unsigned short
 {
     NI_Illegal = 0,
 
+    NI_System_ArgumentNullException_ThrowIfNull,
+
     NI_System_Enum_HasFlag,
 
     NI_System_BitConverter_DoubleToInt64Bits,
@@ -81,11 +83,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsPrimitive,
     NI_System_Type_get_IsByRefLike,
     NI_System_Type_get_TypeHandle,
+    NI_System_Type_get_IsGenericType,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
+    NI_System_Type_GetGenericTypeDefinition,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,

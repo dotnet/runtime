@@ -174,14 +174,9 @@ namespace System.Reflection
                 "GetAssemblyName",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new Type[] { typeof(string) },
-                null);
-
-            if (getAssemblyNameMethod == null)
-            {
+                [typeof(string)],
+                null) ??
                 throw new MissingMethodException(readerType.FullName, "GetAssemblyName");
-            }
-
             return s_getAssemblyName = getAssemblyNameMethod.CreateDelegate<Func<string, AssemblyName>>();
         }
 
@@ -435,7 +430,7 @@ namespace System.Reflection
                 // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
                 char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
 
-                if (!(dest is null) && destPos != 0)
+                if (dest is not null && destPos != 0)
                     Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
                 dest = newresult;
             }

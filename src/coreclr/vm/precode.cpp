@@ -199,32 +199,6 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     return 0;
 }
 
-Precode* Precode::GetPrecodeForTemporaryEntryPoint(TADDR temporaryEntryPoints, int index)
-{
-    WRAPPER_NO_CONTRACT;
-    PrecodeType t = PTR_Precode(temporaryEntryPoints)->GetType();
-    SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
-    return PTR_Precode(temporaryEntryPoints + index * oneSize);
-}
-
-SIZE_T Precode::SizeOfTemporaryEntryPoints(PrecodeType t, int count)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
-    return count * oneSize;
-}
-
-SIZE_T Precode::SizeOfTemporaryEntryPoints(TADDR temporaryEntryPoints, int count)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    PrecodeType precodeType = PTR_Precode(temporaryEntryPoints)->GetType();
-    return SizeOfTemporaryEntryPoints(precodeType, count);
-}
-
 #ifndef DACCESS_COMPILE
 
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
@@ -382,144 +356,6 @@ void Precode::Reset()
         precodeWriterHolder.GetRW()->Init(this, t, pMD, pMD->GetLoaderAllocator());
         ClrFlushInstructionCache(this, SizeOf(), /* hasCodeExecutedBefore */ true);
     }
-}
-
-/* static */
-TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
-                                            LoaderAllocator *  pLoaderAllocator,
-                                            AllocMemTracker *  pamTracker)
-{
-    WRAPPER_NO_CONTRACT;
-
-    MethodDesc* pFirstMD = pChunk->GetFirstMethodDesc();
-
-    int count = pChunk->GetCount();
-
-    // Determine eligibility for tiered compilation
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    bool hasMethodDescVersionableWithPrecode = false;
-#endif
-    {
-        MethodDesc *pMD = pChunk->GetFirstMethodDesc();
-        bool chunkContainsEligibleMethods = pMD->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
-
-#ifdef _DEBUG
-        // Validate every MethodDesc has the same result for DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk
-        MethodDesc *pMDDebug = pChunk->GetFirstMethodDesc();
-        for (int i = 0; i < count; ++i)
-        {
-            _ASSERTE(chunkContainsEligibleMethods == pMDDebug->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
-            pMDDebug = (MethodDesc *)(dac_cast<TADDR>(pMDDebug) + pMDDebug->SizeOf());
-        }
-#endif
-#ifndef HAS_COMPACT_ENTRYPOINTS
-        if (chunkContainsEligibleMethods)
-#endif
-        {
-            for (int i = 0; i < count; ++i)
-            {
-                if (chunkContainsEligibleMethods && pMD->DetermineAndSetIsEligibleForTieredCompilation())
-                {
-                    _ASSERTE(pMD->IsEligibleForTieredCompilation());
-                    _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
-                }
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-                if (pMD->IsVersionableWithPrecode())
-                {
-                    _ASSERTE(pMD->RequiresStableEntryPoint());
-                    hasMethodDescVersionableWithPrecode = true;
-                }
-#endif
-
-                pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
-            }
-        }
-    }
-
-    PrecodeType t = PRECODE_STUB;
-    bool preallocateJumpStubs = false;
-
-#ifdef HAS_FIXUP_PRECODE
-    // Default to faster fixup precode if possible
-    t = PRECODE_FIXUP;
-#endif // HAS_FIXUP_PRECODE
-
-    SIZE_T totalSize = SizeOfTemporaryEntryPoints(t, count);
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    // Note that these are just best guesses to save memory. If we guessed wrong,
-    // we will allocate a new exact type of precode in GetOrCreatePrecode.
-    BOOL fForcedPrecode = hasMethodDescVersionableWithPrecode || pFirstMD->RequiresStableEntryPoint(count > 1);
-
-#ifdef TARGET_ARM
-    if (pFirstMD->RequiresMethodDescCallingConvention(count > 1)
-        || count >= MethodDescChunk::GetCompactEntryPointMaxCount ())
-    {
-        // We do not pass method desc on scratch register
-        fForcedPrecode = TRUE;
-    }
-#endif // TARGET_ARM
-
-    if (!fForcedPrecode && (totalSize > MethodDescChunk::SizeOfCompactEntryPoints(count)))
-        return NULL;
-#endif
-
-    TADDR temporaryEntryPoints;
-    SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
-    MethodDesc * pMD = pChunk->GetFirstMethodDesc();
-
-    if (t == PRECODE_FIXUP || t == PRECODE_STUB)
-    {
-        LoaderHeap *pStubHeap;
-        if (t == PRECODE_FIXUP)
-        {
-            pStubHeap = pLoaderAllocator->GetFixupPrecodeHeap();
-        }
-        else
-        {
-            pStubHeap = pLoaderAllocator->GetNewStubPrecodeHeap();
-        }
-
-        temporaryEntryPoints = (TADDR)pamTracker->Track(pStubHeap->AllocAlignedMem(totalSize, 1));
-        TADDR entryPoint = temporaryEntryPoints;
-        for (int i = 0; i < count; i++)
-        {
-            ((Precode *)entryPoint)->Init((Precode *)entryPoint, t, pMD, pLoaderAllocator);
-
-            _ASSERTE((Precode *)entryPoint == GetPrecodeForTemporaryEntryPoint(temporaryEntryPoints, i));
-            entryPoint += oneSize;
-
-            pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
-        }
-    }
-    else
-    {
-        _ASSERTE(FALSE);
-        temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(totalSize, AlignOf(t)));
-        ExecutableWriterHolder<void> entryPointsWriterHolder((void*)temporaryEntryPoints, totalSize);
-
-        TADDR entryPoint = temporaryEntryPoints;
-        TADDR entryPointRW = (TADDR)entryPointsWriterHolder.GetRW();
-        for (int i = 0; i < count; i++)
-        {
-            ((Precode *)entryPointRW)->Init((Precode *)entryPoint, t, pMD, pLoaderAllocator);
-
-            _ASSERTE((Precode *)entryPoint == GetPrecodeForTemporaryEntryPoint(temporaryEntryPoints, i));
-            entryPoint += oneSize;
-            entryPointRW += oneSize;
-
-            pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
-        }
-    }
-
-#ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "PRECODE_STUB", (PCODE)temporaryEntryPoints, count * oneSize);
-#endif
-
-    ClrFlushInstructionCache((LPVOID)temporaryEntryPoints, count * oneSize);
-
-    return temporaryEntryPoints;
 }
 
 #endif // !DACCESS_COMPILE
@@ -800,13 +636,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     } CONTRACTL_END;
 
     TADDR pInstr = dac_cast<TADDR>(PCODEToPINSTR(pCode));
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif
 
     if (!IS_ALIGNED(pInstr, PRECODE_ALIGNMENT))
     {
