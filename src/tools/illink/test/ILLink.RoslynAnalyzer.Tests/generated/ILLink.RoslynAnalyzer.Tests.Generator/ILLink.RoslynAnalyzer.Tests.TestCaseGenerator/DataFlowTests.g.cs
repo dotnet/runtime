@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -20,13 +20,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task MethodByRefParameterDataFlow ()
+		public Task InterfaceImplementedThroughBaseValidation ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
-		public Task MultipleReturnsDataFlow ()
+		public Task MethodByRefParameterDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

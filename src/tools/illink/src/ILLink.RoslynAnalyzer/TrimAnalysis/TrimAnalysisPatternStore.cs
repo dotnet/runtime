@@ -12,7 +12,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly struct TrimAnalysisPatternStore
 	{
-		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> GenericInstantiationPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
@@ -25,7 +25,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice)
 		{
-			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
+			AssignmentPatterns = new Dictionary<IOperation, TrimAnalysisAssignmentPattern> ();
 			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
 			GenericInstantiationPatterns = new Dictionary<IOperation, TrimAnalysisGenericInstantiationPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
@@ -35,7 +35,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			FeatureContextLattice = featureContextLattice;
 		}
 
-		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern, bool isReturnValue)
+		public void Add (TrimAnalysisAssignmentPattern trimAnalysisPattern)
 		{
 			// Finally blocks will be analyzed multiple times, once for normal control flow and once
 			// for exceptional control flow, and these separate analyses could produce different
@@ -45,12 +45,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// of the normal control-flow state.
 			// We still add patterns to the operation, rather than replacing, to make this resilient to
 			// changes in the analysis algorithm.
-			if (!AssignmentPatterns.TryGetValue ((trimAnalysisPattern.Operation, isReturnValue), out var existingPattern)) {
-				AssignmentPatterns.Add ((trimAnalysisPattern.Operation, isReturnValue), trimAnalysisPattern);
+			if (!AssignmentPatterns.TryGetValue (trimAnalysisPattern.Operation, out var existingPattern)) {
+				AssignmentPatterns.Add (trimAnalysisPattern.Operation, trimAnalysisPattern);
 				return;
 			}
 
-			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+			AssignmentPatterns[trimAnalysisPattern.Operation] = trimAnalysisPattern.Merge (Lattice, FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisFieldAccessPattern pattern)
