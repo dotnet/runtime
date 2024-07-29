@@ -51,6 +51,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105431", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_CreationTime(NotifyFilters filter)
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");

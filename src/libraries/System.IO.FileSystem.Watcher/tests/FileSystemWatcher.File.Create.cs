@@ -13,6 +13,7 @@ namespace System.IO.Tests
     public class File_Create_Tests : FileSystemWatcherTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103630", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Create()
         {
             using (var watcher = new FileSystemWatcher(TestDirectory))
