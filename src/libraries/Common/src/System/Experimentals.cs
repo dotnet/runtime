@@ -25,6 +25,9 @@ namespace System
         // System.Runtime.Intrinsics.Arm.Sve is experimental in .NET 9
         internal const string ArmSveDiagId = "SYSLIB5003";
 
+        // X86Base.DivRem is experimental in .NET 9 since performance is not as optimized as T.DivRem
+        internal const string X86BaseDivRemDiagId = "SYSLIB5004";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }
