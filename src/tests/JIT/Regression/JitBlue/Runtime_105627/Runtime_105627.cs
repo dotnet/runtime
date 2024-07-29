@@ -31,6 +31,6 @@ public class Runtime_105627
         {
             s_9 = -vr1;
         }
-        Assert.Equal(Vector128.Create<ulong>(0x80000000_00000000UL, s_9.AsUInt64()));
+        Assert.Equal(Vector128.Create<ulong>(0x80000000_00000000UL), s_9.AsUInt64());
     }
 }
