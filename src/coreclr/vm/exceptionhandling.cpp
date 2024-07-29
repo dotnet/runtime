@@ -5429,6 +5429,7 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
 
+#ifdef FEATURE_EMULATE_SINGLESTEP
 BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
     Thread *pThread = GetThreadNULLOk();
@@ -5442,6 +5443,7 @@ BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD ex
     }
     return FALSE;
 }
+#endif
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
