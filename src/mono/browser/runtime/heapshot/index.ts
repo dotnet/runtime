@@ -22,7 +22,7 @@ const formatVersion = 1;
 const nameFromKind = ["unknown", "def", "gtd", "ginst", "gparam", "array", "pointer"];
 const handleTypes = ["weak", "weak_track", "normal", "pinned", "weak_fields"];
 
-let totalObjects = 0, totalRefs = 0;
+let totalObjects = 0, totalRefs = 0, totalClasses = 0, totalAssemblies = 0;
 let mostRecentObjectPointer : ManagedPointer = <any>0;
 let heapshotStartedWhen = performance.now();
 
@@ -64,14 +64,25 @@ function tabChannel_message (evt: MessageEvent) {
     }
 }
 
-export function mono_wasm_heapshot_class (klass: VoidPtr, elementKlass: VoidPtr, pNamespace: CharPtr, pName: CharPtr, rank: number, kind: number, numGps: number, pGp: VoidPtr): void {
+export function mono_wasm_heapshot_assembly (assembly: VoidPtr, pName: CharPtr) {
+    const builder = getBuilder("ASSM");
+    totalAssemblies += 1;
+    builder.appendU32(<any>assembly);
+    // No point in using the string table for this
+    builder.appendName(utf8ToString(pName));
+}
+
+export function mono_wasm_heapshot_class (klass: VoidPtr, elementKlass: VoidPtr, assembly: VoidPtr, pNamespace: CharPtr, pName: CharPtr, rank: number, kind: number, numGps: number, pGp: VoidPtr): void {
     const builder = getBuilder("TYPE");
     const kindName = nameFromKind[kind] || "unknown";
+    totalClasses += 1;
     builder.appendU32(<any>klass);
     builder.appendU32(<any>elementKlass);
+    builder.appendU32(<any>assembly);
     builder.appendULeb(rank);
     builder.appendULeb(getStringTableIndex(kindName));
     builder.appendULeb(utf8ToStringTableIndex(pNamespace));
+    // We use the string table for names because each generic instance will have the same name
     builder.appendULeb(utf8ToStringTableIndex(pName));
     builder.appendULeb(numGps);
     for (let i = 0; i < numGps; i++) {
@@ -158,8 +169,7 @@ export function mono_wasm_heapshot_start (): void {
     stringTable.clear();
     for (const kvp of incompletePackets)
         kvp[1].clear();
-    totalObjects = 0;
-    totalRefs = 0;
+    totalObjects = totalRefs = totalClasses = totalAssemblies = 0;
     mostRecentObjectPointer = <any>0;
 
     heapshotStartedWhen = performance.now();
@@ -260,6 +270,8 @@ export function mono_wasm_heapshot_end (): void {
     heapshotCounter("snapshot/num-strings", stringTable.size);
     heapshotCounter("snapshot/num-objects", totalObjects);
     heapshotCounter("snapshot/num-refs", totalRefs);
+    heapshotCounter("snapshot/num-classes", totalClasses);
+    heapshotCounter("snapshot/num-assemblies", totalAssemblies);
     flush();
     const elapsedMs = performance.now() - heapshotStartedWhen;
     heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);

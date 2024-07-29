@@ -181,6 +181,8 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+void *mono_wasm_heapshot_parachute = NULL;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
@@ -226,6 +228,11 @@ mono_wasm_load_runtime (int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+
+	// HACK: Pre-allocate some space that we can release when performing our first heapshot, so that
+	//  the BlobBuilders can successfully malloc their buffers.
+	// FIXME: Remove the need for this by not using BlobBuilder
+	mono_wasm_heapshot_parachute = malloc (64 * 1024 * 10);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -562,6 +569,9 @@ mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
 }
 
 int
+mono_assembly_update_heapshot_scratch_byte (MonoAssembly *assembly, char new_value);
+
+int
 mono_class_update_heapshot_scratch_byte (MonoClass *klass, char new_value);
 
 typedef enum {
@@ -591,24 +601,29 @@ static MonoProfilerHandle heapshot_profiler_handle = NULL;
 extern void
 mono_wasm_heapshot_start ();
 extern void
+mono_wasm_heapshot_assembly (
+	MonoAssembly *assembly, const char *name
+);
+extern void
 mono_wasm_heapshot_class (
-    MonoClass *klass, MonoClass *element_klass, const char *namespace, const char *name,
-    int rank, int kind, int gparam_count, MonoClass **gparams
+	MonoClass *klass, MonoClass *element_klass, MonoAssembly *assembly,
+	const char *namespace, const char *name, int rank,
+	int kind, int gparam_count, MonoClass **gparams
 );
 extern void
 mono_wasm_heapshot_object (
-    MonoObject *obj, MonoClass *klass, uint32_t size, uint32_t ref_count, MonoObject **refs
+	MonoObject *obj, MonoClass *klass, uint32_t size, uint32_t ref_count, MonoObject **refs
 );
 extern void
 mono_wasm_heapshot_gchandle (MonoObject *obj, int handle_type);
 extern void
 mono_wasm_heapshot_roots (
-    MonoObject **objs, int obj_count, MonoGCRootSource source, int root_type, const char *msg
+	MonoObject **objs, int obj_count, MonoGCRootSource source, int root_type, const char *msg
 );
 extern void
 mono_wasm_heapshot_stats (
-    int in_use_pages, int free_pages, int external_pages, int largest_free_chunk,
-    int sgen_los_size, int sgen_heap_capacity
+	int in_use_pages, int free_pages, int external_pages, int largest_free_chunk,
+	int sgen_los_size, int sgen_heap_capacity
 );
 extern void
 mono_wasm_heapshot_end ();
@@ -629,51 +644,58 @@ sgen_try_reveal_pointer (void *hidden, GCHandleType handle_type);
 
 typedef void (*SgenRootIterateCallback) (void *start, void *end, MonoGCRootSource source, int root_type, const char *msg, void *user);
 
-void sgen_registered_root_iterate (SgenRootIterateCallback callback, void *user_data, int root_type);
-int32_t sgen_object_is_live (void *obj);
+void
+sgen_registered_root_iterate (SgenRootIterateCallback callback, void *user_data, int root_type);
 
 extern uint32_t sgen_los_memory_usage, sgen_los_memory_usage_total;
 
-static const int MONO_CLASS_GINST = 3;
+static void
+mono_wasm_on_gc_assembly (MonoAssembly *assembly) {
+	MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+	mono_wasm_heapshot_assembly (assembly, mono_assembly_name_get_name (aname));
+}
 
 static void
-mono_wasm_on_gc_class (
-    MonoClass *klass
-) {
-    MonoClass *info_klass = klass;
-    char namespace_buffer[1024];
-    // If we're looking at an array, examine the element type instead and specify the rank
-    int rank = mono_class_get_rank (klass);
-    if (rank > 0) {
-        info_klass = mono_class_get_element_class (klass);
-        if (mono_class_update_heapshot_scratch_byte (info_klass, next_heapshot_scratch_byte))
-            mono_wasm_on_gc_class (info_klass);
-    }
-    // HACK: Nested types have no namespace, so extract it from the class it's nested in
-    MonoClass *nesting_type = mono_class_get_nesting_type (info_klass);
-    const char *namespace = mono_class_get_namespace (info_klass);
-    if (nesting_type) {
-        // We need to construct a fake namespace from {outer.namespace}.{outer.name}
-        // FIXME: Do this more efficiently
-        strncpy (namespace_buffer, mono_class_get_namespace (nesting_type), sizeof(namespace_buffer));
-        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-        // strcat could overrun by 1 byte so just do it manually
-        namespace_buffer[strlen(namespace_buffer)] = '.';
-        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-        // imagine if strlcat was available here
-        strncat (namespace_buffer, mono_class_get_name (nesting_type), sizeof(namespace_buffer) - strlen(namespace_buffer) - 1);
-        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
-        namespace = namespace_buffer;
-    }
+mono_wasm_on_gc_class (MonoClass *klass) {
+	MonoImage *image = mono_class_get_image (klass);
+	MonoAssembly *assem = mono_image_get_assembly (image);
+	if (mono_assembly_update_heapshot_scratch_byte (assem, next_heapshot_scratch_byte))
+		mono_wasm_on_gc_assembly (assem);
 
-    MonoClass *gparams[64];
-    int gparam_count = mono_class_get_generic_params (klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
-    for (int i = 0; i < gparam_count; i++) {
-        if (mono_class_update_heapshot_scratch_byte (gparams[i], next_heapshot_scratch_byte))
-            mono_wasm_on_gc_class (gparams[i]);
-    }
+	MonoClass *info_klass = klass;
+	char namespace_buffer[1024];
+	// If we're looking at an array, examine the element type instead and specify the rank
+	int rank = mono_class_get_rank (klass);
+	if (rank > 0) {
+		info_klass = mono_class_get_element_class (klass);
+		if (mono_class_update_heapshot_scratch_byte (info_klass, next_heapshot_scratch_byte))
+			mono_wasm_on_gc_class (info_klass);
+	}
+	// HACK: Nested types have no namespace, so extract it from the class it's nested in
+	MonoClass *nesting_type = mono_class_get_nesting_type (info_klass);
+	const char *namespace = mono_class_get_namespace (info_klass);
+	if (nesting_type) {
+		// We need to construct a fake namespace from {outer.namespace}.{outer.name}
+		// FIXME: Do this more efficiently
+		strncpy (namespace_buffer, mono_class_get_namespace (nesting_type), sizeof(namespace_buffer));
+		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+		// strcat could overrun by 1 byte so just do it manually
+		namespace_buffer[strlen(namespace_buffer)] = '.';
+		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+		// imagine if strlcat was available here
+		strncat (namespace_buffer, mono_class_get_name (nesting_type), sizeof(namespace_buffer) - strlen(namespace_buffer) - 1);
+		namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+		namespace = namespace_buffer;
+	}
 
-    mono_wasm_heapshot_class (klass, mono_class_get_element_class (klass), namespace, mono_class_get_name (info_klass), rank, mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL);
+	MonoClass *gparams[64];
+	int gparam_count = mono_class_get_generic_params (klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
+	for (int i = 0; i < gparam_count; i++) {
+		if (mono_class_update_heapshot_scratch_byte (gparams[i], next_heapshot_scratch_byte))
+			mono_wasm_on_gc_class (gparams[i]);
+	}
+
+	mono_wasm_heapshot_class (klass, mono_class_get_element_class (klass), assem, namespace, mono_class_get_name (info_klass), rank, mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL);
 }
 
 // NOTE: for objects (like arrays) containing more than 128 refs, this will get invoked multiple times
@@ -688,7 +710,7 @@ mono_wasm_on_gc_object (
 	void *data
 ) {
 	if (mono_class_update_heapshot_scratch_byte (klass, next_heapshot_scratch_byte))
-        mono_wasm_on_gc_class (klass);
+		mono_wasm_on_gc_class (klass);
 	mono_wasm_heapshot_object (obj, klass, (uint32_t)size, (uint32_t)num, refs);
 	return 0;
 }
@@ -696,43 +718,43 @@ mono_wasm_on_gc_object (
 static void *
 mono_wasm_each_gchandle (void *hidden, GCHandleType handle_type, int max_generation, void *user)
 {
-    MonoObject *obj = sgen_try_reveal_pointer (hidden, handle_type);
-    if (obj)
-        mono_wasm_heapshot_gchandle (obj, handle_type);
-    return hidden;
+	MonoObject *obj = sgen_try_reveal_pointer (hidden, handle_type);
+	if (obj)
+		mono_wasm_heapshot_gchandle (obj, handle_type);
+	return hidden;
 }
 
 static void
 mono_wasm_each_root (void *_start, void *_end, MonoGCRootSource source, int root_type, const char *msg, void *user)
 {
-    MonoObject *buf[64];
-    int buf_count = 0;
-    memset (buf, 0, sizeof(buf));
+	MonoObject *buf[64];
+	int buf_count = 0;
+	memset (buf, 0, sizeof(buf));
 
-    size_t *current = _start, *end = _end;
-    while (current < end) {
-        // the runtime is allowed to use the spare bits (due to object alignment) for any purpose, so we need to
-        //  mask those off, otherwise we'll get random garbage pointers instead of object pointers
-        // once we do this all the pointers we find should be pointers into the gc heap
-        // note that explicitly checking whether these pointers are live can crash for some reason, but that's ok
-        //  since the heap snapshot loader will be checking these "rooted objects" against the objects from the
-        //  heap walk that was performed earlier to serialize the class and object info
-        MonoObject *obj = (MonoObject *)(*current & ~((size_t)7));
-        if (obj) {
-            if (buf_count >= 63) {
-                mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
-                buf_count = 0;
-            }
+	size_t *current = _start, *end = _end;
+	while (current < end) {
+		// the runtime is allowed to use the spare bits (due to object alignment) for any purpose, so we need to
+		//  mask those off, otherwise we'll get random garbage pointers instead of object pointers
+		// once we do this all the pointers we find should be pointers into the gc heap
+		// note that explicitly checking whether these pointers are live can crash for some reason, but that's ok
+		//  since the heap snapshot loader will be checking these "rooted objects" against the objects from the
+		//  heap walk that was performed earlier to serialize the class and object info
+		MonoObject *obj = (MonoObject *)(*current & ~((size_t)7));
+		if (obj) {
+			if (buf_count >= 63) {
+				mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
+				buf_count = 0;
+			}
 
-            buf[buf_count] = obj;
-            buf_count++;
-        }
-        current++;
-    }
+			buf[buf_count] = obj;
+			buf_count++;
+		}
+		current++;
+	}
 
-    if (buf_count > 0)
-        mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
-    memset (buf, 0, sizeof(buf));
+	if (buf_count > 0)
+		mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
+	memset (buf, 0, sizeof(buf));
 }
 
 static void
@@ -745,20 +767,22 @@ mono_wasm_on_gc_event (
 	if (gc_event != MONO_GC_EVENT_PRE_START_WORLD)
 		return;
 
-    uint32_t in_use_pages, free_pages, external_pages, largest_free_chunk;
-    mwpm_compute_stats (&in_use_pages, &free_pages, &external_pages, &largest_free_chunk);
-    mono_wasm_heapshot_stats (
-        in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
-    );
+	uint32_t in_use_pages, free_pages, external_pages, largest_free_chunk;
+	mwpm_compute_stats (&in_use_pages, &free_pages, &external_pages, &largest_free_chunk);
+	mono_wasm_heapshot_stats (
+		in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
+	);
 	mono_gc_walk_heap (0, mono_wasm_on_gc_object, NULL);
-    sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_NORMAL);
-    sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_PINNED);
-    for (int ht = HANDLE_TYPE_MIN; ht < HANDLE_TYPE_MAX; ht++)
-        sgen_gchandle_iterate ((GCHandleType)ht, 2, mono_wasm_each_gchandle, prof);
+	sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_NORMAL);
+	sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_PINNED);
+	for (int ht = HANDLE_TYPE_MIN; ht < HANDLE_TYPE_MAX; ht++)
+		sgen_gchandle_iterate ((GCHandleType)ht, 2, mono_wasm_each_gchandle, prof);
 }
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_perform_heapshot () {
+    if (mono_wasm_heapshot_parachute)
+        free(mono_wasm_heapshot_parachute);
 	if (!heapshot_profiler_handle) {
 		memset (&heapshot_profiler, 0, sizeof(MonoProfiler));
 		heapshot_profiler_handle = mono_profiler_create (&heapshot_profiler);
