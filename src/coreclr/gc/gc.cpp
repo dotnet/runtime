@@ -14293,10 +14293,17 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
-#ifdef DYNAMIC_HEAP_COUNT
-    yp_spin_count_unit = 10;
-#else
     yp_spin_count_unit = 32 * number_of_heaps;
+#ifdef DYNAMIC_HEAP_COUNT
+    if (dynamic_adaptation_mode != 0)
+    {
+        yp_spin_count_unit = 10;
+    }
+
+    else
+    {
+        yp_spin_count_unit = 32 * number_of_heaps;
+    }
 #endif // DYNAMIC_HEAP_COUNT
 #else
     yp_spin_count_unit = 32 * g_num_processors;
