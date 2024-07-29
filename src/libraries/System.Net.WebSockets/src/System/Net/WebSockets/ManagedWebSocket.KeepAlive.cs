@@ -347,7 +347,7 @@ namespace System.Net.WebSockets
         private sealed class ReadAheadState : IDisposable
         {
             internal const int MaxReadAheadBufferSize = 16 * 1024 * 1024; // same as DefaultHttp2MaxStreamWindowSize
-            internal ArrayBuffer Buffer;
+            internal ArrayBuffer Buffer = new ArrayBuffer(0, usePool: true);
             internal ValueWebSocketReceiveResult BufferedResult;
             internal Task? ReadAheadTask;
             private bool IsDisposed => Buffer.DangerousGetUnderlyingBuffer() is null;
@@ -372,53 +372,48 @@ namespace System.Net.WebSockets
 
                 ObjectDisposedException.ThrowIf(IsDisposed, nameof(ReadAheadState));
 
-                try
+                if (!ReadAheadTask.IsCompleted)
                 {
-                    if (!ReadAheadTask.IsCompleted)
-                    {
-                        // We are in a mutex. Read-ahead task also only executes within the mutex.
-                        // If the task isn't null, it must be already completed.
-                        // Throwing here instead of Debug.Assert, just in case to prevent hanging on GetAwaiter().GetResult()
-                        throw new InvalidOperationException("Read-ahead task should be completed before consuming the result.");
-                    }
+                    // We are in a mutex. Read-ahead task also only executes within the mutex.
+                    // If the task isn't null, it must be already completed.
+                    // Throwing here instead of Debug.Assert, just in case to prevent hanging on GetAwaiter().GetResult()
+                    throw new InvalidOperationException("Read-ahead task should be completed before consuming the result.");
+                }
 
-                    ReadAheadTask.GetAwaiter().GetResult(); // throw exceptions, if any
+                ReadAheadTask.GetAwaiter().GetResult(); // throw exceptions, if any
 
-                    int count = Math.Min(destination.Length, Buffer.ActiveLength);
-                    Buffer.ActiveSpan.Slice(0, count).CopyTo(destination);
-                    Buffer.Discard(count);
+                int count = Math.Min(destination.Length, Buffer.ActiveLength);
+                Buffer.ActiveSpan.Slice(0, count).CopyTo(destination);
+                Buffer.Discard(count);
 
-                    ValueWebSocketReceiveResult result;
+                ValueWebSocketReceiveResult result;
 
-                    if (Buffer.ActiveLength == 0) // we've consumed all of the data
-                    {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"All read-ahead data consumed. Last read: {count} bytes");
+                if (Buffer.ActiveLength == 0) // we've consumed all of the data
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"All read-ahead data consumed. Last read: {count} bytes");
 
-                        result = BufferedResult;
-                        BufferedResult = default;
-                        Buffer.ClearAndReturnBuffer();
-                        return result;
-                    }
-
-                    // If we have more data in the read-ahead buffer, we need to construct a new result for the next read to consume it.
-                    result = new ValueWebSocketReceiveResult(count, BufferedResult.MessageType, endOfMessage: false);
-                    BufferedResult = new ValueWebSocketReceiveResult(Buffer.ActiveLength, BufferedResult.MessageType, BufferedResult.EndOfMessage);
-
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Read-ahead data partially consumed. Last read: {count} bytes, remaining: {Buffer.ActiveLength} bytes");
-
-                    ReadAheadTask = Task.CompletedTask;
+                    result = BufferedResult;
+                    BufferedResult = default;
+                    Buffer.ClearAndReturnBuffer();
                     return result;
                 }
-                catch
-                {
-                    Dispose();
-                    throw;
-                }
+
+                // If we have more data in the read-ahead buffer, we need to construct a new result for the next read to consume it.
+                result = new ValueWebSocketReceiveResult(count, BufferedResult.MessageType, endOfMessage: false);
+                BufferedResult = new ValueWebSocketReceiveResult(Buffer.ActiveLength, BufferedResult.MessageType, BufferedResult.EndOfMessage);
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Read-ahead data partially consumed. Last read: {count} bytes, remaining: {Buffer.ActiveLength} bytes");
+
+                ReadAheadTask = Task.CompletedTask;
+                return result;
             }
 
             public void Dispose()
             {
                 Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
+
+                Buffer.Dispose();
+                BufferedResult = default;
 
                 if (ReadAheadTask is not null)
                 {
@@ -427,8 +422,6 @@ namespace System.Net.WebSockets
                     this.Observe(ReadAheadTask);
                     ReadAheadTask = null;
                 }
-                BufferedResult = default;
-                Buffer.Dispose();
             }
         }
     }
