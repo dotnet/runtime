@@ -10,6 +10,7 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public struct S0
 {
@@ -28,6 +29,9 @@ public class Runtime_105558
     [Fact]
     public static void TestEntryPoint()
     {
+        if (!Sse2.IsSupported)
+            return;
+
         var vr17 = Vector128.CreateScalar(2558356441U);
         var vr18 = Vector128.Create(0, 3113514718U, 0, 0);
         var vr19 = Sse2.ShiftRightLogical(vr17, vr18);
