@@ -231,7 +231,7 @@ namespace System.Buffers
             public const int PROT_READ = 0x1;
             public const int PROT_WRITE = 0x2;
 
-            [DllImport("CrossplatVirtualAlloc")]
+            [DllImport("GetMapAnonymousFlag")]
             public static extern int GetMapAnonymousFlag();
 
             private static class Linux

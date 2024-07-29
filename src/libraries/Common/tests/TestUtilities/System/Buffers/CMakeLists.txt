@@ -1,3 +1,3 @@
 include_directories(${INC_PLATFORM_DIR})
-add_library(CrossplatVirtualAlloc SHARED CrossplatVirtualAlloc.cpp)
-target_link_libraries(CrossplatVirtualAlloc PRIVATE platformdefines)
+add_library(GetMapAnonymousFlag SHARED GetMapAnonymousFlag.cpp)
+target_link_libraries(GetMapAnonymousFlag PRIVATE platformdefines)
