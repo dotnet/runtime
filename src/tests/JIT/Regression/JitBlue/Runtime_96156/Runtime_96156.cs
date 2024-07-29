@@ -18,9 +18,12 @@ public class Runtime_96156
     [Fact]
     public static void TestEntryPoint()
     {
-        Vector128<float> c = Vector128.Create(1.0f);
-        Vector128<float> r = Problem(2.0f, 0.5f, c);
-        Assert.Equal(Vector128.Create(4.0f), r);
+        if (Avx.IsSupported)
+        {
+            Vector128<float> c = Vector128.Create(1.0f);
+            Vector128<float> r = Problem(2.0f, 0.5f, c);
+            Assert.Equal(Vector128.Create(4.0f), r);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
