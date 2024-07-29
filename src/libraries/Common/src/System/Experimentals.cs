@@ -19,6 +19,9 @@ namespace System
         // Tensor<T> and related APIs are marked as [Experimental] in .NET 9
         internal const string TensorTDiagId = "SYSLIB5001";
 
+        // SystemColors alternate colors are marked as [Experimental] in .NET 9
+        internal const string SystemColorsDiagId = "SYSLIB5002";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

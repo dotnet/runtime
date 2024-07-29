@@ -183,6 +183,11 @@ CDAC_TYPE_FIELD(String, /*pointer*/, m_FirstChar, cdac_offsets<StringObject>::m_
 CDAC_TYPE_FIELD(String, /*uint32*/, m_StringLength, cdac_offsets<StringObject>::m_StringLength)
 CDAC_TYPE_END(String)
 
+CDAC_TYPE_BEGIN(Array)
+CDAC_TYPE_SIZE(sizeof(ArrayBase))
+CDAC_TYPE_FIELD(Array, /*pointer*/, m_NumComponents, cdac_offsets<ArrayBase>::m_NumComponents)
+CDAC_TYPE_END(Array)
+
 // Loader
 
 CDAC_TYPE_BEGIN(Module)
@@ -291,6 +296,11 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
@@ -299,6 +309,8 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
+CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
+CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_offsets<ArrayBase>::s_arrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
 CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)

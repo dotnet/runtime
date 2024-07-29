@@ -22,7 +22,9 @@ internal interface IObject : IContract
     }
 
     public virtual TargetPointer GetMethodTableAddress(TargetPointer address) => throw new NotImplementedException();
+
     public virtual string GetStringValue(TargetPointer address) => throw new NotImplementedException();
+    public virtual TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
 }
 
 internal readonly struct Object : IObject

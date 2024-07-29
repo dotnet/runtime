@@ -56,7 +56,7 @@ Some variables might already be allocated to hardware registers during the globa
 
 #### Floating point stack
 
-The x86 architecture uses a floating point register stack instead of a set of fp registers. The allocator supports this by a post-processing pass which keeps track of the height of the fp stack, and spills/loads values from the stack as neccesary.
+The x86 architecture uses a floating point register stack instead of a set of fp registers. The allocator supports this by a post-processing pass which keeps track of the height of the fp stack, and spills/loads values from the stack as necessary.
 
 #### Calls
 
