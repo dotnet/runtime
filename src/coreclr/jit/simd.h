@@ -368,6 +368,11 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 {
     switch (oper)
     {
+        case GT_NEG:
+        {
+            return static_cast<TBase>(0) - arg0;
+        }
+
         case GT_NOT:
         {
             return ~arg0;
@@ -399,6 +404,11 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 template <>
 inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 {
+    if (oper == GT_NEG)
+    {
+        return -arg0;
+    }
+
     uint32_t arg0Bits   = BitOperations::SingleToUInt32Bits(arg0);
     uint32_t resultBits = EvaluateUnaryScalarSpecialized<uint32_t>(oper, arg0Bits);
     return BitOperations::UInt32BitsToSingle(resultBits);
@@ -407,6 +417,11 @@ inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 template <>
 inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg0)
 {
+    if (oper == GT_NEG)
+    {
+        return -arg0;
+    }
+
     uint64_t arg0Bits   = BitOperations::DoubleToUInt64Bits(arg0);
     uint64_t resultBits = EvaluateUnaryScalarSpecialized<uint64_t>(oper, arg0Bits);
     return BitOperations::UInt64BitsToDouble(resultBits);
@@ -415,18 +430,7 @@ inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg
 template <typename TBase>
 TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 {
-    switch (oper)
-    {
-        case GT_NEG:
-        {
-            return static_cast<TBase>(0) - arg0;
-        }
-
-        default:
-        {
-            return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
-        }
-    }
+    return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
 }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
