@@ -529,6 +529,107 @@ public:
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
 
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
+
+    class SmallValueNumSet
+    {
+        union
+        {
+            ValueNum     m_inlineElements[4];
+            ValueNumSet* m_set;
+        };
+        unsigned m_numElements = 0;
+
+    public:
+        unsigned Count()
+        {
+            return m_numElements;
+        }
+
+        template <typename Func>
+        void ForEach(Func func)
+        {
+            if (m_numElements <= ArrLen(m_inlineElements))
+            {
+                for (unsigned i = 0; i < m_numElements; i++)
+                {
+                    func(m_inlineElements[i]);
+                }
+            }
+            else
+            {
+                for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+                {
+                    func(vn);
+                }
+            }
+        }
+
+        // Returns false if the value wasn't found
+        bool Lookup(ValueNum vn);
+
+        // Returns false if the value already exists
+        bool Add(Compiler* comp, ValueNum vn);
+    };
+
+    enum class VNVisit
+    {
+        Continue,
+        Abort,
+    };
+
+    ValueNum VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum);
+
+    //--------------------------------------------------------------------------------
+    // VNVisitReachingVNs: given a VN, call the specified callback function on it and all the VNs that reach it
+    //    via PHI definitions if any.
+    //
+    // Arguments:
+    //    vn         - The VN to visit all the reaching VNs for
+    //    argVisitor - The callback function to call on the vn and its PHI arguments if any
+    //
+    // Return Value:
+    //    VNVisit::Aborted  - an argVisitor returned VNVisit::Abort, we stop the walk and return
+    //    VNVisit::Continue - all argVisitor returned VNVisit::Continue
+    //
+    template <typename TArgVisitor>
+    VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
+    {
+        ArrayStack<ValueNum> toVisit(m_alloc);
+        toVisit.Push(vn);
+
+        SmallValueNumSet visited;
+        visited.Add(m_pComp, vn);
+        while (toVisit.Height() > 0)
+        {
+            ValueNum vnToVisit = toVisit.Pop();
+
+            // We need to handle nested (and, potentially, recursive) phi definitions.
+            // For now, we ignore memory phi definitions.
+            VNPhiDef phiDef;
+            if (GetPhiDef(vnToVisit, &phiDef))
+            {
+                for (unsigned ssaArgNum = 0; ssaArgNum < phiDef.NumArgs; ssaArgNum++)
+                {
+                    ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
+                    if (visited.Add(m_pComp, childVN))
+                    {
+                        toVisit.Push(childVN);
+                    }
+                }
+            }
+            else
+            {
+                if (argVisitor(vnToVisit) == VNVisit::Abort)
+                {
+                    // The visitor wants to abort the walk.
+                    return VNVisit::Abort;
+                }
+            }
+        }
+        return VNVisit::Continue;
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {

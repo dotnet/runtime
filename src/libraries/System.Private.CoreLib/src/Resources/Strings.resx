@@ -1011,8 +1011,11 @@
   <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
     <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
   </data>
-  <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
-    <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
+  <data name="InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly" xml:space="preserve">
+    <value>Resolved assembly must be a runtime Assembly object.</value>
+  </data>
+  <data name="InvalidOperation_ResolvedAssemblyRequestedNameMismatch" xml:space="preserve">
+    <value>Resolved assembly's simple name must be the same as of the requested assembly.</value>
   </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
