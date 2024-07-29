@@ -46,6 +46,7 @@ public enum DataType
     MethodDescCodeData,
     PrecodeMachineDescriptor,
     StubPrecodeData,
+    FixupPrecodeData,
     Array,
     SyncBlock,
     SyncTableEntry,

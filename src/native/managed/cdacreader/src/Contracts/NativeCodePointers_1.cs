@@ -58,7 +58,10 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
         internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
         {
-            throw new NotImplementedException(); // TODO(cdac)
+            TargetPointer fixupPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
+            Data.FixupPrecodeData fixupPrecodeData = target.ProcessedData.GetOrAdd<Data.FixupPrecodeData>(fixupPrecodeDataAddress);
+            return fixupPrecodeData.MethodDesc;
+
         }
     }
 

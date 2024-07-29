@@ -366,6 +366,11 @@ CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeDa
 CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
 CDAC_TYPE_END(StubPrecodeData)
 
+CDAC_TYPE_BEGIN(FixupPrecodeData)
+CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
+CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
+CDAC_TYPE_END(FixupPrecodeData)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
