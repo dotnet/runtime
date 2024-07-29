@@ -41,16 +41,22 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
         {
             // We expect GetObjectGeneration to return an error (CORPROF_E_NOT_GC_OBJECT)
             // for non-GC objects.
+            printf("FAIL: GetObjectGeneration failed for nongc object: hr=0x%x\n", hr);
             _failures++;
         }
-        _nonGcHeapObjects++;
+
         if (gen.rangeLength != 0 || gen.rangeLengthReserved != 0 || gen.rangeStart != 0)
         {
+            printf("FAIL: GetObjectGeneration returned unexpected values: rangeLength=%u, rangeLengthReserved=%u, rangeStart=%p\n",
+                (uint32_t)gen.rangeLength, (uint32_t)gen.rangeLengthReserved, (void*)gen.rangeStart);
             _failures++;
         }
+
+        _nonGcHeapObjects++;
     }
     else if (FAILED(hr))
     {
+        printf("FAIL: GetObjectGeneration failed: hr=0x%x\n", hr);
         _failures++;
     }
     return S_OK;
