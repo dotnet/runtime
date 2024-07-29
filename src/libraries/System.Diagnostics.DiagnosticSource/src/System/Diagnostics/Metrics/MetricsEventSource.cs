@@ -653,12 +653,8 @@ namespace System.Diagnostics.Metrics
                     {
                         _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
-                    else if (
-#if NET8_0_OR_GREATER
-                        spec.MeterName.EndsWith('*'))
-#else
-                        spec.MeterName.EndsWith("*", StringComparison.Ordinal))
-#endif
+                    else if (spec.MeterName.Length > 0
+                        && spec.MeterName[spec.MeterName.Length - 1] == '*')
                     {
                         if (spec.MeterName.Length == 1)
                         {
@@ -666,7 +662,8 @@ namespace System.Diagnostics.Metrics
                         }
                         else
                         {
-                            _aggregationManager!.IncludePrefix(spec.MeterName.Substring(0, spec.MeterName.Length - 1));
+                            _aggregationManager!.IncludePrefix(
+                                spec.MeterName.Substring(0, spec.MeterName.Length - 1));
                         }
                     }
                     else

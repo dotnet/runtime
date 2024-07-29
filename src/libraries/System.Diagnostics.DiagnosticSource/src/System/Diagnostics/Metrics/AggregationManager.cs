@@ -88,7 +88,7 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName)
         {
-            Include(i => i.Meter.Name == meterName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase));
         }
 
         public void IncludeAll()
@@ -103,7 +103,8 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName, string instrumentName)
         {
-            Include(i => i.Meter.Name == meterName && i.Name == instrumentName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase)
+                && i.Name.Equals(instrumentName, StringComparison.OrdinalIgnoreCase));
         }
 
         private void Include(Predicate<Instrument> instrumentFilter)
