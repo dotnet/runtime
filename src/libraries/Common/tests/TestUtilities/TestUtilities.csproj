@@ -49,7 +49,6 @@
     <Compile Include="RandomTestCollectionOrderer.cs" />
 
     <Compile Include="TestEventListener.cs" />
-    <CMakeProjectReference Include="System\Buffers\CMakeLists.txt" />
   </ItemGroup>
   <!-- Windows imports -->
   <ItemGroup>

@@ -16,6 +16,5 @@
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Windows.cs" />
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Default.cs" />
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/PoisonPagePlacement.cs" />
-    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

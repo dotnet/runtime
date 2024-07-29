@@ -1,3 +1,0 @@
-include_directories(${INC_PLATFORM_DIR})
-add_library(GetMapAnonymousFlag SHARED GetMapAnonymousFlag.cpp)
-target_link_libraries(GetMapAnonymousFlag PRIVATE platformdefines)
