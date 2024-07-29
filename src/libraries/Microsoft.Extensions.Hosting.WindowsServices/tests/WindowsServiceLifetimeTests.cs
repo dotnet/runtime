@@ -144,7 +144,11 @@ namespace Microsoft.Extensions.Hosting
                     .Build();
 
                 var applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-                applicationLifetime.ApplicationStarted.Register(() => FileLogger.Log($"lifetime started"));
+                applicationLifetime.ApplicationStarted.Register(() =>
+                {
+                    FileLogger.Log($"lifetime started");
+                    are.Set();
+                });
                 applicationLifetime.ApplicationStopping.Register(() => FileLogger.Log($"lifetime stopping"));
                 applicationLifetime.ApplicationStopped.Register(() => FileLogger.Log($"lifetime stopped"));
 
@@ -171,7 +175,7 @@ namespace Microsoft.Extensions.Hosting
                 serviceTester.Start();
 
                 // service will proceed to stopped without any error
-                serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
+                serviceTester.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.MaxValue);
 
                 var status = serviceTester.QueryServiceStatus();
                 Assert.Equal(0, status.win32ExitCode);
@@ -194,6 +198,8 @@ namespace Microsoft.Extensions.Hosting
                 """, logText);
         }
 
+        private static AutoResetEvent are = new AutoResetEvent(false);
+
         [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceSequenceIsCorrect()
         {
@@ -209,7 +215,12 @@ namespace Microsoft.Extensions.Hosting
                     .Build();
 
                 var applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-                applicationLifetime.ApplicationStarted.Register(() => FileLogger.Log($"lifetime started"));
+                applicationLifetime.ApplicationStarted.Register(() =>
+                {
+                    FileLogger.Log($"lifetime started");
+                    are.Set();
+                });
+
                 applicationLifetime.ApplicationStopping.Register(() => FileLogger.Log($"lifetime stopping"));
                 applicationLifetime.ApplicationStopped.Register(() => FileLogger.Log($"lifetime stopped"));
 
@@ -268,6 +279,7 @@ namespace Microsoft.Extensions.Hosting
 
             protected override void OnStop()
             {
+                are.WaitOne();
                 FileLogger.Log("WindowsServiceLifetime.OnStop");
                 base.OnStop();
             }
