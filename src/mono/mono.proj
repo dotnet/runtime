@@ -173,74 +173,6 @@
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
-      <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
-CURRENT_SCRIPT=
-DIR="."
-
-# use shell specific method to get the path
-# to the current file being source'd.
-#
-# To add a shell, add another conditional below,
-# then add tests to scripts/test_source_env.sh
-
-if [ -n "%24{BASH_SOURCE-}" ]%3B then
-  CURRENT_SCRIPT="%24BASH_SOURCE"
-elif [ -n "%24{ZSH_VERSION-}" ]%3B then
-  CURRENT_SCRIPT="%24{(%):-%x}"
-elif [ -n "%24{KSH_VERSION-}" ]%3B then
-  CURRENT_SCRIPT=%24{.sh.file}
-fi
-
-if [ -n "%24{CURRENT_SCRIPT-}" ]%3B then
-  DIR=%24(dirname "%24CURRENT_SCRIPT")
-  if [ -h "%24CURRENT_SCRIPT" ]%3B then
-    # Now work out actual DIR since this is part of a symlink.
-    # Since we can't be sure that readlink or realpath
-    # are available, use tools more likely to be installed.
-    # (This will still fail if sed is not available.)
-    SYMDIR=%24(dirname "%24(ls -l "%24CURRENT_SCRIPT" | sed -n "s/.*-&gt; //p")")
-    if [ -z "%24SYMDIR" ]%3B then
-      SYMDIR="."
-    fi
-    FULLDIR="%24DIR/%24SYMDIR"
-    DIR=%24(cd "%24FULLDIR" &gt; /dev/null 2&gt;&amp;1%3B /bin/pwd)
-    unset SYMDIR
-    unset FULLDIR
-  fi
-fi
-unset CURRENT_SCRIPT
-
-if [ ! -f "%24DIR/emscripten/emcmake.py" ]%3B then
-  echo "Error: unable to determine 'emsdk' directory. Perhaps you are using a shell or" 1&gt;&amp;2
-  echo "       environment that this script does not support." 1&gt;&amp;2
-  echo 1&gt;&amp;2
-  echo "A possible solution is to source this script while in the 'emsdk' directory." 1&gt;&amp;2
-  echo 1&gt;&amp;2
-  unset DIR
-  return
-fi
-
-export EMSDK_PATH=%24{DIR}/
-unset DIR
-
-export DOTNET_EMSCRIPTEN_LLVM_ROOT=%24{EMSDK_PATH}bin/
-export DOTNET_EMSCRIPTEN_NODE_JS=%24{EMSDK_PATH}node/bin/node
-export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%24{EMSDK_PATH}
-
-      </_EmsdkPaths>
-      <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
-@echo off
-
-set CURRENT_SCRIPT=%~dp0
-set EMSDK_PATH=%CURRENT_SCRIPT:~0,-1%\
-
-set EMSDK_PYTHON=%EMSDK_PATH%python\python.exe
-set DOTNET_EMSCRIPTEN_LLVM_ROOT=%EMSDK_PATH%bin\
-set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node
-set DOTNET_EMSCRIPTEN_NODE_PATH=%EMSDK_PATH%node\bin\
-set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
-
-      </_EmsdkPaths>
       <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
@@ -264,12 +196,6 @@ set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
     <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
-    <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
-      <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
-    </ReadLinesFromFile>
-    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
-                      Overwrite="true"
-                      Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
     <!-- Fixup files that were symlinks originally (on Linux/Mac, Windows has an equivalent already) -->
     <ItemGroup>
       <NodeModulesBinFiles Include="$(EMSDK_PATH)node\bin\npm.js" />
