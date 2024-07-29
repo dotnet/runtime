@@ -60,6 +60,11 @@ namespace System.Drawing
         /// </summary>
         /// <remarks>
         /// <para>
+        /// <see cref="KnownColor"/> <see cref="Color"/> values are always looked up every
+        /// time you use them and do not retain any other context. As such, existing
+        /// <see cref="Color"/> values will change when this property is set.
+        /// </para>
+        /// <para>
         /// On Windows, system <see cref="KnownColor"/> values will always return the current
         /// Windows color when the OS has a high contrast theme enabled.
         /// </para>

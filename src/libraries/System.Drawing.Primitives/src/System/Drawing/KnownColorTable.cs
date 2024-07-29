@@ -427,6 +427,11 @@ namespace System.Drawing
             KnownColorKindWeb,      // RebeccaPurple
         ];
 
+        // These values were based on manual investigation of dark mode themes in the
+        // Win32 Common Controls and WinUI. There aren't direct mappings published by
+        // Windows, these may change slightly when this feature is finalized to make
+        // sure we have the best experience in hybrid dark mode scenarios (mixing
+        // WPF, WinForms, and WinUI).
         private static ReadOnlySpan<uint> AlternateSystemColors =>
         [
             0,          // To align with KnownColor.ActiveBorder = 1
@@ -494,18 +499,24 @@ namespace System.Drawing
                  : ColorValueTable[(int)color];
         }
 
+        private static uint GetAlternateSystemColorArgb(KnownColor color)
+        {
+            // Shift the original (split) index to fit the alternate color map.
+            int index = color <= KnownColor.WindowText
+                ? (int)color
+                : (int)color - (int)KnownColor.ButtonFace + (int)KnownColor.WindowText + 1;
+
+            return AlternateSystemColors[index];
+        }
+
 #if FEATURE_WINDOWS_SYSTEM_COLORS
         public static uint GetSystemColorArgb(KnownColor color)
         {
             Debug.Assert(Color.IsKnownColorSystem(color));
 
-            if (!SystemColors.s_useAlternativeColorSet || HighContrastEnabled())
-            {
-                return ColorTranslator.COLORREFToARGB(Interop.User32.GetSysColor((byte)ColorValueTable[(int)color]));
-            }
-
-            int index = color <= KnownColor.WindowText ? (int)color : (int)color - (int)KnownColor.ButtonFace + (int)KnownColor.WindowText + 1;
-            return AlternateSystemColors[index];
+            return !SystemColors.s_useAlternativeColorSet || HighContrastEnabled()
+                ? ColorTranslator.COLORREFToARGB(Interop.User32.GetSysColor((byte)ColorValueTable[(int)color]))
+                : GetAlternateSystemColorArgb(color);
         }
 
         private static unsafe bool HighContrastEnabled()
@@ -529,13 +540,9 @@ namespace System.Drawing
         {
             Debug.Assert(Color.IsKnownColorSystem(color));
 
-            if (!SystemColors.s_useAlternativeColorSet)
-            {
-                return ColorValueTable[(int)color];
-            }
-
-            int index = color <= KnownColor.WindowText ? (int)color : (int)color - (int)KnownColor.ButtonFace + (int)KnownColor.WindowText + 1;
-            return AlternateSystemColors[index];
+            return (!SystemColors.s_useAlternativeColorSet)
+                ? ColorValueTable[(int)color]
+                : GetAlternateSystemColorArgb(color);
         }
 #endif
     }
