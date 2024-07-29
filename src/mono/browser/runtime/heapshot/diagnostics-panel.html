@@ -49,6 +49,7 @@
                 switch (data.cmd) {
                     case "heapshotStart":
                         this.log = "";
+                        this.blobParts = [];
                         break;
                     case "heapshotText":
                         this.log += data.text + "\r\n";
@@ -97,7 +98,10 @@
                             elt.textContent += " (exited)";
                         elt.removeAttribute("disabled");
                         const tabChannel = new BroadcastChannel(`.NET Runtime Diagnostics|${data.sender}`);
-                        const tabObj = { tabId: data.sender, elt, origin: evt.origin, channel: tabChannel, log: "", blobParts: [] };
+                        const tabObj = {
+                            tabId: data.sender, elt, origin: evt.origin,
+                            channel: tabChannel, log: "", blobParts: []
+                        };
                         tabObj.refresh = refreshTab.bind(tabObj);
                         tabChannel.addEventListener("message", tab_message.bind(tabObj));
                         elt.setAttribute("tabListIndex", tabList.length);
