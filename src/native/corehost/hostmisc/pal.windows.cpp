@@ -820,8 +820,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
         {
             if (!skip_error_logging)
             {
-                trace::error(_X("Error resolving full path [%s]"), path->c_str());
-                trace::error(_X("GetLastError(): [%s]"), ::GetLastError());
+                trace::error(_X("Error resolving full path [%s]. Error code: %d"), path->c_str(), error);
                 return false;
             }
         }
@@ -847,8 +846,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 {
                     if (!skip_error_logging)
                     {
-                        trace::error(_X("Error resolving full path [%s]"), path->c_str());
-                        trace::error(_X("GetLastError(): [%s]"), ::GetLastError());
+                        trace::error(_X("Error resolving full path [%s]. Error code: %d"), path->c_str(), ::GetLastError());
                         return false;
                     }
                 }
