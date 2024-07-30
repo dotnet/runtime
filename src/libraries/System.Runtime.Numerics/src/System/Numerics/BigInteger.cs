@@ -475,20 +475,19 @@ namespace System.Numerics
             AssertValid();
         }
 
-        internal BigInteger(int n, uint[]? rgu) : this(n, rgu, false)
+        /// <summary>
+        /// Create a BigInteger directly from inner components (sign and bits).
+        /// The caller should ensure the parameters are valid.
+        /// </summary>
+        /// <param name="sign">the sign field</param>
+        /// <param name="bits">the bits field</param>
+        internal BigInteger(int sign, uint[]? bits)
         {
-        }
+            // Runtime check is converted to assertions because only one call from TryParseBigIntegerHexOrBinaryNumberStyle may fail the length check.
+            // Validation in TryParseBigIntegerHexOrBinaryNumberStyle is also added in the accompanying PR.
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private BigInteger(int n, uint[]? rgu, bool bypassBitsLengthCheck)
-        {
-            if (!bypassBitsLengthCheck && (rgu is not null) && (rgu.Length > MaxLength))
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
-            _sign = n;
-            _bits = rgu;
+            _sign = sign;
+            _bits = bits;
 
             AssertValid();
         }
@@ -714,7 +713,7 @@ namespace System.Numerics
         public static BigInteger Abs(BigInteger value)
         {
             value.AssertValid();
-            return new BigInteger(unchecked((int)NumericsHelpers.Abs(value._sign)), value._bits, true);
+            return new BigInteger(unchecked((int)NumericsHelpers.Abs(value._sign)), value._bits);
         }
 
         public static BigInteger Add(BigInteger left, BigInteger right)
@@ -2650,7 +2649,7 @@ namespace System.Numerics
         public static BigInteger operator -(BigInteger value)
         {
             value.AssertValid();
-            return new BigInteger(-value._sign, value._bits, true);
+            return new BigInteger(-value._sign, value._bits);
         }
 
         public static BigInteger operator +(BigInteger value)
