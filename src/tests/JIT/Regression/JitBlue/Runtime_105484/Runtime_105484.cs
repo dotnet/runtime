@@ -15,12 +15,12 @@ using System.Runtime.Intrinsics.Arm;
 
 public class Runtime_105484
 {
-    public static byte[] s_1;
-    public static byte[,, ] s_2;
-    public static Vector<uint> s_5;
+    private static byte[] s_1;
+    private static byte[,, ] s_2;
+    private static Vector<uint> s_5;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void M()
+    private static void M()
     {
         for (int vr7 = 0; vr7 < 1; vr7++)
         {
