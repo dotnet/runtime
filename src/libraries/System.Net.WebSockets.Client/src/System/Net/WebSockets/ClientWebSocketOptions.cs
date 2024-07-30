@@ -15,7 +15,7 @@ namespace System.Net.WebSockets
     {
         private bool _isReadOnly; // After ConnectAsync is called the options cannot be modified.
         private TimeSpan _keepAliveInterval = WebSocket.DefaultKeepAliveInterval;
-        private TimeSpan _keepAliveTimeout = Timeout.InfiniteTimeSpan; // todo
+        private TimeSpan _keepAliveTimeout = Timeout.InfiniteTimeSpan;
         private bool _useDefaultCredentials;
         private ICredentials? _credentials;
         private IWebProxy? _proxy;

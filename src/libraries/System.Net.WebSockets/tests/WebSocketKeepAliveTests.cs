@@ -15,16 +15,20 @@ namespace System.Net.WebSockets.Tests
         public static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
         public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(100);
         public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(1);
-        public const int FramesToTestCount = 3;
+        public const int FramesToTestCount = 5;
 
 #region Frame format helper constants
 
         public const int MinHeaderLength = 2;
         public const int MaskLength = 4;
-        public const int PingPayloadLength = 8;
+        public const int SingleInt64PayloadLength = sizeof(long);
+        public const int PingPayloadLength = SingleInt64PayloadLength;
 
         // 0b_1_***_**** -- fin=true
         public const byte FirstByteBits_FinFlag = 0b_1_000_0000;
+
+        // 0b_*_***_0010 -- opcode=BINARY (0x02)
+        public const byte FirstByteBits_OpcodeBinary = 0b_0_000_0010;
 
         // 0b_*_***_1001 -- opcode=PING (0x09)
         public const byte FirstByteBits_OpcodePing = 0b_0_000_1001;
@@ -36,10 +40,11 @@ namespace System.Net.WebSockets.Tests
         public const byte SecondByteBits_MaskFlag = 0b_1_0000000;
 
         // 0b_*_0001000 -- length=8
-        public const byte SecondByteBits_PayloadLength8 = PingPayloadLength;
+        public const byte SecondByteBits_PayloadLength8 = SingleInt64PayloadLength;
 
         public const byte FirstByte_PingFrame = FirstByteBits_FinFlag | FirstByteBits_OpcodePing;
         public const byte FirstByte_PongFrame = FirstByteBits_FinFlag | FirstByteBits_OpcodePong;
+        public const byte FirstByte_DataFrame = FirstByteBits_FinFlag | FirstByteBits_OpcodeBinary;
 
         public const byte SecondByte_Server_NoPayload = 0;
         public const byte SecondByte_Client_NoPayload = SecondByteBits_MaskFlag;
@@ -199,7 +204,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [OuterLoop("Uses Task.Delay")]
+        //[OuterLoop("Uses Task.Delay")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -236,6 +241,103 @@ namespace System.Net.WebSockets.Tests
                 var wse = Assert.IsType<WebSocketException>(oce.InnerException);
                 Assert.Equal(WebSocketError.Faulted, wse.WebSocketErrorCode);
                 Assert.Contains("KeepAliveTimeout", wse.Message);
+            }
+        }
+
+        [Fact]
+        public async Task WebSocket_ReadAheadIssuedAndConsumed()
+        {
+            var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
+
+            using WebSocketTestStream testStream = new();
+            Stream serverStream = testStream;
+            Stream clientStream = testStream.Remote;
+
+            using WebSocket webSocketServer = WebSocket.CreateFromStream(serverStream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = KeepAliveInterval,
+                KeepAliveTimeout = TestTimeout // we don't care about the actual timeout here
+            });
+
+            // --- server side ---
+
+            var serverTask = Task.Run(async () =>
+            {
+                var payloadBuffer = new byte[SingleInt64PayloadLength];
+                for (int i = 0; i < FramesToTestCount; i++)
+                {
+                    BinaryPrimitives.WriteInt64BigEndian(payloadBuffer, i * 10);
+                    await webSocketServer.SendAsync(payloadBuffer, WebSocketMessageType.Binary, endOfMessage: true, cancellationToken).ConfigureAwait(false);
+
+                    await Task.Delay(2 * KeepAliveInterval, cancellationToken); // delay to ensure the read-ahead is issued
+
+                    ValueTask<ValueWebSocketReceiveResult> readTask = webSocketServer.ReceiveAsync(payloadBuffer.AsMemory(), cancellationToken);
+                    Assert.True(readTask.IsCompletedSuccessfully); // we should have the read-ahead data consumed synchronously
+                    var result = readTask.GetAwaiter().GetResult();
+                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
+                    Assert.Equal(SingleInt64PayloadLength, result.Count);
+                    Assert.Equal(i * 10, BinaryPrimitives.ReadInt64BigEndian(payloadBuffer));
+                }
+            });
+
+            // --- "client" side ---
+
+            var buffer = new byte[Client_FrameHeaderLength + SingleInt64PayloadLength]; // client frame is bigger because of masking
+
+            for (int i = 0; i < FramesToTestCount; i++)
+            {
+                while (true)
+                {
+                    var (firstByte, payload) = await ReadFrameAsync(clientStream, buffer, cancellationToken).ConfigureAwait(false);
+                    if (firstByte == FirstByte_PingFrame)
+                    {
+                        await SendPongAsync(payload).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Assert.Equal(FirstByte_DataFrame, firstByte);
+                        Assert.Equal(i * 10, payload);
+                        await SendDataAsync(payload).ConfigureAwait(false);
+                        break;
+                    }
+                }
+            }
+
+            await serverTask.ConfigureAwait(false);
+
+            static async Task<(byte FirstByte, long Payload)> ReadFrameAsync(Stream clientStream, byte[] buffer, CancellationToken cancellationToken)
+            {
+                await clientStream.ReadExactlyAsync(
+                    buffer.AsMemory(0, Server_FrameHeaderLength + SingleInt64PayloadLength),
+                    cancellationToken).ConfigureAwait(false);
+
+                Assert.Contains(buffer[0], new byte[]{ FirstByte_DataFrame, FirstByte_PingFrame });
+                Assert.Equal(SecondByte_Server_8bPayload, buffer[1]);
+
+                var payloadBytes = buffer.AsSpan().Slice(Server_FrameHeaderLength, PingPayloadLength);
+                long payload = BinaryPrimitives.ReadInt64BigEndian(payloadBytes);
+
+                return (buffer[0], payload);
+            }
+
+            Task SendPongAsync(long payload)
+                => SendFrameAsync(clientStream, buffer, FirstByte_PongFrame, payload, cancellationToken);
+
+            Task SendDataAsync(long payload)
+                => SendFrameAsync(clientStream, buffer, FirstByte_DataFrame, payload, cancellationToken);
+
+            static async Task SendFrameAsync(Stream clientStream, byte[] buffer, byte firstByte, long payload, CancellationToken cancellationToken)
+            {
+                buffer[0] = firstByte;
+                buffer[1] = SecondByte_Client_8bPayload;
+
+                // using zeroes as a "mask" -- applying such a mask is a no-op
+                Array.Clear(buffer, MinHeaderLength, MaskLength);
+
+                BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan().Slice(Client_FrameHeaderLength), payload);
+
+                await clientStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
         }
     }

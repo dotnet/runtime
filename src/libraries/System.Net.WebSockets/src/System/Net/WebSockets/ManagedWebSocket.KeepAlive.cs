@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,9 +32,6 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
-            // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
-            // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
             this.Observe(
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
@@ -42,8 +40,6 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(opcode is MessageOpcode.Pong || !IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping);
 
-            payload ??= ReadOnlyMemory<byte>.Empty;
-
             if (!IsValidSendState(_state))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Cannot send keep-alive frame in {nameof(_state)}={_state}");
@@ -51,6 +47,8 @@ namespace System.Net.WebSockets
                 // we can't send any frames, but no need to throw as we are not observing errors anyway
                 return ValueTask.CompletedTask;
             }
+
+            payload ??= ReadOnlyMemory<byte>.Empty;
 
             return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload.Value, CancellationToken.None);
         }
@@ -75,7 +73,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception during Keep-Alive: {e}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception during Keep-Alive: {e}");
 
                 lock (StateUpdateLock)
                 {
@@ -137,13 +135,15 @@ namespace System.Net.WebSockets
                     return;
                 }
 
-                if (_readAheadState!.ReadAheadTask is not null) // previous read-ahead is not consumed yet
+                if (_readAheadState!.ReadAheadCompletedOrInProgress) // previous read-ahead is not consumed yet
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead not started: previous read-ahead is not consumed yet");
                     return;
                 }
 
-                _readAheadState!.ReadAheadTask = DoReadAheadAndExitMutexAsync(); // the task will release the mutex when completed
+                TaskCompletionSource readAheadTcs = _readAheadState.StartNewReadAhead();
+                this.Observe(
+                    DoReadAheadAndExitMutexAsync(readAheadTcs)); // the task will release the mutex when completed
                 shouldExitMutex = false;
             }
             finally
@@ -156,7 +156,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private async Task DoReadAheadAndExitMutexAsync() // this is assigned to ReadAheadTask
+        private async Task DoReadAheadAndExitMutexAsync(TaskCompletionSource readAheadTcs)
         {
             Debug.Assert(_receiveMutex.IsHeld);
             Debug.Assert(IsValidReceiveState(_state));
@@ -208,13 +208,18 @@ namespace System.Net.WebSockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Starting read-ahead with buffer length={bufferSize}");
 
                 _readAheadState.BufferedResult = await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
-                    _readAheadState.Buffer.ActiveMemory,
+                    _readAheadState.Buffer.AvailableMemory,
                     shouldEnterMutex: false, // we are already in the mutex
                     shouldAbortOnCanceled: false, // we don't have a cancellation token
                     CancellationToken.None).ConfigureAwait(false);
             }
+            catch (Exception e)
+            {
+                readAheadTcs.SetException(e); // this should be done before exiting the mutex
+            }
             finally
             {
+                readAheadTcs.TrySetResult(); // this should be done before exiting the mutex
                 _receiveMutex.Exit();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
             }
@@ -339,7 +344,7 @@ namespace System.Net.WebSockets
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Throwing Keep-Alive exception {e.GetType().Name}: {e.Message}");
 
-                    throw e;
+                    ExceptionDispatchInfo.Throw(e);
                 }
             }
         }
@@ -349,8 +354,12 @@ namespace System.Net.WebSockets
             internal const int MaxReadAheadBufferSize = 16 * 1024 * 1024; // same as DefaultHttp2MaxStreamWindowSize
             internal ArrayBuffer Buffer = new ArrayBuffer(0, usePool: true);
             internal ValueWebSocketReceiveResult BufferedResult;
-            internal Task? ReadAheadTask;
+            private TaskCompletionSource? ReadAheadTcs;
             private bool IsDisposed => Buffer.DangerousGetUnderlyingBuffer() is null;
+
+            internal bool ReadAheadCompleted => ReadAheadTcs?.Task?.IsCompleted ?? false;
+
+            internal bool ReadAheadCompletedOrInProgress => ReadAheadTcs is not null;
 
             private readonly AsyncMutex _receiveMutex; // for Debug.Asserts
 
@@ -363,16 +372,33 @@ namespace System.Net.WebSockets
 #endif
             }
 
-            internal ValueWebSocketReceiveResult ConsumeResult(Span<byte> destination)
+            internal TaskCompletionSource StartNewReadAhead()
             {
                 Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
-                Debug.Assert(ReadAheadTask is not null);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
                 ObjectDisposedException.ThrowIf(IsDisposed, nameof(ReadAheadState));
 
-                if (!ReadAheadTask.IsCompleted)
+                if (ReadAheadTcs is not null)
+                {
+                    throw new InvalidOperationException("Read-ahead task should be consumed before starting a new one.");
+                }
+
+                ReadAheadTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                return ReadAheadTcs;
+            }
+
+            internal ValueWebSocketReceiveResult ConsumeResult(Span<byte> destination)
+            {
+                Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
+                Debug.Assert(ReadAheadTcs is not null);
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
+                ObjectDisposedException.ThrowIf(IsDisposed, nameof(ReadAheadState));
+
+                if (!ReadAheadCompleted)
                 {
                     // We are in a mutex. Read-ahead task also only executes within the mutex.
                     // If the task isn't null, it must be already completed.
@@ -380,7 +406,10 @@ namespace System.Net.WebSockets
                     throw new InvalidOperationException("Read-ahead task should be completed before consuming the result.");
                 }
 
-                ReadAheadTask.GetAwaiter().GetResult(); // throw exceptions, if any
+                if (ReadAheadTcs.Task.IsFaulted) // throw exception if any
+                {
+                    ExceptionDispatchInfo.Throw(ReadAheadTcs.Task.Exception);
+                }
 
                 int count = Math.Min(destination.Length, Buffer.ActiveLength);
                 Buffer.ActiveSpan.Slice(0, count).CopyTo(destination);
@@ -395,6 +424,7 @@ namespace System.Net.WebSockets
                     result = BufferedResult;
                     BufferedResult = default;
                     Buffer.ClearAndReturnBuffer();
+                    ReadAheadTcs = null; // we're done with this task
                     return result;
                 }
 
@@ -404,7 +434,7 @@ namespace System.Net.WebSockets
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Read-ahead data partially consumed. Last read: {count} bytes, remaining: {Buffer.ActiveLength} bytes");
 
-                ReadAheadTask = Task.CompletedTask;
+                // leave ReadAheadTcs completed as is, so the next read will consume the remaining data
                 return result;
             }
 
@@ -415,12 +445,12 @@ namespace System.Net.WebSockets
                 Buffer.Dispose();
                 BufferedResult = default;
 
-                if (ReadAheadTask is not null)
+                if (ReadAheadTcs is not null)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead task is left unconsumed on dispose");
 
-                    this.Observe(ReadAheadTask);
-                    ReadAheadTask = null;
+                    this.Observe(ReadAheadTcs.Task);
+                    ReadAheadTcs = null;
                 }
             }
         }

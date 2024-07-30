@@ -66,7 +66,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                DebugObserveAndLogCompletion(caller, t, memberName, logSuccessfulCompletion);
+                ObserveAndLogCompletion(caller, t, memberName, logSuccessfulCompletion);
             }
             else
             {
@@ -74,7 +74,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static void DebugObserveAndLogCompletion(object? caller, ValueTask t, string? memberName, bool logSuccessfulCompletion)
+        private static void ObserveAndLogCompletion(object? caller, ValueTask t, string? memberName, bool logSuccessfulCompletion)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 
@@ -89,7 +89,7 @@ namespace System.Net.WebSockets
             }
             else
             {
-                DebugObserveAndLogCompletion(caller, t.AsTask(), memberName, logSuccessfulCompletion);
+                ObserveAndLogCompletion(caller, t.AsTask(), memberName, logSuccessfulCompletion);
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                DebugObserveAndLogCompletion(caller, t, memberName, logSuccessfulCompletion);
+                ObserveAndLogCompletion(caller, t, memberName, logSuccessfulCompletion);
             }
             else
             {
@@ -146,7 +146,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static void DebugObserveAndLogCompletion(object? caller, Task t, string? memberName, bool logSuccessfulCompletion)
+        private static void ObserveAndLogCompletion(object? caller, Task t, string? memberName, bool logSuccessfulCompletion)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 

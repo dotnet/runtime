@@ -154,9 +154,12 @@ namespace System.Net.WebSockets
             Debug.Assert(stream.CanWrite, $"Expected writeable {nameof(stream)}");
             Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid {nameof(keepAliveInterval)}: {keepAliveInterval}");
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, stream);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _sendMutex);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _receiveMutex);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Associate(this, stream);
+                NetEventSource.Associate(this, _sendMutex);
+                NetEventSource.Associate(this, _receiveMutex);
+            }
 
             _stream = stream;
             _isServer = isServer;
@@ -771,11 +774,10 @@ namespace System.Net.WebSockets
 
                 ThrowIfDisposed();
 
-                if (_readAheadState?.ReadAheadTask is not null)
+                if (_readAheadState is not null && _readAheadState.ReadAheadCompleted)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead data available");
 
-                    // this will also set ReadAheadTask to null if fully consumed
                     ValueWebSocketReceiveResult result = _readAheadState!.ConsumeResult(payloadBuffer.Span);
                     return GetReceiveResult<TResult>(result.Count, result.MessageType, result.EndOfMessage);
                 }
@@ -976,7 +978,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception during receive: {exc}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception during receive: {exc}");
 
                 if (exc is OperationCanceledException)
                 {
@@ -1009,13 +1011,13 @@ namespace System.Net.WebSockets
                     bool shouldIssueReadAhead = _state < WebSocketState.CloseReceived && // if we still can receive
                         _keepAlivePingState is not null && _readAheadState is not null && // and we are using keep-alive pings
                         _keepAlivePingState.AwaitingPong && // and we are still waiting for the pong response
-                        _readAheadState.ReadAheadTask is null && // and we've completely consumed the previous read-ahead
+                        !_readAheadState.ReadAheadCompletedOrInProgress && // and we've completely consumed the previous read-ahead
                         _lastReceiveHeader.Processed; // and with the current read we've processed the entire data frame
 
                     _receiveMutex.Exit();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
 
-                    if (shouldIssueReadAhead)
+                    if (shouldIssueReadAhead) // this should be done after releasing the mutex
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Will try to issue a read-ahead");
                         TryIssueReadAhead(); // let's check in case the pong is just after the current message
