@@ -593,7 +593,6 @@ namespace System.Tests
                     Assert.NotEqual(TimeSpan.Zero, usage.PrivilegedTime);
                     Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
                 }
-
             }
             else
             {
