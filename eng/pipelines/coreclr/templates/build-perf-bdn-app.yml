@@ -87,7 +87,7 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       curl -Lo performance-version-details.xml 'https://raw.githubusercontent.com/LoopedBard3/performance/${{parameters.perfBranch}}/eng/Version.Details.xml'
-      version=$(sed -nr 's/\s*<Dependency Name="VS.Tools.Net.Core.SDK.Resolver" Version="(.*)"\s.*/\1/p' ./performance-version-details.xml)
+      version=$(sed -nr 's/[[:space:]]*<Dependency Name="VS.Tools.Net.Core.SDK.Resolver" Version="(.*)"[[:space:]].*/\1/p' ./performance-version-details.xml)
       echo dotnet-version: $version
       chmod -R a+rx .
       ./dotnet-install.sh --version $version --install-dir .
