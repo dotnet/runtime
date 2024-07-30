@@ -12,7 +12,7 @@ inline gc_alloc_context* ee_alloc_context::GetGCAllocContext()
 
 inline uint8_t* ee_alloc_context::GetCombinedLimit()
 {
-    return combined_limit;
+    return m_CombinedLimit;
 }
 
 // Workaround for https://github.com/dotnet/runtime/issues/96081
@@ -25,8 +25,8 @@ struct _thread_inl_gc_alloc_context
 inline void ee_alloc_context::UpdateCombinedLimit()
 {
     // The randomized allocation sampling feature is being submitted in stages. For now sampling is never enabled so
-    // combined_limit is always the same as alloc_limit.
-    combined_limit = ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_limit;
+    // m_CombinedLimit is always the same as alloc_limit.
+    m_CombinedLimit = ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_limit;
 }
 
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame

@@ -86,12 +86,12 @@ struct InlinedThreadStaticRoot
 // This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
 struct ee_alloc_context
 {
-    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
-    // combined_limit is the minimum of:
+    // Any allocation that would overlap m_CombinedLimit needs to be handled by the allocation slow path.
+    // m_CombinedLimit is the minimum of:
     //  - gc_alloc_context.alloc_limit (the end of the current AC)
     //  - the sampling_limit
     //
-    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    // In the simple case that randomized sampling is disabled, m_CombinedLimit is always equal to alloc_limit.
     //
     // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
     // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
@@ -102,13 +102,13 @@ struct ee_alloc_context
     // flexible to handle those cases.
     //
     // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
-    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    // - if m_CombinedLimit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
     //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
     //   that to determine whether future allocated bytes should be sampled.
     //   This occurs either because the sampling feature is disabled, or because the randomized selection
     //   of sampled bytes didn't select a byte in this AC.
-    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
-    uint8_t* combined_limit;
+    // - if m_CombinedLimit < alloc_limit there is a sample limit in the AC. sample_limit = m_CombinedLimit.
+    uint8_t* m_CombinedLimit;
     uint8_t m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
 
     gc_alloc_context* GetGCAllocContext();
@@ -119,7 +119,7 @@ struct ee_alloc_context
 
 struct RuntimeThreadLocals
 {
-    ee_alloc_context        m_eeAllocContext;               
+    ee_alloc_context        m_eeAllocContext;
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode

@@ -61,7 +61,7 @@ ASM_SIZEOF(   14,    20, EHEnum)
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
 ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
-ASM_OFFSET(    0,     0, ee_alloc_context, combined_limit)
+ASM_OFFSET(    0,     0, ee_alloc_context, m_CombinedLimit)
 ASM_OFFSET(    4,     8, ee_alloc_context, m_rgbAllocContextBuffer)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

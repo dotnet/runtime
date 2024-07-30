@@ -11,7 +11,7 @@ GC_ALLOC_FINALIZE               = 1
 // Rename fields of nested structs
 //
 OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  = OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
+OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit  = OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_CombinedLimit
 
 
 
@@ -44,7 +44,7 @@ OFFSETOF__Thread__m_eeAllocContext__combined_limit  = OFFSETOF__Thread__m_eeAllo
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add.d  $a2, $a2, $t3
-        ld.d   $t4, $a1, OFFSETOF__Thread__m_eeAllocContext__combined_limit
+        ld.d   $t4, $a1, OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit
         bltu  $t4, $a2, RhpNewFast_RarePath
 
         // Update the alloc pointer to account for the allocation.
@@ -137,7 +137,7 @@ NewOutOfMemory:
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add.d  $a2, $a2, $t3
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__combined_limit
+        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit
         bltu  $t3, $a2, RhNewString_Rare
 
         // Reload new object address into r12.
@@ -199,7 +199,7 @@ RhNewString_Rare:
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add.d  $a2, $a2, $t3
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__combined_limit
+        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit
         bltu  $t3, $a2, RhpNewArray_Rare
 
         // Reload new object address into t3.

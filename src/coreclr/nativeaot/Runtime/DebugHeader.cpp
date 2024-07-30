@@ -77,7 +77,7 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 4;
+    const uint16_t MajorVersion = 5;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
