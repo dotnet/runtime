@@ -185,7 +185,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
 {
     INDEBUG(reason = "CI Test");
-    return result;
+    return true;
 }
 
 //------------------------------------------------------------------------
