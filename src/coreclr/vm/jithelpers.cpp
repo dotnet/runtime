@@ -5001,16 +5001,24 @@ enum __CorInfoHelpFunc {
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERDEF(code, pfnHelper,sig)
-#define DYNAMICJITHELPER(code, pfnHelper,sig) HELPERDEF(code, 1 + DYNAMIC_##code, sig)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
 #include "jithelpers.h"
 };
 
-// dynamic helpers - filled in at runtime
+// dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERDEF(DYNAMIC_ ## code, pfnHelper, sig)
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#include "jithelpers.h"
+};
+
+// dynamic helpers to Binder ID mapping - See definition of DynamicCorInfoHelpFunc.
+static BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
+{
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) (BinderMethodID)binderId,
 #include "jithelpers.h"
 };
 
@@ -5019,8 +5027,8 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 
 VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(pfnHelper)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(1 + DYNAMIC_##code)
+#define JITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(pfnHelper)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(1 + DYNAMIC_##code)
 #include "jithelpers.h"
 };
 #endif
@@ -5028,19 +5036,46 @@ VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
 
-void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
+void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void *) pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+}
+
+VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
+
+    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    if (helper == NULL)
+    {
+        BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
+
+        LOG((LF_JIT, LL_INFO1000000, "Loading JIT dynamic helper %3d (%s) to binderID %u\n",
+            ftnNum, hlpDynamicFuncTable[ftnNum].name, binderId));
+
+        if (binderId == METHOD__NIL)
+            return {};
+
+        MethodDesc* pMD = CoreLibBinder::GetMethod(binderId);
+        PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
+        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+    }
+
+    return hlpDynamicFuncTable[ftnNum];
 }
 
 /*********************************************************************/

@@ -6157,7 +6157,7 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(cls);
-    if (Nullable::IsNullableType(VMClsHnd)) 
+    if (Nullable::IsNullableType(VMClsHnd))
     {
         VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
     }
@@ -7847,7 +7847,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     result = CORINFO_CLASS_HANDLE(th.AsPtr());
 
-    EE_TO_JIT_TRANSITION();    
+    EE_TO_JIT_TRANSITION();
 
     _ASSERTE(result != NULL);
 
@@ -10550,8 +10550,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                                void **            ppIndirection)  /* OUT */
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -10591,6 +10591,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DISPATCH_INDIRECT_CALL)
         {
             _ASSERTE(ppIndirection != NULL);
+            _ASSERTE(hlpDynamicFuncTable[dynamicFtnNum].pfnHelper != NULL); // Confirm the helper is non-null and doesn't require lazy loading.
             *ppIndirection = &hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
             result = NULL;
             goto exit;
@@ -10629,7 +10630,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
-            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
+            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
 
             // Check if the target MethodDesc is already jitted to its final Tier
@@ -10672,14 +10673,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             goto exit;
         }
 
-        pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper;
 
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif /*_PREFAST_*/
     }
 
-    _ASSERTE(pfnHelper);
+    _ASSERTE(pfnHelper != NULL);
 
     result = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
 
@@ -10690,7 +10691,11 @@ exit: ;
 
 PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     void* pfnHelper = hlpFuncTable[ftnNum].pfnHelper;
 
@@ -10700,7 +10705,7 @@ PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
     // where pfnHelper==0 where pfnHelper-1 will underflow and we will avoid the indirection.
     if (((size_t)pfnHelper - 1) < DYNAMIC_CORINFO_HELP_COUNT)
     {
-        pfnHelper = hlpDynamicFuncTable[((size_t)pfnHelper - 1)].pfnHelper;
+        pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)((size_t)pfnHelper - 1)).pfnHelper;
     }
 
     _ASSERTE(pfnHelper != NULL);
@@ -13596,6 +13601,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (bHookFunction)
             {
+                // Confirm the helpers are non-null and don't require lazy loading.
+                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER].pfnHelper != NULL);
+                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE].pfnHelper != NULL);
+                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL].pfnHelper != NULL);
                 *(entry+kZapProfilingHandleImportValueIndexEnterAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER].pfnHelper;
                 *(entry+kZapProfilingHandleImportValueIndexLeaveAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE].pfnHelper;
                 *(entry+kZapProfilingHandleImportValueIndexTailcallAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL].pfnHelper;
