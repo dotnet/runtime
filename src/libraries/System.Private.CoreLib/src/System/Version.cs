@@ -19,7 +19,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable
+    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable, IUtf8SpanParsable<Version>
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -290,6 +290,12 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
+        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) =>
+            ParseVersion(utf8Text, throwOnFailure: true)!;
+
+        public static Version Parse(ReadOnlySpan<byte> utf8Text) =>
+            ParseVersion(utf8Text, throwOnFailure: true)!;
+
         public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out Version? result)
         {
             if (input == null)
@@ -304,10 +310,17 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result) =>
             (result = ParseVersion(input, throwOnFailure: false)) != null;
 
-        private static Version? ParseVersion(ReadOnlySpan<char> input, bool throwOnFailure)
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result) =>
+            (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
+
+        static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result) =>
+            (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
+
+        private static Version? ParseVersion<TChar>(ReadOnlySpan<TChar> input, bool throwOnFailure)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             // Find the separator between major and minor.  It must exist.
-            int majorEnd = input.IndexOf('.');
+            int majorEnd = input.IndexOf(TChar.CastFrom('.'));
             if (majorEnd < 0)
             {
                 if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
@@ -317,15 +330,15 @@ namespace System
             // Find the ends of the optional minor and build portions.
             // We musn't have any separators after build.
             int buildEnd = -1;
-            int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
+            int minorEnd = input.Slice(majorEnd + 1).IndexOf(TChar.CastFrom('.'));
             if (minorEnd >= 0)
             {
                 minorEnd += (majorEnd + 1);
-                buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
+                buildEnd = input.Slice(minorEnd + 1).IndexOf(TChar.CastFrom('.'));
                 if (buildEnd >= 0)
                 {
                     buildEnd += (minorEnd + 1);
-                    if (input.Slice(buildEnd + 1).Contains('.'))
+                    if (input.Slice(buildEnd + 1).Contains(TChar.CastFrom('.')))
                     {
                         if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
                         return null;
@@ -375,16 +388,18 @@ namespace System
             }
         }
 
-        private static bool TryParseComponent(ReadOnlySpan<char> component, string componentName, bool throwOnFailure, out int parsedComponent)
+        private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, out int parsedComponent)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             if (throwOnFailure)
             {
-                parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.GetInstance(CultureInfo.InvariantCulture));
                 ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 
-            return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
+            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.GetInstance(CultureInfo.InvariantCulture), out parsedComponent);
+            return parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
