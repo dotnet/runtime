@@ -4028,9 +4028,13 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
         // `trueValue`
         GenTreeHWIntrinsic* nestedCndSel = op2->AsHWIntrinsic();
         GenTree*            nestedOp1    = nestedCndSel->Op(1);
+        GenTree*            nestedOp2    = nestedCndSel->Op(2);
         assert(varTypeIsMask(nestedOp1));
+        assert(nestedOp2->OperIsHWIntrinsic());
 
-        if (nestedOp1->IsMaskAllBitsSet())
+        NamedIntrinsic nestedOp2Id = nestedOp2->AsHWIntrinsic()->GetHWIntrinsicId();
+
+        if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id))
         {
             GenTree* nestedOp2 = nestedCndSel->Op(2);
             GenTree* nestedOp3 = nestedCndSel->Op(3);
