@@ -204,7 +204,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        //[OuterLoop("Uses Task.Delay")]
+        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -244,6 +244,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
+        [OuterLoop("Uses Task.Delay")]
         [Fact]
         public async Task WebSocket_ReadAheadIssuedAndConsumed()
         {
