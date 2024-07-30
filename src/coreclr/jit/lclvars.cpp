@@ -8078,6 +8078,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
             return WALK_CONTINUE;
         }
 
+        // Ignore locals used in runtime lookups
+        if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+        {
+            assert(tree->OperIs(GT_LCL_VAR));
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
         // Ignore arguments and temps
         if (varDsc->lvIsParam || lclNum >= pComp->info.compLocalsCount)
         {
