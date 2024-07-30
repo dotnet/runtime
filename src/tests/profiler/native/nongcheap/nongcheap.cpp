@@ -4,11 +4,24 @@
 #include "nongcheap.h"
 #include <vector>
 
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif // _MSC_VER
+
 GUID NonGcHeapProfiler::GetClsid()
 {
     // {EF0D191C-3FC7-4311-88AF-E474CBEB2859}
     GUID clsid = { 0xef0d191c, 0x3fc7, 0x4311, { 0x88, 0xaf, 0xe4, 0x74, 0xcb, 0xeb, 0x28, 0x59 } };
     return clsid;
+}
+
+std::atomic<bool> _allocationsFinished = false;
+extern "C" DLLEXPORT void NotifyNongcAllocationsFinished()
+{
+    printf("NotifyNongcAllocationsFinished is invoked.\n");
+    _allocationsFinished = true;
 }
 
 HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
@@ -20,7 +33,7 @@ HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         COR_PRF_ENABLE_OBJECT_ALLOCATED | COR_PRF_MONITOR_OBJECT_ALLOCATED,
         COR_PRF_HIGH_BASIC_GC)))
     {
-        printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
+        printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x\n", hr);
         return hr;
     }
 
@@ -66,6 +79,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 {
     SHUTDOWNGUARD();
 
+    if (!_allocationsFinished)
+    {
+        printf("Ignoring this GarbageCollectionFinished: NotifyNongcAllocationsFinished has not been invoked yet.\n");
+        return S_OK;
+    }
+    _allocationsFinished = false;
+
     _garbageCollections++;
 
     std::vector<uint64_t> segment_starts;
@@ -99,13 +119,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (nongc_segments[i].rangeLength > nongc_segments[i].rangeLengthReserved)
             {
-                printf("FAIL: GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetNonGCHeapBounds: rangeLength > rangeLengthReserved\n");
                 _failures++;
             }
 
             if (!nongc_segments[i].rangeStart)
             {
-                printf("FAIL: GetNonGCHeapBounds: rangeStart is null");
+                printf("FAIL: GetNonGCHeapBounds: rangeStart is null\n");
                 _failures++;
             }
             segment_starts.push_back(nongc_segments[i].rangeStart);
@@ -134,13 +154,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (gc_segments[i].rangeLength > gc_segments[i].rangeLengthReserved)
             {
-                printf("FAIL: GetGenerationBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetGenerationBounds: rangeLength > rangeLengthReserved\n");
                 _failures++;
             }
 
             if (!gc_segments[i].rangeStart)
             {
-                printf("FAIL: GetGenerationBounds: rangeStart is null");
+                printf("FAIL: GetGenerationBounds: rangeStart is null\n");
                 _failures++;
             }
             segment_starts.push_back(gc_segments[i].rangeStart);
@@ -160,12 +180,12 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (segment_starts[i] == segment_starts[i+1])
             {
-                printf("FAIL: Duplicated segment starts");
+                printf("FAIL: Duplicated segment starts\n");
                 _failures++;
             }
             if (segment_ends[i] == segment_ends[i+1])
             {
-                printf("FAIL: Duplicated segment ends");
+                printf("FAIL: Duplicated segment ends\n");
                 _failures++;
             }
             if (segment_ends[i] > segment_starts[i+1])
@@ -215,11 +235,9 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
             nonGcObjectsEnumerated++;
         }
 
-        if (nonGcObjectsEnumerated == 0)
+        if (nonGcObjectsEnumerated != _nonGcHeapObjects)
         {
-            // It's highly unlikely that we'll have a GC before any non-GC objects are allocated
-            // so this path is used to validate that at least some non-GC objects exist at this point.
-            printf("FAIL: no nongc objects were found");
+            printf("FAIL: nonGcObjectsEnumerated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
             _failures++;
         }
     }
