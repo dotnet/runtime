@@ -26,49 +26,41 @@ internal static partial class Interop
         internal static unsafe bool TryGetProcessInfoById(int pid, out ProcessInfo result)
         {
             result = default;
-            bool ret = false;
-            string fileName = "?";
-            IntPtr ptr = 0;
+
+            int size = sizeof(psinfo);
+            Debug.Assert(size <= 1024, "psinfo struct size exceeds 1024 bytes.");
+            byte* buffer = stackalloc byte[size];
+            psinfo* pr = (psinfo*) buffer;
 
             try
             {
-                fileName = GetInfoFilePathForProcess(pid);
-                int size = Marshal.SizeOf<psinfo>();
-                ptr = Marshal.AllocHGlobal(size);
+                string fileName = GetInfoFilePathForProcess(pid);
+                using FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                fs.ReadExactly(new Span<byte>(buffer, size));
 
-                BinaryReader br = new BinaryReader(File.OpenRead(fileName));
-                byte[] buf = br.ReadBytes(size);
-                Marshal.Copy(buf, 0, ptr, size);
-
-                procfs.psinfo pr = Marshal.PtrToStructure<psinfo>(ptr);
-
-                result.Pid = pr.pr_pid;
-                result.ParentPid = pr.pr_ppid;
-                result.SessionId = pr.pr_sid;
-                result.VirtualSize = (nuint)pr.pr_size * 1024; // pr_size is in Kbytes
-                result.ResidentSetSize = (nuint)pr.pr_rssize * 1024; // pr_rssize is in Kbytes
-                result.StartTime.TvSec = pr.pr_start.tv_sec;
-                result.StartTime.TvNsec = pr.pr_start.tv_nsec;
-                result.CpuTotalTime.TvSec = pr.pr_time.tv_sec;
-                result.CpuTotalTime.TvNsec = pr.pr_time.tv_nsec;
-                result.Args = Marshal.PtrToStringUTF8((IntPtr)pr.pr_psargs);
+                result.Pid = pr->pr_pid;
+                result.ParentPid = pr->pr_ppid;
+                result.SessionId = pr->pr_sid;
+                result.VirtualSize = (nuint)pr->pr_size * 1024; // pr_size is in Kbytes
+                result.ResidentSetSize = (nuint)pr->pr_rssize * 1024; // pr_rssize is in Kbytes
+                result.StartTime.TvSec = pr->pr_start.tv_sec;
+                result.StartTime.TvNsec = pr->pr_start.tv_nsec;
+                result.CpuTotalTime.TvSec = pr->pr_time.tv_sec;
+                result.CpuTotalTime.TvNsec = pr->pr_time.tv_nsec;
+                result.Args = Marshal.PtrToStringUTF8((IntPtr)pr->pr_psargs);
 
                 // A couple things from pr_lwp
-                result.Priority = pr.pr_lwp.pr_pri;
-                result.NiceVal  = (int)pr.pr_lwp.pr_nice;
+                result.Priority = pr->pr_lwp.pr_pri;
+                result.NiceVal  = (int)pr->pr_lwp.pr_nice;
 
-                ret = true;
+                return true;
             }
             catch (Exception e)
             {
-                Debug.Fail($"Failed to read \"{fileName}\": {e}");
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
+                Debug.Fail($"Failed to read process info for PID {pid}: {e}");
             }
 
-            return ret;
+            return false;
         }
 
     }
