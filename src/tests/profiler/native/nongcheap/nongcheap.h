@@ -5,8 +5,6 @@
 
 #include "../profiler.h"
 
-std::atomic<bool> _allocationsFinished;
-
 class NonGcHeapProfiler : public Profiler
 {
 public:

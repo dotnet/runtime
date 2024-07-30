@@ -17,6 +17,8 @@ GUID NonGcHeapProfiler::GetClsid()
     return clsid;
 }
 
+std::atomic<bool> _allocationsFinished;
+
 extern "C" DLLEXPORT void NotifyNongcAllocationsFinished()
 {
     printf("NotifyNongcAllocationsFinished is invoked.\n");
