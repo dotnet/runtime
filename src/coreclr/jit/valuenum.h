@@ -206,6 +206,21 @@ struct VNFuncApp
     }
 };
 
+struct VNPhiDef
+{
+    unsigned  LclNum;
+    unsigned  SsaDef;
+    unsigned* SsaArgs;
+    unsigned  NumArgs;
+};
+
+struct VNMemoryPhiDef
+{
+    BasicBlock* Block;
+    unsigned*   SsaArgs;
+    unsigned    NumArgs;
+};
+
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
@@ -514,6 +529,107 @@ public:
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
 
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
+
+    class SmallValueNumSet
+    {
+        union
+        {
+            ValueNum     m_inlineElements[4];
+            ValueNumSet* m_set;
+        };
+        unsigned m_numElements = 0;
+
+    public:
+        unsigned Count()
+        {
+            return m_numElements;
+        }
+
+        template <typename Func>
+        void ForEach(Func func)
+        {
+            if (m_numElements <= ArrLen(m_inlineElements))
+            {
+                for (unsigned i = 0; i < m_numElements; i++)
+                {
+                    func(m_inlineElements[i]);
+                }
+            }
+            else
+            {
+                for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+                {
+                    func(vn);
+                }
+            }
+        }
+
+        // Returns false if the value wasn't found
+        bool Lookup(ValueNum vn);
+
+        // Returns false if the value already exists
+        bool Add(Compiler* comp, ValueNum vn);
+    };
+
+    enum class VNVisit
+    {
+        Continue,
+        Abort,
+    };
+
+    ValueNum VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum);
+
+    //--------------------------------------------------------------------------------
+    // VNVisitReachingVNs: given a VN, call the specified callback function on it and all the VNs that reach it
+    //    via PHI definitions if any.
+    //
+    // Arguments:
+    //    vn         - The VN to visit all the reaching VNs for
+    //    argVisitor - The callback function to call on the vn and its PHI arguments if any
+    //
+    // Return Value:
+    //    VNVisit::Aborted  - an argVisitor returned VNVisit::Abort, we stop the walk and return
+    //    VNVisit::Continue - all argVisitor returned VNVisit::Continue
+    //
+    template <typename TArgVisitor>
+    VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
+    {
+        ArrayStack<ValueNum> toVisit(m_alloc);
+        toVisit.Push(vn);
+
+        SmallValueNumSet visited;
+        visited.Add(m_pComp, vn);
+        while (toVisit.Height() > 0)
+        {
+            ValueNum vnToVisit = toVisit.Pop();
+
+            // We need to handle nested (and, potentially, recursive) phi definitions.
+            // For now, we ignore memory phi definitions.
+            VNPhiDef phiDef;
+            if (GetPhiDef(vnToVisit, &phiDef))
+            {
+                for (unsigned ssaArgNum = 0; ssaArgNum < phiDef.NumArgs; ssaArgNum++)
+                {
+                    ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
+                    if (visited.Add(m_pComp, childVN))
+                    {
+                        toVisit.Push(childVN);
+                    }
+                }
+            }
+            else
+            {
+                if (argVisitor(vnToVisit) == VNVisit::Abort)
+                {
+                    // The visitor wants to abort the walk.
+                    return VNVisit::Abort;
+                }
+            }
+        }
+        return VNVisit::Continue;
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -699,6 +815,11 @@ public:
 
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
+    ValueNum VNForPhiDef(var_types type, unsigned lclNum, unsigned ssaDef, ArrayStack<unsigned>& ssaArgs);
+    bool     GetPhiDef(ValueNum vn, VNPhiDef* phiDef);
+    ValueNum VNForMemoryPhiDef(BasicBlock* block, ArrayStack<unsigned>& vns);
+    bool     GetMemoryPhiDef(ValueNum vn, VNMemoryPhiDef* memoryPhiDef);
 
     ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
 
@@ -1068,9 +1189,6 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Returns true iff the VN is a phi definition
-    bool IsVNPhiDef(ValueNum vn);
-
     // Returns true if the two VNs represent the same value
     // despite being different VNs. Useful for phi def VNs.
     bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
@@ -1398,13 +1516,15 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,  // This chunk contains constant values.
-        CEA_Handle, // This chunk contains handle constants.
-        CEA_Func0,  // Represents functions of arity 0.
-        CEA_Func1,  // ...arity 1.
-        CEA_Func2,  // ...arity 2.
-        CEA_Func3,  // ...arity 3.
-        CEA_Func4,  // ...arity 4.
+        CEA_Const,        // This chunk contains constant values.
+        CEA_Handle,       // This chunk contains handle constants.
+        CEA_PhiDef,       // This contains pointers to VNPhiDef.
+        CEA_MemoryPhiDef, // This contains pointers to VNMemoryPhiDef.
+        CEA_Func0,        // Represents functions of arity 0.
+        CEA_Func1,        // ...arity 1.
+        CEA_Func2,        // ...arity 2.
+        CEA_Func3,        // ...arity 3.
+        CEA_Func4,        // ...arity 4.
         CEA_Count
     };
 

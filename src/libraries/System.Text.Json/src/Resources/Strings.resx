@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonElementDeepEqualsInsufficientExecutionStack" xml:space="preserve">
+    <value>Insufficient stack to continue executing 'JsonElement.DeepEquals'. This can happen either because the 'JsonElement' values are too deep or 'DeepEquals' is being called too deep in the stack.</value>
+  </data>
   <data name="JsonNumberExponentTooLarge" xml:space="preserve">
     <value>The exponent value in the specified JSON number is too large.</value>
   </data>

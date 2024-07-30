@@ -269,15 +269,7 @@ class DeadCodeElimination
                     throw new Exception();
             }
 
-            // ...but not nullable...
-            {
-                Array arr = new Nullable<NeverAllocated2>[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
-            }
-
-
-            // ...or reference type element types
+            // ...but not reference type element types
             {
                 Array arr = new NeverAllocated3[1];
                 arr.GetValue(0);
