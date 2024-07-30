@@ -389,7 +389,22 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector64<T> operator -(Vector64<T> vector) => Zero - vector;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> operator -(Vector64<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return vector ^ Vector64.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return vector ^ Vector64.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - vector;
+            }
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
