@@ -2863,6 +2863,7 @@ uint64_t gc_heap::last_suspended_end_time = 0;
 uint64_t gc_heap::change_heap_count_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 uint64_t gc_heap::before_distribute_free_regions_time = 0;
+bool gc_heap::trigger_initial_gen2_p = false;
 
 #ifdef BACKGROUND_GC
 bool gc_heap::trigger_bgc_for_rethreading_p = false;
@@ -21058,6 +21059,26 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     }
 #endif //BACKGROUND_GC
 
+#ifdef DYNAMIC_HEAP_COUNT
+    if (trigger_initial_gen2_p)
+    {
+#ifdef BACKGROUND_GC
+        assert (!trigger_bgc_for_rethreading_p);
+        assert (!background_running_p());
+#endif //BACKGROUND_GC
+
+        if (n != max_generation)
+        {
+            n = max_generation;
+            *blocking_collection_p = FALSE;
+
+            dprintf (6666, ("doing the 1st gen2 GC requested by DATAS"));
+        }
+
+        trigger_initial_gen2_p = false;
+    }
+#endif //DYNAMIC_HEAP_COUNT
+
     return n;
 }
 
@@ -25612,6 +25633,21 @@ void gc_heap::calculate_new_heap_count ()
 
             if (change_int > 0)
             {
+                // If we do want to grow but the max HC allowed by DATAS is 0, and we haven't done any gen2 GCs yet, we do want to
+                // trigger a gen2 right away.
+                if (!max_heap_count_growth_datas && !(dynamic_heap_count_data.current_gen2_samples_count))
+                {
+                    trigger_initial_gen2_p = true;
+
+                    dprintf (6666, ("we want to grow but DATAS is limiting, trigger a gen2 right away"));
+#ifdef BACKGROUND_GC
+                    if (background_running_p())
+                    {
+                        trigger_initial_gen2_p = false;
+                    }
+#endif //BACKGROUND_GC
+                }
+
                 agg_factor = dynamic_heap_count_data.get_aggressiveness (change_int);
                 if (agg_factor > 1)
                 {
@@ -26217,7 +26253,16 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         // rethread the free lists
         for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
         {
-            if (gen_idx != max_generation)
+            bool do_rethreading = true;
+
+#ifdef BACKGROUND_GC
+            if (trigger_bgc_for_rethreading_p && (gen_idx == max_generation))
+            {
+                do_rethreading = false;
+            }
+#endif //BACKGROUND_GC
+
+            if (do_rethreading)
             {
                 if (heap_number < old_n_heaps)
                 {

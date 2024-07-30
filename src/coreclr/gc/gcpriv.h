@@ -5127,6 +5127,7 @@ private:
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
 
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_initial_gen2_p;
 #ifdef BACKGROUND_GC
     // This is set when change_heap_count wants the next GC to be a BGC for rethreading gen2 FL
     // and reset during that BGC.
