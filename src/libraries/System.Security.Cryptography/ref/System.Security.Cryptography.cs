@@ -121,7 +121,6 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
     [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
     public sealed partial class AesGcm : System.IDisposable
@@ -287,7 +286,6 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
     [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
     public sealed partial class ChaCha20Poly1305 : System.IDisposable

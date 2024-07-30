@@ -59,6 +59,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string? binFrameworkDir = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
         bool assertAppBundle = true,
+        bool expectSuccess = true,
         params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
@@ -66,8 +67,16 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
-            AssertAppBundle: assertAppBundle), extraArgs);
-        result.EnsureSuccessful();
+            AssertAppBundle: assertAppBundle,
+            ExpectSuccess: expectSuccess), extraArgs);
+        if (expectSuccess)
+        {
+            result.EnsureSuccessful();
+        }
+        else
+        {
+            result.EnsureFailed();
+        }
     }
 
     protected void PublishProject(

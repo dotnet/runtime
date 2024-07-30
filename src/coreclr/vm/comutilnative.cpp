@@ -433,9 +433,10 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
         // The stacktrace can be either sbyte[] or Object[]. In the latter case,
         // the first entry is the actual stack trace sbyte[], the rest are pointers
         // to the method info objects. We only care about the first entry here.
-        if (arrayBaseRef->GetArrayElementType() != ELEMENT_TYPE_I1)
+        CorElementType elemType = arrayBaseRef->GetArrayElementType();
+        if (elemType != ELEMENT_TYPE_I1)
         {
-            _ASSERTE(arrayBaseRef->GetArrayElementType() == ELEMENT_TYPE_OBJECT);
+            _ASSERTE(elemType == ELEMENT_TYPE_CLASS); // object[]
             PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
             arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
         }
