@@ -75,8 +75,10 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
+      pwd
+      echo '$(Build.SourcesDirectory)/rollback.json'
       export PYTHONPATH=$PYTHONPATH:$(Build.SourcesDirectory)/performance/scripts:$(Build.SourcesDirectory)/performance/src/scenarios
-      python -c "import mauisharedpython; roll_dict = mauisharedpython.generate_maui_rollback_dict(); mauisharedpython.dump_dict_to_json_file(roll_dict, '$(Build.SourcesDirectory)/rollback.json')
+      python -c "import mauisharedpython; roll_dict = mauisharedpython.generate_maui_rollback_dict(); mauisharedpython.dump_dict_to_json_file(roll_dict, '$(Build.SourcesDirectory)/rollback.json')"
     displayName: Generate rollback.json
     workingDirectory: $(Build.SourcesDirectory)/performance/src/scenarios/shared
 
