@@ -10560,7 +10560,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     _ASSERTE(ftnNum < CORINFO_HELP_COUNT);
 
@@ -10630,8 +10630,9 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
-            Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper);
-            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
+            MethodDesc* helperMD = NULL;
+            (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
+            _ASSERT(helperMD != NULL);
 
             // Check if the target MethodDesc is already jitted to its final Tier
             // so we no longer need to use indirections and can emit a direct call instead.
@@ -10640,15 +10641,12 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             //
             // JitEnableOptionalRelocs being false means we should avoid non-deterministic
             // optimizations that can randomly change codegen.
-            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive() &&
-                g_pConfig->JitEnableOptionalRelocs())
+            if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive()
+                && g_pConfig->JitEnableOptionalRelocs())
             {
-                MethodDesc* helperMD = pPrecode->GetMethodDesc();
-                _ASSERT(helperMD != nullptr);
-
                 CodeVersionManager* manager = helperMD->GetCodeVersionManager();
-                NativeCodeVersion activeCodeVersion;
 
+                NativeCodeVersion activeCodeVersion;
                 {
                     // Get active code version under a lock
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -10668,6 +10666,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                 }
             }
 
+            Precode* pPrecode = helperMD->GetPrecode();
+            _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
             *ppIndirection = ((FixupPrecode*)pPrecode)->GetTargetSlot();
             result = NULL;
             goto exit;
@@ -10685,7 +10685,7 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
     result = (LPVOID)GetEEFuncEntryPoint(pfnHelper);
 
 exit: ;
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
     return result;
 }
 
