@@ -1,10 +1,10 @@
-id: 
+id:
 name: GitOps.PullRequestIssueManagement
 description: GitOps.PullRequestIssueManagement primitive
-owner: 
+owner:
 resource: repository
 disabled: false
-where: 
+where:
 configuration:
   resourceManagementConfiguration:
     scheduledSearches:
@@ -2097,5 +2097,5 @@ configuration:
       - removeLabel:
           label: backlog-cleanup-candidate
       description: Remove `no-recent-activity` label from PRs when new review is added
-onFailure: 
+onFailure:
 onSuccess:
