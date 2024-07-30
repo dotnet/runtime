@@ -9,53 +9,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private static AppleCertificatePal ImportPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool exportable,
-            SafeKeychainHandle keychain)
-        {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
-            {
-                reader.ParsePkcs12(rawData);
-                reader.Decrypt(password, ephemeralSpecified: false);
-
-                UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
-                AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
-
-                SafeSecKeyRefHandle? safeSecKeyRefHandle =
-                    ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
-
-                AppleCertificatePal? newPal;
-
-                using (safeSecKeyRefHandle)
-                {
-                    // SecItemImport doesn't seem to respect non-exportable import for PKCS#8,
-                    // only PKCS#12.
-                    //
-                    // So, as part of reading this PKCS#12 we now need to write the minimum
-                    // PKCS#12 in a normalized form, and ask the OS to import it.
-                    if (!exportable && safeSecKeyRefHandle != null)
-                    {
-                        using (pal)
-                        {
-                            return ImportPkcs12NonExportable(pal, safeSecKeyRefHandle, password, keychain);
-                        }
-                    }
-
-                    newPal = pal.MoveToKeychain(keychain, safeSecKeyRefHandle);
-
-                    if (newPal != null)
-                    {
-                        pal.Dispose();
-                    }
-                }
-
-                // If no new PAL came back, it means we moved the cert, but had no private key.
-                return newPal ?? pal;
-            }
-        }
-
         internal static AppleCertificatePal ImportPkcs12NonExportable(
             AppleCertificatePal cert,
             SafeSecKeyRefHandle privateKey,

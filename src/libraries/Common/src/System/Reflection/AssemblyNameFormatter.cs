@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-#nullable enable
-
 namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
@@ -129,7 +127,7 @@ namespace System.Reflection
                 vsb.Append(quoteChar);
         }
 
-#if !NETCOREAPP
+#if !NET
         private static void AppendSpanFormattable(this ref ValueStringBuilder vsb, ushort value)
         {
             vsb.Append(value.ToString());

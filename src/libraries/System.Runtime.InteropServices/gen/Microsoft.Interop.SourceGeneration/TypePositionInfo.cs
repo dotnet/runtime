@@ -3,9 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -77,6 +78,7 @@ namespace Microsoft.Interop
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;
+        public bool IsExplicitThis { get; init; }
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
@@ -88,7 +90,8 @@ namespace Microsoft.Interop
                 RefKind = paramSymbol.RefKind,
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
-                ScopedKind = paramSymbol.ScopedKind
+                ScopedKind = paramSymbol.ScopedKind,
+                IsExplicitThis = ((ParameterSyntax)paramSymbol.DeclaringSyntaxReferences[0].GetSyntax()).Modifiers.Any(SyntaxKind.ThisKeyword)
             };
 
             return typeInfo;

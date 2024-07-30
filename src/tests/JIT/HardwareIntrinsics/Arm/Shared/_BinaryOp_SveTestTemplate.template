@@ -83,7 +83,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -193,11 +193,12 @@ namespace JIT.HardwareIntrinsics.Arm
         public void RunBasicScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
-            Vector<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+            Vector<{Op1BaseType}> loadMask1 = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+            Vector<{Op2BaseType}> loadMask2 = Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All);
 
             var result = {Isa}.{Method}(
-                {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
-                {LoadIsa}.Load{Op2VectorType}(loadMask, ({Op2BaseType}*)(_dataTable.inArray2Ptr))
+                {LoadIsa}.Load{Op1VectorType}(loadMask1, ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(loadMask2, ({Op2BaseType}*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);

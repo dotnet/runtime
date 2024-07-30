@@ -133,7 +133,7 @@ namespace System.Configuration
 
                 if (collectionAttribute != null)
                 {
-#if NETCOREAPP
+#if NET
                     if (!collectionAttribute.AddItemName.Contains(','))
 #else
                     if (collectionAttribute.AddItemName.IndexOf(',') == -1)

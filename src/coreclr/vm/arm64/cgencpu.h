@@ -27,7 +27,9 @@
     CALLEE_SAVED_REGISTER(X23) \
     CALLEE_SAVED_REGISTER(X24) \
     CALLEE_SAVED_REGISTER(X25) \
-    CALLEE_SAVED_REGISTER(X26)
+    CALLEE_SAVED_REGISTER(X26) \
+    CALLEE_SAVED_REGISTER(X27) \
+    CALLEE_SAVED_REGISTER(X28)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(V[8].Low) \
@@ -129,10 +131,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -302,7 +302,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     }
     EX_CATCH
     {
-        mem = NULL;
+        mem = 0;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
     EX_END_CATCH(SwallowAllExceptions);

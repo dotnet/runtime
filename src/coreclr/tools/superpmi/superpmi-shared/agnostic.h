@@ -172,6 +172,7 @@ struct Agnostic_CORINFO_EE_INFO
     struct Agnostic_InlinedCallFrameInfo
     {
         DWORD size;
+        DWORD sizeWithSecretStubArg;
         DWORD offsetOfGSCookie;
         DWORD offsetOfFrameVptr;
         DWORD offsetOfFrameLink;
@@ -179,6 +180,8 @@ struct Agnostic_CORINFO_EE_INFO
         DWORD offsetOfCalleeSavedFP;
         DWORD offsetOfCallTarget;
         DWORD offsetOfReturnAddress;
+        DWORD offsetOfSecretStubArg;
+        DWORD offsetOfSPAfterProlog;
     } inlinedCallFrameInfo;
     DWORD offsetOfThreadFrame;
     DWORD offsetOfGCState;
@@ -538,7 +541,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfThreadLocalStoragePointer;
     DWORD                         offsetOfMaxThreadStaticBlocks;
     DWORD                         offsetOfThreadStaticBlocks;
-    DWORD                         offsetOfGCDataPointer;
+    DWORD                         offsetOfBaseOfThreadLocalData;
 };
 
 struct Agnostic_GetThreadStaticInfo_NativeAOT
@@ -627,6 +630,14 @@ struct Agnostic_GetSwiftLowering
     DWORD byReference;
     DWORD loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
     DWORD offsets[MAX_SWIFT_LOWERED_ELEMENTS];
+    DWORD numLoweredElements;
+};
+
+struct Agnostic_GetFpStructLowering
+{
+    DWORD byIntegerCallConv;
+    DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD numLoweredElements;
 };
 

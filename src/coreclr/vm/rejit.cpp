@@ -502,7 +502,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
             continue;
         }
 
-        if (pModule->IsReflection())
+        if (pModule->IsReflectionEmit())
         {
             ReportReJITError(pModule, rgMethodDefs[i], NULL, CORPROF_E_MODULE_IS_DYNAMIC);
             continue;
@@ -1134,7 +1134,7 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     // of a lock to impact our caller (the prestub worker) as little as possible. If the
     // map is nonempty, we'll acquire the lock at that point and do the lookup for real.
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    if (pCodeVersionManager->GetNonDefaultILVersionCount() == 0)
+    if (!pCodeVersionManager->HasNonDefaultILVersions())
     {
         return 0;
     }

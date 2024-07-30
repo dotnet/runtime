@@ -543,7 +543,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (p.IsOut || p.IsIn || p.ParameterType.IsByRef)
                 {
-                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://docs.microsoft.com/en-us/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
+                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://learn.microsoft.com/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
                     return false;
                 }
             }
@@ -952,7 +952,7 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(ISet<>)
-#if NETCOREAPP
+#if NET
                    || genericTypeDefinition == typeof(IReadOnlySet<>)
 #endif
                    ;

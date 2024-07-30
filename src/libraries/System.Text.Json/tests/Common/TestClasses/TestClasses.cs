@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class TestClassWithNull
     {
-        public string MyString { get; set; }
+        public string? MyString { get; set; }
         public static readonly string s_json =
                 @"{" +
                 @"""MyString"" : null" +
@@ -145,31 +145,31 @@ namespace System.Text.Json.Serialization.Tests
 
     public class TestClassWithInitializedProperties
     {
-        public string MyString { get; set; } = "Hello";
+        public string? MyString { get; set; } = "Hello";
         public int? MyInt { get; set; } = 1;
         public DateTime? MyDateTime { get; set; } = new DateTime(1995, 4, 16);
-        public int[] MyIntArray { get; set; } = new int[] { 1 };
-        public List<int> MyIntList { get; set; } = new List<int> { 1 };
-        public List<int?> MyNullableIntList { get; set; } = new List<int?> { 1 };
-        public List<object> MyObjectList { get; set; } = new List<object> { 1 };
-        public List<List<object>> MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
-        public List<Dictionary<string, string>> MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
+        public int[]? MyIntArray { get; set; } = new int[] { 1 };
+        public List<int>? MyIntList { get; set; } = new List<int> { 1 };
+        public List<int?>? MyNullableIntList { get; set; } = new List<int?> { 1 };
+        public List<object>? MyObjectList { get; set; } = new List<object> { 1 };
+        public List<List<object>>? MyListList { get; set; } = new List<List<object>> { new List<object> { 1 } };
+        public List<Dictionary<string, string>>? MyDictionaryList { get; set; } = new List<Dictionary<string, string>> {
             new Dictionary<string, string> { ["key"] = "value" }
         };
-        public Dictionary<string, string> MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
-        public Dictionary<string, DateTime?> MyNullableDateTimeDictionary { get; set; } = new Dictionary<string, DateTime?> { ["key"] = new DateTime(1995, 04, 16) };
-        public Dictionary<string, object> MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
-        public Dictionary<string, Dictionary<string, string>> MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
+        public Dictionary<string, string>? MyStringDictionary { get; set; } = new Dictionary<string, string> { ["key"] = "value" };
+        public Dictionary<string, DateTime?>? MyNullableDateTimeDictionary { get; set; } = new Dictionary<string, DateTime?> { ["key"] = new DateTime(1995, 04, 16) };
+        public Dictionary<string, object>? MyObjectDictionary { get; set; } = new Dictionary<string, object> { ["key"] = "value" };
+        public Dictionary<string, Dictionary<string, string>>? MyStringDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, string>>
         {
             ["key"] = new Dictionary<string, string>
             {
                 ["key"] = "value"
             }
         };
-        public Dictionary<string, List<object>> MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
+        public Dictionary<string, List<object>>? MyListDictionary { get; set; } = new Dictionary<string, List<object>> {
             ["key"] = new List<object> { "value" }
         };
-        public Dictionary<string, Dictionary<string, object>> MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
+        public Dictionary<string, Dictionary<string, object>>? MyObjectDictionaryDictionary { get; set; } = new Dictionary<string, Dictionary<string, object>>
         {
             ["key"] = new Dictionary<string, object>
             {
@@ -698,7 +698,7 @@ namespace System.Text.Json.Serialization.Tests
     public class SimpleClassWithDictionary
     {
         public int MyInt { get; set; }
-        public Dictionary<string, string> MyDictionary { get; set; }
+        public Dictionary<string, string>? MyDictionary { get; set; }
     }
     public class OuterClassHavingPropertiesDefinedAfterClassWithDictionary
     {
@@ -1732,9 +1732,9 @@ namespace System.Text.Json.Serialization.Tests
 
     public class BasicCompany : ITestClass
     {
-        public List<BasicJsonAddress> sites { get; set; }
-        public BasicJsonAddress mainSite { get; set; }
-        public string name { get; set; }
+        public List<BasicJsonAddress>? sites { get; set; }
+        public BasicJsonAddress? mainSite { get; set; }
+        public string? name { get; set; }
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
             "{\n" +
@@ -1812,7 +1812,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ClassWithExtensionProperty
     {
-        public SimpleTestClass MyNestedClass { get; set; }
+        public SimpleTestClass? MyNestedClass { get; set; }
         public int MyInt { get; set; }
 
         [JsonExtensionData]
@@ -1821,7 +1821,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ClassWithExtensionField
     {
-        public SimpleTestClass MyNestedClass { get; set; }
+        public SimpleTestClass? MyNestedClass { get; set; }
         public int MyInt { get; set; }
 
         [JsonInclude]
@@ -2294,7 +2294,7 @@ namespace System.Text.Json.Serialization.Tests
     public class ClassWithRecursiveCollectionTypes
     {
         public ClassWithRecursiveCollectionTypes? Nested { get; set; }
-        public List<ClassWithRecursiveCollectionTypes> List { get; set; }
+        public List<ClassWithRecursiveCollectionTypes>? List { get; set; }
         public IReadOnlyDictionary<string, ClassWithRecursiveCollectionTypes>? Dictionary { get; set; }
     }
 

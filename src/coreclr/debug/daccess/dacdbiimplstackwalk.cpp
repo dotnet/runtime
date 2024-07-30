@@ -505,7 +505,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     Thread *    pThread    = vmThread.GetDacPtr();
     Frame *     pFrame     = pThread->GetFrame();
-    AppDomain * pAppDomain = pThread->GetDomain(INDEBUG(TRUE));
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     // This used to be only true for Enter-Managed chains.
     // Since we don't have chains anymore, this can always be false.

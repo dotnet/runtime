@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -410,7 +411,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			}
 
 			[Kept]
-			internal static void CallExplicitImplMethod<T> () where T : IStaticAndInstanceMethods, new()
+			internal static void CallExplicitImplMethod<
+				[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
+				T
+			> () where T : IStaticAndInstanceMethods, new()
 			{
 				T.StaticMethodExplicitImpl ();
 				IStaticAndInstanceMethods x = new T ();
@@ -418,7 +422,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			}
 
 			[Kept]
-			internal static void CallExplicitImplMethodInternalUsed<T> () where T : IStaticAndInstanceMethodsInternalUsed, new()
+			internal static void CallExplicitImplMethodInternalUsed<
+				[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
+				T
+			> () where T : IStaticAndInstanceMethodsInternalUsed, new()
 			{
 				T.StaticMethodExplicitImpl ();
 				IStaticAndInstanceMethodsInternalUsed x = new T ();

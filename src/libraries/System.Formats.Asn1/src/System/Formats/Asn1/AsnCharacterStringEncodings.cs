@@ -100,7 +100,7 @@ namespace System.Formats.Asn1
         }
 
         public
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             override
 #endif
         int GetByteCount(ReadOnlySpan<char> chars)
@@ -135,7 +135,7 @@ namespace System.Formats.Asn1
         }
 
         public
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             override
 #endif
         int GetCharCount(ReadOnlySpan<byte> bytes)
@@ -435,7 +435,7 @@ namespace System.Formats.Asn1
             return s_utf8Encoding.GetByteCount(s);
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
         public override int GetByteCount(ReadOnlySpan<char> chars)
         {
             return s_utf8Encoding.GetByteCount(chars);
@@ -476,7 +476,7 @@ namespace System.Formats.Asn1
             }
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
         public override int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             try

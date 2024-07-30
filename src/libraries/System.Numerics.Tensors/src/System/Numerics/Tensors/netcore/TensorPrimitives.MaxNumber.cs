@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -85,53 +86,58 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if NET9_0_OR_GREATER
+                return Vector128.MaxNumber(x, y);
+#else
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    if (AdvSimd.IsSupported && typeof(T) == typeof(float))
-                    {
-                        return AdvSimd.MaxNumber(x.AsSingle(), y.AsSingle()).As<float, T>();
-                    }
-
-                    if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(double))
-                    {
-                        return AdvSimd.Arm64.MaxNumber(x.AsDouble(), y.AsDouble()).As<double, T>();
-                    }
-
-                    return
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(y), x, y),
-                            Vector128.ConditionalSelect(Vector128.Equals(y, y), Vector128.Max(x, y), x));
+                    return Vector128.ConditionalSelect(
+                        Vector128.LessThan(y, x) | IsNaN(y) | (Vector128.Equals(x, y) & IsNegative(y)),
+                        x,
+                        y
+                    );
                 }
 
                 return Vector128.Max(x, y);
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if NET9_0_OR_GREATER
+                return Vector256.MaxNumber(x, y);
+#else
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    return
-                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
-                            Vector256.ConditionalSelect(IsNegative(y), x, y),
-                            Vector256.ConditionalSelect(Vector256.Equals(y, y), Vector256.Max(x, y), x));
+                    return Vector256.ConditionalSelect(
+                        Vector256.LessThan(y, x) | IsNaN(y) | (Vector256.Equals(x, y) & IsNegative(y)),
+                        x,
+                        y
+                    );
                 }
 
                 return Vector256.Max(x, y);
+#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+#if NET9_0_OR_GREATER
+                return Vector512.MaxNumber(x, y);
+#else
+                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
-                    return
-                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
-                            Vector512.ConditionalSelect(IsNegative(y), x, y),
-                            Vector512.ConditionalSelect(Vector512.Equals(y, y), Vector512.Max(x, y), x));
+                    return Vector512.ConditionalSelect(
+                        Vector512.LessThan(y, x) | IsNaN(y) | (Vector512.Equals(x, y) & IsNegative(y)),
+                        x,
+                        y
+                    );
                 }
 
                 return Vector512.Max(x, y);
+#endif
             }
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxNumberOperator<T>>(x);

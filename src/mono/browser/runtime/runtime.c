@@ -65,7 +65,7 @@
 int mono_wasm_enable_gc = 1;
 
 /* Missing from public headers */
-char *mono_fixup_symbol_name (char *key);
+char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);
 void mono_wasm_enable_debugging (int);
 void mono_ee_interp_init (const char *opts);
@@ -214,8 +214,9 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 
 	assert (strlen (name) < 100);
 	snprintf (key, sizeof(key), "%s_%s_%s", name, class_name, method_name);
-	char* fixedName = mono_fixup_symbol_name(key);
+	char *fixedName = mono_fixup_symbol_name ("", key, "");
 	addr = wasm_dl_get_native_to_interp (fixedName, extra_arg);
+	free (fixedName);
 	MONO_EXIT_GC_UNSAFE;
 	return addr;
 }
@@ -369,13 +370,13 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
  * This wrapper ensures that the interpreter initializes the pointers.
  */
 void
-mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* typeName, const char* methodName, int num_params)
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params)
 {
 	MonoError error;
 	mono_error_init (&error);
 	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
-	MonoClass* class = mono_wasm_assembly_find_class (assembly, "", typeName);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespaceName, typeName);
 	assert (class);
 	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
 	assert (method);

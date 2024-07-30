@@ -127,7 +127,14 @@ void Scev::Dump(Compiler* comp)
         case ScevOper::Constant:
         {
             ScevConstant* cns = (ScevConstant*)this;
-            printf("%zd", (ssize_t)cns->Value);
+            if (genTypeSize(cns->Type) == 4)
+            {
+                printf("%d", (int32_t)cns->Value);
+            }
+            else
+            {
+                printf("%lld", (int64_t)cns->Value);
+            }
             break;
         }
         case ScevOper::Local:
@@ -194,6 +201,121 @@ void Scev::Dump(Compiler* comp)
     }
 }
 #endif
+
+//------------------------------------------------------------------------
+// Scev::IsInvariant: Check if the SCEV node is invariant inside the loop.
+//
+// Returns:
+//   True if so.
+//
+// Remarks:
+//   A SCEV is variant if it contains any add recurrence.
+//
+bool Scev::IsInvariant()
+{
+    ScevVisit result = Visit([](Scev* scev) {
+        return scev->OperIs(ScevOper::AddRec) ? ScevVisit::Abort : ScevVisit::Continue;
+    });
+
+    return result != ScevVisit::Abort;
+}
+
+//------------------------------------------------------------------------
+// Scev::PeelAdditions: Peel the aditions from a SCEV and return the base SCEV
+// and the sum of the offsets peeled.
+//
+// Parameters:
+//   offset - [out] The sum of offsets peeled
+//
+// Returns:
+//   The base SCEV.
+//
+// Remarks:
+//   If the SCEV is 32-bits, the user is expected to apply the proper
+//   truncation (or extension into 64-bit).
+//
+Scev* Scev::PeelAdditions(int64_t* offset)
+{
+    *offset = 0;
+
+    Scev* scev = this;
+    while (scev->OperIs(ScevOper::Add))
+    {
+        Scev* op1 = ((ScevBinop*)scev)->Op1;
+        Scev* op2 = ((ScevBinop*)scev)->Op2;
+        if (op1->OperIs(ScevOper::Constant))
+        {
+            *offset += ((ScevConstant*)op1)->Value;
+            scev = op2;
+        }
+        else if (op2->OperIs(ScevOper::Constant))
+        {
+            *offset += ((ScevConstant*)op2)->Value;
+            scev = op1;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return scev;
+}
+
+//------------------------------------------------------------------------
+// Scev::Equals: Check if two SCEV trees are equal.
+//
+// Parameters:
+//   left  - First scev
+//   right - Second scev
+//
+// Returns:
+//   True if they represent the same value; otherwise false.
+//
+bool Scev::Equals(Scev* left, Scev* right)
+{
+    if (left == right)
+    {
+        return true;
+    }
+
+    if ((left->Oper != right->Oper) || (left->Type != right->Type))
+    {
+        return false;
+    }
+
+    switch (left->Oper)
+    {
+        case ScevOper::Constant:
+            return static_cast<ScevConstant*>(left)->Value == static_cast<ScevConstant*>(right)->Value;
+        case ScevOper::Local:
+        {
+            ScevLocal* leftLocal  = static_cast<ScevLocal*>(left);
+            ScevLocal* rightLocal = static_cast<ScevLocal*>(right);
+            return (leftLocal->LclNum == rightLocal->LclNum) && (leftLocal->SsaNum == rightLocal->SsaNum);
+        }
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+            return Scev::Equals(static_cast<ScevUnop*>(left)->Op1, static_cast<ScevUnop*>(right)->Op1);
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop* leftBinop  = static_cast<ScevBinop*>(left);
+            ScevBinop* rightBinop = static_cast<ScevBinop*>(right);
+            return Scev::Equals(leftBinop->Op1, rightBinop->Op1) && Scev::Equals(leftBinop->Op2, rightBinop->Op2);
+        }
+        case ScevOper::AddRec:
+        {
+            ScevAddRec* leftAddRec  = static_cast<ScevAddRec*>(left);
+            ScevAddRec* rightAddRec = static_cast<ScevAddRec*>(right);
+            return Scev::Equals(leftAddRec->Start, rightAddRec->Start) &&
+                   Scev::Equals(leftAddRec->Step, rightAddRec->Step);
+        }
+        default:
+            unreached();
+    }
+}
 
 //------------------------------------------------------------------------
 // ScalarEvolutionContext: Construct an instance of a context to do scalar evolution in.
@@ -287,7 +409,26 @@ ScevUnop* ScalarEvolutionContext::NewExtension(ScevOper oper, var_types targetTy
 ScevBinop* ScalarEvolutionContext::NewBinop(ScevOper oper, Scev* op1, Scev* op2)
 {
     assert((op1 != nullptr) && (op2 != nullptr));
-    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, op1->Type, op1, op2);
+    var_types resultType = op1->Type;
+    if (oper == ScevOper::Add)
+    {
+        if (varTypeIsGC(op1->Type))
+        {
+            assert(op2->Type == TYP_I_IMPL);
+            resultType = TYP_BYREF;
+        }
+        else if (varTypeIsGC(op2->Type))
+        {
+            assert(op1->Type == TYP_I_IMPL);
+            resultType = TYP_BYREF;
+        }
+        else
+        {
+            assert(op1->Type == op2->Type);
+        }
+    }
+
+    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, resultType, op1, op2);
     return binop;
 }
 
@@ -392,6 +533,12 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
             assert(m_comp->lvaInSsa(tree->AsLclVarCommon()->GetLclNum()));
             LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
+
+            if ((tree->TypeGet() != dsc->TypeGet()) || varTypeIsSmall(tree))
+            {
+                // TODO: Truncations (for TYP_INT uses of TYP_LONG locals) and NOL handling?
+                return nullptr;
+            }
 
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
             {
@@ -577,6 +724,15 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                     oper = ScevOper::Add;
                     break;
                 case GT_SUB:
+                    if (varTypeIsGC(op2->Type))
+                    {
+                        // We represent x - y as x + (-1)*y, which does not
+                        // work if y is a GC type. If we wanted to support this
+                        // we would need to add an explicit ScevOper::Sub
+                        // operator.
+                        return nullptr;
+                    }
+
                     oper = ScevOper::Add;
                     op2  = NewBinop(ScevOper::Mul, op2, NewConstant(op2->Type, -1));
                     break;
@@ -884,11 +1040,14 @@ static T FoldBinop(ScevOper oper, T op1, T op2)
     }
 }
 
+const SimplificationAssumptions ScalarEvolutionContext::NoAssumptions;
+
 //------------------------------------------------------------------------
 // Simplify: Try to simplify a SCEV node by folding and canonicalization.
 //
 // Parameters:
-//   scev - The node
+//   scev        - The node
+//   assumptions - Assumptions that the simplification procedure can use.
 //
 // Returns:
 //   Simplified node.
@@ -900,14 +1059,24 @@ static T FoldBinop(ScevOper oper, T op1, T op2)
 //   Simple unops/binops on constants are folded. Operands are distributed into
 //   add recs whenever possible.
 //
-Scev* ScalarEvolutionContext::Simplify(Scev* scev)
+Scev* ScalarEvolutionContext::Simplify(Scev* scev, const SimplificationAssumptions& assumptions)
 {
     switch (scev->Oper)
     {
         case ScevOper::Constant:
-        case ScevOper::Local:
         {
             return scev;
+        }
+        case ScevOper::Local:
+        {
+            ScevLocal* local = (ScevLocal*)scev;
+            int64_t    cns;
+            if (local->GetConstantValue(m_comp, &cns))
+            {
+                return NewConstant(local->Type, cns);
+            }
+
+            return local;
         }
         case ScevOper::ZeroExtend:
         case ScevOper::SignExtend:
@@ -915,7 +1084,7 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
             ScevUnop* unop = (ScevUnop*)scev;
             assert(genTypeSize(unop->Type) >= genTypeSize(unop->Op1->Type));
 
-            Scev* op1 = Simplify(unop->Op1);
+            Scev* op1 = Simplify(unop->Op1, assumptions);
 
             if (unop->Type == op1->Type)
             {
@@ -933,9 +1102,23 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 
             if (op1->OperIs(ScevOper::AddRec))
             {
-                // TODO-Cleanup: This requires some proof that it is ok, but
-                // currently we do not rely on this.
-                return op1;
+                ScevAddRec* addRec = (ScevAddRec*)op1;
+
+                // We need to guarantee that
+                // ext(<L, start, step>) = <L, ext(start), ext(step)> to distribute the extension.
+                //
+                // Equivalently this is the case iff
+                // forall i < backedgeTakenCount, ext(start + step * i) == ext(start) + ext(step) * i.
+                //
+                // For zext: we must guarantee that 0 <= start + step * i < 2^32.
+                // For sext: we must guarantee that -2^31 <= start + step * i < 2^31.
+                //
+                if (!AddRecMayOverflow(addRec, unop->OperIs(ScevOper::SignExtend), assumptions))
+                {
+                    Scev* newStart = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Start), assumptions);
+                    Scev* newStep  = Simplify(NewExtension(unop->Oper, TYP_LONG, addRec->Step), assumptions);
+                    return NewAddRec(newStart, newStep);
+                }
             }
 
             return (op1 == unop->Op1) ? unop : NewExtension(unop->Oper, unop->Type, op1);
@@ -945,8 +1128,8 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
         case ScevOper::Lsh:
         {
             ScevBinop* binop = (ScevBinop*)scev;
-            Scev*      op1   = Simplify(binop->Op1);
-            Scev*      op2   = Simplify(binop->Op2);
+            Scev*      op1   = Simplify(binop->Op1, assumptions);
+            Scev*      op2   = Simplify(binop->Op2, assumptions);
 
             if (binop->OperIs(ScevOper::Add, ScevOper::Mul))
             {
@@ -967,9 +1150,9 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 // <L, start, step> + x => <L, start + x, step>
                 // <L, start, step> * x => <L, start * x, step * x>
                 ScevAddRec* addRec   = (ScevAddRec*)op1;
-                Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2));
+                Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2), assumptions);
                 Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
-                                           ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
+                                           ? Simplify(NewBinop(binop->Oper, addRec->Step, op2), assumptions)
                                            : addRec->Step;
                 return NewAddRec(newStart, newStep);
             }
@@ -979,18 +1162,83 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
                 ScevConstant* cns1 = (ScevConstant*)op1;
                 ScevConstant* cns2 = (ScevConstant*)op2;
                 int64_t       newValue;
-                if (binop->TypeIs(TYP_INT))
+                if (genTypeSize(binop->Type) == 4)
                 {
-                    newValue = FoldBinop<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
-                                                  static_cast<int32_t>(cns2->Value));
+                    newValue = FoldBinop<uint32_t>(binop->Oper, static_cast<uint32_t>(cns1->Value),
+                                                   static_cast<uint32_t>(cns2->Value));
                 }
                 else
                 {
-                    assert(binop->TypeIs(TYP_LONG));
-                    newValue = FoldBinop<int64_t>(binop->Oper, cns1->Value, cns2->Value);
+                    assert(genTypeSize(binop->Type) == 8);
+                    newValue = FoldBinop<uint64_t>(binop->Oper, static_cast<uint64_t>(cns1->Value),
+                                                   static_cast<uint64_t>(cns2->Value));
                 }
 
                 return NewConstant(binop->Type, newValue);
+            }
+            else if (op2->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns2 = (ScevConstant*)op2;
+                // a +/<< 0 => a
+                if (binop->OperIs(ScevOper::Add, ScevOper::Lsh) && (cns2->Value == 0))
+                {
+                    return op1;
+                }
+
+                if (binop->OperIs(ScevOper::Add))
+                {
+                    // (a + c1) + c2 => a + (c1 + c2)
+                    if (op1->OperIs(ScevOper::Add) && (((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant)))
+                    {
+                        ScevBinop* newOp2 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op2, cns2);
+                        ScevBinop* newAdd = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op1, newOp2);
+                        return Simplify(newAdd, assumptions);
+                    }
+                }
+
+                if (binop->OperIs(ScevOper::Mul))
+                {
+                    // a * 0 => 0
+                    if (cns2->Value == 0)
+                    {
+                        return cns2;
+                    }
+
+                    // a * 1 => a
+                    if (cns2->Value == 1)
+                    {
+                        return op1;
+                    }
+
+                    // (a * c1) * c2 => a * (c1 * c2)
+                    if (op1->OperIs(ScevOper::Mul) && (((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant)))
+                    {
+                        ScevBinop* newOp2 = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op2, cns2);
+                        ScevBinop* newMul = NewBinop(ScevOper::Mul, ((ScevBinop*)op1)->Op1, newOp2);
+                        return Simplify(newMul, assumptions);
+                    }
+                }
+            }
+            else if (op1->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns1 = (ScevConstant*)op1;
+                if (binop->OperIs(ScevOper::Lsh) && (cns1->Value == 0))
+                {
+                    return cns1;
+                }
+            }
+
+            if (binop->OperIs(ScevOper::Add))
+            {
+                // (a + c1) + (b + c2) => (a + b) + (c1 + c2)
+                if (op1->OperIs(ScevOper::Add) && ((ScevBinop*)op1)->Op2->OperIs(ScevOper::Constant) &&
+                    op2->OperIs(ScevOper::Add) && ((ScevBinop*)op2)->Op2->OperIs(ScevOper::Constant))
+                {
+                    ScevBinop* newOp1 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op1, ((ScevBinop*)op2)->Op1);
+                    ScevBinop* newOp2 = NewBinop(ScevOper::Add, ((ScevBinop*)op1)->Op2, ((ScevBinop*)op2)->Op2);
+                    ScevBinop* newAdd = NewBinop(ScevOper::Add, newOp1, newOp2);
+                    return Simplify(newAdd, assumptions);
+                }
             }
 
             return (op1 == binop->Op1) && (op2 == binop->Op2) ? binop : NewBinop(binop->Oper, op1, op2);
@@ -998,11 +1246,778 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
         case ScevOper::AddRec:
         {
             ScevAddRec* addRec = (ScevAddRec*)scev;
-            Scev*       start  = Simplify(addRec->Start);
-            Scev*       step   = Simplify(addRec->Step);
+            Scev*       start  = Simplify(addRec->Start, assumptions);
+            Scev*       step   = Simplify(addRec->Step, assumptions);
             return (start == addRec->Start) && (step == addRec->Step) ? addRec : NewAddRec(start, step);
         }
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// Materialize: Materialize a SCEV into IR and/or a value number.
+//
+// Parameters:
+//   scev      - The SCEV
+//   createIR  - Whether to create IR. If so "result" will be assigned.
+//   result    - [out] The IR node result.
+//   resultVNP - [out] The VNP result. Cannot be nullptr.
+//
+// Returns:
+//   True on success. Add recurrences cannot be materialized.
+//
+bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** result, ValueNumPair* resultVNP)
+{
+    switch (scev->Oper)
+    {
+        case ScevOper::Constant:
+        {
+            ScevConstant* cns = (ScevConstant*)scev;
+            if (cns->TypeIs(TYP_REF))
+            {
+                if (cns->Value != 0)
+                {
+                    // TODO-CQ: Proper handling for handles
+                    return false;
+                }
+
+                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
+            }
+            else if (cns->TypeIs(TYP_BYREF))
+            {
+                if (cns->Value != 0)
+                {
+                    // TODO-CQ: Proper handling for handles
+                    return false;
+                }
+
+                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
+            }
+            else
+            {
+                resultVNP->SetBoth(
+                    m_comp->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value)));
+            }
+
+            if (createIR)
+            {
+                if (scev->TypeIs(TYP_LONG))
+                {
+                    *result = m_comp->gtNewLconNode(cns->Value);
+                }
+                else
+                {
+                    *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
+                }
+            }
+
+            break;
+        }
+        case ScevOper::Local:
+        {
+            ScevLocal*    lcl    = (ScevLocal*)scev;
+            LclVarDsc*    dsc    = m_comp->lvaGetDesc(lcl->LclNum);
+            LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(lcl->SsaNum);
+            *resultVNP           = m_comp->vnStore->VNPNormalPair(ssaDsc->m_vnPair);
+
+            if (createIR)
+            {
+                *result = m_comp->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
+            }
+
+            break;
+        }
+        case ScevOper::ZeroExtend:
+        case ScevOper::SignExtend:
+        {
+            ScevUnop*    ext = (ScevUnop*)scev;
+            GenTree*     op  = nullptr;
+            ValueNumPair opVN;
+            if (!Materialize(ext->Op1, createIR, &op, &opVN))
+            {
+                return false;
+            }
+
+            *resultVNP = m_comp->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
+
+            if (createIR)
+            {
+                *result = m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
+            }
+
+            break;
+        }
+        case ScevOper::Add:
+        case ScevOper::Mul:
+        case ScevOper::Lsh:
+        {
+            ScevBinop*   binop = (ScevBinop*)scev;
+            GenTree*     op1   = nullptr;
+            ValueNumPair op1VN;
+            GenTree*     op2 = nullptr;
+            ValueNumPair op2VN;
+            if (!Materialize(binop->Op1, createIR, &op1, &op1VN) || !Materialize(binop->Op2, createIR, &op2, &op2VN))
+            {
+                return false;
+            }
+
+            genTreeOps oper;
+            switch (scev->Oper)
+            {
+                case ScevOper::Add:
+                    oper = GT_ADD;
+                    break;
+                case ScevOper::Mul:
+                    oper = GT_MUL;
+                    break;
+                case ScevOper::Lsh:
+                    oper = GT_LSH;
+                    break;
+                default:
+                    unreached();
+            }
+
+            *resultVNP = m_comp->vnStore->VNPairForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
+            if (createIR)
+            {
+                if (oper == GT_MUL)
+                {
+                    if (op1->IsIntegralConst(-1))
+                    {
+                        *result = m_comp->gtNewOperNode(GT_NEG, op2->TypeGet(), op2);
+                        break;
+                    }
+                    if (op2->IsIntegralConst(-1))
+                    {
+                        *result = m_comp->gtNewOperNode(GT_NEG, op1->TypeGet(), op1);
+                        break;
+                    }
+                }
+
+#ifndef TARGET_64BIT
+                if ((oper == GT_MUL) && binop->TypeIs(TYP_LONG))
+                {
+                    // These require helper calls. Just don't bother.
+                    return false;
+                }
+#endif
+                *result = m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
+            }
+
+            break;
+        }
+        case ScevOper::AddRec:
+            return false;
+        default:
+            unreached();
+    }
+
+    if (createIR)
+    {
+        (*result)->SetVNs(*resultVNP);
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Materialize: Materialize a SCEV into IR.
+//
+// Parameters:
+//   scev - The SCEV
+//
+// Returns:
+//   The node, or nullptr if the SCEV cannot be materialized to IR.
+//
+GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
+{
+    ValueNumPair vnp;
+    GenTree*     result;
+    return Materialize(scev, true, &result, &vnp) ? result : nullptr;
+}
+
+//------------------------------------------------------------------------
+// MaterializeVN: Materialize a SCEV into a VN.
+//
+// Parameters:
+//   scev - The SCEV
+//
+// Returns:
+//   The VNP, or (NoVN, NoVN) if the SCEV is not representable as a VN.
+//
+ValueNumPair ScalarEvolutionContext::MaterializeVN(Scev* scev)
+{
+    ValueNumPair vnp;
+    return Materialize(scev, false, nullptr, &vnp) ? vnp : ValueNumPair();
+}
+
+//------------------------------------------------------------------------
+// RelopEvaluationResultString: Convert a RelopEvaluationResult to a string.
+//
+// Parameters:
+//   result - The evaluation result
+//
+// Returns:
+//   String representation
+//
+static const char* RelopEvaluationResultString(RelopEvaluationResult result)
+{
+    switch (result)
+    {
+        case RelopEvaluationResult::Unknown:
+            return "unknown";
+        case RelopEvaluationResult::True:
+            return "true";
+        case RelopEvaluationResult::False:
+            return "false";
+        default:
+            return "n/a";
+    }
+}
+
+//------------------------------------------------------------------------
+// EvaluateRelop:
+//   Try to evaluate a relop represented by a VN.
+//
+// Parameters:
+//   vn - The VN representing the relop.
+//
+// Returns:
+//   The result of the evaluation, or RelopEvaluationResult::Unknown if the
+//   result is not known.
+//
+// Remarks:
+//   Utilizes RBO's reasoning to try to prove the direction of symbolic VNs.
+//   This function will build dominators if necessary.
+//
+RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
+{
+    if (m_comp->vnStore->IsVNConstant(vn))
+    {
+        assert(m_comp->vnStore->TypeOfVN(vn) == TYP_INT);
+        return m_comp->vnStore->ConstantValue<int32_t>(vn) != 0 ? RelopEvaluationResult::True
+                                                                : RelopEvaluationResult::False;
+    }
+
+    // Evaluate by using dominators and RBO's logic.
+    assert(m_comp->m_domTree != nullptr);
+    //
+    // TODO-CQ: Using assertions could be stronger given its dataflow, but it
+    // is not convenient to use (optVNConstantPropOnJTrue does not actually
+    // make any use of assertions to evaluate conditionals, so it seems like
+    // the logic does not actually exist anywhere.)
+    //
+
+    for (BasicBlock* idom = m_loop->GetHeader()->bbIDom; idom != nullptr; idom = idom->bbIDom)
+    {
+        if (!idom->KindIs(BBJ_COND))
+        {
+            continue;
+        }
+
+        Statement* const domJumpStmt = idom->lastStmt();
+        GenTree* const   domJumpTree = domJumpStmt->GetRootNode();
+        assert(domJumpTree->OperIs(GT_JTRUE));
+        GenTree* const domCmpTree = domJumpTree->AsOp()->gtGetOp1();
+
+        if (!domCmpTree->OperIsCompare())
+        {
+            continue;
+        }
+
+        // We can use liberal VNs here, as bounds checks are not yet
+        // manifest explicitly as relops.
+        //
+        RelopImplicationInfo rii;
+        rii.treeNormVN   = vn;
+        rii.domCmpNormVN = m_comp->vnStore->VNLiberalNormalValue(domCmpTree->gtVNPair);
+
+        m_comp->optRelopImpliesRelop(&rii);
+
+        if (!rii.canInfer)
+        {
+            continue;
+        }
+
+        bool domIsInferredRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Inferred);
+        bool domIsSameRelop     = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
+                              (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+
+        bool trueReaches  = m_comp->optReachable(idom->GetTrueTarget(), m_loop->GetHeader(), idom);
+        bool falseReaches = m_comp->optReachable(idom->GetFalseTarget(), m_loop->GetHeader(), idom);
+
+        if (trueReaches && !falseReaches && rii.canInferFromTrue)
+        {
+            bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+            return relopIsTrue ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+        }
+
+        if (falseReaches && !trueReaches && rii.canInferFromFalse)
+        {
+            bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+            return relopIsFalse ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+        }
+    }
+
+    return RelopEvaluationResult::Unknown;
+}
+
+//------------------------------------------------------------------------
+// MayOverflowBeforeExit:
+//   Check if an add recurrence may overflow its computation type before an
+//   exit condition returns true.
+//
+// Parameters:
+//   lhs    - The LHS of an expression causing the loop to exit. An add recurrence.
+//   rhs    - The RHS of the expression causing the loop to exit.
+//   exitOp - The relop such that when [lhs] [exitOp] [rhs] evaluates to true, the loop exits.
+//
+// Returns:
+//   True if it is possible for the LHS to overflow its computation type without the loop exiting.
+//   False if we were able to prove that it cannot.
+//
+// Remarks:
+//   May return true conservatively.
+//
+bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp)
+{
+    int64_t stepCns;
+    if (!lhs->Step->GetConstantValue(m_comp, &stepCns))
+    {
+        // TODO-CQ: With divisibility checks we can likely handle some of
+        // these.
+        return true;
+    }
+
+    // Handle odd cases, where we count in the other direction of the test, and
+    // thus only exit after overflow (or immediately).
+    //
+    // TODO-CQ: One potential pattern we ought to be able to handle for
+    // downwards counting loops with unsigned indices is:
+    // for (uint i = (uint)arr.Length - 1u; i < (uint)arr.Length; i--)
+    // This one overflows, but on overflow it immediately exits.
+    //
+    switch (exitOp)
+    {
+        case VNF_GE:
+        case VNF_GT:
+        case VNF_GE_UN:
+        case VNF_GT_UN:
+            if (stepCns < 0)
+            {
+                return true;
+            }
+
+            break;
+        case VNF_LE:
+        case VNF_LT:
+        case VNF_LE_UN:
+        case VNF_LT_UN:
+            if (stepCns > 0)
+            {
+                return true;
+            }
+
+            break;
+        default:
+            unreached();
+    }
+
+    // A step count of 1/-1 will always exit for "or equal" checks.
+    if ((stepCns == 1) && ((exitOp == VNFunc(GT_GE)) || (exitOp == VNF_GE_UN)))
+    {
+        return false;
+    }
+
+    if ((stepCns == -1) && ((exitOp == VNFunc(GT_LE)) || (exitOp == VNF_LE_UN)))
+    {
+        return false;
+    }
+
+    // Example: If exitOp is GT_GT then it means that we exit when iv >
+    // limitCns. In the worst case the IV ends up at limitCns and then steps
+    // once more. If that still causes us to exit then no overflow is possible.
+    Scev* step = lhs->Step;
+    if ((exitOp == VNF_GE) || (exitOp == VNF_GE_UN))
+    {
+        // Exit on iv >= limitCns, so in worst case we are at limitCns - 1. Include the -1 in the step.
+        Scev* negOne = NewConstant(rhs->Type, -1);
+        step         = NewBinop(ScevOper::Add, step, negOne);
+    }
+    else if ((exitOp == VNF_LE) || (exitOp == VNF_LE_UN))
+    {
+        // Exit on iv <= limitCns, so in worst case we are at limitCns + 1. Include the +1 in the step.
+        Scev* posOne = NewConstant(rhs->Type, 1);
+        step         = NewBinop(ScevOper::Add, step, posOne);
+    }
+
+    Scev* steppedVal           = NewBinop(ScevOper::Add, rhs, step);
+    steppedVal                 = Simplify(steppedVal);
+    ValueNumPair steppedValVNP = MaterializeVN(steppedVal);
+
+    ValueNumPair rhsVNP = MaterializeVN(rhs);
+    ValueNum     relop  = m_comp->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
+    RelopEvaluationResult result = EvaluateRelop(relop);
+    return result != RelopEvaluationResult::True;
+}
+
+//------------------------------------------------------------------------
+// AddRecMayOverflow:
+//   Check if an add recurrence may overflow inside the containing loop.
+//
+// Parameters:
+//   addRec      - The add recurrence
+//   signedBound - Whether to check using signed (true) or unsigned (false) bounds.
+//   assumptions - Assumptions about the containing loop.
+//
+// Returns:
+//   True if the add recurrence may overflow and wrap around. False if we were
+//   able to prove that it cannot.
+//
+// Remarks:
+//   May return true conservatively.
+//
+bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      addRec,
+                                               bool                             signedBound,
+                                               const SimplificationAssumptions& assumptions)
+{
+    if (assumptions.NumBackEdgeTakenBound == 0)
+    {
+        return true;
+    }
+
+    if (!addRec->TypeIs(TYP_INT))
+    {
+        return true;
+    }
+
+    // In general we are interested in proving that the add recurrence does not
+    // cross the minimum or maximum bounds during the iteration of the loop:
+    //
+    // For signed bounds   (sext): sext(a + b) != sext(a) + sext(b) if a + b crosses -2^31 or 2^31 - 1.
+    // For unsigned bounds (zext): zext(a + b) != zext(a) + zext(b) if a + b crosses 0 or 2^32 - 1.
+    //
+    // We need to verify this condition for all i < bound where a = start, b =
+    // step + i.
+    //
+    // For now, we only handle the super duper simple case of unsigned bounds
+    // with addRec = <L, 0, 1> and a TYP_INT bound.
+    //
+    if (signedBound)
+    {
+        return true;
+    }
+
+    int64_t startCns;
+    if (addRec->Start->GetConstantValue(m_comp, &startCns) && (startCns != 0))
+    {
+        return true;
+    }
+
+    int64_t stepCns;
+    if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || (stepCns != 1))
+    {
+        return true;
+    }
+
+    for (unsigned i = 0; i < assumptions.NumBackEdgeTakenBound; i++)
+    {
+        Scev* bound = assumptions.BackEdgeTakenBound[i];
+        if (bound->TypeIs(TYP_INT))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// MapRelopToVNFunc:
+//   Given a potentially unsigned IR relop, map it to a VNFunc.
+//
+// Parameters:
+//   oper       - The IR oper.
+//   isUnsigned - Whether or not this is an unsigned relop.
+//
+// Returns:
+//   The VNFunc for the (potentially unsigned) relop.
+//
+VNFunc ScalarEvolutionContext::MapRelopToVNFunc(genTreeOps oper, bool isUnsigned)
+{
+    if (isUnsigned)
+    {
+        switch (oper)
+        {
+            case GT_EQ:
+            case GT_NE:
+                return VNFunc(oper);
+            case GT_LT:
+                return VNF_LT_UN;
+            case GT_LE:
+                return VNF_LE_UN;
+            case GT_GT:
+                return VNF_GT_UN;
+            case GT_GE:
+                return VNF_GE_UN;
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        return VNFunc(oper);
+    }
+}
+
+//------------------------------------------------------------------------
+// ComputeExitNotTakenCount:
+//   Given an exiting basic block, try to compute an exact expression for the
+//   number of times the exit is not taken, before it is taken.
+//
+// Parameters:
+//   exiting - The exiting basic block. Must be a BBJ_COND block.
+//
+// Returns:
+//   A SCEV representing the number of times the exit is _not_ taken, assuming
+//   it runs on every iteration of the loop. Returns nullptr if an exact count
+//   cannot be computed.
+//
+// Remarks:
+//   The SCEV returned here is equal to the backedge count when the exiting
+//   block dominates all backedges and when it is the only exit of the loop.
+//
+//   The backedge count of the loop is defined as the number of times the
+//   header block is entered from a backedge. It follows that the number of
+//   times the header block is entered is the backedge count + 1. This quantity
+//   is typically called the trip count.
+//
+//   The backedge count gives insight about add recurrences in the loop, since
+//   it is the number of times every add recurrence steps. The final value of
+//   an add recurrence <L, start, step> is thus (start + step * <backedge
+//   count>).
+//
+//   Loops for which the backedge/trip count can be computed are called counted
+//   loops.
+//
+Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
+{
+    assert(exiting->KindIs(BBJ_COND));
+    assert(m_loop->ContainsBlock(exiting->GetTrueTarget()) != m_loop->ContainsBlock(exiting->GetFalseTarget()));
+
+    Statement* lastStmt = exiting->lastStmt();
+    GenTree*   lastExpr = lastStmt->GetRootNode();
+    assert(lastExpr->OperIs(GT_JTRUE));
+    GenTree* cond = lastExpr->gtGetOp1();
+
+    if (!cond->OperIs(GT_LT, GT_LE, GT_GT, GT_GE))
+    {
+        // TODO-CQ: We can handle EQ/NE with divisibility checks.
+        return nullptr;
+    }
+
+    if (!varTypeIsIntegralOrI(cond->gtGetOp1()))
+    {
+        return nullptr;
+    }
+
+    Scev* op1 = Analyze(exiting, cond->gtGetOp1());
+    Scev* op2 = Analyze(exiting, cond->gtGetOp2());
+
+    if ((op1 == nullptr) || (op2 == nullptr))
+    {
+        return nullptr;
+    }
+
+    if (varTypeIsGC(op1->Type) || varTypeIsGC(op2->Type))
+    {
+        // TODO-CQ: Add SUB operator
+        return nullptr;
+    }
+
+    // Now phrase the test such that the loop is exited when [lhs] >/>= [rhs].
+    Scev*      lhs    = Simplify(op1);
+    Scev*      rhs    = Simplify(op2);
+    genTreeOps exitOp = cond->gtOper;
+    if (!m_loop->ContainsBlock(exiting->GetFalseTarget()))
+    {
+        // We exit in the false case, so we exit when the oper is the reverse.
+        exitOp = GenTree::ReverseRelop(exitOp);
+    }
+
+    // We require an add recurrence to have been exposed at this point.
+    if (!lhs->OperIs(ScevOper::AddRec) && !rhs->OperIs(ScevOper::AddRec))
+    {
+        // If both are invariant we could still handle some cases here (it will
+        // be 0 or infinite). Probably uncommon.
+        return nullptr;
+    }
+
+    // Now normalize variant SCEV to the left.
+    bool lhsInvariant = lhs->IsInvariant();
+    bool rhsInvariant = rhs->IsInvariant();
+    if (lhsInvariant == rhsInvariant)
+    {
+        // Both variant. Here we could also prove also try to prove some cases,
+        // but again this is expected to be uncommon.
+        return nullptr;
+    }
+
+    if (lhsInvariant)
+    {
+        exitOp = GenTree::SwapRelop(exitOp);
+        std::swap(lhs, rhs);
+    }
+
+    assert(lhs->OperIs(ScevOper::AddRec));
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("  " FMT_LP " exits when:\n  ", m_loop->GetIndex());
+        lhs->Dump(m_comp);
+        const char* exitOpStr = "";
+        switch (exitOp)
+        {
+            case GT_LT:
+                exitOpStr = "<";
+                break;
+            case GT_LE:
+                exitOpStr = "<=";
+                break;
+            case GT_GT:
+                exitOpStr = ">";
+                break;
+            case GT_GE:
+                exitOpStr = ">=";
+                break;
+            default:
+                unreached();
+        }
+        printf(" %s ", exitOpStr);
+        rhs->Dump(m_comp);
+        printf("\n");
+    }
+#endif
+
+    VNFunc exitOpVNF = MapRelopToVNFunc(exitOp, cond->IsUnsigned());
+    if (MayOverflowBeforeExit((ScevAddRec*)lhs, rhs, exitOpVNF))
+    {
+        JITDUMP("  May overflow, cannot determine backedge count\n");
+        return nullptr;
+    }
+
+    JITDUMP("  Does not overflow past the test\n");
+
+    // We have lhs [exitOp] rhs, where lhs is an add rec
+    Scev* lowerBound;
+    Scev* upperBound;
+    Scev* divisor;
+    switch (exitOpVNF)
+    {
+        case VNF_GE:
+        case VNF_GE_UN:
+        {
+            // Exit on <L, start, step> >= rhs.
+            // Trip count expression is ceil((rhs - start) / step) = (rhs + (step - 1) - start) / step.
+            Scev* stepNegOne  = NewBinop(ScevOper::Add, ((ScevAddRec*)lhs)->Step, NewConstant(rhs->Type, -1));
+            Scev* rhsWithStep = NewBinop(ScevOper::Add, rhs, stepNegOne);
+            lowerBound        = ((ScevAddRec*)lhs)->Start;
+            upperBound        = rhsWithStep;
+            divisor           = ((ScevAddRec*)lhs)->Step;
+            break;
+        }
+        case VNF_GT:
+        case VNF_GT_UN:
+        {
+            // Exit on <L, start, step> > rhs.
+            // Trip count expression is ceil((rhs + 1 - start) / step) = (rhs + step - start) / step.
+            lowerBound = ((ScevAddRec*)lhs)->Start;
+            upperBound = NewBinop(ScevOper::Add, rhs, ((ScevAddRec*)lhs)->Step);
+            divisor    = ((ScevAddRec*)lhs)->Step;
+            break;
+        }
+        case VNF_LE:
+        case VNF_LE_UN:
+        {
+            // Exit on <L, start, step> <= rhs.
+            // Trip count expression is ceil((start - rhs) / -step) = (start + (-step - 1) - rhs) / -step
+            // = (start - step - 1 - rhs) / -step = start - (rhs + step + 1) / -step.
+            Scev* stepPlusOne = NewBinop(ScevOper::Add, ((ScevAddRec*)lhs)->Step, NewConstant(rhs->Type, 1));
+            Scev* rhsWithStep = NewBinop(ScevOper::Add, rhs, stepPlusOne);
+            lowerBound        = rhsWithStep;
+            upperBound        = ((ScevAddRec*)lhs)->Start;
+            divisor           = NewBinop(ScevOper::Mul, ((ScevAddRec*)lhs)->Step, NewConstant(lhs->Type, -1));
+            break;
+        }
+        case VNF_LT:
+        case VNF_LT_UN:
+        {
+            // Exit on <L, start, step> < rhs.
+            // Trip count expression is ceil((start - (rhs - 1)) / -step) = (start + (-step - 1) - (rhs - 1)) / -step
+            // = (start - (rhs + step)) / -step.
+            lowerBound = NewBinop(ScevOper::Add, rhs, ((ScevAddRec*)lhs)->Step);
+            upperBound = ((ScevAddRec*)lhs)->Start;
+            divisor    = NewBinop(ScevOper::Mul, ((ScevAddRec*)lhs)->Step, NewConstant(lhs->Type, -1));
+            break;
+        }
+        default:
+            unreached();
+    }
+
+    lowerBound = Simplify(lowerBound);
+    upperBound = Simplify(upperBound);
+
+    // Now prove that the lower bound is indeed a lower bound.
+    JITDUMP("  Need to prove ");
+    DBEXEC(VERBOSE, lowerBound->Dump(m_comp));
+    JITDUMP(" <= ");
+    DBEXEC(VERBOSE, upperBound->Dump(m_comp));
+
+    VNFunc       relopFunc     = ValueNumStore::VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
+    ValueNumPair lowerBoundVNP = MaterializeVN(lowerBound);
+    if (lowerBoundVNP.GetLiberal() == ValueNumStore::NoVN)
+    {
+        return nullptr;
+    }
+
+    ValueNumPair upperBoundVNP = MaterializeVN(upperBound);
+    if (upperBoundVNP.GetLiberal() == ValueNumStore::NoVN)
+    {
+        return nullptr;
+    }
+
+    ValueNum relop =
+        m_comp->vnStore->VNForFunc(TYP_INT, relopFunc, lowerBoundVNP.GetLiberal(), upperBoundVNP.GetLiberal());
+    RelopEvaluationResult result = EvaluateRelop(relop);
+    JITDUMP(": %s\n", RelopEvaluationResultString(result));
+
+    if (result != RelopEvaluationResult::True)
+    {
+        return nullptr;
+    }
+
+    divisor = Simplify(divisor);
+    int64_t divisorVal;
+    if (!divisor->GetConstantValue(m_comp, &divisorVal) || ((divisorVal != 1) && (divisorVal != -1)))
+    {
+        // TODO-CQ: Enable. Likely need to add a division operator to SCEV.
+        return nullptr;
+    }
+
+    Scev* backedgeCountSubtraction =
+        NewBinop(ScevOper::Add, upperBound, NewBinop(ScevOper::Mul, lowerBound, NewConstant(lowerBound->Type, -1)));
+    Scev* backedgeCount = backedgeCountSubtraction;
+    if (divisorVal == -1)
+    {
+        backedgeCount = NewBinop(ScevOper::Mul, backedgeCount, NewConstant(backedgeCount->Type, -1));
+    }
+
+    backedgeCount = Simplify(backedgeCount);
+    JITDUMP("  Backedge count: ");
+    DBEXEC(VERBOSE, backedgeCount->Dump(m_comp));
+    JITDUMP("\n");
+
+    return backedgeCount;
 }

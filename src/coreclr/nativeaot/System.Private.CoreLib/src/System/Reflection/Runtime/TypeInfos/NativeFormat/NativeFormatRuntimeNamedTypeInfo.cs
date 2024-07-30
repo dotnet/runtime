@@ -164,7 +164,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             {
                 RuntimeTypeInfo? declaringType = null;
                 TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
-                if (!enclosingTypeDefHandle.IsNull(_reader))
+                if (!enclosingTypeDefHandle.IsNil)
                 {
                     declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
+                ArrayBuilder<RuntimeTypeInfo> genericTypeParameters = new ArrayBuilder<RuntimeTypeInfo>(_typeDefinition.GenericParameters.Count);
 
                 foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
                 {
@@ -219,7 +219,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 Handle baseType = _typeDefinition.BaseType;
-                if (baseType.IsNull(_reader))
+                if (baseType.IsNil)
                     return QTypeDefRefOrSpec.Null;
                 return new QTypeDefRefOrSpec(_reader, baseType);
             }
@@ -233,7 +233,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                LowLevelList<QTypeDefRefOrSpec> directlyImplementedInterfaces = new LowLevelList<QTypeDefRefOrSpec>();
+                ArrayBuilder<QTypeDefRefOrSpec> directlyImplementedInterfaces = new ArrayBuilder<QTypeDefRefOrSpec>(_typeDefinition.Interfaces.Count);
                 foreach (Handle ifcHandle in _typeDefinition.Interfaces)
                     directlyImplementedInterfaces.Add(new QTypeDefRefOrSpec(_reader, ifcHandle));
                 return directlyImplementedInterfaces.ToArray();

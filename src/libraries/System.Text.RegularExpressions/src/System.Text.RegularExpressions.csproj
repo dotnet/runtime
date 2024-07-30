@@ -27,6 +27,7 @@
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.EnumerateMatches.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.EnumerateSplits.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCaseBehavior.cs" />
@@ -71,6 +72,8 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\MatchingState.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\DoublyLinkedList.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\ISolver.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchReversalKind.cs"/>
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchReversal.cs"/>
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermClassifier.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" />

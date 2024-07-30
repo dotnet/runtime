@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 if (i != 0)
                     sb.Append(", ");
-                string parameterTypeString = parameters[i].ParameterType.FormatTypeNameForReflection();
+                string parameterTypeString = parameters[i].ParameterType.FormatTypeName();
 
                 // Legacy: Why use "ByRef" for by ref parameters? What language is this?
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
@@ -94,7 +94,7 @@ namespace System.Reflection.Runtime.MethodInfos
         internal static string ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
         {
             StringBuilder sb = new StringBuilder(30);
-            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterType.FormatTypeNameForReflection());  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
+            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterType.FormatTypeName());  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
             sb.Append(' ');
             sb.Append(contextMethod.Name);
             if (methodTypeArguments.Length != 0)

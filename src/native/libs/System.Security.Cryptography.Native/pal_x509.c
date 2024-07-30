@@ -893,14 +893,12 @@ static OCSP_CERTID* MakeCertId(X509* subject, X509* issuer)
     return OCSP_cert_to_id(EVP_sha1(), subject, issuer);
 }
 
-static time_t GetIssuanceWindowStart(void)
+static time_t GetIssuanceWindowStart(time_t currentTime)
 {
     // time_t granularity is seconds, so subtract 4 days worth of seconds.
     // The 4 day policy is based on the CA/Browser Forum Baseline Requirements
     // (version 1.6.3) section 4.9.10 (On-Line Revocation Checking Requirements)
-    time_t t = time(NULL);
-    t -= 4 * 24 * 60 * 60;
-    return t;
+    return currentTime - 4 * 24 * 60 * 60;
 }
 
 static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
@@ -948,7 +946,8 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
         int nonceCheck = req == NULL ? 1 : OCSP_check_nonce(req, basicResp);
 
         // Treat "response has no nonce" as success, since not all responders set the nonce.
-        if (nonceCheck == -1)
+        // Treat "neither has a nonce" as success, since we do not send nonces in our requests.
+        if (nonceCheck == -1 || nonceCheck == 2)
         {
             nonceCheck = 1;
         }
@@ -960,28 +959,37 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
 
             if (OCSP_resp_find_status(basicResp, certId, &status, NULL, NULL, &thisupd, &nextupd))
             {
-                // X509_cmp_current_time uses 0 for error already, so we can use it when there's a null value.
-                // 1 means the nextupd value is in the future, -1 means it is now-or-in-the-past.
-                // Following with OpenSSL conventions, we'll accept "now" as "the past".
-                int nextUpdComparison = nextupd == NULL ? 0 : X509_cmp_current_time(nextupd);
+                time_t currentTime = time(NULL);
+                int nextUpdComparison = 0;
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+                // If openssl uses 32-bit time_t and the current time doesn't fit in 32 bits,
+                // skip checking the status/nextupd, and fall through to return PAL_X509_V_ERR_UNABLE_TO_GET_CRL.
+                if (!g_libSslUses32BitTime || (currentTime >= INT_MIN && currentTime <= INT_MAX))
+#endif
+                {
+                    // X509_cmp_current_time uses 0 for error already, so we can use it when there's a null value.
+                    // 1 means the nextupd value is in the future, -1 means it is now-or-in-the-past.
+                    // Following with OpenSSL conventions, we'll accept "now" as "the past".
+                    nextUpdComparison = nextupd == NULL ? 0 : X509_cmp_time(nextupd, &currentTime);
 
-                // Un-revoking is rare, so reporting revoked on an expired response has a low chance
-                // of a false-positive.
-                //
-                // For non-revoked responses, a next-update value in the past counts as expired.
-                if (status == V_OCSP_CERTSTATUS_REVOKED)
-                {
-                    ret = PAL_X509_V_ERR_CERT_REVOKED;
-                }
-                else
-                {
-                    if (nextupd != NULL && nextUpdComparison <= 0)
+                    // Un-revoking is rare, so reporting revoked on an expired response has a low chance
+                    // of a false-positive.
+                    //
+                    // For non-revoked responses, a next-update value in the past counts as expired.
+                    if (status == V_OCSP_CERTSTATUS_REVOKED)
                     {
-                        ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
+                        ret = PAL_X509_V_ERR_CERT_REVOKED;
                     }
-                    else if (status == V_OCSP_CERTSTATUS_GOOD)
+                    else
                     {
-                        ret = PAL_X509_V_OK;
+                        if (nextupd != NULL && nextUpdComparison <= 0)
+                        {
+                            ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
+                        }
+                        else if (status == V_OCSP_CERTSTATUS_GOOD)
+                        {
+                            ret = PAL_X509_V_OK;
+                        }
                     }
                 }
 
@@ -997,7 +1005,7 @@ static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
                     thisupd != NULL &&
                     nextUpdComparison > 0)
                 {
-                    time_t oldest = GetIssuanceWindowStart();
+                    time_t oldest = GetIssuanceWindowStart(currentTime);
 
                     if (X509_cmp_time(thisupd, &oldest) > 0)
                     {
@@ -1181,8 +1189,9 @@ static OCSP_REQUEST* BuildOcspRequest(X509* subject, X509* issuer)
     // Ownership was successfully transferred to req
     certId = NULL;
 
-    // Add a random nonce.
-    OCSP_request_add1_nonce(req, NULL, -1);
+    // We return the request without setting a nonce on it. Most public CA OCSP responders ignore the nonce, and in some
+    // cases flat out error when presented with a nonce.
+    // This behavior also matches Windows and Apple platforms.
     return req;
 }
 

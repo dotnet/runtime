@@ -413,6 +413,7 @@ OPDEF(MINT_STELEM_R8, "stelem.r8", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_REF, "stelem.ref", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 OPDEF(MINT_STELEM_VT_NOREF, "stelem.vt.noref", 6, 0, 3, MintOpTwoShorts)
+OPDEF(MINT_STELEM_REF_UNCHECKED, "stelem.ref.unchecked", 4, 0, 3, MintOpNoArgs)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
 

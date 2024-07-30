@@ -132,9 +132,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_alloca/test1/test1.cpp
-  #c_runtime/_gcvt/test1/_gcvt.cpp
-  #c_runtime/_gcvt/test2/test2.cpp
-  c_runtime/_itow/test1/test1.cpp
   c_runtime/_putenv/test1/test1.cpp
   c_runtime/_putenv/test2/test2.cpp
   c_runtime/_putenv/test3/test3.cpp
@@ -416,7 +413,6 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
-  miscellaneous/_i64tow/test1/test1.cpp
 # pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp

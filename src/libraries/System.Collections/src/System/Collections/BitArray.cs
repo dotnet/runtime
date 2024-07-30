@@ -623,7 +623,7 @@ namespace System.Collections
                         // In that case, we are shifting a uint by 32, which could be considered undefined.
                         // The result of a shift operation is undefined ... if the right operand
                         // is greater than or equal to the width in bits of the promoted left operand,
-                        // https://docs.microsoft.com/en-us/cpp/c-language/bitwise-shift-operators?view=vs-2017
+                        // https://learn.microsoft.com/cpp/c-language/bitwise-shift-operators?view=vs-2017
                         // However, the compiler protects us from undefined behaviour by constraining the
                         // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
                         uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);

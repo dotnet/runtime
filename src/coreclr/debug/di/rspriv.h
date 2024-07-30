@@ -2879,6 +2879,10 @@ public:
     virtual void RequestSyncAtEvent()= 0;
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
+
+#ifdef FEATURE_INTEROP_DEBUGGING
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
+#endif
 };
 
 
@@ -3462,6 +3466,8 @@ public:
         _ASSERTE(ThreadHoldsProcessLock());
         return m_unmanagedThreads.GetBase(dwThreadId);
     }
+
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     /*
@@ -5100,10 +5106,6 @@ private:
 
 public:
 
-    // set or clear the custom notifications flag to control whether we ignore custom debugger notifications
-    void SetCustomNotifications(BOOL fEnable) { m_fCustomNotificationsEnabled = fEnable; }
-    BOOL CustomNotificationsEnabled () { return m_fCustomNotificationsEnabled; }
-
     HRESULT GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData);
 
     // If you want to force the init to happen even if we think the class
@@ -5177,9 +5179,6 @@ private:
     // if we add static fields with EnC after this class is loaded (in the debuggee),
     // their value will be hung off the FieldDesc.  Hold information about such fields here.
     CordbHangingFieldTable   m_hangingFieldsStatic;
-
-    // this indicates whether we should send custom debugger notifications
-    BOOL                    m_fCustomNotificationsEnabled;
 
 };
 

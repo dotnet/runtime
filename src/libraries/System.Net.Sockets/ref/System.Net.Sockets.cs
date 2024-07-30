@@ -568,6 +568,7 @@ namespace System.Net.Sockets
         DropMembership = 13,
         DontFragment = 14,
         AddSourceMembership = 15,
+        FastOpen = 15,
         DontRoute = 16,
         DropSourceMembership = 16,
         TcpKeepAliveRetryCount = 16,

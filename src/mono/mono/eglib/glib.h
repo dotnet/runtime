@@ -375,6 +375,7 @@ gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 gsize        g_strnlen        (const char*, gsize);
+const gchar *g_memrchr        (const char *s, char c, size_t n);
 
 void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
 
@@ -1066,6 +1067,7 @@ g_async_safe_printf (gchar const *format, ...)
  */
 extern const guchar g_utf8_jump_table[256];
 
+gboolean  g_utf8_validate_part (const unsigned char *inptr, size_t len);
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
 

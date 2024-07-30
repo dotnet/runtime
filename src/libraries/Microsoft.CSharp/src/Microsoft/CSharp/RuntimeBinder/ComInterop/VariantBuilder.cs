@@ -95,7 +95,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return Expression.Assign(variant, Expression.Property(null, typeof(ComVariant).GetProperty(nameof(ComVariant.Null), BindingFlags.Public | BindingFlags.Static)));
 
                 default:
-                    Debug.Assert(false, "Unexpected VarEnum");
+                    Debug.Fail("Unexpected VarEnum");
                     return null;
             }
         }

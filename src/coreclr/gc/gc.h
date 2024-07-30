@@ -124,7 +124,10 @@ enum gc_generation_num
     ephemeral_generation_count = max_generation,
 
     // number of all generations
-    total_generation_count = poh_generation + 1
+    total_generation_count = poh_generation + 1,
+
+    // number of uoh generations
+    uoh_generation_count = total_generation_count - uoh_start_generation
 };
 
 #ifdef GC_CONFIG_DRIVEN

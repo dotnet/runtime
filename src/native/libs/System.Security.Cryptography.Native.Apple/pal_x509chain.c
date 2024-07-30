@@ -207,7 +207,7 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
 #if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
         CFIndex keyStringLength = CFStringGetLength(keyString);
         CFIndex maxEncodedLength = CFStringGetMaximumSizeForEncoding(keyStringLength, kCFStringEncodingUTF8) + 1;
-        char* keyStringBuffer = malloc(maxEncodedLength);
+        char* keyStringBuffer = malloc((size_t)maxEncodedLength);
 
         if (keyStringBuffer)
         {

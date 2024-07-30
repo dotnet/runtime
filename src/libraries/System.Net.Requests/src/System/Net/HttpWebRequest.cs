@@ -13,10 +13,12 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +26,8 @@ namespace System.Net
 {
     public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
     public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.
@@ -47,10 +51,10 @@ namespace System.Net
         private static int _defaultMaxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         private static int _defaultMaximumErrorResponseLength = -1;
 
-        private int _beginGetRequestStreamCalled;
-        private int _beginGetResponseCalled;
-        private int _endGetRequestStreamCalled;
-        private int _endGetResponseCalled;
+        private bool _beginGetRequestStreamCalled;
+        private bool _beginGetResponseCalled;
+        private bool _endGetRequestStreamCalled;
+        private bool _endGetResponseCalled;
 
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeadersLen = _defaultMaxResponseHeadersLength;
@@ -70,7 +74,7 @@ namespace System.Net
         private TaskCompletionSource<WebResponse>? _responseOperation;
         private AsyncCallback? _requestStreamCallback;
         private AsyncCallback? _responseCallback;
-        private int _abortCalled;
+        private volatile bool _abortCalled;
         private CancellationTokenSource? _sendRequestCts;
         private X509CertificateCollection? _clientCertificates;
         private Booleans _booleans = Booleans.Default;
@@ -122,6 +126,7 @@ namespace System.Net
             public readonly CookieContainer? CookieContainer;
             public readonly ServicePoint? ServicePoint;
             public readonly TimeSpan ContinueTimeout;
+            public readonly TokenImpersonationLevel ImpersonationLevel;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
             {
@@ -144,6 +149,7 @@ namespace System.Net
                 CookieContainer = webRequest._cookieContainer;
                 ServicePoint = webRequest._servicePoint;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
+                ImpersonationLevel = webRequest.ImpersonationLevel;
             }
 
             public bool Matches(HttpClientParameters requestParameters)
@@ -164,7 +170,8 @@ namespace System.Net
                     && ReferenceEquals(ServerCertificateValidationCallback, requestParameters.ServerCertificateValidationCallback)
                     && ReferenceEquals(ClientCertificates, requestParameters.ClientCertificates)
                     && ReferenceEquals(CookieContainer, requestParameters.CookieContainer)
-                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint);
+                    && ReferenceEquals(ServicePoint, requestParameters.ServicePoint)
+                    && ImpersonationLevel == requestParameters.ImpersonationLevel;
             }
 
             public bool AreParametersAcceptableForCaching()
@@ -988,7 +995,7 @@ namespace System.Net
 
         public override void Abort()
         {
-            if (Interlocked.Exchange(ref _abortCalled, 1) != 0)
+            if (Interlocked.Exchange(ref _abortCalled, true))
             {
                 return;
             }
@@ -1118,7 +1125,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (Interlocked.Exchange(ref _beginGetRequestStreamCalled, 1) != 0)
+            if (Interlocked.Exchange(ref _beginGetRequestStreamCalled, true))
             {
                 throw new InvalidOperationException(SR.net_repcall);
             }
@@ -1140,7 +1147,7 @@ namespace System.Net
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
 
-            if (Interlocked.Exchange(ref _endGetRequestStreamCalled, 1) != 0)
+            if (Interlocked.Exchange(ref _endGetRequestStreamCalled, true))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndGetRequestStream"));
             }
@@ -1391,7 +1398,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (Interlocked.Exchange(ref _beginGetResponseCalled, 1) != 0)
+            if (Interlocked.Exchange(ref _beginGetResponseCalled, true))
             {
                 throw new InvalidOperationException(SR.net_repcall);
             }
@@ -1411,7 +1418,7 @@ namespace System.Net
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
 
-            if (Interlocked.Exchange(ref _endGetResponseCalled, 1) != 0)
+            if (Interlocked.Exchange(ref _endGetResponseCalled, true))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndGetResponse"));
             }
@@ -1558,7 +1565,7 @@ namespace System.Net
 
         private void CheckAbort()
         {
-            if (Volatile.Read(ref _abortCalled) == 1)
+            if (_abortCalled)
             {
                 throw new WebException(SR.net_reqaborted, WebExceptionStatus.RequestCanceled);
             }
@@ -1665,6 +1672,17 @@ namespace System.Net
                 handler.PreAuthenticate = parameters.PreAuthenticate;
                 handler.Expect100ContinueTimeout = parameters.ContinueTimeout;
                 client.Timeout = parameters.Timeout;
+
+                if (request != null && request.ImpersonationLevel != TokenImpersonationLevel.None)
+                {
+                    // This is legacy feature and we don't have public API at the moment.
+                    // So we want to process it only if explicitly set.
+                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
+                    Debug.Assert(settings != null);
+                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(fi != null);
+                    fi.SetValue(settings, request.ImpersonationLevel);
+                }
 
                 if (parameters.CookieContainer != null)
                 {

@@ -190,7 +190,7 @@ jobs:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -428,6 +428,9 @@ jobs:
           - jitstress_isas_x86_evex
           - jitstress_isas_x86_noavx512
           - jitstressregs0x2000
+        ${{ if in(parameters.testGroup, 'jitstress-isas-sve') }}:
+          scenarios:
+          - jitstress_isas_arm64_sve
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -537,6 +540,7 @@ jobs:
             - jitosr_stress
             - jitpartialcompilation_pgo
             - jitoptrepeat
+            - jitoldlayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -549,6 +553,7 @@ jobs:
             - jitphysicalpromotion_full
             - jitrlcse
             - jitoptrepeat
+            - jitoldlayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg
@@ -613,15 +618,19 @@ jobs:
         condition: always()
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
-      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall
-        displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+      - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
         condition: always()
 
-      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      - task: AzureCLI@2
         displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
+        inputs:
+          azureSubscription: 'superpmi-collect-rw'
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
         condition: always()
-        env:
-          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
 
       - task: CopyFiles@2
         displayName: Copying superpmi.log of all partitions

@@ -101,13 +101,14 @@ namespace System.Collections.Concurrent
         public System.Collections.Generic.ICollection<TValue> Values { get { throw null; } }
         public TValue AddOrUpdate(TKey key, System.Func<TKey, TValue> addValueFactory, System.Func<TKey, TValue, TValue> updateValueFactory) { throw null; }
         public TValue AddOrUpdate(TKey key, TValue addValue, System.Func<TKey, TValue, TValue> updateValueFactory) { throw null; }
-        public TValue AddOrUpdate<TArg>(TKey key, System.Func<TKey, TArg, TValue> addValueFactory, System.Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument) { throw null; }
+        public TValue AddOrUpdate<TArg>(TKey key, System.Func<TKey, TArg, TValue> addValueFactory, System.Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument) where TArg : allows ref struct { throw null; }
         public void Clear() { }
         public bool ContainsKey(TKey key) { throw null; }
+        public AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>() where TAlternateKey : notnull, allows ref struct { throw null; }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
         public TValue GetOrAdd(TKey key, System.Func<TKey, TValue> valueFactory) { throw null; }
         public TValue GetOrAdd(TKey key, TValue value) { throw null; }
-        public TValue GetOrAdd<TArg>(TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) { throw null; }
+        public TValue GetOrAdd<TArg>(TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TArg : allows ref struct { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int index) { }
@@ -122,10 +123,22 @@ namespace System.Collections.Concurrent
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public System.Collections.Generic.KeyValuePair<TKey, TValue>[] ToArray() { throw null; }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryGetAlternateLookup<TAlternateKey>(out AlternateLookup<TAlternateKey> lookup) where TAlternateKey : notnull, allows ref struct { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public bool TryRemove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
         public bool TryRemove(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public bool TryUpdate(TKey key, TValue newValue, TValue comparisonValue) { throw null; }
+        public readonly struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
+        {
+            public System.Collections.Concurrent.ConcurrentDictionary<TKey, TValue> Dictionary { get { throw null; } }
+            public TValue this[TAlternateKey key] { get { throw null; } set { } }
+            public bool ContainsKey(TAlternateKey key) { throw null; }
+            public bool TryAdd(TAlternateKey key, TValue value) { throw null; }
+            public bool TryGetValue(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+            public bool TryGetValue(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TKey actualKey, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+            public bool TryRemove(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+            public bool TryRemove(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TKey actualKey, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        }
     }
     public partial class ConcurrentStack<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {

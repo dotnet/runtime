@@ -328,14 +328,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-bool Thread::CatchAtSafePoint()
-{
-    // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-    // a foreground GC proceed at that point. So it's always safe to return true.
-    ASSERT(IsGCSpecial());
-    return true;
-}
-
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
@@ -580,13 +572,13 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifdef FEATURE_HIJACK
 
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-EXTERN_C void FASTCALL RhpGcStressHijack();
+EXTERN_C void RhpGcProbeHijack();
+EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (&RhpGcProbeHijack == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
     if (&RhpGcStressHijack == address)
@@ -705,7 +697,9 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
+    pThread->HijackReturnAddress(
+        pThreadContext,
+        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS

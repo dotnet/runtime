@@ -26,12 +26,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task MethodOutParameterDataFlow ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task StaticInterfaceMethodDataflow ()
 		{
 			return RunTest (allowMissingWarnings: true);

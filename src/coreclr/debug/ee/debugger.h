@@ -588,6 +588,88 @@ class EMPTY_BASES_DECL ForceCatchHandlerFoundSHashTraits : public DefaultSHashTr
         }
 };
 typedef SHash<ForceCatchHandlerFoundSHashTraits> ForceCatchHandlerFoundTable;
+
+class TypeInModule
+{
+private:
+    Module *m_module;
+    mdTypeDef m_typeDef;
+
+public:
+
+    bool operator ==(const TypeInModule& other) const
+    {
+        return m_module == other.m_module && m_typeDef == other.m_typeDef;
+    }
+
+    bool operator !=(const TypeInModule& other) const
+    {
+        return !(*this == other);
+    }
+
+    bool IsNull() const
+    {
+        return m_module == NULL && m_typeDef == 0;
+    }
+
+    INT32 Hash() const
+    {
+        return (INT32)((UINT_PTR)m_module ^ m_typeDef);
+    }
+
+    TypeInModule(Module * module, mdTypeDef typeDef)
+        :m_module(module), m_typeDef(typeDef)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+    }
+
+    TypeInModule()
+        :m_module(NULL), m_typeDef(0)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+    }
+};
+
+class EMPTY_BASES_DECL CustomNotificationSHashTraits : public DefaultSHashTraits<TypeInModule>
+{
+    public:
+        typedef TypeInModule element_t;
+        typedef TypeInModule key_t;
+        static const bool s_NoThrow = false;
+
+        static BOOL Equals(const TypeInModule &e, const TypeInModule &f)
+        {
+            return e == f;
+        }
+        static TypeInModule GetKey(const TypeInModule &e)
+        {
+            return e;
+        }
+        static INT32 Hash(const TypeInModule &e)
+        {
+            return e.Hash();
+        }
+        static TypeInModule Null()
+        {
+            TypeInModule tim;
+            return tim;
+        }
+        static bool IsNull(const TypeInModule &e)
+        {
+            return e.IsNull();
+        }
+        static TypeInModule Deleted()
+        {
+            TypeInModule tim((Module *)-1, -1);
+            return tim;
+        }
+        static bool IsDeleted(const TypeInModule &e)
+        {
+            TypeInModule tim((Module *)-1, -1);
+            return e == tim;
+        }
+};
+typedef SHash<CustomNotificationSHashTraits> CustomNotificationTable;
 #endif
 
 /* ------------------------------------------------------------------------ *
@@ -946,7 +1028,6 @@ public:
         friend class DebuggerMethodInfo;
 
         DebuggerJitInfo* m_pCurrent;
-        Module* m_pLoaderModuleFilter;
         MethodDesc* m_pMethodDescFilter;
     public:
         DJIIterator();
@@ -954,12 +1035,11 @@ public:
         bool IsAtEnd();
         DebuggerJitInfo * Current();
         void Next(BOOL fFirst = FALSE);
-
     };
 
     // Ensure the DJI cache is completely up to date. (This can be an expensive call, but
     // much less so if pMethodDescFilter is used).
-    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module * pModuleFilter, MethodDesc * pMethodDescFilter);
+    void CreateDJIsForNativeBlobs(AppDomain * pAppDomain, MethodDesc * pMethodDescFilter);
 
     // Ensure the DJI cache is up to date for a particular closed method desc
     void CreateDJIsForMethodDesc(MethodDesc * pMethodDesc);
@@ -967,12 +1047,9 @@ public:
     // Get an iterator for all native blobs (accounts for Generics, Enc, + Prejiiting).
     // Must be stopped when we do this. This could be heavy weight.
     // This will call CreateDJIsForNativeBlobs() to ensure we have all DJIs available.
-    // You may optionally pass pLoaderModuleFilter to restrict the DJIs iterated to
-    // exist only on MethodDescs whose loader module matches the filter (pass NULL not
-    // to filter by loader module).
     // You may optionally pass pMethodDescFilter to restrict the DJIs iterated to only
     // a single generic instantiation.
-    void IterateAllDJIs(AppDomain * pAppDomain, Module * pLoaderModuleFilter, MethodDesc * pMethodDescFilter, DJIIterator * pEnum);
+    void IterateAllDJIs(AppDomain * pAppDomain, MethodDesc * pMethodDescFilter, DJIIterator * pEnum);
 
 private:
     // The linked list of JIT's of this version of the method.   This will ALWAYS
@@ -1974,6 +2051,8 @@ public:
 
     BOOL ShouldSendCatchHandlerFound(Thread* pThread);
 
+    BOOL ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef);
+
     void SendCatchHandlerFound(Thread *pThread,
                                FramePointer fp,
                                SIZE_T nOffset,
@@ -2276,6 +2355,7 @@ public:
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
     HRESULT UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
+    HRESULT UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled);
 
     //
     // The debugger mutex is used to protect any "global" Left Side
@@ -2412,7 +2492,7 @@ public:
         }
         CONTRACTL_END;
 
-        if (g_fProcessDetach)
+        if (IsAtProcessExit())
             return true;
 
         if (g_pEEInterface->GetThread())
@@ -2768,10 +2848,9 @@ private:
 
         Thread *pThread = g_pEEInterface->GetThread();
         AppDomain *pAppDomain = NULL;
-
         if (pThread)
         {
-            pAppDomain = pThread->GetDomain();
+            pAppDomain = AppDomain::GetCurrentDomain();
         }
 
         InitIPCEvent(ipce,
@@ -2865,9 +2944,11 @@ private:
     BOOL                  m_ignoreThreadDetach;
     PTR_DebuggerMethodInfoTable   m_pMethodInfos;
     #ifdef DACCESS_COMPILE
-    VOID * m_pForceCatchHandlerFoundEventsTable;
+    VOID *m_pForceCatchHandlerFoundEventsTable;
+    VOID *m_pCustomNotificationTable;
     #else
     ForceCatchHandlerFoundTable *m_pForceCatchHandlerFoundEventsTable;
+    CustomNotificationTable *m_pCustomNotificationTable;
     #endif
 
 
@@ -3613,7 +3694,7 @@ inline void * __cdecl operator new[](size_t n, const InteropSafe&)
     return result;
 }
 
-inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&) throw()
+inline void * __cdecl operator new(size_t n, const InteropSafe&, const std::nothrow_t&) noexcept
 {
     CONTRACTL
     {
@@ -3632,7 +3713,7 @@ inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&)
     return result;
 }
 
-inline void * __cdecl operator new[](size_t n, const InteropSafe&, const NoThrow&) throw()
+inline void * __cdecl operator new[](size_t n, const InteropSafe&, const std::nothrow_t&) noexcept
 {
     CONTRACTL
     {
@@ -3807,7 +3888,7 @@ HANDLE OpenWin32EventOrThrow(
 // debugger may not be expecting it.  Instead, just leave the lock and retry.
 // When we leave, we'll enter coop mode first and get suspended if a suspension is in progress.
 // Afterwards, we'll transition back into preemptive mode, and we'll block because this thread
-// has been suspended by the debugger (see code:Thread::RareEnablePreemptiveGC).
+// has been suspended by the debugger (see code:Thread::RareDisablePreemptiveGC).
 #define SENDIPCEVENT_BEGIN_EX(pDebugger, thread, gcxStmt)                                 \
   {                                                                                       \
     FireEtwDebugIPCEventStart();                                                          \

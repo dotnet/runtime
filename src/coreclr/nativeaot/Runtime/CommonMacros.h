@@ -119,6 +119,11 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
+#elif defined(HOST_LOONGARCH64)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
+
 #else
 #error Unsupported target architecture
 #endif
@@ -318,7 +323,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 };
 
 #ifdef PROFILE_STARTUP
-extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
+extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)

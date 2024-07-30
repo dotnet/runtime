@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 using Internal.Text;
@@ -46,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -74,8 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode target = reloc.Target;
                     if (target is ISymbolNodeWithLinkage withLinkage)
                         target = withLinkage.NodeForLinkage(factory);
-                    relocOccurences.TryGetValue(target, out int num);
-                    relocOccurences[target] = ++num;
+                    CollectionsMarshal.GetValueRefOrAddDefault(relocOccurences, target, out _)++;
                 }
             }
 

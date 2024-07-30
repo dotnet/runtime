@@ -50,9 +50,9 @@ static const char* getTime(const FILETIME* time, _Out_writes_ (buffLen) char* bu
 }
 
 /*********************************************************************************/
-static inline __int64& toInt64(FILETIME& t)
+static inline int64_t& toInt64(FILETIME& t)
 {
-    return *((__int64 *) &t);
+    return *((int64_t *) &t);
 }
 
 /*********************************************************************************/
@@ -362,7 +362,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     ThreadStressLog* inProcPtr;
     ThreadStressLog** logsPtr = &logs;
     int threadCtr = 0;
-    unsigned __int64 lastTimeStamp = 0;// timestamp of last log entry
+    uint64_t lastTimeStamp = 0;// timestamp of last log entry
 
     while(outProcPtr != 0) {
         inProcPtr = new ThreadStressLog;
@@ -459,7 +459,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     FILETIME endTime;
     double totalSecs;
     totalSecs = ((double) (lastTimeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
-    toInt64(endTime) = toInt64(inProcLog.startTime) + ((__int64) (totalSecs * 1.0E7));
+    toInt64(endTime) = toInt64(inProcLog.startTime) + ((int64_t) (totalSecs * 1.0E7));
 
     char timeBuff[64];
     vDoOut(bDoGcHist, file, "    Clock frequency  = %5.3f GHz\n", inProcLog.tickFrequency / 1.0E9);

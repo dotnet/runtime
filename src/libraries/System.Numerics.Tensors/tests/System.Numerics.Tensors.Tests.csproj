@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- SYSLIB5001: Tensor<T> and related APIs are Experimental in .NET 9 -->
+    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -17,8 +19,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="TensorTests.cs" />
+    <Compile Include="TensorSpanTests.cs" />
+    <Compile Include="ReadOnlyTensorSpanTests.cs" />
+    <Compile Include="NRangeTests.cs" />
+    <Compile Include="NIndexTests.cs" />
     <Compile Include="TensorPrimitives.ConvertTo.cs" />
     <Compile Include="TensorPrimitives.Generic.cs" />
+    <Compile Include="TensorPrimitivesTests.Reference.cs" />
   </ItemGroup>
 
   <ItemGroup>

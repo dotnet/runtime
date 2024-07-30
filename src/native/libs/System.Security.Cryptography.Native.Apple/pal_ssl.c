@@ -262,7 +262,7 @@ int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* pro
 
         // This is extra consistency check to verify that the ALPN data appeared where we expect them
         // before dereferencing sslContext
-        if (tls != NULL && tls->alpnOwnData.length == length + 1)
+        if (tls != NULL && tls->alpnOwnData.length == (size_t)length + 1)
         {
             tls->alpn_announced = 1;
             tls->alpn_received = 1 ;
@@ -700,10 +700,14 @@ PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef s
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     // The underlying call handles NULL inputs, so just pass it through
-    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting);
+    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting > 0 ? 1 : 0);
 #pragma clang diagnostic pop
 
 #else
+    // ignore unused parameters
+    (void)sslContext;
+    (void)certificates;
+    (void)replaceExisting;
     return 0;
 #endif
 }

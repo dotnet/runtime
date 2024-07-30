@@ -62,8 +62,19 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     // First try just the unversioned symbol
     if (dlsym(libicuuc, "u_strlen") == NULL)
     {
+        // suppress Wformat-truncation false-positive warning for gcc 7 and 8
+#if defined(__GNUC__) && __GNUC__ > 6 &&__GNUC__ < 9
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+
         // Now try just the _majorVer added
         snprintf(symbolVersion, symbolVersionLen, "_%d%s", majorVer, suffix);
+
+#if defined(__GNUC__) && __GNUC__ > 6 &&__GNUC__ < 9
+#pragma GCC diagnostic pop
+#endif
+
         snprintf(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
         if (dlsym(libicuuc, symbolName) == NULL)
         {

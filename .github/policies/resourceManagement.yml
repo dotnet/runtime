@@ -699,6 +699,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - directhex
+            - matouskozak
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1604,7 +1605,7 @@ configuration:
           label: needs-breaking-change-doc-created
       - addReply:
           reply: >-
-            Added `needs-breaking-change-doc-created` label because this issue has the `breaking-change` label. 
+            Added `needs-breaking-change-doc-created` label because this issue has the `breaking-change` label.
 
 
             1. [ ] Create and link to this issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://aka.ms/dotnet/docs/new-breaking-change-issue), then remove this `needs-breaking-change-doc-created` label.
@@ -1622,7 +1623,7 @@ configuration:
           label: needs-breaking-change-doc-created
       - addReply:
           reply: >-
-            Added `needs-breaking-change-doc-created` label because this PR has the `breaking-change` label. 
+            Added `needs-breaking-change-doc-created` label because this PR has the `breaking-change` label.
 
 
             When you commit this breaking change:
@@ -1715,9 +1716,11 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
-            - kotlarmilos
             replyTemplate: >-
               Tagging subscribers to 'os-ios': ${mentionees}
 
@@ -1737,6 +1740,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - simonrozsival
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1806,6 +1811,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1827,6 +1835,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -2087,4 +2098,4 @@ configuration:
           label: backlog-cleanup-candidate
       description: Remove `no-recent-activity` label from PRs when new review is added
 onFailure: 
-onSuccess: 
+onSuccess:

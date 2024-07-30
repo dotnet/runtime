@@ -1300,7 +1300,8 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         "result" : result,
                         "time": time,
                         "test_output": test_output,
-                        "assembly_display_name": display_name
+                        "assembly_display_name": display_name,
+                        "is_merged": assembly_is_merged_tests_run
                     }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
@@ -1408,7 +1409,9 @@ def create_repro(args, env, tests):
     # Now that the args.repro_location exists under <runtime>/artifacts
     # create wrappers which will simply run the test with the correct environment
     for test in failed_tests:
-        if test["test_path"] is None:
+        if test["is_merged"]:
+            print("Skipping repro for merged test: %s (%s)" % (test["name"], test["assembly_display_name"]))
+        elif test["test_path"] is None:
             print("Failed to create repro for test: %s (%s)" % (test["name"], test["assembly_display_name"]))
         else:
             debug_env = DebugEnv(args, env, test)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -2530,6 +2531,213 @@ internal class Dummy
                 Assert.Equal(typeof(int?), fieldFromDisk.FieldType);
                 Assert.Equal(1, fieldFromDisk.GetValue(obj));
                 tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void TypeBuilderArrayReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("Break", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Isinst, typeBuilder.MakeArrayType());
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Cgt_Un);
+                il.Emit(OpCodes.Ret);
+
+                mb = typeBuilder.DefineMethod("MultiDimensionalArray", MethodAttributes.Static | MethodAttributes.Public, typeof(bool), [typeof(object)]);
+                il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Isinst, typeBuilder.MakeArrayType(3));
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Cgt_Un);
+                il.Emit(OpCodes.Ret);
+
+                mb = typeBuilder.DefineMethod("JaggedArray", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakeArrayType().MakeArrayType().MakeArrayType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("Break")!;
+                Assert.False((bool)method.Invoke(null, [typeFromDisk]));
+                object arrInst = Array.CreateInstance(typeFromDisk, 2)!;
+                Assert.True((bool)method.Invoke(null, [arrInst]));
+
+                method = typeFromDisk.GetMethod("MultiDimensionalArray")!;
+                Assert.False((bool)method.Invoke(null, [arrInst]));
+                arrInst = Array.CreateInstance(typeFromDisk, 3, 2, 1)!;
+                Assert.True((bool)method.Invoke(null, [arrInst]));
+
+                method = typeFromDisk.GetMethod("JaggedArray")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.True(result.IsArray);
+                Assert.Equal("MyType[][][]", result.Name);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void GenericTypeParameterOfTypeBuilderArrayInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodInfo typeGetTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle")!;
+                MethodBuilder mb = typeBuilder.DefineMethod("LoadDictionary", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                Type dictType = typeof(Dictionary<,>).MakeGenericType(typeBuilder.MakeArrayType(), typeof(int));
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, dictType);
+                il.Emit(OpCodes.Call, typeGetTypeFromHandleMethod);
+                il.Emit(OpCodes.Ret);
+
+                MethodBuilder mb2 = typeBuilder.DefineMethod("LoadList", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                Type listType = typeof(List<>).MakeGenericType(typeBuilder.MakeArrayType());
+                il = mb2.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, listType.MakeArrayType());
+                il.Emit(OpCodes.Call, typeGetTypeFromHandleMethod);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("LoadDictionary")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("Dictionary`2", result.Name);
+                Assert.True(result.IsConstructedGenericType);
+                Assert.Equal("MyType[]", result.GetGenericArguments()[0].Name);
+                method = typeFromDisk.GetMethod("LoadList")!;
+                result = (Type)method.Invoke(null, null);
+                Assert.Equal("List`1[]", result.Name);
+                Assert.True(result.IsArray);
+                result = result.GetElementType();
+                Assert.Equal("MyType[]", result.GetGenericArguments()[0].Name);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void TypeBuilderPointerReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("IsPointer", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakePointerType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("IsPointer")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("MyType*", result.Name);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void TypeBuilderByRefReferencedInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder mb = typeBuilder.DefineMethod("GetByRef", MethodAttributes.Static | MethodAttributes.Public, typeof(Type), null);
+                ILGenerator il = mb.GetILGenerator();
+                il.Emit(OpCodes.Ldtoken, typeBuilder.MakeByRefType());
+                il.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle")!);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("GetByRef")!;
+                Type result = (Type)method.Invoke(null, null);
+                Assert.Equal("MyType&", result.Name);
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void NestedTypeTokenReferencedCorrectlyInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder writeMethod = typeBuilder.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+                ILGenerator il = writeMethod.GetILGenerator();
+                il.DeclareLocal(typeof(HashSet<int>.Enumerator));
+                il.Emit(OpCodes.Newobj, typeof(HashSet<int>).GetConstructors().First(c => c.GetParameters().Length == 0));
+                il.Emit(OpCodes.Callvirt, typeof(HashSet<int>).GetMethod("GetEnumerator")!);
+                il.Emit(OpCodes.Stloc_0);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("Test")!;
+                method.Invoke(null, null); // just make sure token works
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ValueTypeParentTest()
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                Assembly coreAssembly = mlc.CoreAssembly!;
+                Type valueTypeType = coreAssembly.GetType("System.ValueType")!;
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyWithValueType"), coreAssembly);
+                ModuleBuilder mob = ab.DefineDynamicModule("MyModule");
+
+                TypeBuilder valueTb = mob.DefineType("MyValueType", 0, valueTypeType);
+                MethodBuilder vMeb = valueTb.DefineMethod("Method", MethodAttributes.Public, typeof(int), null);
+                ILGenerator il = vMeb.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Ret);
+                valueTb.CreateType();
+                Assert.True(valueTb.IsValueType);
+
+                TypeBuilder tb = mob.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder meb = tb.DefineMethod("MyMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+                il = meb.GetILGenerator();
+                il.BeginScope();
+                il.DeclareLocal(valueTb);
+                il.Emit(OpCodes.Ldloca_S, 0);
+                il.Emit(OpCodes.Initobj, valueTb);
+                il.Emit(OpCodes.Ldloca_S, 0);
+                il.Emit(OpCodes.Call, valueTb.GetMethod("Method"));
+                il.EndScope();
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+
+                using var stream = new MemoryStream();
+                ab.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+                var method = assembly.GetType("MyType")!.GetMethod("MyMethod");
+                int result = (int)method!.Invoke(null, null);
+                Assert.Equal(1, result);
             }
         }
     }

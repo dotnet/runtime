@@ -382,7 +382,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void HttpClientUsesSslCertEnvironmentVariables()
+        public async Task HttpClientUsesSslCertEnvironmentVariables()
         {
             // We set SSL_CERT_DIR and SSL_CERT_FILE to empty locations.
             // The HttpClient should fail to validate the server certificate.
@@ -395,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
+            await RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
                 var version = Version.Parse(useVersionString);
@@ -405,7 +405,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

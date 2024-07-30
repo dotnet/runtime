@@ -92,17 +92,14 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\ColorConverterCommon.cs"
-             Link="System\Drawing\ColorConverterCommon.cs" />
-    <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs"
-             Link="System\Drawing\ColorTable.cs" />
+    <Compile Include="$(CommonPath)System\Drawing\ColorConverterCommon.cs" Link="System\Drawing\ColorConverterCommon.cs" />
+    <Compile Include="$(CommonPath)System\Drawing\ColorTable.cs" Link="System\Drawing\ColorTable.cs" />
     <Compile Include="System\Drawing\ColorConverter.cs" />
     <Compile Include="System\Drawing\PointConverter.cs" />
     <Compile Include="System\Drawing\RectangleConverter.cs" />
     <Compile Include="System\Drawing\SizeConverter.cs" />
     <Compile Include="System\Drawing\SizeFConverter.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <!-- New code introduced for netcoreapp 2.0 -->
     <Compile Include="System\ComponentModel\AddingNewEventArgs.cs" />
     <Compile Include="System\ComponentModel\AddingNewEventHandler.cs" />
@@ -184,6 +181,7 @@
     <Compile Include="System\ComponentModel\ToolboxItemAttribute.cs" />
     <Compile Include="System\ComponentModel\ToolboxItemFilterAttribute.cs" />
     <Compile Include="System\ComponentModel\ToolboxItemFilterType.cs" />
+    <Compile Include="System\ComponentModel\TrimSafeReflectionHelper.cs" />
     <Compile Include="System\ComponentModel\WarningException.cs" />
     <Compile Include="System\ComponentModel\Design\ActiveDesignerEventArgs.cs" />
     <Compile Include="System\ComponentModel\Design\ActiveDocumentEventHandler.cs" />
@@ -250,11 +248,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
-                      ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      OutputItemType="Analyzer" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />

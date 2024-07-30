@@ -57,7 +57,7 @@ namespace System.Text.RegularExpressions.Generator
                 // if there are no changes.
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
-                    (node, _) => node is MethodDeclarationSyntax,
+                    (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
                     GetRegexMethodDataOrFailureDiagnostic)
 
                 // Filter out any parsing errors that resulted in null objects being returned.
@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return new RegexMethod(method.DeclaringType, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
+                            return new RegexMethod(method.DeclaringType, method.IsProperty, method.DiagnosticLocation, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
                         }
                         catch (Exception e)
                         {
@@ -140,8 +140,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // At this point we'll be emitting code.  Create a writer to hold it all.
-                var sw = new StringWriter();
-                IndentedTextWriter writer = new(sw);
+                using StringWriter sw = new();
+                using IndentedTextWriter writer = new(sw);
 
                 // Add file headers and required usings.
                 foreach (string header in s_headers)
@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions.Generator
                         else
                         {
                             regexMethod.IsDuplicate = false;
-                            regexMethod.GeneratedName = $"{regexMethod.MethodName}_{id++}";
+                            regexMethod.GeneratedName = $"{regexMethod.MemberName}_{id++}";
                             emittedExpressions.Add(key, regexMethod);
                         }
 

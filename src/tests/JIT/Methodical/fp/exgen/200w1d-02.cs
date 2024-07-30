@@ -151,6 +151,7 @@ public unsafe class testout1
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         vtstatic_0.a0_0 = 3.7914999471280252E-09;

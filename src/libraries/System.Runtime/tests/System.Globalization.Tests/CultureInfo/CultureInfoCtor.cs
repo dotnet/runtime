@@ -430,7 +430,7 @@ namespace System.Globalization.Tests
         [InlineData(0x4C00)]
         public void TestCreationWithTemporaryLCID(int lcid)
         {
-            // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-lcid/926e694f-1797-4418-a922-343d1c5e91a6
+            // https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/926e694f-1797-4418-a922-343d1c5e91a6
             // If a temporary LCID is assigned it will be dynamically assigned at runtime to be
             // 0x2000, 0x2400, 0x2800, 0x2C00, 0x3000, 0x3400, 0x3800, 0x3C00, 0x4000, 0x4400, 0x4800, or 0x4C00,
             // for the valid language-script-region tags.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -517,11 +518,12 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                AssertReceive(receiver);
+                byte[] data = [1, 2, 3];
+                sender.Send(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                AssertReceive(receiver, [1, 2]);
 
-                sender.Send(new ReadOnlySpan<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                AssertReceive(receiver);
+                sender.Send(new ReadOnlySpan<byte>(data), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                AssertReceive(receiver, data);
             }
         }
 
@@ -536,11 +538,12 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                sender.Send(new byte[1], 1, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-                AssertReceive(receiver);
+                byte[] data = [1, 2, 3];
+                sender.Send(data, 2, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                AssertReceive(receiver, [1, 2]);
 
-                sender.Send(new ReadOnlySpan<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-                AssertReceive(receiver);
+                sender.Send(new ReadOnlySpan<byte>(data), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                AssertReceive(receiver, data);
             }
         }
 
@@ -551,20 +554,22 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                sender.Send(new byte[1], 1);
-                AssertReceive(receiver);
+                byte[] data = [1, 2, 3];
 
-                sender.Send(new ReadOnlySpan<byte>(new byte[1]));
-                AssertReceive(receiver);
+                sender.Send(data, 2);
+                AssertReceive(receiver, [1, 2]);
+
+                sender.Send(new ReadOnlySpan<byte>(data));
+                AssertReceive(receiver, data);
             }
         }
 
-        private static void AssertReceive(UdpClient receiver)
+        private static void AssertReceive(UdpClient receiver, byte[] sentData)
         {
             IPEndPoint remoteEP = null;
             byte[] data = receiver.Receive(ref remoteEP);
             Assert.NotNull(remoteEP);
-            Assert.InRange(data.Length, 1, int.MaxValue);
+            Assert.True(Enumerable.SequenceEqual(sentData, data));
         }
 
         [Theory]
@@ -589,16 +594,17 @@ namespace System.Net.Sockets.Tests
         public void BeginEndSend_BeginEndReceive_Success(bool ipv4)
         {
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            byte[] data = [1, 2, 3];
 
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                sender.EndSend(sender.BeginSend(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
+                sender.EndSend(sender.BeginSend(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
 
                 IPEndPoint remoteEP = null;
-                byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
+                byte[] receivedData = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
                 Assert.NotNull(remoteEP);
-                Assert.InRange(data.Length, 1, int.MaxValue);
+                Assert.True(Enumerable.SequenceEqual(receivedData, new byte[] {1, 2}));
             }
         }
 
@@ -606,15 +612,17 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
         public void BeginEndSend_BeginEndReceive_Connected_Success()
         {
+            byte[] data = [1, 2, 3];
+
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                sender.EndSend(sender.BeginSend(new byte[1], 1, null, null));
+                sender.EndSend(sender.BeginSend(data, 2, null, null));
 
                 IPEndPoint remoteEP = null;
-                byte[] data = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
+                byte[] receivedData = receiver.EndReceive(receiver.BeginReceive(null, null), ref remoteEP);
                 Assert.NotNull(remoteEP);
-                Assert.InRange(data.Length, 1, int.MaxValue);
+                Assert.True(Enumerable.SequenceEqual(receivedData, new byte[] {1, 2}));
             }
         }
 
@@ -624,15 +632,16 @@ namespace System.Net.Sockets.Tests
         public async Task SendAsync_ReceiveAsync_Success(bool ipv4)
         {
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            byte[] data = [1, 2, 3];
 
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                await sender.SendAsync(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                await AssertReceiveAsync(receiver, [1, 2]);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                await AssertReceiveAsync(receiver, data);
             }
         }
 
@@ -643,15 +652,16 @@ namespace System.Net.Sockets.Tests
         public async Task SendAsync_ReceiveAsync_With_HostName_Success(bool ipv4)
         {
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            byte[] data = [1, 2, 3];
 
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
-                await sender.SendAsync(new byte[1], "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(data, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                await AssertReceiveAsync(receiver, data);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                await AssertReceiveAsync(receiver, data);
             }
         }
 
@@ -675,29 +685,30 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // "localhost" resolves to IPv4 & IPV6 on Windows, but may resolve to only one of those on Unix
         public async Task SendAsync_ReceiveAsync_Connected_Success()
         {
+            byte[] data = [1, 2, 3];
+
             using (var receiver = new UdpClient("localhost", 0))
             using (var sender = new UdpClient("localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port))
             {
-                await sender.SendAsync(new byte[1], 1);
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(data, 2);
+                await AssertReceiveAsync(receiver, [1, 2]);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]));
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data));
+                await AssertReceiveAsync(receiver, data);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), null);
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data), null);
+                await AssertReceiveAsync(receiver, data);
 
-                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), null, 0);
-                await AssertReceiveAsync(receiver);
+                await sender.SendAsync(new ReadOnlyMemory<byte>(data), null, 0);
+                await AssertReceiveAsync(receiver, data);
             }
         }
 
-        private static async Task AssertReceiveAsync(UdpClient receiver)
+        private static async Task AssertReceiveAsync(UdpClient receiver, byte[] sentData)
         {
             UdpReceiveResult result = await receiver.ReceiveAsync();
             Assert.NotNull(result.RemoteEndPoint);
-            Assert.NotNull(result.Buffer);
-            Assert.InRange(result.Buffer.Length, 1, int.MaxValue);
+            Assert.True(Enumerable.SequenceEqual(sentData, result.Buffer));
         }
 
         [Fact]

@@ -105,13 +105,12 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     {
         if (varTypeIsStruct(type))
         {
-            info.NumSegments = structDesc.eightByteCount;
-            info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[structDesc.eightByteCount];
+            info = ABIPassingInformation(comp, structDesc.eightByteCount);
 
             for (unsigned i = 0; i < structDesc.eightByteCount; i++)
             {
                 regNumber reg = structDesc.IsIntegralSlot(i) ? m_intRegs.Dequeue() : m_floatRegs.Dequeue();
-                info.Segments[i] =
+                info.Segment(i) =
                     ABIPassingSegment::InRegister(reg, structDesc.eightByteOffsets[i], structDesc.eightByteSizes[i]);
             }
         }
@@ -194,6 +193,45 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
 
     return ABIPassingInformation::FromSegment(comp, segment);
 }
+
+//-----------------------------------------------------------------------------
+// GetShadowSpaceCallerOffsetForReg:
+//   Get the offset (starting at 0) at which a parameter register has shadow
+//   stack space allocated by the caller.
+//
+// Parameters:
+//   reg    - The register
+//   offset - [out] Offset, starting at 0.
+//
+// Returns:
+//   True if the register is a parameter register with shadow space allocated
+//   by the caller; otherwise false.
+//
+bool ABIPassingInformation::GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset)
+{
+    switch (reg)
+    {
+        case REG_ECX:
+        case REG_XMM0:
+            *offset = 0;
+            return true;
+        case REG_EDX:
+        case REG_XMM1:
+            *offset = 8;
+            return true;
+        case REG_R8:
+        case REG_XMM2:
+            *offset = 16;
+            return true;
+        case REG_R9:
+        case REG_XMM3:
+            *offset = 24;
+            return true;
+        default:
+            return false;
+    }
+}
+
 #endif
 
 #endif // TARGET_AMD64

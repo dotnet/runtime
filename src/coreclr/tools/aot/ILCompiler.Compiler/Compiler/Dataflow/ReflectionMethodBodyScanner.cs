@@ -118,7 +118,7 @@ namespace ILCompiler.Dataflow
             if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
             {
                 var method = methodBody.OwningMethod;
-                var methodReturnValue = _annotations.GetMethodReturnValue(method);
+                var methodReturnValue = _annotations.GetMethodReturnValue(method, isNewObj: false);
                 if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
                     HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, method.GetDisplayName());
             }
@@ -315,7 +315,8 @@ namespace ILCompiler.Dataflow
             var callingMethodDefinition = callingMethodBody.OwningMethod;
             Debug.Assert(callingMethodDefinition == diagnosticContext.Origin.MemberDefinition);
 
-            var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod);
+            bool isNewObj = operation == ILOpcode.newobj;
+            var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, isNewObj);
             Debug.Assert(
                 RequiresReflectionMethodBodyScannerForCallSite(reflectionMarker.Annotations, calledMethod) ||
                 annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);

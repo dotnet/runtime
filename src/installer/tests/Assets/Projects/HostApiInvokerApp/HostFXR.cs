@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace HostApiInvokerApp
 {
-    public static class HostFXR
+    public static unsafe class HostFXR
     {
         internal static class hostfxr
         {
@@ -59,6 +59,34 @@ namespace HostApiInvokerApp
                 internal IntPtr frameworks;
             }
 
+            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+            internal struct hostfxr_framework_result
+            {
+                public nuint size;
+                public string name;
+                public string requested_version;
+                public string resolved_version;
+                public string resolved_path;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct hostfxr_resolve_frameworks_result
+            {
+                public nuint size;
+                public nuint resolved_count;
+                public IntPtr resolved_frameworks;
+                public nuint unresolved_count;
+                public IntPtr unresolved_frameworks;
+            };
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct hostfxr_initialize_parameters
+            {
+                public nuint size;
+                public IntPtr host_path;
+                public IntPtr dotnet_root;
+            }
+
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
             internal delegate void hostfxr_resolve_sdk2_result_fn(
                 hostfxr_resolve_sdk2_result_key_t key,
@@ -100,6 +128,18 @@ namespace HostApiInvokerApp
                 string dotnet_root,
                 IntPtr reserved,
                 hostfxr_get_dotnet_environment_info_result_fn result,
+                IntPtr result_context);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            internal delegate void hostfxr_resolve_frameworks_result_fn(
+                 IntPtr result,
+                 IntPtr result_context);
+
+            [DllImport(nameof(hostfxr), CharSet = CharSet.Auto, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int hostfxr_resolve_frameworks_for_runtime_config(
+                string runtime_config_path,
+                hostfxr_initialize_parameters* parameters,
+                hostfxr_resolve_frameworks_result_fn callback,
                 IntPtr result_context);
         }
 
@@ -250,6 +290,85 @@ namespace HostApiInvokerApp
             Console.WriteLine($"{api} framework paths:[{string.Join(";", frameworks.Select(f => f.path).ToList())}]");
         }
 
+        /// <summary>
+        /// Test that invokes hostfxr_resolve_frameworks_for_runtime_config.
+        /// </summary>
+        /// <param name="args[0]">Path to runtime config file</param>
+        /// <param name="args[1]">(Optional) Path to the directory with dotnet.exe</param>
+        static unsafe void Test_hostfxr_resolve_frameworks_for_runtime_config(string[] args)
+        {
+            if (args.Length < 1)
+                throw new ArgumentException($"Invalid arguments. Expected: {nameof(hostfxr.hostfxr_resolve_frameworks_for_runtime_config)} <runtimeConfigPath> [<dotnetRoot>]");
+
+            string runtimeConfigPath = args[0];
+            string dotnetRoot = null;
+            if (args.Length >= 2)
+                dotnetRoot = args[1];
+
+            List<hostfxr.hostfxr_framework_result> resolved = new();
+            List<hostfxr.hostfxr_framework_result> unresolved = new();
+
+            IntPtr resultContext = new IntPtr(123);
+
+            hostfxr.hostfxr_resolve_frameworks_result_fn callback = (IntPtr resultPtr, IntPtr contextPtr) =>
+            {
+                hostfxr.hostfxr_resolve_frameworks_result result = Marshal.PtrToStructure<hostfxr.hostfxr_resolve_frameworks_result>(resultPtr);
+
+                if (result.size != (nuint)sizeof(hostfxr.hostfxr_resolve_frameworks_result))
+                    throw new Exception($"Unexpected {nameof(hostfxr.hostfxr_resolve_frameworks_result)}.size: {result.size}. Expected: {sizeof(hostfxr.hostfxr_resolve_frameworks_result)}.");
+
+                if (contextPtr != resultContext)
+                    throw new Exception($"Unexpected result_context value: {contextPtr}. Expected: {resultContext}.");
+
+                for (int i = 0; i < (int)result.resolved_count; i++)
+                {
+                    nint ptr = result.resolved_frameworks + i * Marshal.SizeOf<hostfxr.hostfxr_framework_result>();
+                    resolved.Add(Marshal.PtrToStructure<hostfxr.hostfxr_framework_result>(ptr));
+                }
+
+                for (int i = 0; i < (int)result.unresolved_count; i++)
+                {
+                    nint ptr = result.unresolved_frameworks + i * Marshal.SizeOf<hostfxr.hostfxr_framework_result>();
+                    unresolved.Add(Marshal.PtrToStructure<hostfxr.hostfxr_framework_result>(ptr));
+                }
+            };
+
+            int rc;
+            hostfxr.hostfxr_initialize_parameters parameters = new()
+            {
+                size = (nuint)sizeof(hostfxr.hostfxr_initialize_parameters),
+                host_path = IntPtr.Zero,
+                dotnet_root = dotnetRoot != null ? Marshal.StringToCoTaskMemAuto(dotnetRoot) : IntPtr.Zero
+            };
+            try
+            {
+                rc = hostfxr.hostfxr_resolve_frameworks_for_runtime_config(
+                    runtime_config_path: runtimeConfigPath,
+                    parameters: &parameters,
+                    callback: callback,
+                    result_context: resultContext);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(parameters.dotnet_root);
+            }
+
+            string api = nameof(hostfxr.hostfxr_resolve_frameworks_for_runtime_config);
+            LogResult(api, rc);
+
+            Console.WriteLine($"{api} resolved_count: {resolved.Count}");
+            foreach (var framework in resolved)
+            {
+                Console.WriteLine($"{api} resolved_framework: name={framework.name}, version={framework.resolved_version}, path=[{framework.resolved_path}]");
+            }
+
+            Console.WriteLine($"{api} unresolved_count: {unresolved.Count}");
+            foreach (var framework in unresolved)
+            {
+                Console.WriteLine($"{api} unresolved_framework: name={framework.name}, requested_version={framework.requested_version}, path=[{framework.resolved_path}]");
+            }
+        }
+
         private static void LogResult(string apiName, int rc)
             => Console.WriteLine(rc == 0 ? $"{apiName}:Success" : $"{apiName}:Fail[0x{rc:x}]");
 
@@ -268,6 +387,9 @@ namespace HostApiInvokerApp
                     break;
                 case nameof(hostfxr.hostfxr_get_dotnet_environment_info):
                     Test_hostfxr_get_dotnet_environment_info(args);
+                    break;
+                case nameof(hostfxr.hostfxr_resolve_frameworks_for_runtime_config):
+                    Test_hostfxr_resolve_frameworks_for_runtime_config(args);
                     break;
                 default:
                     return false;

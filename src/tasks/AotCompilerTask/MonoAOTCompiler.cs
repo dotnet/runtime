@@ -524,7 +524,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else
         {
             int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
-            if (BuildEngine is IBuildEngine9 be9)
+            IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
+            if (be9 is not null)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
             /*
@@ -553,20 +554,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
                 Instead, we want to use work-stealing so jobs can be run by any partition.
             */
-            ParallelLoopResult result = Parallel.ForEach(
+            try
+            {
+                ParallelLoopResult result = Parallel.ForEach(
                                             Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                             PrecompileLibraryParallel);
-
-            if (result.IsCompleted)
-            {
-                int numUnchanged = _totalNumAssemblies - _numCompiled;
-                if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-                    Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+                if (result.IsCompleted)
+                {
+                    int numUnchanged = _totalNumAssemblies - _numCompiled;
+                    if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                        Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+                }
+                else if (!Log.HasLoggedErrors)
+                {
+                    Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+                }
             }
-            else if (!Log.HasLoggedErrors)
+            finally
             {
-                Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+                be9?.ReleaseCores(allowedParallelism);
             }
         }
 
@@ -752,7 +759,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (CollectTrimmingEligibleMethods)
         {
-            string assemblyName = assemblyFilename.Replace(".", "_");
+            string assemblyName = FixupSymbolName(assemblyFilename);
             string outputFileName = assemblyName + "_compiled_methods.txt";
             string outputFilePath;
             if (string.IsNullOrEmpty(TrimmingEligibleMethodsOutputDirectory))

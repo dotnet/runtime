@@ -425,7 +425,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="UInt128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator UInt128(Int128 value) => new UInt128(value._upper, value._lower);
+        public static explicit operator UInt128(Int128 value) => Unsafe.BitCast<Int128, UInt128>(value);
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UInt128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -438,7 +438,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return new UInt128(value._upper, value._lower);
+            return Unsafe.BitCast<Int128, UInt128>(value);
         }
 
         /// <summary>Explicitly converts a 128-bit signed integer to a <see cref="UIntPtr" /> value.</summary>
@@ -1043,57 +1043,39 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower < right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            // If left and right have different signs: Signed comparison of _upper gives result since it is stored as two's complement
+            // If signs are equal and left._upper < right._upper: left < right for negative and positive values,
+            //                                                    since _upper is upper 64 bits in two's complement.
+            // If signs are equal and left._upper > right._upper: left > right for negative and positive values,
+            //                                                    since _upper is upper 64 bits in two's complement.
+            // If left._upper == right._upper: unsigned comparison of _lower gives the result for both negative and positive values since
+            //                                 lower values are lower 64 bits in two's complement.
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower < right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper < right._upper)
-                    || ((left._upper == right._upper) && (left._lower <= right._lower));
-            }
-            else
-            {
-                return IsNegative(left);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper < (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower <= right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower > right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower > right._lower));
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Int128 left, Int128 right)
         {
-            if (IsNegative(left) == IsNegative(right))
-            {
-                return (left._upper > right._upper)
-                    || ((left._upper == right._upper) && (left._lower >= right._lower));
-            }
-            else
-            {
-                return IsNegative(right);
-            }
+            // See comment in < operator for how this works.
+            return ((long)left._upper > (long)right._upper)
+                || ((left._upper == right._upper) && (left._lower >= right._lower));
         }
 
         //
@@ -1538,6 +1520,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static Int128 INumberBase<Int128>.MinMagnitudeNumber(Int128 x, Int128 y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Int128 INumberBase<Int128>.MultiplyAddEstimate(Int128 left, Int128 right, Int128 addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

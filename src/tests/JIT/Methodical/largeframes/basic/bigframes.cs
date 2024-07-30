@@ -143,6 +143,7 @@ namespace BigFrames_bigframes
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test1();

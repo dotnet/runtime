@@ -141,10 +141,10 @@ namespace ILCompiler
             switch (_targetKind)
             {
                 case TargetKind.CanonicalEntrypoint:
-                    return factory.CanonicalEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.AddressTakenMethodEntrypoint(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.ExactCallableAddress:
-                    return factory.ExactCallableAddress(TargetMethod, TargetMethodIsUnboxingThunk);
+                    return factory.ExactCallableAddressTakenAddress(TargetMethod, TargetMethodIsUnboxingThunk);
 
                 case TargetKind.InterfaceDispatch:
                     return factory.InterfaceDispatchCell(TargetMethod);
@@ -306,20 +306,20 @@ namespace ILCompiler
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__DelegateCtor_");
+            sb.Append("__DelegateCtor_"u8);
             if (TargetNeedsVTableLookup)
-                sb.Append("FromVtbl_");
+                sb.Append("FromVtbl_"u8);
             Constructor.AppendMangledName(nameMangler, sb);
-            sb.Append("__");
+            sb.Append("__"u8);
             sb.Append(nameMangler.GetMangledMethodName(_targetMethod));
             if (_constrainedType != null)
             {
-                sb.Append("__");
+                sb.Append("__"u8);
                 nameMangler.GetMangledTypeName(_constrainedType);
             }
             if (Thunk != null)
             {
-                sb.Append("__");
+                sb.Append("__"u8);
                 Thunk.AppendMangledName(nameMangler, sb);
             }
         }
@@ -347,7 +347,7 @@ namespace ILCompiler
             if (compare != 0)
                 return compare;
 
-            compare = comparer.Compare(TargetMethod, other.TargetMethod);
+            compare = comparer.Compare(_targetMethod, other._targetMethod);
             if (compare != 0)
                 return compare;
 

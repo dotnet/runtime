@@ -139,6 +139,9 @@ typedef struct SeqPointInfo SeqPointInfo;
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
+// Used by MonoImage:aot_module to indicate aot_module was not found
+#define AOT_MODULE_NOT_FOUND GINT_TO_POINTER (-1)
+
 typedef struct
 {
 	MonoClass *klass;
@@ -3032,5 +3035,11 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
+
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error);
+
+MonoMethod *
+mini_replace_generated_method (MonoMethod *method, MonoError *error);
 
 #endif /* __MONO_MINI_H__ */

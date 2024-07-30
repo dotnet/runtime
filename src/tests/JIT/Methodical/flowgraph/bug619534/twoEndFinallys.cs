@@ -32,9 +32,10 @@ public class Test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
-        Test t = TwoEndFinallys(new string[] {});
+        Test t = TwoEndFinallys(new string[] { });
         if (t._temp == 101)
             return 100;
         else return 101;

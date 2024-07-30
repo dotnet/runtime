@@ -3,8 +3,6 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <EnablePreviewFeatures>True</EnablePreviewFeatures>
-    <NoWarn>CA2252</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

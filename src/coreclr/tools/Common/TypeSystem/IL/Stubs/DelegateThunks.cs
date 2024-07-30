@@ -12,7 +12,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     public abstract partial class DelegateThunk : ILStubMethod
     {
-        private DelegateInfo _delegateInfo;
+        protected readonly DelegateInfo _delegateInfo;
 
         public DelegateThunk(DelegateInfo delegateInfo)
         {
@@ -72,22 +72,6 @@ namespace Internal.IL.Stubs
             get
             {
                 return SystemDelegateType.GetKnownField("_helperObject");
-            }
-        }
-
-        protected FieldDesc FirstParameterField
-        {
-            get
-            {
-                return SystemDelegateType.GetKnownField("_firstParameter");
-            }
-        }
-
-        protected FieldDesc FunctionPointerField
-        {
-            get
-            {
-                return SystemDelegateType.GetKnownField("_functionPointer");
             }
         }
 
@@ -310,7 +294,6 @@ namespace Internal.IL.Stubs
             ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);
             ILLocalVariable invocationCountLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             ILLocalVariable iteratorLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            ILLocalVariable delegateToCallLocal = emitter.NewLocal(SystemDelegateType);
 
             ILLocalVariable returnValueLocal = 0;
             if (!Signature.ReturnType.IsVoid)
@@ -323,11 +306,11 @@ namespace Internal.IL.Stubs
 
             // ldarg.0 (this pointer)
             // ldfld Delegate._helperObject
-            // castclass Delegate.Wrapper[]
+            // castclass Delegate.Wrapper[] (omitted - generate unsafe cast assuming the delegate is well-formed)
             // stloc delegateArrayLocal
             codeStream.EmitLdArg(0);
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
-            codeStream.Emit(ILOpcode.castclass, emitter.NewToken(invocationListArrayType));
+            // codeStream.Emit(ILOpcode.castclass, emitter.NewToken(invocationListArrayType));
             codeStream.EmitStLoc(delegateArrayLocal);
 
             // Fill in invocationCountLocal
@@ -354,43 +337,31 @@ namespace Internal.IL.Stubs
 
             // Implement as do/while loop. We only have this stub in play if we're in the multicast situation
             // Find the delegate to call
-            // Delegate = delegateToCallLocal = delegateArrayLocal[iteratorLocal].Value;
+            // delegateArrayLocal[iteratorLocal].Value
 
             // ldloc delegateArrayLocal
             // ldloc iteratorLocal
             // ldelema Delegate.Wrapper
             // ldfld Delegate.Wrapper.Value
-            // stloc delegateToCallLocal
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
             codeStream.Emit(ILOpcode.ldelema, emitter.NewToken(delegateWrapperType));
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(delegateWrapperType.GetKnownField("Value")));
-            codeStream.EmitStLoc(delegateToCallLocal);
 
             // Call the delegate
-            // returnValueLocal = delegateToCallLocal(...);
+            // delegateArrayLocal[iteratorLocal].Value(...)
 
-            // ldloc delegateToCallLocal
-            // ldfld Delegate._firstParameter
             // ldarg 1, n
-            // ldloc delegateToCallLocal
-            // ldfld Delegate._functionPointer
-            // calli returnValueType thiscall (all the params)
+            // callvirt DelegateType.Invoke(...)
             // IF there is a return value
             // stloc returnValueLocal
-
-            codeStream.EmitLdLoc(delegateToCallLocal);
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(FirstParameterField));
 
             for (int i = 0; i < Signature.Length; i++)
             {
                 codeStream.EmitLdArg(i + 1);
             }
 
-            codeStream.EmitLdLoc(delegateToCallLocal);
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(FunctionPointerField));
-
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(Signature));
+            codeStream.Emit(ILOpcode.callvirt, emitter.NewToken(_delegateInfo.InvokeMethod.InstantiateAsOpen()));
 
             if (returnValueLocal != 0)
                 codeStream.EmitStLoc(returnValueLocal);
@@ -686,7 +657,7 @@ namespace Internal.IL.Stubs
                     TypeDesc intPtrType = context.GetWellKnownType(WellKnownType.IntPtr);
                     TypeDesc int32Type = context.GetWellKnownType(WellKnownType.Int32);
 
-                    _signature = new MethodSignature(0, 0, intPtrType, new[] { int32Type });
+                    _signature = new MethodSignature(0, 0, intPtrType, [ int32Type ]);
                 }
 
                 return _signature;

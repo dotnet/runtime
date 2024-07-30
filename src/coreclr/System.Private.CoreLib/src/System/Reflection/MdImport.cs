@@ -214,7 +214,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is MetadataImport))
+            if (obj is not MetadataImport)
                 return false;
             return Equals((MetadataImport)obj);
         }
@@ -270,12 +270,12 @@ namespace System.Reflection
                 : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {

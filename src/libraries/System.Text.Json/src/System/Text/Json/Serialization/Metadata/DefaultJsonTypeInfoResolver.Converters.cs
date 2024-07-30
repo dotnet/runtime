@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.CharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
-#if NETCOREAPP
+#if NET
             Add(JsonMetadataServices.DateOnlyConverter);
             Add(JsonMetadataServices.TimeOnlyConverter);
             Add(JsonMetadataServices.HalfConverter);

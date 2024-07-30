@@ -843,7 +843,22 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
+}
+
+bool EECodeManager::InterruptibleSafePointsEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // zero initialized
+    static ConfigDWORD interruptibleCallSitesEnabled;
+    return interruptibleCallSitesEnabled.val(CLRConfig::INTERNAL_InterruptibleCallSites) != 0;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -939,7 +954,7 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
     return state.lastRangeOffset;
 #else
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // #ifndef DACCESS_COMPILE
 }
 
@@ -1408,31 +1423,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible())
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
@@ -1441,7 +1431,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() ||
+            (InterruptibleSafePointsEnabled() && _gcInfoDecoder.CouldBeInterruptibleSafePoint()));
     }
 #endif
 
@@ -1529,6 +1520,24 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
+
+    if ((flags & ActiveStackFrame) != 0)
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        if (!gcInfoDecoder.HasInterruptibleRanges())
+        {
+            gcInfoDecoder = GcInfoDecoder(
+                gcInfoToken,
+                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                curOffs - 1
+            );
+
+            _ASSERTE((InterruptibleSafePointsEnabled() && gcInfoDecoder.CouldBeInterruptibleSafePoint()));
+        }
+    }
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                         pRD,

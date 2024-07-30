@@ -18,7 +18,7 @@ namespace System.Threading
         private static int s_staticsInitializationStage;
         private static bool s_isSingleProcessor;
         private static short s_maxSpinCount;
-        private static short s_minSpinCount;
+        private static short s_minSpinCountForAdaptiveSpin;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
@@ -202,7 +202,7 @@ namespace System.Threading
                     // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
                     s_isSingleProcessor = RuntimeImports.RhGetProcessCpuCount() == 1;
                     s_maxSpinCount = DetermineMaxSpinCount();
-                    s_minSpinCount = DetermineMinSpinCount();
+                    s_minSpinCountForAdaptiveSpin = DetermineMinSpinCountForAdaptiveSpin();
                 }
 
                 // Also initialize some types that are used later to prevent potential class construction cycles. If

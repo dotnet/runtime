@@ -430,7 +430,7 @@ namespace System.Collections.Immutable
             /// Adds the specified items to the end of the array.
             /// </summary>
             /// <param name="items">The items to add at the end of the array.</param>
-            public void AddRange(/*params*/ ReadOnlySpan<T> items)
+            public void AddRange(params ReadOnlySpan<T> items)
             {
                 int offset = this.Count;
                 this.Count += items.Length;
@@ -443,7 +443,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
-            public void AddRange<TDerived>(/*params*/ ReadOnlySpan<TDerived> items) where TDerived : T
+            public void AddRange<TDerived>(params ReadOnlySpan<TDerived> items) where TDerived : T
             {
                 int offset = this.Count;
                 this.Count += items.Length;
@@ -579,7 +579,8 @@ namespace System.Collections.Immutable
             /// <param name="length">The number of elements to remove.</param>
             public void RemoveRange(int index, int length)
             {
-                Requires.Range(index >= 0 && index + length <= _count, nameof(index));
+                Requires.Range(index >= 0 && index <= _count, nameof(index));
+                Requires.Range(length >= 0 && index <= _count - length, nameof(length));
 
                 if (length == 0)
                 {

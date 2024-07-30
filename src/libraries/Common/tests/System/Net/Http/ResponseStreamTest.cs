@@ -228,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_Streaming()

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILCompiler;
 using ILCompiler.Dataflow;
@@ -39,6 +40,7 @@ namespace ILLink.Shared.TrimAnalysis
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;
+            _isNewObj = operation == ILOpcode.newobj;
             _diagnosticContext = diagnosticContext;
             _callingMethod = callingMethod;
             _annotations = annotations;
@@ -87,6 +89,10 @@ namespace ILLink.Shared.TrimAnalysis
                                                 _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
                                             }
                                         }
+                                    }
+                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
                                     }
                                     else
                                     {
@@ -146,6 +152,10 @@ namespace ILLink.Shared.TrimAnalysis
                                                 _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
                                             }
                                         }
+                                    }
+                                    else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
                                     }
                                     else
                                     {
@@ -337,12 +347,6 @@ namespace ILLink.Shared.TrimAnalysis
                         if (Intrinsics.GetIntrinsicIdForMethod(_callingMethod) == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo)
                             break;
 
-                        if (param.IsEmpty())
-                        {
-                            // The static value is unknown and the below `foreach` won't execute
-                            _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ReflectedDelegate(null), "Delegate.Method access on unknown delegate type");
-                        }
-
                         foreach (var valueNode in param.AsEnumerable())
                         {
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
@@ -374,8 +378,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
                             //   void Method<T>(T instance) { instance.GetType().... }
-                            // Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-                            // But it could be that T is annotated with for example PublicMethods:
+                            // It could be that T is annotated with for example PublicMethods:
                             //   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
                             // In this case it's in theory possible to handle it, by treating the T basically as a base class
                             // for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
@@ -387,10 +390,34 @@ namespace ILLink.Shared.TrimAnalysis
                             // currently it won't do.
 
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType?.IsByRef == true)
+                            {
+                                staticType = ((ByRefType)staticType).ParameterType;
+                            }
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
-                                // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod));
+                                DynamicallyAccessedMemberTypes annotation = default;
+                                if (staticType is GenericParameterDesc genericParam)
+                                {
+                                    foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                                    {
+                                        if (constraint.IsWellKnownType(Internal.TypeSystem.WellKnownType.Enum))
+                                        {
+                                            annotation = DynamicallyAccessedMemberTypes.PublicFields;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (annotation != default)
+                                {
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                                }
+                                else
+                                {
+                                    // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                }
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -409,6 +436,10 @@ namespace ILLink.Shared.TrimAnalysis
                                 // we will also make it just work, even if the annotation doesn't match the usage.
                                 AddReturnValue(new SystemTypeValue(staticType));
                             }
+                            else if (staticType.IsTypeOf("System", "Enum"))
+                            {
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
+                            }
                             else
                             {
                                 Debug.Assert(staticType is MetadataType || staticType.IsArray);
@@ -425,7 +456,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
                                 // for the method, which means we're loosing the information about which staticType this
                                 // started with. For now we don't need it, but we can add it later on.
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, annotation));
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
                             }
                         }
                     }
@@ -680,5 +711,17 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
+    }
+
+    file static class Extensions
+    {
+        public static bool IsConstrainedToBeReferenceTypes(this Instantiation inst)
+        {
+            foreach (GenericParameterDesc param in inst)
+                if (!param.HasReferenceTypeConstraint)
+                    return false;
+
+            return true;
+        }
     }
 }
