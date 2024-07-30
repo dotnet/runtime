@@ -8292,7 +8292,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 return false;
             }
 
-            return parentNode->OperIsEmbBroadcastCompatible();
+            return parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding();
         }
 
         default:
