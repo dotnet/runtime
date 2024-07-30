@@ -23,6 +23,7 @@ namespace System.Text
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
         , IUtf8SpanFormattable
+        , IUtf8SpanParsable<Rune>
 #pragma warning restore SA1001
 #endif
     {
@@ -918,6 +919,20 @@ namespace System.Text
 
         bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryEncodeToUtf8(utf8Destination, out bytesWritten);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        static bool IUtf8SpanParsable<Rune>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Rune result)
+            => DecodeFromUtf8(utf8Text, out result, out int bytesConsumed) == OperationStatus.Done && bytesConsumed == utf8Text.Length;
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        static Rune IUtf8SpanParsable<Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider)
+        {
+            if (DecodeFromUtf8(utf8Text, out Rune result, out int bytesConsumed) != OperationStatus.Done || bytesConsumed != utf8Text.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            return result;
+        }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif

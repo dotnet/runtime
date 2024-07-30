@@ -15297,7 +15297,7 @@ namespace System.Text
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         FormKD = 6,
     }
-    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable
+    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Text.Rune>
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
@@ -15353,6 +15353,8 @@ namespace System.Text
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Text.Rune System.IUtf8SpanParsable<System.Text.Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }
         public static System.Text.Rune ToLower(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToLowerInvariant(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }
