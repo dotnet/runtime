@@ -6518,7 +6518,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).gc_allocation_context;
+        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
         if (globalCtx.alloc_ptr != nullptr)
         {
             mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;

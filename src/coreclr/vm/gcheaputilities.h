@@ -16,12 +16,12 @@ extern "C" {
 // This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
 struct ee_alloc_context
 {
-    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
-    // combined_limit is the minimum of:
+    // Any allocation that would overlap m_CombinedLimit needs to be handled by the allocation slow path.
+    // m_CombinedLimit is the minimum of:
     //  - gc_alloc_context.alloc_limit (the end of the current AC)
     //  - the sampling_limit
     //
-    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    // In the simple case that randomized sampling is disabled, m_CombinedLimit is always equal to alloc_limit.
     //
     // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
     // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
@@ -32,46 +32,46 @@ struct ee_alloc_context
     // flexible to handle those cases.
     //
     // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
-    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    // - if m_CombinedLimit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
     //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
     //   that to determine whether future allocated bytes should be sampled.
     //   This occurs either because the sampling feature is disabled, or because the randomized selection
     //   of sampled bytes didn't select a byte in this AC.
-    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
-    uint8_t* combined_limit;
-    gc_alloc_context gc_allocation_context;
+    // - if m_CombinedLimit < alloc_limit there is a sample limit in the AC. sample_limit = m_CombinedLimit.
+    uint8_t* m_CombinedLimit;
+    gc_alloc_context m_GCAllocContext;
 
     void init()
     {
         LIMITED_METHOD_CONTRACT;
-        combined_limit = 0;
-        gc_allocation_context.init();
+        m_CombinedLimit = 0;
+        m_GCAllocContext.init();
     }
 
     uint8_t* getCombinedLimit()
     {
         LIMITED_METHOD_CONTRACT;
-        return combined_limit;
+        return m_CombinedLimit;
     }
 
     static size_t getAllocPtrFieldOffset()
     {
         LIMITED_METHOD_CONTRACT;
-        return offsetof(ee_alloc_context, gc_allocation_context) + offsetof(gc_alloc_context, alloc_ptr);
+        return offsetof(ee_alloc_context, m_GCAllocContext) + offsetof(gc_alloc_context, alloc_ptr);
     }
 
     static size_t getCombinedLimitFieldOffset()
     {
         LIMITED_METHOD_CONTRACT;
-        return offsetof(ee_alloc_context, combined_limit);
+        return offsetof(ee_alloc_context, m_CombinedLimit);
     }
 
-    // Regenerate the randomized sampling limit and update the combined_limit field.
+    // Regenerate the randomized sampling limit and update the m_CombinedLimit field.
     inline void UpdateCombinedLimit()
     {
         // The randomized sampling feature is being submitted in stages. At this point the sampling is never
-        // activated so combined_limit is always equal to alloc_limit.
-        combined_limit = gc_allocation_context.alloc_limit;
+        // activated so m_CombinedLimit is always equal to alloc_limit.
+        m_CombinedLimit = m_GCAllocContext.alloc_limit;
     }
 };
 

@@ -139,7 +139,7 @@ CDAC_TYPE_END(RuntimeThreadLocals)
 
 CDAC_TYPE_BEGIN(EEAllocContext)
 CDAC_TYPE_INDETERMINATE(EEAllocContext)
-CDAC_TYPE_FIELD(EEAllocContext, /*GCAllocContext*/, GCAllocationContext, offsetof(ee_alloc_context, gc_allocation_context))
+CDAC_TYPE_FIELD(EEAllocContext, /*GCAllocContext*/, GCAllocationContext, offsetof(ee_alloc_context, m_GCAllocContext))
 CDAC_TYPE_END(EEAllocContext)
 
 CDAC_TYPE_BEGIN(GCAllocContext)

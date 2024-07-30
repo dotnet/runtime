@@ -970,7 +970,7 @@ public:
         {
             return nullptr;
         }
-        return &m_pRuntimeThreadLocals->alloc_context.gc_allocation_context;
+        return &m_pRuntimeThreadLocals->alloc_context.m_GCAllocContext;
     }
 
     // This is the type handle of the first object in the alloc context at the time
