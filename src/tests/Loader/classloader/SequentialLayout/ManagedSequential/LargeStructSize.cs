@@ -12,30 +12,24 @@ public unsafe class LargeStructSize
     struct X
     {
         byte x;
-        BigArray1 a;
+        BigArray a;
     }
 
     struct Y
     {
-        BigArray1 a;
+        BigArray a;
         byte y;
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = (((1<<27)-1)-6))] // FIELD_OFFSET_LAST_REAL_OFFSET is (((1<<27)-1)-6)
-    struct BigArray1
-    {
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = (((1<<27)-1)-6+1))]
-    struct BigArray2
+    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue)]
+    struct BigArray
     {
     }
 
     [Fact]
     public static void TestLargeStructSize()
     {
-        Assert.Equal((((1<<27)-1)-6), sizeof(BigArray1));
-        Assert.Throws<TypeLoadException>(() => sizeof(BigArray2));
+        Assert.Equal(int.MaxValue, sizeof(BigArray));
         Assert.Throws<TypeLoadException>(() => sizeof(X));
         Assert.Throws<TypeLoadException>(() => sizeof(Y));
     }
