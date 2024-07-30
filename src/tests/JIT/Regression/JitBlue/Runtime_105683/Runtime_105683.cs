@@ -28,6 +28,8 @@ public class Runtime_105683
     [Fact]
     public static void TestEntyPoint()
     {
+        if (!Bmi2.X64.IsSupported)
+            return;
         var vr1 = M1();
         ulong vr2 = Bmi2.X64.ZeroHighBits(vr1, s_1.F1);
         if (vr2 == 0)
