@@ -223,8 +223,8 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
         ee_alloc_context *threadContext = GetThreadEEAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->gc_allocation_context);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&threadContext->gc_allocation_context, size, flags);
+        GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&threadContext->m_GCAllocContext, size, flags);
         threadContext->UpdateCombinedLimit();
 
     }
@@ -232,8 +232,8 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
         ee_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->gc_allocation_context);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&globalContext->gc_allocation_context, size, flags);
+        GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
+        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&globalContext->m_GCAllocContext, size, flags);
         globalContext->UpdateCombinedLimit();
     }
 

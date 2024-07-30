@@ -180,8 +180,8 @@ LEAF_ENTRY JIT_TrialAllocSFastSP, _TEXT
         inc     [g_global_alloc_lock]
         jnz     JIT_NEW
 
-        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]      ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit] ; combined_limit
+        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]       ; alloc_ptr
+        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__m_CombinedLimit] ; m_CombinedLimit
 
         add     r8, rax
 
@@ -208,8 +208,8 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         inc     [g_global_alloc_lock]
         jnz     JIT_Box
 
-        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]      ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit] ; combined_limit
+        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]       ; alloc_ptr
+        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__m_CombinedLimit] ; m_CombinedLimit
 
         add     r8, rax
 
@@ -287,8 +287,8 @@ LEAF_ENTRY AllocateStringFastUP, _TEXT
         inc     [g_global_alloc_lock]
         jnz     FramedAllocateString
 
-        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]      ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit] ; combined_limit
+        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]       ; alloc_ptr
+        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__m_CombinedLimit] ; m_CombinedLimit
 
         add     r8, rax
 
@@ -343,8 +343,8 @@ LEAF_ENTRY JIT_NewArr1VC_UP, _TEXT
         inc     [g_global_alloc_lock]
         jnz     JIT_NewArr1
 
-        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]      ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit] ; combined_limit
+        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]       ; alloc_ptr
+        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__m_CombinedLimit] ; m_CombinedLimit
 
         add     r8, rax
         jc      AllocFailed
@@ -396,8 +396,8 @@ LEAF_ENTRY JIT_NewArr1OBJ_UP, _TEXT
         inc     [g_global_alloc_lock]
         jnz     JIT_NewArr1
 
-        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]      ; alloc_ptr
-        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit] ; combined_limit
+        mov     rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]       ; alloc_ptr
+        mov     r10, [g_global_alloc_context + OFFSETOF__ee_alloc_context__m_CombinedLimit] ; m_CombinedLimit
 
         add     r8, rax
 
