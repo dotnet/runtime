@@ -242,9 +242,6 @@ void InitializeExceptionHandling()
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
-#ifdef FEATURE_EMULATE_SINGLESTEP
-    PAL_SetHandleSingleStepAfterExceptionHandler(HandleSingleStepAfterException);
-#endif
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
@@ -5429,9 +5426,9 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
 
-#ifdef FEATURE_EMULATE_SINGLESTEP
-BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
+BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
+#ifdef FEATURE_EMULATE_SINGLESTEP    
     Thread *pThread = GetThreadNULLOk();
     if (pThread && pThread->IsSingleStepEnabled() &&
         exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
@@ -5439,14 +5436,9 @@ BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD ex
         exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
     {
         pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
-        return TRUE;
     }
-    return FALSE;
-}
 #endif
 
-BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
-{
     PCODE controlPc = GetIP(contextRecord);
 
     if (IsIPInWriteBarrierCodeCopy(controlPc))
