@@ -5835,7 +5835,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #else
 			// NT does not have varargs rax use, and NT ABI does not have red zone.
 			// Use red-zone mov/jmp instead of push/ret to preserve call/ret speculation stack.
-			// FIXME Just like NT the direct cases are are not ideal.
+			// FIXME Just like NT the direct cases are not ideal.
 			amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL

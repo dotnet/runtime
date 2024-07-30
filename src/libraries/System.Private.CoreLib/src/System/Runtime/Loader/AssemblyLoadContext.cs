@@ -604,7 +604,7 @@ namespace System.Runtime.Loader
 #if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
@@ -639,56 +639,44 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
+        private static RuntimeAssembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
             ArgumentException.ThrowIfNullOrEmpty(requestedSimpleName, "AssemblyName.Name");
-
-            // Get the name of the loaded assembly
-            string? loadedSimpleName = null;
 
             // Derived type's Load implementation is expected to use one of the LoadFrom* methods to get the assembly
             // which is a RuntimeAssembly instance. However, since Assembly type can be used build any other artifact (e.g. AssemblyBuilder),
             // we need to check for RuntimeAssembly.
-            RuntimeAssembly? rtLoadedAssembly = GetRuntimeAssembly(assembly);
-            if (rtLoadedAssembly != null)
+            RuntimeAssembly? runtimeAssembly = GetRuntimeAssembly(assembly);
+            if (runtimeAssembly == null)
             {
-                loadedSimpleName = rtLoadedAssembly.GetSimpleName();
+                throw new InvalidOperationException(SR.InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly);
             }
 
-            // The simple names should match at the very least
-            if (string.IsNullOrEmpty(loadedSimpleName) || !requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
+            if (!requestedSimpleName.Equals(runtimeAssembly.GetSimpleName(), StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
+                throw new InvalidOperationException(SR.InvalidOperation_ResolvedAssemblyRequestedNameMismatch);
             }
 
-            return assembly;
+            return runtimeAssembly;
         }
 
-        private Assembly? ResolveUsingLoad(AssemblyName assemblyName)
+        private RuntimeAssembly? ResolveUsingLoad(AssemblyName assemblyName)
         {
             string? simpleName = assemblyName.Name;
+
             Assembly? assembly = Load(assemblyName);
 
-            if (assembly != null)
-            {
-                assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
-            }
-
-            return assembly;
+            return (assembly != null) ? ValidateAssemblyNameWithSimpleName(assembly, simpleName) : null;
         }
 
-        private Assembly? ResolveUsingEvent(AssemblyName assemblyName)
+        private RuntimeAssembly? ResolveUsingEvent(AssemblyName assemblyName)
         {
             string? simpleName = assemblyName.Name;
 
             // Invoke the Resolving event callbacks if wired up
             Assembly? assembly = GetFirstResolvedAssemblyFromResolvingEvent(assemblyName);
-            if (assembly != null)
-            {
-                assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
-            }
 
-            return assembly;
+            return (assembly != null) ? ValidateAssemblyNameWithSimpleName(assembly, simpleName) : null;
         }
 
         // This method is called by the VM.
@@ -755,7 +743,7 @@ namespace System.Runtime.Loader
             Justification = "Satellite assemblies have no code in them and loading is not a problem")]
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "This call is fine because native call runs before this and checks BindSatelliteResourceFromBundle")]
-        private Assembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
+        private RuntimeAssembly? ResolveSatelliteAssembly(AssemblyName assemblyName)
         {
             // Called by native runtime when CultureName is not empty
             Debug.Assert(assemblyName.CultureName?.Length > 0);
@@ -767,7 +755,7 @@ namespace System.Runtime.Loader
 
             string parentAssemblyName = assemblyName.Name.Substring(0, assemblyName.Name.Length - SatelliteSuffix.Length);
 
-            Assembly parentAssembly = LoadFromAssemblyName(new AssemblyName(parentAssemblyName));
+            RuntimeAssembly parentAssembly = (RuntimeAssembly)LoadFromAssemblyName(new AssemblyName(parentAssemblyName));
 
             AssemblyLoadContext parentALC = GetLoadContext(parentAssembly)!;
 
@@ -790,7 +778,7 @@ namespace System.Runtime.Loader
                 exists = FileSystem.FileExists(assemblyPath);
             }
 
-            Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
+            RuntimeAssembly? asm = exists ? (RuntimeAssembly?)parentALC.LoadFromAssemblyPath(assemblyPath) : null;
 #if CORECLR
             if (IsTracingEnabled())
             {

@@ -21,10 +21,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
+    private readonly TargetPointer _stringMethodTable;
+    private readonly TargetPointer _objectMethodTable;
 
     public SOSDacImpl(Target target)
     {
         _target = target;
+        _stringMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _objectMethodTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
     }
 
     public unsafe int GetAppDomainConfigFile(ulong appDomain, int count, char* configFile, uint* pNeeded) => HResults.E_NOTIMPL;
@@ -310,7 +314,78 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
-    public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectData(ulong objAddr, DacpObjectData* data)
+    {
+        try
+        {
+            Contracts.IObject objectContract = _target.Contracts.Object;
+            Contracts.IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mt = objectContract.GetMethodTableAddress(objAddr);
+            TypeHandle handle = runtimeTypeSystemContract.GetTypeHandle(mt);
+
+            data->MethodTable = mt;
+            data->Size = runtimeTypeSystemContract.GetBaseSize(handle);
+            data->dwComponentSize = runtimeTypeSystemContract.GetComponentSize(handle); ;
+
+            if (runtimeTypeSystemContract.IsFreeObjectMethodTable(handle))
+            {
+                data->ObjectType = DacpObjectType.OBJ_FREE;
+            }
+            else if (mt == _stringMethodTable)
+            {
+                data->ObjectType = DacpObjectType.OBJ_STRING;
+
+                // Update the size to include the string character components
+                data->Size += (uint)objectContract.GetStringValue(objAddr).Length * data->dwComponentSize;
+            }
+            else if (mt == _objectMethodTable)
+            {
+                data->ObjectType = DacpObjectType.OBJ_OBJECT;
+            }
+            else if (runtimeTypeSystemContract.IsArray(handle, out uint rank))
+            {
+                data->ObjectType = DacpObjectType.OBJ_ARRAY;
+                data->dwRank = rank;
+
+                TargetPointer arrayData = objectContract.GetArrayData(objAddr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                data->ArrayDataPtr = arrayData;
+                data->dwNumComponents = numComponents;
+                data->ArrayBoundsPtr = boundsStart;
+                data->ArrayLowerBoundsPtr = lowerBounds;
+
+                // Update the size to include the array components
+                data->Size += numComponents * data->dwComponentSize;
+
+                // Get the type of the array elements
+                TypeHandle element = runtimeTypeSystemContract.GetTypeParam(handle);
+                data->ElementTypeHandle = element.Address;
+                data->ElementType = (uint)runtimeTypeSystemContract.GetSignatureCorElementType(element);
+
+                // Validate the element type handles for arrays of arrays
+                while (runtimeTypeSystemContract.IsArray(element, out _))
+                {
+                    element = runtimeTypeSystemContract.GetTypeParam(element);
+                }
+            }
+            else
+            {
+                data->ObjectType = DacpObjectType.OBJ_OTHER;
+            }
+
+            // TODO: [cdac] Get RCW and CCW from interop info on sync block
+            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0)
+                return HResults.E_NOTIMPL;
+
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
 
     public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
     {
@@ -437,10 +512,8 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         {
             data->ArrayMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
-            data->StringMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
-            data->ObjectMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+            data->StringMethodTable = _stringMethodTable;
+            data->ObjectMethodTable = _objectMethodTable;
             data->ExceptionMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
             data->FreeMethodTable = _target.ReadPointer(
