@@ -135,7 +135,7 @@ namespace JSImportGenerator.Unit.Tests
                                 static global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding __signature_Annotated_564258462;
                             }
                         
-                            """.ReplaceLineEndings(), Encoding.UTF8)),
+                            """, Encoding.UTF8)),
                         (typeof(Microsoft.Interop.JavaScript.JSExportGenerator),
                         "JSExports.g.cs",
                         SourceText.From("""
@@ -245,7 +245,7 @@ namespace JSImportGenerator.Unit.Tests
                                 }
                             }
                             
-                            """.ReplaceLineEndings(), Encoding.UTF8)),
+                            """, Encoding.UTF8)),
                     }
                 },
             };
