@@ -27,16 +27,14 @@ namespace Profiler.Tests
             int gen = GC.GetGeneration("string7");
             if (gen != int.MaxValue)
                 throw new Exception("object is expected to be in a non-gc heap for this test to work");
-
-            // Notify the profiler that we're done with the allocations
-            // It's a sort of workaround for possible race conditions between
-            // GarbageCollectionFinished and ObjectAllocated
-            InvokeGc();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void InvokeGc()
         {
+            // Notify the profiler that we're done with the allocations
+            // It's a sort of workaround for possible race conditions between
+            // GarbageCollectionFinished and ObjectAllocated
             NotifyNongcAllocationsFinished();
             GC.Collect();
         }
@@ -50,6 +48,7 @@ namespace Profiler.Tests
         public static int RunTest(String[] args)
         {
             AllocateNonGcHeapObjects();
+            InvokeGc();
             Console.WriteLine("Test Passed");
             return 100;
         }
