@@ -48,7 +48,11 @@ public class Runtime_105484
     {
         if (Sve.IsSupported)
         {
-            M();
+            try
+            {
+                M();
+            }
+            catch {}
         }
     }
 }
