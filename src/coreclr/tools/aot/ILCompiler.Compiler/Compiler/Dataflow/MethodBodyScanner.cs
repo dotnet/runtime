@@ -870,7 +870,7 @@ namespace ILCompiler.Dataflow
 
         protected abstract SingleValue GetMethodParameterValue(ParameterProxy parameter);
 
-        protected abstract MethodReturnValue GetReturnValue (MethodIL method);
+        protected abstract MethodReturnValue GetReturnValue(MethodIL method);
 
         private void ScanLdarg(ILOpcode opcode, int parameterIndex, Stack<StackSlot> currentStack, MethodDesc thisMethod)
         {
