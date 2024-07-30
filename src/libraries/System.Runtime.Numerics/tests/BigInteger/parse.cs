@@ -233,7 +233,7 @@ namespace System.Numerics.Tests
             Assert.False(BigInteger.TryParse(largeSpan, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
             Assert.True(BigInteger.TryParse(largeSpan[..^2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
 
-            // The following line shouldn't throw. Previously it throws rather than returns false.
+            // The following line shouldn't throw. Previously it threw rather than returned false.
             Assert.False(BigInteger.TryParse(largeSpan[..^1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out _));
         }
 

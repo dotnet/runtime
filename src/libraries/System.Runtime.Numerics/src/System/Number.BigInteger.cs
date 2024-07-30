@@ -265,7 +265,7 @@ namespace System
                     // It requires additional leading 1.
 
                     // The edge case was not checked previously.
-                    // Instead of returning ParsingStatus.Overflow, an OverflowException would throw from the constructor of BigInteger.
+                    // Instead of returning ParsingStatus.Overflow, an OverflowException would be thrown from the constructor of BigInteger.
                     if (bits.Length + 1 > BigInteger.MaxLength)
                     {
                         result = default;

@@ -477,7 +477,7 @@ namespace System.Numerics
 
         /// <summary>
         /// Create a BigInteger directly from inner components (sign and bits).
-        /// The caller should ensure the parameters are valid.
+        /// The caller must ensure the parameters are valid.
         /// </summary>
         /// <param name="sign">the sign field</param>
         /// <param name="bits">the bits field</param>
