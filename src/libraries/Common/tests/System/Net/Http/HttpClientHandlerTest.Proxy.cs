@@ -300,7 +300,9 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     HttpRequestException e = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.PostAsync("https://nosuchhost.invalid", new StringContent(content)));
-                    Assert.Contains("407", e.Message);
+                    Assert.Equal(HttpRequestError.ProxyTunnelError, e.HttpRequestError);
+                    Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, e.StatusCode);
+                    Assert.Contains(((int)HttpStatusCode.ProxyAuthenticationRequired).ToString(), e.Message);
                 }
             }
         }
@@ -313,7 +315,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.Proxy = new WebProxy($"https://{Guid.NewGuid():N}");
 
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid():N}"));
+                HttpRequestException e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid():N}"));
+                Assert.Equal(HttpRequestError.ProxyTunnelError, e.HttpRequestError);
+                Assert.Null(e.StatusCode);
             }
         }
 
