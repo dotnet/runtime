@@ -61,6 +61,7 @@
              Link="ProductionCode\Common\Interop\Windows\WinSock\Interop.ErrorCodes.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows' ">
+    <Compile Include="InterfaceInfoPalTest.Windows.cs" />
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs"
              Link="ProductionCode\System\Net\SocketException.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -85,6 +86,10 @@
              Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs"
              Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToName.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceIndexToLuid.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceIndexToLuid.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs"
@@ -103,6 +108,7 @@
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="InterfaceInfoPalTest.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Unix.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs"
