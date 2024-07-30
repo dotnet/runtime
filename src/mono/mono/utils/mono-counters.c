@@ -326,66 +326,6 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 			*(type*)buffer = cb ? ((functype)counter->addr) () : *(type*)counter->addr; \
 	} while (0);
 
-/* lockless */
-static int
-sample_internal (MonoCounter *counter, void *buffer, int buffer_size)
-{
-	int cb = counter->type & MONO_COUNTER_CALLBACK;
-	int size = -1;
-
-	char *strval;
-
-	switch (mono_counter_get_type (counter)) {
-	case MONO_COUNTER_INT:
-		COPY_COUNTER (int, IntFunc);
-		break;
-	case MONO_COUNTER_UINT:
-		COPY_COUNTER (guint, UIntFunc);
-		break;
-	case MONO_COUNTER_LONG:
-	case MONO_COUNTER_TIME_INTERVAL:
-		COPY_COUNTER (gint64, LongFunc);
-		break;
-	case MONO_COUNTER_ULONG:
-		COPY_COUNTER (guint64, ULongFunc);
-		break;
-	case MONO_COUNTER_WORD:
-		COPY_COUNTER (gssize, PtrFunc);
-		break;
-	case MONO_COUNTER_DOUBLE:
-		COPY_COUNTER (double, DoubleFunc);
-		break;
-	case MONO_COUNTER_STRING:
-		if (buffer_size < counter->size) {
-			size = -1;
-		} else if (counter->size == 0) {
-			size = 0;
-		} else {
-			strval = cb ? ((StrFunc)counter->addr) () : (char*)counter->addr;
-			if (!strval) {
-				size = 0;
-			} else {
-				size = counter->size;
-				memcpy ((char *) buffer, strval, size - 1);
-				((char*)buffer)[size - 1] = '\0';
-			}
-		}
-	}
-
-	return size;
-}
-
-int
-mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
-{
-	if (!initialized) {
-		g_debug ("counters not enabled");
-		return -1;
-	}
-
-	return sample_internal (counter, buffer, buffer_size);
-}
-
 static void
 mono_counters_dump_section (int section, int variance, FILE *outfile)
 {

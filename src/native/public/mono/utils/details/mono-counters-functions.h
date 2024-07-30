@@ -30,8 +30,6 @@ MONO_API_FUNCTION(void, mono_counters_cleanup, (void))
 
 MONO_API_FUNCTION(void, mono_counters_foreach, (CountersEnumCallback cb, void *user_data))
 
-MONO_API_FUNCTION(int, mono_counters_sample, (MonoCounter *counter, void *buffer, int buffer_size))
-
 MONO_API_FUNCTION(const char*, mono_counter_get_name, (MonoCounter *name))
 MONO_API_FUNCTION(int, mono_counter_get_type, (MonoCounter *counter))
 MONO_API_FUNCTION(int, mono_counter_get_section, (MonoCounter *counter))
