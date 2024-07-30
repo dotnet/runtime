@@ -579,11 +579,21 @@ namespace System.Tests
         {
             if ((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
             {
-                // Environment should return 0 for all values
                 Environment.ProcessCpuUsage usage = Environment.CpuUsage;
-                Assert.Equal(TimeSpan.Zero, usage.UserTime);
-                Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
-                Assert.Equal(TimeSpan.Zero, usage.TotalTime);
+
+                if (usage.UserTime == TimeSpan.Zero)
+                {
+                    // Environment should return 0 for all values
+                    Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
+                    Assert.Equal(TimeSpan.Zero, usage.TotalTime);
+                }
+                else
+                {
+                    // Mobile platforms emulators may return non-zero values
+                    Assert.NotEqual(TimeSpan.Zero, usage.PrivilegedTime);
+                    Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+                }
+
             }
             else
             {
