@@ -17,7 +17,7 @@ parameters:
   archiveType: ''
   tarCompression: ''
   framework: 'net9.0' # Framework version to get versions for and build for
-  perfBranch: 'UpdateMauiVersionRetrievalFlow' # Perf repo to pull for the PerfLabExporter
+  perfBranch: 'main' # Performance branch to use for cloning
 
 
 steps:
@@ -70,7 +70,7 @@ steps:
   - script: |
       set -x
       pwd
-      git clone https://github.com/LoopedBard3/performance.git --depth 1 -b ${{parameters.perfBranch}} --single-branch
+      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfBranch}} --single-branch
     displayName:  Clone performance
     workingDirectory: $(Build.SourcesDirectory)
 
@@ -86,10 +86,7 @@ steps:
       echo '{ }' > ./global.json
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
-      echo Retrieving version file from https://raw.githubusercontent.com/LoopedBard3/performance/${{parameters.perfBranch}}/eng/Version.Details.xml
-      curl -Lo performance-version-details.xml 'https://raw.githubusercontent.com/LoopedBard3/performance/${{parameters.perfBranch}}/eng/Version.Details.xml'
-      echo Version file contents:
-      cat performance-version-details.xml
+      curl -Lo performance-version-details.xml 'https://raw.githubusercontent.com/dotnet/performance/${{parameters.perfBranch}}/eng/Version.Details.xml'
       version=$(sed -nr 's/[[:space:]]*<Dependency Name="VS.Tools.Net.Core.SDK.Resolver" Version="(.*)"[[:space:]].*/\1/p' ./performance-version-details.xml)
       echo dotnet-version: $version
       chmod -R a+rx .
