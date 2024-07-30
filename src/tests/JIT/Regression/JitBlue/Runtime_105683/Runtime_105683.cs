@@ -8,6 +8,7 @@
 // Debug: Outputs 1
 // Release: Outputs 0
 
+using System;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
