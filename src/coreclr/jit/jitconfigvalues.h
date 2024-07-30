@@ -361,7 +361,7 @@ RELEASE_CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1)
 RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)
 
 // Disables inlining of all methods
-RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 1)
+RELEASE_CONFIG_INTEGER(JitNoInline, W("JitNoInline"), 0)
 
 // clang-format off
 
