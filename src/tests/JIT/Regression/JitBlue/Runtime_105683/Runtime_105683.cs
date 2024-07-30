@@ -9,6 +9,7 @@
 // Release: Outputs 0
 
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public struct S0
 {
