@@ -495,11 +495,11 @@ namespace System.Net.WebSockets.Client.Tests
                 try
                 {
                     using (var cws = new ClientWebSocket())
-                    using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                    using (var testTimeoutCts = new CancellationTokenSource(TimeOutMilliseconds))
                     {
-                        await ConnectAsync(cws, uri, cts.Token);
+                        await ConnectAsync(cws, uri, testTimeoutCts.Token);
 
-                        Task receiveTask = cws.ReceiveAsync(new byte[1], CancellationToken.None);
+                        Task receiveTask = cws.ReceiveAsync(new byte[1], testTimeoutCts.Token);
 
                         var cancelCloseCts = new CancellationTokenSource();
                         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
@@ -508,8 +508,10 @@ namespace System.Net.WebSockets.Client.Tests
                             cancelCloseCts.Cancel();
                             await t;
                         });
+                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
 
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
+                        var receiveOCE = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
+                        Assert.False(testTimeoutCts.Token.IsCancellationRequested);
                     }
                 }
                 finally

@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.WebSockets.Compression;
 using System.Numerics;
@@ -251,7 +252,7 @@ namespace System.Net.WebSockets
 
             if (!_disposed)
             {
-                _disposed = true;
+                Volatile.Write(ref _disposed, true); // _keepAliveState.Exception (if any) needs to be assigned before _disposed is set to true
                 _keepAliveTimer?.Dispose();
                 _stream.Dispose();
                 if (_state < WebSocketState.Aborted)
@@ -433,25 +434,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ThrowIfInvalidState(WebSocketState[] validStates)
-        {
-            // ordering of exceptions:
-            // 1) keep-alive timeout exception (it was the one that triggered the abort/disposal)
-            // 2) disposed
-            // 3) invalid state
-
-            ThrowIfDisposed();
-            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            // Keep-Alive timeout triggers the abort which also disposes the websocket
-            // We only save an exception in the keep-alive state if it actually triggered the abort
-            _keepAlivePingState?.ThrowIfFaulted();
-            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
-        }
-
         /// <summary>Sends a websocket frame to the network.</summary>
         /// <param name="opcode">The opcode for the message.</param>
         /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
@@ -524,9 +506,9 @@ namespace System.Net.WebSockets
             catch (Exception exc)
             {
                 return ValueTask.FromException(
-                    exc is OperationCanceledException ? exc :
-                    _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
+                    exc is OperationCanceledException
+                        ? exc
+                        : GetOperationCanceledExceptionIf(_state == WebSocketState.Aborted, exc) ?? GetPrematureEOFException(exc));
             }
             finally
             {
@@ -556,9 +538,8 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc) when (exc is not OperationCanceledException)
             {
-                throw _state == WebSocketState.Aborted ?
-                    CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                ThrowOperationCanceledIf(_state == WebSocketState.Aborted, exc);
+                ThrowPrematureEOF(exc);
             }
             finally
             {
@@ -586,9 +567,8 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc) when (exc is not OperationCanceledException)
             {
-                throw _state == WebSocketState.Aborted ?
-                    CreateOperationCanceledException(exc, cancellationToken) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                ThrowOperationCanceledIf(_state == WebSocketState.Aborted, exc, cancellationToken: cancellationToken);
+                ThrowPrematureEOF(exc);
             }
             finally
             {
@@ -985,10 +965,7 @@ namespace System.Net.WebSockets
                     throw;
                 }
 
-                if (_state == WebSocketState.Aborted)
-                {
-                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
-                }
+                ThrowOperationCanceledIf(_state == WebSocketState.Aborted, exc, nameof(WebSocketState.Aborted), default);
 
                 lock (StateUpdateLock)
                 {
@@ -1000,7 +977,8 @@ namespace System.Net.WebSockets
                     throw;
                 }
 
-                throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                ThrowPrematureEOF(exc);
+                throw; // unreachable
             }
             finally
             {
@@ -1575,13 +1553,14 @@ namespace System.Net.WebSockets
             }
         }
 
+        [DoesNotReturn]
         private void ThrowEOFUnexpected()
         {
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
             ThrowIfDisposed();
-            throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
+            ThrowPrematureEOF();
         }
 
         /// <summary>Gets a send buffer from the pool.</summary>
@@ -1671,26 +1650,47 @@ namespace System.Net.WebSockets
             return maskIndex;
         }
 
-        /// <summary>Aborts the websocket and throws an exception if an existing operation is in progress.</summary>
-        private void ThrowIfOperationInProgress(bool operationCompleted, [CallerMemberName] string? methodName = null)
+        private void ThrowIfDisposed()
         {
-            if (!operationCompleted)
+            if (_keepAlivePingState is not null)
             {
-                Abort();
-                ThrowOperationInProgress(methodName);
+                ThrowIfDisposedOrKeepAliveFaulted();
+                return;
+            }
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
+        private void ThrowIfInvalidState(WebSocketState[] validStates)
+        {
+            if (_keepAlivePingState is not null)
+            {
+                ThrowIfInvalidStateOrKeepAliveFaulted(validStates);
+                return;
+            }
+
+            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowPrematureEOF(Exception? exc = null) => throw GetPrematureEOFException(exc);
+
+        internal static Exception GetPrematureEOFException(Exception? abortingException = null)
+            => new WebSocketException(WebSocketError.ConnectionClosedPrematurely, abortingException);
+
+        internal static void ThrowOperationCanceledIf([DoesNotReturnIf(true)] bool condition, Exception abortingException, string? message = null, CancellationToken cancellationToken = default)
+        {
+            if (condition)
+            {
+                throw GetOperationCanceledException(abortingException, message, cancellationToken);
             }
         }
 
-        private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
+        internal static Exception? GetOperationCanceledExceptionIf(bool condition, Exception abortingException)
+            => condition ? GetOperationCanceledException(abortingException, message: null, cancellationToken: default) : null;
 
-        /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
-        private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return new OperationCanceledException(
-                new OperationCanceledException().Message,
-                innerException,
-                cancellationToken);
-        }
+        internal static Exception GetOperationCanceledException(Exception abortingException, string? message = null, CancellationToken cancellationToken = default)
+            => new OperationCanceledException(message ?? new OperationCanceledException().Message, abortingException, cancellationToken);
 
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
         // Performs a stateful validation of UTF-8 bytes.

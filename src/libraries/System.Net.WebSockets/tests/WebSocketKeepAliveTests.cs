@@ -240,7 +240,7 @@ namespace System.Net.WebSockets.Tests
                 var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await userReadTask);
                 var wse = Assert.IsType<WebSocketException>(oce.InnerException);
                 Assert.Equal(WebSocketError.Faulted, wse.WebSocketErrorCode);
-                Assert.Contains("KeepAliveTimeout", wse.Message);
+                Assert.Equal(SR.net_Websockets_KeepAlivePingTimeout, wse.Message);
             }
         }
 

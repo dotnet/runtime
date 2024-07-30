@@ -39,26 +39,32 @@ namespace System.Net.WebSockets
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
         {
+            if (GetErrorMessageIfInvalidState(currentState, validStates) is string message)
+            {
+                throw new WebSocketException(WebSocketError.InvalidState, message);
+            }
+
+            // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+            ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
+        }
+
+        internal static string? GetErrorMessageIfInvalidState(WebSocketState state, WebSocketState[] validStates)
+        {
             string validStatesText = string.Empty;
 
             if (validStates != null && validStates.Length > 0)
             {
                 foreach (WebSocketState validState in validStates)
                 {
-                    if (currentState == validState)
+                    if (state == validState)
                     {
-                        // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
-                        return;
+                        return null;
                     }
                 }
-
                 validStatesText = string.Join(", ", validStates);
             }
 
-            throw new WebSocketException(
-                WebSocketError.InvalidState,
-                SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText));
+            return SR.Format(SR.net_WebSockets_InvalidState, state, validStatesText);
         }
 
         internal static void ValidateSubprotocol(string subProtocol)

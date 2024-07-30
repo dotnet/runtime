@@ -80,7 +80,8 @@ namespace System.Net.WebSockets
                     if (!_disposed)
                     {
                         // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
-                        _keepAlivePingState.Exception = e;
+                        // The exception needs to be assigned before _disposed is set to true
+                        Volatile.Write(ref _keepAlivePingState.Exception, e);
                         Abort();
                     }
                 }
@@ -280,6 +281,45 @@ namespace System.Net.WebSockets
             }
         }
 
+        private void ThrowIfDisposedOrKeepAliveFaulted()
+        {
+            Debug.Assert(_keepAlivePingState is not null);
+
+            if (!Volatile.Read(ref _disposed))
+            {
+                return;
+            }
+
+            Exception? abortingException = Volatile.Read(ref _keepAlivePingState.Exception);
+
+            // If abortException is not null, it triggered the abort which also disposed the websocket
+            // We only save the abortException if it actually triggered the abort
+            ObjectDisposedException.ThrowIf(abortingException is null, this);
+            throw GetOperationCanceledException(abortingException, nameof(WebSocketState.Aborted));
+        }
+
+        private void ThrowIfInvalidStateOrKeepAliveFaulted(WebSocketState[] validStates)
+        {
+            Debug.Assert(_keepAlivePingState is not null);
+
+            string? invalidStateMessage = WebSocketValidate.GetErrorMessageIfInvalidState(_state, validStates);
+
+            if (!Volatile.Read(ref _disposed))
+            {
+                if (invalidStateMessage is not null)
+                {
+                    throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage);
+                }
+                return;
+            }
+
+            Exception? abortingException = Volatile.Read(ref _keepAlivePingState.Exception);
+            ObjectDisposedException.ThrowIf(abortingException is null, this);
+
+            ThrowOperationCanceledIf(invalidStateMessage is null, abortingException, nameof(WebSocketState.Aborted));
+            throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage, abortingException);
+        }
+
         private sealed class KeepAlivePingState
         {
             internal const int PingPayloadSize = sizeof(long);
@@ -335,16 +375,6 @@ namespace System.Net.WebSockets
                 else if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Trace(this, $"Received pong with unexpected payload {pongPayloadValue}. Expected {Interlocked.Read(ref PingPayload)}. Skipping.");
-                }
-            }
-
-            internal void ThrowIfFaulted()
-            {
-                if (Volatile.Read(ref Exception) is Exception e)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Throwing Keep-Alive exception {e.GetType().Name}: {e.Message}");
-
-                    ExceptionDispatchInfo.Throw(e);
                 }
             }
         }
