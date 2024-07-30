@@ -40,5 +40,7 @@ internal static class Constants
         internal const string DirectorySeparator = nameof(DirectorySeparator);
 
         internal const string PrecodeMachineDescriptor = nameof(PrecodeMachineDescriptor);
+
+        internal const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
     }
 }

@@ -10,6 +10,7 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
 {
     private readonly Target _target;
     private readonly Data.PrecodeMachineDescriptor _precodeMachineDescriptor;
+    private readonly TargetPointer _executionManagerCodeRangeMapAddress;
 
     private bool IsAlignedInstrPointer(TargetPointer instrPointer) => _target.IsAlignedToPointerSize(instrPointer);
 
@@ -129,10 +130,11 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         }
     }
 
-    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, TargetPointer executionManagerCodeRangeMapAddress)
     {
         _target = target;
         _precodeMachineDescriptor = precodeMachineDescriptor;
+        _executionManagerCodeRangeMapAddress = executionManagerCodeRangeMapAddress;
     }
 
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
@@ -184,20 +186,23 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
             MethodDescAddress = methodDescAddress;
         }
 
-        bool Valid => CodeAddress != default && MethodDescAddress != default;
+        public bool Valid => CodeAddress != default && MethodDescAddress != default;
     }
 
     private sealed class RangeSection
     {
-
+        public bool JitCodeToMethodInfo(TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    private EECodeInfo GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
     {
         RangeSection range = ExecutionManagerFindCodeRange(jittedCodeAddress);
         if (!range.JitCodeToMethodInfo(jittedCodeAddress, out TargetPointer methodDescAddress))
         {
-            return default(EECodeInfo);
+            return null;
         }
         return new EECodeInfo(jittedCodeAddress, methodDescAddress);
     }
@@ -209,9 +214,62 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         throw new NotImplementedException(); // TODO(cdac)
     }
 
+    private RangeSection LookupRangeSection(TargetCodePointer jittedCodeAddress)
+    {
+#if false
+        PTR_RangeSectionFragment fragment = GetRangeSectionForAddress(address, pLockState);
+        if (fragment == NULL)
+            return NULL;
+
+        while ((fragment != NULL) && !fragment->InRange(address))
+        {
+            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+        }
+
+        if (fragment != NULL)
+        {
+            if (fragment->pRangeSection->_pRangeSectionNextForDelete != NULL)
+                return NULL;
+            return fragment->pRangeSection;
+        }
+#endif
+        throw new NotImplementedException();
+    }
+
+#if false
+    PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState* pLockState)
+    {
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
+ ifdef TARGET_64BIT
+        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (rangeSectionL4 == NULL)
+            return NULL;
+        auto rangeSectionL3 = (*rangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL3 == NULL)
+            return NULL;
+        auto rangeSectionL2 = (*rangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL2 == NULL)
+            return NULL;
+        auto rangeSectionL1 = (*rangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
+ else
+        auto rangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
+ endif
+        if (rangeSectionL1 == NULL)
+            return NULL;
+
+        return ((*rangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
+        throw new NotImplementedException();
+    }
+#endif
+
     TargetPointer INativeCodePointers.ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress)
     {
-        EECodeInfo info = GetEECodeInfo(jittedCodeAddress);
+        EECodeInfo? info = GetEECodeInfo(jittedCodeAddress);
+        if (info == null || !info.Valid)
+        {
+            throw new InvalidOperationException($"Failed to get EECodeInfo for {jittedCodeAddress}");
+        }
         return info.MethodDescAddress;
     }
 

@@ -1432,7 +1432,15 @@ public:
     }
 #endif// DACCESS_COMPILE
 
+    template<typename T> friend struct ::cdac_offsets;
 };
+
+template<>
+struct cdac_offsets<RangeSectionMap>
+{
+
+};
+
 
 struct RangeSectionMapData
 {
@@ -2250,11 +2258,13 @@ public:
     template<typename T> friend struct ::cdac_offsets;
 };
 
+#ifndef DACCESS_COMPILE
 template<>
 struct cdac_offsets<ExecutionManager>
 {
-    static constexpr void* CodeRangeMapAddress = &ExecutionManager::g_codeRangeMap;
+    static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
 };
+#endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 {

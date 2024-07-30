@@ -12,9 +12,10 @@ internal interface INativeCodePointers : IContract
     {
         TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
         Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);
+        TargetPointer executionManagerCodeRangeMapAddress = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         return version switch
         {
-            1 => new NativeCodePointers_1(target, precodeMachineDescriptor),
+            1 => new NativeCodePointers_1(target, precodeMachineDescriptor, executionManagerCodeRangeMapAddress),
             _ => default(NativeCodePointers),
         };
     }
