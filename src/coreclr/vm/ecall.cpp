@@ -187,14 +187,6 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
-
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__THROW_HELPERS__THROWARGUMENTEXCEPTION));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_THROW_ARGUMENTEXCEPTION, pDest);
