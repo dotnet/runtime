@@ -5193,13 +5193,7 @@ void ThrowEntryPointNotFoundException(
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
@@ -5406,13 +5400,7 @@ void ThrowAmbiguousResolutionException(
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
