@@ -111,6 +111,11 @@ namespace Microsoft.Interop
             // and emit diagnostics.
             ImmutableArray<DiagnosticInfo>.Builder nonFatalDiagnostics = ImmutableArray.CreateBuilder<DiagnosticInfo>();
 
+            // If there is a base interface and it is defined in another assembly,
+            // warn the user that they are in a scenario that has pitfalls.
+            // We check that either the base interface symbol is defined in a non-source assembly (ie an assembly referenced as metadata)
+            // or if it is defined in a different source assembly (ie another C# project in the same solution when loaded in an IDE)
+            // as Roslyn can provide the symbol information in either shape to us depending on the scenario.
             if (baseSymbol is not null
                 && (baseSymbol.ContainingAssembly is not ISourceAssemblySymbol
                     || (baseSymbol.ContainingAssembly is ISourceAssemblySymbol { Compilation: Compilation baseComp }
