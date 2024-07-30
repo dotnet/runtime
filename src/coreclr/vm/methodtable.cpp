@@ -5193,7 +5193,13 @@ void ThrowEntryPointNotFoundException(
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     SString assemblyName;
 
@@ -5400,7 +5406,13 @@ void ThrowAmbiguousResolutionException(
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 
     SString assemblyName;
 
