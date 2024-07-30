@@ -4544,7 +4544,7 @@ public:
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
+    // For LoongArch64's and RISC-V 64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
@@ -4824,10 +4824,11 @@ class CallArgs
     // made for this call.
     unsigned m_padStkAlign;
 #endif
-    bool m_hasThisPointer           : 1;
-    bool m_hasRetBuffer             : 1;
-    bool m_isVarArgs                : 1;
-    bool m_abiInformationDetermined : 1;
+    bool m_hasThisPointer              : 1;
+    bool m_hasRetBuffer                : 1;
+    bool m_isVarArgs                   : 1;
+    bool m_abiInformationDetermined    : 1;
+    bool m_newAbiInformationDetermined : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
@@ -4885,8 +4886,10 @@ public:
         PushFront(comp, arg);
     }
 
-    void ResetFinalArgsAndABIInfo();
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
+    void ResetFinalArgsAndABIInfo();
+
+    void DetermineNewABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
@@ -4902,7 +4905,15 @@ public:
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
-    bool AreArgsComplete() const { return m_argsComplete; }
+    bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
+
+    // TODO-Remove: Workaround for bad codegen in MSVC versions < 19.41, see
+    // https://github.com/dotnet/runtime/pull/104370#issuecomment-2222910359
+#ifdef _MSC_VER
+    __declspec(noinline)
+#endif
+        bool AreArgsComplete() const { return m_argsComplete; }
+
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }

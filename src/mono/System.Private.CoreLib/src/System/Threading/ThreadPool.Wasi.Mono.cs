@@ -9,8 +9,6 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable IDE0060
-
 namespace System.Threading
 {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -134,10 +132,12 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
+#pragma warning disable IDE0060
         [Conditional("unnecessary")]
         internal static void ReportThreadStatus(bool isWorking)
         {
 
         }
+#pragma warning restore IDE0060
     }
 }

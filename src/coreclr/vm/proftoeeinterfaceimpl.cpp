@@ -8240,7 +8240,6 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
     HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
 
     if (pHMF->InsureInit(
-        false,                      // initialInit
         NULL                        // unwindState
         ) != NULL)
     {

@@ -88,43 +88,6 @@ FCIMPL0(INT32, SystemNative::GetExitCode)
 }
 FCIMPLEND
 
-// Return a method info for the method were the exception was thrown
-FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    // The pStackTraceUNSAFE can be either I1Array or Object[]. In the latter case, the first entry is the actual stack trace I1Array,
-    // the rest are pointers to the method info objects. We only care about the first entry here.
-    if (pStackTraceUNSAFE->GetArrayElementType() != ELEMENT_TYPE_I1)
-    {
-        PtrArray *combinedArray = (PtrArray*)pStackTraceUNSAFE;
-        pStackTraceUNSAFE = (ArrayBase*)OBJECTREFToObject(combinedArray->GetAt(0));
-    }
-    I1ARRAYREF pArray(static_cast<I1Array *>(pStackTraceUNSAFE));
-    StackTraceArray stackArray(pArray);
-
-    if (!stackArray.Size())
-        return NULL;
-
-    // The managed stacktrace classes always returns typical method definition, so we don't need to bother providing exact instantiation.
-    // Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(pElements[0].pFunc, pElements[0].pExactGenericArgsToken, pTypeHandle, &pMD);
-
-    MethodDesc* pFunc = stackArray[0].pFunc;
-
-    // Strip the instantiation to make sure that the reflection never gets a bad method desc back.
-    REFLECTMETHODREF refRet = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0()
-    pFunc = pFunc->LoadTypicalMethodDefinition();
-    refRet = pFunc->GetStubMethodInfo();
-    _ASSERTE(pFunc->IsRuntimeMethodHandle());
-
-    HELPER_METHOD_FRAME_END();
-
-    return (ReflectMethodObject*)OBJECTREFToObject(refRet);
-}
-FCIMPLEND
-
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
 {
     QCALL_CONTRACT;

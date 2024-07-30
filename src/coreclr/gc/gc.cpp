@@ -25402,17 +25402,21 @@ void gc_heap::calculate_new_heap_count ()
     // If there was a blocking gen2 GC, the overhead would be very large and most likely we would not pick it. So we
     // rely on the gen2 sample's overhead calculated above.
     float throughput_cost_percents[dynamic_heap_count_data_t::sample_size];
-    for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
+
+    if (process_eph_samples_p)
     {
-        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-        assert (sample.elapsed_between_gcs > 0);
-        throughput_cost_percents[i] = (sample.elapsed_between_gcs ? (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
-        assert (throughput_cost_percents[i] >= 0.0);
-        if (throughput_cost_percents[i] > 100.0)
-            throughput_cost_percents[i] = 100.0;
-        dprintf (6666, ("sample %d in GC#%Id msl %I64d / %d + pause %I64d / elapsed %I64d = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
-            sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
-            sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
+        for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
+        {
+            dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
+            assert (sample.elapsed_between_gcs > 0);
+            throughput_cost_percents[i] = (sample.elapsed_between_gcs ? (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
+            assert (throughput_cost_percents[i] >= 0.0);
+            if (throughput_cost_percents[i] > 100.0)
+                throughput_cost_percents[i] = 100.0;
+            dprintf (6666, ("sample %d in GC#%Id msl %I64d / %d + pause %I64d / elapsed %I64d = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
+                sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
+                sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
+        }
     }
 
     float median_throughput_cost_percent = median_of_3 (throughput_cost_percents[0], throughput_cost_percents[1], throughput_cost_percents[2]);
@@ -33890,8 +33894,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 }
 #endif //FEATURE_EVENT_TRACE
 
-#if defined(_DEBUG)
-            verify_committed_bytes ();
+#ifdef _DEBUG
+                verify_committed_bytes ();
 #endif // _DEBUG
 
 #ifdef MULTIPLE_HEAPS
@@ -47426,6 +47430,10 @@ void gc_heap::verify_committed_bytes_per_heap()
 
 void gc_heap::verify_committed_bytes()
 {
+#ifndef USE_REGIONS
+    // TODO, https://github.com/dotnet/runtime/issues/102706, re-enable the testing after fixing this bug
+    return;
+#endif //!USE_REGIONS
     size_t total_committed = 0;
     size_t committed_decommit; // unused
     size_t committed_free; // unused

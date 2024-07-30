@@ -236,7 +236,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
@@ -295,7 +295,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     {
         MachState unwindState;
 
-        InsureInit(false, &unwindState);
+        InsureInit(&unwindState);
         pRD->PCTAddr = dac_cast<TADDR>(unwindState.pRetAddr());
         pRD->ControlPC = unwindState.GetRetAddr();
         pRD->SP = unwindState._esp;
@@ -371,7 +371,7 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
     BEGIN_DEBUG_ONLY_CODE;
     if (!state->isValid())
     {
-        frame->InsureInit(false, NULL);
+        frame->InsureInit(NULL);
         _ASSERTE(state->_pEsi != &state->_esi || state->_esi  == (TADDR)esiVal);
         _ASSERTE(state->_pEdi != &state->_edi || state->_edi  == (TADDR)ediVal);
         _ASSERTE(state->_pEbx != &state->_ebx || state->_ebx  == (TADDR)ebxVal);
