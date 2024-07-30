@@ -132,7 +132,6 @@ PAL_SetHardwareExceptionHandler(
 {
     g_hardwareExceptionHandler = exceptionHandler;
     g_safeExceptionCheckFunction = exceptionCheckFunction;
-    
 }
 
 /*++

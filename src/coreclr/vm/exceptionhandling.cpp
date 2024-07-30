@@ -163,9 +163,6 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #ifdef TARGET_UNIX
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-#ifdef FEATURE_EMULATE_SINGLESTEP
-BOOL HandleSingleStepAfterException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-#endif // FEATURE_EMULATE_SINGLESTEP
 #endif // TARGET_UNIX
 
 static ExceptionTracker* GetTrackerMemory()
@@ -242,6 +239,7 @@ void InitializeExceptionHandling()
 #ifdef TARGET_UNIX
     // Register handler of hardware exceptions like null reference in PAL
     PAL_SetHardwareExceptionHandler(HandleHardwareException, IsSafeToHandleHardwareException);
+
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 
