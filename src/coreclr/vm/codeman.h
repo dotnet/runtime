@@ -1432,11 +1432,11 @@ public:
     }
 #endif// DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<RangeSectionMap>
+struct cdac_data<RangeSectionMap>
 {
 
 };
@@ -2255,12 +2255,12 @@ public:
         JumpStubTable m_Table;
     };
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 #ifndef DACCESS_COMPILE
 template<>
-struct cdac_offsets<ExecutionManager>
+struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
 };
