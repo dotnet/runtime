@@ -242,7 +242,7 @@ namespace System.Diagnostics.Metrics.Tests
             new object[] { "dotnet.timer.count", s_longGreaterThanOrEqualToZero, null },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [MemberData(nameof(Measurements))]
         public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
             where T : struct
