@@ -37,7 +37,7 @@
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
