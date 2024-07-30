@@ -17,7 +17,6 @@ GUID NonGcHeapProfiler::GetClsid()
     return clsid;
 }
 
-std::atomic<bool> _allocationsFinished = false;
 extern "C" DLLEXPORT void NotifyNongcAllocationsFinished()
 {
     printf("NotifyNongcAllocationsFinished is invoked.\n");
@@ -26,6 +25,7 @@ extern "C" DLLEXPORT void NotifyNongcAllocationsFinished()
 
 HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
+    _allocationsFinished = false;
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
@@ -84,7 +84,6 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
         printf("Ignoring this GarbageCollectionFinished: NotifyNongcAllocationsFinished has not been invoked yet.\n");
         return S_OK;
     }
-    _allocationsFinished = false;
 
     _garbageCollections++;
 
