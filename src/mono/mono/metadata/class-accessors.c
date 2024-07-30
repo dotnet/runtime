@@ -698,7 +698,7 @@ mono_class_get_generic_params (MonoClass *klass, MonoClass **result, int result_
 
 	MonoGenericClass *gclass = mono_class_get_generic_class (klass);
 	MonoGenericInst *inst = gclass->context.class_inst;
-	for (guint i = 0; i < inst->type_argc; i++) {
+	for (int i = 0; i < (int)inst->type_argc; i++) {
 		MonoType *t = inst->type_argv [i];
 		if (i < result_capacity) {
 			if (t)
@@ -707,7 +707,7 @@ mono_class_get_generic_params (MonoClass *klass, MonoClass **result, int result_
 				result[i] = NULL;
 		}
 	}
-	return (int)MIN(inst->type_argc, result_capacity);
+	return MIN((int)inst->type_argc, result_capacity);
 }
 
 #ifdef MONO_CLASS_DEF_PRIVATE
