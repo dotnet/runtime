@@ -10,6 +10,7 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Create_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -85,7 +86,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Create_InNestedDirectory()
         {
             string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");

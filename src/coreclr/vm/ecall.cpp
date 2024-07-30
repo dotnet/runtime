@@ -186,14 +186,6 @@ void ECall::PopulateManagedHelpers()
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__CONVERT_TO_UINT64_CHECKED));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_DBL2ULNG_OVF, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATH__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_DBLROUND, pDest);
-
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__MATHF__ROUND));
-    pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_FLTROUND, pDest);
 }
 
 static CrstStatic gFCallLock;

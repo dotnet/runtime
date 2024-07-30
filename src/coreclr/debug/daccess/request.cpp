@@ -2538,9 +2538,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 
 DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
 {
-    // For an object pointer, this attempts to read the number of
-    // array components.
-    addr+=sizeof(size_t);
+    // For an object pointer, this attempts to read the number of components.
+    // This expects that the first member after the MethodTable pointer (from Object)
+    // is a 32-bit integer representing the number of components.
+    // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;
     HRESULT hr = target->ReadVirtual(addr, (PBYTE)&Value, sizeof(DWORD), &returned);
@@ -2553,7 +2555,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
 }
 
 HRESULT
-ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData)
+ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData* objectData)
 {
     if (addr == 0 || objectData == NULL)
         return E_INVALIDARG;
@@ -2561,107 +2563,134 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
     SOSDacEnter();
 
     ZeroMemory (objectData, sizeof(DacpObjectData));
-    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget);
-    if (mtTADDR==(TADDR)NULL)
-        hr = E_INVALIDARG;
-
-    BOOL bFree = FALSE;
-    PTR_MethodTable mt = NULL;
-    if (SUCCEEDED(hr))
+    if (m_cdacSos != NULL)
     {
-        mt = PTR_MethodTable(mtTADDR);
-        if (!DacValidateMethodTable(mt, bFree))
-            hr = E_INVALIDARG;
+        hr = m_cdacSos->GetObjectData(addr, objectData);
+        if (FAILED(hr))
+        {
+            hr = GetObjectDataImpl(addr, objectData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpObjectData objectDataLocal;
+            HRESULT hrLocal = GetObjectDataImpl(addr, &objectDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(objectData->MethodTable == objectDataLocal.MethodTable);
+            _ASSERTE(objectData->ObjectType == objectDataLocal.ObjectType);
+            _ASSERTE(objectData->Size == objectDataLocal.Size);
+            _ASSERTE(objectData->ElementTypeHandle == objectDataLocal.ElementTypeHandle);
+            _ASSERTE(objectData->ElementType == objectDataLocal.ElementType);
+            _ASSERTE(objectData->dwRank == objectDataLocal.dwRank);
+            _ASSERTE(objectData->dwNumComponents == objectDataLocal.dwNumComponents);
+            _ASSERTE(objectData->dwComponentSize == objectDataLocal.dwComponentSize);
+            _ASSERTE(objectData->ArrayDataPtr == objectDataLocal.ArrayDataPtr);
+            _ASSERTE(objectData->ArrayBoundsPtr == objectDataLocal.ArrayBoundsPtr);
+            _ASSERTE(objectData->ArrayLowerBoundsPtr == objectDataLocal.ArrayLowerBoundsPtr);
+            _ASSERTE(objectData->RCW == objectDataLocal.RCW);
+            _ASSERTE(objectData->CCW == objectDataLocal.CCW);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectDataImpl(addr, objectData);
     }
 
-    if (SUCCEEDED(hr))
-    {
-        objectData->MethodTable = HOST_CDADDR(mt);
-        objectData->Size = mt->GetBaseSize();
-        if (mt->GetComponentSize())
-        {
-            objectData->Size += (DACGetNumComponents(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget) * mt->GetComponentSize());
-            objectData->dwComponentSize = mt->GetComponentSize();
-        }
+    SOSDacLeave();
+    return hr;
+}
 
-        if (bFree)
+HRESULT
+ClrDataAccess::GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData)
+{
+    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget);
+    if (mtTADDR==(TADDR)NULL)
+        return E_INVALIDARG;
+
+    BOOL bFree = FALSE;
+    PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
+    if (!DacValidateMethodTable(mt, bFree))
+        return E_INVALIDARG;
+
+    objectData->MethodTable = HOST_CDADDR(mt);
+    objectData->Size = mt->GetBaseSize();
+    if (mt->GetComponentSize())
+    {
+        objectData->Size += (DACGetNumComponents(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget) * mt->GetComponentSize());
+        objectData->dwComponentSize = mt->GetComponentSize();
+    }
+
+    if (bFree)
+    {
+        objectData->ObjectType = OBJ_FREE;
+    }
+    else
+    {
+        if (objectData->MethodTable == HOST_CDADDR(g_pStringClass))
         {
-            objectData->ObjectType = OBJ_FREE;
+            objectData->ObjectType = OBJ_STRING;
+        }
+        else if (objectData->MethodTable == HOST_CDADDR(g_pObjectClass))
+        {
+            objectData->ObjectType = OBJ_OBJECT;
+        }
+        else if (mt->IsArray())
+        {
+            objectData->ObjectType = OBJ_ARRAY;
+
+            // For now, go ahead and instantiate array classes.
+            // TODO: avoid instantiating even object Arrays in the host.
+            // NOTE: This code is carefully written to deal with MethodTable fields
+            //       in the array object having the mark bit set (because we may
+            //       be in mark phase when this function is called).
+            ArrayBase *pArrayObj = PTR_ArrayBase(TO_TADDR(addr));
+            objectData->ElementType = mt->GetArrayElementType();
+
+            TypeHandle thElem = mt->GetArrayElementTypeHandle();
+
+            TypeHandle thCur  = thElem;
+            while (thCur.IsArray())
+                thCur = thCur.GetArrayElementTypeHandle();
+
+            TADDR mtCurTADDR = thCur.AsTAddr();
+            if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))
+            {
+                return E_INVALIDARG;
+            }
+
+            objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
+            objectData->dwRank = mt->GetRank();
+            objectData->dwNumComponents = pArrayObj->GetNumComponents ();
+            objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
+            objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
+            objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
         }
         else
         {
-            if (objectData->MethodTable == HOST_CDADDR(g_pStringClass))
-            {
-                objectData->ObjectType = OBJ_STRING;
-            }
-            else if (objectData->MethodTable == HOST_CDADDR(g_pObjectClass))
-            {
-                objectData->ObjectType = OBJ_OBJECT;
-            }
-            else if (mt->IsArray())
-            {
-                objectData->ObjectType = OBJ_ARRAY;
-
-                // For now, go ahead and instantiate array classes.
-                // TODO: avoid instantiating even object Arrays in the host.
-                // NOTE: This code is carefully written to deal with MethodTable fields
-                //       in the array object having the mark bit set (because we may
-                //       be in mark phase when this function is called).
-                ArrayBase *pArrayObj = PTR_ArrayBase(TO_TADDR(addr));
-                objectData->ElementType = mt->GetArrayElementType();
-
-                TypeHandle thElem = mt->GetArrayElementTypeHandle();
-
-                TypeHandle thCur  = thElem;
-                while (thCur.IsArray())
-                    thCur = thCur.GetArrayElementTypeHandle();
-
-                TADDR mtCurTADDR = thCur.AsTAddr();
-                if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))
-                {
-                    hr = E_INVALIDARG;
-                }
-                else
-                {
-                    objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
-                    objectData->dwRank = mt->GetRank();
-                    objectData->dwNumComponents = pArrayObj->GetNumComponents ();
-                    objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
-                    objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
-                    objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
-                }
-            }
-            else
-            {
-                objectData->ObjectType = OBJ_OTHER;
-            }
+            objectData->ObjectType = OBJ_OTHER;
         }
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (SUCCEEDED(hr))
+    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
     {
-        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+        PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr), m_pTarget);
+        if (pSyncBlk != NULL)
         {
-            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr), m_pTarget);
-            if (pSyncBlk != NULL)
+            // see if we have an RCW and/or CCW associated with this object
+            PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
+            if (pInfo != NULL)
             {
-                // see if we have an RCW and/or CCW associated with this object
-                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-                if (pInfo != NULL)
-                {
-                    objectData->RCW = TO_CDADDR(pInfo->DacGetRawRCW());
-                    objectData->CCW = HOST_CDADDR(pInfo->GetCCW());
-                }
+                objectData->RCW = TO_CDADDR(pInfo->DacGetRawRCW());
+                objectData->CCW = HOST_CDADDR(pInfo->GetCCW());
             }
         }
-        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
     }
+    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 #endif // FEATURE_COMINTEROP
 
-    SOSDacLeave();
-
-    return hr;
+    return S_OK;
 }
 
 HRESULT ClrDataAccess::GetAppDomainList(unsigned int count, CLRDATA_ADDRESS values[], unsigned int *fetched)

@@ -95,11 +95,11 @@ struct DynamicMetadata
 {
     uint32_t Size;
     BYTE Data[0];
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<DynamicMetadata>
+struct cdac_data<DynamicMetadata>
 {
     static constexpr size_t Size = offsetof(DynamicMetadata, Size);
     static constexpr size_t Data = offsetof(DynamicMetadata, Data);
@@ -951,7 +951,6 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -1629,11 +1628,11 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Module>
+struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
