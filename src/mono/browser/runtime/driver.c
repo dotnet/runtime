@@ -30,6 +30,7 @@
 
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl-fallback.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
@@ -628,6 +629,10 @@ mono_wasm_heapshot_stats (
 	int sgen_los_size, int sgen_heap_capacity
 );
 extern void
+mono_wasm_heapshot_counter (
+    const char *name, double value
+);
+extern void
 mono_wasm_heapshot_end (int full);
 
 void
@@ -756,6 +761,45 @@ mono_wasm_on_gc_roots (
 	);
 }
 
+struct _MonoCounter {
+	MonoCounter *next;
+	const char *name;
+	void *addr;
+	int type;
+	size_t size;
+};
+
+static int
+mono_wasm_on_counter (
+    MonoCounter *counter, gpointer user_data
+) {
+    double value = 0;
+    switch (counter->type & MONO_COUNTER_TYPE_MASK) {
+        case MONO_COUNTER_INT:    /* 32 bit int */
+            value = *(int32_t *)counter->addr;
+            break;
+        case MONO_COUNTER_UINT:    /* 32 bit uint */
+            value = *(uint32_t *)counter->addr;
+            break;
+        case MONO_COUNTER_WORD:   /* pointer-sized int */
+            value = *(ssize_t *)counter->addr;
+            break;
+        case MONO_COUNTER_LONG:   /* 64 bit int */
+            value = *(int64_t *)counter->addr;
+            break;
+        case MONO_COUNTER_ULONG:   /* 64 bit uint */
+            value = *(uint64_t *)counter->addr;
+            break;
+        case MONO_COUNTER_DOUBLE:
+            value = *(double *)counter->addr;
+            break;
+        default:
+            return 1;
+    }
+    mono_wasm_heapshot_counter (counter->name, value);
+    return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_perform_heapshot (int full) {
 	if (mono_wasm_heapshot_parachute) {
@@ -775,6 +819,7 @@ mono_wasm_perform_heapshot (int full) {
 		mono_gc_collect (mono_gc_max_generation ());
 	else
 		mono_wasm_generate_heapshot_stats ();
+    mono_counters_foreach (mono_wasm_on_counter, NULL);
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, NULL);
 	mono_profiler_set_gc_roots_callback (heapshot_profiler_handle, NULL);
 	mono_wasm_heapshot_end (full);

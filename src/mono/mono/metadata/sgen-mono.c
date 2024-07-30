@@ -2271,8 +2271,6 @@ static size_t worker_heap_size;
 void
 sgen_client_total_allocated_heap_changed (size_t allocated_heap)
 {
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
-
 	/*
 	 * This function can be called from SGen's worker threads. We want to try
 	 * and avoid exposing those threads to the profiler API, so save the heap

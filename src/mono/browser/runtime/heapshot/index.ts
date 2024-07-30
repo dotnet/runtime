@@ -258,6 +258,10 @@ function heapshotCounter (name: string, value: number) {
     builder.appendF64(value);
 }
 
+export function mono_wasm_heapshot_counter (pName: CharPtr, value: number): void {
+    heapshotCounter(`mono/${utf8ToString(pName)}`, value);
+}
+
 export function mono_wasm_heapshot_stats (
     pagesInUse: number, pagesFree: number, pagesUnknown: number,
     largestFreeChunk: number, largeObjectHeapSize: number, sgenHeapCapacity: number

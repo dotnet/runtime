@@ -38,7 +38,3 @@ MONO_API_FUNCTION(int, mono_counter_get_section, (MonoCounter *counter))
 MONO_API_FUNCTION(int, mono_counter_get_unit, (MonoCounter *counter))
 MONO_API_FUNCTION(int, mono_counter_get_variance, (MonoCounter *counter))
 MONO_API_FUNCTION(size_t, mono_counter_get_size, (MonoCounter *counter))
-
-MONO_API_FUNCTION(int,  mono_runtime_resource_limit, (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit))
-MONO_API_FUNCTION(void, mono_runtime_resource_set_callback, (MonoResourceCallback callback))
-MONO_API_FUNCTION(void, mono_runtime_resource_check_limit,  (int resource_type, uintptr_t value))
