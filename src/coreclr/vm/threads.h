@@ -121,7 +121,7 @@
 #include "gchandleutilities.h"
 #include "gcinfotypes.h"
 #include <clrhost.h>
-#include "cdacoffsets.h"
+#include "cdacdata.h"
 
 class     Thread;
 class     ThreadStore;
@@ -3966,11 +3966,11 @@ private:
 private:
     bool m_hasPendingActivation;
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Thread>
+struct cdac_data<Thread>
 {
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
@@ -4248,11 +4248,11 @@ public:
     bool ShouldTriggerGCForDeadThreads();
     void TriggerGCForDeadThreadsIfNecessary();
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<ThreadStore>
+struct cdac_data<ThreadStore>
 {
     static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
