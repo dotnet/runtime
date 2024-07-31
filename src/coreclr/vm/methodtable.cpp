@@ -5353,6 +5353,7 @@ MethodTable::FindDispatchImpl(
                     {
                         if (throwOnConflict)
                         {
+                            GCX_PREEMP();
                             ThrowEntryPointNotFoundException(this, pIfcMT, pIfcMD);
                         }
                     }
@@ -5745,7 +5746,10 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
 
             if (throwOnConflict)
+            {
+                GCX_PREEMP();
                 ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
+            }
 
             *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
