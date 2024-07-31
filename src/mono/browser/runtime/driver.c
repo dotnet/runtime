@@ -630,7 +630,7 @@ mono_wasm_heapshot_stats (
 );
 extern void
 mono_wasm_heapshot_counter (
-    const char *name, double value
+	const char *name, double value
 );
 extern void
 mono_wasm_heapshot_end (int full);
@@ -653,6 +653,24 @@ typedef void (*SgenRootIterateCallback) (void *start, void *end, MonoGCRootSourc
 
 void
 sgen_registered_root_iterate (SgenRootIterateCallback callback, void *user_data, int root_type);
+
+#define MALLINFO_FIELD_TYPE size_t
+
+struct mallinfo {
+	MALLINFO_FIELD_TYPE arena;    /* non-mmapped space allocated from system */
+	MALLINFO_FIELD_TYPE ordblks;  /* number of free chunks */
+	MALLINFO_FIELD_TYPE smblks;   /* always 0 */
+	MALLINFO_FIELD_TYPE hblks;    /* always 0 */
+	MALLINFO_FIELD_TYPE hblkhd;   /* space in mmapped regions */
+	MALLINFO_FIELD_TYPE usmblks;  /* maximum total allocated space */
+	MALLINFO_FIELD_TYPE fsmblks;  /* always 0 */
+	MALLINFO_FIELD_TYPE uordblks; /* total allocated space */
+	MALLINFO_FIELD_TYPE fordblks; /* total free space */
+	MALLINFO_FIELD_TYPE keepcost; /* releasable (via malloc_trim) space */
+};
+
+struct mallinfo
+mallinfo (void);
 
 extern uint32_t sgen_los_memory_usage, sgen_los_memory_usage_total;
 
@@ -686,15 +704,15 @@ mono_wasm_on_gc_class (MonoClass *klass) {
 			mono_wasm_on_gc_class (gparams[i]);
 	}
 
-    MonoClass *nesting_klass = mono_class_get_nesting_type (info_klass);
-    if (nesting_klass && mono_class_update_heapshot_scratch_byte (nesting_klass, next_heapshot_scratch_byte))
-        mono_wasm_on_gc_class (nesting_klass);
+	MonoClass *nesting_klass = mono_class_get_nesting_type (info_klass);
+	if (nesting_klass && mono_class_update_heapshot_scratch_byte (nesting_klass, next_heapshot_scratch_byte))
+		mono_wasm_on_gc_class (nesting_klass);
 
 	mono_wasm_heapshot_class (
-        klass, mono_class_get_element_class (klass), nesting_klass,
-        assem, mono_class_get_namespace (info_klass), mono_class_get_name (info_klass), rank,
-        mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL
-    );
+		klass, mono_class_get_element_class (klass), nesting_klass,
+		assem, mono_class_get_namespace (info_klass), mono_class_get_name (info_klass), rank,
+		mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL
+	);
 }
 
 // NOTE: for objects (like arrays) containing more than 128 refs, this will get invoked multiple times
@@ -730,6 +748,19 @@ mono_wasm_generate_heapshot_stats () {
 	mono_wasm_heapshot_stats (
 		in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
 	);
+	struct mallinfo minfo = mallinfo ();
+#define mifield_inner(a, b) a.b
+#define mifield(name) mono_wasm_heapshot_counter("dlmalloc/" #name, mifield_inner(minfo, name))
+	mifield(arena);
+	mifield(ordblks);
+	mifield(smblks);
+	mifield(hblks);
+	mifield(hblkhd);
+	mifield(usmblks);
+	mifield(fsmblks);
+	mifield(uordblks);
+	mifield(fordblks);
+	mifield(keepcost);
 }
 
 static void
@@ -771,33 +802,33 @@ struct _MonoCounter {
 
 static int
 mono_wasm_on_counter (
-    MonoCounter *counter, gpointer user_data
+	MonoCounter *counter, gpointer user_data
 ) {
-    double value = 0;
-    switch (counter->type & MONO_COUNTER_TYPE_MASK) {
-        case MONO_COUNTER_INT:    /* 32 bit int */
-            value = *(int32_t *)counter->addr;
-            break;
-        case MONO_COUNTER_UINT:    /* 32 bit uint */
-            value = *(uint32_t *)counter->addr;
-            break;
-        case MONO_COUNTER_WORD:   /* pointer-sized int */
-            value = *(ssize_t *)counter->addr;
-            break;
-        case MONO_COUNTER_LONG:   /* 64 bit int */
-            value = *(int64_t *)counter->addr;
-            break;
-        case MONO_COUNTER_ULONG:   /* 64 bit uint */
-            value = *(uint64_t *)counter->addr;
-            break;
-        case MONO_COUNTER_DOUBLE:
-            value = *(double *)counter->addr;
-            break;
-        default:
-            return 1;
-    }
-    mono_wasm_heapshot_counter (counter->name, value);
-    return 1;
+	double value = 0;
+	switch (counter->type & MONO_COUNTER_TYPE_MASK) {
+		case MONO_COUNTER_INT:    /* 32 bit int */
+			value = *(int32_t *)counter->addr;
+			break;
+		case MONO_COUNTER_UINT:    /* 32 bit uint */
+			value = *(uint32_t *)counter->addr;
+			break;
+		case MONO_COUNTER_WORD:   /* pointer-sized int */
+			value = *(ssize_t *)counter->addr;
+			break;
+		case MONO_COUNTER_LONG:   /* 64 bit int */
+			value = *(int64_t *)counter->addr;
+			break;
+		case MONO_COUNTER_ULONG:   /* 64 bit uint */
+			value = *(uint64_t *)counter->addr;
+			break;
+		case MONO_COUNTER_DOUBLE:
+			value = *(double *)counter->addr;
+			break;
+		default:
+			return 1;
+	}
+	mono_wasm_heapshot_counter (counter->name, value);
+	return 1;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -819,7 +850,7 @@ mono_wasm_perform_heapshot (int full) {
 		mono_gc_collect (mono_gc_max_generation ());
 	else
 		mono_wasm_generate_heapshot_stats ();
-    mono_counters_foreach (mono_wasm_on_counter, NULL);
+	mono_counters_foreach (mono_wasm_on_counter, NULL);
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, NULL);
 	mono_profiler_set_gc_roots_callback (heapshot_profiler_handle, NULL);
 	mono_wasm_heapshot_end (full);
