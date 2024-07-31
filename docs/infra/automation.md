@@ -2,7 +2,7 @@
 
 ### Policy Service Bot
 
-This repository uses the Policy Service bot to automate issue and pull request management. All automation rules are defined in the [`.github/policies`](../../.github/policies) folder.
+This repository uses the Policy Service bot to automate issue and pull request management. All automation rules are defined in the [`.github/policies`](/.github/policies) folder.
 
 #### Notifications
 

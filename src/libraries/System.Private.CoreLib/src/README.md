@@ -14,12 +14,12 @@ Any runtime-specific `partial` part which also has a shared part should use a ru
 
 ## System.Private.CoreLib CoreCLR Sources
 
-The CoreCLR specific sources can be found at [src/coreclr/System.Private.CoreLib](../../../coreclr/System.Private.CoreLib/).
+The CoreCLR specific sources can be found at [src/coreclr/System.Private.CoreLib](/src/coreclr/System.Private.CoreLib/).
 
 ## System.Private.CoreLib NativeAot Sources
 
-The NativeAot specific sources can be found at [src/coreclr/nativeaot/System.Private.CoreLib/src](../../../coreclr/nativeaot/System.Private.CoreLib/src/).
+The NativeAot specific sources can be found at [src/coreclr/nativeaot/System.Private.CoreLib/src](/src/coreclr/nativeaot/System.Private.CoreLib/src/).
 
 ## System.Private.CoreLib Mono Sources
 
-The Mono specific sources can be found at [src/mono/System.Private.CoreLib](../../../mono/System.Private.CoreLib/).
+The Mono specific sources can be found at [src/mono/System.Private.CoreLib](/src/mono/System.Private.CoreLib/).

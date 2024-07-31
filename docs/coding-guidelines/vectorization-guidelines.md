@@ -451,7 +451,7 @@ while (elementOffset < (nuint)buffer.Length)
 
 How many times will the loop execute for a buffer of six integers? Twice! The first time it will load the first four elements, but the second time it will load the random content of the memory following the buffer!
 
-Writing tests that detect that issue is hard, but not impossible. The .NET Team uses a helper utility called [BoundedMemory](https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs) that allocates a memory region which is immediately preceded by or immediately followed by a poison (`MEM_NOACCESS`) page. Attempting to read the memory immediately before or after it results in `AccessViolationException`.
+Writing tests that detect that issue is hard, but not impossible. The .NET Team uses a helper utility called [BoundedMemory](/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs) that allocates a memory region which is immediately preceded by or immediately followed by a poison (`MEM_NOACCESS`) page. Attempting to read the memory immediately before or after it results in `AccessViolationException`.
 
 ## Loading and storing vectors
 

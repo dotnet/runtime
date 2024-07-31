@@ -59,7 +59,7 @@ Some test modes are processed at the assembly level. For these tests, you should
 ### Disabling runtime tests (src/tests) with issues.targets
 
 Out-of-process tests are disabled by adding the test to the appropriate place, under the appropriate configuration condition,
-in the [issues.targets](../../../src/tests/issues.targets) file. Additionally, tests that are the only `[Fact]`-attributed method in their assembly may be disabled through issues.targets. All temporarily disabled tests must have a
+in the [issues.targets](/src/tests/issues.targets) file. Additionally, tests that are the only `[Fact]`-attributed method in their assembly may be disabled through issues.targets. All temporarily disabled tests must have a
 link to a GitHub issue in the `<Issue>` element. Disabling a test here can be conditioned on processor
 architecture, runtime, and operating system.
 

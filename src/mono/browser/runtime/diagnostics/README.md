@@ -68,4 +68,4 @@ The connection object (of type `MockScriptConnection` defined in [./mock/index.t
 
 ### Mock example
 
-See [browser-eventpipe](../../../sample/wasm/browser-eventpipe/)
+See [browser-eventpipe](/src/mono/sample/wasm/browser-eventpipe/README.md)

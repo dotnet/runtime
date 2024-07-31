@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the [ECMA-335 - Common Language Infrastructure (CLI)](https://www.ecma-international.org/publications-and-standards/standards/ecma-335) specification and [its amendments](https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md).
+This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the [ECMA-335 - Common Language Infrastructure (CLI)](https://www.ecma-international.org/publications-and-standards/standards/ecma-335) specification and [its amendments](/docs/design/specs/Ecma-335-Augments.md).
 
 The `System.Reflection.Metadata` library is included in the .NET Runtime shared framework. The package can be installed when you need to use it in other target frameworks.
 

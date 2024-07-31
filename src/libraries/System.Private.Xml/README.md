@@ -6,21 +6,20 @@ It provides core implementations of various types including [`XMLReader`](https:
 Documentation can be found at https://learn.microsoft.com/dotnet/standard/serialization/introducing-xml-serialization.
 
 ## Contribution Bar
-- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
+- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
 
 ## Source
 
-* XmlReader and XmlWriter: [../System.Xml.ReaderWriter](../System.Xml.ReaderWriter)
-* XmlDocument: [../System.Xml.XmlDocument](../System.Xml.XmlDocument)
-* XmlSerializer: [../System.Xml.XmlSerializer](../System.Xml.XmlSerializer)
+* XmlReader, XmlWriter, XmlDocument: [/src/libraries/System.Xml.ReaderWriter](/src/libraries/System.Xml.ReaderWriter)
+* XmlSerializer: [/src/libraries/System.Xml.XmlSerializer](/src/libraries/System.Xml.XmlSerializer)
 
 Higher level APIs for performing LINQ operations on XML entities:
-* LINQ to XML: [../System.Private.Xml.Linq](../System.Private.Xml.Linq)
-* XDocument: [../System.Xml.XDocument](../System.Xml.XDocument)
-* XPath: [../System.Xml.XPath](../System.Xml.XPath), [../System.Xml.XPath.XDocument](../System.Xml.XPath.XDocument)
+* LINQ to XML: [/src/libraries/System.Private.Xml.Linq](/src/libraries/System.Private.Xml.Linq)
+* XDocument: [/src/libraries/System.Xml.XDocument](/src/libraries/System.Xml.XDocument)
+* XPath: [/src/libraries/System.Xml.XPath](/src/libraries/System.Xml.XPath), [/src/libraries/System.Xml.XPath.XDocument](/src/libraries/System.Xml.XPath.XDocument)
 
 APIs to support the creation and validation of XML digital signatures:
-* System.Security.Cryptography.Xml: [../System.Security.Cryptography.Xml](../System.Security.Cryptography.Xml); for example [`EncryptedXml`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.xml.encryptedxml) and [`SignedXml`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.xml.signedxml).
+* System.Security.Cryptography.Xml: [/src/libraries/System.Security.Cryptography.Xml](/src/libraries/System.Security.Cryptography.Xml); for example [`EncryptedXml`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.xml.encryptedxml) and [`SignedXml`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.xml.signedxml).
 
 ## Deployment
 The XML processing libraries are included in the shared framework and also shipped as NuGet packages.

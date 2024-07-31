@@ -82,11 +82,11 @@ Despite the anticipated shortcomings, the 2.1 RTM policy is a surprisingly decen
 Implementation
 ==============
 
-The majority of the implementation can be located in [tieredcompilation.h](../../../src/coreclr/vm/tieredcompilation.h), and [tieredcompilation.cpp](../../../src/coreclr/vm/tieredcompilation.cpp)
+The majority of the implementation can be located in [tieredcompilation.h](/src/coreclr/vm/tieredcompilation.h), and [tieredcompilation.cpp](/src/coreclr/vm/tieredcompilation.cpp)
 
-The call counter is implemented in [callcounting.h](../../../src/coreclr/vm/callcounting.h), and [callcounting.cpp](../../../src/coreclr/vm/callcounting.cpp)
+The call counter is implemented in [callcounting.h](/src/coreclr/vm/callcounting.h), and [callcounting.cpp](/src/coreclr/vm/callcounting.cpp)
 
-The policy that determines which methods are eligible for tiering is implemented in `MethodDesc::IsEligibleForTieredCompilation`, located in [method.hpp](../../../src/coreclr/vm/method.hpp)
+The policy that determines which methods are eligible for tiering is implemented in `MethodDesc::IsEligibleForTieredCompilation`, located in [method.hpp](/src/coreclr/vm/method.hpp)
 
 Most of the implementation is relatively straightforward given the design and best described by reading the code, but a few notes:
 

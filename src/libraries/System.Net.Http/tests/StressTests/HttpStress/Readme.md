@@ -26,7 +26,7 @@ $ run-stress-Release-Release.sh -help
 
 ### Building and running with Docker
 
-A docker image containing the live-built runtime bits and the latest daily SDK is created with the [`build-docker-sdk.sh/ps1` scripts](https://github.com/dotnet/runtime/blob/main/eng/docker/Readme.md).
+A docker image containing the live-built runtime bits and the latest daily SDK is created with the [`build-docker-sdk.sh/ps1` scripts](/eng/docker/Readme.md).
 
 It's possible to manually `docker build` a docker image containing the stress project based on the docker image created with `build-docker-sdk.sh/ps1`, however the preferred way is to use docker-compose, which can be used to target both linux and windows containers.
 

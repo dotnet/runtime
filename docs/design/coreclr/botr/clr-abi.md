@@ -51,7 +51,7 @@ The frame pointer register is, for each architecture: ARM: r11, ARM64: x29, x86:
 The JIT creates frame chains most of the time for all platforms _except_ Windows x64. Very simple functions may not get added to the frame chain, with the intent to improve performance by reducing frame setup cost (the heuristics for this choice are in `Compiler::rpMustCreateEBPFrame()`). For Windows x64, unwinding will always be done using the generated unwind codes, and not simple frame chain traversal.
 
 Some additional links:
-- See [ARM64 JIT frame layout](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/arm64-jit-frame-layout.md) for documentation on that architecture's frame design.
+- See [ARM64 JIT frame layout](/docs/design/coreclr/jit/arm64-jit-frame-layout.md) for documentation on that architecture's frame design.
 - The CoreCLR change to always create RBP chains on Unix x64 is [here](https://github.com/dotnet/coreclr/pull/4019) (issue with discussion [here](https://github.com/dotnet/runtime/issues/4651)).
 
 # Special/extra parameters
@@ -809,7 +809,7 @@ However, note that the use of `r11` in the dispatcher makes it incompatible with
 
 # Notes on Memset/Memcpy
 
-Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](../../specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](../../specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
+Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](/docs/design/specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](/docs/design/specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
 
 Examples:
 

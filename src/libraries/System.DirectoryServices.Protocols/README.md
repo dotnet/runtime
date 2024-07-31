@@ -4,8 +4,8 @@ This assembly contains types that provide a managed implementation of the Lightw
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.directoryservices.protocols.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 This assembly's API hasn't really changed much in the past years, and most of the investment have been towards adding Unix support since prior to .NET 5, this assembly was only supported in Windows. We still haven't achieved feature parity between Windows and Unix, so most of the investment will continue to be making sure that things that are supported in Windows would also work in Unix. Also, this assembly's API design was done prior to the existance of `async/await` model, and given it is heavily reliant on network communication, feature requests to modernize the API could also be considered.
 

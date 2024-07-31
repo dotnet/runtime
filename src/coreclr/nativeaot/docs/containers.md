@@ -14,7 +14,7 @@ The [`releasesapi`](https://github.com/dotnet/dotnet-docker/blob/main/samples/re
 
 For cloud native apps, build and runtime OS typically match, at least if you use multi-stage build. Once you step out of containers (for app delivery), it is more likely that you are delivering binaries that you want to work in more places (like on older Linux distros).
 
-The .NET build has this exact same need. We produce several [container images to enable cross-building](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
+The .NET build has this exact same need. We produce several [container images to enable cross-building](/docs/workflow/building/coreclr/linux-instructions.md#docker-images).
 
 You can use these images to build native AOT apps which work on distros as old as Ubuntu 16.04. These build images are not supported, but are expected to work (since we use them to build .NET on daily basis).
 

@@ -4,8 +4,8 @@ Contains classes that can be used to represent the elements and structure of a s
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.codedom
 
 ## Contribution Bar
-- [x] [We only consider fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We only consider fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 ## Deployment
 [System.CodeDom](https://www.nuget.org/packages/System.CodeDom) is a NuGet package that gets shipped along with every release of .NET.

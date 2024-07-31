@@ -299,7 +299,7 @@ The OSR epilog does the following:
 This epilog has a non-standard format because of the two SP adjustments.
 This is currently breaking x64 epilog unwind.
 
-(NOTE: this was fixed as described [here](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md))
+(NOTE: this was fixed as described [here](/docs/design/features/OSRX64EpilogRedesign.md))
 
 On Arm64 we have epilog unwind codes and the second SP adjust does not appear to cause problems.
 
@@ -491,5 +491,5 @@ In the performance repo configurations we reduce the number of warmup iterations
 
 ## References
 
-* [OSR Design Document](https://github.com/dotnet/runtime/blob/main/docs/design/features/OnStackReplacement.md). May be a bit dated in places.
+* [OSR Design Document](/docs/design/features/OnStackReplacement.md). May be a bit dated in places.
 * [OSR Next Steps Issue](https://github.com/dotnet/runtime/issues/33658). Has a lot of information on issues encountered during bring-up, current limitations, and ideas for things we might revisit.

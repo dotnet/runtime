@@ -8,7 +8,7 @@ To add an analyzer package to the build:
     ```XML
     <PackageReference Include="SonarAnalyzer.CSharp" Version="8.50.0.58025" PrivateAssets="all" />
     ```
-3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  You can change the severity for rules by adding entries to the globalconfig files [CodeAnalysis.src.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.src.globalconfig) or [CodeAnalysis.test.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.test.globalconfig).
+3. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  You can change the severity for rules by adding entries to the globalconfig files [CodeAnalysis.src.globalconfig](/eng/CodeAnalysis.src.globalconfig) or [CodeAnalysis.test.globalconfig](/eng/CodeAnalysis.test.globalconfig).
 
 The build system in this repo defaults to treating all warnings as errors. It can be helpful when enabling a new rule to temporarily allow warnings to be warnings rather than errors, while you proceed to fix all of them across the repo. Instead of building from the root of the repo with:
 ```

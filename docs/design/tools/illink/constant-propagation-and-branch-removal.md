@@ -12,7 +12,7 @@ Method can return constant value if its code will always return the same value (
     public bool Is32Bit { get => false; }
 ```
 
-On 64bit platforms the property is compiled with constant value, and ILLInk can determine this. It's also possible to use substitutions to overwrite method's return value to a constant via the [substitutions XML file](../../../tools/illink/data-formats.md#substitution-format).
+On 64bit platforms the property is compiled with constant value, and ILLInk can determine this. It's also possible to use substitutions to overwrite method's return value to a constant via the [substitutions XML file](/docs/tools/illink/data-formats.md#substitution-format).
 
 If such method is used in another method and it influences its return value, it can mean that the caller method will itself always return the same value. For example:
 

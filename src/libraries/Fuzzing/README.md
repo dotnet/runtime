@@ -3,7 +3,7 @@
 This project contains fuzzing targets for various .NET libraries, as well as supporting code for generating OneFuzz deployments from them.
 Targets are instrumented using [SharpFuzz](https://github.com/Metalnem/sharpfuzz), and ran using [libFuzzer](https://llvm.org/docs/LibFuzzer.html).
 
-The runtime and fuzzing targets are periodically rebuilt and published to OneFuzz via [deploy-to-onefuzz.yml](../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml).
+The runtime and fuzzing targets are periodically rebuilt and published to OneFuzz via [deploy-to-onefuzz.yml](/eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml).
 
 Useful links:
 - [libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html)

@@ -10,7 +10,7 @@ Basic guidance is:
 
 - All other runs should reference `eng/common/templates`.
 
-See [azure-pipelines.yml](../../azure-pipelines.yml) (templates-official example) or [azure-pipelines-pr.yml](../../azure-pipelines-pr.yml) (templates example) for examples.
+See [azure-pipelines.yml](/eng/common/templates-official/) (templates-official example) or [azure-pipelines-pr.yml](/eng/common/templates/) (templates example) for examples.
 
 #### The `templateIs1ESManaged` parameter
 

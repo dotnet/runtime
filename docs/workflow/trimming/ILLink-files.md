@@ -30,7 +30,7 @@ If your new feature or bug fix is introducing new ILLink warnings, the warnings 
 
 ILLink warnings that are suppressed by the `ILLink.Suppressions.xml` file will still be emitted when the final application is published. This allows developers to see where their application might be broken when it is trimmed. Warnings that are suppressed by `[UnconditionalSuppressMessage]` attributes in `dotnet/runtime` code will never be emitted, during the `dotnet/runtime` build nor in the final application.
 
-Sometimes it is beneficial to leave an ILLink warning as unsuppressed so the final application's developer sees the warning. An examples of this is using the [`Startup Hooks`](../../design/features/host-startup-hook.md) feature in .NET. By default this feature is disabled when trimming a .NET application. However, the application can re-enable the feature. When they do, an ILLInk warning is emitted when the application is trimmed telling them the feature may not work after trimming.
+Sometimes it is beneficial to leave an ILLink warning as unsuppressed so the final application's developer sees the warning. An examples of this is using the [`Startup Hooks`](/docs/design/features/host-startup-hook.md) feature in .NET. By default this feature is disabled when trimming a .NET application. However, the application can re-enable the feature. When they do, an ILLInk warning is emitted when the application is trimmed telling them the feature may not work after trimming.
 
 To suppress a warning only in the `dotnet/runtime` build, but keep emitting it in the final application, add the warning to a `ILLink.Suppressions.LibraryBuild.xml` file, and include a justification why this approach was taken.
 

@@ -4,7 +4,7 @@ This is the assembly that surfaces specialized collections; for example, [`Linke
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.collections.specialized.
 
 ## Contribution Bar
-- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
+- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
 
 ## Deployment
 `System.Collections.Specialized` is included in the shared framework and also provided as a [NuGet package](https://www.nuget.org/packages/System.Collections.Specialized).

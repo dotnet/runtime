@@ -97,7 +97,7 @@ The repo build treats warnings as errors. Dealing with warnings when you're in t
 
 ## Submitting a PR
 
-Before submitting a PR, make sure to review the [contribution guidelines](../../CONTRIBUTING.md). After you get familiarized with them, please read the [PR guide](ci/pr-guide.md) to find more information about tips and conventions around creating a PR, getting it reviewed, and understanding the CI results.
+Before submitting a PR, make sure to review the [contribution guidelines](/CONTRIBUTING.md). After you get familiarized with them, please read the [PR guide](ci/pr-guide.md) to find more information about tips and conventions around creating a PR, getting it reviewed, and understanding the CI results.
 
 ## Triaging errors in CI
 

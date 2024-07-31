@@ -70,6 +70,6 @@ Other Information
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
 - [Porting to .NET Core](https://learn.microsoft.com/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
-- [CLR Configuration Knobs](../src/coreclr/inc/clrconfigvalues.h)
+- [CLR Configuration Knobs](/src/coreclr/inc/clrconfigvalues.h)
 - [CLR overview](https://learn.microsoft.com/dotnet/standard/clr)
 - [Wikipedia Entry for the CLR](https://en.wikipedia.org/wiki/Common_Language_Runtime)

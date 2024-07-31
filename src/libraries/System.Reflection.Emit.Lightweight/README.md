@@ -2,7 +2,7 @@
 The primary class is [`DynamicMethod`](https://learn.microsoft.com/dotnet/api/system.reflection.emit.DynamicMethod).
 
 ## Contribution Bar
-- [x] [We only consider fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
+- [x] [We only consider fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
 
 ## Deployment
 [System.Reflection.Emit.Lightweight](https://www.nuget.org/packages/System.Reflection.Emit.Lightweight) is included in the shared framework.

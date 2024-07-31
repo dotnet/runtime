@@ -13,7 +13,7 @@ Commonly Used Types:
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/diagnostics.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
 
 The APIs and functionality are new in .NET 8 and will continue to be developed.
 

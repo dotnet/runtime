@@ -5,7 +5,7 @@
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/dependency-injection.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
 
 The APIs and functionality need more investment in the upcoming .NET releases.
 

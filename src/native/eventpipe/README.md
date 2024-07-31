@@ -51,8 +51,8 @@ CoreCLR runtimes. The code depends solely on the C runtime and a limited set of 
 implementations for basic datatypes, locks, threads, etc. The set of functionality each runtime is
 expected to provide is defined in ep-rt-* files (ep=EventPipe and rt=Runtime). Each runtime then
 needs to compile a separate lib that implements this ABI and link it together. For example CoreCLR's
-implementation is in ../../coreclr/vm/eventing/eventpipe and mono's implementation is in
-../../mono/mono/eventpipe. Files starting with ep-* are the runtime neutral portions.
+implementation is in /src/coreclr/vm/eventing/eventpipe and mono's implementation is in
+/src/mono/mono/eventpipe. Files starting with ep-* are the runtime neutral portions.
 
 Files starting with ds-* are the runtime neutral implementation of DiagnosticServer. ds-rt-* files
 are the runtime specific dependencies, following the same pattern used by EventPipe.

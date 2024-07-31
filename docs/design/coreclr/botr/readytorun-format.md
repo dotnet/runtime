@@ -50,7 +50,7 @@ information pointing to the owner composite R2R executable (section `OwnerCompos
 Currently shipping PE envelopes - both single-file and composite - can contain records for additional
 debug information in the debug directory. One such entry specific to R2R images is the one for R2R PerfMaps.
 The format of the auxiliary file is described [R2R perfmap format](./r2r-perfmap-format.md) and the corresponding
-debug directory entry is described in [PE COFF](../../../design/specs/PE-COFF.md#r2r-perfmap-debug-directory-entry-type-21).
+debug directory entry is described in [PE COFF](/docs/design/specs/PE-COFF.md#r2r-perfmap-debug-directory-entry-type-21).
 
 ## Future Improvements
 
@@ -68,7 +68,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the
-[readytorun.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h)
+[readytorun.h](/src/coreclr/inc/readytorun.h)
 header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable

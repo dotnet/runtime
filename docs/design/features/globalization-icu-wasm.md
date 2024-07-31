@@ -16,7 +16,7 @@ Only one value for `WasmIcuDataFileName` can be set. It can also be a custom fil
 
 ## Custom ICU
 
-The easiest way to build ICU is to open https://github.com/dotnet/icu/ it in [Codespaces](docs\workflow\Codespaces.md). See files in https://github.com/dotnet/icu/tree/dotnet/main/icu-filters, and read https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html#locale-slicing. Build your own filter or edit the existing file.
+The easiest way to build ICU is to open https://github.com/dotnet/icu/ it in [Codespaces](/docs/workflow/Codespaces.md). See files in https://github.com/dotnet/icu/tree/dotnet/main/icu-filters, and read https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html#locale-slicing. Build your own filter or edit the existing file.
 We advise to edit the filters **only by adding/removing locales** from the `localeFilter/includelist` to avoid removing important data. We recommend not to remove "en-US" locale from the localeFilter/includelist because it is used as a fallback. Removing it for when
 - `<PredefinedCulturesOnly>true</PredefinedCulturesOnly>`: results in `Encountered infinite recursion while looking for resource in System.Private.Corelib.` exception
 - when predefined cultures only is not set: results in resolving data from ICU's `root.txt` files, e.g. `CultureInfo.DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek)` will return an abbreviated form: `Mon` instead of `Monday`.

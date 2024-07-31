@@ -6,7 +6,7 @@ This tool is used for generating RegexCaseEquivalences.Data.cs which contains th
 
 ## Updating the version of Unicode used
 
-For instructions on how to update Unicode version on the whole repo, you find the instructions [here](../../System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md).
+For instructions on how to update Unicode version on the whole repo, you find the instructions [here](/src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md).
 
 These are the steps to follow in order to update the Regex case equivalence table:
 

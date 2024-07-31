@@ -86,7 +86,7 @@ On the other hand, if it is desired to include all components, there are two opt
 </ItemGroup>
 ```
 2. Automatically, use provided MSBuild property that includes all the supported components for you, in the following way:
-    - Import `AndroidBuild.props/targets` in your project file (the file can be found [here](../../../src/mono/msbuild/android/build/AndroidBuild.targets))
+    - Import `AndroidBuild.props/targets` in your project file (the file can be found [here](/src/mono/msbuild/android/build/AndroidBuild.targets))
     - Set `UseAllRuntimeComponents` MSBuild property to `true` via:
         - By adding: `-p:UseAllRuntimeComponents=true` to your build command, or
         - By adding the following in your project file:

@@ -92,10 +92,10 @@ and then set the configuration variables and run the program.
 
 If you want to use a Debug or Checked build of the JIT, to get access to configuration variables only available
 in those build flavors, you will need to build your own version of the runtime repo. See instructions
-[here](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md).
+[here](/docs/workflow/README.md).
 
 After building the repo, you may also want to use the "Dogfooding daily builds of .NET" instructions
-[here](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md). However, you may also
+[here](/docs/project/dogfooding.md). However, you may also
 be able to run tests just using the built corerun.exe tool.
 
 Ideally, install a dogfood build as described above. Then, build both Debug and Release versions of the

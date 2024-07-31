@@ -10,7 +10,7 @@ Prerequisites:
 Useful links:
 - [OneFuzz Documentation](https://aka.ms/onefuzz)
 - [OneFuzzConfig.json format docs]
-- [deploy-to-onefuzz.yml](../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml)
+- [deploy-to-onefuzz.yml](/eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml)
 - [Internal pipeline](https://dev.azure.com/dnceng/internal/_build?definitionId=1381)
 
 Work items for issues identified by OneFuzz will be filed in https://dev.azure.com/dnceng/internal/_workitems

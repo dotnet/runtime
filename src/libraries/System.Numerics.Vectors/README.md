@@ -1,2 +1,2 @@
 # System.Numerics.Vectors
-Contains select tests for [../System.Runtime.Numerics](../System.Runtime.Numerics)
+Contains select tests for [/src/libraries/System.Runtime.Numerics](/src/libraries/System.Runtime.Numerics)

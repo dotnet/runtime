@@ -24,7 +24,7 @@ build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 
 ## Partial Build and Test Runs
 
-Doing full build and test runs takes a long time and is very inefficient if you need to iterate on a change. For greater control and efficiency individual parts of the build + testing workflow can be run in isolation. See the [Building instructions](../../building/libraries/README.md) for more info on build options.
+Doing full build and test runs takes a long time and is very inefficient if you need to iterate on a change. For greater control and efficiency individual parts of the build + testing workflow can be run in isolation. See the [Building instructions](/docs/workflow/building/libraries/README.md) for more info on build options.
 
 ### Test Run Pre-requisites
 
@@ -42,7 +42,7 @@ build.cmd/sh -subset clr+libs -rc Release
 build.cmd/sh -subset mono+libs -rc Release
 ```
 
-Building the `libs` subset or any of individual library projects automatically copies product binaries into the testhost folder in the bin directory. This is where the tests will load the binaries from during the run. However System.Private.CorLib is an exception - the build does not automatically copy it to the testhost folder. If you [rebuild System.Private.CoreLib](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md#iterating-on-systemprivatecorelib-changes) you must also build the `libs.pretest` subset to ensure S.P.C is copied before running tests.
+Building the `libs` subset or any of individual library projects automatically copies product binaries into the testhost folder in the bin directory. This is where the tests will load the binaries from during the run. However System.Private.CorLib is an exception - the build does not automatically copy it to the testhost folder. If you [rebuild System.Private.CoreLib](/docs/workflow/building/libraries/README.md#iterating-on-systemprivatecorelib-changes) you must also build the `libs.pretest` subset to ensure S.P.C is copied before running tests.
 
 ### Running tests for all libraries
 

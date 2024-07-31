@@ -4,8 +4,8 @@ Contains types that provide the programming model for handling XML configuration
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.configuration
 
 ## Contribution Bar
-- [x] [We only consider fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We only consider fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 ## Deployment
 [System.Configuration ](https://www.nuget.org/packages/System.Configuration.ConfigurationManager) is a NuGet package that gets shipped along with every release of .NET.

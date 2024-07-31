@@ -225,7 +225,7 @@ It's pretty straightforward where to go, to add or modify methods, and code insp
 corprof.idl
 -----------
 
-All profiling API interfaces and types are defined in [src\inc\corprof.idl](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corprof.idl). Go here first to define your types and methods.
+All profiling API interfaces and types are defined in [src\inc\corprof.idl](/src/coreclr/inc/corprof.idl). Go here first to define your types and methods.
 
 EEToProfInterfaceImpl.\*
 -----------------------

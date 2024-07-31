@@ -8,14 +8,14 @@ To merge pull requests, you must have write permissions in the repository. If yo
 ## Quick Code Review Rules
 
 * Do not mix unrelated changes in one pull request. For example, a code style change should never be mixed with a bug fix.
-* All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](../../coding-guidelines/).
+* All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](/docs/coding-guidelines/).
 * Use Draft pull requests for changes you are still working on but want early CI loop feedback. When you think your changes are ready for review, [change the status](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/changing-the-stage-of-a-pull-request) of your pull request.
 * Avoid rebasing your changes. If you are asked to make changes during the review process do them as a new commit.
 * To resolve merge conflicts, use "merge" instead of "rebase".
 
 ## Pull Request Ownership
 
-Every pull request will have automatically a single `area-*` label assigned. The label not only indicates the code segment which the change touches but also the owner. We maintain a list of [areas owners](../../area-owners.md) for all dotnet/runtime labels. They are responsible for landing pull requests in their area in a timely manner and for helping contributors with their submitted pull request. You can ask them for assistance if you need help with landing your changes.
+Every pull request will have automatically a single `area-*` label assigned. The label not only indicates the code segment which the change touches but also the owner. We maintain a list of [areas owners](/docs/area-owners.md) for all dotnet/runtime labels. They are responsible for landing pull requests in their area in a timely manner and for helping contributors with their submitted pull request. You can ask them for assistance if you need help with landing your changes.
 
 If during the code review process a merge conflict occurs the area owner is responsible for its resolution. Pull requests should not be on hold due to the author's unwillingness to resolve code conflicts. GitHub makes this easier by allowing simple conflict resolution using the [conflict-editor](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github).
 

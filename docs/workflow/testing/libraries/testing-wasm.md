@@ -47,7 +47,7 @@ PATH=/Users/<your_user>/.geckodriver:$PATH
 
 ## Building Libs and Tests for WebAssembly
 
-Now we're ready to build everything for WebAssembly (for more details, please read [this document](../../building/libraries/webassembly-instructions.md#building-everything)):
+Now we're ready to build everything for WebAssembly (for more details, please read [this document](/docs/workflow/building/libraries/webassembly-instructions.md#building-everything)):
 ```bash
 ./build.sh -os browser -c Release
 ```
