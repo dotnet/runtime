@@ -805,8 +805,7 @@ The following is a sample of a completed function definition:
 // Notes:
 //    Call-site signature blobs include ELEMENT_TYPE_SENTINEL.
 //    This method does not check for the presence of the sentinel.
-
-// static
+//
 BOOL MetaSig::IsVarArg(Module*         pModule,
                        PCCOR_SIGNATURE pSig)
 {
