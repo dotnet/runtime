@@ -77,10 +77,10 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         }
         else if (MemberValues.Count == 2
             && HasMember("ticks") && HasMember("dateData")
-            && MemberValues[0] is long value && MemberValues[1] is ulong
+            && MemberValues[0] is long && MemberValues[1] is ulong dateData
             && TypeNameMatches(typeof(DateTime)))
         {
-            return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(value));
+            return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(dateData));
         }
         else if(MemberValues.Count == 4
             && HasMember("lo") && HasMember("mid") && HasMember("hi") && HasMember("flags")
