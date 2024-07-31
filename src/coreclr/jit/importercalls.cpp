@@ -9847,19 +9847,6 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     return nullptr;
 }
 
-struct IntrinsicTypeLookupInfo
-{
-    const char* ClassName;
-    const char* NamespaceName;
-    const char* EnclosingClassNames[2];
-};
-
-struct IntrinsicMethodLookupInfo
-{
-    const char*             MethodName;
-    IntrinsicTypeLookupInfo Type;
-};
-
 //------------------------------------------------------------------------
 // lookupNamedIntrinsic: map method to jit named intrinsic value
 //
@@ -9875,11 +9862,6 @@ struct IntrinsicMethodLookupInfo
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
-    if (ISMETHOD("Main"))
-    {
-        printf("here\n");
-    }
-
     const char* className              = nullptr;
     const char* namespaceName          = nullptr;
     const char* enclosingClassNames[2] = {nullptr};
@@ -9895,11 +9877,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     }
     if (enclosingClassNames[1] != nullptr)
     {
-        JITDUMP("%s.", enclosingClassNames);
+        JITDUMP("%s.", enclosingClassNames[1]);
     }
     if (enclosingClassNames[0] != nullptr)
     {
-        JITDUMP("%s.", enclosingClassNames);
+        JITDUMP("%s.", enclosingClassNames[0]);
     }
     if (className != nullptr)
     {
