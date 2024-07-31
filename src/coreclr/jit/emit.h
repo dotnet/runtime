@@ -2745,6 +2745,7 @@ private:
 #if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
+    bool emitGCDisabled();
 #endif // !defined(JIT32_GCENCODER)
 
 #if defined(TARGET_XARCH)

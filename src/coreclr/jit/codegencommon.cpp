@@ -1516,6 +1516,14 @@ void CodeGen::genExitCode(BasicBlock* block)
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
+#ifndef JIT32_GCENCODER
+        // The call to CORINFO_HELP_FAIL_FAST in GS cookie check makes an impression
+        // of trashing all calee-trashed registers.
+        // Instead of ensuring that these registers are live across the check
+        // we just claim that the whole thing is not GC-interruptible.
+        // Effectively this starts the epilog a few instructions earlier.
+        GetEmitter()->emitDisableGC();
+#endif
         genEmitGSCookieCheck(jmpEpilog);
     }
 
@@ -4707,34 +4715,6 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 {
     regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
     regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
-
-    /* The return value is special-cased: make sure it goes live for the epilog */
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
-
-    if (IsFullPtrRegMapRequired() && !jmpEpilog)
-    {
-        if (varTypeIsGC(compiler->info.compRetNativeType))
-        {
-            noway_assert(genTypeStSz(compiler->info.compRetNativeType) == genTypeStSz(TYP_I_IMPL));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
-
-            switch (compiler->info.compRetNativeType)
-            {
-                case TYP_REF:
-                    gcrefRegsArg |= RBM_INTRET;
-                    break;
-                case TYP_BYREF:
-                    byrefRegsArg |= RBM_INTRET;
-                    break;
-                default:
-                    break;
-            }
-
-            JITDUMP("Extending return value GC liveness to epilog\n");
-        }
-    }
 
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
