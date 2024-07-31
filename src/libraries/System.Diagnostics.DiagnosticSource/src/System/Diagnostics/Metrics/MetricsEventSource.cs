@@ -653,6 +653,19 @@ namespace System.Diagnostics.Metrics
                     {
                         _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
+                    else if (spec.MeterName.Length > 0
+                        && spec.MeterName[spec.MeterName.Length - 1] == '*')
+                    {
+                        if (spec.MeterName.Length == 1)
+                        {
+                            _aggregationManager!.IncludeAll();
+                        }
+                        else
+                        {
+                            _aggregationManager!.IncludePrefix(
+                                spec.MeterName.Substring(0, spec.MeterName.Length - 1));
+                        }
+                    }
                     else
                     {
                         _aggregationManager!.Include(spec.MeterName);

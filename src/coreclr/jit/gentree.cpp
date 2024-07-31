@@ -30923,9 +30923,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                             int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
 
-                            if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
+                            if (static_cast<uint64_t>(shiftAmount) >=
+                                (static_cast<uint64_t>(genTypeSize(simdBaseType)) * BITS_PER_BYTE))
                             {
-                                // Ensure we don't lose track the the amount is an overshift
+                                // Set to -1 to indicate an explicit overshift
                                 shiftAmount = -1;
                             }
 
@@ -31170,6 +31171,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else if (op3 == nullptr)
     {
+        if (isScalar)
+        {
+            // We don't support folding for scalars when only one input is constant
+            // because it means one value is computed and the remaining values are
+            // either zeroed or preserved based on the underlying target architecture
+            oper = GT_NONE;
+        }
+
         switch (oper)
         {
             case GT_ADD:

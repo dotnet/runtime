@@ -463,11 +463,11 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Object>
+struct cdac_data<Object>
 {
     static constexpr size_t m_pMethTab = offsetof(Object, m_pMethTab);
 };
@@ -638,7 +638,19 @@ public:
 
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
+
+    template<typename T> friend struct ::cdac_data;
 };
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<ArrayBase>
+{
+    static constexpr size_t m_NumComponents = offsetof(ArrayBase, m_NumComponents);
+
+    static constexpr INT32* ArrayBoundsZero = &ArrayBase::s_arrayBoundsZero;
+};
+#endif
 
 //
 // Template used to build all the non-object
@@ -939,11 +951,11 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<StringObject>
+struct cdac_data<StringObject>
 {
     static constexpr size_t m_FirstChar = offsetof(StringObject, m_FirstChar);
     static constexpr size_t m_StringLength = offsetof(StringObject, m_StringLength);
@@ -2373,11 +2385,11 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<ExceptionObject>
+struct cdac_data<ExceptionObject>
 {
     static constexpr size_t _message = offsetof(ExceptionObject, _message);
     static constexpr size_t _innerException = offsetof(ExceptionObject, _innerException);

@@ -7829,7 +7829,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         //
         // Where EAX is also used as an argument to the stub dispatch helper. Make
         // sure that the call target address is computed into EAX in this case.
-        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             assert(ctrlExpr->isIndir());
             MakeSrcContained(call, ctrlExpr);
