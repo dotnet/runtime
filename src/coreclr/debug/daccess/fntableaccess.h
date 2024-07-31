@@ -22,6 +22,7 @@ struct FakeEEJitManager
 {
     LPVOID      __VFN_table;
     LPVOID      m_runtimeSupport;
+    uint32_t    m_jitManagerKind;
     LPVOID      m_pCodeHeap;
     // Nothing after this point matters: we only need the correct offset of m_pCodeHeap.
 };

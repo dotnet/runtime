@@ -637,6 +637,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t RangeBegin = offsetof(RangeSection, _range.begin);
     static constexpr size_t RangeEndOpen = offsetof(RangeSection, _range.end);
     static constexpr size_t NextForDelete = offsetof(RangeSection, _pRangeSectionNextForDelete);
+    static constexpr size_t JitManager = offsetof(RangeSection, _pjit);
 };
 
 enum class RangeSectionLockState
@@ -1458,8 +1459,6 @@ struct cdac_data<RangeSectionMap>
         static constexpr size_t RangeSection = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSection);
         static constexpr size_t Next = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSectionFragmentNext);
     };
-
-    static constexpr size_t RangeSectionFragmentSize = sizeof(RangeSectionMap::RangeSectionFragment);
 };
 
 
@@ -1553,7 +1552,11 @@ public:
     };
 
 #ifndef DACCESS_COMPILE
-    IJitManager();
+protected:
+    enum class JitManagerKind : uint32_t;
+    IJitManager(JitManagerKind);
+
+public:
 #endif // !DACCESS_COMPILE
 
     virtual DWORD GetCodeType() = 0;
@@ -1651,6 +1654,11 @@ public:
 
 protected:
     PTR_ICodeManager m_runtimeSupport;
+    enum class JitManagerKind : uint32_t {
+        EE = 0,
+        ReadyToRun = 1,
+    };
+    JitManagerKind m_jitManagerKind;
 };
 
 //-----------------------------------------------------------------------------
@@ -2592,6 +2600,8 @@ private:
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
     UNWIND_INFO * GetUnwindInfoHelper(ULONG unwindInfoOffset);
 #endif // TARGET_AMD64
+
+    template<typename T> friend struct ::cdac_data;
 };
 
 #include "codeman.inl"

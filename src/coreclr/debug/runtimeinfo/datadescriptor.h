@@ -377,7 +377,7 @@ CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSecti
 CDAC_TYPE_END(RangeSectionMap)
 
 CDAC_TYPE_BEGIN(RangeSectionFragment)
-CDAC_TYPE_SIZE(cdac_data<RangeSectionMap>::RangeSectionFragmentSize)
+CDAC_TYPE_INDETERMINATE(RangeSectionFragment)
 CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeBegin, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeBegin)
 CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeEndOpen, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeEndOpen)
 CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeSection, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeSection)
@@ -389,6 +389,7 @@ CDAC_TYPE_INDETERMINATE(RangeSection)
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeBegin, cdac_data<RangeSection>::RangeBegin)
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeEndOpen, cdac_data<RangeSection>::RangeEndOpen)
 CDAC_TYPE_FIELD(RangeSection, /*pointer*/, NextForDelete, cdac_data<RangeSection>::NextForDelete)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, JitManager, cdac_data<RangeSection>::JitManager)
 CDAC_TYPE_END(RangeSection)
 
 CDAC_TYPES_END()
