@@ -5,8 +5,14 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	struct TestResolver : ITryResolveMetadata
+	struct TestResolver : ITryResolveMetadata, IMetadataResolver
 	{
+		public TypeDefinition Resolve (TypeReference type) => type.Resolve ();
+
+		public FieldDefinition Resolve (FieldReference field) => field.Resolve ();
+
+		public MethodDefinition Resolve (MethodReference method) => method.Resolve ();
+
 		public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
 
 		public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();

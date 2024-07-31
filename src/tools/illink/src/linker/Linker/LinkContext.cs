@@ -194,7 +194,7 @@ namespace Mono.Linker
 		public SerializationMarker SerializationMarker { get; }
 
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
-			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
+			: this (pipeline, logger, outputDirectory, new UnintializedContextFactory ())
 		{
 		}
 

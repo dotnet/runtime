@@ -25,6 +25,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		{
 		}
 
+		[Kept] // Should be removable
+		[KeptInterface (typeof (IBase))]
 		interface IBase2 : IBase
 		{
 			void Method ();
@@ -32,12 +34,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 
 		[Kept]
 		[KeptInterface (typeof (IBase))]
+		[KeptInterface (typeof (IBase2))] // Should be removable
 		interface IBase3 : IBase2
 		{
 		}
 
 		[Kept]
 		[KeptInterface (typeof (IBase3))]
+		[KeptInterface (typeof (IBase2))] // Should be removable
 		[KeptInterface (typeof (IBase))]
 		class Foo : IBase3
 		{
