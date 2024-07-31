@@ -5240,9 +5240,7 @@ MethodTable::FindDispatchImpl(
 {
     CONTRACT (BOOL) {
         INSTANCE_CHECK;
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pImplSlot));
         POSTCONDITION(!RETVAL || !pImplSlot->IsNull() || IsComObjectType());
     } CONTRACT_END;
@@ -5583,7 +5581,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACT(BOOL) {
         INSTANCE_CHECK;
-        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
@@ -5774,6 +5771,7 @@ DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOO
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
     DispatchSlot implSlot(0);
     FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
     return implSlot;
@@ -7869,7 +7867,10 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL* uniqueResolution,
     ClassLoadLevel level)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL{
+       THROWS;
+       GC_TRIGGERS;
+    } CONTRACTL_END;
 
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariantMatches = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
