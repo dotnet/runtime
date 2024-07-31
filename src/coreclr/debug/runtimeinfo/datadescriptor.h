@@ -371,6 +371,26 @@ CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
 CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
 CDAC_TYPE_END(FixupPrecodeData)
 
+CDAC_TYPE_BEGIN(RangeSectionMap)
+CDAC_TYPE_INDETERMINATE(RangeSectionMap)
+CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)
+CDAC_TYPE_END(RangeSectionMap)
+
+CDAC_TYPE_BEGIN(RangeSectionFragment)
+CDAC_TYPE_INDETERMINATE(RangeSectionFragment)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeBegin, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeBegin)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeEndOpen, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeEndOpen)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, RangeSection, cdac_data<RangeSectionMap>::RangeSectionFragment::RangeSection)
+CDAC_TYPE_FIELD(RangeSectionFragment, /*pointer*/, Next, cdac_data<RangeSectionMap>::RangeSectionFragment::Next)
+CDAC_TYPE_END(RangeSectionFragment)
+
+CDAC_TYPE_BEGIN(RangeSection)
+CDAC_TYPE_INDETERMINATE(RangeSection)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeBegin, cdac_data<RangeSection>::RangeBegin)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, RangeEndOpen, cdac_data<RangeSection>::RangeEndOpen)
+CDAC_TYPE_FIELD(RangeSection, /*pointer*/, NextForDelete, cdac_data<RangeSection>::NextForDelete)
+CDAC_TYPE_END(RangeSection)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

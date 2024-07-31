@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -10,7 +9,8 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
 {
     private readonly Target _target;
     private readonly Data.PrecodeMachineDescriptor _precodeMachineDescriptor;
-    private readonly TargetPointer _executionManagerCodeRangeMapAddress;
+    private readonly Data.RangeSectionMap _topRangeSectionMap;
+    private readonly TargetCodeManagerDescriptor _targetCodeManagerDescriptor;
 
     private bool IsAlignedInstrPointer(TargetPointer instrPointer) => _target.IsAlignedToPointerSize(instrPointer);
 
@@ -41,7 +41,7 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
     {
         internal StubPrecode(TargetPointer instrPointer, KnownPrecodeType type = KnownPrecodeType.Stub) : base(instrPointer, type) { }
 
-        internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
             Data.StubPrecodeData stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData>(stubPrecodeDataAddress);
@@ -57,7 +57,7 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
     internal sealed class FixupPrecode : ValidPrecode
     {
         internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
-        internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer fixupPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
             Data.FixupPrecodeData fixupPrecodeData = target.ProcessedData.GetOrAdd<Data.FixupPrecodeData>(fixupPrecodeDataAddress);
@@ -70,7 +70,7 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
     {
         internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.ThisPtrRetBuf) { }
 
-        internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             throw new NotImplementedException(); // TODO(cdac)
         }
@@ -130,11 +130,12 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         }
     }
 
-    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, TargetPointer executionManagerCodeRangeMapAddress)
+    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, Data.RangeSectionMap topRangeSectionMap)
     {
         _target = target;
         _precodeMachineDescriptor = precodeMachineDescriptor;
-        _executionManagerCodeRangeMapAddress = executionManagerCodeRangeMapAddress;
+        _topRangeSectionMap = topRangeSectionMap; ;
+        _targetCodeManagerDescriptor = TargetCodeManagerDescriptor.Create(target);
     }
 
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
@@ -189,17 +190,66 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         public bool Valid => CodeAddress != default && MethodDescAddress != default;
     }
 
+    private readonly struct TargetCodeManagerDescriptor
+    {
+        public int MapLevels { get; }
+        public int BitsPerLevel { get; } = 8;
+        public int MaxSetBit { get; }
+        public int EntriesPerMapLevel { get; } = 256;
+
+        private TargetCodeManagerDescriptor(int mapLevels, int maxSetBit)
+        {
+            MapLevels = mapLevels;
+            MaxSetBit = maxSetBit;
+        }
+        public static TargetCodeManagerDescriptor Create(Target target)
+        {
+            if (target.PointerSize == 4)
+            {
+                return new(mapLevels: 2, maxSetBit: 31); // 0 indexed
+            }
+            else if (target.PointerSize == 8)
+            {
+                return new(mapLevels: 5, maxSetBit: 56); // 0 indexed
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid pointer size");
+            }
+        }
+    }
+
     private sealed class RangeSection
     {
+        private readonly Data.RangeSection? _rangeSection;
+
+        public RangeSection()
+        {
+            _rangeSection = default;
+        }
+        public RangeSection(Data.RangeSection rangeSection)
+        {
+            _rangeSection = rangeSection;
+        }
         public bool JitCodeToMethodInfo(TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
         {
             throw new NotImplementedException();
+        }
+
+        // note: level is 1-indexed
+        public static uint EffectiveBitsForLevel(TargetCodeManagerDescriptor descriptor, TargetCodePointer address, int level)
+        {
+            ulong addressAsInt = address.Value;
+            ulong addressBitsUsedInMap = addressAsInt >> (descriptor.MaxSetBit + 1 - (descriptor.MapLevels * descriptor.BitsPerLevel));
+            ulong addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * descriptor.BitsPerLevel);
+            ulong addressBitsUsedInLevel = (ulong)(descriptor.EntriesPerMapLevel - 1) & addressBitsShifted;
+            return checked((uint)addressBitsUsedInLevel);
         }
     }
 
     private EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
     {
-        RangeSection range = ExecutionManagerFindCodeRange(jittedCodeAddress);
+        RangeSection range = LookupRangeSection(jittedCodeAddress);
         if (!range.JitCodeToMethodInfo(jittedCodeAddress, out TargetPointer methodDescAddress))
         {
             return null;
@@ -207,15 +257,38 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         return new EECodeInfo(jittedCodeAddress, methodDescAddress);
     }
 
-    private RangeSection ExecutionManagerFindCodeRange(TargetCodePointer jittedCodeAddress)
+    private static bool InRange(Data.RangeSectionFragment fragment, TargetCodePointer address)
     {
-        // GetCodeRangeMap()->LookupRangeSection(addr, pLockState);
-
-        throw new NotImplementedException(); // TODO(cdac)
+        return fragment.RangeBegin <= address && address < fragment.RangeEndOpen;
     }
 
     private RangeSection LookupRangeSection(TargetCodePointer jittedCodeAddress)
     {
+        TargetPointer rangeSectionFragmentPtr = GetRangeSectionForAddress(jittedCodeAddress);
+        if (rangeSectionFragmentPtr == TargetPointer.Null)
+        {
+            return new RangeSection();
+        }
+        while (rangeSectionFragmentPtr != TargetPointer.Null)
+        {
+            Data.RangeSectionFragment fragment = _target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
+            if (InRange(fragment, jittedCodeAddress))
+            {
+                break;
+            }
+            rangeSectionFragmentPtr = fragment.Next; // TODO: load?
+        }
+        if (rangeSectionFragmentPtr != TargetPointer.Null)
+        {
+            Data.RangeSectionFragment fragment = _target.ProcessedData.GetOrAdd<Data.RangeSectionFragment>(rangeSectionFragmentPtr);
+            Data.RangeSection rangeSection = _target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
+            if (rangeSection.NextForDelete != TargetPointer.Null)
+            {
+                return new RangeSection();
+            }
+            return new RangeSection(rangeSection);
+        }
+        return new RangeSection();
 #if false
         PTR_RangeSectionFragment fragment = GetRangeSectionForAddress(address, pLockState);
         if (fragment == NULL)
@@ -236,32 +309,48 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         throw new NotImplementedException();
     }
 
-#if false
-    PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState* pLockState)
+    private TargetPointer RangeSectionPointerLoad(TargetPointer ptr)
     {
-        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
-        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
- ifdef TARGET_64BIT
-        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
-        if (rangeSectionL4 == NULL)
-            return NULL;
-        auto rangeSectionL3 = (*rangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
-        if (rangeSectionL3 == NULL)
-            return NULL;
-        auto rangeSectionL2 = (*rangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
-        if (rangeSectionL2 == NULL)
-            return NULL;
-        auto rangeSectionL1 = (*rangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
- else
-        auto rangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
- endif
-        if (rangeSectionL1 == NULL)
-            return NULL;
-
-        return ((*rangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
-        throw new NotImplementedException();
+        // clear the lowest bit, which is used as a tag for collectible levels, and read the pointer
+        return _target.ReadPointer(ptr.Value & (ulong)~1u);
     }
-#endif
+
+    private TargetPointer /*PTR_RangeSectionFragment*/ GetRangeSectionForAddress(TargetCodePointer jittedCodeAddress)
+    {
+        uint topLevelIndex = RangeSection.EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, _targetCodeManagerDescriptor.MapLevels);
+
+        TargetPointer nextLevelAddress = _topRangeSectionMap.TopLevelData + (ulong)_target.PointerSize * topLevelIndex;
+        TargetPointer rangeSectionL1;
+        if (_target.PointerSize == 8)
+        {
+            TargetPointer rangeSectionL4 = RangeSectionPointerLoad(nextLevelAddress);
+            if (rangeSectionL4 == TargetPointer.Null)
+                return TargetPointer.Null;
+            nextLevelAddress = rangeSectionL4 + (ulong)_target.PointerSize * RangeSection.EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, 4);
+            TargetPointer rangeSectionL3 = RangeSectionPointerLoad(nextLevelAddress);
+            if (rangeSectionL3 == TargetPointer.Null)
+                return TargetPointer.Null;
+            nextLevelAddress = rangeSectionL3 + (ulong)_target.PointerSize * RangeSection.EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, 3);
+            TargetPointer rangeSectionL2 = RangeSectionPointerLoad(nextLevelAddress);
+            if (rangeSectionL2 == TargetPointer.Null)
+                return TargetPointer.Null;
+            nextLevelAddress = rangeSectionL2 + (ulong)_target.PointerSize * RangeSection.EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, 2);
+            rangeSectionL1 = RangeSectionPointerLoad(nextLevelAddress);
+
+        }
+        else if (_target.PointerSize == 4)
+        {
+            rangeSectionL1 = RangeSectionPointerLoad(nextLevelAddress);
+        }
+        else
+        {
+            throw new InvalidOperationException("Invalid pointer size");
+        }
+        if (rangeSectionL1 == TargetPointer.Null)
+            return TargetPointer.Null;
+        nextLevelAddress = rangeSectionL1 + (ulong)_target.PointerSize * RangeSection.EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, 1);
+        return RangeSectionPointerLoad(nextLevelAddress);
+    }
 
     TargetPointer INativeCodePointers.ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress)
     {

@@ -555,6 +555,8 @@ public:
     {
         return end;
     }
+
+    template<typename T> friend struct ::cdac_data;
 };
 
 struct RangeSection
@@ -626,6 +628,15 @@ struct RangeSection
 
 
     RangeSection* _pRangeSectionNextForDelete = NULL; // Used for adding to the cleanup list
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<> struct cdac_data<RangeSection>
+{
+    static constexpr size_t RangeBegin = offsetof(RangeSection, _range.begin);
+    static constexpr size_t RangeEndOpen = offsetof(RangeSection, _range.end);
+    static constexpr size_t NextForDelete = offsetof(RangeSection, _pRangeSectionNextForDelete);
 };
 
 enum class RangeSectionLockState
@@ -1438,8 +1449,17 @@ public:
 template<>
 struct cdac_data<RangeSectionMap>
 {
+    static constexpr size_t TopLevelData = offsetof(RangeSectionMap, _topLevelData);
 
+    struct RangeSectionFragment
+    {
+        static constexpr size_t RangeBegin = offsetof(RangeSectionMap::RangeSectionFragment, _range.begin);
+        static constexpr size_t RangeEndOpen = offsetof(RangeSectionMap::RangeSectionFragment, _range.end);
+        static constexpr size_t RangeSection = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSection);
+        static constexpr size_t Next = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSectionFragmentNext);
+    };
 };
+
 
 
 struct RangeSectionMapData
