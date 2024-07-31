@@ -22,6 +22,7 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
+    [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}; Disposed = {_disposed}")]
     public class CancellationTokenSource : IDisposable
     {
         /// <summary>A <see cref="CancellationTokenSource"/> that's already canceled.</summary>
