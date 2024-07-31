@@ -72,10 +72,15 @@ namespace CopyConstructorMarshaler
             Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
         }
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, int dwFlags);
+        [Fact]
+        public static void CopyConstructorsInArgumentStackSlotsWithUnsafeValueType()
+        {
+            Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
+            Type testType = ijwNativeDll.GetType("TestClass");
+            object testInstance = Activator.CreateInstance(testType);
+            MethodInfo testMethod = testType.GetMethod("ExposedThisUnsafeValueTypeCopyConstructorScenario");
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GetModuleHandle(string lpModuleName);
+            Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
+        }
     }
 }
