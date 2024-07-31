@@ -4425,11 +4425,6 @@ VOID Module::EnsureAllocated()
     GetDomainAssembly()->EnsureAllocated();
 }
 
-VOID Module::EnsureLibraryLoaded()
-{
-    STANDARD_VM_CONTRACT;
-    GetDomainAssembly()->EnsureLibraryLoaded();
-}
 #endif // !DACCESS_COMPILE
 
 CHECK Module::CheckActivated()

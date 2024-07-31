@@ -259,6 +259,9 @@
       <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
         <Link>CommonSystem\Collections\Generic\ArrayBuilder.cs</Link>
       </Compile>
+      <Compile Include="$(CommonPath)System\Experimentals.cs">
+        <Link>CommonSystem\Experimentals.cs</Link>
+      </Compile>
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeaturePortableThreadPool)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />

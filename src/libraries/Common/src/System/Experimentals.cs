@@ -16,11 +16,17 @@ namespace System
         // but retained in the table in docs\project\list-of-diagnostics.md to prevent reuse. Be sure to remove
         // suppressions from the codebase as well.
 
-        // Tensor<T> and related APIs are marked as [Experimental] in .NET 9
+        // Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9
         internal const string TensorTDiagId = "SYSLIB5001";
 
         // SystemColors alternate colors are marked as [Experimental] in .NET 9
         internal const string SystemColorsDiagId = "SYSLIB5002";
+
+        // System.Runtime.Intrinsics.Arm.Sve is experimental in .NET 9
+        internal const string ArmSveDiagId = "SYSLIB5003";
+
+        // X86Base.DivRem is experimental in .NET 9 since performance is not as optimized as T.DivRem
+        internal const string X86BaseDivRemDiagId = "SYSLIB5004";
 
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.

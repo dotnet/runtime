@@ -8358,7 +8358,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
 
         if (isScalar)
         {
-            // We don't support folding scalars today
+            // We don't support folding for scalars when only one input is constant
+            // because it means one value is computed and the remaining values are
+            // either zeroed or preserved based on the underlying target architecture
             oper = GT_NONE;
         }
 
