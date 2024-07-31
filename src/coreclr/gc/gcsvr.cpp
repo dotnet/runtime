@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+#ifndef __INTELLISENSE__
 
 #include "common.h"
 
@@ -30,3 +31,5 @@ namespace SVR {
 }
 
 #endif // defined(FEATURE_SVR_GC)
+
+#endif // !__INTELLISENSE__

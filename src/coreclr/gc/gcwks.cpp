@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+#ifndef __INTELLISENSE__
 
 #include "common.h"
 
@@ -29,3 +30,4 @@ namespace WKS {
 #include "gc.cpp"
 }
 
+#endif // !__INTELLISENSE__
