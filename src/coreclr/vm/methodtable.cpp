@@ -5240,7 +5240,7 @@ MethodTable::FindDispatchImpl(
 {
     CONTRACT (BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pImplSlot));
@@ -5352,10 +5352,7 @@ MethodTable::FindDispatchImpl(
                     if (pDefaultMethod->IsAbstract())
                     {
                         if (throwOnConflict)
-                        {
-                            GCX_PREEMP();
                             ThrowEntryPointNotFoundException(this, pIfcMT, pIfcMD);
-                        }
                     }
                     else
                     {
@@ -5586,7 +5583,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACT(BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
@@ -5746,10 +5743,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
 
             if (throwOnConflict)
-            {
-                GCX_PREEMP();
                 ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
-            }
 
             *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
@@ -7875,6 +7869,8 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL* uniqueResolution,
     ClassLoadLevel level)
 {
+    STANDARD_VM_CONTRACT;
+
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariantMatches = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
