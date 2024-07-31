@@ -60,7 +60,7 @@ struct SimdAsHWIntrinsicInfo
                                    CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
-                                   const char*       enclosingName);
+                                   const char*       enclosingClassName);
 
     static SimdAsHWIntrinsicClassId lookupClassId(Compiler*   comp,
                                                   const char* className,
