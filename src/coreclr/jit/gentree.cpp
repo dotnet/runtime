@@ -26732,6 +26732,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 addr = Op(3);
                 break;
 
+            case NI_Sve_GatherVector:
+            case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt16ZeroExtend:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt32ZeroExtend:
             case NI_Sve_GatherVectorWithByteOffsets:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
@@ -26770,21 +26782,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_Load2xVectorAndUnzip:
             case NI_Sve_Load3xVectorAndUnzip:
             case NI_Sve_Load4xVectorAndUnzip:
-                addr = Op(2);
-                break;
-
-            case NI_Sve_GatherVector:
-            case NI_Sve_GatherVectorByteZeroExtend:
-            case NI_Sve_GatherVectorFirstFaulting:
-            case NI_Sve_GatherVectorInt16SignExtend:
-            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorInt32SignExtend:
-            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorSByteSignExtend:
-            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt16ZeroExtend:
-            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt32ZeroExtend:
                 addr = Op(2);
                 break;
 
@@ -27290,6 +27287,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_SetFfr:
             {
                 return true;
             }
@@ -27472,14 +27470,15 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_PrefetchBytes:
+            case NI_Sve_PrefetchInt16:
+            case NI_Sve_PrefetchInt32:
+            case NI_Sve_PrefetchInt64:
+            case NI_Sve_SetFfr:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);

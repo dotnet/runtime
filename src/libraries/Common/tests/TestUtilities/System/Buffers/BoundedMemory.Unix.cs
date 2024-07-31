@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
@@ -14,13 +15,13 @@ namespace System.Buffers
 
         private sealed class UnixImplementation<T> : BoundedMemory<T> where T : unmanaged
         {
-            private readonly AllocHGlobalHandle _handle;
+            private readonly MmfHandle _handle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
 
             public UnixImplementation(int elementCount, PoisonPagePlacement placement)
             {
-                _handle = AllocHGlobalHandle.Allocate(checked(elementCount * (nint)sizeof(T)), placement);
+                _handle = MmfHandle.Allocate(checked(elementCount * (nint)sizeof(T)), placement);
                 _elementCount = elementCount;
                 _memoryManager = new BoundedMemoryManager(this);
             }
@@ -113,31 +114,32 @@ namespace System.Buffers
             }
         }
 
-        private sealed class AllocHGlobalHandle : SafeHandle
+        private sealed class MmfHandle : SafeHandle
         {
+            private MemoryMappedFile mmf;
+            private MemoryMappedViewAccessor view;
             private IntPtr buffer;
             private ulong allocationSize;
 
             // Called by P/Invoke when returning SafeHandles
-            private AllocHGlobalHandle(IntPtr buffer, ulong allocationSize)
+            private MmfHandle(MemoryMappedFile mmf, MemoryMappedViewAccessor view, IntPtr buffer, ulong allocationSize)
                 : base(IntPtr.Zero, ownsHandle: true)
             {
+                this.mmf = mmf;
+                this.view = view;
                 this.buffer = buffer;
                 this.allocationSize = allocationSize;
             }
 
-            internal static AllocHGlobalHandle Allocate(nint byteLength, PoisonPagePlacement placement)
+            internal static MmfHandle Allocate(nint byteLength, PoisonPagePlacement placement)
             {
-
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
-                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-                if (buffer == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException($"Memory allocation failed with error {Marshal.GetLastPInvokeError()}.");
-                }
+                
+                var mmf = MemoryMappedFile.CreateNew(null, (long)allocationSize, MemoryMappedFileAccess.ReadWrite);
+                var view = mmf.CreateViewAccessor();
+                IntPtr buffer = view.SafeMemoryMappedViewHandle.DangerousGetHandle();
 
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
                 // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
@@ -154,12 +156,12 @@ namespace System.Buffers
                 }
 
                 // Protect the page before/after based on the poison page placement.
-                if (mprotect(poisonPageAddress, (ulong) pageSize, PROT_NONE) == -1)
+                if (mprotect(poisonPageAddress, (ulong)pageSize, PROT_NONE) == -1)
                 {
                     throw new InvalidOperationException($"Failed to mark page as a poison page using mprotect with error :{Marshal.GetLastPInvokeError()}.");
                 }
 
-                AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, (ulong)allocationSize);
+                MmfHandle retVal = new MmfHandle(mmf, view, buffer, (ulong)allocationSize);
                 retVal.SetHandle(baseAddress); // this base address would be used as the start of Span that is used during unit testing.
                 return retVal;
             }
@@ -168,24 +170,39 @@ namespace System.Buffers
 
             protected override bool ReleaseHandle()
             {
-                return munmap(buffer, allocationSize) == 0;
+                view.Dispose();
+                mmf.Dispose();
+                return true;
             }
 
-             // Defined in <sys/mman.h>
-            const int MAP_PRIVATE = 0x2;
-            const int MAP_ANONYMOUS = 0x20;
-            const int PROT_NONE = 0x0;
-            const int PROT_READ = 0x1;
-            const int PROT_WRITE = 0x2;
+            // Defined in <sys/mman.h>
+            public const int PROT_NONE = 0x0;
+            public const int PROT_READ = 0x1;
+            public const int PROT_WRITE = 0x2;
 
-            [DllImport("libc", SetLastError = true)]
-            static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
+            private static class Linux
+            {
 
-            [DllImport("libc", SetLastError = true)]
-            static extern IntPtr munmap(IntPtr address, ulong length);
+                [DllImport("libc", SetLastError = true)]
+                public static extern int mprotect(IntPtr address, ulong length, int prot);
+            }
 
-            [DllImport("libc", SetLastError = true)]
-            static extern int mprotect(IntPtr address, ulong length, int prot);
+            private static class Osx
+            {
+
+                [DllImport("libSystem", SetLastError = true)]
+                public static extern int mprotect(IntPtr address, ulong length, int prot);
+            }
+
+            public static int mprotect(IntPtr address, ulong length, int prot)
+            {
+                if (OperatingSystem.IsLinux())
+                {
+                    return Linux.mprotect(address, length, prot);
+                }
+
+                return Osx.mprotect(address, length, prot);
+            }
         }
     }
 }
