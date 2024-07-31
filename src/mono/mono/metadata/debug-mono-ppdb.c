@@ -30,12 +30,8 @@
 #include <mono/utils/mono-logger-internals.h>
 
 #ifndef DISABLE_EMBEDDED_PDB
-#ifdef INTERNAL_ZLIB
-#include <external/zlib/zlib.h>
-#else
 #include <zlib.h>
-#endif
-#endif
+#endif // DISABLE_EMBEDDED_PDB
 
 #include "debug-mono-ppdb.h"
 

@@ -19,6 +19,7 @@ MonoDomain *mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_
 MonoAssembly *mono_wasm_assembly_load (const char *name);
 MonoClass *mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name);
 MonoMethod *mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments);
-void mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* typeName, const char* methodName, int num_params);
+void mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params);
+int initialize_runtime ();
 
 #endif

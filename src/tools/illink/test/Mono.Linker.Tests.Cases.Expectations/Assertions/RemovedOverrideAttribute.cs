@@ -14,12 +14,14 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[AttributeUsage (AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
 	public class RemovedOverrideAttribute : BaseInAssemblyAttribute
 	{
-		public Type TypeWithOverriddenMethodDeclaration;
 		public RemovedOverrideAttribute (Type typeWithOverriddenMethod)
 		{
 			if (typeWithOverriddenMethod == null)
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeWithOverriddenMethod));
-			TypeWithOverriddenMethodDeclaration = typeWithOverriddenMethod;
+		}
+
+		public RemovedOverrideAttribute (string nameOfOverriddenMethod)
+		{
 		}
 	}
 }

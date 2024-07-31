@@ -17,6 +17,8 @@ Microsoft.Extensions.Diagnostics.Metrics.InstrumentRule
 Microsoft.Extensions.Diagnostics.Metrics.MeterScope
 Microsoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions
 Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

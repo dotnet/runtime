@@ -57,7 +57,7 @@
 
   <PropertyGroup>
     <WorkItemCommand>$(Python) $(ProductDirectory)/superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)/base -diff_jit_directory $(ProductDirectory)/diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>3:00</WorkItemTimeout>
+    <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -14,12 +15,25 @@ namespace Microsoft.Interop
     /// <summary>
     /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
     /// </summary>
-    internal sealed record ComMethodInfo(
-        MethodDeclarationSyntax Syntax,
-        string MethodName,
-        SequenceEqualImmutableArray<AttributeInfo> Attributes,
-        bool IsUserDefinedShadowingMethod)
+    internal sealed record ComMethodInfo
     {
+        public MethodDeclarationSyntax Syntax { get; init; }
+        public string MethodName { get; init; }
+        public SequenceEqualImmutableArray<AttributeInfo> Attributes { get; init; }
+        public bool IsUserDefinedShadowingMethod { get; init; }
+
+        private ComMethodInfo(
+            MethodDeclarationSyntax syntax,
+            string methodName,
+            SequenceEqualImmutableArray<AttributeInfo> attributes,
+            bool isUserDefinedShadowingMethod)
+        {
+            Syntax = syntax;
+            MethodName = methodName;
+            Attributes = attributes;
+            IsUserDefinedShadowingMethod = isUserDefinedShadowingMethod;
+        }
+
         /// <summary>
         /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
         /// </summary>
@@ -94,7 +108,6 @@ namespace Microsoft.Interop
             {
                 return DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(DiagnosticInfo.Create(GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface, method.Locations.FirstOrDefault(), method.ToDisplayString()));
             }
-
 
             // Find the matching declaration syntax
             MethodDeclarationSyntax? comMethodDeclaringSyntax = null;

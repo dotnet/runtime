@@ -480,6 +480,8 @@ public:
     {
         return m_pProfToEE;
     }
+
+    HRESULT EnumerateGCHeapObjectsCallback(ObjectCallback callback, void* callbackState);
 private:
 
     //

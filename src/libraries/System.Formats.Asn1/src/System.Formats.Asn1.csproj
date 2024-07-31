@@ -11,6 +11,8 @@
 Commonly Used Types:
 System.Formats.Asn1.AsnReader
 System.Formats.Asn1.AsnWriter</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

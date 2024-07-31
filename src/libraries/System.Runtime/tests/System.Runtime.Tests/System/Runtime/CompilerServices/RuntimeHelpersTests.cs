@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -101,7 +102,8 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
             RuntimeHelpers.RunClassConstructor(t);
             Assert.Equal("Hello", HasCctorReceiver.S);
-            return;
+            // Should not throw
+            RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
         }
 
         internal class HasCctor
@@ -115,6 +117,14 @@ namespace System.Runtime.CompilerServices.Tests
         internal class HasCctorReceiver
         {
             public static string S;
+        }
+
+        internal class GenericHasCctor<T>
+        {
+            static GenericHasCctor()
+            {
+                Thread.Yield(); // Make sure the preinitialization optimization doesn't eat this.
+            }
         }
 
         [Fact]
@@ -365,6 +375,12 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Guid>());
             Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithoutReferences>());
             Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithReferences>());
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithoutReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<Span<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<ReadOnlySpan<char>>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithRef>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<RefStructWithNestedRef>());
         }
 
         [Fact]
@@ -409,6 +425,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
         }
 
+#pragma warning disable CS0649
         [StructLayoutAttribute(LayoutKind.Sequential)]
         private struct StructWithoutReferences
         {
@@ -421,6 +438,29 @@ namespace System.Runtime.CompilerServices.Tests
             public int a, b, c;
             public object d;
         }
+
+        private ref struct RefStructWithoutReferences
+        {
+            public int a;
+            public long b;
+        }
+
+        private ref struct RefStructWithReferences
+        {
+            public int a;
+            public object b;
+        }
+
+        private ref struct RefStructWithRef
+        {
+            public ref int a;
+        }
+
+        private ref struct RefStructWithNestedRef
+        {
+            public Span<char> a;
+        }
+#pragma warning restore CS0649
 
         [Fact]
         public static void FixedAddressValueTypeTest()

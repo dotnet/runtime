@@ -35,7 +35,7 @@ INST(invalid,       "INVALID",        0,    BAD_CODE)
 INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R
-INST(mov,           "mov",            0,    0x00000013)
+INST(mov,           "mv",             0,    0x00000013)
 INST(sext_w,        "sext.w",         0,    0x0000001b)
 
 ////R_I

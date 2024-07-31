@@ -63,7 +63,7 @@ tdep_get_elf_image (struct elf_image *ei, pid_t pid, unw_word_t ip,
   if (ei)
     rc = elf_map_image (ei, mi.path);
   else
-    rc = strlen(mi.path) >= pathlen ? -UNW_ENOMEM : UNW_ESUCCESS:;
+    rc = strlen(mi.path) >= pathlen ? -UNW_ENOMEM : UNW_ESUCCESS;
 
   maps_close (&mi);
   return rc;

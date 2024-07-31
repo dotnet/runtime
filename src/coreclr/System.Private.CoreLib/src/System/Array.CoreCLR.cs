@@ -62,7 +62,10 @@ namespace System
             if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
-            if (sourceArray.GetType() == destinationArray.GetType() || IsSimpleCopy(sourceArray, destinationArray))
+            ArrayAssignType assignType = ArrayAssignType.WrongType;
+
+            if (sourceArray.GetType() == destinationArray.GetType()
+                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
 
@@ -86,44 +89,50 @@ namespace System
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
 
             // Rare
-            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsSimpleCopy(Array sourceArray, Array destinationArray);
+        private static CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
+        {
+            Debug.Assert(elementType.IsPrimitiveType());
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_0000_0000_0000_1010_1010_0000 >> (int)elementType) & 1;
+            return (CorElementType)((int)elementType - shift);
+        }
 
         // Reliability-wise, this method will either possibly corrupt your
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            void* srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
-            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
-            AssignArrayEnum r = CanAssignArrayType(srcTH, destTH);
-
-            if (r == AssignArrayEnum.AssignWrongType)
-                ThrowHelper.ThrowArrayTypeMismatchException_CantAssignType();
+            if (assignType == ArrayAssignType.WrongType)
+                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             if (length > 0)
             {
-                switch (r)
+                switch (assignType)
                 {
-                    case AssignArrayEnum.AssignUnboxValueClass:
+                    case ArrayAssignType.UnboxValueClass:
                         CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
+                    case ArrayAssignType.BoxValueClassOrPrimitive:
                         CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignMustCast:
+                    case ArrayAssignType.MustCast:
                         CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case AssignArrayEnum.AssignPrimitiveWiden:
+                    case ArrayAssignType.PrimitiveWiden:
                         CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
@@ -134,18 +143,90 @@ namespace System
             }
         }
 
-        // Must match the definition in arraynative.cpp
-        private enum AssignArrayEnum
+        private enum ArrayAssignType
         {
-            AssignWrongType,
-            AssignMustCast,
-            AssignBoxValueClassOrPrimitive,
-            AssignUnboxValueClass,
-            AssignPrimitiveWiden,
+            SimpleCopy,
+            WrongType,
+            MustCast,
+            BoxValueClassOrPrimitive,
+            UnboxValueClass,
+            PrimitiveWiden,
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CanAssignArrayType")]
-        private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
+        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
+        {
+            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
+            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
+
+            if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
+                return ArrayAssignType.SimpleCopy;
+
+            if (!srcTH.IsTypeDesc && !destTH.IsTypeDesc)
+            {
+                MethodTable* pMTsrc = srcTH.AsMethodTable();
+                MethodTable* pMTdest = destTH.AsMethodTable();
+
+                // Value class boxing
+                if (pMTsrc->IsValueType && !pMTdest->IsValueType)
+                {
+                    if (srcTH.CanCastTo(destTH))
+                        return ArrayAssignType.BoxValueClassOrPrimitive;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // Value class unboxing.
+                if (!pMTsrc->IsValueType && pMTdest->IsValueType)
+                {
+                    if (srcTH.CanCastTo(destTH))
+                        return ArrayAssignType.UnboxValueClass;
+                    else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
+                        return ArrayAssignType.UnboxValueClass;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // Copying primitives from one type to another
+                if (pMTsrc->IsPrimitive && pMTdest->IsPrimitive)
+                {
+                    CorElementType srcElType = pMTsrc->GetPrimitiveCorElementType();
+                    CorElementType destElType = pMTdest->GetPrimitiveCorElementType();
+
+                    if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
+                        return ArrayAssignType.SimpleCopy;
+                    else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
+                        return ArrayAssignType.PrimitiveWiden;
+                    else
+                        return ArrayAssignType.WrongType;
+                }
+
+                // src Object extends dest
+                if (srcTH.CanCastTo(destTH))
+                    return ArrayAssignType.SimpleCopy;
+
+                // dest Object extends src
+                if (destTH.CanCastTo(srcTH))
+                    return ArrayAssignType.MustCast;
+
+                // class X extends/implements src and implements dest.
+                if (pMTdest->IsInterface)
+                    return ArrayAssignType.MustCast;
+
+                // class X implements src and extends/implements dest
+                if (pMTsrc->IsInterface)
+                    return ArrayAssignType.MustCast;
+            }
+            else
+            {
+                // Only pointers are valid for TypeDesc in array element
+
+                // Compatible pointers
+                if (srcTH.CanCastTo(destTH))
+                    return ArrayAssignType.SimpleCopy;
+            }
+
+            return ArrayAssignType.WrongType;
+        }
 
         // Unboxes from an Object[] into a value class or primitive array.
         private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
@@ -176,7 +257,7 @@ namespace System
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
-                    ThrowHelper.ThrowInvalidCastException_DownCastArrayElement();
+                    throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
@@ -246,150 +327,9 @@ namespace System
 
             for (int i = 0; i < length; i++)
             {
-                ref byte srcElement = ref Unsafe.Add(ref srcData, (nuint)i * srcElSize);
-                ref byte destElement = ref Unsafe.Add(ref data, (nuint)i * destElSize);
-
-                switch (srcElType)
-                {
-                    case CorElementType.ELEMENT_TYPE_U1:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_CHAR:
-                            case CorElementType.ELEMENT_TYPE_I2:
-                            case CorElementType.ELEMENT_TYPE_U2:
-                                Unsafe.As<byte, ushort>(ref destElement) = srcElement; break;
-                            case CorElementType.ELEMENT_TYPE_I4:
-                            case CorElementType.ELEMENT_TYPE_U4:
-                                Unsafe.As<byte, uint>(ref destElement) = srcElement; break;
-                            case CorElementType.ELEMENT_TYPE_I8:
-                            case CorElementType.ELEMENT_TYPE_U8:
-                                Unsafe.As<byte, ulong>(ref destElement) = srcElement; break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = srcElement; break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = srcElement; break;
-                            default:
-                                Debug.Fail("Array.Copy from U1 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_I1:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_I2:
-                                Unsafe.As<byte, short>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_I4:
-                                Unsafe.As<byte, int>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_I8:
-                                Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, sbyte>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from I1 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_U2:
-                    case CorElementType.ELEMENT_TYPE_CHAR:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_U2:
-                            case CorElementType.ELEMENT_TYPE_CHAR:
-                                // U2 and CHAR are identical in conversion
-                                Unsafe.As<byte, ushort>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_I4:
-                            case CorElementType.ELEMENT_TYPE_U4:
-                                Unsafe.As<byte, uint>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_I8:
-                            case CorElementType.ELEMENT_TYPE_U8:
-                                Unsafe.As<byte, ulong>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, ushort>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from U2 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_I2:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_I4:
-                                Unsafe.As<byte, int>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_I8:
-                                Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, short>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from I2 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_U4:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_I8:
-                            case CorElementType.ELEMENT_TYPE_U8:
-                                Unsafe.As<byte, ulong>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, uint>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from U4 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_I4:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_I8:
-                                Unsafe.As<byte, long>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, int>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from I4 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_U8:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, ulong>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, ulong>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from U8 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_I8:
-                        switch (destElType)
-                        {
-                            case CorElementType.ELEMENT_TYPE_R4:
-                                Unsafe.As<byte, float>(ref destElement) = Unsafe.As<byte, long>(ref srcElement); break;
-                            case CorElementType.ELEMENT_TYPE_R8:
-                                Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, long>(ref srcElement); break;
-                            default:
-                                Debug.Fail("Array.Copy from I8 to another type hit unsupported widening conversion"); break;
-                        }
-                        break;
-
-                    case CorElementType.ELEMENT_TYPE_R4:
-                        Debug.Assert(destElType == CorElementType.ELEMENT_TYPE_R8);
-                        Unsafe.As<byte, double>(ref destElement) = Unsafe.As<byte, float>(ref srcElement); break;
-
-                    default:
-                        Debug.Fail("Fell through outer switch in PrimitiveWiden!  Unknown primitive type for source array!"); break;
-                }
+                InvokeUtils.PrimitiveWiden(ref srcData, ref data, srcElType, destElType);
+                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElSize);
+                data = ref Unsafe.AddByteOffset(ref data, destElSize);
             }
         }
 
@@ -554,8 +494,103 @@ namespace System
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InternalSetValue(object? value, nint flattenedIndex);
+        private unsafe void InternalSetValue(object? value, nint flattenedIndex)
+        {
+            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
+
+            TypeHandle arrayElementTypeHandle = pMethodTable->GetArrayElementTypeHandle();
+
+            // Legacy behavior (this handles pointers and function pointers)
+            if (arrayElementTypeHandle.IsTypeDesc)
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+
+            Debug.Assert((nuint)flattenedIndex < NativeLength);
+
+            ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(this);
+
+            MethodTable* pElementMethodTable = arrayElementTypeHandle.AsMethodTable();
+
+            if (value == null)
+            {
+                // Null is the universal zero...
+                if (pElementMethodTable->IsValueType)
+                {
+                    ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+                    nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
+                    if (pElementMethodTable->ContainsGCPointers)
+                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                    else
+                        SpanHelpers.ClearWithoutReferences(ref offsetDataRef, elementSize);
+                }
+                else
+                {
+                    Unsafe.Add(ref Unsafe.As<byte, object?>(ref arrayDataRef), (nuint)flattenedIndex) = null;
+                }
+            }
+            else if (!pElementMethodTable->IsValueType)
+            {
+                if (pElementMethodTable != TypeHandle.TypeHandleOf<object>().AsMethodTable() //  Everything is compatible with Object
+                    && CastHelpers.IsInstanceOfAny(pElementMethodTable, value) == null)
+                    throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
+
+                Unsafe.Add(ref Unsafe.As<byte, object?>(ref arrayDataRef), (nuint)flattenedIndex) = value;
+            }
+            else
+            {
+                // value class or primitive type
+
+                ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+                if (CastHelpers.IsInstanceOfAny(pElementMethodTable, value) != null)
+                {
+                    if (pElementMethodTable->IsNullable)
+                    {
+                        RuntimeHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
+                    }
+                    else
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
+                        if (pElementMethodTable->ContainsGCPointers)
+                        {
+                            Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
+                        }
+                        else
+                        {
+                            SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), elementSize);
+                        }
+                    }
+                }
+                else
+                {
+                    // Allow enum -> primitive conversion, disallow primitive -> enum conversion
+                    MethodTable* pValueMethodTable = RuntimeHelpers.GetMethodTable(value);
+
+                    // Array.SetValue() does *not* permit conversion from a primitive to an Enum.
+                    if (!pValueMethodTable->IsPrimitive || !pElementMethodTable->IsTruePrimitive)
+                        throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
+
+                    CorElementType srcType = pValueMethodTable->GetPrimitiveCorElementType();
+                    CorElementType targetType = pElementMethodTable->GetPrimitiveCorElementType();
+
+                    // Get a properly widened type
+                    if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))
+                        throw new ArgumentException(SR.Arg_PrimWiden);
+
+                    if (srcType == targetType)
+                    {
+                        // Primitive types are always tightly packed in array, using ComponentSize is sufficient.
+                        SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), pMethodTable->ComponentSize);
+                    }
+                    else
+                    {
+                        InvokeUtils.PrimitiveWiden(ref value.GetRawData(), ref offsetDataRef, srcType, targetType);
+                    }
+                }
+            }
+
+            GC.KeepAlive(this); // Keep the method table alive
+        }
 
         public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
 
@@ -642,34 +677,34 @@ namespace System
 
             RuntimeType arrayType = (RuntimeType)GetType();
 
-            if (arrayType.GenericCache is not ArrayInitializeCache cache)
-            {
-                cache = new ArrayInitializeCache(arrayType);
-                arrayType.GenericCache = cache;
-            }
+            ArrayInitializeCache cache = arrayType.GetOrCreateCacheEntry<ArrayInitializeCache>();
 
             delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = pArrayMT->ComponentSize;
 
-            for (int i = 0; i < Length; i++)
+            for (nuint i = 0; i < NativeLength; i++)
             {
                 constructorFtn(ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
             }
         }
 
-        private sealed unsafe partial class ArrayInitializeCache
+        internal sealed unsafe partial class ArrayInitializeCache : RuntimeType.IGenericCacheEntry<ArrayInitializeCache>
         {
             internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
-            public ArrayInitializeCache(RuntimeType arrayType)
+            private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
-                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+                ConstructorEntrypoint = constructorEntrypoint;
             }
+
+            public static ArrayInitializeCache Create(RuntimeType arrayType) => new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._arrayInitializeCache = this;
+            public static ref ArrayInitializeCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._arrayInitializeCache;
         }
     }
 

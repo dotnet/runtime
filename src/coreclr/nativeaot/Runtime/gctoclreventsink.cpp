@@ -161,6 +161,7 @@ void GCToCLREventSink::FireGCGlobalHeapHistory_V4(uint64_t finalYoungestDesired,
 void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount,
         uint32_t allocationKind)
 {
+    ASSERT(!"Superseded by FireGCAllocationTick_V4");
 }
 
 MethodTable* GetLastAllocEEType();
@@ -273,7 +274,7 @@ void GCToCLREventSink::FireBGC1stConEnd()
 
 void GCToCLREventSink::FireBGC1stSweepEnd(uint32_t genNumber)
 {
-    //FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId()); TODO
+    FireEtwBGC1stSweepEnd(genNumber, GetClrInstanceId());
 }
 
 void GCToCLREventSink::FireBGC2ndNonConBegin()

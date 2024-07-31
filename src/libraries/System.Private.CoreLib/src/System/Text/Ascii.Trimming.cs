@@ -40,8 +40,11 @@ namespace System.Text
         private static Range TrimHelper<T>(ReadOnlySpan<T> value, TrimType trimType)
             where T : unmanaged, IBinaryInteger<T>
         {
+            // A bitmap with a bit set for each ASCII whitespace character. The set bit is at the
+            // index of the character minus 1, since we're using a 32-bit value and space would otherwise
+            // be at index 32; with -1, it's at index 31.
             const uint TrimMask =
-                (1u << (0x09 - 1))
+                  (1u << (0x09 - 1))
                 | (1u << (0x0A - 1))
                 | (1u << (0x0B - 1))
                 | (1u << (0x0C - 1))
@@ -53,8 +56,8 @@ namespace System.Text
             {
                 for (; start < value.Length; start++)
                 {
-                    uint elementValue = uint.CreateTruncating(value[start]);
-                    if ((elementValue > 0x20) || ((TrimMask & (1u << ((int)elementValue - 1))) == 0))
+                    uint elementValueM1 = uint.CreateTruncating(value[start]) - 1;
+                    if ((elementValueM1 > 0x1F) || ((TrimMask & (1u << ((int)elementValueM1))) == 0))
                     {
                         break;
                     }
@@ -66,8 +69,8 @@ namespace System.Text
             {
                 for (; start <= end; end--)
                 {
-                    uint elementValue = uint.CreateTruncating(value[end]);
-                    if ((elementValue > 0x20) || ((TrimMask & (1u << ((int)elementValue - 1))) == 0))
+                    uint elementValueM1 = uint.CreateTruncating(value[end]) - 1;
+                    if ((elementValueM1 > 0x1F) || ((TrimMask & (1u << ((int)elementValueM1))) == 0))
                     {
                         break;
                     }

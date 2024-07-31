@@ -82,26 +82,26 @@ DebugBlockingItemHolder::DebugBlockingItemHolder(Thread *pThread, DebugBlockingI
     }
     CONTRACTL_END;
 
-    // Try to get the address of the thread-local slot for the managed ThreadBlockingInfo.t_first
+    m_ppFirstBlockingInfo = (ThreadBlockingInfo**)&t_ThreadStatics.ThreadBlockingInfo_First;
+#ifdef _DEBUG
+    // Try to verify the address of the thread-local slot for the managed ThreadBlockingInfo.t_first matches the address of the native thread static
     EX_TRY
     {
         FieldDesc *pFD = CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__FIRST);
-        m_ppFirstBlockingInfo = (ThreadBlockingInfo **)Thread::GetStaticFieldAddress(pFD);
+        _ASSERTE(m_ppFirstBlockingInfo == (ThreadBlockingInfo **)Thread::GetStaticFieldAddress(pFD));
     }
     EX_CATCH
     {
     }
     EX_END_CATCH(RethrowTerminalExceptions);
+#endif
 
-    if (m_ppFirstBlockingInfo != nullptr)
-    {
-        // Push info for the managed ThreadBlockingInfo
-        m_blockingInfo.objectPtr = pItem->pMonitor;
-        m_blockingInfo.objectKind = (ThreadBlockingInfo::ObjectKind)pItem->type;
-        m_blockingInfo.timeoutMs = (INT32)pItem->dwTimeout;
-        m_blockingInfo.next = *m_ppFirstBlockingInfo;
-        *m_ppFirstBlockingInfo = &m_blockingInfo;
-    }
+    // Push info for the managed ThreadBlockingInfo
+    m_blockingInfo.objectPtr = pItem->pMonitor;
+    m_blockingInfo.objectKind = (ThreadBlockingInfo::ObjectKind)pItem->type;
+    m_blockingInfo.timeoutMs = (INT32)pItem->dwTimeout;
+    m_blockingInfo.next = *m_ppFirstBlockingInfo;
+    *m_ppFirstBlockingInfo = &m_blockingInfo;
 
     pThread->DebugBlockingInfo.PushBlockingItem(pItem);
 }
@@ -115,14 +115,8 @@ DebugBlockingItemHolder::~DebugBlockingItemHolder()
 
     m_pThread->DebugBlockingInfo.PopBlockingItem();
 
-    if (m_ppFirstBlockingInfo != nullptr)
-    {
-        // Pop info for the managed ThreadBlockingInfo
-        _ASSERTE(
-            m_ppFirstBlockingInfo ==
-            (void *)m_pThread->GetStaticFieldAddrNoCreate(CoreLibBinder::GetField(FIELD__THREAD_BLOCKING_INFO__FIRST)));
-        _ASSERTE(*m_ppFirstBlockingInfo == &m_blockingInfo);
-        *m_ppFirstBlockingInfo = m_blockingInfo.next;
-    }
+    // Pop info for the managed ThreadBlockingInfo
+    _ASSERTE(*m_ppFirstBlockingInfo == &m_blockingInfo);
+    *m_ppFirstBlockingInfo = m_blockingInfo.next;
 }
 #endif //DACCESS_COMPILE

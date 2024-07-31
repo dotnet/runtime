@@ -122,6 +122,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        public static void ThrowArgument_2DTensorRequired(string? paramNames)
+        {
+            throw new ArgumentException(SR.Argument_2DTensorRequired, paramNames);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgument_IncorrectNumberOfFilterItems(string? paramNames)
         {
             throw new ArgumentException(SR.ThrowArgument_IncorrectNumberOfFilterItems, paramNames);
@@ -202,7 +208,19 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_StrideLessThan0()
         {
-            throw new ArgumentException(SR.ThrowArgument_StrideLessThan0);
+            throw new ArgumentOutOfRangeException(SR.ThrowArgument_StrideLessThan0);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_IncompatibleDimensions(nint leftDim, nint rightDim)
+        {
+            throw new ArgumentException(SR.Format(SR.Argument_IncompatibleDimensions, leftDim, rightDim));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgument_StackShapesNotSame()
+        {
+            throw new ArgumentException(SR.ThrowArgument_StackShapesNotSame);
         }
     }
 }

@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
-    <NoWarn>CA1050;CA2007;CA1861;IL2104</NoWarn>
+    <NoWarn>$(NoWarn);CA1050;CA2007;CA1861;IL2104</NoWarn>
     <WasmEnableThreads>true</WasmEnableThreads>
     <StaticWebAssetBasePath>wasmclient</StaticWebAssetBasePath>
   </PropertyGroup>

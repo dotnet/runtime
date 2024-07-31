@@ -302,7 +302,7 @@ namespace ILLink.Tasks
 		{
 			XmlDocument doc = new XmlDocument ();
 			using (var sr = new StreamReader (iLLinkTrimXmlFilePath)) {
-				XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
+				using XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
 				doc.Load (reader);
 			}
 
@@ -471,7 +471,10 @@ namespace ILLink.Tasks
 				Log.LogError ($"Unknown namespace '{classNamespace}'.");
 			}
 
-			return namespaceDictionary[classNamespace] + "." + className;
+			// Convert from the System.Reflection/CoreCLR nested type name format to the IL/Cecil format.
+			string classNameWithCecilNestedFormat = className.Replace ('+', '/');
+
+			return namespaceDictionary[classNamespace] + "." + classNameWithCecilNestedFormat;
 		}
 
 		void InitializeDefineConstants ()

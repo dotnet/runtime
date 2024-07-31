@@ -714,13 +714,13 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
         if (i < 0)
         {
             // Save the name.  Have to convert from UTF8.
-            int iLen = WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
+            int iLen = MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
             rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(iLen*sizeof(WCHAR)));
             if (rProps[ix].pName == NULL)
             {
                 ThrowHR(E_OUTOFMEMORY);
             }
-            WszMultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
+            MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
 
             // Check whether the property has a dispid attribute.
             hr = pMeth->GetMDImport()->GetDispIdOfMemberDef(pd, &dispid);

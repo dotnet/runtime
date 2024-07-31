@@ -244,7 +244,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static UnsupportedType GetUnsupportedTypeInstance () => null;
 
 			[ExpectedWarning ("IL2098", nameof (UnsupportedType))]
-			[ExpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void RequirePublicMethods (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				UnsupportedType unsupportedTypeInstance)
@@ -259,7 +259,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			public static void Test () {
 				var t = GetUnsupportedTypeInstance ();
 				RequirePublicMethods (t);

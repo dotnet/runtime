@@ -229,6 +229,7 @@ async function flush_node_streams () {
 
 function abort_promises (reason: any) {
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
+    loaderHelpers.allDownloadsFinished.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);

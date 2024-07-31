@@ -100,7 +100,7 @@ namespace System.Net.Sockets
         private unsafe NativeOverlapped* AllocateNativeOverlapped()
         {
             Debug.Assert(OperatingSystem.IsWindows());
-            Debug.Assert(_operating == InProgress, $"Expected {nameof(_operating)} == {nameof(InProgress)}, got {_operating}");
+            Debug.Assert(_operating == OperationState.InProgress, $"Expected {nameof(_operating)} == {nameof(OperationState.InProgress)}, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
             Debug.Assert(_currentSocket.SafeHandle != null, "_currentSocket.SafeHandle is null");
             Debug.Assert(_preAllocatedOverlapped != null, "_preAllocatedOverlapped is null");
@@ -113,7 +113,7 @@ namespace System.Net.Sockets
         {
             Debug.Assert(OperatingSystem.IsWindows());
             Debug.Assert(overlapped != null, "overlapped is null");
-            Debug.Assert(_operating == InProgress, $"Expected _operating == InProgress, got {_operating}");
+            Debug.Assert(_operating == OperationState.InProgress, $"Expected _operating == OperationState.InProgress, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
             Debug.Assert(_currentSocket.SafeHandle != null, "_currentSocket.SafeHandle is null");
             Debug.Assert(_currentSocket.SafeHandle.IOCPBoundHandle != null, "_currentSocket.SafeHandle.IOCPBoundHandle is null");
