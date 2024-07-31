@@ -87,6 +87,8 @@ namespace System.Threading
 
                 lock (SyncObj)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(this);
+
                     // Now that we're holding the lock, check to see whether the async lock is acquirable.
                     if (!_lockedSemaphoreFull)
                     {
@@ -118,6 +120,8 @@ namespace System.Threading
                         w.Prev.Next = w.Next.Prev = w;
                     }
                     _waitersTail = w;
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(this);
                 }
 
                 // Return the waiter as a value task.
@@ -131,6 +135,8 @@ namespace System.Threading
 
                     lock (m.SyncObj)
                     {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(m);
+
                         bool inList = w.Next != null;
                         if (inList)
                         {
@@ -171,6 +177,8 @@ namespace System.Threading
                             // The waiter was no longer in the list.  We must not cancel it.
                             w = null;
                         }
+
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(m);
                     }
 
                     // If the waiter was in the list, we removed it under the lock and thus own
@@ -201,6 +209,8 @@ namespace System.Threading
                 {
                     Debug.Assert(_lockedSemaphoreFull);
 
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(this);
+
                     w = _waitersTail;
                     if (w is null)
                     {
@@ -228,6 +238,8 @@ namespace System.Threading
 
                         w.Next = w.Prev = null;
                     }
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(this);
                 }
 
                 // Either there wasn't a waiter, or we got one and successfully removed it from the list,

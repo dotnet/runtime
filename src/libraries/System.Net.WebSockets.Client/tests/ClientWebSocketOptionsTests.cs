@@ -147,7 +147,7 @@ namespace System.Net.WebSockets.Client.Tests
         public static void KeepAliveTimeout_Roundtrips()
         {
             var cws = new ClientWebSocket();
-            Assert.True(cws.Options.KeepAliveTimeout > TimeSpan.Zero);
+            Assert.True(cws.Options.KeepAliveTimeout == Timeout.InfiniteTimeSpan);
 
             cws.Options.KeepAliveTimeout = TimeSpan.Zero;
             Assert.Equal(TimeSpan.Zero, cws.Options.KeepAliveTimeout);

@@ -14,7 +14,7 @@ namespace System.Net.WebSockets
 
         public static void DisposeSafe(this IDisposable resource, AsyncMutex mutex)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncProcessingTrace(resource, $"Disposing resource within mutex {NetEventSource.IdOf(mutex)}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLog(resource, $"Disposing resource within mutex {NetEventSource.IdOf(mutex)}");
 
             Task lockTask = mutex.EnterAsync(CancellationToken.None);
             if (lockTask.IsCompletedSuccessfully)
@@ -84,7 +84,7 @@ namespace System.Net.WebSockets
 
                 if (logSuccessfulCompletion)
                 {
-                    NetEventSource.AsyncProcessingSuccess(caller, memberName);
+                    NetEventSource.AsyncDbgLogSuccess(caller, memberName);
                 }
             }
             else
@@ -142,7 +142,7 @@ namespace System.Net.WebSockets
 
                 _ = task.Exception; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncProcessingFailure(caller, memberName, task.Exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLogFailure(caller, memberName, task.Exception);
             }
         }
 
@@ -165,11 +165,11 @@ namespace System.Net.WebSockets
                 try
                 {
                     await t.ConfigureAwait(false);
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncProcessingSuccess(caller, memberName);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLogSuccess(caller, memberName);
                 }
                 catch (Exception e)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncProcessingFailure(caller, memberName, e);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLogFailure(caller, memberName, e);
                 }
             }
         }

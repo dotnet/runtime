@@ -77,6 +77,8 @@ namespace System.Net.WebSockets
 
                 lock (StateUpdateLock)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(this);
+
                     if (!_disposed)
                     {
                         // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
@@ -84,6 +86,8 @@ namespace System.Net.WebSockets
                         Volatile.Write(ref _keepAlivePingState.Exception, e);
                         Abort();
                     }
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(this);
                 }
             }
         }
@@ -124,6 +128,7 @@ namespace System.Net.WebSockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead not started: other read already in progress");
                 return;
             }
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
 
             bool shouldExitMutex = true;
@@ -161,6 +166,8 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_receiveMutex.IsHeld);
             Debug.Assert(IsValidReceiveState(_state));
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.ReadAheadStarted(this);
 
             try
             {
@@ -216,13 +223,21 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                readAheadTcs.SetException(e); // this should be done before exiting the mutex
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLog(this, $"Completing TCS with exception {e.GetType().FullName}: {e.Message}");
+                readAheadTcs.SetException(e); // TCS should be completed before exiting the mutex
             }
             finally
             {
-                readAheadTcs.TrySetResult(); // this should be done before exiting the mutex
+                readAheadTcs.TrySetResult(); // TCS should be completed before exiting the mutex
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.AsyncDbgLog(this, $"TCS completed");
+
                 _receiveMutex.Exit();
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.MutexExited(_receiveMutex);
+                    NetEventSource.ReadAheadCompleted(this);
+                }
             }
         }
 
