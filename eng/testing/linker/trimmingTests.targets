@@ -138,7 +138,7 @@
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Publish"
-             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture)" />
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false;TargetOS=$(TargetOS);TargetArchitecture=$(TargetArchitecture);_IsPublishing=true" />
   </Target>
 
   <Target Name="ExecuteApplications"
