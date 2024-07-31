@@ -181,7 +181,8 @@ namespace ILVerify
             {
                 var importer = new ILImporter(method, methodIL)
                 {
-                    SanityChecks = _verifierOptions.SanityChecks
+                    SanityChecks = _verifierOptions.SanityChecks,
+                    SuppressTypeVerification = _verifierOptions.SuppressTypeVerification
                 };
 
                 importer.ReportVerificationError = (args, code) =>
@@ -325,5 +326,6 @@ namespace ILVerify
     {
         public bool IncludeMetadataTokensInErrorMessages { get; set; }
         public bool SanityChecks { get; set; }
+        public bool SuppressTypeVerification { get; set; }
     }
 }
