@@ -5,6 +5,14 @@
 #ifndef GCIMPL_H_
 #define GCIMPL_H_
 
+#ifdef __INTELLISENSE__
+#ifdef SERVER_GC
+namespace SVR {
+#else
+namespace WKS {
+#endif // SERVER_GC
+#endif // __INTELLISENSE__
+
 #ifdef SERVER_GC
 #define MULTIPLE_HEAPS 1
 #endif  // SERVER_GC
@@ -333,3 +341,7 @@ public:
 };
 
 #endif  // GCIMPL_H_
+
+#ifdef __INTELLISENSE__
+}
+#endif // __INTELLISENSE__

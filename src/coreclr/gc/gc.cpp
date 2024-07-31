@@ -34,27 +34,25 @@
 
 #define SERVER_GC 1
 
-#ifdef TARGET_AMD64
-#include "vxsort/do_vxsort.h"
-#endif
-
-namespace SVR {
-#include "gcimpl.h"
-#include "gcpriv.h"
-
 #else
 
 #ifdef SERVER_GC
 #undef SERVER_GC
 #endif
 
+#endif // defined(FEATURE_SVR_GC)
+
 #ifdef TARGET_AMD64
 #include "vxsort/do_vxsort.h"
 #endif
 
-namespace WKS {
 #include "gcimpl.h"
 #include "gcpriv.h"
+
+#if defined(FEATURE_SVR_GC)
+namespace SVR {
+#else
+namespace WKS {
 #endif // defined(FEATURE_SVR_GC)
 
 #else
