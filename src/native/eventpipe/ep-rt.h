@@ -107,6 +107,14 @@ static
 bool
 ep_rt_config_release (void);
 
+static
+bool
+ep_rt_callback_dispatch_acquire (void);
+
+static
+bool
+ep_rt_callback_dispatch_release (void);
+
 #ifdef EP_CHECKED_BUILD
 static
 void
@@ -115,9 +123,19 @@ ep_rt_config_requires_lock_held (void);
 static
 void
 ep_rt_config_requires_lock_not_held (void);
+
+static
+void
+ep_rt_requires_callback_dispatch_lock_held (void);
+
+static
+void
+ep_rt_requires_callback_dispatch_lock_not_held (void);
 #else
 #define ep_rt_config_requires_lock_held()
 #define ep_rt_config_requires_lock_not_held()
+#define ep_rt_requires_callback_dispatch_lock_held()
+#define ep_rt_requires_callback_dispatch_lock_not_held()
 #endif
 
 static
@@ -732,6 +750,26 @@ _ep_on_config_lock_exit_ ##section_name: \
 	if (EP_UNLIKELY((!_no_config_error_ ##section_name))) \
 		goto ep_on_error; \
 	ep_requires_lock_not_held (); \
+}
+
+#define EP_CALLBACK_DISPATCH_LOCK_ENTER() \
+{ \
+    ep_rt_requires_callback_dispatch_lock_not_held (); \
+	bool _owns_callback_dispatch_lock = ep_rt_callback_dispatch_acquire (); \
+	bool _no_callback_dispatch_error = false; \
+	if (EP_UNLIKELY(!_owns_callback_dispatch_lock)) \
+	    goto _ep_on_callback_dispatch_lock_exit;
+
+#define EP_CALLBACK_DISPATCH_LOCK_EXIT() \
+    _no_callback_dispatch_error = true; \
+_ep_on_callback_dispatch_lock_exit: \
+	if (EP_UNLIKELY(!_owns_callback_dispatch_lock)) \
+		goto ep_on_error; \
+	ep_rt_requires_callback_dispatch_lock_held (); \
+	ep_rt_callback_dispatch_release (); \
+	if (EP_UNLIKELY(!_no_callback_dispatch_error)) \
+		goto ep_on_error; \
+	ep_rt_requires_callback_dispatch_lock_not_held (); \
 }
 
 #define ep_raise_error_if_nok_holding_lock(expr, section_name) do { if (EP_UNLIKELY(!(expr))) { _no_config_error_ ##section_name = false; goto _ep_on_config_lock_exit_ ##section_name; } } while (0)
