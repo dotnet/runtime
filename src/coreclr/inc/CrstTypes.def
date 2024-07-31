@@ -584,4 +584,5 @@ End
 
 Crst EventPipeCallbackDispatch
     AcquiredAfter EventPipe
+    AcquiredBefore ThreadIdDispenser ThreadStore GenericDictionaryExpansion InstMethodHashTable
 End

@@ -174,8 +174,8 @@ int g_rgCrstLevelMap[] =
     0,          // CrstDynamicIL
     10,         // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
-    20,         // CrstEventPipe
-    0,          // CrstEventPipeCallbackDispatch
+    21,         // CrstEventPipe
+    20,         // CrstEventPipeCallbackDispatch
     0,          // CrstEventStore
     0,          // CrstException
     0,          // CrstExecutableAllocatorLock
@@ -194,7 +194,7 @@ int g_rgCrstLevelMap[] =
     7,          // CrstILStubGen
     3,          // CrstInlineTrackingMap
     19,         // CrstInstMethodHashTable
-    22,         // CrstInterop
+    23,         // CrstInterop
     10,         // CrstInteropData
     0,          // CrstIsJMCMethod
     7,          // CrstISymUnmanagedReader
@@ -223,7 +223,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstNotifyGdb
     2,          // CrstObjectList
     5,          // CrstPEImage
-    21,         // CrstPendingTypeLoadEntry
+    22,         // CrstPendingTypeLoadEntry
     0,          // CrstPerfMap
     4,          // CrstPgoData
     0,          // CrstPinnedByrefValidation
