@@ -366,66 +366,78 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	// Lock should not be held when invoking callback.
 	ep_requires_lock_not_held ();
 
-	const ep_char8_t *filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
-	EventPipeCallback callback_function = ep_provider_callback_data_get_callback_function (provider_callback_data);
-	bool enabled = ep_provider_callback_data_get_enabled (provider_callback_data);
-	int64_t keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
-	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
-	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
-	EventPipeSessionID session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
+	const ep_char8_t *filter_data = NULL;
+	EventPipeCallback callback_function = NULL;
+	bool enabled = false;
+	int64_t keywords = 0;
+	EventPipeEventLevel provider_level = EP_EVENT_LEVEL_LOGALWAYS;
+	void *callback_data = NULL;
+	EventPipeSessionID session_id = 0;
 
 	bool is_event_filter_desc_init = false;
 	EventFilterDescriptor event_filter_desc;
 	uint8_t *buffer = NULL;
 
-	if (filter_data) {
-		// The callback is expecting that filter data to be a concatenated list
-		// of pairs of null terminated strings. The first member of the pair is
-		// the key and the second is the value.
-		// To convert to this format we need to convert all '=' and ';'
-		// characters to '\0', except when in a quoted string.
-		const uint32_t filter_data_len = (uint32_t)strlen (filter_data);
-		uint32_t buffer_size = filter_data_len + 1;
+	EP_CALLBACK_DISPATCH_LOCK_ENTER ()
 
-		buffer = ep_rt_byte_array_alloc (buffer_size);
-		ep_raise_error_if_nok (buffer != NULL);
+		filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
+		callback_function = ep_provider_callback_data_get_callback_function (provider_callback_data);
+		enabled = ep_provider_callback_data_get_enabled (provider_callback_data);
+		keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
+		provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
+		callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
+		session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
 
-		bool is_quoted_value = false;
-		uint32_t j = 0;
+		if (filter_data) {
+			// The callback is expecting that filter data to be a concatenated list
+			// of pairs of null terminated strings. The first member of the pair is
+			// the key and the second is the value.
+			// To convert to this format we need to convert all '=' and ';'
+			// characters to '\0', except when in a quoted string.
+			const uint32_t filter_data_len = (uint32_t)strlen (filter_data);
+			uint32_t buffer_size = filter_data_len + 1;
 
-		for (uint32_t i = 0; i < buffer_size; ++i) {
-			// if a value is a quoted string, leave the quotes out from the destination
-			// and don't replace `=` or `;` characters until leaving the quoted section
-			// e.g., key="a;value=";foo=bar --> { key\0a;value=\0foo\0bar\0 }
-			if (filter_data [i] == '"') {
-				is_quoted_value = !is_quoted_value;
-				continue;
+			buffer = ep_rt_byte_array_alloc (buffer_size);
+			ep_raise_error_if_nok (buffer != NULL);
+
+			bool is_quoted_value = false;
+			uint32_t j = 0;
+
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				// if a value is a quoted string, leave the quotes out from the destination
+				// and don't replace `=` or `;` characters until leaving the quoted section
+				// e.g., key="a;value=";foo=bar --> { key\0a;value=\0foo\0bar\0 }
+				if (filter_data [i] == '"') {
+					is_quoted_value = !is_quoted_value;
+					continue;
+				}
+				buffer [j++] = ((filter_data [i] == '=' || filter_data [i] == ';') && !is_quoted_value) ? '\0' : filter_data [i];
 			}
-			buffer [j++] = ((filter_data [i] == '=' || filter_data [i] == ';') && !is_quoted_value) ? '\0' : filter_data [i];
+
+			// In case we skipped over quotes in the filter string, shrink the buffer size accordingly
+			if (j < filter_data_len)
+				buffer_size = j + 1;
+
+			ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, 0);
+			is_event_filter_desc_init = true;
 		}
 
-		// In case we skipped over quotes in the filter string, shrink the buffer size accordingly
-		if (j < filter_data_len)
-			buffer_size = j + 1;
+		// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
+		// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
+		// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
+		if (callback_function && !ep_rt_process_shutdown ()) {
+			ep_rt_provider_invoke_callback (
+				callback_function,
+				(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
+				enabled ? 1 : 0, /* ControlCode */
+				(uint8_t)provider_level,
+				(uint64_t)keywords,
+				0, /* match_all_keywords */
+				is_event_filter_desc_init ? &event_filter_desc : NULL,
+				callback_data /* CallbackContext */);
+		}
 
-		ep_event_filter_desc_init (&event_filter_desc, (uint64_t)buffer, buffer_size, 0);
-		is_event_filter_desc_init = true;
-	}
-
-	// NOTE: When we call the callback, we pass in enabled (which is either 1 or 0) as the ControlCode.
-	// If we want to add new ControlCode, we have to make corresponding change in ETW callback signature
-	// to address this. See https://github.com/dotnet/runtime/pull/36733 for more discussions on this.
-	if (callback_function && !ep_rt_process_shutdown ()) {
-		ep_rt_provider_invoke_callback (
-			callback_function,
-			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
-			enabled ? 1 : 0, /* ControlCode */
-			(uint8_t)provider_level,
-			(uint64_t)keywords,
-			0, /* match_all_keywords */
-			is_event_filter_desc_init ? &event_filter_desc : NULL,
-			callback_data /* CallbackContext */);
-	}
+	EP_CALLBACK_DISPATCH_LOCK_EXIT ()
 
 ep_on_exit:
 	if (is_event_filter_desc_init)
