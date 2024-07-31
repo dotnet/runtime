@@ -247,7 +247,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (!IsSupported && object.ReferenceEquals(_value, s_throwSentinel))
+                if (!IsSupported && ReferenceEquals(_value, s_throwSentinel))
                 {
                     throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
                 }
