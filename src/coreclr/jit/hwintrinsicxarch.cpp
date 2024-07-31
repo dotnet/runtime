@@ -5051,6 +5051,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for ZeroHighBits"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             // Instruction BZHI requires to encode op2 (3rd register) in VEX.vvvv and op1 maybe memory operand,
@@ -5067,6 +5069,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
             assert(sig->numArgs == 2);
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for BitFieldExtract"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
