@@ -174,8 +174,8 @@ int g_rgCrstLevelMap[] =
     0,          // CrstDynamicIL
     10,         // CrstDynamicMT
     0,          // CrstEtwTypeLogHash
-    21,         // CrstEventPipe
-    20,         // CrstEventPipeCallbackDispatch
+    20,         // CrstEventPipe
+    21,         // CrstEventPipeCallbackDispatch
     0,          // CrstEventStore
     0,          // CrstException
     0,          // CrstExecutableAllocatorLock

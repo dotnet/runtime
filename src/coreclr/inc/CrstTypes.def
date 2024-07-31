@@ -583,6 +583,6 @@ Crst PerfMap
 End
 
 Crst EventPipeCallbackDispatch
-    AcquiredAfter EventPipe
-    AcquiredBefore ThreadIdDispenser ThreadStore GenericDictionaryExpansion InstMethodHashTable
+    AcquiredAfter PendingTypeLoadEntry
+    AcquiredBefore EventPipe
 End

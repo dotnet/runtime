@@ -1313,16 +1313,16 @@ ep_delete_provider (EventPipeProvider *provider)
 	// Take the lock to make sure that we don't have a race
 	// between disabling tracing and deleting a provider
 	// where we hold a provider after tracing has been disabled.
-	EP_LOCK_ENTER (section1)
-		EP_CALLBACK_DISPATCH_LOCK_ENTER ()
+	EP_CALLBACK_DISPATCH_LOCK_ENTER ()
+		EP_LOCK_ENTER (section1)
 			if (enabled ()) {
 				// Save the provider until the end of the tracing session.
 				ep_provider_set_delete_deferred (provider, true);
 			} else {
 				config_delete_provider (ep_config_get (), provider);
 			}
-		EP_CALLBACK_DISPATCH_LOCK_EXIT ()
-	EP_LOCK_EXIT (section1)
+		EP_LOCK_EXIT (section1)
+	EP_CALLBACK_DISPATCH_LOCK_EXIT ()
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
