@@ -1458,6 +1458,8 @@ struct cdac_data<RangeSectionMap>
         static constexpr size_t RangeSection = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSection);
         static constexpr size_t Next = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSectionFragmentNext);
     };
+
+    static constexpr size_t RangeSectionFragmentSize = sizeof(RangeSectionMap::RangeSectionFragment);
 };
 
 
