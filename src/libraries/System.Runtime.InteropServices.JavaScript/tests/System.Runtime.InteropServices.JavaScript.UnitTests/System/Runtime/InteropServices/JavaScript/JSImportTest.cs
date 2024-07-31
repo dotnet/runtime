@@ -1152,7 +1152,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportResolvedPromiseReturnsCompletedTask()
         {
             var promise = JavaScriptTestHelper.ReturnResolvedPromise();
+#ifndef FeatureWasmManagedThreads
             Assert.False(promise.IsCompleted);
+#endif
             await promise;
             Assert.True(promise.IsCompleted);
         }
