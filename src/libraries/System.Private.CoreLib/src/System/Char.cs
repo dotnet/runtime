@@ -241,7 +241,7 @@ namespace System
 
             if (!rune.IsBmp)
             {
-                ThrowHelper.ThrowOverflowException();
+                Number.ThrowOverflowException<char>();
             }
 
             return (char)rune.Value;

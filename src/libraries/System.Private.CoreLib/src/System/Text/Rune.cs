@@ -935,7 +935,7 @@ namespace System.Text
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
-        static Rune IUtf8SpanParsable<Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider)
+        static Rune IUtf8SpanParsable<Rune>.Parse(ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider)
         {
             if (DecodeFromUtf8(utf8Text, out Rune result, out int bytesConsumed) != OperationStatus.Done || bytesConsumed != utf8Text.Length)
             {
