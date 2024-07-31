@@ -4311,15 +4311,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
         if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
-            // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            // Exception to this transformation is if relopOp1 can set flags and we expect TryLowerConditionToFlagsNode will later 
-            // transform the tree to reuse the zero flag, then we can avoid changing to compare + branch here.
-            // TryLowerConditionToFlagsNode will only transform if optimizations enabled so don't bother avoiding this change if optimizations is off
-            if (!comp->opts.OptimizationEnabled() || !relopOp1->SupportsSettingZeroFlag() || !IsInvariantInRange(relopOp1, jtrue))
-            {
-                newOper = GT_JCMP;
-                cc      = GenCondition::FromRelop(cond);
-            }
+            newOper = GT_JCMP;
+            cc      = GenCondition::FromRelop(cond);
         }
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {

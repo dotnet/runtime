@@ -7143,13 +7143,6 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
         return nullptr;
     }
 
-    // It would likely be more performant to avoid using "andn" when dealing with `and` with constant
-    // Constant in `not` needs to be in a register anyways but `and` can encode a constant as an immediate
-    if (opNode->IsIntegralConst())
-    {
-        return nullptr;
-    }
-
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
     if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((notNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
