@@ -23,6 +23,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public required CollectionInstantiationConcreteType InstantiationConcreteType { get; init; }
 
         public required CollectionPopulationCastType PopulationCastType { get; init; }
+
+        public required bool ShouldTestCast {get; init; }
     }
 
     internal sealed record ArraySpec : CollectionSpec
