@@ -6752,8 +6752,7 @@ get_source_files_for_type (MonoClass *klass)
 
 		if (minfo) {
 			mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
-			if (source_file_list != NULL)
-			{
+			if (source_file_list != NULL) {
 				for (guint j = 0; j < source_file_list->len; ++j) {
 					guint i;
 					sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
