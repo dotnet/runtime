@@ -138,5 +138,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName ());
 			}
 		}
+
+		internal bool TryResolveTypeNameAndMark (Compilation compilation, string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out ITypeSymbol? type)
+		{
+			var typeNameResolver = new TypeNameResolver (compilation);
+			return typeNameResolver.TryResolveTypeName (typeName, diagnosticContext, compilation.Assembly, out type, needsAssemblyName);
+		}
 	}
 }

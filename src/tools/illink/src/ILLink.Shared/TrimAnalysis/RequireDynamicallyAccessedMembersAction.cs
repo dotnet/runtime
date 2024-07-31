@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -69,7 +70,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type);
+		public partial bool TryResolveTypeNameAndMark (string typeNameString, bool needsAssemblyName, out TypeProxy type);
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 	}

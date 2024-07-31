@@ -51,15 +51,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var location = Operation.Syntax.GetLocation ();
 				switch (GenericInstantiation) {
 				case INamedTypeSymbol type:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, type, reportDiagnostic);
 					break;
 
 				case IMethodSymbol method:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, method, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, method, reportDiagnostic);
 					break;
 
 				case IFieldSymbol field:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, field, reportDiagnostic);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, field, reportDiagnostic);
 					break;
 				}
 			}

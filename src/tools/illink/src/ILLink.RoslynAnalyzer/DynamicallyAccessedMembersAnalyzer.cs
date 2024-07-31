@@ -52,6 +52,7 @@ namespace ILLink.RoslynAnalyzer
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeNameInTypeGetType));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.TypeNameIsNotAssemblyQualified));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ReturnValueDoesNotMatchFeatureGuards));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.InvalidFeatureGuard));
 
@@ -118,10 +119,10 @@ namespace ILLink.RoslynAnalyzer
 					var location = GetPrimaryLocation (type.Locations);
 
 					if (type.BaseType is INamedTypeSymbol baseType)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, baseType, context.ReportDiagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, baseType, context.ReportDiagnostic);
 
 					foreach (var interfaceType in type.Interfaces)
-						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, interfaceType, context.ReportDiagnostic);
+						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (context.Compilation, location, interfaceType, context.ReportDiagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);
