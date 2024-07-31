@@ -922,7 +922,17 @@ namespace System.Text
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
         static bool IUtf8SpanParsable<Rune>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Rune result)
-            => DecodeFromUtf8(utf8Text, out result, out int bytesConsumed) == OperationStatus.Done && bytesConsumed == utf8Text.Length;
+        {
+            if (DecodeFromUtf8(utf8Text, out result, out int bytesConsumed) == OperationStatus.Done)
+            {
+                if (bytesConsumed == utf8Text.Length)
+                {
+                    return true;
+                }
+                result = ReplacementChar;
+            }
+            return false;
+        }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
         static Rune IUtf8SpanParsable<Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider)

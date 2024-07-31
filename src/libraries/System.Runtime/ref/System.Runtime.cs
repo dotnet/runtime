@@ -1161,6 +1161,8 @@ namespace System
         static char System.ISpanParsable<char>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static char System.IUtf8SpanParsable<char>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
+        static bool System.IUtf8SpanParsable<char>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, out char result) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator checked +(char left, char right) { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }

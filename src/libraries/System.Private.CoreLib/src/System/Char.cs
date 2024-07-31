@@ -29,6 +29,7 @@ namespace System
           IMinMaxValue<char>,
           IUnsignedNumber<char>,
           IUtf8SpanFormattable,
+          IUtf8SpanParsable<char>,
           IUtfChar<char>,
           IBinaryIntegerParseAndFormatInfo<char>
     {
@@ -227,6 +228,36 @@ namespace System
             }
 
             result = s[0];
+            return true;
+        }
+
+        static char IUtf8SpanParsable<char>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        {
+            if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out int bytesConsumed) != Buffers.OperationStatus.Done ||
+                bytesConsumed != utf8Text.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            if (!rune.IsBmp)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+
+            return (char)rune.Value;
+        }
+
+        static bool IUtf8SpanParsable<char>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out char result)
+        {
+            if (Rune.DecodeFromUtf8(utf8Text, out Rune rune, out int bytesConsumed) != Buffers.OperationStatus.Done ||
+                bytesConsumed != utf8Text.Length ||
+                !rune.IsBmp)
+            {
+                result = '\0';
+                return false;
+            }
+
+            result = (char)rune.Value;
             return true;
         }
 
