@@ -13,7 +13,7 @@ namespace System.Runtime.Intrinsics.Arm
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview. Debugger scenario is not supported.")]
+    [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class Sve : AdvSimd
     {
         internal Sve() { }
@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics.Arm
         }
 
 
-        ///  Abs : Absolute value
+        // Absolute value
 
         /// <summary>
         /// svint8_t svabs[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
@@ -104,7 +104,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> Abs(Vector<double> value) => Abs(value);
 
 
-        ///  Absolute compare greater than
+        // Absolute compare greater than
 
         /// <summary>
         /// svbool_t svacgt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
@@ -118,7 +118,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> AbsoluteCompareGreaterThan(Vector<double> left, Vector<double> right) => AbsoluteCompareGreaterThan(left, right);
 
-        ///  Absolute compare greater than or equal to
+
+        // Absolute compare greater than or equal to
 
         /// <summary>
         /// svbool_t svacge[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
@@ -132,7 +133,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> AbsoluteCompareGreaterThanOrEqual(Vector<double> left, Vector<double> right) => AbsoluteCompareGreaterThanOrEqual(left, right);
 
-        ///  Absolute compare less than
+
+        // Absolute compare less than
 
         /// <summary>
         /// svbool_t svaclt[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
@@ -146,7 +148,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> AbsoluteCompareLessThan(Vector<double> left, Vector<double> right) => AbsoluteCompareLessThan(left, right);
 
-        ///  Absolute compare less than or equal to
+
+        // Absolute compare less than or equal to
 
         /// <summary>
         /// svbool_t svacle[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
@@ -160,7 +163,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> AbsoluteCompareLessThanOrEqual(Vector<double> left, Vector<double> right) => AbsoluteCompareLessThanOrEqual(left, right);
 
-        ///  AbsoluteDifference : Absolute difference
+
+        // Absolute difference
 
         /// <summary>
         /// svuint8_t svabd[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -242,7 +246,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AbsoluteDifference(Vector<ulong> left, Vector<ulong> right) => AbsoluteDifference(left, right);
 
-        ///  Add : Add
+
+        // Add
 
         /// <summary>
         /// svint8_t svadd[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
@@ -315,7 +320,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> Add(Vector<double> left, Vector<double> right) => Add(left, right);
 
 
-        ///  AddAcross : Add reduction
+        // Add reduction
 
         /// <summary>
         /// float64_t svaddv[_f64](svbool_t pg, svfloat64_t op)
@@ -377,7 +382,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
 
-        ///  Complex add with rotate
+
+        // Complex add with rotate
 
         /// <summary>
         /// svfloat64_t svcadd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
@@ -397,7 +403,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> AddRotateComplex(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddRotateComplex(left, right, rotation);
 
-        ///  AddSaturate : Saturating add
+
+        // Saturating add
 
         /// <summary>
         /// svuint8_t svqadd[_u8](svuint8_t op1, svuint8_t op2)
@@ -447,7 +454,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
 
-        ///  AddSequentialAcross : Add reduction (strictly-ordered)
+
+        // Add reduction (strictly-ordered)
 
         /// <summary>
         /// float64_t svadda[_f64](svbool_t pg, float64_t initial, svfloat64_t op)
@@ -461,7 +469,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> AddSequentialAcross(Vector<float> initial, Vector<float> value) => AddSequentialAcross(initial, value);
 
-        ///  And : Bitwise AND
+
+        // Bitwise AND
 
         /// <summary>
         /// svuint8_t svand[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -552,7 +561,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> And(Vector<ulong> left, Vector<ulong> right) => And(left, right);
 
 
-        ///  AndAcross : Bitwise AND reduction to scalar
+        // Bitwise AND reduction to scalar
 
         /// <summary>
         /// uint8_t svandv[_u8](svbool_t pg, svuint8_t op)
@@ -603,7 +612,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> AndAcross(Vector<ulong> value) => AndAcross(value);
 
 
-        ///  BitwiseClear : Bitwise clear
+        // Bitwise clear
 
         /// <summary>
         /// svuint8_t svbic[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -694,7 +703,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> BitwiseClear(Vector<ulong> left, Vector<ulong> right) => BitwiseClear(left, right);
 
 
-        ///  BooleanNot : Logically invert boolean condition
+        // Logically invert boolean condition
 
         /// <summary>
         /// svuint8_t svcnot[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
@@ -760,7 +769,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
 
-        ///  Shuffle active elements of vector to the right and fill with zero
+
+        // Shuffle active elements of vector to the right and fill with zero
 
         /// <summary>
         /// svfloat64_t svcompact[_f64](svbool_t pg, svfloat64_t op)
@@ -799,7 +809,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) => Compact(mask, value);
 
 
-        ///  Compare equal to
+        // Compare equal to
 
         /// <summary>
         /// svbool_t svcmpeq[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -879,7 +889,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> CompareEqual(Vector<ulong> left, Vector<ulong> right) => CompareEqual(left, right);
 
-        ///  Compare greater than
+
+        // Compare greater than
 
         /// <summary>
         /// svbool_t svcmpgt[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -978,7 +989,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CompareGreaterThan(Vector<ulong> left, Vector<ulong> right) => CompareGreaterThan(left, right);
 
 
-        ///  Compare greater than or equal to
+        // Compare greater than or equal to
 
         /// <summary>
         /// svbool_t svcmpge[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -1076,7 +1087,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> CompareGreaterThanOrEqual(Vector<ulong> left, Vector<ulong> right) => CompareGreaterThanOrEqual(left, right);
 
-        ///  Compare less than
+
+        // Compare less than
 
         /// <summary>
         /// svbool_t svcmplt[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -1175,7 +1187,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CompareLessThan(Vector<ulong> left, Vector<ulong> right) => CompareLessThan(left, right);
 
 
-        ///  Compare less than or equal to
+        // Compare less than or equal to
 
         /// <summary>
         /// svbool_t svcmple[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -1273,7 +1285,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> CompareLessThanOrEqual(Vector<ulong> left, Vector<ulong> right) => CompareLessThanOrEqual(left, right);
 
-        ///  Compare not equal to
+
+        // Compare not equal to
 
         /// <summary>
         /// svbool_t svcmpne[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -1354,7 +1367,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CompareNotEqualTo(Vector<ulong> left, Vector<ulong> right) => CompareNotEqualTo(left, right);
 
 
-        ///  Compare unordered with
+        // Compare unordered with
 
         /// <summary>
         /// svbool_t svcmpuo[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
@@ -1368,7 +1381,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> CompareUnordered(Vector<float> left, Vector<float> right) => CompareUnordered(left, right);
 
-        ///  Compute vector addresses for 16-bit data
+
+        // Compute vector addresses for 16-bit data
 
         /// <summary>
         /// svuint32_t svadrh[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
@@ -1395,7 +1409,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute16BitAddresses(bases, indices);
 
 
-        ///  Compute vector addresses for 32-bit data
+        // Compute vector addresses for 32-bit data
 
         /// <summary>
         /// svuint32_t svadrw[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
@@ -1422,7 +1436,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute32BitAddresses(bases, indices);
 
 
-        ///  Compute vector addresses for 64-bit data
+        // Compute vector addresses for 64-bit data
 
         /// <summary>
         /// svuint32_t svadrd[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
@@ -1449,7 +1463,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute64BitAddresses(bases, indices);
 
 
-        ///  Compute vector addresses for 8-bit data
+        // Compute vector addresses for 8-bit data
 
         /// <summary>
         /// svuint32_t svadrb[_u32base]_[s32]offset(svuint32_t bases, svint32_t offsets)
@@ -1475,7 +1489,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute8BitAddresses(bases, indices);
 
-        ///  Conditionally extract element after last
+
+        // Conditionally extract element after last
 
         /// <summary>
         /// svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)
@@ -1598,7 +1613,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong ConditionalExtractAfterLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) => ConditionalExtractAfterLastActiveElement(mask, defaultValues, data);
 
 
-        ///  Conditionally extract element after last
+        // Conditionally extract element after last
 
         /// <summary>
         /// svuint8_t svclasta[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)
@@ -1661,7 +1676,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ConditionalExtractAfterLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> defaultScalar, Vector<ulong> data) => ConditionalExtractAfterLastActiveElementAndReplicate(mask, defaultScalar, data);
 
 
-        ///  Conditionally extract last element
+        // Conditionally extract last element
 
         /// <summary>
         /// svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)
@@ -1784,7 +1799,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong ConditionalExtractLastActiveElement(Vector<ulong> mask, ulong defaultValues, Vector<ulong> data) => ConditionalExtractLastActiveElement(mask, defaultValues, data);
 
 
-        ///  Conditionally extract last element
+        // Conditionally extract last element
 
         /// <summary>
         /// svuint8_t svclastb[_u8](svbool_t pg, svuint8_t fallback, svuint8_t data)
@@ -1847,8 +1862,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ConditionalExtractLastActiveElementAndReplicate(Vector<ulong> mask, Vector<ulong> fallback, Vector<ulong> data) => ConditionalExtractLastActiveElementAndReplicate(mask, fallback, data);
 
 
-        ///  Compare equal to
-        ///  ConditionalSelect : Conditionally select elements
+        // Conditionally select elements
 
         /// <summary>
         /// svint8_t svsel[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
@@ -1937,7 +1951,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) => ConditionalSelect(mask, left, right);
 
 
-        ///  ConvertToDouble : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svfloat64_t svcvt_f64[_s32]_m(svfloat64_t inactive, svbool_t pg, svint32_t op)
@@ -1985,7 +1999,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value) => ConvertToDouble(value);
 
 
-        ///  ConvertToInt32 : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svint32_t svcvt_s32[_f64]_m(svint32_t inactive, svbool_t pg, svfloat64_t op)
@@ -2006,7 +2020,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> ConvertToInt32(Vector<float> value) => ConvertToInt32(value);
 
 
-        ///  ConvertToInt64 : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svint64_t svcvt_s64[_f64]_m(svint64_t inactive, svbool_t pg, svfloat64_t op)
@@ -2027,7 +2041,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> ConvertToInt64(Vector<float> value) => ConvertToInt64(value);
 
 
-        ///  ConvertToSingle : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svfloat32_t svcvt_f32[_f64]_m(svfloat32_t inactive, svbool_t pg, svfloat64_t op)
@@ -2075,7 +2089,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> ConvertToSingle(Vector<ulong> value) => ConvertToSingle(value);
 
 
-        ///  ConvertToUInt32 : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svuint32_t svcvt_u32[_f64]_m(svuint32_t inactive, svbool_t pg, svfloat64_t op)
@@ -2096,7 +2110,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value) => ConvertToUInt32(value);
 
 
-        ///  ConvertToUInt64 : Floating-point convert
+        // Floating-point convert
 
         /// <summary>
         /// svuint64_t svcvt_u64[_f64]_m(svuint64_t inactive, svbool_t pg, svfloat64_t op)
@@ -2117,7 +2131,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ConvertToUInt64(Vector<float> value) => ConvertToUInt64(value);
 
 
-        ///  Count16BitElements : Count the number of 16-bit elements in a vector
+        // Count the number of 16-bit elements in a vector
 
         /// <summary>
         /// uint64_t svcnth_pat(enum svpattern pattern)
@@ -2126,7 +2140,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => Count16BitElements(pattern);
 
 
-        ///  Count32BitElements : Count the number of 32-bit elements in a vector
+        // Count the number of 32-bit elements in a vector
 
         /// <summary>
         /// uint64_t svcntw_pat(enum svpattern pattern)
@@ -2135,7 +2149,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => Count32BitElements(pattern);
 
 
-        ///  Count64BitElements : Count the number of 64-bit elements in a vector
+        // Count the number of 64-bit elements in a vector
 
         /// <summary>
         /// uint64_t svcntd_pat(enum svpattern pattern)
@@ -2144,7 +2158,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => Count64BitElements(pattern);
 
 
-        ///  Count8BitElements : Count the number of 8-bit elements in a vector
+        // Count the number of 8-bit elements in a vector
 
         /// <summary>
         /// uint64_t svcntb_pat(enum svpattern pattern)
@@ -2558,7 +2572,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) => CreateMaskForNextActiveElement(mask, srcMask);
 
 
-        ///  CreateTrueMaskByte : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2567,7 +2581,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<byte> CreateTrueMaskByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskByte(pattern);
 
 
-        ///  CreateTrueMaskDouble : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2576,7 +2590,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> CreateTrueMaskDouble([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskDouble(pattern);
 
 
-        ///  CreateTrueMaskInt16 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2585,7 +2599,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<short> CreateTrueMaskInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt16(pattern);
 
 
-        ///  CreateTrueMaskInt32 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2594,7 +2608,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> CreateTrueMaskInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt32(pattern);
 
 
-        ///  CreateTrueMaskInt64 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2603,7 +2617,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> CreateTrueMaskInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskInt64(pattern);
 
 
-        ///  CreateTrueMaskSByte : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2612,7 +2626,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<sbyte> CreateTrueMaskSByte([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskSByte(pattern);
 
 
-        ///  CreateTrueMaskSingle : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b8(enum svpattern pattern)
@@ -2621,7 +2635,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> CreateTrueMaskSingle([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskSingle(pattern);
 
 
-        ///  CreateTrueMaskUInt16 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b16(enum svpattern pattern)
@@ -2630,7 +2644,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt16(pattern);
 
 
-        ///  CreateTrueMaskUInt32 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b32(enum svpattern pattern)
@@ -2639,7 +2653,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt32(pattern);
 
 
-        ///  CreateTrueMaskUInt64 : Set predicate elements to true
+        // Set predicate elements to true
 
         /// <summary>
         /// svbool_t svptrue_pat_b64(enum svpattern pattern)
@@ -2648,7 +2662,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => CreateTrueMaskUInt64(pattern);
 
 
-        ///  CreateWhileLessThanMask16Bit : While incrementing scalar is less than
+        // While incrementing scalar is less than
 
         /// <summary>
         /// svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)
@@ -2675,7 +2689,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) => CreateWhileLessThanMask16Bit(left, right);
 
 
-        ///  CreateWhileLessThanMask32Bit : While incrementing scalar is less than
+        // While incrementing scalar is less than
 
         /// <summary>
         /// svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)
@@ -2702,7 +2716,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) => CreateWhileLessThanMask32Bit(left, right);
 
 
-        ///  CreateWhileLessThanMask64Bit : While incrementing scalar is less than
+        // While incrementing scalar is less than
 
         /// <summary>
         /// svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)
@@ -2729,7 +2743,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) => CreateWhileLessThanMask64Bit(left, right);
 
 
-        ///  CreateWhileLessThanMask8Bit : While incrementing scalar is less than
+        // While incrementing scalar is less than
 
         /// <summary>
         /// svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)
@@ -2756,7 +2770,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) => CreateWhileLessThanMask8Bit(left, right);
 
 
-        ///  CreateWhileLessThanOrEqualMask16Bit : While incrementing scalar is less than or equal to
+        // While incrementing scalar is less than or equal to
 
         /// <summary>
         /// svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)
@@ -2783,7 +2797,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask16Bit(left, right);
 
 
-        ///  CreateWhileLessThanOrEqualMask32Bit : While incrementing scalar is less than or equal to
+        // While incrementing scalar is less than or equal to
 
         /// <summary>
         /// svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)
@@ -2810,7 +2824,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask32Bit(left, right);
 
 
-        ///  CreateWhileLessThanOrEqualMask64Bit : While incrementing scalar is less than or equal to
+        // While incrementing scalar is less than or equal to
 
         /// <summary>
         /// svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)
@@ -2837,7 +2851,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask64Bit(left, right);
 
 
-        ///  CreateWhileLessThanOrEqualMask8Bit : While incrementing scalar is less than or equal to
+        // While incrementing scalar is less than or equal to
 
         /// <summary>
         /// svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)
@@ -2864,7 +2878,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) => CreateWhileLessThanOrEqualMask8Bit(left, right);
 
 
-        ///  Divide : Divide
+        // Divide
 
         /// <summary>
         /// svfloat32_t svdiv[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
@@ -2890,7 +2904,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Divide(Vector<double> left, Vector<double> right) => Divide(left, right);
 
-        ///  DotProduct : Dot product
+
+        // Dot product
 
         /// <summary>
         /// svint32_t svdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3)
@@ -2917,7 +2932,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> DotProduct(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right) => DotProduct(addend, left, right);
 
 
-        ///  DotProductBySelectedScalar : Dot product
+        // Dot product
 
         /// <summary>
         /// svint32_t svdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index)
@@ -2944,7 +2959,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) => DotProductBySelectedScalar(addend, left, right, rightIndex);
 
 
-        ///  Broadcast a scalar value
+        // Broadcast a scalar value
 
         /// <summary>
         /// svuint8_t svdup_lane[_u8](svuint8_t data, uint8_t index)
@@ -3068,7 +3083,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
 
 
-        ///  Floating-point exponential accelerator
+        // Floating-point exponential accelerator
 
         /// <summary>
         /// svfloat64_t svexpa[_f64](svuint64_t op)
@@ -3083,7 +3098,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FloatingPointExponentialAccelerator(Vector<uint> value) => FloatingPointExponentialAccelerator(value);
 
 
-        ///  FusedMultiplyAdd : Multiply-add, addend first
+        // Multiply-add, addend first
 
         /// <summary>
         /// svfloat64_t svmla[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3)
@@ -3102,7 +3117,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplyAdd(Vector<float> addend, Vector<float> left, Vector<float> right) => FusedMultiplyAdd(addend, left, right);
 
 
-        ///  FusedMultiplyAddBySelectedScalar : Multiply-add, addend first
+        // Multiply-add, addend first
 
         /// <summary>
         /// svfloat64_t svmla_lane[_f64](svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_index)
@@ -3117,7 +3132,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplyAddBySelectedScalar(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected] byte rightIndex) => FusedMultiplyAddBySelectedScalar(addend, left, right, rightIndex);
 
 
-        ///  FusedMultiplyAddNegated : Negated multiply-add, addend first
+        // Negated multiply-add, addend first
 
         /// <summary>
         /// svfloat64_t svnmla[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3)
@@ -3136,7 +3151,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplyAddNegated(Vector<float> addend, Vector<float> left, Vector<float> right) => FusedMultiplyAddNegated(addend, left, right);
 
 
-        ///  FusedMultiplySubtract : Multiply-subtract, minuend first
+        // Multiply-subtract, minuend first
 
         /// <summary>
         /// svfloat64_t svmls[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3)
@@ -3155,7 +3170,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtract(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtract(minuend, left, right);
 
 
-        ///  FusedMultiplySubtractBySelectedScalar : Multiply-subtract, minuend first
+        // Multiply-subtract, minuend first
 
         /// <summary>
         /// svfloat64_t svmls_lane[_f64](svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_index)
@@ -3170,7 +3185,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractBySelectedScalar(Vector<float> minuend, Vector<float> left, Vector<float> right, [ConstantExpected] byte rightIndex) => FusedMultiplySubtractBySelectedScalar(minuend, left, right, rightIndex);
 
 
-        ///  FusedMultiplySubtractNegated : Negated multiply-subtract, minuend first
+        // Negated multiply-subtract, minuend first
 
         /// <summary>
         /// svfloat64_t svnmls[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3)
@@ -3189,7 +3204,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtractNegated(minuend, left, right);
 
 
-        ///  Prefetch halfwords
+        // Prefetch halfwords
 
         /// <summary>
         /// void svprfh_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
@@ -3264,7 +3279,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void GatherPrefetch16Bit(Vector<ushort> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch16Bit(mask, address, indices, prefetchType);
 
 
-        ///  Prefetch words
+        // Prefetch words
 
         /// <summary>
         /// void svprfw_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
@@ -3339,7 +3354,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void GatherPrefetch32Bit(Vector<uint> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch32Bit(mask, address, indices, prefetchType);
 
 
-        ///  Prefetch doublewords
+        // Prefetch doublewords
 
         /// <summary>
         /// void svprfd_gather_[s32]index(svbool_t pg, const void *base, svint32_t indices, enum svprfop op)
@@ -3414,7 +3429,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void GatherPrefetch64Bit(Vector<ulong> mask, void* address, Vector<ulong> indices, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch64Bit(mask, address, indices, prefetchType);
 
 
-        ///  Prefetch bytes
+        // Prefetch bytes
 
         /// <summary>
         /// void svprfb_gather_[s32]offset(svbool_t pg, const void *base, svint32_t offsets, enum svprfop op)
@@ -3489,7 +3504,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void GatherPrefetch8Bit(Vector<sbyte> mask, void* address, Vector<ulong> offsets, [ConstantExpected] SvePrefetchType prefetchType) => GatherPrefetch8Bit(mask, address, offsets, prefetchType);
 
 
-        ///  Unextended load
+        // Unextended load
 
         /// <summary>
         /// svfloat64_t svld1_gather_[s64]index[_f64](svbool_t pg, const float64_t *base, svint64_t indices)
@@ -3605,7 +3620,7 @@ namespace System.Runtime.Intrinsics.Arm
 
 
 
-        ///  Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svint32_t svld1ub_gather_[s32]offset_s32(svbool_t pg, const uint8_t *base, svint32_t offsets)
@@ -3794,7 +3809,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorFirstFaulting(Vector<ulong> mask, ulong* address, Vector<ulong> indices) => GatherVectorFirstFaulting(mask, address, indices);
 
 
-        ///  Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svint32_t svld1sh_gather_[s32]index_s32(svbool_t pg, const int16_t *base, svint32_t indices)
@@ -3871,7 +3886,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorInt16SignExtend(Vector<ulong> mask, short* address, Vector<ulong> indices) => GatherVectorInt16SignExtend(mask, address, indices);
 
 
-        ///  Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svint32_t svld1sh_gather_[s32]offset_s32(svbool_t pg, const int16_t *base, svint32_t offsets)
@@ -3922,7 +3937,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtend(Vector<ulong> mask, short* address, Vector<ulong> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
 
 
-        ///  Load 32-bit data and sign-extend
+        // Load 32-bit data and sign-extend
 
         /// <summary>
         /// svint64_t svld1sw_gather_[s64]index_s64(svbool_t pg, const int32_t *base, svint64_t indices)
@@ -3961,7 +3976,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorInt32SignExtend(Vector<ulong> mask, int* address, Vector<ulong> indices) => GatherVectorInt32SignExtend(mask, address, indices);
 
 
-        ///  Load 32-bit data and sign-extend
+        // Load 32-bit data and sign-extend
 
         /// <summary>
         /// svint64_t svld1sw_gather_[s64]offset_s64(svbool_t pg, const int32_t *base, svint64_t offsets)
@@ -3988,7 +4003,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtend(Vector<ulong> mask, int* address, Vector<ulong> offsets) => GatherVectorInt32WithByteOffsetsSignExtend(mask, address, offsets);
 
 
-        ///  Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svint32_t svld1sb_gather_[s32]offset_s32(svbool_t pg, const int8_t *base, svint32_t offsets)
@@ -4065,7 +4080,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorSByteSignExtend(Vector<ulong> mask, sbyte* address, Vector<ulong> indices) => GatherVectorSByteSignExtend(mask, address, indices);
 
 
-        ///  Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svint32_t svld1uh_gather_[s32]offset_s32(svbool_t pg, const uint16_t *base, svint32_t offsets)
@@ -4116,7 +4131,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<ulong> mask, ushort* address, Vector<ulong> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
 
 
-        ///  Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svint32_t svld1uh_gather_[s32]index_s32(svbool_t pg, const uint16_t *base, svint32_t indices)
@@ -4193,7 +4208,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtend(Vector<ulong> mask, ushort* address, Vector<ulong> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
 
 
-        ///  Load 32-bit data and zero-extend
+        // Load 32-bit data and zero-extend
 
         /// <summary>
         /// svint64_t svld1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)
@@ -4244,7 +4259,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<ulong> mask, uint* address, Vector<ulong> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
 
 
-        ///  Load 32-bit data and zero-extend
+        // Load 32-bit data and zero-extend
 
         /// <summary>
         /// svint64_t svld1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)
@@ -4321,7 +4336,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, uint* address, Vector<ulong> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
 
 
-        ///  Unextended load
+        // Unextended load
 
         /// <summary>
         /// svfloat64_t svld1_gather_[s64]offset[_f64](svbool_t pg, const float64_t *base, svint64_t offsets)
@@ -4396,7 +4411,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
 
 
-        ///  Count set predicate bits
+        // Count set predicate bits
 
         /// <summary>
         /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
@@ -4508,7 +4523,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> GetFfrUInt64() => GetFfrUInt64();
 
 
-        ///  Insert scalar into shifted vector
+        // Insert scalar into shifted vector
 
         /// <summary>
         /// svuint8_t svinsr[_n_u8](svuint8_t op1, uint8_t op2)
@@ -4581,7 +4596,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> InsertIntoShiftedVector(Vector<ulong> left, ulong right) => InsertIntoShiftedVector(left, right);
 
 
-        ///  LeadingSignCount : Count leading sign bits
+        // Count leading sign bits
 
         /// <summary>
         /// svuint8_t svcls[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
@@ -4616,7 +4631,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LeadingSignCount(Vector<long> value) => LeadingSignCount(value);
 
 
-        ///  LeadingZeroCount : Count leading zero bits
+        // Count leading zero bits
 
         /// <summary>
         /// svuint8_t svclz[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
@@ -4683,7 +4698,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LeadingZeroCount(Vector<ulong> value) => LeadingZeroCount(value);
 
 
-        ///  LoadVector : Unextended load
+        // Unextended load
 
         /// <summary>
         /// svint8_t svld1[_s8](svbool_t pg, const int8_t *base)
@@ -4938,7 +4953,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVector128AndReplicateToVector(Vector<ulong> mask, ulong* address) => LoadVector128AndReplicateToVector(mask, address);
 
-        ///  LoadVectorByteZeroExtendToInt16 : Load 8-bit data and zero-extend
+
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svint16_t svld1ub_s16(svbool_t pg, const uint8_t *base)
@@ -4947,7 +4963,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<short> LoadVectorByteZeroExtendToInt16(Vector<short> mask, byte* address) => LoadVectorByteZeroExtendToInt16(mask, address);
 
 
-        ///  LoadVectorByteZeroExtendToInt32 : Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svint32_t svld1ub_s32(svbool_t pg, const uint8_t *base)
@@ -4956,7 +4972,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> LoadVectorByteZeroExtendToInt32(Vector<int> mask, byte* address) => LoadVectorByteZeroExtendToInt32(mask, address);
 
 
-        ///  LoadVectorByteZeroExtendToInt64 : Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svint64_t svld1ub_s64(svbool_t pg, const uint8_t *base)
@@ -4965,7 +4981,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorByteZeroExtendToInt64(Vector<long> mask, byte* address) => LoadVectorByteZeroExtendToInt64(mask, address);
 
 
-        ///  LoadVectorByteZeroExtendToUInt16 : Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svuint16_t svld1ub_u16(svbool_t pg, const uint8_t *base)
@@ -4974,7 +4990,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> LoadVectorByteZeroExtendToUInt16(Vector<ushort> mask, byte* address) => LoadVectorByteZeroExtendToUInt16(mask, address);
 
 
-        ///  LoadVectorByteZeroExtendToUInt32 : Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svuint32_t svld1ub_u32(svbool_t pg, const uint8_t *base)
@@ -4983,7 +4999,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorByteZeroExtendToUInt32(Vector<uint> mask, byte* address) => LoadVectorByteZeroExtendToUInt32(mask, address);
 
 
-        ///  LoadVectorByteZeroExtendToUInt64 : Load 8-bit data and zero-extend
+        // Load 8-bit data and zero-extend
 
         /// <summary>
         /// svuint64_t svld1ub_u64(svbool_t pg, const uint8_t *base)
@@ -5053,7 +5069,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorFirstFaulting(Vector<ulong> mask, ulong* address) => LoadVectorFirstFaulting(mask, address);
 
 
-        ///  LoadVectorInt16SignExtendToInt32 : Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svint32_t svld1sh_s32(svbool_t pg, const int16_t *base)
@@ -5062,7 +5078,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> LoadVectorInt16SignExtendToInt32(Vector<int> mask, short* address) => LoadVectorInt16SignExtendToInt32(mask, address);
 
 
-        ///  LoadVectorInt16SignExtendToInt64 : Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svint64_t svld1sh_s64(svbool_t pg, const int16_t *base)
@@ -5071,7 +5087,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorInt16SignExtendToInt64(Vector<long> mask, short* address) => LoadVectorInt16SignExtendToInt64(mask, address);
 
 
-        ///  LoadVectorInt16SignExtendToUInt32 : Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svuint32_t svld1sh_u32(svbool_t pg, const int16_t *base)
@@ -5080,7 +5096,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorInt16SignExtendToUInt32(Vector<uint> mask, short* address) => LoadVectorInt16SignExtendToUInt32(mask, address);
 
 
-        ///  LoadVectorInt16SignExtendToUInt64 : Load 16-bit data and sign-extend
+        // Load 16-bit data and sign-extend
 
         /// <summary>
         /// svuint64_t svld1sh_u64(svbool_t pg, const int16_t *base)
@@ -5089,7 +5105,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorInt16SignExtendToUInt64(Vector<ulong> mask, short* address) => LoadVectorInt16SignExtendToUInt64(mask, address);
 
 
-        ///  LoadVectorInt32SignExtendToInt64 : Load 32-bit data and sign-extend
+        // Load 32-bit data and sign-extend
 
         /// <summary>
         /// svint64_t svld1sw_s64(svbool_t pg, const int32_t *base)
@@ -5098,7 +5114,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorInt32SignExtendToInt64(Vector<long> mask, int* address) => LoadVectorInt32SignExtendToInt64(mask, address);
 
 
-        ///  LoadVectorInt32SignExtendToUInt64 : Load 32-bit data and sign-extend
+        // Load 32-bit data and sign-extend
 
         /// <summary>
         /// svuint64_t svld1sw_u64(svbool_t pg, const int32_t *base)
@@ -5107,7 +5123,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorInt32SignExtendToUInt64(Vector<ulong> mask, int* address) => LoadVectorInt32SignExtendToUInt64(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToInt16 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svint16_t svld1sb_s16(svbool_t pg, const int8_t *base)
@@ -5116,7 +5132,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<short> LoadVectorSByteSignExtendToInt16(Vector<short> mask, sbyte* address) => LoadVectorSByteSignExtendToInt16(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToInt32 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svint32_t svld1sb_s32(svbool_t pg, const int8_t *base)
@@ -5125,7 +5141,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> LoadVectorSByteSignExtendToInt32(Vector<int> mask, sbyte* address) => LoadVectorSByteSignExtendToInt32(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToInt64 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svint64_t svld1sb_s64(svbool_t pg, const int8_t *base)
@@ -5134,7 +5150,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorSByteSignExtendToInt64(Vector<long> mask, sbyte* address) => LoadVectorSByteSignExtendToInt64(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToUInt16 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svuint16_t svld1sb_u16(svbool_t pg, const int8_t *base)
@@ -5143,7 +5159,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> LoadVectorSByteSignExtendToUInt16(Vector<ushort> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt16(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToUInt32 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svuint32_t svld1sb_u32(svbool_t pg, const int8_t *base)
@@ -5152,7 +5168,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorSByteSignExtendToUInt32(Vector<uint> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt32(mask, address);
 
 
-        ///  LoadVectorSByteSignExtendToUInt64 : Load 8-bit data and sign-extend
+        // Load 8-bit data and sign-extend
 
         /// <summary>
         /// svuint64_t svld1sb_u64(svbool_t pg, const int8_t *base)
@@ -5161,7 +5177,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorSByteSignExtendToUInt64(Vector<ulong> mask, sbyte* address) => LoadVectorSByteSignExtendToUInt64(mask, address);
 
 
-        ///  LoadVectorUInt16ZeroExtendToInt32 : Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svint32_t svld1uh_s32(svbool_t pg, const uint16_t *base)
@@ -5170,7 +5186,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> LoadVectorUInt16ZeroExtendToInt32(Vector<int> mask, ushort* address) => LoadVectorUInt16ZeroExtendToInt32(mask, address);
 
 
-        ///  LoadVectorUInt16ZeroExtendToInt64 : Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svint64_t svld1uh_s64(svbool_t pg, const uint16_t *base)
@@ -5179,7 +5195,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorUInt16ZeroExtendToInt64(Vector<long> mask, ushort* address) => LoadVectorUInt16ZeroExtendToInt64(mask, address);
 
 
-        ///  LoadVectorUInt16ZeroExtendToUInt32 : Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svuint32_t svld1uh_u32(svbool_t pg, const uint16_t *base)
@@ -5188,7 +5204,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(Vector<uint> mask, ushort* address) => LoadVectorUInt16ZeroExtendToUInt32(mask, address);
 
 
-        ///  LoadVectorUInt16ZeroExtendToUInt64 : Load 16-bit data and zero-extend
+        // Load 16-bit data and zero-extend
 
         /// <summary>
         /// svuint64_t svld1uh_u64(svbool_t pg, const uint16_t *base)
@@ -5197,7 +5213,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(Vector<ulong> mask, ushort* address) => LoadVectorUInt16ZeroExtendToUInt64(mask, address);
 
 
-        ///  LoadVectorUInt32ZeroExtendToInt64 : Load 32-bit data and zero-extend
+        // Load 32-bit data and zero-extend
 
         /// <summary>
         /// svint64_t svld1uw_s64(svbool_t pg, const uint32_t *base)
@@ -5206,7 +5222,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorUInt32ZeroExtendToInt64(Vector<long> mask, uint* address) => LoadVectorUInt32ZeroExtendToInt64(mask, address);
 
 
-        ///  LoadVectorUInt32ZeroExtendToUInt64 : Load 32-bit data and zero-extend
+        // Load 32-bit data and zero-extend
 
         /// <summary>
         /// svuint64_t svld1uw_u64(svbool_t pg, const uint32_t *base)
@@ -5466,7 +5482,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>, Vector<ulong>) Load4xVectorAndUnzip(Vector<ulong> mask, ulong* address) => Load4xVectorAndUnzip(mask, address);
 
-        ///  Load 16-bit data and sign-extend, non-faulting
+
+        // Load 16-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint32_t svldnf1sh_s32(svbool_t pg, const int16_t *base)
@@ -5475,7 +5492,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(address);
 
 
-        ///  Load 16-bit data and sign-extend, non-faulting
+        // Load 16-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint64_t svldnf1sh_s64(svbool_t pg, const int16_t *base)
@@ -5484,7 +5501,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(address);
 
 
-        ///  Load 16-bit data and sign-extend, non-faulting
+        // Load 16-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint32_t svldnf1sh_u32(svbool_t pg, const int16_t *base)
@@ -5493,7 +5510,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(address);
 
 
-        ///  Load 16-bit data and sign-extend, non-faulting
+        // Load 16-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint64_t svldnf1sh_u64(svbool_t pg, const int16_t *base)
@@ -5501,7 +5518,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(address);
 
-        ///  Load 32-bit data and sign-extend, non-faulting
+
+        // Load 32-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint64_t svldnf1sw_s64(svbool_t pg, const int32_t *base)
@@ -5509,7 +5527,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(address);
 
-        ///  Load 32-bit data and sign-extend, non-faulting
+
+        // Load 32-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint64_t svldnf1sw_u64(svbool_t pg, const int32_t *base)
@@ -5517,7 +5536,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(address);
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint16_t svldnf1sb_s16(svbool_t pg, const int8_t *base)
@@ -5526,7 +5546,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(address);
 
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint32_t svldnf1sb_s32(svbool_t pg, const int8_t *base)
@@ -5534,7 +5554,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(address);
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svint64_t svldnf1sb_s64(svbool_t pg, const int8_t *base)
@@ -5543,7 +5564,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(address);
 
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint16_t svldnf1sb_u16(svbool_t pg, const int8_t *base)
@@ -5552,7 +5573,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(address);
 
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint32_t svldnf1sb_u32(svbool_t pg, const int8_t *base)
@@ -5561,7 +5582,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(address);
 
 
-        ///  Load 8-bit data and sign-extend, non-faulting
+        // Load 8-bit data and sign-extend, non-faulting
 
         /// <summary>
         /// svuint64_t svldnf1sb_u64(svbool_t pg, const int8_t *base)
@@ -5569,7 +5590,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(address);
 
-        ///  Max : Maximum
+
+        // Maximum
 
         /// <summary>
         /// svuint8_t svmax[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -5662,7 +5684,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Max(Vector<ulong> left, Vector<ulong> right) => Max(left, right);
 
 
-        ///  MaxAcross : Maximum reduction to scalar
+        // Maximum reduction to scalar
 
         /// <summary>
         /// uint8_t svmaxv[_u8](svbool_t pg, svuint8_t op)
@@ -5725,7 +5747,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> MaxAcross(Vector<ulong> value) => MaxAcross(value);
 
 
-        ///  MaxNumber : Maximum number
+        // Maximum number
 
         /// <summary>
         /// svfloat64_t svmaxnm[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
@@ -5746,7 +5768,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> MaxNumber(Vector<float> left, Vector<float> right) => MaxNumber(left, right);
 
 
-        ///  MaxNumberAcross : Maximum number reduction to scalar
+        // Maximum number reduction to scalar
 
         /// <summary>
         /// float64_t svmaxnmv[_f64](svbool_t pg, svfloat64_t op)
@@ -5761,7 +5783,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> MaxNumberAcross(Vector<float> value) => MaxNumberAcross(value);
 
 
-        ///  Min : Minimum
+        // Minimum
 
         /// <summary>
         /// svuint8_t svmin[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -5854,7 +5876,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Min(Vector<ulong> left, Vector<ulong> right) => Min(left, right);
 
 
-        ///  MinAcross : Minimum reduction to scalar
+        // Minimum reduction to scalar
 
         /// <summary>
         /// uint8_t svminv[_u8](svbool_t pg, svuint8_t op)
@@ -5917,7 +5939,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> MinAcross(Vector<ulong> value) => MinAcross(value);
 
 
-        ///  MinNumber : Minimum number
+        // Minimum number
 
         /// <summary>
         /// svfloat64_t svminnm[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
@@ -5938,7 +5960,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> MinNumber(Vector<float> left, Vector<float> right) => MinNumber(left, right);
 
 
-        ///  MinNumberAcross : Minimum number reduction to scalar
+        // Minimum number reduction to scalar
 
         /// <summary>
         /// float64_t svminnmv[_f64](svbool_t pg, svfloat64_t op)
@@ -5952,6 +5974,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MinNumberAcross(Vector<float> value) => MinNumberAcross(value);
 
+
+        // Multiply
 
         /// <summary>
         /// svint8_t svmul[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
@@ -6095,7 +6119,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Multiply(Vector<double> left, Vector<double> right) => Multiply(left, right);
 
-        ///  MultiplyAdd : Multiply-add, addend first
+
+        // Multiply-add, addend first
 
         /// <summary>
         /// svuint8_t svmla[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2, svuint8_t op3)
@@ -6161,7 +6186,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> MultiplyAdd(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right) => MultiplyAdd(addend, left, right);
 
-        ///  Complex multiply-add with rotate
+
+        // Complex multiply-add with rotate
 
         /// <summary>
         /// svfloat64_t svcmla[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
@@ -6181,7 +6207,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MultiplyAddRotateComplex(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplex(addend, left, right, rotation);
 
-        ///  Complex multiply-add with rotate
+
+        // Complex multiply-add with rotate
 
         /// <summary>
         /// svfloat32_t svcmla_lane[_f32](svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_index, uint64_t imm_rotation)
@@ -6189,7 +6216,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MultiplyAddRotateComplexBySelectedScalar(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplexBySelectedScalar(addend, left, right, rightIndex, rotation);
 
-        ///  MultiplyBySelectedScalar : Multiply
+
+        // Multiply
 
         /// <summary>
         /// svfloat64_t svmul_lane[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm_index)
@@ -6203,7 +6231,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MultiplyBySelectedScalar(Vector<float> left, Vector<float> right, [ConstantExpected] byte rightIndex) => MultiplyBySelectedScalar(left, right, rightIndex);
 
-        ///  MultiplyExtended : Multiply extended (∞×0=2)
+
+        // Multiply extended (∞×0=2)
 
         /// <summary>
         /// svfloat64_t svmulx[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
@@ -6221,7 +6250,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MultiplyExtended(Vector<float> left, Vector<float> right) => MultiplyExtended(left, right);
 
-        ///  MultiplySubtract : Multiply-subtract, minuend first
+
+        // Multiply-subtract, minuend first
 
         /// <summary>
         /// svuint8_t svmls[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2, svuint8_t op3)
@@ -6287,7 +6317,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> MultiplySubtract(Vector<ulong> minuend, Vector<ulong> left, Vector<ulong> right) => MultiplySubtract(minuend, left, right);
 
-        ///  Negate : Negate
+
+        // Negate
 
         /// <summary>
         /// svfloat64_t svneg[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -6337,7 +6368,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> Negate(Vector<float> value) => Negate(value);
 
-        ///  Bitwise invert
+
+        // Bitwise invert
 
         /// <summary>
         /// svuint8_t svnot[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
@@ -6427,7 +6459,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> Not(Vector<ulong> value) => Not(value);
 
-        ///  Or : Bitwise inclusive OR
+
+        // Bitwise inclusive OR
 
         /// <summary>
         /// svuint8_t svorr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -6518,7 +6551,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Or(Vector<ulong> left, Vector<ulong> right) => Or(left, right);
 
 
-        ///  OrAcross : Bitwise inclusive OR reduction to scalar
+        // Bitwise inclusive OR reduction to scalar
 
         /// <summary>
         /// uint8_t svorv[_u8](svbool_t pg, svuint8_t op)
@@ -6569,7 +6602,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> OrAcross(Vector<ulong> value) => OrAcross(value);
 
 
-        ///  Count nonzero bits
+        // Count nonzero bits
 
         /// <summary>
         /// svuint8_t svcnt[_s8]_m(svuint8_t inactive, svbool_t pg, svint8_t op)
@@ -6676,7 +6709,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
 
 
-        ///  ReciprocalEstimate : Reciprocal estimate
+        // Reciprocal estimate
 
         /// <summary>
         /// svfloat64_t svrecpe[_f64](svfloat64_t op)
@@ -6691,7 +6724,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> ReciprocalEstimate(Vector<float> value) => ReciprocalEstimate(value);
 
 
-        ///  ReciprocalExponent : Reciprocal exponent
+        // Reciprocal exponent
 
         /// <summary>
         /// svfloat64_t svrecpx[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -6712,7 +6745,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> ReciprocalExponent(Vector<float> value) => ReciprocalExponent(value);
 
 
-        ///  ReciprocalSqrtEstimate : Reciprocal square root estimate
+        // Reciprocal square root estimate
 
         /// <summary>
         /// svfloat64_t svrsqrte[_f64](svfloat64_t op)
@@ -6727,7 +6760,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> ReciprocalSqrtEstimate(Vector<float> value) => ReciprocalSqrtEstimate(value);
 
 
-        ///  ReciprocalSqrtStep : Reciprocal square root step
+        // Reciprocal square root step
 
         /// <summary>
         /// svfloat64_t svrsqrts[_f64](svfloat64_t op1, svfloat64_t op2)
@@ -6742,7 +6775,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> ReciprocalSqrtStep(Vector<float> left, Vector<float> right) => ReciprocalSqrtStep(left, right);
 
 
-        ///  ReciprocalStep : Reciprocal step
+        // Reciprocal step
 
         /// <summary>
         /// svfloat64_t svrecps[_f64](svfloat64_t op1, svfloat64_t op2)
@@ -6755,7 +6788,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   FRECPS Zresult.S, Zop1.S, Zop2.S
         /// </summary>
         public static unsafe Vector<float> ReciprocalStep(Vector<float> left, Vector<float> right) => ReciprocalStep(left, right);
-        ///  Reverse bits
+        // Reverse bits
 
         /// <summary>
         /// svuint8_t svrbit[_u8]_x(svbool_t pg, svuint8_t op)
@@ -6806,7 +6839,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseBits(Vector<ulong> value) => ReverseBits(value);
 
 
-        ///  Reverse all elements
+        // Reverse all elements
 
         /// <summary>
         /// svuint8_t svrev[_u8](svuint8_t op)
@@ -6869,7 +6902,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseElement(Vector<ulong> value) => ReverseElement(value);
 
 
-        ///  Reverse halfwords within elements
+        // Reverse halfwords within elements
 
         /// <summary>
         /// svint32_t svrevh[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
@@ -6896,7 +6929,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseElement16(Vector<ulong> value) => ReverseElement16(value);
 
 
-        ///  Reverse words within elements
+        // Reverse words within elements
 
         /// <summary>
         /// svint64_t svrevw[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
@@ -6911,7 +6944,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseElement32(Vector<ulong> value) => ReverseElement32(value);
 
 
-        ///  Reverse bytes within elements
+        // Reverse bytes within elements
 
         /// <summary>
         /// svint16_t svrevb[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
@@ -6950,7 +6983,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseElement8(Vector<ulong> value) => ReverseElement8(value);
 
 
-        ///  RoundAwayFromZero : Round to nearest, ties away from zero
+        // Round to nearest, ties away from zero
 
         /// <summary>
         /// svfloat64_t svrinta[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -6971,7 +7004,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> RoundAwayFromZero(Vector<float> value) => RoundAwayFromZero(value);
 
 
-        ///  RoundToNearest : Round to nearest, ties to even
+        // Round to nearest, ties to even
 
         /// <summary>
         /// svfloat64_t svrintn[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -6992,7 +7025,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> RoundToNearest(Vector<float> value) => RoundToNearest(value);
 
 
-        ///  RoundToNegativeInfinity : Round towards -∞
+        // Round towards -∞
 
         /// <summary>
         /// svfloat64_t svrintm[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -7013,7 +7046,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> RoundToNegativeInfinity(Vector<float> value) => RoundToNegativeInfinity(value);
 
 
-        ///  RoundToPositiveInfinity : Round towards +∞
+        // Round towards +∞
 
         /// <summary>
         /// svfloat64_t svrintp[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -7034,7 +7067,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> RoundToPositiveInfinity(Vector<float> value) => RoundToPositiveInfinity(value);
 
 
-        ///  RoundToZero : Round towards zero
+        // Round towards zero
 
         /// <summary>
         /// svfloat64_t svrintz[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -7055,7 +7088,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> RoundToZero(Vector<float> value) => RoundToZero(value);
 
 
-        ///  Saturating decrement by number of halfword elements
+        // Saturating decrement by number of halfword elements
 
         /// <summary>
         /// int32_t svqdech_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7094,7 +7127,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> SaturatingDecrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating decrement by number of word elements
+        // Saturating decrement by number of word elements
 
         /// <summary>
         /// int32_t svqdecw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7133,7 +7166,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> SaturatingDecrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating decrement by number of doubleword elements
+        // Saturating decrement by number of doubleword elements
 
         /// <summary>
         /// int32_t svqdecd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7172,7 +7205,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingDecrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating decrement by number of byte elements
+        // Saturating decrement by number of byte elements
 
         /// <summary>
         /// int32_t svqdecb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7199,7 +7232,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating decrement by active element count
+        // Saturating decrement by active element count
 
         /// <summary>
         /// int32_t svqdecp[_n_s32]_b8(int32_t op, svbool_t pg)
@@ -7334,7 +7367,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingDecrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
 
 
-        ///  Saturating increment by number of halfword elements
+        // Saturating increment by number of halfword elements
 
         /// <summary>
         /// int32_t svqinch_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7373,7 +7406,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ushort> SaturatingIncrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating increment by number of word elements
+        // Saturating increment by number of word elements
 
         /// <summary>
         /// int32_t svqincw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7412,7 +7445,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<uint> SaturatingIncrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating increment by number of doubleword elements
+        // Saturating increment by number of doubleword elements
 
         /// <summary>
         /// int32_t svqincd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7451,7 +7484,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingIncrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating increment by number of byte elements
+        // Saturating increment by number of byte elements
 
         /// <summary>
         /// int32_t svqincb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
@@ -7478,7 +7511,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
 
 
-        ///  Saturating increment by active element count
+        // Saturating increment by active element count
 
         /// <summary>
         /// int32_t svqincp[_n_s32]_b8(int32_t op, svbool_t pg)
@@ -7613,7 +7646,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
 
 
-        ///  Scale : Adjust exponent
+        // Adjust exponent
 
         /// <summary>
         /// svfloat64_t svscale[_f64]_m(svbool_t pg, svfloat64_t op1, svint64_t op2)
@@ -7634,30 +7667,31 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) => Scale(left, right);
 
 
-        ///  Non-truncating store
+        // Non-truncating store
 
-        // <summary>
-        // void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<double> mask, double* address, Vector<long> indicies, Vector<double> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter[_u64base_f64](svbool_t pg, svuint64_t bases, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter[_u64base_f64](svbool_t pg, svuint64_t bases, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter(Vector<double> mask, Vector<ulong> addresses, Vector<double> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<double> mask, double* address, Vector<ulong> indicies, Vector<double> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<int> mask, int* address, Vector<int> indicies, Vector<int> data) => Scatter(mask, address, indicies, data);
 
         // <summary>
@@ -7667,34 +7701,34 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<int> mask, int* address, Vector<uint> indicies, Vector<int> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<long> mask, long* address, Vector<long> indicies, Vector<long> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<long> mask, long* address, Vector<ulong> indicies, Vector<long> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<float> mask, float* address, Vector<int> indicies, Vector<float> data) => Scatter(mask, address, indicies, data);
 
         // <summary>
@@ -7704,16 +7738,16 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter(Vector<float> mask, Vector<uint> addresses, Vector<float> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<float> mask, float* address, Vector<uint> indicies, Vector<float> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<int> indicies, Vector<uint> data) => Scatter(mask, address, indicies, data);
 
         // <summary>
@@ -7723,28 +7757,28 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
-        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
+        ///   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<uint> indicies, Vector<uint> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<long> indicies, Vector<ulong> data) => Scatter(mask, address, indicies, data);
 
-        // <summary>
-        // void svst1_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter(mask, addresses, data);
 
-        // <summary>
-        // void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
-        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<ulong> indicies, Vector<ulong> data) => Scatter(mask, address, indicies, data);
 
 
@@ -7757,10 +7791,10 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter16BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter16BitNarrowing(mask, addresses, data);
 
-        // <summary>
-        // void svst1h_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
-        //   ST1H Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter16BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter16BitNarrowing(mask, addresses, data);
 
         // <summary>
@@ -7770,107 +7804,109 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter16BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter16BitNarrowing(mask, addresses, data);
 
-        // <summary>
-        // void svst1h_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
-        //   ST1H Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter16BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter16BitNarrowing(mask, addresses, data);
 
 
         //  Truncate to 16 bits and store
 
-        // <summary>
-        // void svst1h_scatter_[s32]offset[_s32](svbool_t pg, int16_t *base, svint32_t offsets, svint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[s32]offset[_s32](svbool_t pg, int16_t *base, svint32_t offsets, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<int> offsets, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<long> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[s32]offset[_u32](svbool_t pg, uint16_t *base, svint32_t offsets, svuint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[s32]offset[_u32](svbool_t pg, uint16_t *base, svint32_t offsets, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<int> offsets, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
+        ///   ST1H Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<long> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
 
         //  Truncate to 32 bits and store
 
-        // <summary>
-        // void svst1w_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
-        //   ST1W Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1w_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter32BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter32BitNarrowing(mask, addresses, data);
 
-        // <summary>
-        // void svst1w_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
-        //   ST1W Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1w_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter32BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter32BitNarrowing(mask, addresses, data);
 
 
-        //  Truncate to 32 bits and store
+        // Truncate to 32 bits and store
 
-        // <summary>
-        // void svst1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
-        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+
+        /// <summary>
+        /// void svst1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<long> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
-        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
-        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<long> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
-        //   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1W Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
 
-        //  Truncate to 8 bits and store
+        // Truncate to 8 bits and store
+
 
         // <summary>
         // void svst1b_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
@@ -7879,10 +7915,10 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter8BitNarrowing(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter8BitNarrowing(mask, addresses, data);
 
-        // <summary>
-        // void svst1b_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
-        //   ST1B Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        ///   ST1B Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter8BitNarrowing(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter8BitNarrowing(mask, addresses, data);
 
         // <summary>
@@ -7892,61 +7928,62 @@ namespace System.Runtime.Intrinsics.Arm
         // Removed as per #103297
         // public static unsafe void Scatter8BitNarrowing(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter8BitNarrowing(mask, addresses, data);
 
-        // <summary>
-        // void svst1b_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
-        //   ST1B Zdata.D, Pg, [Zbases.D, #0]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        ///   ST1B Zdata.D, Pg, [Zbases.D, #0]
+        /// </summary>
         public static unsafe void Scatter8BitNarrowing(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter8BitNarrowing(mask, addresses, data);
 
 
-        //  Truncate to 8 bits and store
+        // Truncate to 8 bits and store
 
-        // <summary>
-        // void svst1b_scatter_[s32]offset[_s32](svbool_t pg, int8_t *base, svint32_t offsets, svint32_t data)
-        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+
+        /// <summary>
+        /// void svst1b_scatter_[s32]offset[_s32](svbool_t pg, int8_t *base, svint32_t offsets, svint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<int> mask, sbyte* address, Vector<int> offsets, Vector<int> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
-        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<int> mask, sbyte* address, Vector<uint> offsets, Vector<int> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
-        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<long> mask, sbyte* address, Vector<long> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
-        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<long> mask, sbyte* address, Vector<ulong> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[s32]offset[_u32](svbool_t pg, uint8_t *base, svint32_t offsets, svuint32_t data)
-        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[s32]offset[_u32](svbool_t pg, uint8_t *base, svint32_t offsets, svuint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<uint> mask, byte* address, Vector<int> offsets, Vector<uint> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
-        //   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
+        ///   ST1B Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<uint> mask, byte* address, Vector<uint> offsets, Vector<uint> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
-        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<long> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
-        // <summary>
-        // void svst1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
-        //   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
-        // </summary>
+        /// <summary>
+        /// void svst1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
+        ///   ST1B Zdata.D, Pg, [Xbase, Zoffsets.D]
+        /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowing(mask, address, offsets, data);
 
 
@@ -7999,7 +8036,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void SetFfr(Vector<ulong> value) => SetFfr(value);
 
 
-        ///  Logical shift left
+        // Logical shift left
 
         /// <summary>
         /// svuint8_t svlsl[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -8134,7 +8171,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ShiftLeftLogical(Vector<ulong> left, Vector<ulong> right) => ShiftLeftLogical(left, right);
 
 
-        ///  Arithmetic shift right
+        // Arithmetic shift right
 
         /// <summary>
         /// svint16_t svasr[_s16]_m(svbool_t pg, svint16_t op1, svuint16_t op2)
@@ -8203,7 +8240,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> left, Vector<ulong> right) => ShiftRightArithmetic(left, right);
 
 
-        ///  Arithmetic shift right for divide by immediate
+        // Arithmetic shift right for divide by immediate
 
         /// <summary>
         /// svint16_t svasrd[_n_s16]_m(svbool_t pg, svint16_t op1, uint64_t imm2)
@@ -8242,7 +8279,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<sbyte> ShiftRightArithmeticForDivide(Vector<sbyte> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte control) => ShiftRightArithmeticForDivide(value, control);
 
 
-        ///  Logical shift right
+        // Logical shift right
 
         /// <summary>
         /// svuint8_t svlsr[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -8311,7 +8348,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ShiftRightLogical(Vector<ulong> left, Vector<ulong> right) => ShiftRightLogical(left, right);
 
 
-        ///  SignExtend16 : Sign-extend the low 16 bits
+        // Sign-extend the low 16 bits
 
         /// <summary>
         /// svint32_t svexth[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
@@ -8337,7 +8374,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<long> SignExtend16(Vector<long> value) => SignExtend16(value);
 
-        ///  SignExtend32 : Sign-extend the low 32 bits
+
+        // Sign-extend the low 32 bits
 
         /// <summary>
         /// svint64_t svextw[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
@@ -8352,7 +8390,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> SignExtend32(Vector<long> value) => SignExtend32(value);
 
 
-        ///  SignExtend8 : Sign-extend the low 8 bits
+        // Sign-extend the low 8 bits
 
         /// <summary>
         /// svint16_t svextb[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
@@ -8391,7 +8429,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> SignExtend8(Vector<long> value) => SignExtend8(value);
 
 
-        ///  SignExtendWideningLower : Unpack and extend low half
+        // Unpack and extend low half
 
         /// <summary>
         /// svint16_t svunpklo[_s16](svint8_t op)
@@ -8412,7 +8450,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> SignExtendWideningLower(Vector<int> value) => SignExtendWideningLower(value);
 
 
-        ///  SignExtendWideningUpper : Unpack and extend high half
+        // Unpack and extend high half
 
         /// <summary>
         /// svint16_t svunpkhi[_s16](svint8_t op)
@@ -8433,7 +8471,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
 
 
-        ///  Splice two vectors under predicate control
+        // Splice two vectors under predicate control
 
         /// <summary>
         /// svuint8_t svsplice[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -8496,7 +8534,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Splice(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) => Splice(mask, left, right);
 
 
-        ///  Sqrt : Square root
+        // Square root
 
         /// <summary>
         /// svfloat64_t svsqrt[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
@@ -8517,7 +8555,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> Sqrt(Vector<float> value) => Sqrt(value);
 
 
-        ///  Non-truncating store
+        // Non-truncating store
 
         /// <summary>
         /// void svst1[_u8](svbool_t pg, uint8_t *base, svuint8_t data)
@@ -8758,8 +8796,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ST4D {Zdata0.D - Zdata3.D}, Pg, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe void StoreAndZip(Vector<ulong> mask, ulong* address, (Vector<ulong> Value1, Vector<ulong> Value2, Vector<ulong> Value3, Vector<ulong> Value4) data) => StoreAndZip(mask, address, data);
-        ///  Truncate to 8 bits and store
 
+
+        // Truncate to 8 bits and store
 
         /// <summary>
         /// void svst1b[_s16](svbool_t pg, int8_t *base, svint16_t data)
@@ -8834,7 +8873,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> data) => StoreNarrowing(mask, address, data);
 
 
-        ///  StoreNonTemporal : Non-truncating store, non-temporal
+        // Non-truncating store, non-temporal
 
         /// <summary>
         /// void svstnt1[_u8](svbool_t pg, uint8_t *base, svuint8_t data)
@@ -8897,7 +8936,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> data) => StoreNonTemporal(mask, address, data);
 
 
-        ///  Subtract : Subtract
+        // Subtract
 
         /// <summary>
         /// svint8_t svsub[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
@@ -9021,7 +9060,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> Subtract(Vector<double> left, Vector<double> right) => Subtract(left, right);
 
-        ///  SubtractSaturate : Saturating subtract
+
+        // Saturating subtract
 
         /// <summary>
         /// svuint8_t svqsub[_u8](svuint8_t op1, svuint8_t op2)
@@ -9072,6 +9112,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) => SubtractSaturate(left, right);
 
 
+        // Test whether any active element is true
+
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
@@ -9120,6 +9162,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestAnyTrue(mask, srcMask);
 
+        // Test whether the first active element is true
+
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
@@ -9167,6 +9211,9 @@ namespace System.Runtime.Intrinsics.Arm
         ///   PTEST
         /// </summary>
         public static unsafe bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestFirstTrue(mask, srcMask);
+
+
+        // Test whether the last active element is true
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
@@ -9217,7 +9264,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestLastTrue(mask, srcMask);
 
 
-        ///  Interleave even elements from two inputs
+        // Interleave even elements from two inputs
 
         /// <summary>
         /// svuint8_t svtrn1[_u8](svuint8_t op1, svuint8_t op2)
@@ -9280,7 +9327,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> TransposeEven(Vector<ulong> left, Vector<ulong> right) => TransposeEven(left, right);
 
 
-        ///  Interleave odd elements from two inputs
+        // Interleave odd elements from two inputs
 
         /// <summary>
         /// svuint8_t svtrn2[_u8](svuint8_t op1, svuint8_t op2)
@@ -9343,7 +9390,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) => TransposeOdd(left, right);
 
 
-        ///  Trigonometric multiply-add coefficient
+        // Trigonometric multiply-add coefficient
 
         /// <summary>
         /// svfloat64_t svtmad[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
@@ -9358,7 +9405,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> TrigonometricMultiplyAddCoefficient(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) => TrigonometricMultiplyAddCoefficient(left, right, control);
 
 
-        ///  Trigonometric select coefficient
+        // Trigonometric select coefficient
 
         /// <summary>
         /// svfloat64_t svtssel[_f64](svfloat64_t op1, svuint64_t op2)
@@ -9373,7 +9420,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> TrigonometricSelectCoefficient(Vector<float> value, Vector<uint> selector) => TrigonometricSelectCoefficient(value, selector);
 
 
-        ///  Trigonometric starting value
+        // Trigonometric starting value
 
         /// <summary>
         /// svfloat64_t svtsmul[_f64](svfloat64_t op1, svuint64_t op2)
@@ -9388,7 +9435,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> TrigonometricStartingValue(Vector<float> value, Vector<uint> sign) => TrigonometricStartingValue(value, sign);
 
 
-        ///  UnzipEven : Concatenate even elements from two inputs
+        // Concatenate even elements from two inputs
 
         /// <summary>
         /// svuint8_t svuzp1[_u8](svuint8_t op1, svuint8_t op2)
@@ -9459,7 +9506,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> UnzipEven(Vector<ulong> left, Vector<ulong> right) => UnzipEven(left, right);
 
 
-        ///  UnzipOdd : Concatenate odd elements from two inputs
+        // Concatenate odd elements from two inputs
 
         /// <summary>
         /// svuint8_t svuzp2[_u8](svuint8_t op1, svuint8_t op2)
@@ -9530,7 +9577,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> UnzipOdd(Vector<ulong> left, Vector<ulong> right) => UnzipOdd(left, right);
 
 
-        ///  Table lookup in single-vector table
+        // Table lookup in single-vector table
 
         /// <summary>
         /// svuint8_t svtbl[_u8](svuint8_t data, svuint8_t indices)
@@ -9593,7 +9640,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> VectorTableLookup(Vector<ulong> data, Vector<ulong> indices) => VectorTableLookup(data, indices);
 
 
-        ///  Xor : Bitwise exclusive OR
+        // Bitwise exclusive OR
 
         /// <summary>
         /// svuint8_t sveor[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
@@ -9684,7 +9731,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> Xor(Vector<ulong> left, Vector<ulong> right) => Xor(left, right);
 
 
-        ///  XorAcross : Bitwise exclusive OR reduction to scalar
+        // Bitwise exclusive OR reduction to scalar
 
         /// <summary>
         /// uint8_t sveorv[_u8](svbool_t pg, svuint8_t op)
@@ -9735,7 +9782,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> XorAcross(Vector<ulong> value) => XorAcross(value);
 
 
-        ///  ZeroExtend16 : Zero-extend the low 16 bits
+        // Zero-extend the low 16 bits
 
         /// <summary>
         /// svuint32_t svexth[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
@@ -9762,7 +9809,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ZeroExtend16(Vector<ulong> value) => ZeroExtend16(value);
 
 
-        ///  ZeroExtend32 : Zero-extend the low 32 bits
+        // Zero-extend the low 32 bits
 
         /// <summary>
         /// svuint64_t svextw[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
@@ -9777,7 +9824,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ZeroExtend32(Vector<ulong> value) => ZeroExtend32(value);
 
 
-        ///  ZeroExtend8 : Zero-extend the low 8 bits
+        // Zero-extend the low 8 bits
 
         /// <summary>
         /// svuint16_t svextb[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
@@ -9815,7 +9862,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> ZeroExtend8(Vector<ulong> value) => ZeroExtend8(value);
 
-        ///  ZeroExtendWideningLower : Unpack and extend low half
+
+        // Unpack and extend low half
 
         /// <summary>
         /// svuint16_t svunpklo[_u16](svuint8_t op)
@@ -9836,7 +9884,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ZeroExtendWideningLower(Vector<uint> value) => ZeroExtendWideningLower(value);
 
 
-        ///  ZeroExtendWideningUpper : Unpack and extend high half
+        // Unpack and extend high half
 
         /// <summary>
         /// svuint16_t svunpkhi[_u16](svuint8_t op)
@@ -9858,7 +9906,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> ZeroExtendWideningUpper(Vector<uint> value) => ZeroExtendWideningUpper(value);
 
-        ///  ZipHigh : Interleave elements from high halves of two inputs
+
+        // Interleave elements from high halves of two inputs
 
         /// <summary>
         /// svuint8_t svzip2[_u8](svuint8_t op1, svuint8_t op2)
@@ -9927,7 +9976,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ZipHigh(Vector<ulong> left, Vector<ulong> right) => ZipHigh(left, right);
 
 
-        ///  ZipLow : Interleave elements from low halves of two inputs
+        // Interleave elements from low halves of two inputs
 
         /// <summary>
         /// svuint8_t svzip1[_u8](svuint8_t op1, svuint8_t op2)
