@@ -2168,7 +2168,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task JsonIgnoreCondition_WhenWriting()
         {
-            var json = await Serializer.SerializeWrapper(new JsonIgnoreCondition_WhenReadingWritingTestModel{ Age = 10, Name = "Mike" });
+            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
+            var json = await Serializer.SerializeWrapper
+                (
+                    new JsonIgnoreCondition_WhenReadingWritingTestModel { Age = 10, Name = "Mike" },
+                    options
+                );
             Assert.Equal("""{"Age":10}""", json);
         }
 
@@ -2182,7 +2187,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public class JsonIgnoreCondition_WhenReadingWritingTestModel
-        {  
+        {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
             public int Age { get; set; }
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
