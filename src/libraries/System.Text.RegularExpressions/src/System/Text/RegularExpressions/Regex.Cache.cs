@@ -254,7 +254,11 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Finally add the regex.
-                var node = new Node(key, regex);
+                var node = new Node(key, regex)
+                {
+                    LastAccessStamp = s_lastAccessed is { } lastAccessed ? Volatile.Read(ref lastAccessed.LastAccessStamp) + 1 : 1
+                };
+
                 s_lastAccessed = node;
                 s_cacheList.Add(node);
                 s_cacheDictionary.TryAdd(key, node);
