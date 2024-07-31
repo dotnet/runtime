@@ -79,6 +79,16 @@ ep_rt_aot_config_lock_get (void)
 
 static
 inline
+ep_rt_lock_handle_t *
+ep_rt_aot_callback_dispatch_lock_get (void)
+{
+    extern ep_rt_lock_handle_t _ep_rt_aot_callback_dispatch_lock_handle;
+    return &_ep_rt_aot_callback_dispatch_lock_handle;
+}
+
+
+static
+inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
@@ -284,6 +294,22 @@ ep_rt_config_release (void)
     return ep_rt_lock_release (ep_rt_aot_config_lock_get ());
 }
 
+static
+inline
+bool
+ep_rt_callback_dispatch_acquire (void)
+{
+	return ep_rt_lock_acquire (ep_rt_aot_callback_dispatch_lock_get ());
+}
+
+static
+inline
+bool
+ep_rt_callback_dispatch_release (void)
+{
+	return ep_rt_lock_release (ep_rt_aot_callback_dispatch_lock_get ());
+}
+
 #ifdef EP_CHECKED_BUILD
 static
 inline
@@ -299,6 +325,22 @@ void
 ep_rt_config_requires_lock_not_held (void)
 {
     ep_rt_lock_requires_lock_not_held (ep_rt_aot_config_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_held (void)
+{
+    ep_rt_lock_requires_lock_held (ep_rt_aot_callback_dispatch_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_not_held (void)
+{
+    ep_rt_lock_requires_lock_not_held (ep_rt_aot_callback_dispatch_lock_get ());
 }
 #endif
 

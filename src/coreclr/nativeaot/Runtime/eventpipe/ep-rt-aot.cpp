@@ -30,6 +30,8 @@
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
 
+ep_rt_lock_handle_t _ep_rt_aot_callback_dispatch_lock_handle;
+CrstStatic _ep_rt_aot_callback_dispatch_lock;
 
 #ifndef TARGET_UNIX
 uint32_t *_ep_rt_aot_proc_group_offsets;
@@ -701,6 +703,12 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
+
+    extern ep_rt_lock_handle_t _ep_rt_aot_callback_dispatch_lock_handle;
+    extern CrstStatic _ep_rt_aot_callback_dispatch_lock;
+
+    _ep_rt_aot_callback_dispatch_lock_handle.lock = &_ep_rt_aot_callback_dispatch_lock;
+    _ep_rt_aot_callback_dispatch_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeCallbackDispatch);
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

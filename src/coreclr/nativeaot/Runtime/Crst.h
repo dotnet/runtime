@@ -23,6 +23,7 @@ enum CrstType
     CrstEventPipe,
     CrstEventPipeConfig,
     CrstGcEvent,
+    CrstEventPipeCallbackDispatch,
 };
 
 enum CrstFlags
