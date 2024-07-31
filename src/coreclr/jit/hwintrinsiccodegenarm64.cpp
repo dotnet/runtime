@@ -2074,7 +2074,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op4Reg, opt);
                     }
                 }
-
                 FALLTHROUGH;
             }
             case NI_Sve_GatherVector:
