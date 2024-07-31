@@ -1,0 +1,12 @@
+# See https://sourceware.org/libabigail/manual/libabigail-concepts.html#suppression-specifications
+
+[suppress_type]
+  name = internal_state
+
+[suppress_type]
+  name_regexp = z_stream.*
+
+# Size varies with version number
+[suppress_variable]
+  name_regexp = z(|ng|libng)_(|v)string
+
