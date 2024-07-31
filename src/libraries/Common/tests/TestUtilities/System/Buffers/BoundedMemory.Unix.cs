@@ -136,6 +136,10 @@ namespace System.Buffers
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
+
+                // WILL REMOVE THIS, just need to test CI to make sure we can call it.
+                var ptr = AllocWithGuard((nuint)allocationSize);
+                Free(ptr, (nuint)allocationSize);
                 
                 var mmf = MemoryMappedFile.CreateNew(null, (long)allocationSize, MemoryMappedFileAccess.ReadWrite);
                 var view = mmf.CreateViewAccessor();
@@ -179,6 +183,13 @@ namespace System.Buffers
             public const int PROT_NONE = 0x0;
             public const int PROT_READ = 0x1;
             public const int PROT_WRITE = 0x2;
+
+            [DllImport(nameof("XplatVirtualAlloc"))]
+            public static extern byte* AllocWithGuard(nuint size);
+
+
+            [DllImport(nameof("XplatVirtualAlloc"))]
+            public static extern void Free(byte* ptr, nuint size);
 
             private static class Linux
             {

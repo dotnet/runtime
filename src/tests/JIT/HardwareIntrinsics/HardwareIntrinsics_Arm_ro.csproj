@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <MergedWrapperProjectReference Include="$(MSBuildThisFileDirectory)Arm/**/*_ro.csproj" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
