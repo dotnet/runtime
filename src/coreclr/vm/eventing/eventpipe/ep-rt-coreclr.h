@@ -49,6 +49,17 @@ ep_rt_coreclr_config_lock_get (void)
 
 static
 inline
+ep_rt_lock_handle_t *
+ep_rt_coreclr_callback_dispatch_lock_get (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	extern ep_rt_lock_handle_t _ep_rt_coreclr_callback_dispatch_lock_handle;
+	return &_ep_rt_coreclr_callback_dispatch_lock_handle;
+}
+
+static
+inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
@@ -260,6 +271,12 @@ ep_rt_init (void)
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
 	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
 
+	extern ep_rt_lock_handle_t _ep_rt_coreclr_callback_dispatch_lock_handle;
+	extern CrstStatic _ep_rt_coreclr_callback_dispatch_lock;
+
+	_ep_rt_coreclr_callback_dispatch_lock_handle.lock = &_ep_rt_coreclr_callback_dispatch_lock;
+	_ep_rt_coreclr_callback_dispatch_lock_handle.lock->InitNoThrow (CrstEventPipeCallbackDispatch, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
 		// setup the windows processor group offset table
@@ -311,6 +328,24 @@ ep_rt_config_release (void)
 	return ep_rt_lock_release (ep_rt_coreclr_config_lock_get ());
 }
 
+static
+inline
+bool
+ep_rt_callback_dispatch_acquire (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return ep_rt_lock_acquire (ep_rt_coreclr_callback_dispatch_lock_get ());
+}
+
+static
+inline
+bool
+ep_rt_callback_dispatch_release (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return ep_rt_lock_release (ep_rt_coreclr_callback_dispatch_lock_get ());
+}
+
 #ifdef EP_CHECKED_BUILD
 static
 inline
@@ -328,6 +363,24 @@ ep_rt_config_requires_lock_not_held (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	ep_rt_lock_requires_lock_not_held (ep_rt_coreclr_config_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_held (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	ep_rt_lock_requires_lock_held (ep_rt_coreclr_callback_dispatch_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_not_held (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	ep_rt_lock_requires_lock_not_held (ep_rt_coreclr_callback_dispatch_lock_get ());
 }
 #endif
 

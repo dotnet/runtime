@@ -13,6 +13,9 @@
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
 
+ep_rt_lock_handle_t _ep_rt_coreclr_callback_dispatch_lock_handle;
+CrstStatic _ep_rt_coreclr_callback_dispatch_lock;
+
 thread_local EventPipeCoreCLRThreadHolderTLS EventPipeCoreCLRThreadHolderTLS::g_threadHolderTLS;
 
 ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
