@@ -417,7 +417,12 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+    }
 
+    [Collection(nameof(DisableParallelization))]
+    // Set of tests to not run  together with any other tests.
+    public class NoParallelSelectTests
+    {
         [ConditionalFact]
         public void Select_LargeNumber_Succcess()
         {
