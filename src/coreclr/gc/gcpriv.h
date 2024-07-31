@@ -17,7 +17,7 @@
 #ifdef __INTELLISENSE__
 #ifdef SERVER_GC
 namespace SVR {
-#else
+#else // SERVER_GC
 namespace WKS {
 #endif // SERVER_GC
 #endif // __INTELLISENSE__

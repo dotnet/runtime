@@ -34,7 +34,7 @@
 
 #define SERVER_GC 1
 
-#else
+#else // defined(FEATURE_SVR_GC)
 
 #ifdef SERVER_GC
 #undef SERVER_GC
@@ -51,11 +51,11 @@
 
 #if defined(FEATURE_SVR_GC)
 namespace SVR {
-#else
+#else // defined(FEATURE_SVR_GC)
 namespace WKS {
 #endif // defined(FEATURE_SVR_GC)
 
-#else
+#else // __INTELLISENSE__
 
 #include "gcpriv.h"
 
