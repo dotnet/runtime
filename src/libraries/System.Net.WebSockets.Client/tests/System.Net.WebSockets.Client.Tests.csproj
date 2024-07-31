@@ -55,6 +55,7 @@
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
+    <Compile Include="CloseTest_Tracing.cs" />
     <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
+    <Compile Include="TracingTestCollection.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />

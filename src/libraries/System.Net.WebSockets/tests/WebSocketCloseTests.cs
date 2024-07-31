@@ -96,10 +96,12 @@ namespace System.Net.WebSockets.Tests
             using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
 
             Task receiveTask = websocket.ReceiveAsync(new byte[1], CancellationToken);
+            await Task.Delay(100); // give the receive task a chance to aquire the lock
             var cancelCloseCts = new CancellationTokenSource();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
             {
                 Task t = websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
+                await Task.Delay(100); // give the close task time to get in the queue waiting for the lock
                 cancelCloseCts.Cancel();
                 await t;
             });
