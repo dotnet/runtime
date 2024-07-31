@@ -147,6 +147,7 @@ public:
 
 public:
 // if we're using the indirect codeheaders then all enumeration is done by the code header
+
 } RealCodeHeader;
 
 typedef struct _hpCodeHdr
@@ -638,6 +639,8 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t RangeEndOpen = offsetof(RangeSection, _range.end);
     static constexpr size_t NextForDelete = offsetof(RangeSection, _pRangeSectionNextForDelete);
     static constexpr size_t JitManager = offsetof(RangeSection, _pjit);
+    static constexpr size_t Flags = offsetof(RangeSection, _flags);
+    static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
 };
 
 enum class RangeSectionLockState
@@ -1659,6 +1662,14 @@ protected:
         ReadyToRun = 1,
     };
     JitManagerKind m_jitManagerKind;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<IJitManager>
+{
+    static constexpr size_t JitManagerKind = offsetof(IJitManager, m_jitManagerKind);
 };
 
 //-----------------------------------------------------------------------------

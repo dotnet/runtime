@@ -88,11 +88,25 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         private readonly Data.RangeSectionMap _topRangeSectionMap;
         private readonly TargetCodeManagerDescriptor _targetCodeManagerDescriptor;
 
+
+        internal enum JitManagerKind
+        {
+            EEJitManager = 0,
+            ReadyToRunJitManager = 1,
+        }
+
         public ExecutionManagerContract(Target target, Data.RangeSectionMap topRangeSectionMap)
         {
             _target = target;
             _topRangeSectionMap = topRangeSectionMap;
             _targetCodeManagerDescriptor = TargetCodeManagerDescriptor.Create(target);
+        }
+
+        [Flags]
+        enum RangeSectionFlags : int
+        {
+            CodeHeap = 0x02,
+            RangeList = 0x04,
         }
 
         private sealed class RangeSection
@@ -107,11 +121,160 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             {
                 _rangeSection = rangeSection;
             }
-            public bool JitCodeToMethodInfo(TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+
+            private bool HasFlags(RangeSectionFlags mask) => (_rangeSection!.Flags & (int)mask) != 0;
+            private bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
+            private bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
+
+            public bool JitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
             {
-                throw new NotImplementedException();
+                if (_rangeSection == null)
+                {
+                    methodDescAddress = TargetPointer.Null;
+                    return false;
+                }
+                Data.IJitManager jitManager = target.ProcessedData.GetOrAdd<Data.IJitManager>(_rangeSection.JitManager);
+                switch ((JitManagerKind)jitManager.JitManagerKind)
+                {
+                    case JitManagerKind.EEJitManager:
+                        return EEJitCodeToMethodInfo(target, jitManager, jittedCodeAddress, out methodDescAddress);
+                    case JitManagerKind.ReadyToRunJitManager:
+                        methodDescAddress = TargetPointer.Null;
+                        throw new NotImplementedException(); // TODO[cdac]:
+                    default:
+                        throw new InvalidOperationException($"Invalid JitManagerKind {jitManager.JitManagerKind}");
+                }
             }
 
+            private bool EEJitCodeToMethodInfo(Target target, Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            {
+                // EEJitManager::JitCodeToMethodInfo
+                if (IsRangeList)
+                {
+                    methodDescAddress = TargetPointer.Null;
+                    return false;
+                }
+                TargetPointer start = EEFindMethodCode(jitManager, jittedCodeAddress);
+                if (start == TargetPointer.Null)
+                {
+                    methodDescAddress = TargetPointer.Null;
+                    return false;
+                }
+                TargetPointer codeHeaderIndirect = new TargetPointer(start - (ulong)target.PointerSize);
+                if (IsStubCodeBlock(target, codeHeaderIndirect))
+                {
+                    methodDescAddress = TargetPointer.Null;
+                    return false;
+                }
+                TargetPointer codeHeaderAddress = target.ReadPointer(codeHeaderIndirect);
+                Data.RealCodeHeader realCodeHeader = target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+                methodDescAddress = realCodeHeader.MethodDesc;
+                return true;
+            }
+
+            private static bool IsStubCodeBlock(Target target, TargetPointer codeHeaderIndirect)
+            {
+                uint stubCodeBlockLast = target.ReadGlobal<uint>(Constants.Globals.StubCodeBlockLast);
+                return codeHeaderIndirect.Value <= stubCodeBlockLast;
+            }
+
+            private TargetPointer EEFindMethodCode(Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress)
+            {
+                // EEJitManager::FindMethodCode
+                if (_rangeSection == null)
+                {
+                    throw new InvalidOperationException();
+                }
+                if (!IsCodeHeap)
+                {
+                    throw new InvalidOperationException("RangeSection is not a code heap");
+                }
+                TargetPointer heapListAddress = _rangeSection.HeapList;
+#if false
+    HeapList *pHp = pRangeSection->_pHeapList;
+
+    if ((currentPC < pHp->startAddress) ||
+        (currentPC > pHp->endAddress))
+    {
+        return 0;
+    }
+
+    TADDR base = pHp->mapBase;
+    TADDR delta = currentPC - base;
+    PTR_DWORD pMap = pHp->pHdrMap;
+    PTR_DWORD pMapStart = pMap;
+
+    DWORD tmp;
+
+    size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
+                                        // ( == index into the array of nibbles)
+    DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
+
+    _ASSERTE(offset == (offset & NIBBLE_MASK));
+
+    pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
+
+    // get DWORD and shift down our nibble
+
+    PREFIX_ASSUME(pMap != NULL);
+    tmp = VolatileLoadWithoutBarrier<DWORD>(pMap) >> POS2SHIFTCOUNT(startPos);
+
+    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset) )
+    {
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+    }
+
+    // Is there a header in the remainder of the DWORD ?
+    tmp = tmp >> NIBBLE_SIZE;
+
+    if (tmp)
+    {
+        startPos--;
+        while (!(tmp & NIBBLE_MASK))
+        {
+            tmp = tmp >> NIBBLE_SIZE;
+            startPos--;
+        }
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+    }
+
+    // We skipped the remainder of the DWORD,
+    // so we must set startPos to the highest position of
+    // previous DWORD, unless we are already on the first DWORD
+
+    if (startPos < NIBBLES_PER_DWORD)
+        return 0;
+
+    startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+
+    // Skip "headerless" DWORDS
+
+    while (pMapStart < pMap && 0 == (tmp = VolatileLoadWithoutBarrier<DWORD>(--pMap)))
+    {
+        startPos -= NIBBLES_PER_DWORD;
+    }
+
+    // This helps to catch degenerate error cases. This relies on the fact that
+    // startPos cannot ever be bigger than MAX_UINT
+    if (((INT_PTR)startPos) < 0)
+        return 0;
+
+    // Find the nibble with the header in the DWORD
+
+    while (startPos && !(tmp & NIBBLE_MASK))
+    {
+        tmp = tmp >> NIBBLE_SIZE;
+        startPos--;
+    }
+
+    if (startPos == 0 && tmp == 0)
+        return 0;
+
+    return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+
+#endif
+
+            }
         }
 
         // note: level is 1-indexed
