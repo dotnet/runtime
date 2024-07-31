@@ -51,6 +51,7 @@ extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
 extern char *_ep_rt_mono_managed_cmd_line;
 extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
 extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
+extern ep_rt_spin_lock_handle_t _ep_rt_mono_callback_dispatch_lock;
 extern char * ep_rt_mono_get_managed_cmd_line (void);
 extern char * ep_rt_mono_get_os_cmd_line (void);
 extern ep_rt_file_handle_t ep_rt_mono_file_open_write (const ep_char8_t *path);
@@ -170,6 +171,14 @@ ep_rt_spin_lock_handle_t *
 ep_rt_mono_config_lock_get (void)
 {
 	return &_ep_rt_mono_config_lock;
+}
+
+static
+inline
+ep_rt_spin_lock_handle_t *
+ep_rt_mono_callback_dispatch_lock_get (void)
+{
+	return &_ep_rt_mono_callback_dispatch_lock;
 }
 
 /*
@@ -421,6 +430,22 @@ ep_rt_config_release (void)
 	return ep_rt_spin_lock_release (ep_rt_mono_config_lock_get ());
 }
 
+static
+inline
+bool
+ep_rt_callback_dispatch_acquire (void)
+{
+	return ep_rt_spin_lock_acquire (ep_rt_mono_callback_dispatch_lock_get ());
+}
+
+static
+inline
+bool
+ep_rt_callback_dispatch_release (void)
+{
+	return ep_rt_spin_lock_release (ep_rt_mono_callback_dispatch_lock_get ());
+}
+
 #ifdef EP_CHECKED_BUILD
 static
 inline
@@ -436,6 +461,22 @@ void
 ep_rt_config_requires_lock_not_held (void)
 {
 	ep_rt_spin_lock_requires_lock_not_held (ep_rt_mono_config_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_held (void)
+{
+	ep_rt_spin_lock_requires_lock_held (ep_rt_mono_callback_dispatch_lock_get ());
+}
+
+static
+inline
+void
+ep_rt_requires_callback_dispatch_lock_not_held (void)
+{
+	ep_rt_spin_lock_requires_lock_not_held (ep_rt_mono_callback_dispatch_lock_get ());
 }
 #endif
 

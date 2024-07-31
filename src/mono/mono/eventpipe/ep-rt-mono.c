@@ -35,6 +35,9 @@ static gpointer _rand_provider;
 // EventPipe global config lock.
 ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock = {0};
 
+// EventPipe callback lock
+ep_rt_spin_lock_handle_t _ep_rt_mono_callback_dispatch_lock = {0};
+
 // OS cmd line.
 mono_lazy_init_t _ep_rt_mono_os_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 char *_ep_rt_mono_os_cmd_line = NULL;
@@ -759,6 +762,7 @@ void
 ep_rt_mono_component_init (void)
 {
 	ep_rt_spin_lock_alloc (&_ep_rt_mono_config_lock);
+	ep_rt_spin_lock_alloc (&_ep_rt_mono_callback_dispatch_lock);
 
 	RUNTIME_PROVIDER_CONTEXT = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context;
 	RUNTIME_PRIVATE_PROVIDER_CONTEXT = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context;
