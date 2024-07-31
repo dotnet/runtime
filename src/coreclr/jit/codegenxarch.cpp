@@ -97,10 +97,10 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
 #ifdef JIT32_GCENCODER
-    // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by EAX.
     if (!pushReg)
     {
+        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
+        // executing GS cookie check will not collect the object pointed to by EAX.
         if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
@@ -122,6 +122,28 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
                 gcInfo.gcRegByrefSetCur |= RBM_INTRET;
             }
         }
+    }
+    else
+    {
+        // Dev10 642944 -
+        // The GS cookie check created a temp label that has no live
+        // incoming GC registers, we need to fix that
+
+        unsigned   varNum;
+        LclVarDsc* varDsc;
+
+        /* Figure out which register parameters hold pointers */
+
+        for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount && varDsc->lvIsRegArg;
+             varNum++, varDsc++)
+        {
+            noway_assert(varDsc->lvIsParam);
+
+            gcInfo.gcMarkRegPtrVal(varDsc->GetArgReg(), varDsc->TypeGet());
+        }
+
+        GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
+        GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
     }
 #else
     assert(GetEmitter()->emitGCDisabled());

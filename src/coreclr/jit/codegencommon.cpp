@@ -1517,11 +1517,15 @@ void CodeGen::genExitCode(BasicBlock* block)
     if (compiler->getNeedsGSSecurityCookie())
     {
 #ifndef JIT32_GCENCODER
-        // The call to CORINFO_HELP_FAIL_FAST in GS cookie check makes an impression
-        // of trashing all calee-trashed registers.
-        // Instead of ensuring that these registers are live across the check
-        // we just claim that the whole thing is not GC-interruptible.
+        // At this point the gc info that we track in codegen is often incorrect,
+        // as it could be missing return registers or arg registers (in a case of tail call).
+        // GS cookie check will emit a call and that will pass our GC info to emit and potentially mess things up.
+        // While we could infer returns/args and force them to be live and it seems to work in JIT32_GCENCODER case,
+        // it appears to be nontrivial in more general case.
+        // So, instead, we just claim that the whole thing is not GC-interruptible.
         // Effectively this starts the epilog a few instructions earlier.
+        //
+        // CONSIDER: is that a good place to be that codegen loses track of returns/args at this point?
         GetEmitter()->emitDisableGC();
 #endif
         genEmitGSCookieCheck(jmpEpilog);
@@ -4713,14 +4717,13 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
-    regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
-    regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
-
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
     assert(block != nullptr);
-    const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
+    // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
+    // Besides, at this point the GC info that we track in CodeGen is often incorrect.
+    // See comments in genExitCode for more info.
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0,
                                           block->IsLast());
 }
 
