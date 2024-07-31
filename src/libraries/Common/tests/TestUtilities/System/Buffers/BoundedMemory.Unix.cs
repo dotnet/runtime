@@ -184,11 +184,11 @@ namespace System.Buffers
             public const int PROT_READ = 0x1;
             public const int PROT_WRITE = 0x2;
 
-            [DllImport(nameof("XplatVirtualAlloc"))]
+            [DllImport("XplatVirtualAlloc")]
             public static extern byte* AllocWithGuard(nuint size);
 
 
-            [DllImport(nameof("XplatVirtualAlloc"))]
+            [DllImport("XplatVirtualAlloc")]
             public static extern void Free(byte* ptr, nuint size);
 
             private static class Linux
