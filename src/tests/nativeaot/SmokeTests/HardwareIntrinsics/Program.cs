@@ -124,6 +124,7 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvx10v1 = null;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -145,6 +146,7 @@ unsafe class Program
         bool? ExpectedBmi1 = null;
         bool? ExpectedBmi2 = null;
         bool? ExpectedAvxVnni = null;
+        bool? ExpectedAvx10v1 = null;
         bool? ExpectedAvx512F = true;
         bool? ExpectedAvx512BW = true;
         bool? ExpectedAvx512CD = true;
@@ -221,6 +223,12 @@ unsafe class Program
         Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
 
+        Check("Avx10v1", ExpectedAvx10v1, &Avx10v1IsSupported, Avx10v1.IsSupported, () => Avx10v1.Abs(Vector128<long>.Zero).Equals(Vector128<ulong>.Zero));
+        Check("Avx10v1.X64", ExpectedAvx10v1, &Avx10v1X64IsSupported, Avx10v1.X64.IsSupported, null);
+
+        Check("Avx10v1.V512", ExpectedAvx10v1V512, &Avx10v1V512IsSupported, Avx10v1.V512.IsSupported, () => Avx10v1.V512.Abs(Vector512<long>.Zero).Equals(Vector512<ulong>.Zero));
+        Check("Avx10v1.V512.X64", ExpectedAvx10v1V512, &Avx10v1V512X64IsSupported, Avx10v1.V512.X64.IsSupported, () => null);
+
         Check("Avx512F", ExpectedAvx512F, &Avx512FIsSupported, Avx512F.IsSupported, () => Avx512F.Abs(Vector512<int>.Zero).Equals(Vector512<uint>.Zero));
         Check("Avx512F.VL", ExpectedAvx512F, &Avx512FVLIsSupported, Avx512F.VL.IsSupported, null);
         Check("Avx512F.X64", ExpectedAvx512F, &Avx512FX64IsSupported, Avx512F.X64.IsSupported, null);
@@ -282,6 +290,10 @@ unsafe class Program
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+    static bool Avx10v1IsSupported() => Avx10v1.IsSupported;
+    static bool Avx10v1X64IsSupported() => Avx10v1.X64.IsSupported;
+    static bool Avx10v1V512IsSupported() => Avx10v1.V512.IsSupported;
+    static bool Avx10v1V512X64IsSupported() => Avx10v1.V512.X64.IsSupported;
     static bool Avx512FIsSupported() => Avx512F.IsSupported;
     static bool Avx512FVLIsSupported() => Avx512F.VL.IsSupported;
     static bool Avx512FX64IsSupported() => Avx512F.X64.IsSupported;
