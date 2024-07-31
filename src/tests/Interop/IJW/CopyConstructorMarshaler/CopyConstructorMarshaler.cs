@@ -62,6 +62,7 @@ namespace CopyConstructorMarshaler
         }
 
         [Fact]
+        [SkipOnCoreClr("JitStress and MinOpts can introduce extra copies that won't happen in production scenarios.", RuntimeTestModes.JitStress | RuntimeTestModes.JitMinOpts)]
         public static void CopyConstructorsInArgumentStackSlots()
         {
             Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
@@ -73,6 +74,7 @@ namespace CopyConstructorMarshaler
         }
 
         [Fact]
+        [SkipOnCoreClr("JitStress and MinOpts can introduce extra copies that won't happen in production scenarios.", RuntimeTestModes.JitStress | RuntimeTestModes.JitMinOpts)]
         public static void CopyConstructorsInArgumentStackSlotsWithUnsafeValueType()
         {
             Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
