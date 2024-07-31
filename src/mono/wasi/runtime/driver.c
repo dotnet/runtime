@@ -242,7 +242,7 @@ load_runtimeconfig (void)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
 
