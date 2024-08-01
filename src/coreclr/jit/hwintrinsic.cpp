@@ -963,9 +963,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
     if (info.numArgs != -1)
     {
         // We should only have an expected number of arguments
-#if defined(TARGET_ARM64)
-        assert((info.numArgs >= 0) && (info.numArgs <= 4));
-#elif defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
 #else
         unreached();
@@ -2299,10 +2297,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (intrinsic)
         {
-            case NI_Sve_CreateBreakAfterMask:
             case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                // HWInstrinsic requires a mask for op3
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                FALLTHROUGH;
+            }
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateMaskForFirstActiveElement:
             case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
@@ -2312,29 +2315,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op2
                 convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
-                break;
+                FALLTHROUGH;
             }
-
             default:
-                break;
-        }
-
-        switch (intrinsic)
-        {
-            case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforePropagateMask:
             {
-                // HWInstrinsic requires a mask for op3
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                // HWInstrinsic requires a mask for op1
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
                 break;
             }
-
-            default:
-                break;
         }
-
-        // HWInstrinsic requires a mask for op1
-        convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {

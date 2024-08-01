@@ -32,12 +32,12 @@ namespace System.Diagnostics.Metrics
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
-        private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
+        private readonly Action<Instrument, LabeledAggregationStatistics, InstrumentState?> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
-        private readonly Action<Instrument> _beginInstrumentMeasurements;
-        private readonly Action<Instrument> _endInstrumentMeasurements;
-        private readonly Action<Instrument> _instrumentPublished;
+        private readonly Action<Instrument, InstrumentState> _beginInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState> _endInstrumentMeasurements;
+        private readonly Action<Instrument, InstrumentState?> _instrumentPublished;
         private readonly Action _initialInstrumentEnumerationComplete;
         private readonly Action<Exception> _collectionError;
         private readonly Action _timeSeriesLimitReached;
@@ -47,12 +47,12 @@ namespace System.Diagnostics.Metrics
         public AggregationManager(
             int maxTimeSeries,
             int maxHistograms,
-            Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
+            Action<Instrument, LabeledAggregationStatistics, InstrumentState?> collectMeasurement,
             Action<DateTime, DateTime> beginCollection,
             Action<DateTime, DateTime> endCollection,
-            Action<Instrument> beginInstrumentMeasurements,
-            Action<Instrument> endInstrumentMeasurements,
-            Action<Instrument> instrumentPublished,
+            Action<Instrument, InstrumentState> beginInstrumentMeasurements,
+            Action<Instrument, InstrumentState> endInstrumentMeasurements,
+            Action<Instrument, InstrumentState?> instrumentPublished,
             Action initialInstrumentEnumerationComplete,
             Action<Exception> collectionError,
             Action timeSeriesLimitReached,
@@ -88,12 +88,23 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName)
         {
-            Include(i => i.Meter.Name == meterName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void IncludeAll()
+        {
+            Include(i => true);
+        }
+
+        public void IncludePrefix(string meterNamePrefix)
+        {
+            Include(i => i.Meter.Name.StartsWith(meterNamePrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Include(string meterName, string instrumentName)
         {
-            Include(i => i.Meter.Name == meterName && i.Name == instrumentName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase)
+                && i.Name.Equals(instrumentName, StringComparison.OrdinalIgnoreCase));
         }
 
         private void Include(Predicate<Instrument> instrumentFilter)
@@ -118,17 +129,18 @@ namespace System.Diagnostics.Metrics
         private void CompletedMeasurements(Instrument instrument, object? cookie)
         {
             _instruments.Remove(instrument);
-            _endInstrumentMeasurements(instrument);
+            Debug.Assert(cookie is not null);
+            _endInstrumentMeasurements(instrument, (InstrumentState)cookie);
             RemoveInstrumentState(instrument);
         }
 
         private void PublishedInstrument(Instrument instrument, MeterListener _)
         {
-            _instrumentPublished(instrument);
             InstrumentState? state = GetInstrumentState(instrument);
+            _instrumentPublished(instrument, state);
             if (state != null)
             {
-                _beginInstrumentMeasurements(instrument);
+                _beginInstrumentMeasurements(instrument, state);
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
                 if (!_instruments.ContainsKey(instrument))
 #pragma warning restore CA1864
@@ -418,7 +430,7 @@ namespace System.Diagnostics.Metrics
             {
                 kv.Value.Collect(kv.Key, (LabeledAggregationStatistics labeledAggStats) =>
                 {
-                    _collectMeasurement(kv.Key, labeledAggStats);
+                    _collectMeasurement(kv.Key, labeledAggStats, kv.Value);
                 });
             }
         }

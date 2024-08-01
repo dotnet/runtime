@@ -46,6 +46,7 @@ namespace System.Formats.Tar
         public System.IO.UnixFileMode Mode { get { throw null; } set { } }
         public System.DateTimeOffset ModificationTime { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
+        public long DataOffset { get { throw null; } }
         public int Uid { get { throw null; } set { } }
         public void ExtractToFile(string destinationFileName, bool overwrite) { }
         public System.Threading.Tasks.Task ExtractToFileAsync(string destinationFileName, bool overwrite, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

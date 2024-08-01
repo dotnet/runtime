@@ -29,12 +29,7 @@ namespace System
         /// </summary>
         /// <param name="value">A Boolean value.</param>
         /// <returns>A byte array with length 1.</returns>
-        public static byte[] GetBytes(bool value)
-        {
-            byte[] r = new byte[1];
-            r[0] = (value ? (byte)1 : (byte)0);
-            return r;
-        }
+        public static byte[] GetBytes(bool value) => [(value ? (byte)1 : (byte)0)];
 
         /// <summary>
         /// Converts a Boolean into a span of bytes.

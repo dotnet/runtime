@@ -193,6 +193,8 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
                                 int         varx     = -1,
                                 int         offs     = -1 DEBUG_ARG(bool useRsvdReg = false));
 
+bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
+
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
     assert(id->idIsLclVarPair());
@@ -1455,7 +1457,10 @@ void emitIns_R_I(instruction     ins,
                  insOpts         opt  = INS_OPTS_NONE,
                  insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                      DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
-void emitIns_Add_Add_Tls_Reloc(emitAttr attr, regNumber reg, ssize_t imm DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
+                               regNumber   targetReg,
+                               regNumber   reg,
+                               ssize_t imm DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitInsSve_R_I(instruction     ins,
                     emitAttr        attr,

@@ -18,7 +18,6 @@ namespace System.Net.Quic.Tests
 
     [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91757", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
@@ -266,7 +265,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
-            await streamsAvailableFired.WaitAsync();
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
 
@@ -276,7 +275,7 @@ namespace System.Net.Quic.Tests
             await serverStreamBidi.DisposeAsync();
 
             // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
-            await streamsAvailableFired.WaitAsync();
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(1, bidiIncrement);
             Assert.Equal(0, unidiIncrement);
 
@@ -286,7 +285,7 @@ namespace System.Net.Quic.Tests
             await serverStreamUnidi.DisposeAsync();
 
             // STREAMS_AVAILABLE event comes asynchronously, give it a chance to propagate
-            await streamsAvailableFired.WaitAsync();
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(0, bidiIncrement);
             Assert.Equal(1, unidiIncrement);
 
@@ -315,7 +314,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
-            await streamsAvailableFired.WaitAsync();
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiTotal);
@@ -354,7 +353,7 @@ namespace System.Net.Quic.Tests
             {
                 await clientStream.DisposeAsync();
                 await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
-                await streamsAvailableFired.WaitAsync();
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
                 Assert.Equal(unidirectional ? 0 : (first ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams + 1 : 1), bidiIncrement);
                 Assert.Equal(unidirectional ? (first ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams + 1 : 1) : 0, unidiIncrement);
                 first = false;
@@ -388,7 +387,7 @@ namespace System.Net.Quic.Tests
             };
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
-            await streamsAvailableFired.WaitAsync();
+            await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
             Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiTotal);
@@ -427,7 +426,7 @@ namespace System.Net.Quic.Tests
             {
                 Assert.True(cancelledStream.IsCanceled);
                 await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
-                await streamsAvailableFired.WaitAsync();
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
                 Assert.Equal(unidirectional ? 0 : (first ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams + 1 : 1), bidiIncrement);
                 Assert.Equal(unidirectional ? (first ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams + 1 : 1) : 0, unidiIncrement);
                 first = false;

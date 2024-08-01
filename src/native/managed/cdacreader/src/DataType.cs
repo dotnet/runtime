@@ -37,4 +37,9 @@ public enum DataType
     TypeVarTypeDesc,
     FnPtrTypeDesc,
     DynamicMetadata,
+    Object,
+    String,
+    MethodDesc,
+    MethodDescChunk,
+    Array,
 }

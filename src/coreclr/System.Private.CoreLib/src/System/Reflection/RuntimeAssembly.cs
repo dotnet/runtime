@@ -103,12 +103,7 @@ namespace System.Reflection
                     throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
                 }
 
-                string? codeBase = GetCodeBase();
-                if (codeBase is null)
-                {
-                    // Not supported if the assembly was loaded from single-file bundle.
-                    throw new NotSupportedException(SR.NotSupported_CodeBase);
-                }
+                string? codeBase = GetCodeBase() ?? throw new NotSupportedException(SR.NotSupported_CodeBase);
                 if (codeBase.Length == 0)
                 {
                     // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
@@ -598,12 +593,12 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
 
-        internal string? GetSimpleName()
+        internal string GetSimpleName()
         {
             RuntimeAssembly runtimeAssembly = this;
             string? name = null;
             GetSimpleName(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref name));
-            return name;
+            return name!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetHashAlgorithm")]

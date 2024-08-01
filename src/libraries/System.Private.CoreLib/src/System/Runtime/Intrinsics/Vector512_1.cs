@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
-    // will generate code small enough to make the AgressiveInlining profitable. The
+    // will generate code small enough to make the AggressiveInlining profitable. The
     // other cases (such as the software fallback) are placed in their own method.
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
@@ -335,7 +335,22 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector512<T> operator -(Vector512<T> vector) => Zero - vector;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> operator -(Vector512<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return vector ^ Vector512.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return vector ^ Vector512.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - vector;
+            }
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>

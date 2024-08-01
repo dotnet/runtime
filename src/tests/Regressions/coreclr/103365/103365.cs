@@ -39,13 +39,12 @@ public class BasicDerivedClass : BasicBaseClass, IBaseInterface<BasicDerivedClas
 public static class Test_Issue103365
 {
     [Fact]
-  	public static void Main ()
-	{
+    public static void Test()
+    {
         var instances = new IBaseInterface<BasicBaseClass>[2];
         instances[0] = new BasicBaseClass();
         instances[1] = new BasicDerivedClass();
         Assert.Equal("BasicBaseClass", instances[0].explicitDeclaration());
         Assert.Equal("BasicDerivedClass", instances[1].explicitDeclaration());
-  	}
+    }
 }
-

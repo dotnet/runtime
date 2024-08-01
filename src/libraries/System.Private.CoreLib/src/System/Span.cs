@@ -20,9 +20,7 @@ namespace System
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [NonVersionable]
-#pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(SpanMarshaller<,>))]
-#pragma warning restore SYSLIB1056 // Specified native type is invalid
     [Intrinsic]
     public readonly ref struct Span<T>
     {
