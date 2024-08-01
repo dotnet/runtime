@@ -69,6 +69,60 @@ extends:
       jobs:
 
       #
+      # Build CoreCLR and Libraries with Libraries tests
+      # For running libraries tests and installer tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - linux_musl_x64
+          jobParameters:
+            nameSuffix: CoreCLR_Libraries
+            buildArgs: -s clr+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+
+
+      #
+      # Libraries Debug Test Execution against a release coreclr runtime
+      # Only when the PR contains a libraries change
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - linux_musl_x64
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          jobParameters:
+            isOfficialBuild: false
+            testScope: innerloop
+            liveRuntimeBuildConfig: release
+            unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
+            unifiedBuildNameSuffix: CoreCLR_Libraries
+            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
+
+      #
       # Build and test Mono Interpreter with the libraries testss
       #
       - template: /eng/pipelines/common/platform-matrix.yml
