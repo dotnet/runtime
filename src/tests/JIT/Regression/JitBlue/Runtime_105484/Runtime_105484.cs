@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 public class Runtime_105484
 {
