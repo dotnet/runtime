@@ -33,7 +33,7 @@ namespace System.Reflection.Emit
             _name = name;
             _attributes = attributes;
             _callingConvention = callingConvention;
-            _propertyType = returnType;
+            _propertyType = returnType ?? containingType.GetModuleBuilder().GetTypeFromCoreAssembly(CoreTypeId.Void);
             _parameterTypes = parameterTypes;
             _containingType = containingType;
             _returnTypeRequiredCustomModifiers = returnTypeRequiredCustomModifiers;
