@@ -148,8 +148,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
-                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
-                {
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) => {
                     callbackCalled = true;
                     Assert.NotNull(request);
 
@@ -228,7 +227,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77726")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
