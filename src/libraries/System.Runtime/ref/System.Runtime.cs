@@ -7774,8 +7774,8 @@ namespace System
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
-        static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
-        static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
+        static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, int fieldCount, out int bytesWritten) { throw null; }

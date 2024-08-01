@@ -290,8 +290,17 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
-        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) =>
-            ParseVersion(utf8Text, throwOnFailure: true)!;
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)"/>
+        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        {
+            Version? result = ParseVersion(utf8Text, throwOnFailure: false);
+            // Required to throw FormatException for invalid input according to contract.
+            if (result == null)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            return result;
+        }
 
         public static Version Parse(ReadOnlySpan<byte> utf8Text) =>
             ParseVersion(utf8Text, throwOnFailure: true)!;
@@ -313,6 +322,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result) =>
             (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
 
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)"/>
         static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result) =>
             (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
 
@@ -393,12 +403,12 @@ namespace System
         {
             if (throwOnFailure)
             {
-                parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.GetInstance(CultureInfo.InvariantCulture));
+                parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
                 ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 
-            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.GetInstance(CultureInfo.InvariantCulture), out parsedComponent);
+            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent);
             return parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0;
         }
 
