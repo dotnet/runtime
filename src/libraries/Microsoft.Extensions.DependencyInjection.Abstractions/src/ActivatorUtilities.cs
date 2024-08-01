@@ -291,11 +291,11 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory? result = factoryLambda.Compile();
+            return result;
         }
 
         /// <summary>
@@ -324,11 +324,11 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory<T>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory<T>? result = factoryLambda.Compile();
+            return result;
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
