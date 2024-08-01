@@ -66,6 +66,8 @@ namespace System.Buffers
             return AllocateFromExistingData(new ReadOnlySpan<T>(data), placement);
         }
 
+        private static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+
         private static void FillRandom(Span<byte> buffer)
         {
             // Loop over a Random instance manually since Random.NextBytes(Span<byte>) doesn't
@@ -85,8 +87,9 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (!IsMonoRuntime && (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)))
             {
+                // Not supported for mono as the implementtion uses SystemNative from CoreClr.
                 return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
             }
             else
