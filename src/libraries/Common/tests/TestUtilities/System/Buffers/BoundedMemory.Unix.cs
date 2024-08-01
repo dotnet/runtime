@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Microsoft.Win32.SafeHandles;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -189,13 +188,13 @@ namespace System.Buffers
             private const string SystemNative = "libSystem.Native";
 
             // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
-            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
             private static extern IntPtr MMap(IntPtr addr, ulong len, int prot, int flags, IntPtr fd, long offset);
 
-            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MProtect", SetLastError = true)]
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MProtect", SetLastError = true)]
             private static extern int MProtect(IntPtr addr, ulong len, int prot);
 
-            [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MUnmap", SetLastError = true)]
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MUnmap", SetLastError = true)]
             internal static extern int MUnmap(IntPtr addr, ulong len);
         }
     }
