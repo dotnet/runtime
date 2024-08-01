@@ -95,7 +95,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(TestData))]
         public void DefineTypePersistedAssembly(string name, TypeAttributes attributes, Type parent, PackingSize packingSize, int typesize, Type[] implementedInterfaces)
         {

@@ -96,7 +96,7 @@ namespace System.Reflection.Emit.Tests
             VerifyMethod(type4, method4, name, attributes, callingConvention, returnType, parameterTypes);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(TestData))]
         public void DefineMethodPersistedAssembly(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
         {
@@ -139,7 +139,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<TypeLoadException>(() => type.CreateType()); 
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void DefineMethod_65536MethodsPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefineMethod_65536MethodsPersistedAssembly"));

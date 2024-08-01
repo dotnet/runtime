@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(TestData))]
         public void DefineFieldPersistedAssembly(string name, Type fieldType, FieldAttributes attributes, FieldAttributes expectedAttributes)
         {
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<AmbiguousMatchException>(() => createdType.GetField("FieldName", Helpers.AllFlags));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void DefineField_NameCollisionPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<TypeLoadException>(() => type.CreateType());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void DefineField_65536FieldsPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -178,7 +178,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(Helpers.s_512Chars, method.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void DefineFieldMethod_LongNamePersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);

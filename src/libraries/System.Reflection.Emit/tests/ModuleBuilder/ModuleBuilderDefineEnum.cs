@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName, createdUnderlyingField.Attributes);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(DefineEnum_TestData))]
         public void DefineEnumPersistedAssembly(string name, TypeAttributes visibility, Type underlyingType)
         {
