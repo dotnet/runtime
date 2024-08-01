@@ -14,14 +14,6 @@
 #define inline __forceinline
 #endif // __GNUC__
 
-#ifdef __INTELLISENSE__
-#ifdef SERVER_GC
-namespace SVR {
-#else // SERVER_GC
-namespace WKS {
-#endif // SERVER_GC
-#endif // __INTELLISENSE__
-
 #include "gc.h"
 #include "gcrecord.h"
 
@@ -6625,7 +6617,3 @@ public:
 
 using std::min;
 using std::max;
-
-#ifdef __INTELLISENSE__
-}
-#endif // __INTELLISENSE__
