@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,7 +53,7 @@ namespace System.Net.WebSockets
 
                 _ = task.Exception; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, task.Exception);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, task.Exception);
             }
         }
 
@@ -119,22 +118,20 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, e);
-
-                bool aborting = false;
-                lock (StateUpdateLock)
+                if (NetEventSource.Log.IsEnabled())
                 {
-                    if (!_disposed)
-                    {
-                        // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
-                        // The exception needs to be assigned before _disposed is set to true
-                        _keepAlivePingState.Exception = e;
-                        aborting = true;
-                    }
+                    NetEventSource.TraceException(this, e);
+                    NetEventSource.Trace(this, $"_disposed={_disposed}");
                 }
 
-                if (aborting)
+                if (!_disposed)
                 {
+                    // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
+                    // The exception needs to be assigned before _disposed is set to true
+                    _keepAlivePingState.Exception = e;
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception saved in _keepAlivePingState, aborting...");
+
                     Abort();
                 }
             }
@@ -215,7 +212,9 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState is not null);
 
-            if (_disposed && _state == WebSocketState.Aborted && _keepAlivePingState.Exception is not null)
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_disposed={_disposed}, _state={_state}, _keepAlivePingState.Exception={_keepAlivePingState.Exception?.Message}");
+
+            if (_disposed && _keepAlivePingState.Exception is not null)
             {
                 // If Exception is not null, it triggered the abort which also disposed the websocket
                 // We only save the Exception if it actually triggered the abort
@@ -229,11 +228,13 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState is not null);
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_disposed={_disposed}, _state={_state}, _keepAlivePingState.Exception={_keepAlivePingState.Exception?.Message}");
+
             try
             {
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
             }
-            catch (Exception exc) when (_state == WebSocketState.Aborted && _keepAlivePingState.Exception is not null)
+            catch (Exception exc) when (_disposed && _keepAlivePingState.Exception is not null)
             {
                 // If Exception is not null, it triggered the abort which also disposed the websocket
                 // We only save the Exception if it actually triggered the abort

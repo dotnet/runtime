@@ -340,7 +340,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                 return ValueTask.FromException(exc);
             }
 
@@ -382,7 +382,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                 return Task.FromException<WebSocketReceiveResult>(exc);
             }
         }
@@ -399,7 +399,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                 return ValueTask.FromException<ValueWebSocketReceiveResult>(exc);
             }
         }
@@ -416,7 +416,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                 return Task.FromException(exc);
             }
 
@@ -542,7 +542,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
 
                 return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
@@ -580,9 +580,9 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
 
-                if (exc is not OperationCanceledException)
+                if (exc is OperationCanceledException)
                 {
                     throw;
                 }
@@ -621,9 +621,9 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
 
-                if (exc is not OperationCanceledException)
+                if (exc is OperationCanceledException)
                 {
                     throw;
                 }
@@ -1011,7 +1011,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
 
                 if (exc is OperationCanceledException)
                 {
@@ -1022,6 +1022,8 @@ namespace System.Net.WebSockets
                 {
                     if (_disposed && _keepAlivePingState?.Exception is not null)
                     {
+                        // it should have already been wrapped in an OperationCanceledException and thrown above,
+                        // but just in case it wasn't due to some race, let's surface both exceptions
                         throw new OperationCanceledException(nameof(WebSocketState.Aborted), new AggregateException(exc, _keepAlivePingState.Exception));
                     }
 
@@ -1497,7 +1499,7 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceErrorMsg(this, exc);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                 throw;
             }
             finally
@@ -1724,7 +1726,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfDisposed()
         {
-            if (_keepAlivePingState is null)
+            if (_keepAlivePingState is not null)
             {
                 ThrowIfDisposedOrKeepAliveFaulted();
                 return;
@@ -1735,7 +1737,7 @@ namespace System.Net.WebSockets
 
         private void ThrowIfInvalidState(WebSocketState[] validStates)
         {
-            if (_keepAlivePingState is null)
+            if (_keepAlivePingState is not null)
             {
                 ThrowIfInvalidStateOrKeepAliveFaulted(validStates);
                 return;

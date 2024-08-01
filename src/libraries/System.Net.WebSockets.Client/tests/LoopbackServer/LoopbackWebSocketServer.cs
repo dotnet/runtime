@@ -132,6 +132,8 @@ namespace System.Net.WebSockets.Client.Tests
                 clientWebSocket.Options.RemoteCertificateValidationCallback = delegate { return true; };
             }
 
+            options.ConfigureClientOptions?.Invoke(clientWebSocket.Options);
+
             await clientWebSocket.ConnectAsync(uri, options.HttpInvoker, cancellationToken).ConfigureAwait(false);
 
             return clientWebSocket;
@@ -143,6 +145,7 @@ namespace System.Net.WebSockets.Client.Tests
             public bool DisposeClientWebSocket { get; set; }
             public bool DisposeHttpInvoker { get; set; }
             public bool ManualServerHandshakeResponse { get; set; }
+            public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
         }
     }
 }
