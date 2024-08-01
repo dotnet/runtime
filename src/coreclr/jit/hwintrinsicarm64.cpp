@@ -570,9 +570,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         {
             // AdvSimd.ShiftRightLogical be replaced with AdvSimd.ShiftLogical, which takes op2 in a simd register
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
 
