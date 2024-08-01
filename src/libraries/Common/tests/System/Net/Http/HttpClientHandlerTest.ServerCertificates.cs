@@ -148,7 +148,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
-                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) => {
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                {
                     callbackCalled = true;
                     Assert.NotNull(request);
 
