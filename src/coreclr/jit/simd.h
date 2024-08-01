@@ -668,10 +668,10 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 template <typename TBase>
 TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
     {
-        // For SIMD, xarch allows overshifting and treats
+        // For SIMD, xarch and ARM64 allow overshifting and treat
         // it as zeroing. So ensure we do the same here.
         //
         // The xplat APIs ensure the shiftAmount is masked
@@ -683,7 +683,7 @@ TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
     // Other platforms enforce masking in their encoding
     unsigned shiftCountMask = (sizeof(TBase) * 8) - 1;
     arg1 &= shiftCountMask;
-#endif
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     return arg0 >> arg1;
 }
