@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -34,5 +35,24 @@ namespace System.Collections.Generic
         protected KeyNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
+
+
+        /// <summary>Throws an <see cref="KeyNotFoundException"/> if <param name="obj"> is null </param></summary>
+        /// <param name="obj">The reference type argument to validate as non-null.</param>
+        /// <param name="message"></param>
+        [Intrinsic]
+        public static void ThrowIfNull([NotNull] object? obj, string? message = null)
+        {
+            if (obj is null)
+            {
+                Throw(message);
+            }
+        }
+
+
+        [DoesNotReturn]
+        internal static void Throw(string? message) =>
+            throw new KeyNotFoundException(message);
     }
+}
 }
