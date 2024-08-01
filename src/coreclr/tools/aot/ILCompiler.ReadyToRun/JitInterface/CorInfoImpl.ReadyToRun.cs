@@ -3174,14 +3174,36 @@ namespace Internal.JitInterface
         }
 
         private readonly Stack<List<ISymbolNode>> _stashedPrecodeFixups = new Stack<List<ISymbolNode>>();
-        private readonly Stack<HashSet<MethodDesc>> _stashedInlinedMethods = new Stack<HashSet<MethodDesc>>();
+        private readonly Stack<HashSet<MethodDesc>> _stashedInlinedMethods = FailFastIfNull(new Stack<HashSet<MethodDesc>>());
 
         private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
         {
-            _stashedPrecodeFixups.Push(_precodeFixups);
-            _precodeFixups = null;
-            _stashedInlinedMethods.Push(_inlinedMethods);
-            _inlinedMethods = null;
+            try
+            {
+                _stashedPrecodeFixups.Push(_precodeFixups);
+                _precodeFixups = null;
+                _stashedInlinedMethods.Push(_inlinedMethods);
+                _inlinedMethods = null;
+            }
+            catch
+            {
+                Environment.FailFast("Caught exception in beginInlining");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Stack<HashSet<MethodDesc>> FailFastIfNull(Stack<HashSet<MethodDesc>> s)
+        {
+            var array = Accessor<HashSet<MethodDesc>>.GetArray(s);
+            if (array == null)
+                Environment.FailFast("Got null array");
+            return s;
+        }
+
+        class Accessor<T>
+        {
+            [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_array")]
+            public extern static ref T[] GetArray(Stack<T> stack);
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
