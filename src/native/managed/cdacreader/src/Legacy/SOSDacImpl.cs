@@ -374,9 +374,13 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                 data->ObjectType = DacpObjectType.OBJ_OTHER;
             }
 
-            // TODO: [cdac] Get RCW and CCW from interop info on sync block
-            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0)
-                return HResults.E_NOTIMPL;
+            // Populate COM data if this is a COM object
+            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
+                && objectContract.GetComData(objAddr, out TargetPointer rcw, out TargetPointer ccw))
+            {
+                data->RCW = rcw;
+                data->CCW = ccw;
+            }
 
         }
         catch (System.Exception ex)
