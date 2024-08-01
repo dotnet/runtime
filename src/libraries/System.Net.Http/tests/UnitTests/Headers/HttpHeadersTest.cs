@@ -2664,21 +2664,25 @@ namespace System.Net.Http.Tests
         [InlineData(new object[] { "gzip", true, null}, null)]
         public void AddTransferEncoding_SetValues_ChunkedAsExpected(object?[] values, bool? expected)
         {
-            var headers = new HttpRequestHeaders();
+            var req = new HttpRequestHeaders();
+            var resp = new HttpResponseHeaders();
 
             foreach (object value in values)
             {
                 if (value is bool? || value is null)
                 {
-                    headers.TransferEncodingChunked = (bool?)value;
+                    req.TransferEncodingChunked = (bool?)value;
+                    resp.TransferEncodingChunked = (bool?)value;
                 }
                 else
                 {
-                    headers.TransferEncoding.ParseAdd((string)value);
+                    req.TransferEncoding.ParseAdd((string)value);
+                    resp.TransferEncoding.ParseAdd((string)value);
                 }
             }
 
-            Assert.Equal(expected, headers.TransferEncodingChunked);
+            Assert.Equal(expected, req.TransferEncodingChunked);
+            Assert.Equal(expected, resp.TransferEncodingChunked);
         }
 
         public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
