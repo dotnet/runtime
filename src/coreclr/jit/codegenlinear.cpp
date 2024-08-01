@@ -2148,6 +2148,12 @@ void CodeGen::genProduceReg(GenTree* tree)
             tree->gtFlags |= GTF_SPILLED;
             tree->gtFlags &= ~GTF_SPILL;
 
+            if (tree->isUsedFromSpillTemp())
+            {
+                // The register assignment is not meaningful for the use.
+                tree->ClearRegNum();
+            }
+
             return;
         }
     }
