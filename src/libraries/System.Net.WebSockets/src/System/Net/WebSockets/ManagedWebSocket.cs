@@ -138,7 +138,6 @@ namespace System.Net.WebSockets
         private readonly WebSocketInflater? _inflater;
         private readonly WebSocketDeflater? _deflater;
 
-        private readonly ReadAheadState? _readAheadState;
         private readonly KeepAlivePingState? _keepAlivePingState;
 
         /// <summary>Initializes the websocket.</summary>
@@ -180,13 +179,11 @@ namespace System.Net.WebSockets
                 long heartBeatIntervalMs = (long)keepAliveInterval.TotalMilliseconds;
                 if (keepAliveTimeout > TimeSpan.Zero)
                 {
-                    _readAheadState = new ReadAheadState(_receiveMutex);
                     _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout);
                     heartBeatIntervalMs = _keepAlivePingState.HeartBeatIntervalMs;
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        NetEventSource.Associate(this, _readAheadState);
                         NetEventSource.Associate(this, _keepAlivePingState);
 
                         NetEventSource.Trace(this,
@@ -269,8 +266,6 @@ namespace System.Net.WebSockets
 
                 _inflater?.DisposeSafe(_receiveMutex);
                 _deflater?.DisposeSafe(_sendMutex);
-
-                _readAheadState?.DisposeSafe(_receiveMutex);
             }
         }
 
@@ -807,14 +802,6 @@ namespace System.Net.WebSockets
 
                 ThrowIfDisposed();
 
-                if (_readAheadState is not null && _readAheadState.ReadAheadCompleted)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead data available");
-
-                    ValueWebSocketReceiveResult result = _readAheadState!.ConsumeResult(payloadBuffer.Span);
-                    return GetReceiveResult<TResult>(result.Count, result.MessageType, result.EndOfMessage);
-                }
-
                 while (true) // in case we get control frames that should be ignored from the user's perspective
                 {
                     // Get the last received header.  If its payload length is non-zero, that means we previously
@@ -1040,30 +1027,10 @@ namespace System.Net.WebSockets
             {
                 registration.Dispose();
 
-                bool shouldIssueReadAhead = false;
-
                 if (shouldExitMutex) // this is a (successful) user-issued read
                 {
-                    // this should be assigned before releasing the mutex
-                    // let's check in case the pong is just after the current message
-                    shouldIssueReadAhead = _state < WebSocketState.CloseReceived && // if we still can receive
-                        _keepAlivePingState is not null && _readAheadState is not null && // and we are using keep-alive pings
-                        _keepAlivePingState.AwaitingPong && // and we are still waiting for the pong response
-                        !_readAheadState.ReadAheadCompletedOrInProgress && // and we've completely consumed the previous read-ahead
-                        _lastReceiveHeader.Processed; // and with the current read we've processed the entire data frame
-
                     _receiveMutex.Exit();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
-                }
-
-                // This should be done after releasing the mutex
-                // TryIssueReadAhead would try to syncronously take the mutex and spin up a new read-ahead task in background
-                // If the user issues a next read, then after aquiring the lock they would syncronously consume the data from
-                // the already-completed read-ahead task
-                if (shouldIssueReadAhead)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Will try to issue a read-ahead");
-                    TryIssueReadAhead();
                 }
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.ReceiveAsyncPrivateCompleted(this);

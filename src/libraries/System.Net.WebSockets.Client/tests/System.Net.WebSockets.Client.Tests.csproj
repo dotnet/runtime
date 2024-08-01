@@ -55,7 +55,6 @@
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
-    <Compile Include="CloseTest_Tracing.cs" />
     <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
