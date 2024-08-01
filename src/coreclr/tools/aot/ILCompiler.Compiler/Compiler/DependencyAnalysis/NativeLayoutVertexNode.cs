@@ -544,6 +544,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
 
+                Debug.Assert(factory.MarkingComplete);
+                if (!_type.ContainsSignatureVariables() && !_type.IsRuntimeDeterminedSubtype && factory.NecessaryTypeSymbol(_type).Marked)
+                {
+                    IEETypeNode eetypeNode = factory.NecessaryTypeSymbol(_type);
+                    uint typeIndex = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(eetypeNode);
+                    return GetNativeWriter(factory).GetExternalTypeSignature(typeIndex);
+                }
+
                 Vertex genericDefVertex = _genericTypeDefSig.WriteVertex(factory);
                 Vertex[] args = new Vertex[_instantiationArgs.Length];
                 for (int i = 0; i < args.Length; i++)
