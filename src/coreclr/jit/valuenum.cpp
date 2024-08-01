@@ -8235,9 +8235,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             {
                 if (TypeOfVN(arg1VN) == TYP_SIMD16)
                 {
-                    if ((ni != NI_AVX2_ShiftLeftLogicalVariable) && (ni != NI_AVX2_ShiftRightArithmeticVariable) &&
-                        (ni != NI_AVX512F_VL_ShiftRightArithmeticVariable) &&
-                        (ni != NI_AVX10v1_ShiftRightArithmeticVariable) && (ni != NI_AVX2_ShiftRightLogicalVariable))
+                    if (!HWIntrinsicInfo::IsVariableShift(ni))
                     {
                         // The xarch shift instructions support taking the shift amount as
                         // a simd16, in which case they take the shift amount from the lower
@@ -8358,7 +8356,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
 
         if (isScalar)
         {
-            // We don't support folding scalars today
+            // We don't support folding for scalars when only one input is constant
+            // because it means one value is computed and the remaining values are
+            // either zeroed or preserved based on the underlying target architecture
             oper = GT_NONE;
         }
 

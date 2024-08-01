@@ -293,12 +293,12 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
 template<>
-struct cdac_offsets<GenericsDictInfo>
+struct cdac_data<GenericsDictInfo>
 {
     static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
 };
@@ -4029,10 +4029,10 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };  // class MethodTable
 
-template<> struct cdac_offsets<MethodTable>
+template<> struct cdac_data<MethodTable>
 {
     static constexpr size_t MTFlags = offsetof(MethodTable, m_dwFlags);
     static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
