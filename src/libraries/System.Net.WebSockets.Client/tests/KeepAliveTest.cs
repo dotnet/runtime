@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [Collection(nameof(TracingTestCollection))]
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
     public class KeepAliveTest : ClientWebSocketTestBase
     {
@@ -19,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop] // involves long delay
-        public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
+        public async Task KeepAlive_LongDelayBetweenSendAndReceive_Succeeds()
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
             {
@@ -31,7 +32,45 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
                 Assert.Equal(42, receiveBuffer[0]);
 
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendAndReceive_Succeeds", CancellationToken.None);
+            }
+        }
+
+        [ConditionalTheory(nameof(WebSocketsSupported))]
+        //[OuterLoop] // involves long delay
+        [InlineData(1, 0)] // unsolicited pong
+        [InlineData(1, 1)] // ping-pong
+        public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds(int keepAliveIntervalSec, int KeepAliveTimeoutSec)
+        {
+            Console.WriteLine(Environment.NewLine + "===== " + this.GetType().FullName + " =====" + Environment.NewLine);
+
+            using var testEventListener = TracingTestCollection.CreateTestEventListener(this);
+
+            ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
+                System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer,
+                TimeOutMilliseconds,
+                _output,
+                options =>
+                {
+                    options.KeepAliveInterval = TimeSpan.FromSeconds(keepAliveIntervalSec);
+                    options.KeepAliveTimeout = TimeSpan.FromSeconds(KeepAliveTimeoutSec);
+                });
+
+            await SendReceive(cws).ConfigureAwait(false);
+
+            await Task.Delay(TimeSpan.FromSeconds(10));
+
+            await SendReceive(cws).ConfigureAwait(false);
+
+            await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
+
+            static async Task SendReceive(ClientWebSocket cws)
+            {
+                await cws.SendAsync(new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, CancellationToken.None);
+
+                byte[] receiveBuffer = new byte[1];
+                Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
+                Assert.Equal(42, receiveBuffer[0]);
             }
         }
 

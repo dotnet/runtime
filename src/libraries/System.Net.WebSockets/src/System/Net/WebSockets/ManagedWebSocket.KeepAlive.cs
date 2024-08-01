@@ -220,6 +220,9 @@ namespace System.Net.WebSockets
                     shouldEnterMutex: false, // we are already in the mutex
                     shouldAbortOnCanceled: false, // we don't have a cancellation token
                     CancellationToken.None).ConfigureAwait(false);
+                _readAheadState.Buffer.Commit(_readAheadState.BufferedResult.Count);
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Read-ahead received {_readAheadState.BufferedResult.Count} bytes");
             }
             catch (Exception e)
             {

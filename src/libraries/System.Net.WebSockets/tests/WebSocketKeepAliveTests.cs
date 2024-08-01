@@ -273,6 +273,8 @@ namespace System.Net.WebSockets.Tests
 
                     await Task.Delay(2 * KeepAliveInterval, cancellationToken); // delay to ensure the read-ahead is issued
 
+                    payloadBuffer.AsSpan().Clear();
+
                     ValueTask<ValueWebSocketReceiveResult> readTask = webSocketServer.ReceiveAsync(payloadBuffer.AsMemory(), cancellationToken);
                     Assert.True(readTask.IsCompletedSuccessfully); // we should have the read-ahead data consumed synchronously
                     var result = readTask.GetAwaiter().GetResult();
@@ -290,6 +292,8 @@ namespace System.Net.WebSockets.Tests
             {
                 while (true)
                 {
+                    buffer.AsSpan().Clear();
+
                     var (firstByte, payload) = await ReadFrameAsync(clientStream, buffer, cancellationToken).ConfigureAwait(false);
                     if (firstByte == FirstByte_PingFrame)
                     {
@@ -330,11 +334,12 @@ namespace System.Net.WebSockets.Tests
 
             static async Task SendFrameAsync(Stream clientStream, byte[] buffer, byte firstByte, long payload, CancellationToken cancellationToken)
             {
+                buffer.AsSpan().Clear();
+
                 buffer[0] = firstByte;
                 buffer[1] = SecondByte_Client_8bPayload;
 
                 // using zeroes as a "mask" -- applying such a mask is a no-op
-                Array.Clear(buffer, MinHeaderLength, MaskLength);
 
                 BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan().Slice(Client_FrameHeaderLength), payload);
 

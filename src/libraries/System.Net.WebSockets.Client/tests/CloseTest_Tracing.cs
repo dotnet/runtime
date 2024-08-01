@@ -51,60 +51,60 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 try
                 {
-                    TracingTestCollection.Trace(this, "Test client started");
+                    Trace("Test client started");
 
                     using var cws = new ClientWebSocket();
                     using var testTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                     using var testTimeoutCtsRegistration = testTimeoutCts.Token.Register(() =>
                     {
-                        TracingTestCollection.Trace(this, "Test timed out, canceling...");
+                        Trace("Test timed out, canceling...");
                     });
 
                     await ConnectAsync(cws, uri, testTimeoutCts.Token);
 
-                    TracingTestCollection.Trace(this, "ClientWebSocket connected");
+                    Trace("ClientWebSocket connected");
                     TracingTestCollection.TraceUnderlyingWebSocket(this, cws);
 
                     Task receiveTask = cws.ReceiveAsync(new byte[1], testTimeoutCts.Token);
-                    TracingTestCollection.Trace(this, "Started ReceiveAsync");
+                    Trace("Started ReceiveAsync");
 
                     var cancelCloseCts = new CancellationTokenSource();
                     using var cancelCloseCtsRegistration = cancelCloseCts.Token.Register(() =>
                     {
-                        TracingTestCollection.Trace(this, "Canceling CloseAsync");
+                        Trace("Canceling CloseAsync");
                     });
 
                     var closeException = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                     {
                         Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
-                        TracingTestCollection.Trace(this, "Started CloseAsync");
+                        Trace("Started CloseAsync");
                         cancelCloseCts.Cancel();
 
-                        TracingTestCollection.Trace(this, "Before await CloseAsync");
+                        Trace("Before await CloseAsync");
                         try
                         {
                             await t;
                         }
                         catch (Exception ex)
                         {
-                            TracingTestCollection.Trace(this, "CloseAsync exception: " + ex.Message);
+                            Trace("CloseAsync exception: " + ex.Message);
                             throw;
                         }
                         finally
                         {
-                            TracingTestCollection.Trace(this, "After await CloseAsync");
+                            Trace("After await CloseAsync");
                         }
                     });
-                    TracingTestCollection.Trace(this, "After await Assert.ThrowsAsync");
+                    Trace("After await Assert.ThrowsAsync");
 
                     Assert.Equal(cancelCloseCts.Token, closeException.CancellationToken);
-                    TracingTestCollection.Trace(this, "closeOCE: " + closeException.Message);
-                    TracingTestCollection.Trace(this, "cancelCloseCts.Token.IsCancellationRequested=" + cancelCloseCts.Token.IsCancellationRequested);
-                    TracingTestCollection.Trace(this, "testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
+                    Trace("closeOCE: " + closeException.Message);
+                    Trace("cancelCloseCts.Token.IsCancellationRequested=" + cancelCloseCts.Token.IsCancellationRequested);
+                    Trace("testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
 
-                    TracingTestCollection.Trace(this, "Before await");
+                    Trace("Before await");
                     var receiveOCE = await Assert.ThrowsAsync<OperationCanceledException>(() => receiveTask);
-                    TracingTestCollection.Trace(this, "After await");
+                    Trace("After await");
 
 
                     Assert.Equal(nameof(WebSocketState.Aborted), receiveOCE.Message);
@@ -113,32 +113,35 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.Equal(System.Net.Sockets.SocketError.OperationAborted, se.SocketErrorCode);
 
 
-                    TracingTestCollection.Trace(this, "receiveOCE: " + receiveOCE.Message);
-                    TracingTestCollection.Trace(this, "testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
+                    Trace("receiveOCE: " + receiveOCE.Message);
+                    Trace("testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
 
                 }
                 catch (Exception e)
                 {
-                    TracingTestCollection.Trace(this, "Client exception: " + e.Message);
+                    Trace("Client exception: " + e.Message);
                     throw;
                 }
                 finally
                 {
                     tcs.SetResult();
-                    TracingTestCollection.Trace(this, "Test client finished after " + stopwatch.Elapsed);
+                    Trace("Test client finished after " + stopwatch.Elapsed);
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                TracingTestCollection.Trace(this, "Test server started");
+                Trace("Test server started");
 
                 Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection);
                 Assert.NotNull(headers);
 
                 await tcs.Task;
 
-                TracingTestCollection.Trace(this, "Test server finished");
+                Trace("Test server finished");
 
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
+
+        //internal void Trace(string message) => TracingTestCollection.Trace(this, message);
+        internal void Trace(string _) {}
     }
 }
