@@ -66,7 +66,8 @@ namespace System.Buffers
             return AllocateFromExistingData(new ReadOnlySpan<T>(data), placement);
         }
 
-        private static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        private static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
+        private static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
 
         private static void FillRandom(Span<byte> buffer)
         {
@@ -87,14 +88,13 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (!IsMonoRuntime && (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)))
+            else if (IsWasi || IsBrowser)
             {
-                // Not supported for mono as the implementation uses SystemNative from CoreClr.
-                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
             else
             {
-                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
+                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
             }
         }
     }
