@@ -232,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, 0)
+            : base(factory, method, method.IsRuntimeDeterminedExactMethod ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
         {
         }
 
@@ -543,14 +543,6 @@ namespace ILCompiler.DependencyAnalysis
             public override Vertex WriteVertex(NodeFactory factory)
             {
                 Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
-
-                Debug.Assert(factory.MarkingComplete);
-                if (!_type.ContainsSignatureVariables() && !_type.IsRuntimeDeterminedSubtype && factory.NecessaryTypeSymbol(_type).Marked)
-                {
-                    IEETypeNode eetypeNode = factory.NecessaryTypeSymbol(_type);
-                    uint typeIndex = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(eetypeNode);
-                    return GetNativeWriter(factory).GetExternalTypeSignature(typeIndex);
-                }
 
                 Vertex genericDefVertex = _genericTypeDefSig.WriteVertex(factory);
                 Vertex[] args = new Vertex[_instantiationArgs.Length];
