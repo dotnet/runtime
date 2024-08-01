@@ -5555,8 +5555,8 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
-#if !defined(TARGET_XARCH)
-    if (comp->GetInterruptible())
+    //#if !defined(TARGET_XARCH)
+    //if (comp->GetInterruptible())
     {
         // If the target's backend doesn't support indirect calls with immediate operands (contained)
         // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
@@ -5571,7 +5571,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
             BlockRange().InsertAfter(call, stopNonGCNode);
         }
     }
-#endif
+    //#endif
 
     ContainCheckIndir(newThis->AsIndir());
 
