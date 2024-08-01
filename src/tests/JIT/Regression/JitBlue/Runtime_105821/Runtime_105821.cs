@@ -11,14 +11,14 @@
 //     File: /__w/1/s/src/coreclr/jit/hwintrinsiccodegenxarch.cpp Line: 2242
 // 
 using System;
-using System.Runtime.CompilerServices;
-using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-public class Program
+public class Runtime_105821
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         M1(0);
     }
