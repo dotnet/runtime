@@ -1225,6 +1225,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
 	public static void Test_PackedEmptyFloatLong_ByReflection_RiscV()
 	{
 		var expected = PackedEmptyFloatLong.Get();
@@ -1268,6 +1269,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
 	public static void Test_PackedEmptyFloatLong_InIntegerRegs_ByReflection_RiscV()
 	{
 		var expected = PackedEmptyFloatLong.Get();
@@ -1311,6 +1313,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
 	public static void Test_PackedEmptyFloatLong_Split_ByReflection_RiscV()
 	{
 		var expected = PackedEmptyFloatLong.Get();
@@ -1354,6 +1357,7 @@ public static class Program
 	}
 
 	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
 	public static void Test_PackedEmptyFloatLong_OnStack_ByReflection_RiscV()
 	{
 		var expected = PackedEmptyFloatLong.Get();
@@ -1410,6 +1414,20 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_ByReflection_RiscV()
+	{
+		var expected = PackedFloatEmptyByte.Get();
+		var native = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_RiscV").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f });
+		var managed = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_RiscV_Managed").Invoke(
+			null, new object[] {0, 0f, expected, 1, -1f });
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern PackedFloatEmptyByte Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV(
 		int a0,
@@ -1440,6 +1458,20 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_InIntegerRegs_ByReflection_RiscV()
+	{
+		var expected = PackedFloatEmptyByte.Get();
+		var native = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV").Invoke(
+			null, new object[] { 0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f });
+		var managed = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV_Managed").Invoke(
+			null, new object[] { 0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f });
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
 	[DllImport("EmptyStructsLib")]
 	public static extern PackedFloatEmptyByte Echo_PackedFloatEmptyByte_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
@@ -1465,6 +1497,20 @@ public static class Program
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
 		PackedFloatEmptyByte managed = Echo_PackedFloatEmptyByte_OnStack_RiscV_Managed(
 			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_OnStack_ByReflection_RiscV()
+	{
+		var expected = PackedFloatEmptyByte.Get();
+		var native = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_OnStack_RiscV").Invoke(
+			null, new object[] { 0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f });
+		var managed = (PackedFloatEmptyByte)typeof(Program).GetMethod("Echo_PackedFloatEmptyByte_OnStack_RiscV_Managed").Invoke(
+			null, new object[] { 0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f });
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
