@@ -10,6 +10,7 @@ namespace System.Buffers
     /// </summary>
     public static partial class BoundedMemory
     {
+        public static bool UnixBoundsEnabled { get; set; }
         private static readonly int SystemPageSize = Environment.SystemPageSize;
 
         /// <summary>
