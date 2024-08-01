@@ -3504,6 +3504,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         // but on other platforms it comes by-reference
 #ifdef TARGET_X86
         LocalDesc locDesc(pargs->mm.m_pMT);
+        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
         pslIL->SetStubTargetArgType(&locDesc);
 
         DWORD       dwNewValueTypeLocal;

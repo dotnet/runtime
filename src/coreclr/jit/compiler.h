@@ -532,6 +532,8 @@ public:
 #endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
+    unsigned char lvRequiresSpecialCopy : 1; // Local requires copy helper for stack copies.
+
     unsigned char lvMustInit : 1; // must be initialized
 
 private:
@@ -11278,6 +11280,8 @@ public:
             //   - Whenever a parameter passed in an argument register needs to be spilled by LSRA, we
             //     create a new spill temp if the method needs GS cookie check.
             return varDsc->lvIsParam;
+#elif defined(TARGET_X86)
+            return varDsc->lvIsParam && !varDsc->lvIsRegArg && !varDsc->lvRequiresSpecialCopy;
 #else // !defined(TARGET_AMD64)
             return varDsc->lvIsParam && !varDsc->lvIsRegArg;
 #endif

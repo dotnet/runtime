@@ -1251,7 +1251,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     CorNativeType nativeType        = NATIVE_TYPE_DEFAULT;
     Assembly *pAssembly             = pModule->GetAssembly();
-    BOOL fNeedsCopyCtor             = FALSE;
+    mdToken pCopyCtorModifier       = mdTokenNil;
     m_BestFit                       = BestFit;
     m_ThrowOnUnmappableChar         = ThrowOnUnmappableChar;
     m_ms                            = ms;
@@ -1378,11 +1378,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
             // Skip ET_BYREF
             IfFailGoto(sigtmp.GetByte(NULL), lFail);
 
-            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) ||
+                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) )
             {
                 mtype = ELEMENT_TYPE_VALUETYPE;
-                fNeedsCopyCtor = TRUE;
                 m_byref = FALSE;
             }
         }
@@ -1411,8 +1410,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
             if (!th.IsEnum())
             {
                 // Check for Copy Constructor Modifier
-                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD, &pCopyCtorModifier) )
                 {
                     mtype = mtype2;
 
@@ -1420,7 +1419,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     // of this method we are pretending that the parameter is a value type passed by-value.
                     IfFailGoto(sig.GetElemType(NULL), lFail);
 
-                    fNeedsCopyCtor = TRUE;
                     m_byref = FALSE;
                 }
             }
@@ -2381,7 +2379,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     else
                     {
-                        if (fNeedsCopyCtor && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
+                        if (pCopyCtorModifier != mdTokenNil && !IsFieldScenario()) // We don't support automatically discovering copy constructors for fields.
                         {
 #if defined(FEATURE_IJW)
                             MethodDesc *pCopyCtor;
@@ -2389,6 +2387,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             FindCopyCtor(pModule, m_pMT, &pCopyCtor);
                             FindDtor(pModule, m_pMT, &pDtor);
 
+                            m_args.mm.m_pSigMod = ClassLoader::LoadTypeDefOrRefThrowing(pModule, pCopyCtorModifier).AsMethodTable();
                             m_args.mm.m_pMT = m_pMT;
                             m_args.mm.m_pCopyCtor = pCopyCtor;
                             m_args.mm.m_pDtor = pDtor;

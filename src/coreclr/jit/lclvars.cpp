@@ -326,6 +326,19 @@ void Compiler::lvaInitTypeRef()
             }
         }
 
+        if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
+        {
+            if (corInfoType == CORINFO_TYPE_VALUECLASS)
+            {
+                JITDUMP("Setting lvRequiresSpecialCopy for V%02u\n", varNum);
+                varDsc->lvRequiresSpecialCopy = 1;
+            }
+            else
+            {
+                JITDUMP("Ignoring special copy for non-struct V%02u\n", varNum);
+            }
+        }
+
         varDsc->lvOnFrame = true; // The final home for this local variable might be our local stack frame
 
         if (corInfoType == CORINFO_TYPE_CLASS)
@@ -652,6 +665,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
+        
+        if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
+        {
+            if (strip(corInfoType) == CORINFO_TYPE_VALUECLASS)
+            {
+                JITDUMP("Setting lvRequiresSpecialCopy for user arg%02u\n", i);
+                varDsc->lvRequiresSpecialCopy = 1;
+            }
+            else
+            {
+                JITDUMP("Ignoring special copy for non-struct user arg%02u\n", i);
+            }
+        }
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
@@ -7591,6 +7617,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvPinned)
     {
         printf(" pinned");
+    }
+    if (varDsc->lvRequiresSpecialCopy)
+    {
+        printf(" special-copy");
     }
     if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
     {

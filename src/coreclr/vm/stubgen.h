@@ -96,6 +96,19 @@ struct LocalDesc
         ChangeType(ELEMENT_TYPE_PTR);
     }
 
+    void AddModifier(bool required, mdToken token)
+    {
+        LIMITED_METHOD_CONTRACT;
+        BYTE compressed[4];
+        ULONG cbCompressed;
+        cbCompressed = CorSigCompressToken(token, compressed);
+        _ASSERTE(cbCompressed + cbType + 1 <= MAX_LOCALDESC_ELEMENTS);
+        memmove(&ElementType[cbCompressed], ElementType, cbType);
+        memmove(&ElementType, compressed, cbCompressed);
+        cbType += cbCompressed;
+        ChangeType(required ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT);
+    }
+
     void ChangeType(CorElementType elemType)
     {
         LIMITED_METHOD_CONTRACT;

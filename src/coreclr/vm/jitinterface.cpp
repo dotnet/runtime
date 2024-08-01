@@ -9437,11 +9437,31 @@ CorInfoTypeWithMod CEEInfo::getArgType (
         IfFailThrow(ptr.PeekElemType(&eType));
     }
 
+    Module* pModule = GetModule(sig->scope);
+
+    if (!IsDynamicScope(sig->scope))
+    {
+        SigPointer sigtmp = ptr;
+        if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+            sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+        {
+            result = (CorInfoTypeWithMod)((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
+        }
+    }
+    else
+    {
+        SigPointer sigtmp = ptr;
+        DynamicResolver* pResolver = GetDynamicResolver(sig->scope);
+        if (sigtmp.HasCustomModifier(pResolver, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+            sigtmp.HasCustomModifier(pResolver, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+        {
+            result = (CorInfoTypeWithMod)((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
+        }
+    }
+
     // Now read off the "real" element type after taking any instantiations into consideration
     SigTypeContext typeContext;
     GetTypeContext(&sig->sigInst,&typeContext);
-
-    Module* pModule = GetModule(sig->scope);
 
     CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
 

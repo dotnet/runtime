@@ -87,6 +87,7 @@ struct OverrideProcArgs
 
         struct
         {
+            MethodTable* m_pSigMod;
             MethodTable* m_pMT;
             MethodDesc*  m_pCopyCtor;
             MethodDesc*  m_pDtor;

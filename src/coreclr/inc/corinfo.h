@@ -644,6 +644,7 @@ enum CorInfoTypeWithMod
 {
     CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
     CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {

@@ -937,6 +937,25 @@ IsTypeRefOrDef(
     return(true);
 } // IsTypeRefOrDef
 
+BOOL IsTypeRefOrDef(
+    LPCSTR   szClassName,
+    DynamicResolver * pResolver,
+    mdToken  token)
+{
+    STANDARD_VM_CONTRACT;
+
+    ResolvedToken resolved;
+    pResolver->ResolveToken(token, &resolved);
+
+    if (resolved.TypeHandle.IsNull())
+        return false;
+    
+    DefineFullyQualifiedNameForClassOnStack();
+    LPCUTF8 fullyQualifiedName = GetFullyQualifiedNameForClass(resolved.TypeHandle.GetMethodTable());
+
+    return (strcmp(szClassName, fullyQualifiedName) == 0);
+}
+
 TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
                                        const SigTypeContext *pTypeContext) const
 {
@@ -2282,7 +2301,7 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
 //------------------------------------------------------------------------
 // Tests for the existence of a custom modifier
 //------------------------------------------------------------------------
-BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const
+BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType) const
 {
     CONTRACTL
     {
@@ -2318,6 +2337,54 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
 
         if (etyp == cmodtype && IsTypeRefOrDef(szModName, pModule, tk))
         {
+            if (pModifierType != nullptr)
+            {
+                *pModifierType = tk;
+            }
+            return(TRUE);
+        }
+
+        if (FAILED(sp.GetByte(&data)))
+            return FALSE;
+
+        etyp = (CorElementType)data;
+
+
+    }
+    return(FALSE);
+}
+
+BOOL SigPointer::HasCustomModifier(DynamicResolver *pResolver, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType) const
+{
+    STANDARD_VM_CONTRACT;
+
+    BAD_FORMAT_NOTHROW_ASSERT(cmodtype == ELEMENT_TYPE_CMOD_OPT || cmodtype == ELEMENT_TYPE_CMOD_REQD);
+
+    SigPointer sp = *this;
+    CorElementType etyp;
+    if (sp.AtSentinel())
+        sp.m_ptr++;
+
+    BYTE data;
+
+    if (FAILED(sp.GetByte(&data)))
+        return FALSE;
+
+    etyp = (CorElementType)data;
+
+
+    while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD) {
+
+        mdToken tk;
+        if (FAILED(sp.GetToken(&tk)))
+            return FALSE;
+
+        if (etyp == cmodtype && IsTypeRefOrDef(szModName, pResolver, tk))
+        {
+            if (pModifierType != nullptr)
+            {
+                *pModifierType = tk;
+            }
             return(TRUE);
         }
 
