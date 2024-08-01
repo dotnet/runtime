@@ -27,6 +27,7 @@
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+    <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
