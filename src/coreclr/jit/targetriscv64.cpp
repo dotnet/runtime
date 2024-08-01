@@ -102,17 +102,18 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (lowering == nullptr)
-            {
-                assert(varTypeIsFloating(type)); // standalone floating-point real
-            }
-            else
+            unsigned offset = 0;
+            if (lowering != nullptr)
             {
                 assert(lowering->numLoweredElements == 1); // struct containing just one FP real
-                assert(varTypeIsFloating(JITtype2varType(lowering->loweredElements[0])));
+                type       = JITtype2varType(lowering->loweredElements[0]);
+                passedSize = genTypeSize(type);
+                offset     = lowering->offsets[0];
             }
-            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
-                                                                                          passedSize));
+            assert(varTypeIsFloating(type));
+
+            ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
+            return ABIPassingInformation::FromSegment(comp, seg);
         }
         else
         {
@@ -122,23 +123,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(!lowering->byIntegerCallConv);
             assert(lowering->numLoweredElements == 2);
 
-            var_types types[] = {
-                JITtype2varType(lowering->loweredElements[0]),
-                JITtype2varType(lowering->loweredElements[1]),
-            };
-            unsigned firstSize  = (genTypeSize(types[0]) == 8) ? 8 : 4;
-            unsigned secondSize = (genTypeSize(types[1]) == 8) ? 8 : 4;
-            unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
+            var_types type0 = JITtype2varType(lowering->loweredElements[0]);
+            var_types type1 = JITtype2varType(lowering->loweredElements[1]);
+            assert(varTypeIsFloating(type0) || varTypeIsFloating(type1));
+            RegisterQueue& queue0 = varTypeIsFloating(type0) ? m_floatRegs : m_intRegs;
+            RegisterQueue& queue1 = varTypeIsFloating(type1) ? m_floatRegs : m_intRegs;
 
-            bool isFirstFloat  = varTypeIsFloating(types[0]);
-            bool isSecondFloat = varTypeIsFloating(types[1]);
-            assert(isFirstFloat || isSecondFloat);
-
-            regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
-            regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
-
-            return ABIPassingInformation::FromSegments(comp, ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                                       ABIPassingSegment::InRegister(secondReg, offset, secondSize));
+            auto seg0 = ABIPassingSegment::InRegister(queue0.Dequeue(), lowering->offsets[0], genTypeSize(type0));
+            auto seg1 = ABIPassingSegment::InRegister(queue1.Dequeue(), lowering->offsets[1], genTypeSize(type1));
+            return ABIPassingInformation::FromSegments(comp, seg0, seg1);
         }
     }
     else
