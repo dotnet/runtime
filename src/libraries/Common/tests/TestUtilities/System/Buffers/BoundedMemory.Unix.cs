@@ -135,7 +135,6 @@ namespace System.Buffers
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
                 IntPtr buffer = MMap(0, (ulong)allocationSize, (int)(MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE), (int)(MemoryMappedFlags.MAP_PRIVATE | MemoryMappedFlags.MAP_ANONYMOUS), -1, 0);
 
-                Console.WriteLine(buffer);
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
                 // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
                 // For `PoisonPagePlacement.Before` the first page is made inaccessible using mprotect and baseAddress points to the start of the second page.
