@@ -3183,8 +3183,8 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
         GetEmitter()->emitIns_R_R(srcType == TYP_DOUBLE ? INS_movgr2fr_d : INS_movgr2fr_w, EA_8BYTE, tmpReg, REG_R0);
 
-        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE, op1->GetRegNum(),
-                                    tmpReg, 2); // cc=2
+        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE,
+                                    op1->GetRegNum(), tmpReg, 2);                                     // cc=2
         GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, dstType == TYP_UINT ? 16 << 2 : 13 << 2); // cc=2
 
         if (srcType == TYP_DOUBLE)
