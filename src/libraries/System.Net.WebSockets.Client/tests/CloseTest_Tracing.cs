@@ -45,6 +45,8 @@ namespace System.Net.WebSockets.Client.Tests
             using var testEventListener = TracingTestCollection.CreateTestEventListener(this);
             var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            var stopwatch = Stopwatch.StartNew();
+
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 try
@@ -52,7 +54,7 @@ namespace System.Net.WebSockets.Client.Tests
                     TracingTestCollection.Trace(this, "Test client started");
 
                     using var cws = new ClientWebSocket();
-                    using var testTimeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
+                    using var testTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
                     await ConnectAsync(cws, uri, testTimeoutCts.Token);
 
@@ -60,24 +62,49 @@ namespace System.Net.WebSockets.Client.Tests
                     TracingTestCollection.TraceUnderlyingWebSocket(this, cws);
 
                     Task receiveTask = cws.ReceiveAsync(new byte[1], testTimeoutCts.Token);
+                    TracingTestCollection.Trace(this, "Started ReceiveAsync");
 
                     var cancelCloseCts = new CancellationTokenSource();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                    var closeException = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                     {
                         Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
-                        cancelCloseCts.Cancel();
+                        TracingTestCollection.Trace(this, "Started CloseAsync");
+                        cancelCloseCts.CancelAfter(100);
+
+                        TracingTestCollection.Trace(this, "Before await");
                         await t;
                     });
-                    Assert.False(testTimeoutCts.Token.IsCancellationRequested);
+                    TracingTestCollection.Trace(this, "After await");
 
-                    var receiveOCE = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
-                    Assert.False(testTimeoutCts.Token.IsCancellationRequested);
+                    Assert.Equal(cancelCloseCts.Token, closeException.CancellationToken);
+                    TracingTestCollection.Trace(this, "closeOCE: " + closeException.Message);
+                    TracingTestCollection.Trace(this, "cancelCloseCts.Token.IsCancellationRequested=" + cancelCloseCts.Token.IsCancellationRequested);
+                    TracingTestCollection.Trace(this, "testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
 
+                    TracingTestCollection.Trace(this, "Before await");
+                    var receiveOCE = await Assert.ThrowsAsync<OperationCanceledException>(() => receiveTask);
+                    TracingTestCollection.Trace(this, "After await");
+
+
+                    Assert.Equal(nameof(WebSocketState.Aborted), receiveOCE.Message);
+                    var ioe = Assert.IsType<System.IO.IOException>(receiveOCE.InnerException);
+                    var se = Assert.IsType<System.Net.Sockets.SocketException>(ioe.InnerException);
+                    Assert.Equal(System.Net.Sockets.SocketError.OperationAborted, se.SocketErrorCode);
+
+
+                    TracingTestCollection.Trace(this, "receiveOCE: " + receiveOCE.Message);
+                    TracingTestCollection.Trace(this, "testTimeoutCts.Token.IsCancellationRequested=" + testTimeoutCts.Token.IsCancellationRequested);
+
+                }
+                catch (Exception e)
+                {
+                    TracingTestCollection.Trace(this, "Client exception: " + e.Message);
+                    throw;
                 }
                 finally
                 {
                     tcs.SetResult();
-                    TracingTestCollection.Trace(this, "Test client finished");
+                    TracingTestCollection.Trace(this, "Test client finished after " + stopwatch.Elapsed);
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {

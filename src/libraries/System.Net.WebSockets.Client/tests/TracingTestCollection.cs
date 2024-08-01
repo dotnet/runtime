@@ -73,7 +73,7 @@ public class TracingTestCollection : ICollectionFixture<TracingTestCollection>, 
     {
         lock (Console.Out)
         {
-            Console.WriteLine($"{objName} | {message}");
+            Console.WriteLine($"{objName} {DateTime.UtcNow:ss.fff} {message}");
         }
     }
 

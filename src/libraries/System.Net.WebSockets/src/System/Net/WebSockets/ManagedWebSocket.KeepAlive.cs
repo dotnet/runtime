@@ -338,6 +338,7 @@ namespace System.Net.WebSockets
         private sealed class KeepAlivePingState
         {
             internal const int PingPayloadSize = sizeof(long);
+            internal const long MinIntervalMs = 1;
 
             internal long DelayMs;
             internal long TimeoutMs;
@@ -357,12 +358,13 @@ namespace System.Net.WebSockets
                 NextPingTimestamp = Environment.TickCount64 + DelayMs;
                 WillTimeoutTimestamp = Timeout.Infinite;
 
-                HeartBeatIntervalMs = Math.Min(DelayMs, TimeoutMs) / 4;
+                HeartBeatIntervalMs = Math.Max(Math.Min(DelayMs, TimeoutMs) / 4, MinIntervalMs);
 
                 static long TimeSpanToMs(TimeSpan value)
                 {
                     double milliseconds = value.TotalMilliseconds;
-                    return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
+                    long ms = (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
+                    return Math.Max(ms, MinIntervalMs);
                 }
             }
 
