@@ -683,7 +683,7 @@ TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
     // Other platforms enforce masking in their encoding
     unsigned shiftCountMask = (sizeof(TBase) * 8) - 1;
     arg1 &= shiftCountMask;
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif
 
     return arg0 >> arg1;
 }
@@ -817,10 +817,10 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_RSH:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
             {
-                // For SIMD, xarch allows overshifting and treats
+                // For SIMD, xarch and ARM64 allow overshifting and treat
                 // it as propagating the sign bit (returning Zero
                 // or AllBitsSet). So ensure we do the same here.
                 //
