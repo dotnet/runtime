@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -46,6 +47,12 @@ namespace System.Threading
         /// <summary>Gets the object used to synchronize contended operations.</summary>
         private object SyncObj => this;
 
+        /// <summary>Attempts to syncronously enter the mutex.</summary>
+        /// <remarks>This will succeed in case the mutex is not currently held nor contended.</remarks>
+        /// <returns>Whether the mutex has been entered.</returns>
+        public bool TryEnter()
+            => Interlocked.CompareExchange(ref _gate, 0, 1) == 1;
+
         /// <summary>Asynchronously waits to enter the mutex.</summary>
         /// <param name="cancellationToken">The CancellationToken token to observe.</param>
         /// <returns>A task that will complete when the mutex has been entered or the enter canceled.</returns>
@@ -65,6 +72,8 @@ namespace System.Threading
 
             Task Contended(CancellationToken cancellationToken)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 var w = new Waiter(this);
 
                 // We need to register for cancellation before storing the waiter into the list.
@@ -185,6 +194,8 @@ namespace System.Threading
 
             void Contended()
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 Waiter? w;
                 lock (SyncObj)
                 {
