@@ -1507,12 +1507,18 @@ namespace System.Net.WebSockets
                     {
                         if (cancellationToken.CanBeCanceled)
                         {
-                            registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Registering for cancellation");
+                            registration = cancellationToken.Register(static s =>
+                            {
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(s, "Aborting due to cancellation", nameof(cancellationToken.Register));
+                                ((ManagedWebSocket)s!).Abort();
+                            }, this);
                         }
 
                         // Loop until we've received a close frame.
                         while (!_receivedCloseFrame)
                         {
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Waiting for the _receiveMutex...");
                             await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
 
@@ -1538,12 +1544,19 @@ namespace System.Net.WebSockets
                     finally
                     {
                         ArrayPool<byte>.Shared.Return(closeBuffer);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Disposing cancellation registration");
                         registration.Dispose();
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Cancellation registration disposed");
                     }
                 }
 
                 // We're closed. Close the connection and update the status.
                 Dispose();
+            }
+            catch (Exception exc)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
+                throw;
             }
             finally
             {

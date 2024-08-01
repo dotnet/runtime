@@ -55,6 +55,10 @@ namespace System.Net.WebSockets.Client.Tests
 
                     using var cws = new ClientWebSocket();
                     using var testTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    using var testTimeoutCtsRegistration = testTimeoutCts.Token.Register(() =>
+                    {
+                        TracingTestCollection.Trace(this, "Test timed out, canceling...");
+                    });
 
                     await ConnectAsync(cws, uri, testTimeoutCts.Token);
 
@@ -65,16 +69,33 @@ namespace System.Net.WebSockets.Client.Tests
                     TracingTestCollection.Trace(this, "Started ReceiveAsync");
 
                     var cancelCloseCts = new CancellationTokenSource();
+                    using var cancelCloseCtsRegistration = cancelCloseCts.Token.Register(() =>
+                    {
+                        TracingTestCollection.Trace(this, "Canceling CloseAsync");
+                    });
+
                     var closeException = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
                     {
                         Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
                         TracingTestCollection.Trace(this, "Started CloseAsync");
-                        cancelCloseCts.CancelAfter(100);
+                        cancelCloseCts.Cancel();
 
-                        TracingTestCollection.Trace(this, "Before await");
-                        await t;
+                        TracingTestCollection.Trace(this, "Before await CloseAsync");
+                        try
+                        {
+                            await t;
+                        }
+                        catch (Exception ex)
+                        {
+                            TracingTestCollection.Trace(this, "CloseAsync exception: " + ex.Message);
+                            throw;
+                        }
+                        finally
+                        {
+                            TracingTestCollection.Trace(this, "After await CloseAsync");
+                        }
                     });
-                    TracingTestCollection.Trace(this, "After await");
+                    TracingTestCollection.Trace(this, "After await Assert.ThrowsAsync");
 
                     Assert.Equal(cancelCloseCts.Token, closeException.CancellationToken);
                     TracingTestCollection.Trace(this, "closeOCE: " + closeException.Message);
