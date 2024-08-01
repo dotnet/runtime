@@ -237,7 +237,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 try
                 {
-                    using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
+                    using JsonDocument jDoc = CreateDeepJsonDocument(100_000);
                     JsonElement element = jDoc.RootElement;
                     Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
                     tcs.SetResult(true);
