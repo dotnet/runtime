@@ -27,9 +27,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
-            <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -65,9 +62,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>CoreCLR does not implement the mono embedding API</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
-            <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
