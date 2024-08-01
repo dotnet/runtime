@@ -31,7 +31,7 @@ public class Runtime_105817
         if (AdvSimd.IsSupported)
         {
             var vr6 = Vector64.Create<long>(1);
-            var vr7 = AdvSimd.ShiftRightLogicalScalar(vr6, 128);
+            var vr7 = AdvSimd.ShiftRightLogicalScalar(vr6, 64);
             Assert.Equal(vr7, Vector64<long>.Zero);
         }
     }
@@ -53,7 +53,7 @@ public class Runtime_105817
         if (AdvSimd.IsSupported)
         {
             var vr6 = Vector64.Create<long>(1);
-            var vr7 = AdvSimd.ShiftRightArithmeticScalar(vr6, 128);
+            var vr7 = AdvSimd.ShiftRightArithmeticScalar(vr6, 64);
             Assert.Equal(vr7, Vector64<long>.Zero);
         }
     }
