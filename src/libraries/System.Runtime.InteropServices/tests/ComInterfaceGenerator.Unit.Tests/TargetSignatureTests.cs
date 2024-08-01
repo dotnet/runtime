@@ -326,20 +326,135 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            TargetFunctionPointerInvocationTest test = new(
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
                 "IComInterface2",
                 "DerivedMethod",
                 (newComp, invocation) =>
                 {
                     Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        [Fact]
+        public async Task ComInterfaceInheritingAcrossCompilationsChainInBaseCalculatesCorrectVTableIndex()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
+                public partial interface IComInterface2
+                {
+                    void MiddleMethod();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                partial interface {|#1:IComInterface3|} : IComInterface2
+                {
+                    void DerivedMethod();
+                }
+                """;
+
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
+                "IComInterface3",
+                "DerivedMethod",
+                (newComp, invocation) =>
+                {
+                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface2").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        
+
+        [Fact]
+        public async Task ComInterfaceInheritingAcrossCompilationsChainInDerivedCalculatesCorrectVTableIndex()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
+                public partial interface IComInterface2 : IComInterface
+                {
+                    void MiddleMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                partial interface {|#1:IComInterface3|} : IComInterface2
+                {
+                    void DerivedMethod();
+                }
+                """;
+
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
+                "IComInterface3",
+                "DerivedMethod",
+                (newComp, invocation) =>
+                {
+                    Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        private static async Task VerifyInvocationWithMultipleProjectsAsync(
+            string thisSource,
+            string baseSource,
+            string interfaceName,
+            string methodName,
+            Action<Compilation, IFunctionPointerInvocationOperation> invocationValidator,
+            params DiagnosticResult[] diagnostics)
+        {
+            TargetFunctionPointerInvocationTest test = new(
+                interfaceName,
+                methodName,
+                invocationValidator,
                 new ComInterfaceImplementationLocator(),
                 [typeof(Microsoft.Interop.ComInterfaceGenerator)]
             )
             {
                 TestState =
                 {
-                    Sources = { derivedSource },
+                    Sources = { thisSource },
                     AdditionalProjects =
                     {
                         ["Base"] =
@@ -349,11 +464,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     },
                     AdditionalProjectReferences = { "Base" },
                 },
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                ExpectedDiagnostics =
-                {
-                    VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning)
-                }
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
             test.TestState.AdditionalProjects["Base"].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
@@ -364,6 +475,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 var additionalProject = sln.Projects.First(proj => proj.Name == "Base");
                 return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
             });
+
+            test.ExpectedDiagnostics.AddRange(diagnostics);
 
             await test.RunAsync();
         }
