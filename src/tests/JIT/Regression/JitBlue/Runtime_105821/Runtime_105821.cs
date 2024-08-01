@@ -23,7 +23,7 @@ public class Runtime_105821
         M1(0);
     }
 
-    public static void M1(short arg0)
+    private static void M1(short arg0)
     {
         if (Sse42.IsSupported)
         {
