@@ -89,7 +89,7 @@ namespace System.Buffers
             }
             else if (!IsMonoRuntime && (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)))
             {
-                // Not supported for mono as the implementtion uses SystemNative from CoreClr.
+                // Not supported for mono as the implementation uses SystemNative from CoreClr.
                 return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
             }
             else
