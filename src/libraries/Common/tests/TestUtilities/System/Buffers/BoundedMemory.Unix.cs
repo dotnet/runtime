@@ -133,7 +133,7 @@ namespace System.Buffers
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
-                IntPtr buffer = MMap(0, (ulong)allocationSize, MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE, MemoryMappedFlags.MAP_PRIVATE | MemoryMappedFlags.MAP_ANONYMOUS, -1, 0);
+                IntPtr buffer = MMap(0, (ulong)allocationSize, (int)(MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE), (int)(MemoryMappedFlags.MAP_PRIVATE | MemoryMappedFlags.MAP_ANONYMOUS), -1, 0);
 
                 Console.WriteLine(buffer);
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
@@ -151,7 +151,7 @@ namespace System.Buffers
                 }
 
                 // Protect the page before/after based on the poison page placement.
-                if (MProtect(poisonPageAddress, (ulong)pageSize, MemoryMappedProtections.PROT_NONE) == -1)
+                if (MProtect(poisonPageAddress, (ulong)pageSize, (int)MemoryMappedProtections.PROT_NONE) == -1)
                 {
                     throw new InvalidOperationException($"Failed to mark page as a poison page using mprotect with error :{Marshal.GetLastPInvokeError()}.");
                 }
@@ -190,13 +190,10 @@ namespace System.Buffers
 
             // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
             [DllImport(SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
-            private static extern IntPtr MMap(
-                IntPtr addr, ulong len,
-                MemoryMappedProtections prot, MemoryMappedFlags flags,
-                IntPtr fd, long offset);
+            private static extern IntPtr MMap(IntPtr addr, ulong len, int prot, int flags, IntPtr fd, long offset);
 
             [DllImport(SystemNative, EntryPoint = "SystemNative_MProtect", SetLastError = true)]
-            private static extern int MProtect(IntPtr addr, ulong len, MemoryMappedProtections prot);
+            private static extern int MProtect(IntPtr addr, ulong len, int prot);
 
             [DllImport(SystemNative, EntryPoint = "SystemNative_MUnmap", SetLastError = true)]
             internal static extern int MUnmap(IntPtr addr, ulong len);
