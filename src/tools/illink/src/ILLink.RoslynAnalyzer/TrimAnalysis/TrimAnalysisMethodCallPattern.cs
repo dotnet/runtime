@@ -15,7 +15,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisMethodCallPattern
+	internal readonly record struct TrimAnalysisMethodCallPattern
 	{
 		public IMethodSymbol CalledMethod { get; init; }
 		public MultiValue Instance { get; init; }
@@ -84,11 +84,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag)
-					&& !requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
-				{
-					diagnosticContext.AddDiagnostic (diag);
-				}
+				if (!requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
+					requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, in diagnosticContext);
 			}
 
 			return diagnosticContext.Diagnostics;
