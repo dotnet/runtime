@@ -3919,11 +3919,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet() && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
-                    // Do this only if op1 was AllTrueMask
+                    // Do this only if op1 was AllTrueMask and op2 is embedded.
                     MakeSrcContained(node, op3);
                 }
 
