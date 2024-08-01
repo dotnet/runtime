@@ -1418,6 +1418,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
         GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
         isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
+        isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
 
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
@@ -1427,6 +1428,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         assert(isInitOffset == 0);
 
         isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
 
         // Check ClassInitFlags::INITIALIZED_FLAG bit
         isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
