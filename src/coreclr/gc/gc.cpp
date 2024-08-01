@@ -44144,7 +44144,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     }
 #endif //BACKGROUND_GC
 
-    if (use_large_pages_p)
+    if (require_clearing_memory_p)
     {
         assert (heap_segment_used (region) == heap_segment_mem (region));
     }
