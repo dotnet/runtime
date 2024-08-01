@@ -4,9 +4,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <HWITestsArm64Only>true</HWITestsArm64Only>
-    <!-- SYSLIB5003: System.Runtime.Intrinsics.Arm.Sve is experimental in .NET 9 -->
-    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
+    <!-- X86Base.DivRem is experimental in .NET 9 since performance is not as optimized as T.DivRem -->
+    <NoWarn>$(NoWarn);SYSLIB5004</NoWarn>
   </PropertyGroup>
 
 </Project>

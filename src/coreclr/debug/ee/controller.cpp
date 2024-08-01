@@ -3232,7 +3232,7 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
         // so there should be nothing to do. However, we still assert b/c we want to know how
         // we'd actually hit this.
         // @todo - is there a path if TriggerUnwind() calls DisableAll(). But why would
-        CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread));
+        //CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread)); it can be caused in a scenario where we are stepping and an AV is thrown
         LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag couldn't get context.\n"));
         return;
     }

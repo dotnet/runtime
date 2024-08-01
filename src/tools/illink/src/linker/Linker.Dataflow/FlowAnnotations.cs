@@ -151,7 +151,14 @@ namespace ILLink.Shared.TrimAnalysis
 			if (typeReference.MetadataType == MetadataType.String)
 				return true;
 
-			TypeDefinition? type = _context.TryResolve (typeReference);
+			// ByRef over an interesting type is itself interesting
+			if (typeReference.IsByReference)
+				typeReference = ((ByReferenceType) typeReference).ElementType;
+
+			if (!typeReference.IsNamedType ())
+				return false;
+
+			TypeDefinition? type = typeReference.ResolveToTypeDefinition (_context);
 			return type != null && (
 				_hierarchyInfo.IsSystemType (type) ||
 				_hierarchyInfo.IsSystemReflectionIReflect (type));
