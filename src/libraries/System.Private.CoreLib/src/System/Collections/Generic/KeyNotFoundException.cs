@@ -49,7 +49,6 @@ namespace System.Collections.Generic
             }
         }
 
-
         [DoesNotReturn]
         internal static void Throw(string? message) =>
             throw new KeyNotFoundException(message);
