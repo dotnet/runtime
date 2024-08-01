@@ -440,6 +440,17 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
+    <Copy SourceFiles="runtime/heapshot/diagnostics-panel.html"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="runtime/runtime.c;
+                       runtime/driver.c;
+                       runtime/pinvoke.c;
+                       runtime/corebindings.c;"
+          DestinationFolder="$(NativeBinDir)src"
+          SkipUnchangedFiles="true" />
+
     <Copy SourceFiles="runtime/runtime.h;
                        runtime/runtime.c;
                        runtime/driver.c;
@@ -504,6 +515,10 @@
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.mjs"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
 	        Condition="Exists('$(NativeBinDir)dotnet.native.worker.mjs')"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(RepoRoot)\src\mono\browser\runtime\heapshot\diagnostics-panel.html"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"

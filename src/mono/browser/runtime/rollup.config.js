@@ -17,7 +17,7 @@ setTimeout(() => {
     // eslint-disable-next-line no-console
     console.log("Forcibly exiting process to work around hang in rollup");
     process.exit();
-}, 25000);
+}, 35000);
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
