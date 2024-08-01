@@ -200,7 +200,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 #else
-            Debug.Assert(false, "Unhandled exceptions should be processed by the native runtime only");
+            Debug.Fail("Unhandled exceptions should be processed by the native runtime only");
 #endif
         }
 
@@ -429,7 +429,7 @@ namespace System.Runtime
                     return new InvalidCastException();
 
                 default:
-                    Debug.Assert(false, "unexpected ExceptionID");
+                    Debug.Fail("unexpected ExceptionID");
                     FallbackFailFast(RhFailFastReason.InternalError, null);
                     return null;
             }
@@ -696,7 +696,7 @@ namespace System.Runtime
                 InternalCalls.ResumeAtInterceptionLocation(exInfo._frameIter.RegisterSet);
             }
 
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 #endif // !NATIVEAOT
@@ -903,7 +903,7 @@ namespace System.Runtime
                     pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
 #endif
-                Debug.Assert(false, "unreachable");
+                Debug.Fail("unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);
             }
 #endif // FEATURE_OBJCMARSHAL
@@ -926,7 +926,7 @@ namespace System.Runtime
             }
 #endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 

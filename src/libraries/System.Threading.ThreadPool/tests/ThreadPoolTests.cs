@@ -452,7 +452,7 @@ namespace System.Threading.ThreadPools.Tests
                 bool waitForWorkStart = false;
                 var workStarted = new AutoResetEvent(false);
                 var localWorkScheduled = new AutoResetEvent(false);
-                int completeWork = 0;
+                bool completeWork = false;
                 int queuedWorkCount = 0;
                 var allWorkCompleted = new ManualResetEvent(false);
                 Exception backgroundEx = null;
@@ -467,7 +467,7 @@ namespace System.Threading.ThreadPools.Tests
                         // Blocking can affect thread pool thread injection heuristics, so don't block, pretend like a
                         // long-running CPU-bound work item
                         ThreadTestHelpers.WaitForConditionWithoutRelinquishingTimeSlice(
-                                () => Interlocked.CompareExchange(ref completeWork, 0, 0) != 0);
+                                () => Interlocked.CompareExchange(ref completeWork, false, false));
                     }
                     catch (Exception ex)
                     {
@@ -557,7 +557,7 @@ namespace System.Threading.ThreadPools.Tests
                 finally
                 {
                     // Complete the work
-                    Interlocked.Exchange(ref completeWork, 1);
+                    Interlocked.Exchange(ref completeWork, true);
                 }
 
                 // Wait for work items to exit, for counting

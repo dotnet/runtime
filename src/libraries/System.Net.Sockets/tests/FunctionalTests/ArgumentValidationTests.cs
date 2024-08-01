@@ -6,7 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -792,7 +792,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]
@@ -800,6 +800,11 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
+                {
+                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
+                }
+
                 switch (invalidatingAction)
                 {
                     case 0:
@@ -823,7 +828,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]
@@ -833,6 +838,11 @@ namespace System.Net.Sockets.Tests
 
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
+                if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
+                {
+                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
+                }
+
                 switch (invalidatingAction)
                 {
                     case 0:

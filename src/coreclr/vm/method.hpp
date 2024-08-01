@@ -253,7 +253,7 @@ public:
             pamTracker = NULL;
         }
 
-        // If EnsureTemporaryEntryPointCore is called, then 
+        // If EnsureTemporaryEntryPointCore is called, then
         // both GetTemporaryEntryPointIfExists and GetSlot()
         // are guaranteed to return a NON-NULL PCODE.
         EnsureTemporaryEntryPointCore(pamTracker);
@@ -316,7 +316,7 @@ public:
 
     Precode* GetOrCreatePrecode();
     void MarkPrecodeAsStableEntrypoint();
-    
+
 
     // Given a code address return back the MethodDesc whenever possible
     //
@@ -1908,6 +1908,15 @@ private:
 public:
     static void Init();
 #endif
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<> struct cdac_data<MethodDesc>
+{
+    static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
+    static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
+    static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2328,6 +2337,17 @@ private:
     UINT16               m_flagsAndTokenRange;
 
     // Followed by array of method descs...
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<MethodDescChunk>
+{
+    static constexpr size_t MethodTable = offsetof(MethodDescChunk, m_methodTable);
+    static constexpr size_t Next = offsetof(MethodDescChunk, m_next);
+    static constexpr size_t Size = offsetof(MethodDescChunk, m_size);
+    static constexpr size_t Count = offsetof(MethodDescChunk, m_count);
 };
 
 inline int MethodDesc::GetMethodDescChunkIndex() const

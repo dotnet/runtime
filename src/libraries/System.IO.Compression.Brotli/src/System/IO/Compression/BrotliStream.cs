@@ -128,7 +128,7 @@ namespace System.IO.Compression
             if (buffer != null)
             {
                 _buffer = null!;
-                if (!AsyncOperationIsActive)
+                if (!_activeAsyncOperation)
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
@@ -170,18 +170,19 @@ namespace System.IO.Compression
         /// <param name="value">The length of the stream.</param>
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        private int _activeAsyncOperation; // 1 == true, 0 == false
-        private bool AsyncOperationIsActive => _activeAsyncOperation != 0;
+        private volatile bool _activeAsyncOperation;
 
         private void EnsureNoActiveAsyncOperation()
         {
-            if (AsyncOperationIsActive)
+            if (_activeAsyncOperation)
+            {
                 ThrowInvalidBeginCall();
+            }
         }
 
         private void AsyncOperationStarting()
         {
-            if (Interlocked.Exchange(ref _activeAsyncOperation, 1) != 0)
+            if (Interlocked.Exchange(ref _activeAsyncOperation, true))
             {
                 ThrowInvalidBeginCall();
             }
@@ -189,8 +190,8 @@ namespace System.IO.Compression
 
         private void AsyncOperationCompleting()
         {
-            Debug.Assert(_activeAsyncOperation == 1);
-            Volatile.Write(ref _activeAsyncOperation, 0);
+            Debug.Assert(_activeAsyncOperation);
+            _activeAsyncOperation = false;
         }
 
         private static void ThrowInvalidBeginCall() =>

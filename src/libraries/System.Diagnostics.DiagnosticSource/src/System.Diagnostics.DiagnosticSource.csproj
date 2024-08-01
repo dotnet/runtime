@@ -49,6 +49,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DsesSamplerBuilder.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
     <Compile Include="System\Diagnostics\DsesFilterAndTransform.cs" />
+    <Compile Include="System\Diagnostics\Helpers.cs" />
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />

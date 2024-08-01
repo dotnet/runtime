@@ -500,13 +500,16 @@ namespace System.Diagnostics.Tracing
 
                 m_eventCommandExecuted += value;
 
-                // If we have an EventHandler<EventCommandEventArgs> attached to the EventSource before the first command arrives
-                // It should get a chance to handle the deferred commands.
-                EventCommandEventArgs? deferredCommands = m_deferredCommands;
-                while (deferredCommands != null)
+                if (m_completelyInited)
                 {
-                    value(this, deferredCommands);
-                    deferredCommands = deferredCommands.nextCommand;
+                    // If we have an EventHandler<EventCommandEventArgs> attached to the EventSource before the first command arrives
+                    // It should get a chance to handle the deferred commands.
+                    EventCommandEventArgs? deferredCommands = m_deferredCommands;
+                    while (deferredCommands != null)
+                    {
+                        value(this, deferredCommands);
+                        deferredCommands = deferredCommands.nextCommand;
+                    }
                 }
             }
             remove
@@ -1638,8 +1641,6 @@ namespace System.Diagnostics.Tracing
                 m_eventPipeProvider = eventPipeProvider;
 #endif
                 Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
-                // We are logically completely initialized at this point.
-                m_completelyInited = true;
             }
             catch (Exception e)
             {
@@ -1659,6 +1660,11 @@ namespace System.Diagnostics.Tracing
                 {
                     DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
                     deferredCommands = deferredCommands.nextCommand;
+                }
+
+                if (m_constructionException == null)
+                {
+                    m_completelyInited = true;
                 }
             }
         }
@@ -2200,7 +2206,7 @@ namespace System.Diagnostics.Tracing
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
                                     paramInfo.SetInfo("message", typeof(string));
-                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, new EventParameterInfo[] { paramInfo });
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, [paramInfo]);
                                     uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                                     fixed (byte* pMetadata = metadata)
@@ -2573,9 +2579,9 @@ namespace System.Diagnostics.Tracing
             }
 
             // PRECONDITION: We should be holding the EventListener.EventListenersLock
-            // We defer commands until we are completely inited.  This allows error messages to be sent.
-            Debug.Assert(m_completelyInited);
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
 
+            // We defer commands until we can send error messages.
             if (m_etwProvider == null)     // If we failed to construct
                 return;
 
@@ -2958,7 +2964,7 @@ namespace System.Diagnostics.Tracing
 
                     if (data.ConstructorArguments.Count == 1)
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType, new object?[] { data.ConstructorArguments[0].Value });
+                        attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
                     }
                     else if (data.ConstructorArguments.Count == 0)
                     {
@@ -5920,7 +5926,7 @@ namespace System.Diagnostics.Tracing
             stringBuilder.Append(eventMessage, startIndex, count);
         }
 
-        private static readonly string[] s_escapes = { "&amp;", "&lt;", "&gt;", "&apos;", "&quot;", "%r", "%n", "%t" };
+        private static readonly string[] s_escapes = ["&amp;", "&lt;", "&gt;", "&apos;", "&quot;", "%r", "%n", "%t"];
         // Manifest messages use %N conventions for their message substitutions.   Translate from
         // .NET conventions.   We can't use RegEx for this (we are in mscorlib), so we do it 'by hand'
         private string TranslateToManifestConvention(string eventMessage, string evtName)

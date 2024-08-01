@@ -576,7 +576,22 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
-        public static Vector<T> operator -(Vector<T> value) => Zero - value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> operator -(Vector<T> value)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return value ^ Vector.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return value ^ Vector.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - value;
+            }
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
