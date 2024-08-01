@@ -3179,6 +3179,14 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
             }
         }
 
+        GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
+
+        GetEmitter()->emitIns_R_R(srcType == TYP_DOUBLE ? INS_movgr2fr_d : INS_movgr2fr_w, EA_8BYTE, tmpReg, REG_R0);
+
+        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE, op1->GetRegNum(),
+                                    tmpReg, 2); // cc=2
+        GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, dstType == TYP_UINT ? 16 << 2 : 13 << 2); // cc=2
+
         if (srcType == TYP_DOUBLE)
         {
             GetEmitter()->emitIns_R_R_I(INS_lu52i_d, EA_8BYTE, REG_R21, REG_R0, imm >> 8);
@@ -3192,9 +3200,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
         GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_clt_d : INS_fcmp_clt_s, EA_8BYTE, op1->GetRegNum(),
                                     tmpReg, 2); // cc=2
-
-        GetEmitter()->emitIns_R_R_I(srcType == TYP_DOUBLE ? INS_fcmp_ceq_d : INS_fcmp_ceq_s, EA_8BYTE, op1->GetRegNum(),
-                                    tmpReg, 3); // cc=3
 
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 0);
         GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, 4 << 2); // cc=2
@@ -3217,9 +3222,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
             GetEmitter()->emitIns_R_R_I(INS_bne, EA_PTRSIZE, treeNode->GetRegNum(), REG_RA, (2 << 2));
             GetEmitter()->emitIns_R_R_I(INS_ori, dstSize, treeNode->GetRegNum(), REG_R0, 0);
         }
-
-        GetEmitter()->emitIns_I_I(INS_bcnez, EA_PTRSIZE, 3, 2 << 2); // cc=3
-        GetEmitter()->emitIns_R_I(INS_beqz, EA_PTRSIZE, treeNode->GetRegNum(), 2 << 2);
 
         GetEmitter()->emitIns_R_R_R(INS_or, dstSize, treeNode->GetRegNum(), REG_R21, treeNode->GetRegNum());
     }
