@@ -24,10 +24,7 @@ namespace System.Net
         private const int WsTraceId = KeepAliveAckedId + 1;
         private const int WsAsyncDbgId = WsTraceId + 1;
 
-        private const int ReadAheadStartId = WsAsyncDbgId + 1;
-        private const int ReadAheadStopId = ReadAheadStartId + 1;
-
-        private const int CloseStartId = ReadAheadStopId + 1;
+        private const int CloseStartId = WsAsyncDbgId + 1;
         private const int CloseStopId = CloseStartId + 1;
 
         private const int ReceiveStartId = CloseStopId + 1;
@@ -124,32 +121,6 @@ namespace System.Net
         {
             Debug.Assert(Log.IsEnabled());
             Log.WsAsyncDbg(IdOf(obj), memberName ?? MissingMember, message);
-        }
-
-        //
-        // Read-Ahead
-        //
-
-        [Event(ReadAheadStartId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        private void ReadAheadStart(string objName, string memberName) =>
-            WriteEvent(ReadAheadStartId, objName, memberName);
-
-        [Event(ReadAheadStopId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        private void ReadAheadStop(string objName, string memberName) =>
-            WriteEvent(ReadAheadStopId, objName, memberName);
-
-        [NonEvent]
-        public static void ReadAheadStarted(object? obj, [CallerMemberName] string? memberName = null)
-        {
-            Debug.Assert(Log.IsEnabled());
-            Log.ReadAheadStart(IdOf(obj), memberName ?? MissingMember);
-        }
-
-        [NonEvent]
-        public static void ReadAheadCompleted(object? obj, [CallerMemberName] string? memberName = null)
-        {
-            Debug.Assert(Log.IsEnabled());
-            Log.ReadAheadStop(IdOf(obj), memberName ?? MissingMember);
         }
 
         //
