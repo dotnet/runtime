@@ -743,7 +743,6 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     // Create the expression `*(array_addr + lenOffset)`
 
     GenTree* addr;
-    noway_assert(arr->gtNext == node);
 
     if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
     {
