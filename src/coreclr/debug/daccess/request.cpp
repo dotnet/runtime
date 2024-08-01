@@ -696,14 +696,14 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
 #elif defined(TARGET_LOONGARCH64)
     static const WCHAR *regs[] =
     {
-        W("R0"), W("AT"), W("V0"), W("V1"),
+        W("R0"), W("RA"), W("TP"), W("SP"),
         W("A0"), W("A1"), W("A2"), W("A3"),
         W("A4"), W("A5"), W("A6"), W("A7"),
         W("T0"), W("T1"), W("T2"), W("T3"),
-        W("T8"), W("T9"), W("S0"), W("S1"),
-        W("S2"), W("S3"), W("S4"), W("S5"),
-        W("S6"), W("S7"), W("K0"), W("K1"),
-        W("GP"), W("SP"), W("FP"), W("RA")
+        W("T4"), W("T5"), W("T6"), W("T7"),
+        W("T8"), W("R21"), W("FP"), W("S0"),
+        W("S1"), W("S2"), W("S3"), W("S4"),
+        W("S5"), W("S6"), W("S7"), W("S8")
     };
 #elif defined(TARGET_RISCV64)
     static const WCHAR *regs[] =
