@@ -5559,7 +5559,12 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
         GenTree* stopNonGCNode  = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
         BlockRange().InsertAfter(thisArgNode, startNonGCNode);
-        BlockRange().InsertAfter(call, stopNonGCNode);
+        if (!call->IsTailCall())
+        {
+            // We don't have to insert the STOP_NONGC node for tail calls, as the call itself is
+            // a safe point and effectively the last node.
+            BlockRange().InsertAfter(call, stopNonGCNode);
+        }
     }
 #endif
 
