@@ -25,6 +25,9 @@ public class Program
 
     public static void M1(short arg0)
     {
-        Sse42.Crc32(Bmi2.ParallelBitDeposit(0, 0) % 0, (uint)arg0);
+        if (Sse42.IsSupported)
+        {
+            Sse42.Crc32(Bmi2.ParallelBitDeposit(0, 0) % 0, (uint)arg0);
+        }
     }
 }
