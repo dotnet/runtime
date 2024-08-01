@@ -707,7 +707,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
             {
                 FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
-                bool hasPointers = gc.retVal->GetMethodTable()->ContainsPointers();
+                bool hasPointers = gc.retVal->GetMethodTable()->ContainsGCPointers();
                 CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info, hasPointers);
             }
             else
