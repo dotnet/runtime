@@ -897,6 +897,7 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
 #ifdef FEATURE_CODE_VERSIONING
@@ -1600,6 +1601,8 @@ private:
     // is not called for each fixup
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
+
+    LOADERHANDLE m_hExposedObject;
 
     // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
     // the debugger to get metadata of dynamic modules from out of process.

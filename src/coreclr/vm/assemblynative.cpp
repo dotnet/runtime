@@ -735,7 +735,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
         {
             DomainAssembly * pModule = modules[i];
 
-            OBJECTREF o = pModule->GetExposedModuleObject();
+            OBJECTREF o = pModule->GetModule()->GetExposedObject();
             orModules->SetAt(i, o);
         }
 

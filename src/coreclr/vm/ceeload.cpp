@@ -329,6 +329,10 @@ void Module::NotifyEtwLoadFinished(HRESULT hr)
 // It cannot throw or fail.
 //
 Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
+    : m_pPEAssembly{pPEAssembly}
+    , m_dwTransientFlags{CLASSES_FREED}
+    , m_pAssembly{pAssembly}
+    , m_hExposedObject{}
 {
     CONTRACTL
     {
@@ -341,12 +345,9 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     PREFIX_ASSUME(pAssembly != NULL);
 
     m_loaderAllocator = NULL;
-    m_pAssembly = pAssembly;
-    m_pPEAssembly      = pPEAssembly;
-    m_dwTransientFlags = CLASSES_FREED;
     m_pDynamicMetadata = (TADDR)NULL;
 
-    pPEAssembly->AddRef();
+    m_pPEAssembly->AddRef();
 }
 
 uint32_t Module::GetNativeMetadataAssemblyCount()
@@ -1147,6 +1148,11 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     m_pDomainAssembly = pDomainAssembly;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Returns managed representation of the module (Module or ModuleBuilder).
+// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
+//
 OBJECTREF Module::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1159,7 +1165,62 @@ OBJECTREF Module::GetExposedObject()
     }
     CONTRACT_END;
 
-    RETURN GetDomainAssembly()->GetExposedModuleObject();
+        LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
+
+    if (m_hExposedObject == (LOADERHANDLE)NULL)
+    {
+        // Atomically create a handle
+        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
+
+        InterlockedCompareExchangeT(&m_hExposedObject, handle, static_cast<LOADERHANDLE>(0));
+    }
+
+    if (pLoaderAllocator->GetHandleValue(m_hExposedObject) == NULL)
+    {
+        REFLECTMODULEBASEREF refClass = NULL;
+
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
+        // return NULL
+        bool fIsLoaderAllocatorCollected = false;
+
+        GCPROTECT_BEGIN(refClass);
+
+        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
+        refClass->SetModule(this);
+
+        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
+        // alive as long as a reference to the module is kept alive.
+        if (GetAssembly() != NULL)
+        {
+            OBJECTREF refAssembly = GetAssembly()->GetExposedObject();
+            if ((refAssembly == NULL) && GetAssembly()->IsCollectible())
+            {
+                fIsLoaderAllocatorCollected = true;
+            }
+            refClass->SetAssembly(refAssembly);
+        }
+
+        pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedObject, (OBJECTREF)refClass, NULL);
+        GCPROTECT_END();
+
+        if (fIsLoaderAllocatorCollected)
+        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
+            // Note: We did not publish the allocated Module/ModuleBuilder object, it will get collected
+            // by GC
+            return NULL;
+        }
+    }
+
+    RETURN pLoaderAllocator->GetHandleValue(m_hExposedObject);
+}
+
+OBJECTREF Module::GetExposedObjectIfExists()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    OBJECTREF objRet = NULL;
+    GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedObject, &objRet);
+    return objRet;
 }
 
 //
