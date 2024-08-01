@@ -4723,8 +4723,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
     // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
     // Besides, at this point the GC info that we track in CodeGen is often incorrect.
     // See comments in genExitCode for more info.
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0,
-                                          block->IsLast());
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, block->IsLast());
 }
 
 /*****************************************************************************
