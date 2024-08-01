@@ -232,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, method.IsRuntimeDeterminedExactMethod ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
+            : base(factory, method, method.IsRuntimeDeterminedExactMethod || method.IsGenericMethodDefinition ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
         {
         }
 
