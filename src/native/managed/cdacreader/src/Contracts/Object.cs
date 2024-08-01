@@ -14,9 +14,11 @@ internal interface IObject : IContract
         byte objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
         TargetPointer stringMethodTable = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        TargetPointer syncTableEntries = target.ReadPointer(
+            target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
         return version switch
         {
-            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask, stringMethodTable),
+            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask, stringMethodTable, syncTableEntries),
             _ => default(Object),
         };
     }
@@ -25,6 +27,7 @@ internal interface IObject : IContract
 
     public virtual string GetStringValue(TargetPointer address) => throw new NotImplementedException();
     public virtual TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
+    public virtual bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
 }
 
 internal readonly struct Object : IObject
