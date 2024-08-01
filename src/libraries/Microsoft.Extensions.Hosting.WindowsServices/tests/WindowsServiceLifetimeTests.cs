@@ -144,11 +144,7 @@ namespace Microsoft.Extensions.Hosting
                     .Build();
 
                 var applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-                applicationLifetime.ApplicationStarted.Register(() =>
-                {
-                    FileLogger.Log($"lifetime started");
-                    are.Set();
-                });
+                applicationLifetime.ApplicationStarted.Register(() => FileLogger.Log($"lifetime started"));
                 applicationLifetime.ApplicationStopping.Register(() => FileLogger.Log($"lifetime stopping"));
                 applicationLifetime.ApplicationStopped.Register(() => FileLogger.Log($"lifetime stopped"));
 
@@ -198,7 +194,7 @@ namespace Microsoft.Extensions.Hosting
                 """, logText);
         }
 
-        private static AutoResetEvent are = new AutoResetEvent(false);
+        private static AutoResetEvent s_are = new AutoResetEvent(false);
 
         [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceSequenceIsCorrect()
@@ -214,11 +210,14 @@ namespace Microsoft.Extensions.Hosting
                     })
                     .Build();
 
+                var windowsService = (LoggingWindowsServiceLifetime)host.Services.GetRequiredService<IHostLifetime>();
+                windowsService.WaitOnStop = true;
+
                 var applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
                 applicationLifetime.ApplicationStarted.Register(() =>
                 {
                     FileLogger.Log($"lifetime started");
-                    are.Set();
+                    s_are.Set();
                 });
 
                 applicationLifetime.ApplicationStopping.Register(() => FileLogger.Log($"lifetime stopping"));
@@ -271,6 +270,8 @@ namespace Microsoft.Extensions.Hosting
                 base(environment, applicationLifetime, loggerFactory, optionsAccessor)
             { }
 
+            public bool WaitOnStop { get; set; }
+
             protected override void OnStart(string[] args)
             {
                 FileLogger.Log("WindowsServiceLifetime.OnStart");
@@ -279,7 +280,10 @@ namespace Microsoft.Extensions.Hosting
 
             protected override void OnStop()
             {
-                are.WaitOne();
+                if (WaitOnStop)
+                {
+                    s_are.WaitOne();
+                }
                 FileLogger.Log("WindowsServiceLifetime.OnStop");
                 base.OnStop();
             }
