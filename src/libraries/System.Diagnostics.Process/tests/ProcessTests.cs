@@ -564,6 +564,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
@@ -619,6 +620,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105686", typeof(PlatformDetection), nameof(PlatformDetection.IsQemuLinux))]
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();

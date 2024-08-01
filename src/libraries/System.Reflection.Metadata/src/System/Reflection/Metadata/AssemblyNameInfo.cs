@@ -108,7 +108,9 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    byte[]? publicKeyToken = ((Flags & AssemblyNameFlags.PublicKey) != 0) ? null :
+                    bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+
+                    byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
 #elif NET8_0_OR_GREATER
@@ -116,8 +118,10 @@ namespace System.Reflection.Metadata
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken,
-                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags));
+                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName,
+                        pkt: isPublicKey ? null : publicKeyOrToken,
+                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
+                        pk: isPublicKey ? publicKeyOrToken : null);
                 }
 
                 return _fullName;

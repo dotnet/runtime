@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0)
+        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
         {
             const int PUBLIC_KEY_TOKEN_LEN = 8;
             Debug.Assert(name.Length != 0);
@@ -57,19 +57,28 @@ namespace System.Reflection
                 vsb.AppendQuoted(cultureName);
             }
 
-            if (pkt != null)
+            byte[]? keyOrToken = pkt ?? pk;
+            if (keyOrToken != null)
             {
-                if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
-                    throw new ArgumentException();
+                if (pkt != null)
+                {
+                    if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
+                        throw new ArgumentException();
 
-                vsb.Append(", PublicKeyToken=");
-                if (pkt.Length == 0)
+                    vsb.Append(", PublicKeyToken=");
+                }
+                else
+                {
+                    vsb.Append(", PublicKey=");
+                }
+
+                if (keyOrToken.Length == 0)
                 {
                     vsb.Append("null");
                 }
                 else
                 {
-                    HexConverter.EncodeToUtf16(pkt, vsb.AppendSpan(pkt.Length * 2), HexConverter.Casing.Lower);
+                    HexConverter.EncodeToUtf16(keyOrToken, vsb.AppendSpan(keyOrToken.Length * 2), HexConverter.Casing.Lower);
                 }
             }
 
