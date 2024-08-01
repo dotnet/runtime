@@ -32,7 +32,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
     <Scenario>WasmTestOnWasmtime</Scenario>
-    <DefineConstants>$(DefineConstants);TARGET_WASi</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">

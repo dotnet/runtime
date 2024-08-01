@@ -348,7 +348,11 @@
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
       <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
-      <!-- TODO this makes hard dependency on wasi:http@0.2.0, ideally this would be trimmable when HTTP is not used -->
+      <!-- 
+      this together with some DLLImports makes dependency on wasi:http@0.2.0
+      it will get trimmed when HTTP is not used and using publish + native rebuild
+      otherwise it will be included in the dotnet.wasm and required -S http argument to wasmtime
+      -->
       <_WasiLinkStepArgs Include="-Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;"/>
       <_WasiLinkStepArgs Include="-Wl,-s" Condition="'$(WasmNativeStrip)' == 'true'"/>
 
