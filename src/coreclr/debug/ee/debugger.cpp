@@ -15174,6 +15174,8 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         filterContext->X0 = (SIZE_T)pDE;
 #elif defined(TARGET_RISCV64)
         filterContext->A0 = (SIZE_T)pDE;
+#elif defined(TARGET_LOONGARCH64)
+        filterContext->A0 = (SIZE_T)pDE;
 #else
         PORTABILITY_ASSERT("Debugger::FuncEvalSetup is not implemented on this platform.");
 #endif
