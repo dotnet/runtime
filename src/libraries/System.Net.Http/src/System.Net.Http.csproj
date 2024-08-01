@@ -456,7 +456,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
-    <Reference Include="System.Threading.Thread" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpHandler.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttp.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop.cs" />
@@ -500,6 +499,10 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'wasi'">
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">

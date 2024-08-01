@@ -119,6 +119,7 @@ namespace System.Net.Http.Functional.Tests
 
     [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
     [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send method is not supported on Android.")]
+    [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
     public sealed class SyncHttpHandlerTest_HttpClientHandlerTest_Headers : HttpClientHandlerTest_Headers
     {
         public SyncHttpHandlerTest_HttpClientHandlerTest_Headers(ITestOutputHelper output) : base(output) { }
