@@ -77,6 +77,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineProperty_NameCollision()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

@@ -131,6 +131,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineField_65536Fields()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

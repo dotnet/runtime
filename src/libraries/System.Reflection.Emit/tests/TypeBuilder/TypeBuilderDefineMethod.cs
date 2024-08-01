@@ -125,6 +125,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethod_65536Methods()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -139,6 +140,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineMethod_65536MethodsPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("DefineMethod_65536MethodsPersistedAssembly"));
