@@ -311,7 +311,7 @@ mono_class_setup_fields (MonoClass *klass)
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 
-	if (real_size > (INT32_MAX - MONO_ABI_SIZEOF (MonoObject)))
+	if (real_size > GINT32_TO_UINT32(INT32_MAX - MONO_ABI_SIZEOF (MonoObject)))
 		mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
 
 	if (explicit_size)
