@@ -66,6 +66,7 @@ namespace System.Buffers
             return AllocateFromExistingData(new ReadOnlySpan<T>(data), placement);
         }
 
+        private static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         private static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         private static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
 
@@ -88,7 +89,7 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (IsBrowser || IsWasi)
+            else if (IsBrowser || IsWasi || IsMonoRuntime)
             {
                 return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
