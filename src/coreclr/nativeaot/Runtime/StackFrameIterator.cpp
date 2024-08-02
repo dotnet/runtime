@@ -1830,7 +1830,10 @@ void StackFrameIterator::PrepareToYieldFrame()
     ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
          ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
-    if (m_dwFlags & ApplyReturnAddressAdjustment)
+    // Do not adjust the PC if ExCollide is set since in that case it's set to the
+    // beginning of the instruction from ExInfo and adjusting it would cause to move
+    // to the previous instruction.
+    if ((m_dwFlags & (ApplyReturnAddressAdjustment | ExCollide)) == ApplyReturnAddressAdjustment)
     {
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
     }
