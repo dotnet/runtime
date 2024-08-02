@@ -547,7 +547,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 

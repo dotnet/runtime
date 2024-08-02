@@ -2472,6 +2472,9 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
+    if (kFile == mdFileNil)
+        return this;
+
     // Handle the module ref case
     if (TypeFromToken(kFile) == mdtModuleRef)
     {
@@ -2484,19 +2487,14 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
     }
 
-    if (kFile == mdFileNil)
-    {
-        return this;
-    }
-
     RETURN NULL;
 }
 
 #ifndef DACCESS_COMPILE
 
-DomainAssembly *ModuleBase::LoadModule(mdFile kFile)
+Module *ModuleBase::LoadModule(mdFile kFile)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Module *)
     {
         INSTANCE_CHECK;
         THROWS;
