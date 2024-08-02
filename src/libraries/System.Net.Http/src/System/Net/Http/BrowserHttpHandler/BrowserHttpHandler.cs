@@ -148,10 +148,7 @@ namespace System.Net.Http
         public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (request.RequestUri == null)
-            {
-                throw new ArgumentNullException(nameof(request.RequestUri));
-            }
+            ArgumentNullException.ThrowIfNull(request.RequestUri);
 
             _cancellationToken = cancellationToken;
             _request = request;
