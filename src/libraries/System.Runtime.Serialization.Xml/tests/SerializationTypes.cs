@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -616,7 +618,7 @@ namespace SerializationTypes
         public string StrProperty { get; set; }
     }
 
-    public class ClassImplementingIXmlSerialiable : IXmlSerializable
+    public class ClassImplementingIXmlSerializable : IXmlSerializable
     {
         public static bool WriteXmlInvoked = false;
         public static bool ReadXmlInvoked = false;
@@ -624,7 +626,7 @@ namespace SerializationTypes
         public string StringValue { get; set; }
         private bool BoolValue { get; set; }
 
-        public ClassImplementingIXmlSerialiable()
+        public ClassImplementingIXmlSerializable()
         {
             BoolValue = true;
         }
@@ -694,7 +696,107 @@ namespace SerializationTypes
         public string TestProperty;
     }
 
+    public class CustomDocument
+    {
+        private XmlDocument? _doc;
+        public XmlDocument Document => _doc ??= new XmlDocument();
 
+        [XmlAnyElement]
+        public XmlNode[] Items
+        {
+            get => _items.ToArray<XmlNode>();
+            set
+            {
+                _items = new List<XmlElement>();
+                foreach (var v in value)
+                {
+                    _items.Add(MakeElement(v));
+                }
+            }
+        }
+        private List<XmlElement> _items = new List<XmlElement>();
+
+        [XmlElement("customElement", typeof(CustomElement))]
+        public List<CustomElement> CustomItems = new List<CustomElement>();
+
+
+        public void AddItem(XmlElement item) => _items.Add(item);
+        public void AddCustomItem(CustomElement item) => CustomItems.Add(item);
+
+        public XmlAttribute CreateAttribute(string name, string value)
+        {
+            var attr = Document.CreateAttribute(name);
+            attr.Value = value;
+            return attr;
+        }
+        public CustomAttribute CreateCustomAttribute(string name, string value)
+        {
+            var attr = new CustomAttribute(null, name, null, Document);
+            attr.Value = value;
+            return attr;
+        }
+
+        private XmlElement MakeElement(XmlNode node)
+        {
+            if (node is XmlElement element)
+            {
+                return element;
+            }
+            else
+            {
+                var element2 = Document.CreateElement(node.LocalName);
+
+                if (node.Attributes != null)
+                    foreach (XmlAttribute attr in node.Attributes)
+                        element2.SetAttribute(attr.LocalName, attr.Value);
+
+                if (node.ChildNodes != null)
+                    foreach (XmlNode child in node.ChildNodes)
+                        element2.AppendChild(MakeElement(child));
+
+                element2.InnerText = node.Value;
+                return element2;
+            }
+        }
+    }
+
+    public class CustomElement
+    {
+        List<XmlAttribute>? _attributes = new List<XmlAttribute>();
+        List<CustomAttribute>? _customAttributes = new List<CustomAttribute>();
+
+        [XmlAttribute("name")]
+        public string Name;
+
+        [XmlAnyAttribute]
+        public XmlAttribute[] Attributes
+        {
+            get => _attributes.ToArray<XmlAttribute>();
+            set => _attributes = value?.ToList();
+        }
+
+        [XmlAnyAttribute]
+        public XmlNode[] CustomAttributes
+        {
+            get => _customAttributes.ToArray<XmlNode>();
+            set
+            {
+                _customAttributes = new List<CustomAttribute>();
+                foreach (var v in value)
+                {
+                    _customAttributes.Add(new CustomAttribute(v.Prefix, v.Name, v.NamespaceURI, v.OwnerDocument) { Value = v.Value });
+                }
+            }
+        }
+
+        public void AddAttribute(XmlAttribute attribute) => _attributes.Add(attribute);
+        public void AddAttribute(CustomAttribute attribute) => _customAttributes.Add(attribute);
+    }
+
+    public class CustomAttribute : XmlAttribute
+    {
+        protected internal CustomAttribute(string? prefix, string localName, string? namespaceURI, XmlDocument doc) : base(prefix, localName, namespaceURI, doc) { }
+    }
     #endregion
 
     public class TypeWithNonPublicDefaultConstructor
@@ -838,14 +940,18 @@ namespace SerializationTypes
 
     public class TypeWithFieldsOrdered
     {
-        [XmlElement(Order = 0)]
-        public int IntField1;
-        [XmlElement(Order = 1)]
-        public int IntField2;
-        [XmlElement(Order = 3)]
-        public string StringField1;
-        [XmlElement(Order = 2)]
+        // Specifying an 'Order' that matches the order of definition defeats the purpose.
+        // If the serializer ignores ordering altogether, it would still work by accident.
+        // Also, change the element names for two fields to be ambiguous without ordering, to
+        // further test that reading the correct fields in the correct order is happening.
+        [XmlElement(Order = 2, ElementName = "strfld")]
         public string StringField2;
+        [XmlElement(Order = 1)]
+        public int IntField1;
+        [XmlElement(Order = 0)]
+        public int IntField2;
+        [XmlElement(Order = 3, ElementName = "strfld")]
+        public string StringField1;
     }
 
     [KnownType(typeof(List<SimpleType>))]
@@ -1032,6 +1138,104 @@ public class DerivedClass : BaseClass
 {
     public new string value;
     public new string Value { get; set; }
+}
+
+[XmlInclude(typeof(SimpleDerivedClass))]
+public class SimpleBaseClass
+{
+    [XmlAttribute]
+    public string? AttributeString { get; set; }
+    [XmlAttribute]
+    public DateTime DateTimeValue { get; set; }
+}
+
+public class SimpleDerivedClass : SimpleBaseClass
+{
+    [XmlAttribute]
+    public bool BoolValue { get; set; }
+}
+
+[XmlSchemaProvider("GetMySchema")]
+[XmlRoot(Namespace = XmlNamespace)]
+public class XmlSerializableBaseClass : IXmlSerializable
+{
+    public const string XmlNamespace = "http://example.com/serializer-test-namespace";
+    public const string BaseName = "BaseIXmlSerializable";
+    public const string DerivedName = "DerivedIXmlSerializable";
+
+    public string? AttributeString { get; set; }
+    public DateTime DateTimeValue { get; set; }
+
+    public virtual void WriteXml(XmlWriter writer)
+    {
+        writer.WriteAttributeString("AttributeString", AttributeString);
+        writer.WriteAttributeString("DateTimeValue", DateTimeValue.ToString());
+    }
+
+    public virtual void ReadXml(XmlReader reader)
+    {
+        if (reader.MoveToAttribute("AttributeString"))
+            AttributeString = reader.Value;
+        if (reader.MoveToAttribute("DateTimeValue"))
+            DateTimeValue = DateTime.Parse(reader.Value);
+    }
+
+    public XmlSchema? GetSchema() => null;
+    public static XmlQualifiedName GetMySchema(XmlSchemaSet xs) => GetSchemaForType(xs, BaseName);
+
+    protected static XmlQualifiedName GetSchemaForType(XmlSchemaSet xs, string xmlTypeName)
+    {
+        var schema = new XmlSchema() { Id = "DerivedIXmlSerializableSchema", TargetNamespace = XmlNamespace };
+
+        // Define type for base class
+        var baseType = new XmlSchemaComplexType() { Name = BaseName };
+        baseType.Attributes.Add(new XmlSchemaAttribute { Name = "AttributeString", SchemaTypeName = new XmlQualifiedName("string", XmlSchema.Namespace) });
+        baseType.Attributes.Add(new XmlSchemaAttribute { Name = "DateTimeValue", SchemaTypeName = new XmlQualifiedName("dateTime", XmlSchema.Namespace) });
+        schema.Items.Add(baseType);
+
+        // Define type for derived class
+        var derivedType = new XmlSchemaComplexType() { Name = DerivedName };
+        var baseExtension = new XmlSchemaComplexContentExtension() { BaseTypeName = new XmlQualifiedName(BaseName, schema.TargetNamespace) };
+        baseExtension.Attributes.Add(new XmlSchemaAttribute { Name = "BoolValue", SchemaTypeName = new XmlQualifiedName("string", XmlSchema.Namespace) });
+        derivedType.ContentModel = new XmlSchemaComplexContent { Content = baseExtension };
+        schema.Items.Add(derivedType);
+
+        xs.Add(schema);
+        return new XmlQualifiedName(xmlTypeName, XmlNamespace);
+    }
+}
+
+[XmlSchemaProvider("GetMySchema")]
+public class XmlSerializableDerivedClass : XmlSerializableBaseClass
+{
+    public bool BoolValue { get; set; }
+
+    public override void WriteXml(XmlWriter writer)
+    {
+        // I don't know why the serializer does this for regular serializable classes, but not for IXmlSerializable.
+        // We have to emit xsi:type manually to get derived deserialization to work. Unfortunately, we always have to
+        // emit this extra declaration, even if the derived class is the root element.
+        EnsureDefaultNamespaces(writer);
+        writer.WriteAttributeString("xsi", "type", null, DerivedName);
+
+        base.WriteXml(writer);
+        writer.WriteAttributeString("BoolValue", BoolValue.ToString());
+    }
+
+    public override void ReadXml(XmlReader reader)
+    {
+        base.ReadXml(reader);
+        if (reader.MoveToAttribute("BoolValue"))
+            BoolValue = bool.Parse(reader.Value);
+    }
+
+    public static void EnsureDefaultNamespaces(System.Xml.XmlWriter writer)
+    {
+        if (writer.LookupPrefix(System.Xml.Schema.XmlSchema.InstanceNamespace) == null)
+            writer.WriteAttributeString("xmlns", "xsi", null, System.Xml.Schema.XmlSchema.InstanceNamespace);
+    }
+
+    public static new XmlQualifiedName GetMySchema(XmlSchemaSet xs) => GetSchemaForType(xs, DerivedName);
 }
 
 [XmlRootAttribute("PurchaseOrder", Namespace = "http://www.contoso1.com", IsNullable = false)]
