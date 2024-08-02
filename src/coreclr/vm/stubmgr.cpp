@@ -1354,6 +1354,9 @@ static BOOL TraceManagedThunk(
 
     LOG((LF_CORDB, LL_INFO10000, "TraceManagedThunk: at %p, retAddr is %p\n", pc, (*pRetAddr)));
 
+    // NOTE: This doesn't work correctly and we anticipate changing it in the future. See
+    // the discussion at https://github.com/dotnet/runtime/pull/104731/files#r1693796408
+    // for details.
     DELEGATEREF orDelegate;
     if (GetEEFuncEntryPoint(SinglecastDelegateInvokeStub) == pc)
     {

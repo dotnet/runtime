@@ -3465,16 +3465,40 @@ namespace Internal.JitInterface
             lowering = SwiftPhysicalLowering.LowerTypeForSwiftSignature(HandleToObject(structHnd));
         }
 
-        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
-        }
+            FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                HandleToObject(structHnd), _compilation.TypeSystemContext.Target.Architecture);
+            if (info.flags != FpStruct.UseIntCallConv)
+            {
+                lowering.byIntegerCallConv = false;
+                lowering.Offsets[0] = info.offset1st;
+                lowering.Offsets[1] = info.offset2nd;
+                lowering.numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2;
 
-        private uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc typeDesc = HandleToObject(cls);
-            return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.FloatInt | FpStruct.OnlyOne)) != 0)
+                    lowering.LoweredElements[0] = (info.SizeShift1st() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.BothFloat | FpStruct.IntFloat)) != 0)
+                    lowering.LoweredElements[1] = (info.SizeShift2nd() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+
+                if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
+                {
+                    int index = ((info.flags & FpStruct.FloatInt) != 0) ? 1 : 0;
+                    uint sizeShift = (index == 0) ? info.SizeShift1st() : info.SizeShift2nd();
+                    lowering.LoweredElements[index] = (CorInfoType)((int)CorInfoType.CORINFO_TYPE_BYTE + sizeShift * 2);
+
+                    // unittests
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 0 * 2 == (int)CorInfoType.CORINFO_TYPE_BYTE);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 1 * 2 == (int)CorInfoType.CORINFO_TYPE_SHORT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 2 * 2 == (int)CorInfoType.CORINFO_TYPE_INT);
+                    Debug.Assert((int)CorInfoType.CORINFO_TYPE_BYTE + 3 * 2 == (int)CorInfoType.CORINFO_TYPE_LONG);
+                }
+            }
+            else
+            {
+                lowering.byIntegerCallConv = true;
+            }
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -4360,11 +4384,43 @@ namespace Internal.JitInterface
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
                 // feature is supported or hardware accelerated.
-                if (!isMethodDefinedInCoreLib() ||
-                    MethodBeingCompiled.Name == "get_IsSupported" ||
-                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
+                if (!isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                }
+                else
+                {
+                    ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
+
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"))
+                    {
+                        // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                        // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                        // skip the prefix before trying to resolve the method.
+
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(70);
+
+                        if (partialMethodName.StartsWith("<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(7);
+                        }
+                        else if (partialMethodName.StartsWith("64<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(9);
+                        }
+                        else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                 partialMethodName.StartsWith("256<T>,T>.") ||
+                                 partialMethodName.StartsWith("512<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(10);
+                        }
+                    }
+
+                    if (methodName.Equals("get_IsSupported", StringComparison.Ordinal) ||
+                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal))
+                    {
+                        _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                    }
                 }
             }
             return supportEnabled;

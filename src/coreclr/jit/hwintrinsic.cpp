@@ -1660,7 +1660,24 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         {
             assert(!mustExpand);
             // The imm-HWintrinsics that do not accept all imm8 values may throw
-            // ArgumentOutOfRangeException when the imm argument is not in the valid range
+            // ArgumentOutOfRangeException when the imm argument is not in the valid range,
+            // unless the intrinsic can be transformed into one that does accept all imm8 values
+
+#ifdef TARGET_ARM64
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftRightLogical:
+                    *useFallback = true;
+                    break;
+
+                    // TODO: Implement more AdvSimd fallbacks in Compiler::impNonConstFallback
+
+                default:
+                    assert(*useFallback == false);
+                    break;
+            }
+#endif // TARGET_ARM64
+
             return false;
         }
     }
@@ -2297,10 +2314,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (intrinsic)
         {
-            case NI_Sve_CreateBreakAfterMask:
             case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                // HWInstrinsic requires a mask for op3
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                FALLTHROUGH;
+            }
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateMaskForFirstActiveElement:
             case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
@@ -2310,29 +2332,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // HWInstrinsic requires a mask for op2
                 convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
-                break;
+                FALLTHROUGH;
             }
-
             default:
-                break;
-        }
-
-        switch (intrinsic)
-        {
-            case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforePropagateMask:
             {
-                // HWInstrinsic requires a mask for op3
-                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                // HWInstrinsic requires a mask for op1
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
                 break;
             }
-
-            default:
-                break;
         }
-
-        // HWInstrinsic requires a mask for op1
-        convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {

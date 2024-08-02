@@ -441,7 +441,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3SearchValues.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\AsciiWithSecondSetCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMapState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticWithAsciiCharSearchValues.cs" />
@@ -2801,5 +2800,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryNegationOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventLoop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_0.PollInterop.cs" />
   </ItemGroup>
 </Project>

@@ -7201,6 +7201,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
+            assert((gtFlags & GTF_HW_USER_CALL) == 0);
+
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
@@ -7239,6 +7241,15 @@ bool GenTree::OperMayThrow(Compiler* comp)
         helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
         return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (OperIsHWIntrinsic())
+    {
+        if ((gtFlags & GTF_HW_USER_CALL) != 0)
+        {
+            return true;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
@@ -7624,7 +7635,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
+#ifdef TARGET_ARM64
+    assert(genIsValidIntReg(reg) || (reg == REG_SPBASE) || (reg == REG_FFR));
+#else
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
+#endif
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
     return result;
 }
@@ -11709,6 +11724,14 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilKind = "cse";
             ilNum  = lclNum - optCSEstart;
         }
+#ifdef TARGET_ARM64
+        else if (lclNum == lvaFfrRegister)
+        {
+            // We introduce this LclVar in lowering, hence special case the printing of
+            // it instead of handling it in "rationalizer" below.
+            ilName = "FFReg";
+        }
+#endif
         else if (lclNum >= optCSEstart)
         {
             // Currently any new LclVar's introduced after the CSE phase
@@ -20106,7 +20129,7 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
                                           CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
-    gtFlags |= GTF_HW_USER_CALL;
+    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
 
     size_t operandCount = GetOperandCount();
 
@@ -29466,6 +29489,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(returnType != TYP_UNKNOWN);
             assert(returnType != TYP_STRUCT);
             m_regType[0] = returnType;
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
+            {
+                assert(lowering->numLoweredElements == 1);
+                m_fieldOffset[0] = lowering->offsets[0];
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
         }
 
@@ -29531,38 +29563,27 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             }
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
-
-#ifdef TARGET_LOONGARCH64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-#else
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
-#endif
+            assert(structSize > sizeof(float));
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-
-            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] =
-                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] =
-                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
+                static_assert(MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS, "");
+                for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+                {
+                    m_regType[i]     = JITtype2varType(lowering->loweredElements[i]);
+                    m_fieldOffset[i] = lowering->offsets[i];
+                    if (m_regType[i] == TYP_LONG && ((m_fieldOffset[i] % TARGET_POINTER_SIZE) == 0))
+                    {
+                        unsigned slot = m_fieldOffset[i] / TARGET_POINTER_SIZE;
+                        m_regType[i]  = comp->getJitGCType(gcPtrs[slot]);
+                    }
+                }
+                assert(varTypeIsFloating(m_regType[0]) || varTypeIsFloating(m_regType[1]));
             }
             else
             {
@@ -29570,6 +29591,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
+                m_fieldOffset[0] = 0;
+                m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
 #elif defined(TARGET_X86)
@@ -30524,8 +30547,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
                     DEBUG_DESTROY_NODE(op, tree);
-                    INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
+                    if (fgGlobalMorph)
+                    {
+                        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    }
                     return vectorNode;
                 }
             }
@@ -30894,10 +30920,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     if (otherNode->TypeIs(TYP_SIMD16))
                     {
-                        if ((ni != NI_AVX2_ShiftLeftLogicalVariable) && (ni != NI_AVX2_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX512F_VL_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX10v1_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX2_ShiftRightLogicalVariable))
+                        if (!HWIntrinsicInfo::IsVariableShift(ni))
                         {
                             // The xarch shift instructions support taking the shift amount as
                             // a simd16, in which case they take the shift amount from the lower
@@ -30905,11 +30928,16 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                             int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
 
-                            if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
+                            if (static_cast<uint64_t>(shiftAmount) >=
+                                (static_cast<uint64_t>(genTypeSize(simdBaseType)) * BITS_PER_BYTE))
                             {
-                                // Ensure we don't lose track the the amount is an overshift
+                                // Set to -1 to indicate an explicit overshift
                                 shiftAmount = -1;
                             }
+
+                            // Ensure we broadcast to the right vector size
+                            otherNode->gtType = retType;
+
                             otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
                         }
                     }
@@ -31148,6 +31176,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else if (op3 == nullptr)
     {
+        if (isScalar)
+        {
+            // We don't support folding for scalars when only one input is constant
+            // because it means one value is computed and the remaining values are
+            // either zeroed or preserved based on the underlying target architecture
+            oper = GT_NONE;
+        }
+
         switch (oper)
         {
             case GT_ADD:

@@ -564,7 +564,26 @@ void HWIntrinsicInfo::lookupImmBounds(
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
 {
-    return nullptr;
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_ShiftRightLogical:
+        {
+            // AdvSimd.ShiftRightLogical be replaced with AdvSimd.ShiftLogical, which takes op2 in a simd register
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impSIMDPopStack();
+
+            // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
+            GenTree* tmpOp =
+                gtNewSimdCreateBroadcastNode(simdType, gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2),
+                                             simdBaseJitType, genTypeSize(simdType));
+            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, NI_AdvSimd_ShiftLogical, simdBaseJitType,
+                                            genTypeSize(simdType));
+        }
+
+        default:
+            return nullptr;
+    }
 }
 
 //------------------------------------------------------------------------

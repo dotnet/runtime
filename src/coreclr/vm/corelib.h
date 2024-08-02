@@ -260,7 +260,6 @@ DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
-DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
 #ifndef TARGET_64BIT
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
@@ -269,9 +268,6 @@ DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Chec
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
-
-DEFINE_CLASS(MATHF,                 System,                 MathF)
-DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
@@ -646,6 +642,20 @@ DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byt
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
+DEFINE_CLASS(THROWHELPER,     System,                 ThrowHelper)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTEXCEPTION,             ThrowArgumentException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTOUTOFRANGEEXCEPTION,   ThrowArgumentOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWINDEXOUTOFRANGEEXCEPTION,      ThrowIndexOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNOTIMPLEMENTEDEXCEPTION,       ThrowNotImplementedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWPLATFORMNOTSUPPORTEDEXCEPTION, ThrowPlatformNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWTYPENOTSUPPORTED,              ThrowTypeNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWOVERFLOWEXCEPTION,             ThrowOverflowException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWDIVIDEBYZEROEXCEPTION,         ThrowDivideByZeroException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNULLREFEXCEPTION,              ThrowNullReferenceException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWVERIFICATIONEXCEPTION,         ThrowVerificationException, SM_Int_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,  ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWENTRYPOINTNOTFOUNDEXCEPTION,   ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
@@ -867,11 +877,11 @@ DEFINE_FIELD_U(_id,                         AssemblyLoadContextBaseObject, _id)
 DEFINE_FIELD_U(_state,                      AssemblyLoadContextBaseObject, _state)
 DEFINE_FIELD_U(_isCollectible,              AssemblyLoadContextBaseObject, _isCollectible)
 DEFINE_CLASS(ASSEMBLYLOADCONTEXT,  Loader,                AssemblyLoadContext)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssemblyBase)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssembly)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmanagedDll,           SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_Str_AssemblyBase_IntPtr_RetIntPtr)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssemblyBase)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssemblyBase)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssembly)
 DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,              AssemblyLoad)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,           OnAssemblyLoad,             SM_Assembly_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,        OnResourceResolve,          SM_Assembly_Str_RetAssembly)
@@ -1123,15 +1133,10 @@ DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_Ptr
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
 
-// The generator for the ILLink XML doesn't understand inner classes so generation
-// needs to skip the following type.
-// See https://github.com/dotnet/runtime/issues/71847
-#ifndef FOR_ILLINK
 DEFINE_CLASS(UTF8STRINGMARSHALLER_IN, Marshalling, Utf8StringMarshaller+ManagedToUnmanagedIn)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfByte_RetVoid)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
-#endif // FOR_ILLINK
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
@@ -1180,9 +1185,7 @@ DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 #endif // FEATURE_EH_FUNCLETS
 
-#ifndef FOR_ILLINK
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
-#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)
