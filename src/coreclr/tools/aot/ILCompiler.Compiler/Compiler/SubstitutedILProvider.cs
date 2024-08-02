@@ -659,7 +659,7 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
-        private bool TryGetMethodConstantValue(MethodDesc method, out int constant)
+        private bool TryGetMethodConstantValue(MethodDesc method, out int constant, int level = 0)
         {
             method = method.GetTypicalMethodDefinition();
 
@@ -680,6 +680,32 @@ namespace ILCompiler
                 case ILOpcode.ldc_i4_s: constant = (sbyte)reader.ReadILByte(); break;
                 case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: constant = opcode - ILOpcode.ldc_i4_0; break;
                 case ILOpcode.ldc_i4_m1: constant = -1; break;
+
+                case ILOpcode.call:
+                {
+                    MethodDesc callee = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                    if (reader.ReadILOpcode() != ILOpcode.ret)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
+                    if (substitution != null && substitution.Value is int c)
+                    {
+                        constant = c;
+                        return true;
+                    }
+
+                    if (level > 4)
+                    {
+                        constant = 0;
+                        return false;
+                    }
+
+                    return TryGetMethodConstantValue(callee, out constant, level + 1);
+                }
+
                 default:
                     constant = 0;
                     return false;
