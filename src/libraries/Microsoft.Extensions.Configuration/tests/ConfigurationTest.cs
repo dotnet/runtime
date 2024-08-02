@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 Configuration = configurationRoot,
                 ShouldDisposeConfiguration = false,
             };
-            
+
             var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
             IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
             Assert.Equal(1000, childKeys.Count());
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 Configuration = configurationRoot,
                 ShouldDisposeConfiguration = false,
             };
-            
+
             var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
             IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
             Assert.Equal(1000, childKeys.Count());
@@ -507,11 +507,32 @@ namespace Microsoft.Extensions.Configuration.Test
             var memVal1 = config.GetConnectionString("DB1:Connection1");
             var memVal2 = config.GetConnectionString("DB1:Connection2");
             var memVal3 = config.GetConnectionString("DB2:Connection");
+            var nonExistingValue = config.GetConnectionString("DB2:NonExistingKey");
 
             // Assert
             Assert.Equal("MemVal1", memVal1);
             Assert.Equal("MemVal2", memVal2);
             Assert.Equal("MemVal3", memVal3);
+            Assert.Null(nonExistingValue);
+        }
+
+        [Fact]
+        public void GetConnectionStringMissingThrowException()
+        {
+            // Arrange
+            var dict = new Dictionary<string, string>()
+            {
+                {"Key", "Value"}
+            };
+
+            var config = new ConfigurationManager();
+            ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
+
+            // Act
+            var exception = Assert.Throws<InvalidOperationException>(() => config.GetConnectionString("NonExistingKey"));
+
+            // Assert
+            Assert.Equal("Section 'ConnectionStrings' not found in configuration.", exception.Message);
         }
 
         [Fact]
