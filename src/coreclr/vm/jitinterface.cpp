@@ -12579,11 +12579,14 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
          }
 
+#ifndef TARGET_AMD64
          // Always emit frames for methods marked no-inline (see #define ETW_EBP_FRAMED in the JIT)
+         // We don't need a frame pointer on AMD64 for the frame to show up in stack walk.
          if (IsMiNoInlining(dwImplFlags))
          {
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
          }
+#endif
     }
 
     if (ftn->HasUnmanagedCallersOnlyAttribute())
