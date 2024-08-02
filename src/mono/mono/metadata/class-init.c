@@ -2538,7 +2538,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 	}
 
-	/*valuetypes can't be neither bigger than 1Mb or empty. */
+	/*valuetypes can not be size 0 or bigger than 2gb. */
 	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > INT32_MAX)) {
 		/* Special case compiler generated types */
 		/* Hard to check for [CompilerGenerated] here */
