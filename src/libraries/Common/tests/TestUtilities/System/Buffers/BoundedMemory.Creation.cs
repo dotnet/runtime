@@ -66,10 +66,6 @@ namespace System.Buffers
             return AllocateFromExistingData(new ReadOnlySpan<T>(data), placement);
         }
 
-        private static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
-        private static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
-        private static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
-
         private static void FillRandom(Span<byte> buffer)
         {
             // Loop over a Random instance manually since Random.NextBytes(Span<byte>) doesn't
@@ -92,7 +88,7 @@ namespace System.Buffers
 #if NETFRAMEWORK
             return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
 #else
-            else if (IsBrowser || IsWasi || IsMonoRuntime)
+            else if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
             {
                 return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
