@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [Collection(nameof(TracingTestCollection))]
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
     public class KeepAliveTest : ClientWebSocketTestBase
     {
@@ -18,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [OuterLoop] // involves long delay
-        public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
+        public async Task KeepAlive_LongDelayBetweenSendAndReceive_Succeeds()
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(System.Net.Test.Common.Configuration.WebSockets.RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
             {
@@ -30,7 +32,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(1, (await cws.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None)).Count);
                 Assert.Equal(42, receiveBuffer[0]);
 
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendReceives_Succeeds", CancellationToken.None);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "KeepAlive_LongDelayBetweenSendAndReceive_Succeeds", CancellationToken.None);
             }
         }
     }

@@ -66,6 +66,7 @@
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="SendReceiveTest.Http2.cs" />
+    <Compile Include="TracingTestCollection.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />
