@@ -3658,6 +3658,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorByteZeroExtend(Vector<ulong> mask, byte* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
 
 
+        // Unextended load, first-faulting
+
         /// <summary>
         /// svfloat64_t svldff1_gather_[s64]index[_f64](svbool_t pg, const float64_t *base, svint64_t indices)
         ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
@@ -4902,6 +4904,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorByteZeroExtendToUInt64(Vector<ulong> mask, byte* address) { throw new PlatformNotSupportedException(); }
 
+
+        // Unextended load, first-faulting
 
         /// <summary>
         /// svuint8_t svldff1[_u8](svbool_t pg, const uint8_t *base)
