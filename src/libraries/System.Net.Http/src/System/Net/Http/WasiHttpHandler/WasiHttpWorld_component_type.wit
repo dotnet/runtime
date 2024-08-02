@@ -1,0 +1,270 @@
+package wasi:io@0.2.0 {
+  interface poll {
+    resource pollable {
+      ready: func() -> bool;
+      block: func();
+    }
+
+    poll: func(in: list<borrow<pollable>>) -> list<u32>;
+  }
+
+  interface error {
+    resource error {
+      to-debug-string: func() -> string;
+    }
+  }
+
+  interface streams {
+    use error.{error};
+    use poll.{pollable};
+
+    variant stream-error {
+      last-operation-failed(error),
+      closed,
+    }
+
+    resource input-stream {
+      read: func(len: u64) -> result<list<u8>, stream-error>;
+      blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
+      skip: func(len: u64) -> result<u64, stream-error>;
+      blocking-skip: func(len: u64) -> result<u64, stream-error>;
+      subscribe: func() -> pollable;
+    }
+
+    resource output-stream {
+      check-write: func() -> result<u64, stream-error>;
+      write: func(contents: list<u8>) -> result<_, stream-error>;
+      blocking-write-and-flush: func(contents: list<u8>) -> result<_, stream-error>;
+      flush: func() -> result<_, stream-error>;
+      blocking-flush: func() -> result<_, stream-error>;
+      subscribe: func() -> pollable;
+      write-zeroes: func(len: u64) -> result<_, stream-error>;
+      blocking-write-zeroes-and-flush: func(len: u64) -> result<_, stream-error>;
+      splice: func(src: borrow<input-stream>, len: u64) -> result<u64, stream-error>;
+      blocking-splice: func(src: borrow<input-stream>, len: u64) -> result<u64, stream-error>;
+    }
+  }
+
+}
+
+
+package wasi:clocks@0.2.0 {
+  interface monotonic-clock {
+    use wasi:io/poll@0.2.0.{pollable};
+
+    type instant = u64;
+
+    type duration = u64;
+
+    now: func() -> instant;
+
+    resolution: func() -> duration;
+
+    subscribe-instant: func(when: instant) -> pollable;
+
+    subscribe-duration: func(when: duration) -> pollable;
+  }
+
+}
+
+
+package wasi:http@0.2.0 {
+  interface types {
+    use wasi:clocks/monotonic-clock@0.2.0.{duration};
+    use wasi:io/streams@0.2.0.{input-stream, output-stream};
+    use wasi:io/error@0.2.0.{error as io-error};
+    use wasi:io/poll@0.2.0.{pollable};
+
+    variant method {
+      get,
+      head,
+      post,
+      put,
+      delete,
+      connect,
+      options,
+      trace,
+      patch,
+      other(string),
+    }
+
+    variant scheme {
+      HTTP,
+      HTTPS,
+      other(string),
+    }
+
+    record DNS-error-payload {
+      rcode: option<string>,
+      info-code: option<u16>,
+    }
+
+    record TLS-alert-received-payload {
+      alert-id: option<u8>,
+      alert-message: option<string>,
+    }
+
+    record field-size-payload {
+      field-name: option<string>,
+      field-size: option<u32>,
+    }
+
+    variant error-code {
+      DNS-timeout,
+      DNS-error(DNS-error-payload),
+      destination-not-found,
+      destination-unavailable,
+      destination-IP-prohibited,
+      destination-IP-unroutable,
+      connection-refused,
+      connection-terminated,
+      connection-timeout,
+      connection-read-timeout,
+      connection-write-timeout,
+      connection-limit-reached,
+      TLS-protocol-error,
+      TLS-certificate-error,
+      TLS-alert-received(TLS-alert-received-payload),
+      HTTP-request-denied,
+      HTTP-request-length-required,
+      HTTP-request-body-size(option<u64>),
+      HTTP-request-method-invalid,
+      HTTP-request-URI-invalid,
+      HTTP-request-URI-too-long,
+      HTTP-request-header-section-size(option<u32>),
+      HTTP-request-header-size(option<field-size-payload>),
+      HTTP-request-trailer-section-size(option<u32>),
+      HTTP-request-trailer-size(field-size-payload),
+      HTTP-response-incomplete,
+      HTTP-response-header-section-size(option<u32>),
+      HTTP-response-header-size(field-size-payload),
+      HTTP-response-body-size(option<u64>),
+      HTTP-response-trailer-section-size(option<u32>),
+      HTTP-response-trailer-size(field-size-payload),
+      HTTP-response-transfer-coding(option<string>),
+      HTTP-response-content-coding(option<string>),
+      HTTP-response-timeout,
+      HTTP-upgrade-failed,
+      HTTP-protocol-error,
+      loop-detected,
+      configuration-error,
+      internal-error(option<string>),
+    }
+
+    variant header-error {
+      invalid-syntax,
+      forbidden,
+      immutable,
+    }
+
+    type field-key = string;
+
+    type field-value = list<u8>;
+
+    resource fields {
+      constructor();
+      from-list: static func(entries: list<tuple<field-key, field-value>>) -> result<fields, header-error>;
+      get: func(name: field-key) -> list<field-value>;
+      has: func(name: field-key) -> bool;
+      set: func(name: field-key, value: list<field-value>) -> result<_, header-error>;
+      delete: func(name: field-key) -> result<_, header-error>;
+      append: func(name: field-key, value: field-value) -> result<_, header-error>;
+      entries: func() -> list<tuple<field-key, field-value>>;
+      clone: func() -> fields;
+    }
+
+    type headers = fields;
+
+    type trailers = fields;
+
+    resource incoming-request {
+      method: func() -> method;
+      path-with-query: func() -> option<string>;
+      scheme: func() -> option<scheme>;
+      authority: func() -> option<string>;
+      headers: func() -> headers;
+      consume: func() -> result<incoming-body>;
+    }
+
+    resource outgoing-request {
+      constructor(headers: headers);
+      body: func() -> result<outgoing-body>;
+      method: func() -> method;
+      set-method: func(method: method) -> result;
+      path-with-query: func() -> option<string>;
+      set-path-with-query: func(path-with-query: option<string>) -> result;
+      scheme: func() -> option<scheme>;
+      set-scheme: func(scheme: option<scheme>) -> result;
+      authority: func() -> option<string>;
+      set-authority: func(authority: option<string>) -> result;
+      headers: func() -> headers;
+    }
+
+    resource request-options {
+      constructor();
+      connect-timeout: func() -> option<duration>;
+      set-connect-timeout: func(duration: option<duration>) -> result;
+      first-byte-timeout: func() -> option<duration>;
+      set-first-byte-timeout: func(duration: option<duration>) -> result;
+      between-bytes-timeout: func() -> option<duration>;
+      set-between-bytes-timeout: func(duration: option<duration>) -> result;
+    }
+
+    resource response-outparam {
+      set: static func(param: response-outparam, response: result<outgoing-response, error-code>);
+    }
+
+    type status-code = u16;
+
+    resource incoming-response {
+      status: func() -> status-code;
+      headers: func() -> headers;
+      consume: func() -> result<incoming-body>;
+    }
+
+    resource incoming-body {
+      %stream: func() -> result<input-stream>;
+      finish: static func(this: incoming-body) -> future-trailers;
+    }
+
+    resource future-trailers {
+      subscribe: func() -> pollable;
+      get: func() -> option<result<result<option<trailers>, error-code>>>;
+    }
+
+    resource outgoing-response {
+      constructor(headers: headers);
+      status-code: func() -> status-code;
+      set-status-code: func(status-code: status-code) -> result;
+      headers: func() -> headers;
+      body: func() -> result<outgoing-body>;
+    }
+
+    resource outgoing-body {
+      write: func() -> result<output-stream>;
+      finish: static func(this: outgoing-body, trailers: option<trailers>) -> result<_, error-code>;
+    }
+
+    resource future-incoming-response {
+      subscribe: func() -> pollable;
+      get: func() -> option<result<result<incoming-response, error-code>>>;
+    }
+
+    http-error-code: func(err: borrow<io-error>) -> option<error-code>;
+  }
+
+  interface outgoing-handler {
+    use types.{outgoing-request, request-options, future-incoming-response, error-code};
+
+    handle: func(request: outgoing-request, options: option<request-options>) -> result<future-incoming-response, error-code>;
+  }
+
+  world wasi-http {
+    import wasi:io/poll@0.2.0;
+    import wasi:clocks/monotonic-clock@0.2.0;
+    import wasi:io/error@0.2.0;
+    import wasi:io/streams@0.2.0;
+    import types;
+    import outgoing-handler;
+  }
+}
