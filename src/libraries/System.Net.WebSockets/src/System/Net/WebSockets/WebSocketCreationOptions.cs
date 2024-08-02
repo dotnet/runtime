@@ -37,6 +37,8 @@ namespace System.Net.WebSockets
 
         /// <summary>
         /// The keep-alive interval to use, or <see cref="TimeSpan.Zero"/> or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.
+        /// If <see cref="WebSocketCreationOptions.KeepAliveTimeout"/> is set, then PING messages are sent and peer's PONG responses are expected, otherwise,
+        /// unsolicited PONG messages are used as a keep-alive heartbeat.
         /// The default is <see cref="TimeSpan.Zero"/>.
         /// </summary>
         public TimeSpan KeepAliveInterval
