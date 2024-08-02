@@ -103,7 +103,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         }
 
         [Flags]
-        enum RangeSectionFlags : int
+        private enum RangeSectionFlags : int
         {
             CodeHeap = 0x02,
             RangeList = 0x04,
@@ -133,6 +133,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     methodDescAddress = TargetPointer.Null;
                     return false;
                 }
+                // FIXME(cdac): prototype uses R2RModule to determine if the RangeSection belongs to the JIT or to R2R,
+                // we don't need an extra JitManagerKind field.
                 Data.IJitManager jitManager = target.ProcessedData.GetOrAdd<Data.IJitManager>(_rangeSection.JitManager);
                 switch ((JitManagerKind)jitManager.JitManagerKind)
                 {
@@ -154,7 +156,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     methodDescAddress = TargetPointer.Null;
                     return false;
                 }
-                TargetPointer start = EEFindMethodCode(jitManager, jittedCodeAddress);
+                TargetPointer start = EEFindMethodCode(target, jitManager, jittedCodeAddress);
                 if (start == TargetPointer.Null)
                 {
                     methodDescAddress = TargetPointer.Null;
@@ -178,7 +180,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 return codeHeaderIndirect.Value <= stubCodeBlockLast;
             }
 
-            private TargetPointer EEFindMethodCode(Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress)
+            private TargetPointer EEFindMethodCode(Target target, Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress)
             {
                 // EEJitManager::FindMethodCode
                 if (_rangeSection == null)
@@ -190,6 +192,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     throw new InvalidOperationException("RangeSection is not a code heap");
                 }
                 TargetPointer heapListAddress = _rangeSection.HeapList;
+                Data.HeapList heapList = _target.ProcessedData.GetOrAdd<Data.HeapList>(heapListAddress);
 #if false
     HeapList *pHp = pRangeSection->_pHeapList;
 
@@ -200,79 +203,11 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     }
 
     TADDR base = pHp->mapBase;
-    TADDR delta = currentPC - base;
     PTR_DWORD pMap = pHp->pHdrMap;
     PTR_DWORD pMapStart = pMap;
-
-    DWORD tmp;
-
-    size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
-                                        // ( == index into the array of nibbles)
-    DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
-
-    _ASSERTE(offset == (offset & NIBBLE_MASK));
-
-    pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
-
-    // get DWORD and shift down our nibble
-
-    PREFIX_ASSUME(pMap != NULL);
-    tmp = VolatileLoadWithoutBarrier<DWORD>(pMap) >> POS2SHIFTCOUNT(startPos);
-
-    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset) )
-    {
-        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
-    }
-
-    // Is there a header in the remainder of the DWORD ?
-    tmp = tmp >> NIBBLE_SIZE;
-
-    if (tmp)
-    {
-        startPos--;
-        while (!(tmp & NIBBLE_MASK))
-        {
-            tmp = tmp >> NIBBLE_SIZE;
-            startPos--;
-        }
-        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
-    }
-
-    // We skipped the remainder of the DWORD,
-    // so we must set startPos to the highest position of
-    // previous DWORD, unless we are already on the first DWORD
-
-    if (startPos < NIBBLES_PER_DWORD)
-        return 0;
-
-    startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
-
-    // Skip "headerless" DWORDS
-
-    while (pMapStart < pMap && 0 == (tmp = VolatileLoadWithoutBarrier<DWORD>(--pMap)))
-    {
-        startPos -= NIBBLES_PER_DWORD;
-    }
-
-    // This helps to catch degenerate error cases. This relies on the fact that
-    // startPos cannot ever be bigger than MAX_UINT
-    if (((INT_PTR)startPos) < 0)
-        return 0;
-
-    // Find the nibble with the header in the DWORD
-
-    while (startPos && !(tmp & NIBBLE_MASK))
-    {
-        tmp = tmp >> NIBBLE_SIZE;
-        startPos--;
-    }
-
-    if (startPos == 0 && tmp == 0)
-        return 0;
-
-    return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
-
 #endif
+                NibbleMap nibbleMap = NibbleMap.Create(target);
+                return nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
 
             }
         }
@@ -290,7 +225,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         internal EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
         {
             RangeSection range = LookupRangeSection(jittedCodeAddress);
-            if (!range.JitCodeToMethodInfo(jittedCodeAddress, out TargetPointer methodDescAddress))
+            if (!range.JitCodeToMethodInfo(_target, jittedCodeAddress, out TargetPointer methodDescAddress))
             {
                 return null;
             }
