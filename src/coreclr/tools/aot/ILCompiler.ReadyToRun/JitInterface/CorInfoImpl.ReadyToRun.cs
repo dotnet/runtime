@@ -3173,7 +3173,7 @@ namespace Internal.JitInterface
             _ehClauses[EHnumber] = clause;
         }
 
-        private readonly Stack<List<ISymbolNode>> _stashedPrecodeFixups = new Stack<List<ISymbolNode>>();
+        private readonly Stack<List<ISymbolNode>> _stashedPrecodeFixups = FailFastIfNull(new Stack<List<ISymbolNode>>());
         private readonly Stack<HashSet<MethodDesc>> _stashedInlinedMethods = FailFastIfNull(new Stack<HashSet<MethodDesc>>());
 
         private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
@@ -3191,10 +3191,10 @@ namespace Internal.JitInterface
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Stack<HashSet<MethodDesc>> FailFastIfNull(Stack<HashSet<MethodDesc>> s)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Stack<T> FailFastIfNull<T>(Stack<T> s)
         {
-            var array = Accessor<HashSet<MethodDesc>>.GetArray(s);
+            var array = Accessor<T>.GetArray(s);
             if (array == null)
                 Environment.FailFast("Got null array");
             return s;
