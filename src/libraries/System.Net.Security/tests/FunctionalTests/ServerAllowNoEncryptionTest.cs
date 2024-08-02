@@ -35,10 +35,12 @@ namespace System.Net.Security.Tests
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false),
                         server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         clientStream.Socket.RemoteEndPoint, client.CipherAlgorithm, client.CipherStrength);
                     Assert.NotEqual(CipherAlgorithmType.Null, client.CipherAlgorithm);
                     Assert.True(client.CipherStrength > 0);
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
             }
         }
@@ -59,10 +61,12 @@ namespace System.Net.Security.Tests
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.None, false),
                         server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         clientStream.Socket.RemoteEndPoint, client.CipherAlgorithm, client.CipherStrength);
                     Assert.NotEqual(CipherAlgorithmType.Null, client.CipherAlgorithm);
                     Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
             }
         }
@@ -85,12 +89,15 @@ namespace System.Net.Security.Tests
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false),
                         server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
 #pragma warning restore SYSLIB0039
+
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         clientStream.Socket.RemoteEndPoint, client.CipherAlgorithm, client.CipherStrength);
 
                     CipherAlgorithmType expected = CipherAlgorithmType.Null;
                     Assert.Equal(expected, client.CipherAlgorithm);
                     Assert.Equal(0, client.CipherStrength);
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
             }
         }

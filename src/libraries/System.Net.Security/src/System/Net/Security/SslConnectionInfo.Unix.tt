@@ -13,9 +13,10 @@
 <# Array dataCipherAlgs = typeof(CipherAlgorithmTypeIndex).GetEnumValues(); #>
 <# Array dataHashAlgs = typeof(HashAlgorithmTypeIndex).GetEnumValues(); #>
 
-
 using System.Diagnostics;
 using System.Security.Authentication;
+
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
 
 namespace System.Net.Security
 {

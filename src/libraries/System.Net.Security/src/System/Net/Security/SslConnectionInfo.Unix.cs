@@ -10,6 +10,8 @@
 using System.Diagnostics;
 using System.Security.Authentication;
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+
 namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo

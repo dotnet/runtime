@@ -156,10 +156,12 @@ namespace System.Net.Security.Tests
 
                     await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                     _log.WriteLine("Client authenticated to server with encryption cipher: {0} {1}-bit strength",
                             client.CipherAlgorithm, client.CipherStrength);
                     Assert.True(client.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
                     Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
                 finally
                 {
@@ -197,7 +199,9 @@ namespace System.Net.Security.Tests
             SslStream stream = (SslStream)sender;
 
             Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
             Assert.NotEqual(CipherAlgorithmType.None, stream.CipherAlgorithm);
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
 
             return true;  // allow everything
         }

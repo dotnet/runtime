@@ -70,13 +70,15 @@ namespace System.Net.Security.Tests
                         // null encryption is not permitted with Tls13
                         client.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false),
                         server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate));
-#pragma warning restore SYSLIB0039                        
+#pragma warning restore SYSLIB0039
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                     _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                         serverStream.Socket.RemoteEndPoint, client.CipherAlgorithm, client.CipherStrength);
 
                     Assert.Equal(CipherAlgorithmType.Null, client.CipherAlgorithm);
                     Assert.Equal(0, client.CipherStrength);
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
             }
         }

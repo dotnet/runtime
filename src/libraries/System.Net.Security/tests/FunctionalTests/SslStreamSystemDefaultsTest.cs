@@ -95,6 +95,7 @@ namespace System.Net.Security.Tests
 #pragma warning restore 0618
                 {
                     Assert.True(
+#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         (_clientStream.SslProtocol == SslProtocols.Tls11 && _clientStream.HashAlgorithm == HashAlgorithmType.Sha1) ||
 #pragma warning restore SYSLIB0039
@@ -102,6 +103,7 @@ namespace System.Net.Security.Tests
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
                         _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
+#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
                 }
             }
         }
