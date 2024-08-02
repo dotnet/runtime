@@ -1086,11 +1086,19 @@ int LinearScan::BuildNode(GenTree* tree)
                     }
                     setInternalRegsDelayFree = true;
                 }
+                buildInternalRegisterUses();
+                if (dstCount == 1)
+                {
+                    BuildDef(tree);
+                }
             }
-            buildInternalRegisterUses();
-            if (dstCount == 1)
+            else
             {
-                BuildDef(tree);
+                buildInternalRegisterUses();
+                // We can't use ZR as the target reg since it may change the
+                // semantics for some LSE instructions.
+                // See atomicBarrierDroppedOnZero in LLVM
+                BuildDef(tree, availableIntRegs & ~(SRBM_ZR));
             }
         }
         break;
