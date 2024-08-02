@@ -98,8 +98,7 @@ namespace ILLink.RoslynAnalyzer
 					foreach (var operationBlock in context.OperationBlocks) {
 						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, dataFlowAnalyzerContext, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
-							context.ReportDiagnostic (diagnostic);
+						trimDataFlowAnalysis.ReportDiagnostics (context.ReportDiagnostic);
 					}
 				});
 
@@ -117,16 +116,13 @@ namespace ILLink.RoslynAnalyzer
 						return;
 
 					var location = GetPrimaryLocation (type.Locations);
-					DiagnosticContext diagnosticContext = new (location);
+					DiagnosticContext diagnosticContext = new (location, context.ReportDiagnostic);
 
 					if (type.BaseType is INamedTypeSymbol baseType)
 						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, baseType);
 
 					foreach (var interfaceType in type.Interfaces)
 						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, interfaceType);
-
-					foreach (var diagnostic in diagnosticContext.Diagnostics)
-						context.ReportDiagnostic (diagnostic);
 				}, SymbolKind.NamedType);
 				context.RegisterSymbolAction (context => {
 					VerifyMemberOnlyApplyToTypesOrStrings (context, context.Symbol);

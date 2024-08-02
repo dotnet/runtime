@@ -12,13 +12,14 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	public readonly partial struct DiagnosticContext
 	{
-		public List<Diagnostic> Diagnostics { get; } = new ();
-
 		readonly Location? Location { get; init; }
 
-		public DiagnosticContext (Location location)
+		readonly Action<Diagnostic> _reportDiagnostic;
+
+		public DiagnosticContext (Location location, Action<Diagnostic> reportDiagnostic)
 		{
 			Location = location;
+			_reportDiagnostic = reportDiagnostic;
 		}
 
 		public static DiagnosticContext CreateDisabled () => new () { Location = null };
@@ -33,7 +34,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (Location == null)
 				return;
 
-			Diagnostics.Add (CreateDiagnostic (id, args));
+			_reportDiagnostic (CreateDiagnostic (id, args));
 		}
 
 		public partial void AddDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
@@ -41,7 +42,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (Location == null)
 				return;
 
-			Diagnostics.Add (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
+			_reportDiagnostic (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
 		}
 
 		private Diagnostic CreateDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)

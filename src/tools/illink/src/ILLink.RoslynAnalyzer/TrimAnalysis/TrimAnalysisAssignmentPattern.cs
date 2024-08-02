@@ -53,9 +53,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
+			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation (), reportDiagnostic);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
@@ -71,8 +71,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					}
 				}
 			}
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }

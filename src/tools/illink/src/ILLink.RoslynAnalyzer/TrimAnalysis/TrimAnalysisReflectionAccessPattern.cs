@@ -1,9 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -44,9 +43,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
+			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation (), reportDiagnostic);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
@@ -55,8 +54,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }
