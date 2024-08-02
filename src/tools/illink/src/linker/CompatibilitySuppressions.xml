@@ -1511,6 +1511,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_SystemModuleName</Target>
+    <Left>ref/net9.0/illink.dll</Left>
+    <Right>lib/net9.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_KeepComInterfaces(System.Boolean)</Target>
     <Left>ref/net9.0/illink.dll</Left>
     <Right>lib/net9.0/illink.dll</Right>
@@ -1518,6 +1524,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_PreserveSymbolPaths(System.Boolean)</Target>
+    <Left>ref/net9.0/illink.dll</Left>
+    <Right>lib/net9.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_SystemModuleName(System.String)</Target>
     <Left>ref/net9.0/illink.dll</Left>
     <Right>lib/net9.0/illink.dll</Right>
   </Suppression>

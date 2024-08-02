@@ -25,7 +25,7 @@ namespace System.Threading
     public class CancellationTokenSource : IDisposable
     {
         /// <summary>A <see cref="CancellationTokenSource"/> that's already canceled.</summary>
-        internal static readonly CancellationTokenSource s_canceledSource = new CancellationTokenSource() { _state = NotifyingCompleteState };
+        internal static readonly CancellationTokenSource s_canceledSource = new CancellationTokenSource() { _state = States.NotifyingCompleteState };
         /// <summary>A <see cref="CancellationTokenSource"/> that's never canceled.  This isn't enforced programmatically, only by usage.  Do not cancel!</summary>
         internal static readonly CancellationTokenSource s_neverCanceledSource = new CancellationTokenSource();
 
@@ -35,7 +35,7 @@ namespace System.Threading
             ((CancellationTokenSource)state!).NotifyCancellation(throwOnFirstException: false); // skip ThrowIfDisposed() check in Cancel()
 
         /// <summary>The current state of the CancellationTokenSource.</summary>
-        private volatile int _state;
+        private volatile States _state;
         /// <summary>Whether this <see cref="CancellationTokenSource"/> has been disposed.</summary>
         private bool _disposed;
         /// <summary>ITimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
@@ -46,10 +46,13 @@ namespace System.Threading
         /// <remarks>Lazily-initialized, also serving as the lock to protect its contained state.</remarks>
         private Registrations? _registrations;
 
-        // legal values for _state
-        private const int NotCanceledState = 0; // default value of _state
-        private const int NotifyingState = 1;
-        private const int NotifyingCompleteState = 2;
+        /// <summary>Legal values for <see cref="_state"/>.</summary>
+        private enum States
+        {
+            NotCanceledState = 0, // default value of _state
+            NotifyingState = 1,
+            NotifyingCompleteState = 2,
+        }
 
         /// <summary>Gets whether cancellation has been requested for this <see cref="CancellationTokenSource" />.</summary>
         /// <value>Whether cancellation has been requested for this <see cref="CancellationTokenSource" />.</value>
@@ -66,10 +69,10 @@ namespace System.Threading
         /// canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested => _state != NotCanceledState;
+        public bool IsCancellationRequested => _state != States.NotCanceledState;
 
         /// <summary>A simple helper to determine whether cancellation has finished.</summary>
-        internal bool IsCancellationCompleted => _state == NotifyingCompleteState;
+        internal bool IsCancellationCompleted => _state == States.NotifyingCompleteState;
 
         /// <summary>Gets the <see cref="CancellationToken"/> associated with this <see cref="CancellationTokenSource"/>.</summary>
         /// <value>The <see cref="CancellationToken"/> associated with this <see cref="CancellationTokenSource"/>.</value>
@@ -201,7 +204,7 @@ namespace System.Threading
         {
             if (millisecondsDelay == TimeSpan.Zero)
             {
-                _state = NotifyingCompleteState;
+                _state = States.NotifyingCompleteState;
             }
             else
             {
@@ -480,7 +483,7 @@ namespace System.Threading
 
             // We can only reset if cancellation has not yet been requested: we never want to allow a CancellationToken
             // to transition from canceled to non-canceled.
-            if (_state == NotCanceledState)
+            if (_state == States.NotCanceledState)
             {
                 // If there is no timer, then we're free to reset.  If there is a timer, then we need to first try
                 // to reset it to be infinite so that it won't fire, and then recognize that it could have already
@@ -556,7 +559,7 @@ namespace System.Threading
                 if (_kernelEvent != null)
                 {
                     ManualResetEvent? mre = Interlocked.Exchange<ManualResetEvent?>(ref _kernelEvent!, null);
-                    if (mre != null && _state != NotifyingState)
+                    if (mre != null && _state != States.NotifyingState)
                     {
                         mre.Dispose();
                     }
@@ -698,13 +701,13 @@ namespace System.Threading
             }
         }
 
-        /// <summary>Transitions from <see cref="NotCanceledState"/> to <see cref="NotifyingState"/>.</summary>
+        /// <summary>Transitions from <see cref="States.NotCanceledState"/> to <see cref="States.NotifyingState"/>.</summary>
         /// <returns>true if it successfully transitioned; otherwise, false.</returns>
         /// <remarks>If it successfully transitions, it will also have disposed of <see cref="_timer"/> and set <see cref="_kernelEvent"/>.</remarks>
         private bool TransitionToCancellationRequested()
         {
             if (!IsCancellationRequested &&
-                Interlocked.CompareExchange(ref _state, NotifyingState, NotCanceledState) == NotCanceledState)
+                Interlocked.CompareExchange(ref _state, States.NotifyingState, States.NotCanceledState) == States.NotCanceledState)
             {
                 // Dispose of the timer, if any.  Dispose may be running concurrently here, but ITimer.Dispose is thread-safe.
                 ITimer? timer = _timer;
@@ -737,7 +740,7 @@ namespace System.Threading
             Registrations? registrations = Interlocked.Exchange(ref _registrations, null);
             if (registrations is null)
             {
-                Interlocked.Exchange(ref _state, NotifyingCompleteState);
+                Interlocked.Exchange(ref _state, States.NotifyingCompleteState);
                 return;
             }
 
@@ -825,7 +828,7 @@ namespace System.Threading
             }
             finally
             {
-                _state = NotifyingCompleteState;
+                _state = States.NotifyingCompleteState;
                 Interlocked.Exchange(ref registrations.ExecutingCallbackId, 0); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
             }
 
@@ -1021,7 +1024,7 @@ namespace System.Threading
             /// </remarks>
             public volatile int ThreadIDExecutingCallbacks = -1;
             /// <summary>Spin lock that protects state in the instance.</summary>
-            private int _lock;
+            private volatile bool _locked;
 
             /// <summary>Initializes the instance.</summary>
             /// <param name="source">The associated source.</param>
@@ -1030,7 +1033,7 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // used in only two places, one of which is a hot path
             private void Recycle(CallbackNode node)
             {
-                Debug.Assert(_lock == 1);
+                Debug.Assert(_locked);
 
                 // Clear out the unused node and put it on the singly-linked free list.
                 // The only field we don't clear out is the associated Registrations, as that's fixed
@@ -1163,16 +1166,16 @@ namespace System.Threading
             /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>
             public void EnterLock()
             {
-                ref int value = ref _lock;
-                if (Interlocked.Exchange(ref value, 1) != 0)
+                ref bool value = ref _locked;
+                if (Interlocked.Exchange(ref value, true))
                 {
                     Contention(ref value);
 
                     [MethodImpl(MethodImplOptions.NoInlining)]
-                    static void Contention(ref int value)
+                    static void Contention(ref bool value)
                     {
                         SpinWait sw = default;
-                        do { sw.SpinOnce(); } while (Interlocked.Exchange(ref value, 1) == 1);
+                        do { sw.SpinOnce(); } while (Interlocked.Exchange(ref value, true));
                     }
                 }
             }
@@ -1180,8 +1183,8 @@ namespace System.Threading
             /// <summary>Exits the lock for this instance.  The current thread must be holding the lock, but that is not validated.</summary>
             public void ExitLock()
             {
-                Debug.Assert(_lock == 1);
-                Volatile.Write(ref _lock, 0);
+                Debug.Assert(_locked);
+                _locked = false;
             }
         }
 

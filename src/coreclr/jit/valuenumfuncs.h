@@ -12,9 +12,6 @@ ValueNumFuncDef(MapStore, 4, false, false, false, false)           // Args: 0: m
 ValueNumFuncDef(MapPhysicalStore, 3, false, false, false, false)   // Args: 0: map, 1: "physical selector": offset and size, 2: value being stored
 ValueNumFuncDef(BitCast, 2, false, false, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
 ValueNumFuncDef(ZeroObj, 1, false, false, false, false)            // Args: 0: VN of the class handle.
-ValueNumFuncDef(PhiDef, 3, false, false, false, false)             // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
-ValueNumFuncDef(PhiMemoryDef, 2, false, false, false, false)       // Args: 0: VN for basic block pointer, 1: VN of definition
-ValueNumFuncDef(Phi, 2, false, false, false, false)                // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true, false, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
@@ -161,6 +158,7 @@ ValueNumFuncDef(LazyStrCns, 2, false, true, false, false)            // Lazy-ini
 ValueNumFuncDef(InvariantLoad, 1, false, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, false, false, false)
+ValueNumFuncDef(Unbox_TypeTest, 2, false, false, false, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false, false)

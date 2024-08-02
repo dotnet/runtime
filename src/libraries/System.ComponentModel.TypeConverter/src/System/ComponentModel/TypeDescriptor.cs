@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
@@ -56,12 +57,12 @@ namespace System.ComponentModel
         internal static readonly object s_commonSyncObject = new object();
 
         // A direct mapping from type to provider.
-        private static readonly Dictionary<Type, TypeDescriptionNode> s_providerTypeTable = new Dictionary<Type, TypeDescriptionNode>();
+        private static readonly ConcurrentDictionary<Type, TypeDescriptionNode> s_providerTypeTable = new ConcurrentDictionary<Type, TypeDescriptionNode>();
 
         // Tracks DefaultTypeDescriptionProviderAttributes.
         // A value of `null` indicates initialization is in progress.
         // A value of s_initializedDefaultProvider indicates the provider is initialized.
-        private static readonly Dictionary<Type, object?> s_defaultProviderInitialized = new Dictionary<Type, object?>();
+        private static readonly ConcurrentDictionary<Type, object?> s_defaultProviderInitialized = new ConcurrentDictionary<Type, object?>();
 
         private static readonly object s_initializedDefaultProvider = new object();
 

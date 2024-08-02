@@ -445,73 +445,58 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
+FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
     }
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refType != NULL);
 
     TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    _ASSERTE(!typeHandle.IsGenericVariable());
 
     MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT)
-        return (INT32)pMT->GetNumVirtuals();
-    else
+    if (pMT == NULL)
         return 0;
+    return (INT32)pMT->GetNumVirtuals();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
 
     INT32 numVirtuals = 0;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsGenericVariable());
+
     MethodTable *pMT = typeHandle.GetMethodTable();
-    if (pMT)
+    if (pMT != NULL)
     {
         numVirtuals = (INT32)pMT->GetNumVirtuals();
-
         if (pMT->HasVirtualStaticMethods())
         {
             for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
             {
                 MethodDesc *pMD = it.GetMethodDesc();
-                if (pMD->IsVirtual() &&
-                    pMD->IsStatic())
+                if (pMD->IsVirtual()
+                    && pMD->IsStatic())
                 {
                     numVirtuals++;
                 }
             }
         }
     }
-    HELPER_METHOD_FRAME_END();
+
+    END_QCALL;
 
     return numVirtuals;
 }
-FCIMPLEND
 
 FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
     CONTRACTL {

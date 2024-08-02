@@ -17,10 +17,10 @@ namespace System.Net.Sockets
         private AddressFamily _family;
         private Socket _clientSocket = null!; // initialized by helper called from ctor
         private NetworkStream? _dataStream;
-        private volatile int _disposed;
+        private volatile bool _disposed;
         private bool _active;
 
-        private bool Disposed => _disposed != 0;
+        private bool Disposed => _disposed;
 
         // Initializes a new instance of the System.Net.Sockets.TcpClient class.
         public TcpClient() : this(AddressFamily.Unknown)
@@ -252,7 +252,7 @@ namespace System.Net.Sockets
         // Disposes the Tcp connection.
         protected virtual void Dispose(bool disposing)
         {
-            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+            if (!Interlocked.Exchange(ref _disposed, true))
             {
                 if (disposing)
                 {

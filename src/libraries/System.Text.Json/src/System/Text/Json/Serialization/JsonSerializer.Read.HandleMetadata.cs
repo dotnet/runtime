@@ -323,44 +323,17 @@ namespace System.Text.Json
             {
                 switch (propertyName.Length)
                 {
-                    case 3:
-                        if (propertyName[1] == 'i' &&
-                            propertyName[2] == 'd')
-                        {
-                            return MetadataPropertyName.Id;
-                        }
-                        break;
+                    case 3 when propertyName.SequenceEqual("$id"u8):
+                        return MetadataPropertyName.Id;
 
-                    case 4:
-                        if (propertyName[1] == 'r' &&
-                            propertyName[2] == 'e' &&
-                            propertyName[3] == 'f')
-                        {
-                            return MetadataPropertyName.Ref;
-                        }
-                        break;
+                    case 4 when propertyName.SequenceEqual("$ref"u8):
+                        return MetadataPropertyName.Ref;
 
-                    case 5 when resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is null:
-                        if (propertyName[1] == 't' &&
-                            propertyName[2] == 'y' &&
-                            propertyName[3] == 'p' &&
-                            propertyName[4] == 'e')
-                        {
-                            return MetadataPropertyName.Type;
-                        }
-                        break;
+                    case 5 when resolver?.CustomTypeDiscriminatorPropertyNameUtf8 is null && propertyName.SequenceEqual("$type"u8):
+                        return MetadataPropertyName.Type;
 
-                    case 7:
-                        if (propertyName[1] == 'v' &&
-                            propertyName[2] == 'a' &&
-                            propertyName[3] == 'l' &&
-                            propertyName[4] == 'u' &&
-                            propertyName[5] == 'e' &&
-                            propertyName[6] == 's')
-                        {
-                            return MetadataPropertyName.Values;
-                        }
-                        break;
+                    case 7 when propertyName.SequenceEqual("$values"u8):
+                        return MetadataPropertyName.Values;
                 }
             }
 

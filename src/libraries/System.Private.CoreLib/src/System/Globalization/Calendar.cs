@@ -28,19 +28,7 @@ namespace System.Globalization
 
     public abstract class Calendar : ICloneable
     {
-        // Number of days in a non-leap year
-        internal const int DaysPerYear = 365;
-        // Number of days in 4 years
-        internal const int DaysPer4Years = DaysPerYear * 4 + 1;
-        // Number of days in 100 years
-        internal const int DaysPer100Years = DaysPer4Years * 25 - 1;
-        // Number of days in 400 years
-        internal const int DaysPer400Years = DaysPer100Years * 4 + 1;
-
-        // Number of days from 1/1/0001 to 1/1/10000
-        internal const int DaysTo10000 = DaysPer400Years * 25 - 366;
-
-        internal const long MaxMillis = (long)DaysTo10000 * TimeSpan.MillisecondsPerDay;
+        internal const long MaxMillis = (long)DateTime.DaysTo10000 * TimeSpan.MillisecondsPerDay;
 
         private int _currentEraValue = -1;
 
@@ -100,7 +88,7 @@ namespace System.Globalization
         /// <summary>
         /// This is used to convert CurrentEra(0) to an appropriate era value.
         /// </summary>
-        internal virtual int CurrentEraValue
+        internal int CurrentEraValue
         {
             get
             {

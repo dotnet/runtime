@@ -106,14 +106,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private struct TestStruct
         {
-            public {Op1VectorType}<{RetBaseType}> _fld1;
+            public {RetVectorType}<{RetBaseType}> _fld1;
+            public {RetBaseType}[] _outData;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
+                testStruct._outData= new {RetBaseType}[RetElementCount];
 
-                for (var i = 0; i < Op2ElementCount; i++) { _data[i] = {NextValueOp2}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{RetBaseType}>>());
+                // Randomise the output buffer to ensure that after the load operation, expected data is populated.
+                for (var i = 0; i < RetElementCount; i++) { testStruct._outData[i] = {NextValueOp1}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{RetBaseType}, byte>(ref testStruct._outData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
                 return testStruct;
             }
@@ -127,14 +130,14 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(testClass._dataTable.inArray1Ptr, testClass._dataTable.outArrayPtr);
             }
-        }   
+        }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int Op2ElementCount = Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
-        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op2ElementCount];
+        private static {Op2BaseType}[] _data = new {Op2BaseType}[Op2ElementCount];
 
         private {Op1VectorType}<{RetBaseType}> _fld1;
 

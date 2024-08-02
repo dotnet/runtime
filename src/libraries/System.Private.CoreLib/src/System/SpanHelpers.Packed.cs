@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     // This is a separate class instead of 'partial SpanHelpers' to hide the private helpers
