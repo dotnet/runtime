@@ -414,37 +414,23 @@ namespace System.Reflection.Metadata
 
 #if SYSTEM_REFLECTION_METADATA
         /// <summary>
-        /// Creates a new <see cref="TypeName" /> object that represents given name with provided assembly name.
+        /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name and declaring type.
         /// </summary>
-        /// <param name="metadataName">Unescaped full name.</param>
         /// <param name="declaringType">Declaring type name.</param>
         /// <param name="assemblyName">Assembly name.</param>
         /// <returns>Created simple name.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException">Provided type name was invalid. For example, it was empty or escaped.</exception>
-        public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null)
+        /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
+        public TypeName MakeSimpleTypeName(TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null)
         {
-#if NET
-            ArgumentNullException.ThrowIfNullOrEmpty(nameof(metadataName));
-            bool containsEscapeCharacter = metadataName.Contains(TypeNameParserHelpers.EscapeCharacter);
-#else
-            if (string.IsNullOrEmpty(metadataName))
+            if (!IsSimple)
             {
-                throw metadataName is null
-                    ? throw new ArgumentNullException(nameof(metadataName))
-                    : throw new ArgumentException(SR.Argument_EmptyString, nameof(metadataName));
-            }
-            bool containsEscapeCharacter = metadataName.IndexOf(TypeNameParserHelpers.EscapeCharacter) >= 0;
-#endif
-            if (containsEscapeCharacter)
-            {
-                throw new ArgumentException(SR.Argument_InvalidTypeName);
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
             }
 
-            return new TypeName(fullName: metadataName,
+            return new TypeName(fullName: FullName,
                 assemblyName: assemblyName,
                 elementOrGenericType: null,
-                declaringType: declaringType,
+                declaringType: IsNested ? declaringType ?? DeclaringType : null,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty);
         }
 
@@ -499,9 +485,14 @@ namespace System.Reflection.Metadata
         /// </returns>
         /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
         public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
-            => IsSimple
-                ? new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments)
-                : throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, FullName));
+        {
+            if (!IsSimple)
+            {
+                TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
+            }
+
+            return new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments);
+        }
 
         private TypeName MakeElementTypeName(sbyte rankOrModifier)
             => new TypeName(

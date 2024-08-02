@@ -528,22 +528,31 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Declaring+Nested")]
         [InlineData("Declaring+Deep+Deeper+Nested")]
         [InlineData("Generic[[GenericArg]]")]
-        public void CreateSimpleTypeNameTreatsEveryInputAsUnescapedSimpleFullName(string input)
+        public void MakeSimpleTypeNameThrowsForNonSimpleNames(string input)
         {
-            TypeName typeName = TypeName.CreateSimpleTypeName(input);
+            TypeName typeName = TypeName.Parse(input.AsSpan());
 
-            Assert.True(typeName.IsSimple);
-            Assert.False(typeName.IsArray);
-            Assert.False(typeName.IsConstructedGenericType);
-            Assert.False(typeName.IsPointer);
-            Assert.False(typeName.IsByRef);
-            Assert.False(typeName.IsNested);
+            if (typeName.IsSimple)
+            {
+                AssemblyNameInfo assemblyName = new("MyName");
+                TypeName simple = typeName.MakeSimpleTypeName(assemblyName: assemblyName);
+
+                Assert.Equal(typeName.FullName, simple.FullName); // full name has not changed
+                Assert.NotEqual(typeName.AssemblyQualifiedName, simple.AssemblyQualifiedName);
+                Assert.Equal($"{typeName.FullName}, {assemblyName.FullName}", simple.AssemblyQualifiedName);
+
+                Assert.True(simple.IsSimple);
+                Assert.False(simple.IsArray);
+                Assert.False(simple.IsConstructedGenericType);
+                Assert.False(simple.IsPointer);
+                Assert.False(simple.IsByRef);
+                Assert.Equal(typeName.IsNested, simple.IsNested);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => typeName.MakeSimpleTypeName());
+            }
         }
-
-        [Theory]
-        [MemberData(nameof(GetTypesThatRequireEscaping))]
-        public void CreateSimpleTypeNameThrowsForEscapedInput(Type type)
-            => Assert.Throws<ArgumentException>(() => TypeName.CreateSimpleTypeName(type.FullName));
 
         [Fact]
         public void IsSimpleReturnsTrueForNestedNonGenericTypes()

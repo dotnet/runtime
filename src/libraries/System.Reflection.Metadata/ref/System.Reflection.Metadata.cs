@@ -2438,7 +2438,6 @@ namespace System.Reflection.Metadata
         public bool IsSZArray { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
-        public static System.Reflection.Metadata.TypeName CreateSimpleTypeName(string metadataName, System.Reflection.Metadata.TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null) { throw null; }
         public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
         public int GetArrayRank() { throw null; }
@@ -2451,6 +2450,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.TypeName MakeByRefTypeName() { throw null; }
         public System.Reflection.Metadata.TypeName MakeGenericTypeName(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.TypeName> typeArguments) { throw null; }
         public System.Reflection.Metadata.TypeName MakePointerTypeName() { throw null; }
+        public System.Reflection.Metadata.TypeName MakeSimpleTypeName(System.Reflection.Metadata.TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null) { throw null; }
     }
     public sealed partial class TypeNameParseOptions
     {

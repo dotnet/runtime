@@ -20,9 +20,6 @@ internal static class TypeNameHelpers
     private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
     private static AssemblyNameInfo? s_CoreLibAssemblyName;
 
-    internal static AssemblyNameInfo CoreLibAssemblyName
-        => s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
-
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
         Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
@@ -53,7 +50,7 @@ internal static class TypeNameHelpers
                 _ => "System.UInt64",
             };
 
-            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.CreateSimpleTypeName(fullName, assemblyName: CoreLibAssemblyName);
+            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
         }
         return typeName;
     }
@@ -131,7 +128,7 @@ internal static class TypeNameHelpers
                 .WithCoreLibAssemblyName(); // We know it's a System Record, so we set the LibraryName to CoreLib
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(CoreLibAssemblyName);
+        => systemType.WithAssemblyName(s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
 
     private static TypeName WithAssemblyName(this TypeName typeName, AssemblyNameInfo assemblyName)
     {
@@ -160,8 +157,7 @@ internal static class TypeNameHelpers
         }
 
         TypeName? newDeclaringType = typeName.IsNested ? typeName.DeclaringType.WithAssemblyName(assemblyName) : null;
-
-        return TypeName.CreateSimpleTypeName(typeName.FullName, newDeclaringType, assemblyName);
+        return typeName.MakeSimpleTypeName(newDeclaringType, assemblyName);
     }
 
     private static TypeName ParseWithoutAssemblyName(string rawName, PayloadOptions payloadOptions)
