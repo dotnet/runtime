@@ -1553,7 +1553,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     assert(call->gtArgs.CountUserArgs() == 2);
     assert(call->TypeIs(TYP_VOID));
 
-    if (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    if (!opts.Tier0OptimizationEnabled())
     {
         // Don't fold it for debug code or forced MinOpts
         return call;
@@ -3302,11 +3302,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-
-    if (!mustExpand && tier0opts)
+    if (!mustExpand && opts.Tier0OptimizationEnabled())
     {
         switch (ni)
         {
@@ -10316,6 +10312,19 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else
                     {
 #ifdef FEATURE_HW_INTRINSICS
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "<T>,T>.", 7) == 0)
+                            {
+                                methodName += 77;
+                            }
+                        }
+
                         CORINFO_SIG_INFO sig;
                         info.compCompHnd->getMethodSig(method, &sig);
 
@@ -10533,6 +10542,25 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #else
 #error Unsupported platform
 #endif
+
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        {
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
+
+                            if (strncmp(methodName + 70, "64<T>,T>.", 9) == 0)
+                            {
+                                methodName += 79;
+                            }
+                            else if ((strncmp(methodName + 70, "128<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "256<T>,T>.", 10) == 0) ||
+                                     (strncmp(methodName + 70, "512<T>,T>.", 10) == 0))
+                            {
+                                methodName += 80;
+                            }
+                        }
 
                         if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
                         {

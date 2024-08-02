@@ -10,11 +10,7 @@ There is a design document for the Arm64 intrinsics: https://github.com/dotnet/r
 
 ## Overview
 
-The reference assemblies for the hardware intrinsics live in corefx, but all of the implementation is in the coreclr repo:
-
-* The C# implementation lives in coreclr/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
-
-  * Note that they are mirrored to other repositories, including corefx, corert and mono.
+* The C# implementation lives in src/libraries/System.Private.CoreLib/shared/System/Runtime/Intrinsics. These are little more than skeleton methods that are only compiled if needed for indirect invocation.
 
 ## C# Implementation
 

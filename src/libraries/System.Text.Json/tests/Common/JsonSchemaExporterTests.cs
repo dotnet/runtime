@@ -26,6 +26,7 @@ namespace System.Text.Json.Schema.Tests
 
         [Theory]
         [MemberData(nameof(GetTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103694", TestRuntimes.Mono)]
         public void TestTypes_GeneratesExpectedJsonSchema(ITestData testData)
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(testData.Type, testData.Options);

@@ -695,7 +695,8 @@ namespace Wasm.Build.Tests
 
         protected CommandResult RunWithoutBuild(string config, string id)
         {
-            string runArgs = $"run --no-build -c {config} --forward-exit-code";
+            // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+            string runArgs = $"run --no-build -c {config} --forward-exit-code --extra-host-arg=--wasi --extra-host-arg=http";
             runArgs += " x y z";
             int expectedExitCode = 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)

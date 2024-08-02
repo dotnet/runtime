@@ -236,7 +236,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.IRowset? irowset = _irowset;
             if (null == irowset)
             {
-                Debug.Assert(false, "object is disposed");
+                Debug.Fail("object is disposed");
                 throw new ObjectDisposedException(GetType().Name);
             }
             return irowset;
@@ -247,7 +247,7 @@ namespace System.Data.OleDb
             UnsafeNativeMethods.IRow? irow = _irow;
             if (null == irow)
             {
-                Debug.Assert(false, "object is disposed");
+                Debug.Fail("object is disposed");
                 throw new ObjectDisposedException(GetType().Name);
             }
             return irow;
@@ -459,7 +459,7 @@ namespace System.Data.OleDb
 #if DEBUG
                 if (handle is UnsafeNativeMethods.IRow)
                 {
-                    Debug.Assert(false, "bad IRow - IColumnsInfo not available");
+                    Debug.Fail("bad IRow - IColumnsInfo not available");
                 }
                 else
                 {
@@ -1294,7 +1294,7 @@ namespace System.Data.OleDb
         private static void NextResultsInfinite()
         {
             // edtriou's suggestion is that we debug assert so that users will learn of MSOLAP's misbehavior and not call ExecuteNonQuery
-            Debug.Assert(false, "<oledb.OleDbDataReader.NextResultsInfinite|INFO> System.Data.OleDb.OleDbDataReader: 2000 IMultipleResult.GetResult(NULL, DBRESULTFLAG_DEFAULT, IID_NULL, NULL, NULL) iterations with 0 records affected. Stopping suspect infinite loop. To work-around try using ExecuteReader() and iterating through results with NextResult().\n");
+            Debug.Fail("<oledb.OleDbDataReader.NextResultsInfinite|INFO> System.Data.OleDb.OleDbDataReader: 2000 IMultipleResult.GetResult(NULL, DBRESULTFLAG_DEFAULT, IID_NULL, NULL, NULL) iterations with 0 records affected. Stopping suspect infinite loop. To work-around try using ExecuteReader() and iterating through results with NextResult().\n");
         }
 
         public override bool NextResult()

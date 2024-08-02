@@ -46,18 +46,13 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             // AOT does not support managed debugging, is disabled by design
             data.Add("Debug", false);
+            data.Add("Debug", true);
         }
-        data.Add("Release", false); // Release relinks by default
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            if (!isAot)
-            {
-                data.Add("Debug", true);
-            }
-            data.Add("Release", true);
-        }
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
+        // when running locally the path might be longer than 260 chars and these tests can fail with AOT
+        data.Add("Release", false); // Release relinks by default
+        data.Add("Release", true);
         return data;
     }
 
@@ -171,8 +166,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             foreach (string culture in cultures)
             {
-                string resourceAssemblyPath = Path.Combine(basePath, culture, $"{id}.resources{ProjectProviderBase.WasmAssemblyExtension}");
-                Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
+                string? resourceAssemblyPath = Directory.EnumerateFiles(Path.Combine(basePath, culture), $"*{ProjectProviderBase.WasmAssemblyExtension}").SingleOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith($"{id}.resources"));
+                Assert.True(resourceAssemblyPath != null && File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
             }
         }
     }

@@ -135,7 +135,8 @@ public class WasiTemplateTests : BuildTestBase
 
         CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
-                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                    // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} --extra-host-arg=--wasi --extra-host-arg=http x y z")
                                     .EnsureSuccessful();
 
         Assert.Contains("Hello, Wasi Console!", res.Output);
