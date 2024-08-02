@@ -659,6 +659,41 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
+        private bool TryGetMethodConstantValue(MethodDesc method, out int constant)
+        {
+            method = method.GetTypicalMethodDefinition();
+
+            TypeFlags returnType = method.Signature.ReturnType.Category;
+            if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
+                || method.IsIntrinsic
+                || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
+            {
+                constant = 0;
+                return false;
+            }
+
+            var reader = new ILReader(methodIL.GetILBytes());
+            var opcode = reader.ReadILOpcode();
+            switch (opcode)
+            {
+                case ILOpcode.ldc_i4: constant = (int)reader.ReadILUInt32(); break;
+                case ILOpcode.ldc_i4_s: constant = (sbyte)reader.ReadILByte(); break;
+                case >= ILOpcode.ldc_i4_0 and <= ILOpcode.ldc_i4_8: constant = opcode - ILOpcode.ldc_i4_0; break;
+                case ILOpcode.ldc_i4_m1: constant = -1; break;
+                default:
+                    constant = 0;
+                    return false;
+            }
+
+            if (reader.ReadILOpcode() != ILOpcode.ret)
+            {
+                constant = 0;
+                return false;
+            }
+
+            return true;
+        }
+
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
         {
             if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
@@ -684,6 +719,11 @@ namespace ILCompiler
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
+                            return true;
+                        }
+                        if ((opcode != ILOpcode.callvirt || !method.IsVirtual)
+                            && TryGetMethodConstantValue(method, out constant))
+                        {
                             return true;
                         }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
