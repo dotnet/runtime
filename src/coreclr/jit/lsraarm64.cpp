@@ -1098,7 +1098,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // We can't use ZR as the target reg since it may change the
                 // semantics for some LSE instructions.
                 // See atomicBarrierDroppedOnZero in LLVM
-                BuildDef(tree, availableIntRegs & ~(SRBM_ZR));
+                BuildDef(tree);
             }
         }
         break;
