@@ -35,6 +35,11 @@ jobs:
         value: 60
       - name: timeoutPerTestCollectionInMinutes
         value: 180
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -48,7 +53,7 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+              eq(variables['librariesContainsChange'], true),
+              eq(variables['monoContainsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
