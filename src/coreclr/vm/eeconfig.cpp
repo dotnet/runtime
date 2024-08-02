@@ -498,6 +498,15 @@ HRESULT EEConfig::sync()
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
+
+#ifdef FEATURE_PERFMAP
+    if (!fJitFramed && (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) != 0))
+    {
+        // Never omit the frame pointer in order to improve perf measurement quality.
+        fJitFramed = true;
+    }
+#endif
+
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
     fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
