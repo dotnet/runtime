@@ -256,9 +256,9 @@ namespace System.Net.WebSockets
             internal const int PingPayloadSize = sizeof(long);
             internal const int MinIntervalMs = 1;
 
-            internal int DelayMs;
-            internal int TimeoutMs;
-            internal int HeartBeatIntervalMs;
+            internal readonly int DelayMs;
+            internal readonly int TimeoutMs;
+            internal readonly int HeartBeatIntervalMs;
 
             internal long NextPingTimestamp;
             internal long WillTimeoutTimestamp;
