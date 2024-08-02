@@ -43,17 +43,18 @@ namespace System.Net.WebSockets
         {
             task.ContinueWith(
                 LogFaulted,
+                this,
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
 
-            void LogFaulted(Task task)
+            static void LogFaulted(Task task, object? state)
             {
                 Debug.Assert(task.IsFaulted);
 
-                _ = task.Exception; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
+                Exception? e = task.Exception!.InnerException; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, task.Exception);
+                if (NetEventSource.Log.IsEnabled() && e != null) NetEventSource.TraceException((ManagedWebSocket)state!, e);
             }
         }
 
@@ -77,7 +78,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            this.Observe(
+            Observe(
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
@@ -172,7 +173,7 @@ namespace System.Net.WebSockets
 
                 long pingPayload = Interlocked.Increment(ref _keepAlivePingState.PingPayload);
 
-                this.Observe(
+                Observe(
                     SendPingAsync(pingPayload));
             }
         }
@@ -253,14 +254,14 @@ namespace System.Net.WebSockets
         private sealed class KeepAlivePingState
         {
             internal const int PingPayloadSize = sizeof(long);
-            internal const long MinIntervalMs = 1;
+            internal const int MinIntervalMs = 1;
 
-            internal long DelayMs;
-            internal long TimeoutMs;
+            internal int DelayMs;
+            internal int TimeoutMs;
+            internal int HeartBeatIntervalMs;
+
             internal long NextPingTimestamp;
             internal long WillTimeoutTimestamp;
-
-            internal long HeartBeatIntervalMs;
 
             internal bool AwaitingPong;
             internal long PingPayload;
@@ -277,9 +278,8 @@ namespace System.Net.WebSockets
                     Math.Min(DelayMs, TimeoutMs) / 4,
                     MinIntervalMs);
 
-                static long TimeSpanToMs(TimeSpan value) => Math.Max(
-                        (long) Math.Min(value.TotalMilliseconds, int.MaxValue),
-                        MinIntervalMs);
+                static int TimeSpanToMs(TimeSpan value) =>
+                    Math.Clamp((int)value.TotalMilliseconds, MinIntervalMs, int.MaxValue);
             }
 
             internal void OnDataReceived()
@@ -310,7 +310,5 @@ namespace System.Net.WebSockets
                 }
             }
         }
-
-
     }
 }

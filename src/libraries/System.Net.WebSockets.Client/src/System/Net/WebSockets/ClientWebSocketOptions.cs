@@ -189,6 +189,11 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// The timeout to use when waiting for the peer's PONG in response to us sending a PING; or <see cref="TimeSpan.Zero"/> or
+        /// <see cref="Timeout.InfiniteTimeSpan"/> to disable waiting for peer's response, and use an unsolicited PONG as a Keep-Alive heartbeat instead.
+        /// The default is <see cref="Timeout.InfiniteTimeSpan"/>.
+        /// </summary>
         [UnsupportedOSPlatform("browser")]
         public TimeSpan KeepAliveTimeout
         {

@@ -567,7 +567,6 @@ namespace System.Net.WebSockets
             return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
@@ -604,7 +603,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, Task lockTask, CancellationToken cancellationToken)
         {
             await lockTask.ConfigureAwait(false);
@@ -794,10 +792,7 @@ namespace System.Net.WebSockets
             CancellationTokenRegistration registration = default;
             try
             {
-                if (cancellationToken.CanBeCanceled)
-                {
-                    registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
-                }
+                registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
 
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
