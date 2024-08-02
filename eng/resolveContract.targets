@@ -20,6 +20,8 @@
                                                  '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'
                                                 )
                                                )">true</AnnotateTargetPathWithContract>
+    <!-- Don't let the compiler automatically generate a reference assembly when there's a dedicated reference assembly project that is being used. -->
+    <ProduceReferenceAssembly Condition="'$(AnnotateTargetPathWithContract)' == 'true'">false</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != ''">
