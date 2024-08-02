@@ -71,7 +71,7 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
     ULONG32 returned = 0;
     TADDR Value = (TADDR)NULL;
 
-    // Every object has a pointer the methad table at offset 0
+    // Every object has a pointer to its method table at offset 0
     HRESULT hr = target->ReadVirtual(objAddr, (PBYTE)&Value, sizeof(TADDR), &returned);
 
     if ((hr != S_OK) || (returned != sizeof(TADDR)))

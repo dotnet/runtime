@@ -20,7 +20,7 @@ internal readonly struct Object_1 : IObject
         [Flags]
         public enum Bits
         {
-            // Value represents either the hash code ore sync block index (bits 0-25)
+            // Value represents either the hash code or sync block index (bits 0-25)
             // - IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code.
             // - IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index
             IsHashCodeOrSyncBlockIndex = 0x08000000,

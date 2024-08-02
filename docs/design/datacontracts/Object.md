@@ -15,7 +15,7 @@ string GetStringValue(TargetPointer address);
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
 
 // Get COM data for the object if available. Returns false, if address does not represent a COM object
-bool GetCOMData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 ```
 
 ## Version 1
@@ -101,7 +101,7 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     return address + dataOffset;
 }
 
-bool GetCOMData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 {
     uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
