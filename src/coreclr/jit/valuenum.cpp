@@ -10474,19 +10474,6 @@ void ValueNumStore::ValidateValueNumStoreStatics()
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
          id                = (NamedIntrinsic)(id + 1))
     {
-        // bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
-
-        // if (encodeResultType)
-        //{
-        //     // These HW_Intrinsic's have an extra VNF_SimdType arg.
-        //     //
-        //     VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-        //     unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
-        //     unsigned newArity = oldArity + 1;
-
-        //    ValueNumFuncSetArity(func, newArity);
-        //}
-
         if (HWIntrinsicInfo::IsCommutative(id))
         {
             VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
