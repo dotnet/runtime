@@ -10,7 +10,7 @@
 using System.Diagnostics;
 using System.Security.Authentication;
 
-#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
 
 namespace System.Net.Security
 {

@@ -143,25 +143,27 @@ namespace System.Net.Security.Tests
                 try
                 {
                     Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-                        {
-                            EnabledSslProtocols = clientSslProtocols,
-                            RemoteCertificateValidationCallback = AllowAnyServerCertificate,
-                            TargetHost = serverName });
-                    serverTask = server.AuthenticateAsServerAsync( new SslServerAuthenticationOptions
-                        {
-                            EncryptionPolicy = encryptionPolicy,
-                            EnabledSslProtocols = serverSslProtocols,
-                            ServerCertificate = TestConfiguration.ServerCertificate,
-                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck });
+                    {
+                        EnabledSslProtocols = clientSslProtocols,
+                        RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                        TargetHost = serverName
+                    });
+                    serverTask = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        EncryptionPolicy = encryptionPolicy,
+                        EnabledSslProtocols = serverSslProtocols,
+                        ServerCertificate = TestConfiguration.ServerCertificate,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                    });
 
                     await clientTask.WaitAsync(TestConfiguration.PassingTestTimeout);
 
-#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
                     _log.WriteLine("Client authenticated to server with encryption cipher: {0} {1}-bit strength",
                             client.CipherAlgorithm, client.CipherStrength);
                     Assert.True(client.CipherAlgorithm != CipherAlgorithmType.Null, "Cipher algorithm should not be NULL");
                     Assert.True(client.CipherStrength > 0, "Cipher strength should be greater than 0");
-#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
                 }
                 finally
                 {
@@ -199,9 +201,9 @@ namespace System.Net.Security.Tests
             SslStream stream = (SslStream)sender;
 
             Assert.NotEqual(SslProtocols.None, stream.SslProtocol);
-#pragma warning disable SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
             Assert.NotEqual(CipherAlgorithmType.None, stream.CipherAlgorithm);
-#pragma warning restore SYSLIB0058 // Use NegotiatedTlsCipherSuite.
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
 
             return true;  // allow everything
         }
