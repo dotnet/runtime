@@ -7824,8 +7824,10 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
     return vns->VNForSimdMaskCon(result);
 }
 
-ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
-    GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum resultTypeVN)
+ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
+                                                VNFunc              func,
+                                                ValueNum            arg0VN,
+                                                ValueNum            resultTypeVN)
 {
     var_types      type     = tree->TypeGet();
     var_types      baseType = tree->GetSimdBaseType();
@@ -8162,11 +8164,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     return VNForFunc(type, func, arg0VN, resultTypeVN);
 }
 
-ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
-                                                 VNFunc              func,
-                                                 ValueNum            arg0VN,
-                                                 ValueNum            arg1VN,
-                                                 ValueNum            resultTypeVN)
+ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
+    GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum resultTypeVN)
 {
     var_types      type     = tree->TypeGet();
     var_types      baseType = tree->GetSimdBaseType();
@@ -9060,12 +9059,8 @@ ValueNum EvaluateSimdWithElementIntegral(
     }
 }
 
-ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
-                                                  VNFunc              func,
-                                                  ValueNum            arg0VN,
-                                                  ValueNum            arg1VN,
-                                                  ValueNum            arg2VN,
-                                                  ValueNum            resultTypeVN)
+ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
+    GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum resultTypeVN)
 {
     var_types      type     = tree->TypeGet();
     var_types      baseType = tree->GetSimdBaseType();
@@ -10399,7 +10394,7 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 
     0, // VNF_Boundary
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                        \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
     GetOpAttribsForFunc(arity, commute, knownNonNull, sharedStatic),
 #include "valuenumfuncs.h"
 };
@@ -10479,15 +10474,15 @@ void ValueNumStore::ValidateValueNumStoreStatics()
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
          id                = (NamedIntrinsic)(id + 1))
     {
-        //bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
+        // bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
 
-        //if (encodeResultType)
+        // if (encodeResultType)
         //{
-        //    // These HW_Intrinsic's have an extra VNF_SimdType arg.
-        //    //
-        //    VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-        //    unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
-        //    unsigned newArity = oldArity + 1;
+        //     // These HW_Intrinsic's have an extra VNF_SimdType arg.
+        //     //
+        //     VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+        //     unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
+        //     unsigned newArity = oldArity + 1;
 
         //    ValueNumFuncSetArity(func, newArity);
         //}
@@ -12979,8 +12974,8 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else
     {
-        VNFunc       func             = GetVNFuncForNode(tree);
-        ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
+        VNFunc       func       = GetVNFuncForNode(tree);
+        ValueNum     simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
         ValueNumPair resultTypeVNPair(simdTypeVN, simdTypeVN);
 
         JITDUMP("    simdTypeVN is ");
@@ -13023,9 +13018,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             if (opCount == 1)
             {
-                ValueNum normalLVN = vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetLiberal(), resultTypeVNPair.GetLiberal());
-                ValueNum normalCVN =
-                    vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetConservative(), resultTypeVNPair.GetConservative());
+                ValueNum normalLVN =
+                    vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetLiberal(), resultTypeVNPair.GetLiberal());
+                ValueNum normalCVN = vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetConservative(),
+                                                                      resultTypeVNPair.GetConservative());
 
                 normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = op1Xvnp;
@@ -13039,9 +13035,11 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 if (opCount == 2)
                 {
                     ValueNum normalLVN =
-                        vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetLiberal(), op2vnp.GetLiberal(), resultTypeVNPair.GetLiberal());
-                    ValueNum normalCVN = vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetConservative(),
-                                                                           op2vnp.GetConservative(), resultTypeVNPair.GetConservative());
+                        vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetLiberal(), op2vnp.GetLiberal(),
+                                                          resultTypeVNPair.GetLiberal());
+                    ValueNum normalCVN =
+                        vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetConservative(),
+                                                          op2vnp.GetConservative(), resultTypeVNPair.GetConservative());
 
                     normalPair = ValueNumPair(normalLVN, normalCVN);
                     excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);

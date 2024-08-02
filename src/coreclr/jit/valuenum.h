@@ -1354,11 +1354,8 @@ public:
 #if defined(FEATURE_HW_INTRINSICS)
     ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
-                                      VNFunc              func,
-                                      ValueNum            arg0VN,
-                                      ValueNum            arg1VN,
-                                      ValueNum            resultTypeVN);
+    ValueNum EvalHWIntrinsicFunBinary(
+        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum resultTypeVN);
 
     ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
                                        VNFunc              func,
