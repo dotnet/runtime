@@ -328,14 +328,14 @@ void Compiler::lvaInitTypeRef()
 
         if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
-            if (corInfoType == CORINFO_TYPE_VALUECLASS)
+            if (corInfoType == CORINFO_TYPE_VALUECLASS || corInfoType == CORINFO_TYPE_BYREF)
             {
                 JITDUMP("Setting lvRequiresSpecialCopy for V%02u\n", varNum);
                 varDsc->lvRequiresSpecialCopy = 1;
             }
             else
             {
-                JITDUMP("Ignoring special copy for non-struct V%02u\n", varNum);
+                JITDUMP("Ignoring special copy for non-struct, non-byref V%02u\n", varNum);
             }
         }
 

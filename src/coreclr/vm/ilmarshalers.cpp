@@ -3425,10 +3425,12 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
     if (fManagedToNative)
     {
 #ifdef TARGET_X86
-        LocalDesc   locDesc(pargs->mm.m_pMT);        
+        LocalDesc   locDesc(pargs->mm.m_pMT);
         pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
 
         locDesc.MakeByRef();
+        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
+
         locDesc.MakePinned();
 
         DWORD       dwPinnedArgLocal;
@@ -3472,8 +3474,22 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslIL->EmitLDLOCA(ctorCookie);
         pslIL->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__ADD, 2, 0);
 #else
+        LocalDesc   locDesc(pargs->mm.m_pMT);
+        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
+
+        locDesc.MakeByRef();
+        locDesc.MakePinned();
+
+        DWORD       dwPinnedArgLocal;
+
+        // Step 1
+        dwPinnedArgLocal = pslIL->NewLocal(locDesc);
+
+        pslIL->EmitLDARG(argidx);
+        pslIL->EmitSTLOC(dwPinnedArgLocal);
+
         pslIL->SetStubTargetArgType(ELEMENT_TYPE_U);        // native type is a pointer
-        pslILDispatch->EmitLDARG(argidx);
+        pslILDispatch->EmitLDLOC(dwPinnedArgLocal);
         pslILEmit->EmitCONV_U();
 #endif
 
