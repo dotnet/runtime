@@ -1094,10 +1094,9 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             else
             {
+                // We always need the target reg for LSE, even if
+                // return value is unused, see genLockedInstructions
                 buildInternalRegisterUses();
-                // We can't use ZR as the target reg since it may change the
-                // semantics for some LSE instructions.
-                // See atomicBarrierDroppedOnZero in LLVM
                 BuildDef(tree);
             }
         }
