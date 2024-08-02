@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <NoWarn>SYSLIB5003</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

@@ -3184,243 +3184,6 @@ HCIMPL0(void, IL_Rethrow)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL0(void, JIT_RngChkFail)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kIndexOutOfRangeException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowArgumentException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kArgumentException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowArgumentOutOfRangeException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kArgumentOutOfRangeException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowNotImplementedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kNotImplementedException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowPlatformNotSupportedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kPlatformNotSupportedException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kNotSupportedException, W("Arg_TypeNotSupported"));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL3(void, JIT_ThrowAmbiguousResolutionException,
-    MethodDesc *method,
-    MethodTable *interfaceType,
-    MethodTable *targetType)
-{
-    FCALL_CONTRACT;
-
-    SString strMethodName;
-    SString strInterfaceName;
-    SString strTargetClassName;
-
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
-    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
-    TypeString::AppendType(strTargetClassName, targetType);
-
-    HELPER_METHOD_FRAME_END();    // Set up a frame
-
-    FCThrowExVoid(
-        kAmbiguousImplementationException,
-        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
-        strMethodName,
-        strInterfaceName,
-        strTargetClassName);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL3(void, JIT_ThrowEntryPointNotFoundException,
-    MethodDesc *method,
-    MethodTable *interfaceType,
-    MethodTable *targetType)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    SString strMethodName;
-    SString strInterfaceName;
-    SString strTargetClassName;
-    SString assemblyName;
-
-    targetType->GetAssembly()->GetDisplayName(assemblyName);
-    TypeString::AppendMethod(strMethodName, method, method->GetMethodInstantiation());
-    TypeString::AppendType(strInterfaceName, TypeHandle(interfaceType));
-    TypeString::AppendType(strTargetClassName, targetType);
-
-    COMPlusThrow(
-        kEntryPointNotFoundException,
-        IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED,
-        strMethodName,
-        strInterfaceName,
-        strTargetClassName,
-        assemblyName);
-
-    HELPER_METHOD_FRAME_END();    // Set up a frame
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_Overflow)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kOverflowException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowDivZero)
-{
-    FCALL_CONTRACT;
-
-    /* Make no assumptions about the current machine state */
-    ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kDivideByZeroException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL0(void, JIT_ThrowNullRef)
-{
-  FCALL_CONTRACT;
-
-  /* Make no assumptions about the current machine state */
-  ResetCurrentContext();
-
-  FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-  HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-  COMPlusThrow(kNullReferenceException);
-
-  HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1(void, IL_VerificationError,  int ilOffset)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    COMPlusThrow(kVerificationException);
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
 static RuntimeExceptionKind MapCorInfoExceptionToRuntimeExceptionKind(unsigned exceptNum)
 {
     LIMITED_METHOD_CONTRACT;
@@ -5238,16 +5001,24 @@ enum __CorInfoHelpFunc {
 // static helpers - constant array
 const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERDEF(code, pfnHelper,sig)
-#define DYNAMICJITHELPER(code, pfnHelper,sig) HELPERDEF(code, 1 + DYNAMIC_##code, sig)
+#define JITHELPER(code, pfnHelper, binderId) HELPERDEF(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(code, 1 + DYNAMIC_##code, binderId)
 #include "jithelpers.h"
 };
 
-// dynamic helpers - filled in at runtime
+// dynamic helpers - filled in at runtime - See definition of DynamicCorInfoHelpFunc.
 VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 {
-#define JITHELPER(code, pfnHelper, sig)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERDEF(DYNAMIC_ ## code, pfnHelper, sig)
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERDEF(DYNAMIC_ ## code, pfnHelper, binderId)
+#include "jithelpers.h"
+};
+
+// dynamic helpers to Binder ID mapping - See definition of DynamicCorInfoHelpFunc.
+static const BinderMethodID hlpDynamicToBinderMap[DYNAMIC_CORINFO_HELP_COUNT] =
+{
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) (BinderMethodID)binderId,
 #include "jithelpers.h"
 };
 
@@ -5256,8 +5027,8 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 
 VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 {
-#define JITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(pfnHelper)
-#define DYNAMICJITHELPER(code, pfnHelper, sig) HELPERCOUNTDEF(1 + DYNAMIC_##code)
+#define JITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(pfnHelper)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) HELPERCOUNTDEF(1 + DYNAMIC_##code)
 #include "jithelpers.h"
 };
 #endif
@@ -5265,19 +5036,60 @@ VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
 // Set the JIT helper function in the helper table
 // Handles the case where the function does not reside in mscorwks.dll
 
-void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
+void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
 
     LOG((LF_JIT, LL_INFO1000000, "Setting JIT dynamic helper %3d (%s) to %p\n",
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
-    hlpDynamicFuncTable[ftnNum].pfnHelper = (void *) pFunc;
+    hlpDynamicFuncTable[ftnNum].pfnHelper = (void*)pFunc;
+}
+
+VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ftnNum < DYNAMIC_CORINFO_HELP_COUNT);
+
+    MethodDesc* pMD = NULL;
+    void* helper = VolatileLoad(&hlpDynamicFuncTable[ftnNum].pfnHelper);
+    if (helper == NULL)
+    {
+        BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
+
+        LOG((LF_JIT, LL_INFO1000000, "Loading JIT dynamic helper %3d (%s) to binderID %u\n",
+            ftnNum, hlpDynamicFuncTable[ftnNum].name, binderId));
+
+        if (binderId == METHOD__NIL)
+            return {};
+
+        pMD = CoreLibBinder::GetMethod(binderId);
+        PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
+        InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
+    }
+
+    // If the caller wants the MethodDesc, we may need to try and load it.
+    if (methodDesc != NULL)
+    {
+        if (pMD == NULL)
+        {
+            BinderMethodID binderId = hlpDynamicToBinderMap[ftnNum];
+            pMD = binderId != METHOD__NIL
+                ? CoreLibBinder::GetMethod(binderId)
+                : NULL;
+        }
+        *methodDesc = pMD;
+    }
+
+    return hlpDynamicFuncTable[ftnNum];
 }
 
 /*********************************************************************/
