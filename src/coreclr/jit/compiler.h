@@ -11280,8 +11280,6 @@ public:
             //   - Whenever a parameter passed in an argument register needs to be spilled by LSRA, we
             //     create a new spill temp if the method needs GS cookie check.
             return varDsc->lvIsParam;
-#elif defined(TARGET_X86)
-            return varDsc->lvIsParam && !varDsc->lvIsRegArg && !varDsc->lvRequiresSpecialCopy;
 #else // !defined(TARGET_AMD64)
             return varDsc->lvIsParam && !varDsc->lvIsRegArg;
 #endif

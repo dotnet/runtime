@@ -7597,6 +7597,8 @@ namespace
             pCode->EmitCALL(pCode->GetToken(pDestructor), 1, 0);
         }
 
+        pCode->EmitRET();
+
         // Generate all IL associated data for JIT
         {
             UINT maxStack;

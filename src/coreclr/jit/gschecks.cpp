@@ -516,13 +516,41 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        src->gtFlags |= GTF_DONT_CSE;
-        GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+        if (varDsc->lvRequiresSpecialCopy)
+        {
+            GenTree* src = gtNewLclVarAddrNode(lclNum);
+            GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
+            GenTree* type = gtNewIconHandleNode(size_t(varDsc->GetLayout()->GetClassHandle()), GTF_ICON_CLASS_HDL);
+            GenTree* getHelper = gtNewHelperCallNode(CORINFO_HELP_GET_SPECIAL_STRUCT_COPY, TYP_I_IMPL, type);
+            GenTreeCall* call = gtNewIndCallNode(getHelper, TYP_VOID);
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
 
-        fgEnsureFirstBBisScratch();
-        compCurBB = fgFirstBB; // Needed by some morphing
-        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+            fgEnsureFirstBBisScratch();
+            compCurBB = fgFirstBB; // Needed by some morphing
+            if (opts.IsReversePInvoke())
+            {
+                // If we are in a reverse P/Invoke, then we need to insert
+                // the call at the end of the first block as we need to do the GC transition
+                // before we can call the helper.
+                (void)fgNewStmtAtEnd(fgFirstBB, fgMorphTree(call));
+            }
+            else
+            {
+                (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(call));
+            }
+        }
+        else
+        {
+            GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
+            src->gtFlags |= GTF_DONT_CSE;
+            
+            GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+
+            fgEnsureFirstBBisScratch();
+            compCurBB = fgFirstBB; // Needed by some morphing
+            (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+        }
     }
     compCurBB = nullptr;
 
