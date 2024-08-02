@@ -2,81 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
+using MockObject = MockDescriptors.Object;
+
 public unsafe class ObjectTests
 {
-    const ulong TestStringMethodTableGlobalAddress = 0x00000000_100000a0;
-    const ulong TestStringMethodTableAddress = 0x00000000_100000a8;
-
-    private static readonly Target.TypeInfo ObjectTypeInfo = new()
-    {
-        Fields = {
-            { "m_pMethTab", new() { Offset = 0, Type = DataType.pointer} },
-        }
-    };
-
-    private static readonly Target.TypeInfo StringTypeInfo = new Target.TypeInfo()
-    {
-        Fields = {
-            { "m_StringLength", new() { Offset = 0x8, Type = DataType.uint32} },
-            { "m_FirstChar", new() { Offset = 0xc, Type = DataType.uint16} },
-        }
-    };
-
-    private static readonly (DataType Type, Target.TypeInfo Info)[] ObjectTypes =
-    [
-        (DataType.Object, ObjectTypeInfo),
-        (DataType.String, StringTypeInfo),
-    ];
-
-    const ulong TestObjectToMethodTableUnmask = 0x7;
-    private static (string Name, ulong Value, string? Type)[] ObjectGlobals =
-    [
-        (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
-        (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
-    ];
-
-    private static MockMemorySpace.Builder AddStringMethodTablePointer(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
-    {
-        MockMemorySpace.HeapFragment fragment = new() { Name = "Address of String Method Table", Address = TestStringMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
-        targetTestHelpers.WritePointer(fragment.Data, TestStringMethodTableAddress);
-        return builder.AddHeapFragments([
-            fragment,
-            new () { Name = "String Method Table", Address = TestStringMethodTableAddress, Data = new byte[targetTestHelpers.PointerSize] }
-        ]);
-    }
-
     private delegate MockMemorySpace.Builder ConfigureContextBuilder(MockMemorySpace.Builder builder);
 
     private static void ObjectContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        string typesJson = TargetTestHelpers.MakeTypesJson(ObjectTypes);
-        string globalsJson = TargetTestHelpers.MakeGlobalsJson(ObjectGlobals);
+
+        (string Name, ulong Value, string? Type)[] globals = MockObject.Globals(targetTestHelpers);
+
+        string typesJson = TargetTestHelpers.MakeTypesJson(MockObject.Types(targetTestHelpers));
+        string globalsJson = TargetTestHelpers.MakeGlobalsJson(globals);
         byte[] json = Encoding.UTF8.GetBytes($$"""
         {
             "version": 0,
             "baseline": "empty",
             "contracts": {
-                "{{nameof(Contracts.Object)}}": 1
+                "{{nameof(Contracts.Object)}}": 1,
+                "{{nameof(Contracts.RuntimeTypeSystem)}}": 1
             },
             "types": { {{typesJson}} },
             "globals": { {{globalsJson}} }
         }
         """);
         Span<byte> descriptor = stackalloc byte[targetTestHelpers.ContractDescriptorSize];
-        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, ObjectGlobals.Length);
+        targetTestHelpers.ContractDescriptorFill(descriptor, json.Length, globals.Length);
 
         int pointerSize = targetTestHelpers.PointerSize;
-        Span<byte> pointerData = stackalloc byte[ObjectGlobals.Length * pointerSize];
-        for (int i = 0; i < ObjectGlobals.Length; i++)
+        Span<byte> pointerData = stackalloc byte[globals.Length * pointerSize];
+        for (int i = 0; i < globals.Length; i++)
         {
-            var (_, value, _) = ObjectGlobals[i];
+            var (_, value, _) = globals[i];
             targetTestHelpers.WritePointer(pointerData.Slice(i * pointerSize), value);
         }
 
@@ -87,7 +51,7 @@ public unsafe class ObjectTests
                     .SetJson(json)
                     .SetPointerData(pointerData);
 
-            builder = AddStringMethodTablePointer(targetTestHelpers, builder);
+            builder = MockObject.AddGlobalPointers(targetTestHelpers, builder);
 
             if (configure != null)
             {
@@ -104,25 +68,6 @@ public unsafe class ObjectTests
         GC.KeepAlive(json);
     }
 
-    private static MockMemorySpace.Builder AddObject(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer address, TargetPointer methodTable)
-    {
-        MockMemorySpace.HeapFragment fragment = new() { Name = $"Object : MT = '{methodTable}'", Address = address, Data = new byte[targetTestHelpers.SizeOfTypeInfo(ObjectTypeInfo)] };
-        Span<byte> dest = fragment.Data;
-        targetTestHelpers.WritePointer(dest.Slice(ObjectTypeInfo.Fields["m_pMethTab"].Offset), methodTable);
-        return builder.AddHeapFragment(fragment);
-    }
-
-    private static MockMemorySpace.Builder AddStringObject(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer address, string value)
-    {
-        int size = targetTestHelpers.SizeOfTypeInfo(ObjectTypeInfo) + targetTestHelpers.SizeOfTypeInfo(StringTypeInfo) + value.Length * sizeof(char);
-        MockMemorySpace.HeapFragment fragment = new() { Name = $"String = '{value}'", Address = address, Data = new byte[size] };
-        Span<byte> dest = fragment.Data;
-        targetTestHelpers.WritePointer(dest.Slice(ObjectTypeInfo.Fields["m_pMethTab"].Offset), TestStringMethodTableAddress);
-        targetTestHelpers.Write(dest.Slice(StringTypeInfo.Fields["m_StringLength"].Offset), (uint)value.Length);
-        MemoryMarshal.Cast<char, byte>(value).CopyTo(dest.Slice(StringTypeInfo.Fields["m_FirstChar"].Offset));
-        return builder.AddHeapFragment(fragment);
-    }
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void UnmaskMethodTableAddress(MockTarget.Architecture arch)
@@ -133,7 +78,7 @@ public unsafe class ObjectTests
         ObjectContractHelper(arch,
             (builder) =>
             {
-                builder = AddObject(targetTestHelpers, builder, TestObjectAddress, TestMethodTableAddress);
+                builder = MockObject.AddObject(targetTestHelpers, builder, TestObjectAddress, TestMethodTableAddress);
                 return builder;
             },
             (target) =>
@@ -141,7 +86,7 @@ public unsafe class ObjectTests
                 Contracts.IObject contract = target.Contracts.Object;
                 Assert.NotNull(contract);
                 TargetPointer mt = contract.GetMethodTableAddress(TestObjectAddress);
-                Assert.Equal(TestMethodTableAddress & ~TestObjectToMethodTableUnmask, mt.Value);
+                Assert.Equal(TestMethodTableAddress & ~MockObject.TestObjectToMethodTableUnmask, mt.Value);
             });
     }
 
@@ -153,17 +98,65 @@ public unsafe class ObjectTests
         string expected = "test_string_value";
         TargetTestHelpers targetTestHelpers = new(arch);
         ObjectContractHelper(arch,
-        (builder) =>
-        {
-            builder = AddStringObject(targetTestHelpers, builder, TestStringAddress, expected);
-            return builder;
-        },
-        (target) =>
-        {
-            Contracts.IObject contract = target.Contracts.Object;
-            Assert.NotNull(contract);
-            string actual = contract.GetStringValue(TestStringAddress);
-            Assert.Equal(expected, actual);
-        });
+            (builder) =>
+            {
+                builder = MockObject.AddStringObject(targetTestHelpers, builder, TestStringAddress, expected);
+                return builder;
+            },
+            (target) =>
+            {
+                Contracts.IObject contract = target.Contracts.Object;
+                Assert.NotNull(contract);
+                string actual = contract.GetStringValue(TestStringAddress);
+                Assert.Equal(expected, actual);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ArrayData(MockTarget.Architecture arch)
+    {
+        const ulong SingleDimensionArrayAddress = 0x00000000_20000010;
+        const ulong MultiDimensionArrayAddress = 0x00000000_30000010;
+        const ulong NonZeroLowerBoundArrayAddress = 0x00000000_40000010;
+
+        Array singleDimension = new int[10];
+        Array multiDimension = new int[1, 2, 3, 4];
+        Array nonZeroLowerBound = Array.CreateInstance(typeof(int), [10], [5]);
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ObjectContractHelper(arch,
+            (builder) =>
+            {
+                builder = MockObject.AddArrayObject(targetTestHelpers, builder, SingleDimensionArrayAddress, singleDimension);
+                builder = MockObject.AddArrayObject(targetTestHelpers, builder, MultiDimensionArrayAddress, multiDimension);
+                builder = MockObject.AddArrayObject(targetTestHelpers, builder, NonZeroLowerBoundArrayAddress, nonZeroLowerBound);
+                return builder;
+            },
+            (target) =>
+            {
+                Contracts.IObject contract = target.Contracts.Object;
+                Assert.NotNull(contract);
+                {
+                    TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                    Assert.Equal(SingleDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
+                    Assert.Equal((uint)singleDimension.Length, count);
+                    Assert.Equal(SingleDimensionArrayAddress + (ulong)MockObject.Types(targetTestHelpers)[DataType.Array].Fields["m_NumComponents"].Offset, boundsStart.Value);
+                    Assert.Equal(MockObject.TestArrayBoundsZeroGlobalAddress, lowerBounds.Value);
+                }
+                {
+                    TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                    Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
+                    Assert.Equal((uint)multiDimension.Length, count);
+                    Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
+                    Assert.Equal(boundsStart.Value + (ulong)(multiDimension.Rank * sizeof(int)), lowerBounds.Value);
+                }
+                {
+                    TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                    Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
+                    Assert.Equal((uint)nonZeroLowerBound.Length, count);
+                    Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
+                    Assert.Equal(boundsStart.Value + (ulong)(nonZeroLowerBound.Rank * sizeof(int)), lowerBounds.Value);
+                }
+            });
     }
 }

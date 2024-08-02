@@ -470,6 +470,48 @@
     <Right>net9.0/System.dll</Right>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32,System.Int32,System.Int32):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32,System.UInt32,System.UInt32):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UIntPtr,System.IntPtr,System.IntPtr):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UIntPtr,System.UIntPtr,System.UIntPtr):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64,System.Int64,System.Int64):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64,System.UInt64,System.UInt64):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Runtime.Intrinsics.X86.AvxVnni:[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net9.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.ShiftLeftLogicalSaturateScalar(System.Runtime.Intrinsics.Vector64{System.Byte},System.Byte)$1:[T:System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute]</Target>
     <Left>net8.0/System.Runtime.Intrinsics.dll</Left>

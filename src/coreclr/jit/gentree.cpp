@@ -29489,6 +29489,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(returnType != TYP_UNKNOWN);
             assert(returnType != TYP_STRUCT);
             m_regType[0] = returnType;
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
+            {
+                assert(lowering->numLoweredElements == 1);
+                m_fieldOffset[0] = lowering->offsets[0];
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
         }
 
@@ -29554,7 +29563,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             }
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+            assert(structSize > sizeof(float));
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
             const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
@@ -29562,22 +29572,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             {
                 comp->compFloatingPointUsed = true;
                 assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
-                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering->loweredElements[0]),
-                                                      JITtype2varType(lowering->loweredElements[1])};
-                assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
-                assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
+                static_assert(MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS, "");
                 for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
                 {
-                    if (varTypeIsFloating(types[i]))
+                    m_regType[i]     = JITtype2varType(lowering->loweredElements[i]);
+                    m_fieldOffset[i] = lowering->offsets[i];
+                    if (m_regType[i] == TYP_LONG && ((m_fieldOffset[i] % TARGET_POINTER_SIZE) == 0))
                     {
-                        m_regType[i] = types[i];
-                    }
-                    else
-                    {
-                        assert(varTypeIsIntegralOrI(types[i]));
-                        m_regType[i] = (genTypeSize(types[i]) == 8) ? comp->getJitGCType(gcPtrs[i]) : TYP_INT;
+                        unsigned slot = m_fieldOffset[i] / TARGET_POINTER_SIZE;
+                        m_regType[i]  = comp->getJitGCType(gcPtrs[slot]);
                     }
                 }
+                assert(varTypeIsFloating(m_regType[0]) || varTypeIsFloating(m_regType[1]));
             }
             else
             {
@@ -29585,6 +29591,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
+                m_fieldOffset[0] = 0;
+                m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
 #elif defined(TARGET_X86)
@@ -30912,10 +30920,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     if (otherNode->TypeIs(TYP_SIMD16))
                     {
-                        if ((ni != NI_AVX2_ShiftLeftLogicalVariable) && (ni != NI_AVX2_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX512F_VL_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX10v1_ShiftRightArithmeticVariable) &&
-                            (ni != NI_AVX2_ShiftRightLogicalVariable))
+                        if (!HWIntrinsicInfo::IsVariableShift(ni))
                         {
                             // The xarch shift instructions support taking the shift amount as
                             // a simd16, in which case they take the shift amount from the lower
@@ -30923,9 +30928,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                             int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
 
-                            if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
+                            if (static_cast<uint64_t>(shiftAmount) >=
+                                (static_cast<uint64_t>(genTypeSize(simdBaseType)) * BITS_PER_BYTE))
                             {
-                                // Ensure we don't lose track the the amount is an overshift
+                                // Set to -1 to indicate an explicit overshift
                                 shiftAmount = -1;
                             }
 
@@ -31170,6 +31176,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else if (op3 == nullptr)
     {
+        if (isScalar)
+        {
+            // We don't support folding for scalars when only one input is constant
+            // because it means one value is computed and the remaining values are
+            // either zeroed or preserved based on the underlying target architecture
+            oper = GT_NONE;
+        }
+
         switch (oper)
         {
             case GT_ADD:

@@ -1660,7 +1660,24 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         {
             assert(!mustExpand);
             // The imm-HWintrinsics that do not accept all imm8 values may throw
-            // ArgumentOutOfRangeException when the imm argument is not in the valid range
+            // ArgumentOutOfRangeException when the imm argument is not in the valid range,
+            // unless the intrinsic can be transformed into one that does accept all imm8 values
+
+#ifdef TARGET_ARM64
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftRightLogical:
+                    *useFallback = true;
+                    break;
+
+                    // TODO: Implement more AdvSimd fallbacks in Compiler::impNonConstFallback
+
+                default:
+                    assert(*useFallback == false);
+                    break;
+            }
+#endif // TARGET_ARM64
+
             return false;
         }
     }
