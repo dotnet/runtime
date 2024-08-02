@@ -401,7 +401,7 @@ CDAC_TYPE_END(IJitManager)
 
 CDAC_TYPE_BEGIN(RealCodeHeader)
 CDAC_TYPE_INDETERMINATE(RealCodeHeader)
-CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, m_pMethodDesc))
+CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(HeapList)
