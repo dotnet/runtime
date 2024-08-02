@@ -160,7 +160,7 @@ internal readonly struct MemberTypeInfo
         // Custom offset arrays are not supported by design, so in our case it's always SZArray.
         // That is why we don't call TypeName.MakeArrayTypeName(1) because it would create [*] instead of [] name.
         return arrayInfo.Rank == 1
-            ? elementTypeName.MakeArrayTypeName()
+            ? elementTypeName.MakeSZArrayTypeName()
             : elementTypeName.MakeArrayTypeName(arrayInfo.Rank);
     }
 }

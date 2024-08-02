@@ -414,6 +414,41 @@ namespace System.Reflection.Metadata
 
 #if SYSTEM_REFLECTION_METADATA
         /// <summary>
+        /// Creates a new <see cref="TypeName" /> object that represents given name with provided assembly name.
+        /// </summary>
+        /// <param name="metadataName">Unescaped full name.</param>
+        /// <param name="declaringType">Declaring type name.</param>
+        /// <param name="assemblyName">Assembly name.</param>
+        /// <returns>Created simple name.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="metadataName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">Provided type name was invalid. For example, it was empty or escaped.</exception>
+        public static TypeName CreateSimpleTypeName(string metadataName, TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null)
+        {
+#if NET
+            ArgumentNullException.ThrowIfNullOrEmpty(nameof(metadataName));
+            bool containsEscapeCharacter = metadataName.Contains(TypeNameParserHelpers.EscapeCharacter);
+#else
+            if (string.IsNullOrEmpty(metadataName))
+            {
+                throw metadataName is null
+                    ? throw new ArgumentNullException(nameof(metadataName))
+                    : throw new ArgumentException(SR.Argument_EmptyString, nameof(metadataName));
+            }
+            bool containsEscapeCharacter = metadataName.IndexOf(TypeNameParserHelpers.EscapeCharacter) >= 0;
+#endif
+            if (containsEscapeCharacter)
+            {
+                throw new ArgumentException(SR.Argument_InvalidTypeName);
+            }
+
+            return new TypeName(fullName: metadataName,
+                assemblyName: assemblyName,
+                elementOrGenericType: null,
+                declaringType: declaringType,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty);
+        }
+
+        /// <summary>
         /// Returns a <see cref="TypeName" /> object representing a one-dimensional array
         /// of the current type, with a lower bound of zero.
         /// </summary>
@@ -421,7 +456,7 @@ namespace System.Reflection.Metadata
         /// A <see cref="TypeName" /> object representing a one-dimensional array
         /// of the current type, with a lower bound of zero.
         /// </returns>
-        public TypeName MakeArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
+        public TypeName MakeSZArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
 
         /// <summary>
         /// Returns a <see cref="TypeName" /> object representing an array of the current type,
@@ -465,39 +500,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
         public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
             => IsSimple
-                ? new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, genericTypeArguments: typeArguments)
+                ? new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, declaringType: _declaringType, genericTypeArguments: typeArguments)
                 : throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, FullName));
-
-        /// <summary>
-        /// Returns a <see cref="TypeName" /> object that represents the current type name with provided assembly name.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="TypeName" /> object that represents the current type name with provided assembly name.
-        /// </returns>
-        public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
-            => WithAssemblyName(this, AssemblyName, assemblyName)!;
-
-        private static TypeName? WithAssemblyName(TypeName? typeName, AssemblyNameInfo? oldName, AssemblyNameInfo? newName)
-        {
-            if (typeName is null)
-            {
-                return null;
-            }
-            else if (!ReferenceEquals(typeName.AssemblyName, oldName))
-            {
-                return typeName; // There is nothing to update.
-            }
-
-            return new TypeName(
-                fullName: typeName._fullName,
-                newName,
-                elementOrGenericType: WithAssemblyName(typeName._elementOrGenericType, oldName, newName),
-                declaringType: WithAssemblyName(typeName._declaringType, oldName, newName),
-                // We don't update the assembly names of generic arguments on purpose!
-                genericTypeArguments: typeName._genericArguments,
-                rankOrModifier: typeName._rankOrModifier,
-                nestedNameLength: typeName._nestedNameLength);
-        }
 
         private TypeName MakeElementTypeName(sbyte rankOrModifier)
             => new TypeName(

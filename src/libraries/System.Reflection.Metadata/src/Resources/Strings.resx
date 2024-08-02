@@ -435,4 +435,7 @@
   <data name="Arg_NotSimpleTypeName" xml:space="preserve">
     <value>MakeGenericTypeName may only be called on a type name for which TypeName.IsSimple is true, for '{0}' it's not.</value>
   </data>
+  <data name="Argument_EmptyString" xml:space="preserve">
+    <value>The value cannot be an empty string.</value>
+  </data>
 </root>

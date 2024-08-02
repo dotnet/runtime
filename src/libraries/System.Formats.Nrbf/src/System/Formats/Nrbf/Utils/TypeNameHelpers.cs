@@ -20,6 +20,9 @@ internal static class TypeNameHelpers
     private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)UIntPtrPrimitiveType + 1];
     private static AssemblyNameInfo? s_CoreLibAssemblyName;
 
+    internal static AssemblyNameInfo CoreLibAssemblyName
+        => s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
+
     internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
     {
         Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
@@ -50,7 +53,7 @@ internal static class TypeNameHelpers
                 _ => "System.UInt64",
             };
 
-            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
+            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.CreateSimpleTypeName(fullName, assemblyName: CoreLibAssemblyName);
         }
         return typeName;
     }
@@ -60,7 +63,7 @@ internal static class TypeNameHelpers
         TypeName? typeName = s_PrimitiveSZArrayTypeNames[(int)primitiveType];
         if (typeName is null)
         {
-            s_PrimitiveSZArrayTypeNames[(int)primitiveType] = typeName = GetPrimitiveTypeName(primitiveType).MakeArrayTypeName();
+            s_PrimitiveSZArrayTypeNames[(int)primitiveType] = typeName = GetPrimitiveTypeName(primitiveType).MakeSZArrayTypeName();
         }
         return typeName;
     }
@@ -128,7 +131,38 @@ internal static class TypeNameHelpers
                 .WithCoreLibAssemblyName(); // We know it's a System Record, so we set the LibraryName to CoreLib
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
+        => systemType.WithAssemblyName(CoreLibAssemblyName);
+
+    private static TypeName WithAssemblyName(this TypeName typeName, AssemblyNameInfo assemblyName)
+    {
+        if (!typeName.IsSimple)
+        {
+            if (typeName.IsArray)
+            {
+                TypeName newElementType = typeName.GetElementType().WithAssemblyName(assemblyName);
+
+                return typeName.IsSZArray
+                    ? newElementType.MakeSZArrayTypeName()
+                    : newElementType.MakeArrayTypeName(typeName.GetArrayRank());
+            }
+            else if (typeName.IsConstructedGenericType)
+            {
+                TypeName newGenericTypeDefinition = typeName.GetGenericTypeDefinition().WithAssemblyName(assemblyName);
+
+                // We don't change the assembly name of generic arguments on purpose.
+                return newGenericTypeDefinition.MakeGenericTypeName(typeName.GetGenericArguments());
+            }
+            else
+            {
+                // BinaryFormatter can not serialize pointers or references.
+                ThrowHelper.ThrowInvalidTypeName(typeName.FullName);
+            }
+        }
+
+        TypeName? newDeclaringType = typeName.IsNested ? typeName.DeclaringType.WithAssemblyName(assemblyName) : null;
+
+        return TypeName.CreateSimpleTypeName(typeName.FullName, newDeclaringType, assemblyName);
+    }
 
     private static TypeName ParseWithoutAssemblyName(string rawName, PayloadOptions payloadOptions)
     {

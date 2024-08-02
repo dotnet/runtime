@@ -486,7 +486,7 @@ namespace System.Reflection.Metadata.Tests
 
             if (!type.IsByRef)
             {
-                EnsureBasicMatch(parsed.MakeArrayTypeName(), type.MakeArrayType());
+                EnsureBasicMatch(parsed.MakeSZArrayTypeName(), type.MakeArrayType());
                 EnsureBasicMatch(parsed.MakeArrayTypeName(3), type.MakeArrayType(3));
                 EnsureBasicMatch(parsed.MakeByRefTypeName(), type.MakeByRefType());
                 EnsureBasicMatch(parsed.MakePointerTypeName(), type.MakePointerType());
@@ -507,7 +507,7 @@ namespace System.Reflection.Metadata.Tests
 
             EnsureBasicMatch(genericTypeName, genericType);
 
-            TypeName szArrayTypeName = genericTypeNameDefinition.MakeArrayTypeName();
+            TypeName szArrayTypeName = genericTypeNameDefinition.MakeSZArrayTypeName();
             Assert.Throws<InvalidOperationException>(() => szArrayTypeName.MakeGenericTypeName(genericTypeNames));
             TypeName mdArrayTypeName = genericTypeNameDefinition.MakeArrayTypeName(3);
             Assert.Throws<InvalidOperationException>(() => mdArrayTypeName.MakeGenericTypeName(genericTypeNames));
@@ -528,131 +528,22 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Declaring+Nested")]
         [InlineData("Declaring+Deep+Deeper+Nested")]
         [InlineData("Generic[[GenericArg]]")]
-        public void WithAssemblyNameCanSetANewName(string fullName)
+        public void CreateSimpleTypeNameTreatsEveryInputAsUnescapedSimpleFullName(string input)
         {
-            TypeName typeName = TypeName.Parse(fullName.AsSpan());
-            Assert.Equal(fullName, typeName.FullName);
-            Assert.Equal(fullName, typeName.AssemblyQualifiedName);
-            Assert.Null(typeName.AssemblyName);
+            TypeName typeName = TypeName.CreateSimpleTypeName(input);
 
-            VerifySimpleAssemblyNames(typeName, expectedAssemblyName: null);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
-
-            AssemblyNameInfo newAssemblyName = new("NewName");
-            TypeName withDifferentAssemblyName = typeName.WithAssemblyName(newAssemblyName);
-
-            // ensure it does not mutate current instance, but returns a new one
-            Assert.NotSame(typeName, withDifferentAssemblyName);
-            // full name does not include assembly name and should remain unchanged
-            Assert.Equal(fullName, withDifferentAssemblyName.FullName);
-            // ensure it has not created a new copy of the immutable name
-            Assert.Same(newAssemblyName, withDifferentAssemblyName.AssemblyName);
-            // ensure the old AssemblyQualifiedName was not copied
-            Assert.Equal($"{fullName}, NewName", withDifferentAssemblyName.AssemblyQualifiedName);
-
-            VerifySimpleAssemblyNames(withDifferentAssemblyName, expectedAssemblyName: newAssemblyName);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                // generic arguments remain unchanged on purpose
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
+            Assert.True(typeName.IsSimple);
+            Assert.False(typeName.IsArray);
+            Assert.False(typeName.IsConstructedGenericType);
+            Assert.False(typeName.IsPointer);
+            Assert.False(typeName.IsByRef);
+            Assert.False(typeName.IsNested);
         }
 
         [Theory]
-        [InlineData("Simple, AssemblyName")]
-        [InlineData("Pointer*, AssemblyName")]
-        [InlineData("Pointer*****, AssemblyName")]
-        [InlineData("ByRef&, AssemblyName")]
-        [InlineData("SZArray[], AssemblyName")]
-        [InlineData("CustomOffsetArray[*], AssemblyName")]
-        [InlineData("MDArray[,], AssemblyName")]
-        [InlineData("Declaring+Nested, AssemblyName")]
-        [InlineData("Declaring+Deep+Deeper+Nested, AssemblyName")]
-        [InlineData("Generic[[GenericArg]], AssemblyName")]
-        public void WithAssemblyNameCanReplaceExistingName(string assemblyQualifiedName)
-        {
-            TypeName typeName = TypeName.Parse(assemblyQualifiedName.AsSpan());
-            Assert.NotEqual(assemblyQualifiedName, typeName.FullName);
-            Assert.Equal(assemblyQualifiedName, typeName.AssemblyQualifiedName);
-
-            VerifySimpleAssemblyNames(typeName, typeName.AssemblyName);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
-
-            AssemblyNameInfo differentAssemblyName = new("Different");
-            TypeName withDifferentAssemblyName = typeName.WithAssemblyName(differentAssemblyName);
-
-            VerifySimpleAssemblyNames(withDifferentAssemblyName, differentAssemblyName);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
-        }
-
-        [Theory]
-        [InlineData("Simple, AssemblyName")]
-        [InlineData("Pointer*, AssemblyName")]
-        [InlineData("Pointer*****, AssemblyName")]
-        [InlineData("ByRef&, AssemblyName")]
-        [InlineData("SZArray[], AssemblyName")]
-        [InlineData("CustomOffsetArray[*], AssemblyName")]
-        [InlineData("MDArray[,], AssemblyName")]
-        [InlineData("Declaring+Nested, AssemblyName")]
-        [InlineData("Declaring+Deep+Deeper+Nested, AssemblyName")]
-        [InlineData("Generic[[GenericArg]], AssemblyName")]
-        public void WithAssemblyNameCanRemoveExistingName(string assemblyQualifiedName)
-        {
-            TypeName typeName = TypeName.Parse(assemblyQualifiedName.AsSpan());
-            Assert.NotEqual(assemblyQualifiedName, typeName.FullName);
-            Assert.Equal(assemblyQualifiedName, typeName.AssemblyQualifiedName);
-
-            VerifySimpleAssemblyNames(typeName, typeName.AssemblyName);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
-
-            AssemblyNameInfo? noAssemblyName = null;
-            TypeName withDifferentAssemblyName = typeName.WithAssemblyName(noAssemblyName);
-
-            VerifySimpleAssemblyNames(withDifferentAssemblyName, noAssemblyName);
-
-            if (typeName.IsConstructedGenericType)
-            {
-                Assert.All(typeName.GetGenericArguments(), genericArg => Assert.Null(genericArg.AssemblyName));
-            }
-        }
-
-        private static void VerifySimpleAssemblyNames(TypeName typeName, AssemblyNameInfo? expectedAssemblyName)
-        {
-            Assert.Same(expectedAssemblyName, typeName.AssemblyName);
-
-            TypeName elementTypeName = typeName;
-            while (elementTypeName.IsPointer || elementTypeName.IsByRef || elementTypeName.IsArray)
-            {
-                elementTypeName = elementTypeName.GetElementType();
-                // the assembly name of the element type has to be updated
-                Assert.Same(expectedAssemblyName, elementTypeName.AssemblyName);
-            }
-
-            TypeName declaringType = typeName;
-            while (declaringType.IsNested)
-            {
-                declaringType = declaringType.DeclaringType;
-                // the assembly name of the declaring type has to be updated
-                Assert.Same(expectedAssemblyName, declaringType.AssemblyName);
-            }
-        }
+        [MemberData(nameof(GetTypesThatRequireEscaping))]
+        public void CreateSimpleTypeNameThrowsForEscapedInput(Type type)
+            => Assert.Throws<ArgumentException>(() => TypeName.CreateSimpleTypeName(type.FullName));
 
         [Fact]
         public void IsSimpleReturnsTrueForNestedNonGenericTypes()
