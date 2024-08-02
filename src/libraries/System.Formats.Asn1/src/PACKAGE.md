@@ -17,10 +17,11 @@ ASN.1 is a standard interface description language for defining data structures 
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
-Parsing ASN.1 Data:
+Parsing ASN.1 data:
 
 ```csharp
 using System.Formats.Asn1;
+using System.Numerics;
 
 // Sample ASN.1 encoded data (DER format)
 byte[] asn1Data = [0x30, 0x09, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02, 0x02, 0x01, 0x03];
@@ -32,9 +33,9 @@ AsnReader reader = new(asn1Data, AsnEncodingRules.DER);
 AsnReader sequenceReader = reader.ReadSequence();
 
 // Read integers from the sequence
-var firstInt = sequenceReader.ReadInteger();
-var secondInt = sequenceReader.ReadInteger();
-var thirdInt = sequenceReader.ReadInteger();
+BigInteger firstInt = sequenceReader.ReadInteger();
+BigInteger secondInt = sequenceReader.ReadInteger();
+BigInteger thirdInt = sequenceReader.ReadInteger();
 
 Console.WriteLine($"First integer: {firstInt}");
 Console.WriteLine($"Second integer: {secondInt}");
@@ -45,22 +46,57 @@ Console.WriteLine($"Third integer: {thirdInt}");
 // Third integer: 3
 ```
 
-Encoding ASN.1 Data:
+Decoding ASN.1 data using `AsnDecoder`:
+
+```csharp
+using System.Formats.Asn1;
+using System.Numerics;
+using System.Text;
+
+// Sample ASN.1 encoded data
+byte[] booleanData = [0x01, 0x01, 0xFF]; // BOOLEAN TRUE
+byte[] integerData = [0x02, 0x01, 0x05]; // INTEGER 5
+byte[] octetStringData = [0x04, 0x03, 0x41, 0x42, 0x43]; // OCTET STRING "ABC"
+byte[] objectIdentifierData = [0x06, 0x03, 0x2A, 0x03, 0x04]; // OBJECT IDENTIFIER 1.2.3.4
+byte[] utf8StringData = [0x0C, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F]; // UTF8String "Hello"
+
+int bytesConsumed;
+
+bool booleanValue = AsnDecoder.ReadBoolean(booleanData, AsnEncodingRules.DER, out bytesConsumed);
+Console.WriteLine($"Decoded BOOLEAN value: {booleanValue}, Bytes consumed: {bytesConsumed}");
+// Decoded BOOLEAN value: True, Bytes consumed: 3
+
+BigInteger integerValue = AsnDecoder.ReadInteger(integerData, AsnEncodingRules.DER, out bytesConsumed);
+Console.WriteLine($"Decoded INTEGER value: {integerValue}, Bytes consumed: {bytesConsumed}");
+// Decoded INTEGER value: 5, Bytes consumed: 3
+
+byte[] octetStringValue = AsnDecoder.ReadOctetString(octetStringData, AsnEncodingRules.DER, out bytesConsumed);
+Console.WriteLine($"Decoded OCTET STRING value: {Encoding.ASCII.GetString(octetStringValue)}, Bytes consumed: {bytesConsumed}");
+// Decoded OCTET STRING value: ABC, Bytes consumed: 5
+
+string objectIdentifierValue = AsnDecoder.ReadObjectIdentifier(objectIdentifierData, AsnEncodingRules.DER, out bytesConsumed);
+Console.WriteLine($"Decoded OBJECT IDENTIFIER value: {objectIdentifierValue}, Bytes consumed: {bytesConsumed}");
+// Decoded OBJECT IDENTIFIER value: 1.2.3.4, Bytes consumed: 5
+
+string utf8StringValue = AsnDecoder.ReadCharacterString(utf8StringData, AsnEncodingRules.DER, UniversalTagNumber.UTF8String, out bytesConsumed);
+Console.WriteLine($"Decoded UTF8String value: {utf8StringValue}, Bytes consumed: {bytesConsumed}");
+// Decoded UTF8String value: Hello, Bytes consumed: 7
+```
+
+Encoding ASN.1 data:
 
 ```csharp
 // Create an AsnWriter to encode data
 AsnWriter writer = new(AsnEncodingRules.DER);
 
-// Write a sequence
-writer.PushSequence();
-
-// Write integers to the sequence
-writer.WriteInteger(1);
-writer.WriteInteger(2);
-writer.WriteInteger(3);
-
-// Pop the sequence to finalize it
-writer.PopSequence();
+// Create a scope for the sequence
+using (AsnWriter.Scope scope = writer.PushSequence())
+{
+    // Write integers to the sequence
+    writer.WriteInteger(1);
+    writer.WriteInteger(2);
+    writer.WriteInteger(3);
+}
 
 // Get the encoded data
 byte[] encodedData = writer.Encode();
@@ -78,6 +114,7 @@ The main types provided by this library are:
 
 * `System.Formats.Asn1.AsnReader`
 * `System.Formats.Asn1.AsnWriter`
+* `System.Formats.Asn1.AsnDecoder`
 * `System.Formats.Asn1.AsnEncodingRules`
 
 ## Additional Documentation
