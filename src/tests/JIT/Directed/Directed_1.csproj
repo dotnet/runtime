@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <MergedWrapperProjectReference Include="coverage/**/*.??proj" />
-    <MergedWrapperProjectReference Include="nullabletypes/**/*.??proj" />
-  </ItemGroup>
-
-  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
-</Project>
