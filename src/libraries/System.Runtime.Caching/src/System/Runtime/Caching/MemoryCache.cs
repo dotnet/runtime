@@ -39,7 +39,6 @@ namespace System.Runtime.Caching
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
-        private UnhandledExceptionEventHandler _onUnhandledException;
 #if NET
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
@@ -219,9 +218,6 @@ namespace System.Runtime.Caching
                 EventHandler onAppDomainUnload = new EventHandler(OnAppDomainUnload);
                 appDomain.DomainUnload += onAppDomainUnload;
                 _onAppDomainUnload = onAppDomainUnload;
-                UnhandledExceptionEventHandler onUnhandledException = new UnhandledExceptionEventHandler(OnUnhandledException);
-                appDomain.UnhandledException += onUnhandledException;
-                _onUnhandledException = onUnhandledException;
                 dispose = false;
             }
             finally
@@ -236,16 +232,6 @@ namespace System.Runtime.Caching
         private void OnAppDomainUnload(object unusedObject, EventArgs unusedEventArgs)
         {
             Dispose();
-        }
-
-        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
-        {
-            // if the CLR is terminating, dispose the cache.
-            // This will dispose the perf counters
-            if (eventArgs.IsTerminating)
-            {
-                Dispose();
-            }
         }
 
         private static void ValidatePolicy(CacheItemPolicy policy)
@@ -499,10 +485,6 @@ namespace System.Runtime.Caching
             if (_onAppDomainUnload != null)
             {
                 appDomain.DomainUnload -= _onAppDomainUnload;
-            }
-            if (_onUnhandledException != null)
-            {
-                appDomain.UnhandledException -= _onUnhandledException;
             }
         }
 
