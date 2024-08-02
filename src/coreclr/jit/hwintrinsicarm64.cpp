@@ -564,25 +564,41 @@ void HWIntrinsicInfo::lookupImmBounds(
 //
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
 {
+    bool isRightShift = true;
+
     switch (intrinsic)
     {
+        case NI_AdvSimd_ShiftLeftLogical:
+        case NI_AdvSimd_ShiftLeftLogicalScalar:
+            isRightShift = false;
+            FALLTHROUGH;
+
         case NI_AdvSimd_ShiftRightLogical:
         case NI_AdvSimd_ShiftRightLogicalScalar:
         case NI_AdvSimd_ShiftRightArithmetic:
         case NI_AdvSimd_ShiftRightArithmeticScalar:
         {
-            // AdvSimd.ShiftRight* be replaced with AdvSimd.Shift*, which takes op2 in a simd register
+            // AdvSimd.ShiftLeft* and AdvSimd.ShiftRight* can be replaced with AdvSimd.Shift*, which takes op2 in a simd
+            // register
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
 
+            // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
+            if (isRightShift)
+            {
+                op2 = gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2);
+            }
+
             NamedIntrinsic fallbackIntrinsic;
             switch (intrinsic)
             {
+                case NI_AdvSimd_ShiftLeftLogical:
                 case NI_AdvSimd_ShiftRightLogical:
                     fallbackIntrinsic = NI_AdvSimd_ShiftLogical;
                     break;
 
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
                 case NI_AdvSimd_ShiftRightLogicalScalar:
                     fallbackIntrinsic = NI_AdvSimd_ShiftLogicalScalar;
                     break;
@@ -599,10 +615,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
                     unreached();
             }
 
-            // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
-            GenTree* tmpOp =
-                gtNewSimdCreateBroadcastNode(simdType, gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2),
-                                             simdBaseJitType, genTypeSize(simdType));
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
             return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
                                             genTypeSize(simdType));
         }

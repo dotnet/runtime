@@ -15,6 +15,28 @@ using Xunit;
 public class Runtime_105817
 {
     [Fact]
+    public static void TestOverShiftLeftLogical()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr6 = Vector128.Create<short>(1);
+            var vr7 = AdvSimd.ShiftLeftLogical(vr6, 16);
+            Assert.Equal(vr7, Vector128<short>.Zero);
+        }
+    }
+
+    [Fact]
+    public static void TestOverShiftLeftLogicalScalar()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr6 = Vector64.Create<long>(1);
+            var vr7 = AdvSimd.ShiftLeftLogicalScalar(vr6, 64);
+            Assert.Equal(vr7, Vector64<long>.Zero);
+        }
+    }
+
+    [Fact]
     public static void TestOverShiftRightLogical()
     {
         if (AdvSimd.IsSupported)

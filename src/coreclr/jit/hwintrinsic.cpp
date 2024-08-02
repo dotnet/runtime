@@ -1666,6 +1666,8 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 #ifdef TARGET_ARM64
             switch (intrinsic)
             {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
                 case NI_AdvSimd_ShiftRightLogical:
                 case NI_AdvSimd_ShiftRightLogicalScalar:
                 case NI_AdvSimd_ShiftRightArithmetic:

@@ -19,6 +19,72 @@ public class Runtime_105621
     private static byte getLongImmOOB() => 65;
 
     [Fact]
+    public static void TestShiftLeftLogicalByZero()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<byte>(1);
+            var vr4 = AdvSimd.ShiftLeftLogical(vr3, 0);
+            Assert.Equal(vr3, vr4);
+        }
+    }
+
+    [Fact]
+    public static void TestShiftLeftLogicalToZero()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<byte>(128);
+            var vr4 = AdvSimd.ShiftLeftLogical(vr3, 9);
+            Assert.Equal(vr4, Vector64<byte>.Zero);
+        }
+    }
+
+    [Fact]
+    public static void TestShiftLeftLogicalToZeroNonConst()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<byte>(128);
+            var vr4 = AdvSimd.ShiftLeftLogical(vr3, getByteImmOOB());
+            Assert.Equal(vr4, Vector64<byte>.Zero);
+        }
+    }
+
+    [Fact]
+    public static void TestShiftLeftLogicalScalarByZero()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<long>(1);
+            var vr4 = AdvSimd.ShiftLeftLogicalScalar(vr3, 0);
+            Assert.Equal(vr3, vr4);
+        }
+    }
+
+    [Fact]
+    public static void TestShiftLeftLogicalScalarToZero()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<long>(128);
+            var vr4 = AdvSimd.ShiftLeftLogicalScalar(vr3, 65);
+            Assert.Equal(vr4, Vector64<long>.Zero);
+        }
+    }
+
+    [Fact]
+    public static void TestShiftLeftLogicalScalarToZeroNonConst()
+    {
+        if (AdvSimd.IsSupported)
+        {
+            var vr3 = Vector64.Create<long>(128);
+            var vr4 = AdvSimd.ShiftLeftLogicalScalar(vr3, getLongImmOOB());
+            Assert.Equal(vr4, Vector64<long>.Zero);
+        }
+    }
+
+    [Fact]
     public static void TestShiftRightLogicalByZero()
     {
         if (AdvSimd.IsSupported)
