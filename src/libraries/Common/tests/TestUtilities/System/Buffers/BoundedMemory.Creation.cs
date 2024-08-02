@@ -66,6 +66,7 @@ namespace System.Buffers
             return AllocateFromExistingData(new ReadOnlySpan<T>(data), placement);
         }
 
+        private static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         private static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
 
         private static void FillRandom(Span<byte> buffer)
@@ -87,7 +88,7 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (OperatingSystem.IsBrowser() || IsWasi)
+            else if (IsBrowser || IsWasi)
             {
                 return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
