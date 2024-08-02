@@ -721,7 +721,7 @@ namespace System.Net.Http.Functional.Tests
 
                 if (UseVersion.Major > 2)
                 {
-                    // With HTTP/2 and HTTP/3, the idle state change is emitted before RequestsQueueDuration.
+                    // With HTTP/3, the idle state change is emitted before RequestsQueueDuration.
                     check1 = connectionNoLongerIdle;
                     check2 = connectionIsActive;
                     check3 = requestsQueueDuration;
