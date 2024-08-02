@@ -244,6 +244,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(ExportsFile)' != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Condition="'$(_targetOS)' == 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader,DATA" />
       <IlcArg Condition="'$(_targetOS)' != 'win' and '$(DebuggerSupport)' != 'false'" Include="--export-dynamic-symbol:DotNetRuntimeDebugHeader" />
+      <IlcArg Condition="'$(_targetOS)' == 'freebsd' and '$(IsNativeExecutable)' == 'true'" Include="--export-dynamic-symbol:__progname;--export-dynamic-symbol:environ" />
       <IlcArg Condition="'$(IlcExportUnmanagedEntrypoints)' == 'true'" Include="--export-unmanaged-entrypoints" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(DirectPInvoke->'--directpinvoke:%(Identity)')" />
@@ -290,6 +291,9 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+
+      <!-- Export the managed entry point if building a native library in custom main mode -->
+      <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

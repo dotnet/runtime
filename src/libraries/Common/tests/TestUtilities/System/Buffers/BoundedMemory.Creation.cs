@@ -10,6 +10,7 @@ namespace System.Buffers
     /// </summary>
     public static partial class BoundedMemory
     {
+        public static bool UnixBoundsEnabled { get; set; }
         private static readonly int SystemPageSize = Environment.SystemPageSize;
 
         /// <summary>
@@ -84,13 +85,13 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsBrowser())
             {
-                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
             else
             {
-                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
+                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
             }
         }
     }

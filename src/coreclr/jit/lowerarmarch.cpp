@@ -1891,6 +1891,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
+            node->ClearUnusedValue();
             condSelNode->SetUnusedValue();
         }
 
