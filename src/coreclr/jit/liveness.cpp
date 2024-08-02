@@ -848,11 +848,11 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars
 // Arguments:
 //    life          - The live set that is being computed.
 //    varDsc        - The LclVar descriptor for the variable being used or defined.
-//    node          - The node that is defining the lclVar.
+//    node          - The node that is using the lclVar.
 void Compiler::fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node)
 {
     assert(node != nullptr);
-    assert((node->gtFlags & GTF_VAR_DEF) == 0);
+    assert(((node->gtFlags & GTF_VAR_DEF) == 0) || ((node->gtFlags & GTF_VAR_USEASG) != 0));
     assert(varDsc.lvTracked);
 
     const unsigned varIndex = varDsc.lvVarIndex;
@@ -1069,35 +1069,37 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 // Arguments:
 //    life          - The live set that is being computed.
 //    keepAliveVars - The current set of variables to keep alive regardless of their actual lifetime.
-//    lclVarNode    - The node that corresponds to the local var def or use.
+//    node          - The node that corresponds to the local var def or use.
 //
 // Returns:
 //    `true` if the local var node corresponds to a dead store; `false` otherwise.
 //
-bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
+bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* node)
 {
-    unsigned lclNum = lclVarNode->AsLclVarCommon()->GetLclNum();
+    GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
+    unsigned const             lclNum     = lclVarNode->GetLclNum();
 
     assert(lclNum < lvaCount);
     LclVarDsc& varDsc = lvaTable[lclNum];
     bool       isDef  = ((lclVarNode->gtFlags & GTF_VAR_DEF) != 0);
+    bool       isUse  = !isDef || ((lclVarNode->gtFlags & GTF_VAR_USEASG) != 0);
 
     // Is this a tracked variable?
     if (varDsc.lvTracked)
     {
-        /* Is this a definition or use? */
+        if (isUse)
+        {
+            fgComputeLifeTrackedLocalUse(life, varDsc, lclVarNode);
+        }
+
         if (isDef)
         {
-            return fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
-        }
-        else
-        {
-            fgComputeLifeTrackedLocalUse(life, varDsc, lclVarNode->AsLclVarCommon());
+            return fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode);
         }
     }
     else
     {
-        return fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
+        return fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
     }
     return false;
 }
