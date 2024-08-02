@@ -46,12 +46,12 @@
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
 #define DEBUG_CONTEXT_STR_LEN 2000
 
-namespace
+namespace IJWHelpers
 {
     //-------------------------------------------------------------------------------------
     // Return the copy ctor for a VC class (if any exists)
     //-------------------------------------------------------------------------------------
-    void FindCopyCtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+    void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
         CONTRACTL
         {
@@ -249,7 +249,7 @@ namespace
     //-------------------------------------------------------------------------------------
     // Return the destructor for a VC class (if any exists)
     //-------------------------------------------------------------------------------------
-    void FindDtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+    void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
         CONTRACTL
         {
@@ -2384,8 +2384,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
 #if defined(FEATURE_IJW)
                             MethodDesc *pCopyCtor;
                             MethodDesc *pDtor;
-                            FindCopyCtor(pModule, m_pMT, &pCopyCtor);
-                            FindDtor(pModule, m_pMT, &pDtor);
+                            IJWHelpers::FindCopyConstructor(pModule, m_pMT, &pCopyCtor);
+                            IJWHelpers::FindDestructor(pModule, m_pMT, &pDtor);
 
                             m_args.mm.m_pSigMod = ClassLoader::LoadTypeDefOrRefThrowing(pModule, pCopyCtorModifier).AsMethodTable();
                             m_args.mm.m_pMT = m_pMT;

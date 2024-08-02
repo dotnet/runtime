@@ -123,6 +123,19 @@ typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
                                                       OverrideProcArgs*   pargs,
                                                       UINT*               pResID);
 
+namespace IJWHelpers
+{
+    //-------------------------------------------------------------------------------------
+    // Return the copy ctor for a VC class (if any exists)
+    //-------------------------------------------------------------------------------------
+    void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
+
+    //-------------------------------------------------------------------------------------
+    // Return the destructor for a VC class (if any exists)
+    //-------------------------------------------------------------------------------------
+    void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
+}
+
 //==========================================================================
 // This structure contains the native type information for a given
 // parameter.

@@ -7549,6 +7549,80 @@ public:
     }
 };
 
+namespace
+{
+    bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, MethodInfoHelperContext& cxt, CORINFO_METHOD_INFO* methInfo)
+    {
+        if (!type.IsValueType())
+            return false;
+        
+        MethodTable * pMT = type.AsMethodTable();
+
+        MethodDesc* pCopyCtor = nullptr;
+        IJWHelpers::FindCopyConstructor(pMT->GetModule(), pMT, &pCopyCtor);
+
+        MethodDesc* pDestructor = nullptr;
+        IJWHelpers::FindDestructor(pMT->GetModule(), pMT, &pDestructor);
+
+        NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+        ilResolver->SetStubMethodDesc(ftn);
+
+        SigTypeContext genericContext;
+        SigTypeContext::InitTypeContext(ftn, &genericContext);
+
+        ILStubLinker sl(
+            ftn->GetModule(),
+            ftn->GetSignature(),
+            &genericContext,
+            ftn,
+            ILSTUB_LINKER_FLAG_NONE);
+        
+        ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+        pCode->EmitLDARG(0);
+        pCode->EmitLDARG(1);
+        if (pCopyCtor != nullptr)
+        {
+            pCode->EmitCALL(pCode->GetToken(pCopyCtor), 2, 0);
+        }
+        else
+        {
+            pCode->EmitLDC(type.GetSize());
+            pCode->EmitCPBLK();
+        }
+
+        if (pDestructor != nullptr)
+        {
+            pCode->EmitLDARG(1);
+            pCode->EmitCALL(pCode->GetToken(pDestructor), 1, 0);
+        }
+
+        // Generate all IL associated data for JIT
+        {
+            UINT maxStack;
+            size_t cbCode = sl.Link(&maxStack);
+            DWORD cbSig = sl.GetLocalSigSize();
+
+            COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
+            BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+            BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+            _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+            sl.GenerateCode(pbBuffer, cbCode);
+            sl.GetLocalSig(pbLocalSig, cbSig);
+
+            // Store the token lookup map
+            ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
+            ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+            cxt.TransientResolver = (DynamicResolver*)ilResolver;
+            cxt.Header = pILHeader;
+        }
+
+        ilResolver.SuppressRelease();
+        return true;
+    }
+}
+
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
@@ -7622,6 +7696,26 @@ static void getMethodInfoHelper(
         methInfo->EHcount = (unsigned short)EHCount;
         SigPointer localSig = pResolver->GetLocalSig();
         localSig.GetSignature(&pLocalSig, &cbLocalSig);
+    }
+    else if (ftn->GetMemberDef() == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(inst.GetNumArgs() == 1);
+        TypeHandle type = inst[0];
+        
+        if (!GenerateCopyConstructorHelper(ftn, type, cxt, methInfo))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        scopeHnd = cxt.CreateScopeHandle();
+
+        _ASSERTE(cxt.Header != NULL);
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        pLocalSig = cxt.Header->LocalVarSig;
+        cbLocalSig = cxt.Header->cbLocalVarSig;
     }
     else
     {

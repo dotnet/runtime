@@ -2438,6 +2438,29 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 }
 HCIMPLEND
 
+HCIMPL1(PCODE, JIT_GetSpecialStructCopyHelper, CORINFO_CLASS_HANDLE cls)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle type{cls};
+
+    _ASSERTE(type.IsValueType());
+
+    MethodDesc* pHelperMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT);
+
+    pHelperMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pHelperMD,
+        pHelperMD->GetMethodTable(),
+        FALSE,
+        Instantiation(&type, 1),
+        FALSE,
+        FALSE);
+    
+    pHelperMD->CheckRestore();
+    return pHelperMD->GetMultiCallableAddrOfCode();
+}
+HCIMPLEND
+
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;
