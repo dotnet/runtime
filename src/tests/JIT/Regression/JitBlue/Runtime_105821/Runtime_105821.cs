@@ -20,14 +20,14 @@ public class Runtime_105821
     [Fact]
     public static void TestEntryPoint()
     {
-        M1(0);
+        if (Sse42.IsSupported)
+        {
+            Assert.Throws<DivideByZeroException>(() => M1(0));
+        }
     }
 
     private static void M1(short arg0)
     {
-        if (Sse42.IsSupported)
-        {
-            Sse42.Crc32(Bmi2.ParallelBitDeposit(0, 0) % 0, (uint)arg0);
-        }
+        Sse42.Crc32(Bmi2.ParallelBitDeposit(0, 0) % 0, (uint)arg0);
     }
 }
