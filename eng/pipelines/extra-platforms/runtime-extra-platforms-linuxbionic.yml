@@ -12,7 +12,6 @@ jobs:
 
 #
 # Build the whole product using Mono for Android Linux with Bionic libc
-# FIXME: disabled test runs https://github.com/dotnet/runtime/issues/100281
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -23,7 +22,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isLinuxBionicOnlyBuild: ${{ parameters.isLinuxBionicOnlyBuild }}
     platforms:
-      - linux_bionic_arm64
+      #- linux_bionic_arm64 # FIXME: disabled linux_bionic_arm64 test runs https://github.com/dotnet/runtime/issues/100281
       - linux_bionic_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -38,13 +37,18 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      targetRid: linux-bionic-x64
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 480
-      # extra steps, run tests # FIXME: see https://github.com/dotnet/runtime/issues/100281
-      # postBuildSteps:
-      #   - template: /eng/pipelines/libraries/helix.yml
-      #     parameters:
-      #       creator: dotnet-bot
-      #       testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
+      # extra steps, run tests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true)))
