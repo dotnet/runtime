@@ -27,6 +27,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(provider.GetService<IService>());
             Assert.Same(service1, provider.GetKeyedService<IService>("service1"));
             Assert.Same(service2, provider.GetKeyedService<IService>("service2"));
+
+            Assert.Null(provider.GetService(typeof(IService)));
+            Assert.Same(service1, provider.GetKeyedService(typeof(IService), "service1"));
+            Assert.Same(service2, provider.GetKeyedService(typeof(IService), "service2"));
         }
 
         [Fact]
@@ -39,10 +43,12 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var provider = CreateServiceProvider(serviceCollection);
 
             var nonKeyed = provider.GetService<IService>();
-            var nullKey = provider.GetKeyedService<IService>(null);
+            var nullKeyOfT = provider.GetKeyedService<IService>(null);
+            var nullKeyOfType = provider.GetKeyedService(typeof(IService), null);
 
             Assert.Same(service1, nonKeyed);
-            Assert.Same(service1, nullKey);
+            Assert.Same(service1, nullKeyOfT);
+            Assert.Same(service1, nullKeyOfType);
         }
 
         [Fact]
@@ -192,6 +198,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             Assert.Null(provider.GetService<IService>());
             Assert.Same(service, provider.GetKeyedService<IService>("service1"));
+            Assert.Same(service, provider.GetKeyedService(typeof(IService), "service1"));
         }
 
         [Fact]
@@ -291,6 +298,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             Assert.Null(provider.GetService<IService>());
             Assert.Same(service, provider.GetKeyedService<IService>("service1"));
+            Assert.Same(service, provider.GetKeyedService(typeof(IService), "service1"));
         }
 
         [Fact]
@@ -324,6 +332,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(provider.GetService<IService>());
             Assert.NotNull(provider.GetKeyedService<IService>(87));
             Assert.ThrowsAny<InvalidOperationException>(() => provider.GetKeyedService<IService>(new object()));
+            Assert.ThrowsAny<InvalidOperationException>(() => provider.GetKeyedService(typeof(IService), new object()));
         }
 
         [Fact]
@@ -490,6 +499,20 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotSame(serviceA1, serviceB1);
         }
 
+        [Fact]
+        public void ResolveKeyedServiceThrowsIfNotSupported()
+        {
+            var provider = new NonKeyedServiceProvider();
+            var serviceKey = new object();
+
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<IService>(serviceKey));
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService(typeof(IService), serviceKey));
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedServices<IService>(serviceKey));
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedServices(typeof(IService), serviceKey));
+            Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService<IService>(serviceKey));
+            Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService(typeof(IService), serviceKey));
+        }
+
         internal interface IService { }
 
         internal class Service : IService
@@ -570,5 +593,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         public class SimpleService : ISimpleService { }
 
         public class AnotherSimpleService : ISimpleService { }
+
+        public class NonKeyedServiceProvider : IServiceProvider
+        {
+            public object GetService(Type serviceType) => throw new NotImplementedException();
+        }
     }
 }
