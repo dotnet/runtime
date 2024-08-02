@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The connection string.</returns>
         public static string? GetConnectionString(this IConfiguration configuration, string name)
         {
-            return configuration?.GetSection("ConnectionStrings")[name];
+            return GetRequiredSection(configuration, "ConnectionStrings")[name];
         }
 
         /// <summary>
