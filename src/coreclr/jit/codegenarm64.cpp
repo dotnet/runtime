@@ -3880,7 +3880,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         // These instructions change semantics when targetReg is ZR (the memory ordering becomes weaker).
         // See atomicBarrierDroppedOnZero in LLVM
-        assert((targetReg == REG_NA) || (targetReg == REG_ZR));
+        assert((targetReg != REG_NA) && (targetReg != REG_ZR));
 
         switch (treeNode->gtOper)
         {
