@@ -775,57 +775,56 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
 {
     // No extra type information is needed for scalar/special HW Intrinsic.
     //
-    unsigned simdSize = 0;
-    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
-    {
-        return false;
-    }
+    //unsigned simdSize = 0;
+    //if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
+    //{
+    //    return false;
+    //}
 
-    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
+    //int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
 
-    // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give them a unique value number, and don't add an extra argument.
-    //
-    if (numArgs == -1)
-    {
-        return false;
-    }
+    //if (numArgs == -1)
+    //{
+    //    return false;
+    //}
 
-    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
-    // We set  diffInsCount to the number of instructions that can execute differently.
-    //
-    unsigned diffInsCount = 0;
-#ifdef TARGET_XARCH
-    instruction lastIns = INS_invalid;
-#endif
-    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
-    {
-        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
-        if (curIns != INS_invalid)
-        {
-#ifdef TARGET_XARCH
-            if (curIns != lastIns)
-            {
-                diffInsCount++;
-                // remember the last valid instruction that we saw
-                lastIns = curIns;
-            }
-#elif defined(TARGET_ARM64)
-            // On ARM64 we use the same instruction and specify an insOpt arrangement
-            // so we always consider the instruction operation to be different
-            //
-            diffInsCount++;
-#endif // TARGET
-            if (diffInsCount >= 2)
-            {
-                // We can  early exit the loop now
-                break;
-            }
-        }
-    }
-
-    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
-    return (diffInsCount >= 2);
+    return true;
+//
+//    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
+//    // We set  diffInsCount to the number of instructions that can execute differently.
+//    //
+//    unsigned diffInsCount = 0;
+//#ifdef TARGET_XARCH
+//    instruction lastIns = INS_invalid;
+//#endif
+//    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
+//    {
+//        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
+//        if (curIns != INS_invalid)
+//        {
+//#ifdef TARGET_XARCH
+//            if (curIns != lastIns)
+//            {
+//                diffInsCount++;
+//                // remember the last valid instruction that we saw
+//                lastIns = curIns;
+//            }
+//#elif defined(TARGET_ARM64)
+//            // On ARM64 we use the same instruction and specify an insOpt arrangement
+//            // so we always consider the instruction operation to be different
+//            //
+//            diffInsCount++;
+//#endif // TARGET
+//            if (diffInsCount >= 2)
+//            {
+//                // We can  early exit the loop now
+//                break;
+//            }
+//        }
+//    }
+//
+//    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
+//    return (diffInsCount >= 2);
 }
 
 struct HWIntrinsicIsaRange

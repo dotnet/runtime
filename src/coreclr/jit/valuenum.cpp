@@ -2947,7 +2947,8 @@ ValueNum ValueNumStore::VNForFunc(
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(arg2VN == VNNormalValue(arg2VN));
     assert((func == VNF_MapStore) || (arg3VN == VNNormalValue(arg3VN)));
-    assert(VNFuncArity(func) == 4);
+    // Some SIMD functions with variable number of arguments are defined with zero arity
+    assert((VNFuncArity(func) == 0) || (VNFuncArity(func) == 4));
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN') ?
     //
@@ -10435,7 +10436,7 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
     0, // VNF_Boundary
 
 #define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
-    GetOpAttribsForFunc((arity) + static_cast<int>(extra), commute, knownNonNull, sharedStatic),
+    GetOpAttribsForFunc(arity, commute, knownNonNull, sharedStatic),
 #include "valuenumfuncs.h"
 };
 
@@ -10514,18 +10515,18 @@ void ValueNumStore::ValidateValueNumStoreStatics()
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
          id                = (NamedIntrinsic)(id + 1))
     {
-        bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
+        //bool encodeResultType = Compiler::vnEncodesResultTypeForHWIntrinsic(id);
 
-        if (encodeResultType)
-        {
-            // These HW_Intrinsic's have an extra VNF_SimdType arg.
-            //
-            VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-            unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
-            unsigned newArity = oldArity + 1;
+        //if (encodeResultType)
+        //{
+        //    // These HW_Intrinsic's have an extra VNF_SimdType arg.
+        //    //
+        //    VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+        //    unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
+        //    unsigned newArity = oldArity + 1;
 
-            ValueNumFuncSetArity(func, newArity);
-        }
+        //    ValueNumFuncSetArity(func, newArity);
+        //}
 
         if (HWIntrinsicInfo::IsCommutative(id))
         {
@@ -13048,8 +13049,6 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 pNormVNPair->SetConservative(vnStore->VNForExpr(compCurBB, loadType));
             }
         };
-
-        const bool isVariableNumArgs = HWIntrinsicInfo::lookupNumArgs(intrinsicId) == -1;
 
         // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
         if (opCount == 0)
