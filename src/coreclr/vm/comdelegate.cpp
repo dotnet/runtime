@@ -724,6 +724,46 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 #else
 #error Unsupported architecture
 #endif
+
+    if (LoggingOn(LF_STUBS, LL_INFO1000000))
+    {
+        LOGALWAYS(("GenerateShuffleArray: %u entries for %s -> %s:\n",
+            pShuffleEntryArray->GetCount(), pInvoke->GetName(), pTargetMeth->GetName()));
+
+        for (COUNT_T i = 0; i < pShuffleEntryArray->GetCount(); ++i)
+        {
+            const ShuffleEntry& entry = (*pShuffleEntryArray)[i];
+            if (entry.srcofs != ShuffleEntry::SENTINEL)
+            {
+                struct ShuffleInfo { const char* type; int offset; };
+                auto getShuffleInfo = [](UINT16 offset) -> ShuffleInfo {
+                    using SE = ShuffleEntry;
+                    if (offset == SE::HELPERREG)
+                    {
+                        return { "helper register" };
+                    }
+                    else if (offset & SE::REGMASK)
+                    {
+                        const char* type = (offset & SE::FPREGMASK)
+                            ? ((offset & SE::FPSINGLEMASK) ? "single-FP register" : "FP register")
+                            : "integer register";
+                        return { type, offset & SE::OFSREGMASK };
+                    }
+                    else
+                    {
+                        return {"stack slot", offset & SE::OFSMASK };
+                    }
+                };
+                ShuffleInfo src = getShuffleInfo(entry.srcofs);
+                ShuffleInfo dst = getShuffleInfo(entry.dstofs);
+                LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
+            }
+            else
+            {
+                LOGALWAYS(("    [%u] sentinel, stack size delta %u\n", i, entry.stacksizedelta));
+            }
+        }
+    }
 }
 
 
