@@ -51,9 +51,9 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
-            condition: >-
-              or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['monoContainsChange'], true),
-              eq(variables['isRollingBuild'], true))
+            # condition: >-
+            #   or(
+            #   eq(variables['librariesContainsChange'], true),
+            #   eq(variables['monoContainsChange'], true),
+            #   eq(variables['isRollingBuild'], true))
 
