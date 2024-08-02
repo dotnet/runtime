@@ -567,17 +567,43 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
     switch (intrinsic)
     {
         case NI_AdvSimd_ShiftRightLogical:
+        case NI_AdvSimd_ShiftRightLogicalScalar:
+        case NI_AdvSimd_ShiftRightArithmetic:
+        case NI_AdvSimd_ShiftRightArithmeticScalar:
         {
-            // AdvSimd.ShiftRightLogical be replaced with AdvSimd.ShiftLogical, which takes op2 in a simd register
+            // AdvSimd.ShiftRight* be replaced with AdvSimd.Shift*, which takes op2 in a simd register
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
+
+            NamedIntrinsic fallbackIntrinsic;
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftRightLogical:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogical;
+                    break;
+
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftLogicalScalar;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmetic:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmetic;
+                    break;
+
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
+                    fallbackIntrinsic = NI_AdvSimd_ShiftArithmeticScalar;
+                    break;
+
+                default:
+                    unreached();
+            }
 
             // AdvSimd.ShiftLogical does right-shifts with negative immediates, hence the negation
             GenTree* tmpOp =
                 gtNewSimdCreateBroadcastNode(simdType, gtNewOperNode(GT_NEG, genActualType(op2->TypeGet()), op2),
                                              simdBaseJitType, genTypeSize(simdType));
-            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, NI_AdvSimd_ShiftLogical, simdBaseJitType,
+            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
                                             genTypeSize(simdType));
         }
 
