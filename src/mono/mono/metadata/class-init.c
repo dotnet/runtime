@@ -2327,8 +2327,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				/*TypeBuilders produce all sort of weird things*/
 				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
 
-				long raw_real_size = (long)field_offsets [i] + size;
-				real_size = (int)raw_real_size;
+				gint64 raw_real_size = (gint64)field_offsets [i] + size;
+				real_size = (gint32)raw_real_size;
 
 				if (real_size != raw_real_size)
 					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
