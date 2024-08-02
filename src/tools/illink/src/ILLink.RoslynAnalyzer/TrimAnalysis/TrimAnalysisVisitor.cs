@@ -121,8 +121,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			var value = base.VisitConversion (operation, state);
 
-			if (operation.OperatorMethod != null)
-				return operation.OperatorMethod.ReturnType.IsTypeInterestingForDataflow () ? new MethodReturnValue (operation.OperatorMethod, isNewObj: false) : value;
+			if (operation.OperatorMethod is IMethodSymbol method)
+				return method.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef) ? new MethodReturnValue (method, isNewObj: false) : value;
 
 			// TODO - is it possible to have annotation on the operator method parameters?
 			// if so, will these be checked here?
@@ -346,7 +346,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
 
-			if (method.ReturnType.IsTypeInterestingForDataflow ()) {
+			if (method.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef)) {
 				var returnParameter = new MethodReturnValue (method, isNewObj: false);
 
 				TrimAnalysisPatterns.Add (

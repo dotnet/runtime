@@ -2123,6 +2123,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             {
                 // Struct passed according to hardware floating-point calling convention
                 assert(!arg.NewAbiInfo.HasAnyStackSegment());
+                assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
                 if (arg.NewAbiInfo.NumSegments == 2)
                 {
                     // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
@@ -2137,19 +2138,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     assert(arg.NewAbiInfo.NumSegments == 1);
                     structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
                 }
-
-                for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
-                {
-                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segment(i).GetRegisterType();
-                }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
             arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
-
-#ifdef UNIX_AMD64_ABI
-            comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(argSigClass, &arg.AbiInfo.StructDesc);
-#endif
         }
         else
         {
@@ -2626,7 +2618,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
-                    assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
+                    assert(structBaseType != TYP_STRUCT);
+
+                    // On RISC-V / LoongArch the passing size may be smaller than the original size if we pass a struct
+                    // according to hardware FP calling convention and it has empty fields
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                    assert(genTypeSize(structBaseType) >= originalSize);
+#endif
 
                     if (argObj->OperIsLoad())
                     {
@@ -2688,6 +2686,17 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                                // Single-field structs passed according to floating-point calling convention may have
+                                // padding in front of the field passed in a register
+                                assert(arg.NewAbiInfo.NumSegments == 1);
+                                // Single-slot structs passed according to integer calling convention also go through
+                                // here but since they always have zero offset nothing should change
+                                ABIPassingSegment seg = arg.NewAbiInfo.Segment(0);
+                                assert((seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister())) ||
+                                       (seg.Offset == 0));
+                                argObj->AsLclFld()->SetLclOffs(seg.Offset);
+#endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
                         }

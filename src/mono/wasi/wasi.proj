@@ -147,8 +147,8 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
-      <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
-      <!-- keep stack-size in sync with wasm_get_stack_size until after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b in WASI SDK -->
+      <!-- keep in sync with src\mono\wasi\build\WasiApp.targets -->
+      <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
     </ItemGroup>
 
@@ -202,6 +202,7 @@
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
+      <WASIComponentImports Include="$(RepoRoot)src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit" />
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(WasiObjDir)\pinvoke-table.h</PInvokeTableFile>
@@ -211,6 +212,13 @@
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationWasiFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+
+      <!-- 
+      this together with some DLLImports makes dependency on wasi:http@0.2.0
+      it will get trimmed when HTTP is not used and using publish + native rebuild
+      but the default dotnet.wasm and requires -S http argument to wasmtime
+      -->
+      <CMakeConfigurationLinkFlags>$(CMakeBuildRuntimeConfigureCmd) -Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;</CMakeConfigurationLinkFlags>
 
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
@@ -266,7 +274,8 @@
 
     <Copy SourceFiles="@(ICULibFiles);
                        @(ICULibNativeFiles);
-                       @(_WasmArchivedTimezones);"
+                       @(_WasmArchivedTimezones);
+                       @(WASIComponentImports);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -284,7 +293,7 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones)"
+    <Copy SourceFiles="@(IcuDataFiles);@(ICULibNativeFiles);@(_WasmArchivedTimezones);@(WASIComponentImports);"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

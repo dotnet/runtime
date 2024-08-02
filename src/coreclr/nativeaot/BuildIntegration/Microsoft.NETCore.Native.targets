@@ -291,6 +291,9 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
+
+      <!-- Export the managed entry point if building a native library in custom main mode -->
+      <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
