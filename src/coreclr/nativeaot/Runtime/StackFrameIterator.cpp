@@ -811,11 +811,6 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         // Sync our 'current' ExInfo with the updated state (we may have skipped other dispatches)
         ResetNextExInfoForSP(m_RegDisplay.GetSP());
 
-        // In case m_ControlPC is pre-adjusted, counteract here, since the caller of this routine
-        // will apply the adjustment again once we return. If the m_ControlPC is not pre-adjusted,
-        // this is simply an no-op.
-        m_ControlPC = m_OriginalControlPC;
-
         m_dwFlags = curFlags;
 
         // The iterator has been moved to the "owner frame" (either a parent funclet or the main
