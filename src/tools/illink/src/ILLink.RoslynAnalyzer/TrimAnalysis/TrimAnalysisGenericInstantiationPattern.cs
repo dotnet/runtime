@@ -45,21 +45,21 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation (), reportDiagnostic);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
+				var location = Operation.Syntax.GetLocation ();
 				switch (GenericInstantiation) {
 				case INamedTypeSymbol type:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, type);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
 					break;
 
 				case IMethodSymbol method:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, method);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, method, reportDiagnostic);
 					break;
 
 				case IFieldSymbol field:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, field);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, field, reportDiagnostic);
 					break;
 				}
 			}

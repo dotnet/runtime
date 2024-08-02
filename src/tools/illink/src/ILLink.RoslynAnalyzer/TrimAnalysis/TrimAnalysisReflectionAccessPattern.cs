@@ -45,13 +45,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation (), reportDiagnostic);
+			var location = Operation.Syntax.GetLocation ();
+			var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic);
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
-				ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod);
+				reflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (location, ReferencedMethod);
 			}
 
+			DiagnosticContext diagnosticContext = new (location, reportDiagnostic);
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
 		}

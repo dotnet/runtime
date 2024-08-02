@@ -66,7 +66,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
 							throw new NotImplementedException ();
 
-						var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
+						var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic);
+						var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, reflectionAccessAnalyzer);
 						requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 					}
 				}

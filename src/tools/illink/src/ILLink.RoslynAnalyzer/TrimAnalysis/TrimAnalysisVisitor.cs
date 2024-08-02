@@ -293,8 +293,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
 			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-			var diagnosticContext = DiagnosticContext.CreateDisabled ();
-			HandleCall (operation, OwningSymbol, calledMethod, instance, arguments, diagnosticContext, _multiValueLattice, out MultiValue methodReturnValue);
+			HandleCall (operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
 			// This will copy the values if necessary
 			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
@@ -323,11 +322,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			IMethodSymbol calledMethod,
 			MultiValue instance,
 			ImmutableArray<MultiValue> arguments,
-			DiagnosticContext diagnosticContext,
+			Location location,
+			Action<Diagnostic>? reportDiagnostic,
 			ValueSetLattice<SingleValue> multiValueLattice,
 			out MultiValue methodReturnValue)
 		{
-			var handleCallAction = new HandleCallAction (diagnosticContext, owningSymbol, operation, multiValueLattice);
+			var handleCallAction = new HandleCallAction (location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
 			MethodProxy method = new (calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
 			if (!handleCallAction.Invoke (method, instance, arguments, intrinsicId, out methodReturnValue))
