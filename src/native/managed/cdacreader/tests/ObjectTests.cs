@@ -159,4 +159,42 @@ public unsafe class ObjectTests
                 }
             });
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ComData(MockTarget.Architecture arch)
+    {
+        const ulong TestComObjectAddress = 0x00000000_10000010;
+        const ulong TestNonComObjectAddress = 0x00000000_10000020;
+
+        TargetPointer expectedRCW = 0xaaaa;
+        TargetPointer expectedCCW = 0xbbbb;
+
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ObjectContractHelper(arch,
+            (builder) =>
+            {
+                uint syncBlockIndex = 0;
+                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestComObjectAddress, 0, syncBlockIndex++, expectedRCW, expectedCCW);
+                builder = MockObject.AddObjectWithSyncBlock(targetTestHelpers, builder, TestNonComObjectAddress, 0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                return builder;
+            },
+            (target) =>
+            {
+                Contracts.IObject contract = target.Contracts.Object;
+                Assert.NotNull(contract);
+                {
+                    bool res = contract.GetComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    Assert.True(res);
+                    Assert.Equal(expectedRCW.Value, rcw.Value);
+                    Assert.Equal(expectedCCW.Value, ccw.Value);
+                }
+                {
+                    bool res = contract.GetComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    Assert.False(res);
+                    Assert.Equal(TargetPointer.Null.Value, rcw.Value);
+                    Assert.Equal(TargetPointer.Null.Value, ccw.Value);
+                }
+            });
+    }
 }
