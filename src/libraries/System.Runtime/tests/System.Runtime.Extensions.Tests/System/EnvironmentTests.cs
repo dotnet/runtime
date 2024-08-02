@@ -584,14 +584,20 @@ namespace System.Tests
                 if (usage.UserTime == TimeSpan.Zero)
                 {
                     // Environment should return 0 for all values
-                    Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
-                    Assert.Equal(TimeSpan.Zero, usage.TotalTime);
+                    Assert.True(usage.PrivilegedTime == TimeSpan.Zero, $"Unexpected privileged time: {usage.PrivilegedTime} while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == TimeSpan.Zero, $"Unexpected Zero Total while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
+                    // Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
+                    // Assert.Equal(TimeSpan.Zero, usage.TotalTime);
                 }
                 else
                 {
                     // Mobile platforms emulators may return non-zero values
-                    Assert.NotEqual(TimeSpan.Zero, usage.PrivilegedTime);
-                    Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+
+                    Assert.True(TimeSpan.Zero != usage.PrivilegedTime, $"Unexpected Zero privileged time while having user time: {usage.UserTime}");
+                    Assert.True(usage.TotalTime == usage.UserTime + usage.PrivilegedTime, $"Unexpected Total time: {usage.TotalTime} while having privileged time: {usage.PrivilegedTime} and user time: {usage.UserTime}");
+
+                    // Assert.NotEqual(TimeSpan.Zero, usage.PrivilegedTime);
+                    // Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
                 }
             }
             else
