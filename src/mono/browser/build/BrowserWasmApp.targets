@@ -336,6 +336,8 @@
                                Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
                                Dependencies="" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)heapshot.c"
+                               Dependencies="" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)runtime.c"
                                Dependencies="@(_RuntimeCDependencies)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)corebindings.c" />

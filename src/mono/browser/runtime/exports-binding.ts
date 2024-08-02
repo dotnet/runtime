@@ -90,6 +90,7 @@ export const mono_wasm_imports = [
     mono_wasm_set_entrypoint_breakpoint,
     mono_wasm_event_pipe_early_startup_callback,
 
+    // heapshot.c
     mono_wasm_heapshot_start,
     mono_wasm_heapshot_assembly,
     mono_wasm_heapshot_class,

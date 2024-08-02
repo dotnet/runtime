@@ -444,16 +444,10 @@
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/runtime.c;
-                       runtime/driver.c;
-                       runtime/pinvoke.c;
-                       runtime/corebindings.c;"
-          DestinationFolder="$(NativeBinDir)src"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="runtime/runtime.h;
                        runtime/runtime.c;
                        runtime/driver.c;
+                       runtime/heapshot.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;"
           DestinationFolder="$(NativeBinDir)src"
