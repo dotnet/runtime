@@ -340,3 +340,4 @@ FUNCTIONS
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
+    CORINFO_METHOD_HANDLE GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

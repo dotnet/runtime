@@ -2438,31 +2438,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 }
 HCIMPLEND
 
-// This helper may be called in the prolog or after a GC transition, so we cannot make
-// assumptions about GC mode.
-HCIMPL1_RAW(PCODE, JIT_GetSpecialStructCopyHelper, CORINFO_CLASS_HANDLE cls)
-{
-    TypeHandle type{cls};
-
-    GCX_COOP();
-
-    _ASSERTE(type.IsValueType());
-
-    MethodDesc* pHelperMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT);
-
-    pHelperMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        pHelperMD,
-        pHelperMD->GetMethodTable(),
-        FALSE,
-        Instantiation(&type, 1),
-        FALSE,
-        FALSE);
-    
-    pHelperMD->CheckRestore();
-    return pHelperMD->GetMultiCallableAddrOfCode();
-}
-HCIMPLEND_RAW
-
 HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
 {
     FCALL_CONTRACT;

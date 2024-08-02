@@ -896,6 +896,10 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const WCHAR* repGetStringConfigValue(const WCHAR* name);
 
+    void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
+    void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
+
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
     struct Environment

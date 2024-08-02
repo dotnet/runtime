@@ -1436,3 +1436,10 @@ uint32_t interceptor_ICJI::getJitFlags(
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::GetSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    mcs->AddCall("GetSpecialCopyHelper");
+    return original_ICorJitInfo->GetSpecialCopyHelper(type);
+}
+

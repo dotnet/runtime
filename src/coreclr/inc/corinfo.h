@@ -509,7 +509,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_MEMCPY,                // Copy block of memory
     CORINFO_HELP_NATIVE_MEMSET,         // Init block of memory using native memset (not safe for pDst being null,
                                         // not safe for unbounded size, does not trigger GC)
-    CORINFO_HELP_GET_SPECIAL_STRUCT_COPY,   // special copy helper for structs
 
     CORINFO_HELP_RUNTIMEHANDLE_METHOD,          // determine a type/field/method handle at run-time
     CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,      // determine a type/field/method handle at run-time, with IBC logging
@@ -3323,6 +3322,8 @@ public:
     // but for tailcalls, the contract is that JIT leaves the indirection cell in
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
+
+    virtual CORINFO_METHOD_HANDLE GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
 
 /**********************************************************************************/

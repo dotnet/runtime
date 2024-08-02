@@ -1741,6 +1741,15 @@ uint32_t WrapICorJitInfo::getJitFlags(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::GetSpecialCopyHelper(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(GetSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->GetSpecialCopyHelper(type);
+    API_LEAVE(GetSpecialCopyHelper);
+    return temp;
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

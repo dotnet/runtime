@@ -10048,6 +10048,40 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     EE_TO_JIT_TRANSITION();
 }
 
+CORINFO_METHOD_HANDLE CEEInfo::GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th = TypeHandle(type);
+
+    _ASSERTE(th.IsValueType());
+
+    MethodDesc* pHelperMD = CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT);
+
+    pHelperMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pHelperMD,
+        pHelperMD->GetMethodTable(),
+        FALSE,
+        Instantiation(&th, 1),
+        FALSE,
+        FALSE);
+    
+    pHelperMD->CheckRestore();
+    result = (CORINFO_METHOD_HANDLE)pHelperMD;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 CORINFO_JUST_MY_CODE_HANDLE CEEInfo::getJustMyCodeHandle(
                 CORINFO_METHOD_HANDLE       method,
