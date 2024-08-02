@@ -139,7 +139,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 switch ((JitManagerKind)jitManager.JitManagerKind)
                 {
                     case JitManagerKind.EEJitManager:
-                        return EEJitCodeToMethodInfo(target, jitManager, jittedCodeAddress, out methodDescAddress);
+                        return EEJitCodeToMethodInfo(target, jittedCodeAddress, out methodDescAddress);
                     case JitManagerKind.ReadyToRunJitManager:
                         methodDescAddress = TargetPointer.Null;
                         throw new NotImplementedException(); // TODO[cdac]:
@@ -148,7 +148,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 }
             }
 
-            private bool EEJitCodeToMethodInfo(Target target, Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            private bool EEJitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
             {
                 // EEJitManager::JitCodeToMethodInfo
                 if (IsRangeList)
@@ -156,7 +156,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     methodDescAddress = TargetPointer.Null;
                     return false;
                 }
-                TargetPointer start = EEFindMethodCode(target, jitManager, jittedCodeAddress);
+                TargetPointer start = EEFindMethodCode(target, jittedCodeAddress);
                 if (start == TargetPointer.Null)
                 {
                     methodDescAddress = TargetPointer.Null;
@@ -180,7 +180,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 return codeHeaderIndirect.Value <= stubCodeBlockLast;
             }
 
-            private TargetPointer EEFindMethodCode(Target target, Data.IJitManager jitManager, TargetCodePointer jittedCodeAddress)
+            private TargetPointer EEFindMethodCode(Target target, TargetCodePointer jittedCodeAddress)
             {
                 // EEJitManager::FindMethodCode
                 if (_rangeSection == null)
@@ -192,21 +192,14 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     throw new InvalidOperationException("RangeSection is not a code heap");
                 }
                 TargetPointer heapListAddress = _rangeSection.HeapList;
-                Data.HeapList heapList = _target.ProcessedData.GetOrAdd<Data.HeapList>(heapListAddress);
-#if false
-    HeapList *pHp = pRangeSection->_pHeapList;
-
-    if ((currentPC < pHp->startAddress) ||
-        (currentPC > pHp->endAddress))
-    {
-        return 0;
-    }
-
-    TADDR base = pHp->mapBase;
-    PTR_DWORD pMap = pHp->pHdrMap;
-    PTR_DWORD pMapStart = pMap;
-#endif
-                NibbleMap nibbleMap = NibbleMap.Create(target);
+                Data.HeapList heapList = target.ProcessedData.GetOrAdd<Data.HeapList>(heapListAddress);
+                if (jittedCodeAddress < heapList.StartAddress || jittedCodeAddress > heapList.EndAddress)
+                {
+                    return TargetPointer.Null;
+                }
+                TargetPointer mapBase = heapList.MapBase;
+                TargetPointer mapStart = heapList.HeaderMap;
+                NibbleMap nibbleMap = NibbleMap.Create(target, (uint)target.PointerSize);
                 return nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
 
             }

@@ -92,7 +92,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             return mapStart + (mapIdx / NibblesPerMapUnit) * MapUnitBytes;
         }
 
-        public TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetPointer currentPC)
+        public TargetPointer FindMethodCode(TargetPointer mapBase, TargetPointer mapStart, TargetCodePointer currentPC)
         {
             TargetNUInt relativeAddress = new TargetNUInt(currentPC.Value - mapBase.Value);
             DecomposeAddress(relativeAddress, out ulong mapIdx, out uint bucketByteIndex);
@@ -134,7 +134,9 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
             // We're now done with the current map index.
             // Align the map index and move to the previous map unit, then move back one nibble.
+#pragma warning disable IDE0054 // use compound assignment
             mapIdx = mapIdx & (~(NibblesPerMapUnit - 1)) - 1;
+#pragma warning restore IDE0054 // use compound assignment
 
             // read the map unit containing mapIdx and skip over it if it is all zeros
             while (mapIdx >= NibblesPerMapUnit)
