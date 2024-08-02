@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
 

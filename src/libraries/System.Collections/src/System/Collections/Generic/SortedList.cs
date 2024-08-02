@@ -266,8 +266,8 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            if (value == null && default(TValue) != null)    // null is an invalid value for Value types
-                throw new ArgumentNullException(nameof(value));
+            if (default(TValue) != null)    // null is an invalid value for Value types
+                ArgumentNullException.ThrowIfNull(value);
 
             if (!(key is TKey))
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
@@ -579,7 +579,8 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null) throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
+
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -613,8 +614,8 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && default(TValue) != null)
-                    throw new ArgumentNullException(nameof(value));
+                if (default(TValue) != null)
+                    ArgumentNullException.ThrowIfNull(value);
 
                 TKey tempKey = (TKey)key;
                 try

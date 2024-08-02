@@ -813,13 +813,16 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
-        public static string BasicReturnAndParameterByValue(string returnType, string parameterType, string preDeclaration = "") => $$"""
+        /// <summary>
+        /// Declaration with a non-blittable parameter that is always supported for marshalling
+        /// </summary>
+        public static string BasicReturnAndParameterWithAlwaysSupportedParameter(string returnType, string parameterType, string preDeclaration = "") => $$"""
             using System.Runtime.InteropServices;
             {{preDeclaration}}
             partial class Test
             {
                 [LibraryImport("DoesNotExist")]
-                public static partial {{returnType}} Method({{parameterType}} p);
+                public static partial {{returnType}} Method({{parameterType}} p, out int i);
             }
             """;
 

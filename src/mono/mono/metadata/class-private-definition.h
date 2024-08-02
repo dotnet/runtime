@@ -80,6 +80,7 @@ struct _MonoClass {
 	guint has_deferred_failure : 1;
 	/* next byte*/
 	guint is_exception_class : 1; /* is System.Exception or derived from it */
+	guint variant_search_table_inited : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -127,6 +128,8 @@ struct _MonoClass {
 
 	/* Infrequently used items. See class-accessors.c: InfrequentDataKind for what goes into here. */
 	MonoPropertyBag infrequent_data;
+
+	void *variant_search_table;
 };
 
 struct _MonoClassDef {

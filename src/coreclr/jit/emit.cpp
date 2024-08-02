@@ -2787,86 +2787,11 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
 //  There is no need to record live pointers for such call sites.
 //
 // Arguments:
-//   helpFunc - a helper signature for the call, can be CORINFO_HELP_UNDEF, that means that the call is not a helper.
-//
-// Return value:
-//   true if GC can't happen within this call, false otherwise.
-bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
-{
-    // TODO-Throughput: Make this faster (maybe via a simple table of bools?)
-
-    switch (helpFunc)
-    {
-        case CORINFO_HELP_UNDEF:
-            return false;
-
-        case CORINFO_HELP_PROF_FCN_LEAVE:
-        case CORINFO_HELP_PROF_FCN_ENTER:
-        case CORINFO_HELP_PROF_FCN_TAILCALL:
-        case CORINFO_HELP_LLSH:
-        case CORINFO_HELP_LRSH:
-        case CORINFO_HELP_LRSZ:
-
-            //  case CORINFO_HELP_LMUL:
-            //  case CORINFO_HELP_LDIV:
-            //  case CORINFO_HELP_LMOD:
-            //  case CORINFO_HELP_ULDIV:
-            //  case CORINFO_HELP_ULMOD:
-
-#ifdef TARGET_X86
-        case CORINFO_HELP_ASSIGN_REF_EAX:
-        case CORINFO_HELP_ASSIGN_REF_ECX:
-        case CORINFO_HELP_ASSIGN_REF_EBX:
-        case CORINFO_HELP_ASSIGN_REF_EBP:
-        case CORINFO_HELP_ASSIGN_REF_ESI:
-        case CORINFO_HELP_ASSIGN_REF_EDI:
-
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-#endif
-
-        case CORINFO_HELP_ASSIGN_REF:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF:
-        case CORINFO_HELP_ASSIGN_BYREF:
-
-        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
-
-        case CORINFO_HELP_INIT_PINVOKE_FRAME:
-
-        case CORINFO_HELP_FAIL_FAST:
-        case CORINFO_HELP_STACK_PROBE:
-
-        case CORINFO_HELP_CHECK_OBJ:
-
-        // never present on stack at the time of GC
-        case CORINFO_HELP_TAILCALL:
-        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
-
-        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
-//------------------------------------------------------------------------
-// emitNoGChelper: Returns true if garbage collection won't happen within the helper call.
-//
-// Notes:
-//  There is no need to record live pointers for such call sites.
-//
-// Arguments:
 //   methHnd - a method handle for the call.
 //
 // Return value:
 //   true if GC can't happen within this call, false otherwise.
+//
 bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 {
     CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
@@ -2874,7 +2799,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
     {
         return false;
     }
-    return emitNoGChelper(helpFunc);
+    return Compiler::s_helperCallProperties.IsNoGC(helpFunc);
 }
 
 /*****************************************************************************
@@ -10430,7 +10355,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 //
 regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
-    assert(emitNoGChelper(helper));
+    assert(emitNoGChelper(Compiler::eeFindHelper(helper)));
     regMaskTP result;
     switch (helper)
     {

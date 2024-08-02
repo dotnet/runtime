@@ -508,13 +508,17 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         else
         {
+#ifdef TARGET_ARM64
+            assert(emitter::isMaskReg(reg) || (reg == REG_FFR));
+#else
             assert(emitter::isMaskReg(reg));
+#endif
             registerType = MaskRegisterType;
         }
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -1989,10 +1993,10 @@ private:
                             RefPosition**    useRefPosition = nullptr);
     int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
     int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
-    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
 
     RefPosition* BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
+    int          BuildCallArgUses(GenTreeCall* call);
     void         BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
     void         BuildKills(GenTree* tree, regMaskTP killMask);
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)

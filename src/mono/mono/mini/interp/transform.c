@@ -1221,7 +1221,8 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (!mono_jit_call_can_be_supported_by_interp (method, sig, mono_llvm_only))
 		return FALSE;
 
-	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+	MonoAotModule *amodule = m_class_get_image (method->klass)->aot_module;
+	if (mono_aot_only && amodule && (amodule != AOT_MODULE_NOT_FOUND) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
 		mono_class_init_internal (method->klass);
 		gpointer addr = mono_aot_get_method (method, error);
@@ -1423,15 +1424,6 @@ interp_dump_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, " %g", * (double *)&tmp);
 		break;
 	}
-	case MintOpShortBranch:
-		if (ins) {
-			/* the target IL is already embedded in the instruction */
-			g_string_append_printf (str, " BB%d", ins->info.target_bb->index);
-		} else {
-			target = ins_offset + *(gint16*)data;
-			g_string_append_printf (str, " IR_%04x", target);
-		}
-		break;
 	case MintOpBranch:
 		if (ins) {
 			g_string_append_printf (str, " BB%d", ins->info.target_bb->index);
@@ -1458,12 +1450,12 @@ interp_dump_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, ")");
 		break;
 	}
-	case MintOpShortAndShortBranch:
+	case MintOpShortAndBranch:
 		if (ins) {
 			/* the target IL is already embedded in the instruction */
 			g_string_append_printf (str, " %u, BB%d", *(guint16*)data, ins->info.target_bb->index);
 		} else {
-			target = ins_offset + *(gint16*)(data + 1);
+			target = ins_offset + (gint32)READ32 (data + 1);
 			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
 		}
 		break;
@@ -2252,56 +2244,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
-		} else if (!strcmp (tm, "IsNullRef")) {
-#if SIZEOF_VOID_P == 4
-			*op = MINT_CEQ0_I4;
-#else
-			// FIXME: No CEQ0_I8
-#endif
-		} else if (!strcmp (tm, "NullRef")) {
-#if SIZEOF_VOID_P == 4
-			*op = MINT_LDC_I4_0;
-#else
-			*op = MINT_LDC_I8_0;
-#endif
-		} else if (!strcmp (tm, "Add")) {
-			MonoGenericContext *ctx = mono_method_get_context (target_method);
-			g_assert (ctx);
-			g_assert (ctx->method_inst);
-			g_assert (ctx->method_inst->type_argc == 1);
-			MonoType *t = ctx->method_inst->type_argv [0];
-
-			int base_var = td->sp [-2].var,
-				offset_var = td->sp [-1].var,
-				align, esize;
-
-#if SIZEOF_VOID_P == 8
-			if (td->sp [-1].type == STACK_TYPE_I4) {
-				interp_add_ins (td, MINT_CONV_I8_I4);
-				interp_ins_set_sreg (td->last_ins, offset_var);
-				interp_ins_set_dreg (td->last_ins, offset_var);
-			}
-#endif
-
-			td->sp -= 2;
-
-			esize = mono_type_size (t, &align);
-			if (esize != 1) {
-				g_assert (esize <= 32767);
-				interp_add_ins (td, MINT_MUL_P_IMM);
-				td->last_ins->data [0] = (gint16)esize;
-				interp_ins_set_sreg (td->last_ins, offset_var);
-				interp_ins_set_dreg (td->last_ins, offset_var);
-			}
-
-			interp_add_ins (td, MINT_ADD_P);
-			interp_ins_set_sregs2 (td->last_ins, base_var, offset_var);
-			push_simple_type (td, STACK_TYPE_MP);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
-
-			td->ip += 5;
-
-			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {
@@ -3405,7 +3347,9 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	uint32_t new_param_count = 0;
 	int align;
 	MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+	MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+	MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 	/*
 	* Go through the lowered arguments, if the argument is a struct,
 	* we need to replace it with a sequence of lowered arguments.
@@ -3414,8 +3358,10 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 	for (int idx_param = 0; idx_param < csignature->param_count; ++idx_param) {
 		MonoType *ptype = csignature->params [idx_param];
 		MonoClass *klass = mono_class_from_mono_type_internal (ptype);
-		// SwiftSelf and SwiftError are special cases where we need to preserve the class information for the codegen to handle them correctly.
-		if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error)) {
+		MonoGenericClass *gklass = mono_class_try_get_generic_class (klass);
+
+		// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
+		if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
 			SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 			if (!lowered_swift_struct.by_reference) {
 				for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
@@ -3434,8 +3380,13 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 					g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 				}
 			} else {
-				// For structs that cannot be lowered, we change the argument to byref type
-				ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
+				// For structs that cannot be lowered, we change the argument to a pointer-like argument type.
+				// If SwiftSelf<T> can't be lowered, it should be passed in the same manner as SwiftSelf, via the context register.
+				if (gklass && (gklass->container_class == swift_self_t))
+					ptype = mono_class_get_byref_type (swift_self);
+				else
+					ptype = mono_class_get_byref_type (klass);
+
 				// Load the address of the struct
 				interp_add_ins (td, MINT_LDLOCA_S);
 				interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
@@ -4526,8 +4477,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	int swift_error_index = -1;
 	imethod->swift_error_offset = -1;
-	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 #endif
 
 	/*
@@ -4557,6 +4506,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (swift_error_index < 0 && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (klass == swift_error_ptr)
 			swift_error_index = i;
@@ -8701,10 +8652,6 @@ handle_relocations (TransformData *td)
 		int offset = reloc->target_bb->native_offset - reloc->offset;
 
 		switch (reloc->type) {
-		case RELOC_SHORT_BRANCH:
-			g_assert (td->new_code [reloc->offset + reloc->skip + 1] == 0xdead);
-			td->new_code [reloc->offset + reloc->skip + 1] = GINT_TO_UINT16 (offset);
-			break;
 		case RELOC_LONG_BRANCH: {
 			guint16 *v = (guint16 *)&offset;
 			g_assert (td->new_code [reloc->offset + reloc->skip + 1] == 0xdead);
@@ -8791,18 +8738,14 @@ interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void 
 }
 
 int
-interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
+interp_compute_native_offset_estimates (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	int noe = 0;
 
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
-		// FIXME This doesn't currently hold because of bblock reordering potentially
-		// inserting additional instructions after the estimate is computed.
-		//
-		// if (bb->native_offset_estimate)
-		//	g_assert (bb->native_offset_estimate >= noe);
+
 		bb->native_offset_estimate = noe;
 		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
@@ -8822,19 +8765,6 @@ interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
 				continue;
 			noe += interp_get_ins_length (ins);
 
-			if (!final_code && td->optimized &&
-					(ins->flags & INTERP_INST_FLAG_CALL) &&
-					ins->info.call_info &&
-					ins->info.call_info->call_args) {
-				// When code is optimized, for a call, the offset allocator
-				// might end up inserting additional moves for the arguments
-				int *call_args = ins->info.call_info->call_args;
-				while (*call_args != -1) {
-					noe += 4; // mono_interp_oplen [MINT_MOV_VT];
-					call_args++;
-				}
-			}
-
 			if (!td->optimized)
 				interp_foreach_ins_var (td, ins, NULL, alloc_unopt_global_local);
 		}
@@ -8845,39 +8775,6 @@ interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
 		td->param_area_offset = td->total_locals_size;
 	}
 	return noe;
-}
-
-gboolean
-interp_is_short_offset (int src_offset, int dest_offset)
-{
-	int diff = dest_offset - src_offset;
-	if (diff >= G_MININT16 && diff <= G_MAXINT16)
-		return TRUE;
-	return FALSE;
-}
-
-static int
-get_short_brop (int opcode)
-{
-	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
-		if (opcode == MINT_BR)
-			return MINT_BR_S;
-		else if (opcode == MINT_LEAVE_CHECK)
-			return MINT_LEAVE_S_CHECK;
-		else if (opcode == MINT_CALL_HANDLER)
-			return MINT_CALL_HANDLER_S;
-		else
-			return opcode;
-	}
-
-	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_I8)
-		return opcode + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
-
-	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
-		return opcode + MINT_BEQ_I4_S - MINT_BEQ_I4;
-
-	// Already short branch
-	return opcode;
 }
 
 static void
@@ -9035,45 +8932,20 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		if (ins->info.target_bb->native_offset >= 0) {
 			int offset = ins->info.target_bb->native_offset - br_offset;
-			// Backwards branch. We can already patch it.
-			if (interp_is_short_offset (br_offset, ins->info.target_bb->native_offset)) {
-				// Replace the long opcode we added at the start
-				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-				*ip++ = GINT_TO_UINT16 (ins->info.target_bb->native_offset - br_offset);
-			} else {
-				WRITE32 (ip, &offset);
-			}
+			WRITE32 (ip, &offset);
 		} else if (opcode == MINT_BR && ins->info.target_bb == td->cbb->next_bb) {
 			// Ignore branch to the next basic block. Revert the added MINT_BR.
 			ip--;
 		} else {
-			// If the estimate offset is short, then surely the real offset is short
-			// otherwise we conservatively have to use long branch opcodes
-			int cur_estimation_error = td->cbb->native_offset_estimate - td->cbb->native_offset;
-			int target_bb_estimated_offset = ins->info.target_bb->native_offset_estimate - cur_estimation_error;
-			gboolean is_short = interp_is_short_offset (br_offset, target_bb_estimated_offset);
-			if (is_short)
-				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-			else if (MINT_IS_SUPER_BRANCH (opcode)) {
-				g_printf (
-					"long superbranch detected with opcode %d (%s) in method %s.%s\n",
-					opcode, mono_interp_opname (opcode),
-					m_class_get_name (td->method->klass), td->method->name
-				);
-				// FIXME missing handling for long branch
-				g_assert (FALSE);
-			}
-
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
-			reloc->type = is_short ? RELOC_SHORT_BRANCH : RELOC_LONG_BRANCH;
+			reloc->type = RELOC_LONG_BRANCH;
 			reloc->skip = mono_interp_op_sregs [opcode] + has_imm;
 			reloc->offset = br_offset;
 			reloc->target_bb = ins->info.target_bb;
 			g_ptr_array_add (td->relocs, reloc);
 			*ip++ = 0xdead;
-			if (!is_short)
-				*ip++ = 0xbeef;
+			*ip++ = 0xbeef;
 		}
 		if (opcode == MINT_CALL_HANDLER)
 			*ip++ = ins->data [2];
@@ -9273,9 +9145,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
 
-	// This iteration could be avoided at the cost of less precise size result, following
-	// super instruction pass
-	size = interp_compute_native_offset_estimates (td, TRUE);
+	size = interp_compute_native_offset_estimates (td);
 
 	// Generate the compacted stream of instructions
 	td->new_code = ip = (guint16*)imethod_alloc0 (td, size * sizeof (guint16));

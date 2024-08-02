@@ -1615,12 +1615,6 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
     RETURN(typeHandle);
 }
 
-DomainAssembly *ClassLoader::GetDomainAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetAssembly()->GetDomainAssembly();
-}
-
 #ifndef DACCESS_COMPILE
 
 //
@@ -1958,17 +1952,17 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                                         className);
                         GCX_COOP();
                         ASSEMBLYREF asmRef = NULL;
-                        DomainAssembly *pDomainAssembly = NULL;
+                        Assembly* pAssembly = NULL;
                         GCPROTECT_BEGIN(asmRef);
 
-                        pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
-                            pModule->GetAssembly()->GetDomainAssembly(),
+                        pAssembly = pDomain->RaiseTypeResolveEventThrowing(
+                            pModule->GetAssembly(),
                             pszFullName, &asmRef);
 
                         if (asmRef != NULL)
                         {
-                            _ASSERTE(pDomainAssembly != NULL);
-                            if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
+                            _ASSERTE(pAssembly != NULL);
+                            if (pAssembly->GetLoaderAllocator()->IsCollectible())
                             {
                                 if (!pModule->GetLoaderAllocator()->IsCollectible())
                                 {
@@ -1976,14 +1970,12 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                     COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                                 }
 
-                                pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
+                                pModule->GetLoaderAllocator()->EnsureReference(pAssembly->GetLoaderAllocator());
                             }
                         }
                         GCPROTECT_END();
-                        if (pDomainAssembly != NULL)
+                        if (pAssembly != NULL)
                         {
-                            Assembly *pAssembly = pDomainAssembly->GetAssembly();
-
                             NameHandle name(nameSpace, className);
                             name.SetTypeToken(pModule, typeDef);
                             name.SetTokenNotToLoad(tdAllAssemblies);
@@ -2783,6 +2775,16 @@ TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {

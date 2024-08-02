@@ -77,7 +77,7 @@
 
   <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetArchitecture)' == 'wasm'">
     <ItemGroup>
-      <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+      <_PropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
     </ItemGroup>
   </Target>
 

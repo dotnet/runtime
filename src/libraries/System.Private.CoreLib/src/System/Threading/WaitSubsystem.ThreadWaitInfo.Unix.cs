@@ -75,7 +75,7 @@ namespace System.Threading
             /// - Sleep(0) intentionally does not acquire any lock, so it uses an interlocked compare-exchange for the read and
             ///   reset, see <see cref="CheckAndResetPendingInterrupt_NotLocked"/>
             /// </summary>
-            private int _isPendingInterrupt;
+            private bool _isPendingInterrupt;
 
             ////////////////////////////////////////////////////////////////
 
@@ -508,7 +508,7 @@ namespace System.Threading
                 s_lock.VerifyIsLocked();
                 _waitMonitor.VerifyIsLocked();
 
-                _isPendingInterrupt = 1;
+                _isPendingInterrupt = true;
             }
 
             public bool CheckAndResetPendingInterrupt
@@ -519,11 +519,11 @@ namespace System.Threading
                     Debug.Assert(s_lock.IsLocked || _waitMonitor.IsLocked);
 #endif
 
-                    if (_isPendingInterrupt == 0)
+                    if (!_isPendingInterrupt)
                     {
                         return false;
                     }
-                    _isPendingInterrupt = 0;
+                    _isPendingInterrupt = false;
                     return true;
                 }
             }
@@ -535,7 +535,7 @@ namespace System.Threading
                     s_lock.VerifyIsNotLocked();
                     _waitMonitor.VerifyIsNotLocked();
 
-                    return Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
+                    return Interlocked.CompareExchange(ref _isPendingInterrupt, false, true);
                 }
             }
 

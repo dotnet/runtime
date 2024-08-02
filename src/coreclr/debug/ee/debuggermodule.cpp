@@ -113,8 +113,8 @@ DebuggerModuleTable::~DebuggerModuleTable()
 #ifdef _DEBUG
 bool DebuggerModuleTable::ThreadHoldsLock()
 {
-    // In shutdown (g_fProcessDetach), the shutdown thread implicitly holds all locks.
-    return g_fProcessDetach || g_pDebugger->HasDebuggerDataLock();
+    // In shutdown (IsAtProcessExit()), the shutdown thread implicitly holds all locks.
+    return IsAtProcessExit() || g_pDebugger->HasDebuggerDataLock();
 }
 #endif
 

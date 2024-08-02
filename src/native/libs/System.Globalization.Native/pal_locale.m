@@ -786,13 +786,21 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
     }
 }
 
+static NSString* GetBaseName(NSString *localeIdentifier)
+{
+    NSLocale *locale = [[NSLocale alloc] initWithLocaleIdentifier:localeIdentifier];
+    NSString *languageCode = [locale objectForKey:NSLocaleLanguageCode];
+    return languageCode;
+}
+
 const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
 {
     @autoreleasepool
     {
         if (NSLocale.preferredLanguages.count > 0)
         {
-            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
+            NSString *preferredLanguage = [NSLocale.preferredLanguages objectAtIndex:0];
+            return strdup([GetBaseName(preferredLanguage) UTF8String]);
         }
         else
         {
@@ -813,7 +821,7 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
                 localeName = currentLocale.localeIdentifier;
             }
 
-            return strdup([localeName UTF8String]);
+            return strdup([GetBaseName(localeName) UTF8String]);
         }
     }
 }

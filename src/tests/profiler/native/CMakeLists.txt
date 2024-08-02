@@ -11,6 +11,8 @@ set(SOURCES
     gcallocateprofiler/gcallocateprofiler.cpp
     nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp

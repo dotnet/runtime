@@ -252,12 +252,16 @@ namespace ILCompiler
                 if ((flags[offset] & OpcodeFlags.Mark) != 0)
                     continue;
 
+                TypeEqualityPatternAnalyzer typeEqualityAnalyzer = default;
+
                 ILReader reader = new ILReader(methodBytes, offset);
                 while (reader.HasNext)
                 {
                     offset = reader.Offset;
                     flags[offset] |= OpcodeFlags.Mark;
                     ILOpcode opcode = reader.ReadILOpcode();
+
+                    typeEqualityAnalyzer.Advance(opcode, reader, method);
 
                     // Mark any applicable EH blocks
                     foreach (ILExceptionRegion ehRegion in ehRegions)
@@ -297,7 +301,8 @@ namespace ILCompiler
                         || opcode == ILOpcode.brtrue || opcode == ILOpcode.brtrue_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant))
+                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
+                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -681,13 +686,6 @@ namespace ILCompiler
                             constant = (int)substitution.Value;
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
-                            && method.OwningType is MetadataType mdType
-                            && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
-                            && TryExpandTypeEquality(methodIL, body, flags, currentOffset, method.Name, out constant))
-                        {
-                            return true;
-                        }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
@@ -873,175 +871,63 @@ namespace ILCompiler
             return true;
         }
 
-        private bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        private bool TryExpandTypeEquality(in TypeEqualityPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
         {
-            if (TryExpandTypeEquality_TokenToken(methodIL, body, flags, offset, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: true, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: true, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: true, out constant))
-            {
-                if (op == "op_Inequality")
-                    constant ^= 1;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool TryExpandTypeEquality_TokenToken(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
-        {
-            // We expect to see a sequence:
-            // ldtoken Foo
-            // call GetTypeFromHandle
-            // ldtoken Bar
-            // call GetTypeFromHandle
-            // -> offset points here
             constant = 0;
-            const int SequenceLength = 20;
-            if (offset < SequenceLength)
+            if (!analyzer.IsTypeEqualityBranch)
                 return false;
 
-            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
-                return false;
-
-            ILReader reader = new ILReader(body, offset - SequenceLength);
-
-            TypeDesc type1 = ReadLdToken(ref reader, methodIL, flags);
-            if (type1 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                return false;
-
-            TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
-            if (type2 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                return false;
-
-            // No value in making this work for definitions
-            if (type1.IsGenericDefinition || type2.IsGenericDefinition)
-                return false;
-
-            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
-            // Unfortunately this means dataflow will still see code that the rest of the system
-            // might have optimized away. It should not be a problem in practice.
-            if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
-                return false;
-
-            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
-            if (!equality.HasValue)
-                return false;
-
-            constant = equality.Value ? 1 : 0;
-
-            return true;
-        }
-
-        private bool TryExpandTypeEquality_TokenOther(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int ldInstructionSize, bool expectGetType, out int constant)
-        {
-            // We expect to see a sequence:
-            // ldtoken Foo
-            // call GetTypeFromHandle
-            // ldloc.X/ldloc_s X/ldarg.X/ldarg_s X
-            // [optional] call Object.GetType
-            // -> offset points here
-            //
-            // The ldtoken part can potentially be in the second argument position
-
-            constant = 0;
-            int sequenceLength = 5 + 5 + ldInstructionSize + (expectGetType ? 5 : 0);
-            if (offset < sequenceLength)
-                return false;
-
-            if ((flags[offset - sequenceLength] & OpcodeFlags.InstructionStart) == 0)
-                return false;
-
-            ILReader reader = new ILReader(body, offset - sequenceLength);
-
-            TypeDesc knownType = null;
-
-            // Is the ldtoken in the first position?
-            if (reader.PeekILOpcode() == ILOpcode.ldtoken)
+            if (analyzer.IsTwoTokens)
             {
-                knownType = ReadLdToken(ref reader, methodIL, flags);
-                if (knownType == null)
+                var type1 = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+                var type2 = (TypeDesc)methodIL.GetObject(analyzer.Token2);
+
+                // No value in making this work for definitions
+                if (type1.IsGenericDefinition || type2.IsGenericDefinition)
                     return false;
 
-                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
                     return false;
-            }
 
-            ILOpcode opcode = reader.ReadILOpcode();
-            if (ldInstructionSize == 1 && opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3))
-            {
-                // Nothing to read
-            }
-            else if (ldInstructionSize == 2 && opcode is ILOpcode.ldloc_s or ILOpcode.ldarg_s)
-            {
-                reader.ReadILByte();
-            }
-            else if (ldInstructionSize == 3 && opcode is ILOpcode.ldloc or ILOpcode.ldarg)
-            {
-                reader.ReadILUInt16();
+                bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+                if (!equality.HasValue)
+                    return false;
+
+                constant = equality.Value ? 1 : 0;
             }
             else
             {
-                return false;
+                var knownType = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+
+                // No value in making this work for definitions
+                if (knownType.IsGenericDefinition)
+                    return false;
+
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (knownType.ContainsSignatureVariables())
+                    return false;
+
+                if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    return false;
+
+                // We don't track types without a constructed MethodTable very well.
+                if (!ConstructedEETypeNode.CreationAllowed(knownType))
+                    return false;
+
+                if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                    return false;
+
+                constant = 0;
             }
 
-            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                return false;
+            if (analyzer.IsInequality)
+                constant ^= 1;
 
-            if (expectGetType)
-            {
-                if (reader.ReadILOpcode() is not ILOpcode.callvirt and not ILOpcode.call)
-                    return false;
-
-                // We don't actually mind if this is not Object.GetType
-                reader.ReadILToken();
-
-                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                    return false;
-            }
-
-            // If the ldtoken wasn't in the first position, it must be in the other
-            if (knownType == null)
-            {
-                knownType = ReadLdToken(ref reader, methodIL, flags);
-                if (knownType == null)
-                    return false;
-
-                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                    return false;
-            }
-
-            // No value in making this work for definitions
-            if (knownType.IsGenericDefinition)
-                return false;
-
-            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
-            // Unfortunately this means dataflow will still see code that the rest of the system
-            // might have optimized away. It should not be a problem in practice.
-            if (knownType.ContainsSignatureVariables())
-                return false;
-
-            if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                return false;
-
-            // We don't track types without a constructed MethodTable very well.
-            if (!ConstructedEETypeNode.CreationAllowed(knownType))
-                return false;
-
-            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
-                return false;
-
-            constant = 0;
             return true;
         }
 

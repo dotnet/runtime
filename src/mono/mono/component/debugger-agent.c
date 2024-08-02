@@ -6752,16 +6752,18 @@ get_source_files_for_type (MonoClass *klass)
 
 		if (minfo) {
 			mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
-			for (guint j = 0; j < source_file_list->len; ++j) {
-				guint i;
-				sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
-				for (i = 0; i < files->len; ++i)
-					if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))
-						break;
-				if (i == files->len)
-					g_ptr_array_add (files, g_strdup (sinfo->source_file));
+			if (source_file_list != NULL) {
+				for (guint j = 0; j < source_file_list->len; ++j) {
+					guint i;
+					sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, j);
+					for (i = 0; i < files->len; ++i)
+						if (!strcmp ((const char*)g_ptr_array_index (files, i), (const char*)sinfo->source_file))
+							break;
+					if (i == files->len)
+						g_ptr_array_add (files, g_strdup (sinfo->source_file));
+				}
+				g_ptr_array_free (source_file_list, TRUE);
 			}
-			g_ptr_array_free (source_file_list, TRUE);
 		}
 	}
 
@@ -9203,6 +9205,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case MDBGPROT_CMD_METHOD_GET_CLASS_TOKEN: {
 		buffer_add_int (buf, m_class_get_type_token (method->klass));
+		break;
 	}
 	case CMD_METHOD_GET_DECLARING_TYPE: {
 		buffer_add_typeid (buf, domain, method->klass);

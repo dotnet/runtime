@@ -15,7 +15,7 @@ public:
         _weakHandle(NULL),
         _strongHandle(NULL),
         _pinnedHandle(NULL),
-        _pinnedObject(NULL)
+        _pinnedObject(0)
     {}
 
 	static GUID GetClsid();

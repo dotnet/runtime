@@ -134,8 +134,12 @@ class ReduceExamples(threading.Thread):
 
                     if reduce_this:
                         print("Reducing {}".format(ex['Seed']))
-                        output_path = path.join(self.examples_dir, str(ex["Seed"]) + ".cs")
-                        spmi_collections_path = path.join(self.examples_dir, str(ex["Seed"]) + "_spmi")
+                        file_name = str(ex["Seed"])
+                        dash_index = file_name.find('-')
+                        if dash_index != -1:
+                            file_name = file_name[:dash_index]
+                        output_path = path.join(self.examples_dir, file_name + ".cs")
+                        spmi_collections_path = path.join(self.examples_dir, file_name + "_spmi")
                         os.mkdir(spmi_collections_path)
                         cmd = [self.fuzzlyn_path,
                             "--host", self.host_path,

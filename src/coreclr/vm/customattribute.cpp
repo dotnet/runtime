@@ -16,11 +16,11 @@
 #include "runtimehandles.h"
 #include "typestring.h"
 
-static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, DomainAssembly* pDomainAssembly)
+static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Assembly* pAssembly)
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(szEnumName));
         PRECONDITION(cbEnumName);
         THROWS;
@@ -30,13 +30,13 @@ static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, DomainA
     CONTRACTL_END;
 
     StackSString sszEnumName(SString::Utf8, szEnumName, cbEnumName);
-    return TypeName::GetTypeReferencedByCustomAttribute(sszEnumName.GetUnicode(), pDomainAssembly->GetAssembly());
+    return TypeName::GetTypeReferencedByCustomAttribute(sszEnumName.GetUnicode(), pAssembly);
 }
 
 static HRESULT ParseCaType(
     CustomAttributeParser &ca,
     CaType* pCaType,
-    DomainAssembly* pDomainAssembly,
+    Assembly* pAssembly,
     StackSString* ss = NULL)
 {
     WRAPPER_NO_CONTRACT;
@@ -48,7 +48,7 @@ static HRESULT ParseCaType(
     if (pCaType->tag == SERIALIZATION_TYPE_ENUM
         || (pCaType->tag == SERIALIZATION_TYPE_SZARRAY && pCaType->arrayType == SERIALIZATION_TYPE_ENUM ))
     {
-        TypeHandle th = GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pDomainAssembly);
+        TypeHandle th = GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pAssembly);
 
         if (!th.IsNull() && th.IsEnum())
         {
@@ -83,7 +83,7 @@ static HRESULT ParseCaValue(
     CaValue* pCaArg,
     CaType* pCaParam,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -99,7 +99,7 @@ static HRESULT ParseCaValue(
     CaType elementType;
 
     if (pCaParam->tag == SERIALIZATION_TYPE_TAGGED_OBJECT)
-        IfFailGo(ParseCaType(ca, &pCaArg->type, pDomainAssembly));
+        IfFailGo(ParseCaType(ca, &pCaArg->type, pAssembly));
     else
         pCaArg->type = *pCaParam;
 
@@ -155,7 +155,7 @@ static HRESULT ParseCaValue(
         elementType.Init(pCaArg->type.arrayType, SERIALIZATION_TYPE_UNDEFINED,
             pCaArg->type.enumType, pCaArg->type.szEnumName, pCaArg->type.cEnumName);
         for (ULONG i = 0; i < pCaArg->arr.length; i++)
-            IfFailGo(ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pDomainAssembly));
+            IfFailGo(ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pAssembly));
 
         break;
 
@@ -174,7 +174,7 @@ static HRESULT ParseCaCtorArgs(
     CaArg* pArgs,
     ULONG cArgs,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -191,7 +191,7 @@ static HRESULT ParseCaCtorArgs(
     for (ix=0; ix<cArgs; ++ix)
     {
         CaArg* pArg = &pArgs[ix];
-        IfFailGo(ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pAssembly));
     }
 
 ErrExit:
@@ -210,11 +210,11 @@ static HRESULT ParseCaNamedArgs(
     CaNamedArg *pNamedParams,
     ULONG cNamedParams,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     CONTRACTL {
         PRECONDITION(CheckPointer(pCaValueArrayFactory));
-        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(CheckPointer(pAssembly));
         THROWS;
     } CONTRACTL_END;
 
@@ -243,7 +243,7 @@ static HRESULT ParseCaNamedArgs(
         // Get argument type information
         CaType* pNamedArgType = &namedArg.type;
         StackSString ss;
-        IfFailGo(ParseCaType(ca, pNamedArgType, pDomainAssembly, &ss));
+        IfFailGo(ParseCaType(ca, pNamedArgType, pAssembly, &ss));
 
         LPCSTR szLoadedEnumName = NULL;
 
@@ -319,14 +319,14 @@ static HRESULT ParseCaNamedArgs(
             IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
-        IfFailGo(ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pAssembly));
     }
 
 ErrExit:
     return hr;
 }
 
-HRESULT Attribute::ParseArgumentValues(
+HRESULT CustomAttribute::ParseArgumentValues(
     void* pCa,
     INT32 cCa,
     CaValueArrayFactory* pCaValueArrayFactory,
@@ -334,15 +334,15 @@ HRESULT Attribute::ParseArgumentValues(
     COUNT_T cArgs,
     CaNamedArg* pCaNamedArgs,
     COUNT_T cNamedArgs,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
     HRESULT hr = S_OK;
     CustomAttributeParser cap(pCa, cCa);
 
-    IfFailGo(ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pDomainAssembly));
-    IfFailGo(ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pDomainAssembly));
+    IfFailGo(ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pAssembly));
+    IfFailGo(ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pAssembly));
 
 ErrExit:
     return hr;

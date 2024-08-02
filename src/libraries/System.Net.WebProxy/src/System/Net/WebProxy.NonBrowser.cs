@@ -11,7 +11,7 @@ namespace System.Net
     {
         private static volatile string? s_domainName;
         private static volatile IPAddress[]? s_localAddresses;
-        private static int s_networkChangeRegistered;
+        private static bool s_networkChangeRegistered;
 
         private static bool IsLocal(Uri host)
         {
@@ -47,13 +47,13 @@ namespace System.Net
         /// <summary>Ensures we've registered with NetworkChange to clear out statically-cached state upon a network change notification.</summary>
         private static void EnsureNetworkChangeRegistration()
         {
-            if (s_networkChangeRegistered == 0)
+            if (!s_networkChangeRegistered)
             {
                 Register();
 
                 static void Register()
                 {
-                    if (Interlocked.Exchange(ref s_networkChangeRegistered, 1) != 0)
+                    if (Interlocked.Exchange(ref s_networkChangeRegistered, true))
                     {
                         return;
                     }

@@ -715,6 +715,7 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
+#ifndef DACCESS_COMPILE
 inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 {
     CONTRACTL
@@ -726,14 +727,11 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
     }
     CONTRACTL_END;
 
-#ifndef DACCESS_COMPILE
     AssemblySpec spec;
     spec.InitializeSpec(this);
     spec.GetDisplayName(flags, result);
-#else
-    DacNotImpl();
-#endif //DACCESS_COMPILE
 }
+#endif //DACCESS_COMPILE
 
 // ------------------------------------------------------------
 // Metadata access
