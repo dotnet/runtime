@@ -144,9 +144,12 @@ public class MockDescriptors
 
     public static class Object
     {
-        const ulong TestStringMethodTableGlobalAddress = 0x00000000_100000a0;
-        const ulong TestStringMethodTableAddress = 0x00000000_100000a8;
+        private const ulong TestStringMethodTableGlobalAddress = 0x00000000_100000a0;
+        private const ulong TestStringMethodTableAddress = 0x00000000_100000a8;
         internal const ulong TestArrayBoundsZeroGlobalAddress = 0x00000000_100000b0;
+
+        private const ulong TestSyncTableEntriesGlobalAddress = 0x00000000_100000c0;
+        private const ulong TestSyncTableEntriesAddress = 0x00000000_f0000000;
 
         internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers) => RuntimeTypeSystem.Types.Concat(
         new Dictionary<DataType, Target.TypeInfo>(){
@@ -156,18 +159,22 @@ public class MockDescriptors
         }).ToDictionary();
 
         internal const ulong TestObjectToMethodTableUnmask = 0x7;
+        internal const ulong TestSyncBlockValueToObjectOffset = sizeof(uint);
         internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers helpers) => RuntimeTypeSystem.Globals.Concat(
         [
             (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
             (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
             (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress, null),
+            (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress, null),
             (nameof(Constants.Globals.ObjectHeaderSize), helpers.ObjHeaderSize, "uint32"),
+            (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset, "uint16"),
         ]).ToArray();
 
         internal static MockMemorySpace.Builder AddGlobalPointers(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
         {
             builder = RuntimeTypeSystem.AddGlobalPointers(targetTestHelpers, builder);
             builder = AddStringMethodTablePointer(targetTestHelpers, builder);
+            builder = AddSyncTableEntriesPointer(targetTestHelpers, builder);
             return builder;
         }
 
@@ -178,6 +185,16 @@ public class MockDescriptors
             return builder.AddHeapFragments([
                 fragment,
                 new () { Name = "String Method Table", Address = TestStringMethodTableAddress, Data = new byte[targetTestHelpers.PointerSize] }
+            ]);
+        }
+
+        private static MockMemorySpace.Builder AddSyncTableEntriesPointer(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
+        {
+            MockMemorySpace.HeapFragment fragment = new() { Name = "Address of Sync Table Entries", Address = TestSyncTableEntriesGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
+            targetTestHelpers.WritePointer(fragment.Data, TestSyncTableEntriesAddress);
+            return builder.AddHeapFragments([
+                fragment,
+                new () { Name = "Sync Table Entries", Address = TestSyncTableEntriesAddress, Data = new byte[targetTestHelpers.PointerSize] }
             ]);
         }
 
