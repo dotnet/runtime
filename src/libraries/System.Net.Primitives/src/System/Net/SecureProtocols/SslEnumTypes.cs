@@ -25,6 +25,7 @@ namespace System.Security.Authentication
         Default = Ssl3 | Tls
     }
 
+    [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public enum ExchangeAlgorithmType
     {
         None = 0,
@@ -33,6 +34,7 @@ namespace System.Security.Authentication
         DiffieHellman = (Interop.Crypt32.ALG_CLASS_KEY_EXCHANGE | Interop.Crypt32.ALG_TYPE_DH | Interop.Crypt32.ALG_SID_DH_EPHEM),
     }
 
+    [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public enum CipherAlgorithmType
     {
         None = 0,  // No encryption
@@ -47,6 +49,7 @@ namespace System.Security.Authentication
         Null = (Interop.Crypt32.ALG_CLASS_ENCRYPT),  // 0-bit NULL cipher algorithm
     }
 
+    [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public enum HashAlgorithmType
     {
         None = 0,
