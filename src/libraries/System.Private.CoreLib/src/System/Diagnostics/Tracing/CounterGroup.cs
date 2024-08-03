@@ -156,7 +156,7 @@ namespace System.Diagnostics.Tracing
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
                 // Schedule IncrementingPollingCounter reset and synchronously reset other counters
-                HandleCountersReset(); 
+                HandleCountersReset();
 
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
                 _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
@@ -274,7 +274,7 @@ namespace System.Diagnostics.Tracing
         private static AutoResetEvent? s_pollingThreadSleepEvent;
 
         private static List<CounterGroup>? s_counterGroupEnabledList;
-        private static readonly List<IncrementingPollingCounter> s_needsResetIncrementingPollingCounters = [];
+        private static List<IncrementingPollingCounter> s_needsResetIncrementingPollingCounters = [];
 
         private static void PollForValues()
         {
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Tracing
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
             var onTimers = new List<CounterGroup>();
-            List<IncrementingPollingCounter> countersToReset = [];
+            List<IncrementingPollingCounter>? countersToReset = null;
             while (true)
             {
                 int sleepDurationInMilliseconds = int.MaxValue;
@@ -307,19 +307,20 @@ namespace System.Diagnostics.Tracing
 
                     if (s_needsResetIncrementingPollingCounters.Count > 0)
                     {
-                        foreach (IncrementingPollingCounter counter in s_needsResetIncrementingPollingCounters)
-                        {
-                            countersToReset.Add(counter);
-                        }
-                        s_needsResetIncrementingPollingCounters.Clear();
+                        countersToReset = s_needsResetIncrementingPollingCounters;
+                        s_needsResetIncrementingPollingCounters = [];
                     }
                 }
 
-                foreach (IncrementingPollingCounter counter in countersToReset)
+                if (countersToReset != null)
                 {
-                    counter.UpdateMetric();
+                    foreach (IncrementingPollingCounter counter in countersToReset)
+                    {
+                        counter.UpdateMetric();
+                    }
+
+                    countersToReset = null;
                 }
-                countersToReset.Clear();
 
                 foreach (CounterGroup onTimer in onTimers)
                 {
