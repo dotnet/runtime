@@ -137,7 +137,15 @@ namespace Internal.Runtime
                 gcDesc = Internal.Runtime.Augments.RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticGCDescForDynamicType(typeManager, typeTlsIndex);
             }
 
-            return RuntimeImports.RhNewObject((MethodTable*)gcDesc);
+            MethodTable *pMethodTable = (MethodTable*)gcDesc;
+#if FEATURE_64BIT_ALIGNMENT
+            if (pMethodTable->RequiresAlign8)
+            {
+                return InternalCalls.RhpNewFastAlign8(pMethodTable);
+            }
+#endif
+
+            return RuntimeImports.RhNewObject(pMethodTable);
         }
     }
 }
