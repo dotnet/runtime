@@ -155,7 +155,8 @@ namespace System.Diagnostics.Tracing
             if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
-                HandleCountersReset(); // Schedule IncrementingPollingCounter reset and synchronously reset other counters before we start the thread
+                // Schedule IncrementingPollingCounter reset and synchronously reset other counters
+                HandleCountersReset(); 
 
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
                 _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
