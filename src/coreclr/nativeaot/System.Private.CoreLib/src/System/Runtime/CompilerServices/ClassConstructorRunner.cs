@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", pContext, CurrentManagedThreadId);
 
-            // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
+            // If we were called from JIT helper, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pfnCctor == 0)
             {
