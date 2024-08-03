@@ -900,9 +900,6 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_TVOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
-  add_subdirectory(dlls/mscordbi)
-endif()
 
 configure_file(cmake/config.h.in config.h)
 configure_file(cmake/eglib-config.h.cmake.in mono/eglib/eglib-config.h)
