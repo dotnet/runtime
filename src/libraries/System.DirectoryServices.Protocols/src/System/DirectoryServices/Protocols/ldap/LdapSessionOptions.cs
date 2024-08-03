@@ -71,9 +71,11 @@ namespace System.DirectoryServices.Protocols
     {
         // Not marked as readonly to enable passing to Unsafe.As in GetPinnableReference.
         private SecurityProtocol _securityProtocol;
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
         private readonly CipherAlgorithmType _identifier;
         private readonly int _strength;
         private readonly HashAlgorithmType _hashAlgorithm;
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
         private readonly int _hashStrength;
         private readonly int _keyExchangeAlgorithm;
         private readonly int _exchangeStrength;
@@ -84,16 +86,22 @@ namespace System.DirectoryServices.Protocols
 
         public SecurityProtocol Protocol => _securityProtocol;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CipherAlgorithmType AlgorithmIdentifier => _identifier;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int CipherStrength => _strength;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public HashAlgorithmType Hash => _hashAlgorithm;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int HashStrength => _hashStrength;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int KeyExchangeAlgorithm => _keyExchangeAlgorithm;
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public int ExchangeStrength => _exchangeStrength;
 
         internal ref readonly byte GetPinnableReference() => ref Unsafe.As<SecurityProtocol, byte>(ref _securityProtocol);
