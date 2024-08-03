@@ -113,37 +113,15 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         }
         else
         {
-            if (compiler->info.compRetNativeType == TYP_REF)
+            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
             {
-                gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
-            }
-            else if (compiler->info.compRetNativeType == TYP_BYREF)
-            {
-                gcInfo.gcRegByrefSetCur |= RBM_INTRET;
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
             }
         }
-    }
-    else
-    {
-        // Dev10 642944 -
-        // The GS cookie check created a temp label that has no live
-        // incoming GC registers, we need to fix that
-
-        unsigned   varNum;
-        LclVarDsc* varDsc;
-
-        /* Figure out which register parameters hold pointers */
-
-        for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount && varDsc->lvIsRegArg;
-             varNum++, varDsc++)
-        {
-            noway_assert(varDsc->lvIsParam);
-
-            gcInfo.gcMarkRegPtrVal(varDsc->GetArgReg(), varDsc->TypeGet());
-        }
-
-        GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
-        GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
     }
 #else
     assert(GetEmitter()->emitGCDisabled());
