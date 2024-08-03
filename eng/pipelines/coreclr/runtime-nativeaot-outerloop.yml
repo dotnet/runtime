@@ -208,7 +208,7 @@ extends:
             value: 180
           jobParameters:
             timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
-            nameSuffix: NativeAOT_Pri0
+            nameSuffix: NativeAOT_Pri0_CET_CFG
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
