@@ -216,7 +216,7 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
+            testRunNamePrefixSuffix: NativeAOT_Pri0_CET_CFG_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
