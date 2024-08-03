@@ -11,7 +11,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
     public class ClientCertificateHelper
     {
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_PrivateKey =
-            new X509Certificate2(
+            X509CertificateLoader.LoadPkcs12(
                 Convert.FromBase64String(
                   // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy certificate.")]
                   @"MIIKTgIBAzCCCgoGCSqGSIb3DQEHAaCCCfsEggn3MIIJ8zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
@@ -64,7 +64,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 "password");
 
         private readonly X509Certificate2 _cert_KeyUsageMissingDigitalSignature_EKUIncludesClientAuth_PrivateKey =
-            new X509Certificate2(
+            X509CertificateLoader.LoadPkcs12(
                 Convert.FromBase64String(
                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test dummy certificate.")]
                   @"MIIKTgIBAzCCCgoGCSqGSIb3DQEHAaCCCfsEggn3MIIJ8zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
@@ -117,7 +117,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 "password");
 
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUMissingClientAuth_PrivateKey =
-            new X509Certificate2(
+            X509CertificateLoader.LoadPkcs12(
                 Convert.FromBase64String(
                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                   @"MIIKRgIBAzCCCgIGCSqGSIb3DQEHAaCCCfMEggnvMIIJ6zCCBgQGCSqGSIb3DQEHAaCCBfUEggXx
@@ -170,7 +170,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 "password");
 
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_NoEKU_PrivateKey =
-            new X509Certificate2(
+            X509CertificateLoader.LoadPkcs12(
                 Convert.FromBase64String(
                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                   @"MIIKPgIBAzCCCfoGCSqGSIb3DQEHAaCCCesEggnnMIIJ4zCCBgwGCSqGSIb3DQEHAaCCBf0EggX5
@@ -223,7 +223,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 "password");
 
         private readonly X509Certificate2 _cert_KeyUsageIncludesDigitalSignature_EKUIncludesClientAuth_NoPrivateKey =
-            new X509Certificate2(
+            X509CertificateLoader.LoadCertificate(
                 Convert.FromBase64String(
                    // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Dummy certificate for testing.")]
                   @"MIIDFjCCAf6gAwIBAgIQTm8+EF94L4FJ0nBFl5LICzANBgkqhkiG9w0BAQsFADAb
