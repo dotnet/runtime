@@ -10820,17 +10820,12 @@ PhaseStatus Compiler::fgValueNumber()
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
 
-    // At the block level, we will use a modified worklist algorithm.  We will have two
-    // "todo" sets of unvisited blocks.  Blocks (other than the entry block) are put in a
-    // todo set only when some predecessor has been visited, so all blocks have at least one
-    // predecessor visited.  The distinction between the two sets is whether *all* predecessors have
-    // already been visited.  We visit such blocks preferentially if they exist, since phi definitions
-    // in such blocks will have all arguments defined, enabling a simplification in the case that all
-    // arguments to the phi have the same VN.  If no such blocks exist, we pick a block with at least
-    // one unvisited predecessor.  In this case, we assign a new VN for phi definitions.
+    // At the block level, we will traverse the blocks in RPO, modified to ensure that all loop blocks are
+    // processed before any loop successor block is processed.
 
-    // Start by giving incoming arguments value numbers.
-    // Also give must-init vars a zero of their type.
+    // Start by giving all ssa locals value numbers.
+    // If we know the initial value of a local is (implicitly) zero, use a zero of the right type.
+    //
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         if (!lvaInSsa(lclNum))
@@ -10838,28 +10833,24 @@ PhaseStatus Compiler::fgValueNumber()
             continue;
         }
 
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvTracked);
+        LclSsaVarDsc* const ssaDef = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
 
         if (varDsc->lvIsParam)
         {
-            // We assume that code equivalent to this variable initialization loop
-            // has been performed when doing SSA naming, so that all the variables we give
-            // initial VNs to here have been given initial SSA definitions there.
             // SSA numbers always start from FIRST_SSA_NUM, and we give the value number to SSA name FIRST_SSA_NUM.
-            // We use the VNF_InitVal(i) from here so we know that this value is loop-invariant
-            // in all loops.
-            ValueNum      initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(lclNum));
-            LclSsaVarDsc* ssaDef  = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
+            // We use the VNF_InitVal(i) from here so we know that this value is unknown but method invariant.
+            //
+            ValueNum initVal = vnStore->VNForFunc(varDsc->TypeGet(), VNF_InitVal, vnStore->VNForIntCon(lclNum));
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->SetBlock(fgFirstBB);
         }
-        else if (info.compInitMem || varDsc->lvMustInit || (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
-                 VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        else
         {
-            // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
-            // these are variables that are read before being initialized (at least on some control flow paths)
-            // if they are not must-init, then they get VNF_InitVal(i), as with the param case.)
+            // Initial value is either implicitly zero or unknown but method invariant.
+            // (even if unused, we will assign a VN, so things like VN dead store can see what the value was)
+            //
             bool      isZeroed = !fgVarNeedsExplicitZeroInit(lclNum, /* bbInALoop */ false, /* bbIsReturn */ false);
             ValueNum  initVal  = ValueNumStore::NoVN; // We must assign a new value to initVal
             var_types typ      = varDsc->TypeGet();
@@ -10881,9 +10872,16 @@ PhaseStatus Compiler::fgValueNumber()
 #endif
             assert(initVal != ValueNumStore::NoVN);
 
-            LclSsaVarDsc* ssaDef = varDsc->GetPerSsaData(SsaConfig::FIRST_SSA_NUM);
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->SetBlock(fgFirstBB);
+
+            if (ssaDef->GetNumUses() > 0)
+            {
+                // If we see there are uses for the initial ssa def for locals, note this.
+                //
+                JITDUMP("Initial value V%02u.%u has %u uses; value is %s (" FMT_VN ")\n", lclNum,
+                        SsaConfig::FIRST_SSA_NUM, ssaDef->GetNumUses(), isZeroed ? "zero" : "uninitialized", initVal);
+            }
         }
     }
     // Give memory an initial value number (about which we know nothing).
