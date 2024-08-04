@@ -288,8 +288,11 @@ namespace CorUnix
         void* m_stackBase;
         // Limit address of the stack of this thread
         void* m_stackLimit;
+
+#if !HAVE_MACH_EXCEPTIONS && !defined(TARGET_SUNOS)
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
+#endif
 
         //
         // The thread entry routine (called from InternalCreateThread)
@@ -343,8 +346,10 @@ namespace CorUnix
             m_fStartStatus(FALSE),
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
-            m_stackLimit(NULL),
-            m_alternateStack(NULL)
+            m_stackLimit(NULL)
+#if !HAVE_MACH_EXCEPTIONS && !defined(TARGET_SUNOS)
+            ,m_alternateStack(NULL)
+#endif
         {
         };
 
@@ -588,7 +593,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && !defined(TARGET_SUNOS)
         BOOL
         EnsureSignalAlternateStack(
             void

@@ -190,13 +190,20 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+        int additionalFlagsForSigSegv = 0;
+#ifndef TARGET_SUNOS
+        // On platforms that support it,
         // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
-        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
+        additionalFlagsForSigSegv |= SA_ONSTACK;
+#endif
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, additionalFlagsForSigSegv);
 
+#ifndef TARGET_SUNOS
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
             return FALSE;
         }
+#endif
 
         // Allocate the minimal stack necessary for handling stack overflow
         int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
@@ -344,7 +351,7 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || defined(TARGET_SUNOS)
     return false;
 #else
     bool isRunningOnAlternateStack;
@@ -652,6 +659,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
         // hardware signal handler on the original stack.
 
+#ifndef TARGET_SUNOS
         if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
         {
             if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
@@ -660,6 +668,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             }
         }
         else
+#endif
         {
             // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
             // by coreclr. In both cases, we execute the common_signal_handler directly.
