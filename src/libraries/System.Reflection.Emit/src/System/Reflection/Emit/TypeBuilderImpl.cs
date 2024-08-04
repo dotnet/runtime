@@ -439,7 +439,8 @@ namespace System.Reflection.Emit
             return DefineDataHelper(name, new byte[size], size, attributes);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "Types are preserved via ModuleBuilderImpl.s_coreTypes")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:DynamicallyAccessedMembers", Justification = "The members of 'ValueType' are not referenced in this context")]
+```suggestion
         private FieldBuilder DefineDataHelper(string name, byte[] data, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
