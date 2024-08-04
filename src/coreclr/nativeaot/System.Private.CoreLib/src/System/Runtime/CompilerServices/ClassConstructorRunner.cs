@@ -87,13 +87,6 @@ namespace System.Runtime.CompilerServices
 
                                 ((delegate*<void>)pfnCctor)();
 
-                                // Insert a memory barrier here to order any writes executed as part of static class
-                                // construction above with respect to the initialized flag update we're about to make
-                                // below. This is important since the fast path for checking the cctor uses a normal read
-                                // and doesn't come here so without the barrier it could observe initialized == 1 but
-                                // still see uninitialized static fields on the class.
-                                Interlocked.MemoryBarrier();
-
                                 NoisyLog("Set type inited, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                                 pContext->cctorMethodAddress = 0;
