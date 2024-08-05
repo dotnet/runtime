@@ -181,15 +181,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 		[Fact]
 		public Task TypeHierarchyReflectionWarnings ()
 		{
-			// https://github.com/dotnet/runtime/issues/104742
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]
 		public Task TypeHierarchySuppressions ()
 		{
-			// https://github.com/dotnet/runtime/issues/104742
-			return RunTest (allowMissingWarnings: true);
+			return RunTest ();
 		}
 
 		[Fact]

@@ -35,6 +35,97 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
+		internal static bool ShouldWarnWhenAccessedForReflection (ISymbol symbol) =>
+			symbol switch {
+				IMethodSymbol method => ShouldWarnWhenAccessedForReflection (method),
+				IFieldSymbol field => ShouldWarnWhenAccessedForReflection (field),
+				_ => false
+			};
+
+		static bool ShouldWarnWhenAccessedForReflection (IMethodSymbol method)
+		{
+			bool? hasParameterAnnotation = null;
+			if (GetMethodReturnValueAnnotation (method) == DynamicallyAccessedMemberTypes.None) {
+				if (!HasParameterAnnotation (method))
+					return false;
+				hasParameterAnnotation = true;
+			}
+
+			// If the method only has annotation on the return value and it's not virtual avoid warning.
+			// Return value annotations are "consumed" by the caller of a method, and as such there is nothing
+			// wrong calling these dynamically. The only problem can happen if something overrides a virtual
+			// method with annotated return value at runtime - in this case the trimmer can't validate
+			// that the method will return only types which fulfill the annotation's requirements.
+			// For example:
+			//   class BaseWithAnnotation
+			//   {
+			//       [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+			//       public abstract Type GetTypeWithFields();
+			//   }
+			//
+			//   class UsingTheBase
+			//   {
+			//       public void PrintFields(Base base)
+			//       {
+			//            // No warning here - GetTypeWithFields is correctly annotated to allow GetFields on the return value.
+			//            Console.WriteLine(string.Join(" ", base.GetTypeWithFields().GetFields().Select(f => f.Name)));
+			//       }
+			//   }
+			//
+			// If at runtime (through ref emit) something generates code like this:
+			//   class DerivedAtRuntimeFromBase
+			//   {
+			//       // No point in adding annotation on the return value - nothing will look at it anyway
+			//       // Trimming will not see this code, so there are no checks
+			//       public override Type GetTypeWithFields() { return typeof(TestType); }
+			//   }
+			//
+			// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+			// But there has to be code like this somewhere in the app, in order to generate the override:
+			//   class RuntimeTypeGenerator
+			//   {
+			//       public MethodInfo GetBaseMethod()
+			//       {
+			//            // This must warn - that the GetTypeWithFields has annotation on the return value
+			//            return typeof(BaseWithAnnotation).GetMethod("GetTypeWithFields");
+			//       }
+			//   }
+
+			return method.IsVirtual || method.IsOverride || (hasParameterAnnotation ?? HasParameterAnnotation (method));
+
+			static bool HasParameterAnnotation (IMethodSymbol method) {
+				foreach (var param in method.GetParameters ()) {
+					if (GetMethodParameterAnnotation (param) != DynamicallyAccessedMemberTypes.None)
+						return true;
+				}
+				return false;
+			}
+		}
+
+		static bool ShouldWarnWhenAccessedForReflection (IFieldSymbol field)
+		{
+			return field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None;
+		}
+
+		internal static DynamicallyAccessedMemberTypes GetTypeAnnotations (INamedTypeSymbol type)
+		{
+			DynamicallyAccessedMemberTypes typeAnnotation = type.GetDynamicallyAccessedMemberTypes ();
+
+			// Also inherit annotation from bases
+			INamedTypeSymbol? baseType = type.BaseType;
+			while (baseType is not null) {
+				typeAnnotation |= baseType.GetDynamicallyAccessedMemberTypes ();
+				baseType = baseType.BaseType;
+			}
+
+			// And inherit them from interfaces
+			foreach (INamedTypeSymbol interfaceType in type.AllInterfaces) {
+				typeAnnotation |= interfaceType.GetDynamicallyAccessedMemberTypes ();
+			}
+
+			return typeAnnotation;
+		}
+
 		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
 			IMethodSymbol method = param.Method.Method;
