@@ -149,6 +149,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ObjectGetTypeLibraryMode ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task PropertyUsedViaReflection ()
 		{
 			return RunTest ();
@@ -174,6 +180,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task TypeDelegator ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
+		public Task TypeHierarchyLibraryModeSuppressions ()
 		{
 			return RunTest ();
 		}
