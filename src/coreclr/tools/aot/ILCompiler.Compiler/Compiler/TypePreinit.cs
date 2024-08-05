@@ -52,54 +52,13 @@ namespace ILCompiler
             _flowAnnotations = flowAnnotations;
 
             // Zero initialize all fields we model.
-            if (owningType != null)
+            foreach (var field in owningType.GetFields())
             {
-                foreach (var field in owningType.GetFields())
-                {
-                    if (!field.IsStatic || field.IsLiteral || field.IsThreadStatic || field.HasRva)
-                        continue;
+                if (!field.IsStatic || field.IsLiteral || field.IsThreadStatic || field.HasRva)
+                    continue;
 
-                    _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType));
-                }
+               _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType));
             }
-        }
-
-
-        public static bool TryGetConstant(ILProvider ilProvider, MethodDesc method, out int constant)
-        {
-            try
-            {
-                TypePreinit preinit = new TypePreinit(null, new SingleFileCompilationModuleGroup(), ilProvider, new DisabledPreinitializationPolicy(), new ReadOnlyFieldPolicy(), null);
-                int instructions = 0;
-
-                Value[] parameters = null;
-                if (!method.Signature.IsStatic)
-                {
-                    parameters = new Value[] { null };
-                }
-
-                ValueTypeValue val = new ValueTypeValue(method.Context.GetWellKnownType(WellKnownType.Int32));
-                Status status = preinit.TryScanMethod(method, parameters, null, ref instructions, out Value returnValue);
-                if (status.IsSuccessful)
-                {
-                    constant = method.Signature.ReturnType.UnderlyingType.Category switch
-                    {
-                        TypeFlags.Boolean or TypeFlags.Byte => (int)(byte)returnValue.AsSByte(),
-                        TypeFlags.SByte => (int)returnValue.AsSByte(),
-                        TypeFlags.Char or TypeFlags.UInt16 => (int)(ushort)returnValue.AsInt16(),
-                        TypeFlags.Int16 => (int)returnValue.AsInt16(),
-                        TypeFlags.Int32 or TypeFlags.UInt32 => returnValue.AsInt32(),
-                        _ => throw new UnreachableException(),
-                    };
-                    return true;
-                }
-            }
-            catch (TypeSystemException)
-            {
-            }
-
-            constant = 0;
-            return false;
         }
 
         public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, ReadOnlyFieldPolicy readOnlyPolicy, FlowAnnotations flowAnnotations, MetadataType type)
@@ -362,7 +321,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
@@ -464,7 +423,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
@@ -511,7 +470,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
@@ -584,7 +543,7 @@ namespace ILCompiler
                                 }
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
@@ -600,7 +559,7 @@ namespace ILCompiler
                                 ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
                             }
 
-                            AllocationSite allocSite = _type == null ? default : new AllocationSite(_type, instructionCounter);
+                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
 
                             Value instance;
                             if (owningType.IsDelegate)
@@ -792,7 +751,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Byref field");
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
@@ -838,7 +797,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
-                            if (_flowAnnotations != null && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
                             }
