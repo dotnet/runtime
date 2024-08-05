@@ -3202,7 +3202,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
-    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    SetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 //
@@ -3232,14 +3232,14 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
         // so there should be nothing to do. However, we still assert b/c we want to know how
         // we'd actually hit this.
         // @todo - is there a path if TriggerUnwind() calls DisableAll(). But why would
-        CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread));
+        //CONSISTENCY_CHECK_MSGF(false, ("How did we get here?. thread=%p\n", thread)); it can be caused in a scenario where we are stepping and an AV is thrown
         LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag couldn't get context.\n"));
         return;
     }
 
     // Always need to unmark for stepping
     g_pEEInterface->MarkThreadForDebugStepping(thread, false);
-    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread));
+    UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(context) ARM_ARG(thread) ARM64_ARG(thread) RISCV64_ARG(thread) LOONGARCH64_ARG(thread));
 }
 
 void DebuggerController::EnableExceptionHook()

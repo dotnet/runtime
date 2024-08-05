@@ -705,11 +705,6 @@ JS_ENGINES = [NODE_JS]
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
-    <!-- Devloop features -->
-    <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
-      <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
@@ -1225,9 +1220,6 @@ JS_ENGINES = [NODE_JS]
       <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)_deps\fetchzlibng-build\libz.a">
         <Destination>$(RuntimeBinDir)libz.a</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
-        <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>
-      </_MonoICorDebugArtifacts>
     </ItemGroup>
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"

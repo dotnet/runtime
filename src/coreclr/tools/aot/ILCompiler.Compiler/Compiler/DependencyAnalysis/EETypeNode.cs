@@ -91,6 +91,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
 
+            Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);

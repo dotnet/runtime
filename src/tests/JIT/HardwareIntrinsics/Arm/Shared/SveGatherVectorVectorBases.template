@@ -452,17 +452,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                if (result[i] != gatherResult)
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
 
             if (!succeeded)
             {
@@ -546,18 +536,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_TrueValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                {RetBaseType} iterResult = (maskOp[i] != 0) ? gatherResult : falseOp[i];
-                if (iterResult != result[i])
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, falseOp, result);
 
             if (!succeeded)
             {
@@ -592,21 +571,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_FalseValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] trueOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            bool succeeded = true;
-
-            for (var i = 0; i < RetElementCount; i++)
-            {
-                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
-                {RetBaseType} iterResult = (maskOp[i] != 0) ? trueOp[i] : gatherResult;
-                if (maskOp[i] != 0)
-                {
-                    if (iterResult != result[i])
-                    {
-                        succeeded = false;
-                        break;
-                    }
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectTrueBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, trueOp, result);
 
             if (!succeeded)
             {

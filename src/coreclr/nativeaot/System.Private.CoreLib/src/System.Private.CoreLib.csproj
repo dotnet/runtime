@@ -96,6 +96,9 @@
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs">
       <Link>Common\src\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Experimentals.cs">
+      <Link>Common\Experimentals.cs</Link>
+    </Compile>
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.cs" />
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />

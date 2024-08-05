@@ -260,7 +260,6 @@ DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
-DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
 #ifndef TARGET_64BIT
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
 DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
@@ -269,9 +268,6 @@ DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Chec
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
-
-DEFINE_CLASS(MATHF,                 System,                 MathF)
-DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
 
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
@@ -645,6 +641,20 @@ DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
+
+DEFINE_CLASS(THROWHELPER,     System,                 ThrowHelper)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTEXCEPTION,             ThrowArgumentException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTOUTOFRANGEEXCEPTION,   ThrowArgumentOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWINDEXOUTOFRANGEEXCEPTION,      ThrowIndexOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNOTIMPLEMENTEDEXCEPTION,       ThrowNotImplementedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWPLATFORMNOTSUPPORTEDEXCEPTION, ThrowPlatformNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWTYPENOTSUPPORTED,              ThrowTypeNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWOVERFLOWEXCEPTION,             ThrowOverflowException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWDIVIDEBYZEROEXCEPTION,         ThrowDivideByZeroException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNULLREFEXCEPTION,              ThrowNullReferenceException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWVERIFICATIONEXCEPTION,         ThrowVerificationException, SM_Int_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,  ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWENTRYPOINTNOTFOUNDEXCEPTION,   ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)

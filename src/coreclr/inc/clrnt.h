@@ -369,24 +369,6 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
-// Mirror the XSTATE_ARM64_SVE flags from winnt.h
-
-#ifndef XSTATE_ARM64_SVE
-#define XSTATE_ARM64_SVE (2)
-#endif // XSTATE_ARM64_SVE
-
-#ifndef XSTATE_MASK_ARM64_SVE
-#define XSTATE_MASK_ARM64_SVE (1ui64 << (XSTATE_ARM64_SVE))
-#endif // XSTATE_MASK_ARM64_SVE
-
-#ifndef CONTEXT_ARM64_XSTATE
-#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
-#endif // CONTEXT_ARM64_XSTATE
-
-#ifndef CONTEXT_XSTATE
-#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
-#endif // CONTEXT_XSTATE
-
 #endif
 
 #ifdef TARGET_LOONGARCH64
@@ -411,8 +393,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        memcpy(&FunctionLength, (void*)(ImageBase + FunctionLength), sizeof(UINT32));
-        FunctionLength &= 0x3ffff;
+        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
