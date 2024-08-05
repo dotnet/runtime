@@ -295,7 +295,8 @@ bool emitter::IsRex2EncodableInstruction(instruction ins) const
 bool emitter::IsLegacyMap1(code_t code) const
 {
 #ifdef TARGET_AMD64
-    // Lagacy-Map-1 opcode could be in the following style:
+    // Lagacy-Map-1 opcode is defined as 2-byte opcode with a leading byte of 0x0F,
+    // In JIT, it could be in the following style:
     // 2-byte: XX0F
     // 3-byte: 0F00XX
     // 4-byte: 0FPP00XX
@@ -1367,6 +1368,11 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 bool emitter::TakesRex2Prefix(const instrDesc* id) const
 {
     // Return true iff the instruction supports REX2 encoding, and it requires to access EGPRs.
+
+    // TODO-xarch-apx:
+    // At this stage, we are only using REX2 in the case that non-simd integer instructions 
+    // with EGPRs being used in its operands, it could be either direct register uses, or
+    // memory addresssig operands, i.e. index and base.
     instruction ins = id->idIns();
     if(!IsRex2EncodableInstruction(ins))
     {
@@ -1798,70 +1804,21 @@ bool emitter::HasHighSIMDReg(const instrDesc* id) const
 bool emitter::HasExtendedGPReg(const instrDesc* id) const
 {
 #if defined(TARGET_AMD64)
-    int regCount = 0;
-
-    if(id->idHasReg1())
+    // First check if addressing mode is used and if any of those uses eGPRs.
+    if (id->idHasMemAdr() &&
+        (IsExtendedGPReg(id->idAddr()->iiaAddrMode.amBaseReg) || IsExtendedGPReg(id->idAddr()->iiaAddrMode.amIndxReg)))
     {
-        regCount++;
+        return true;
+    }
+    
+    if ((id->idHasReg1() && IsExtendedGPReg(id->idReg1())) ||
+        (id->idHasReg2() && IsExtendedGPReg(id->idReg2())) || 
+        (id->idHasReg3() && IsExtendedGPReg(id->idReg3())) || 
+        (id->idHasReg4() && IsExtendedGPReg(id->idReg4())))
+    {
+        return true;
     }
 
-    if(id->idHasReg2())
-    {
-        regCount++;
-    }
-
-    // TODO-apx: revisit code below, do we really have legacy map0/1 instructions taking 3/4 regs.
-    if(id->idHasReg3())
-    {
-        regCount++;
-    }
-
-    if(id->idHasReg4())
-    {
-        regCount++;
-    }
-
-    switch (regCount)
-    {
-        case 4:
-        {
-            if(IsExtendedGPReg(id->idReg4()))
-            {
-                return true;
-            }
-            FALLTHROUGH;
-        }
-
-        case 3:
-        {
-            if(IsExtendedGPReg(id->idReg3()))
-            {
-                return true;
-            }
-            FALLTHROUGH;
-        }
-
-        case 2:
-        {
-            if(IsExtendedGPReg(id->idReg2()))
-            {
-                return true;
-            }
-            FALLTHROUGH;
-        }
-
-        case 1:
-        {
-            if(IsExtendedGPReg(id->idReg1()))
-            {
-                return true;
-            }
-            FALLTHROUGH;
-        }
-        
-        default:
-            return false;
-    }
 #endif
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -1923,11 +1880,20 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
     // TODO-apx:
     // Consider merge this method into IsExtendedReg(regNumber reg)
 
-    if(reg > REG_STK)
+    if (reg > REG_STK)
     {
         // not an actual reg
         return false;
     }
+
+#ifdef TARGET_AMD64
+    if (UseRex2Encoding())
+    {
+        /*
+            include EGPR checks here.
+        */
+    }
+#endif
 
     // TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
     //           instead of stressing here.
