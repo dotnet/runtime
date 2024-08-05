@@ -12,9 +12,11 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerSupportTrue.cs">
       <EnabledProperties>DebuggerSupport</EnabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerSupportFalse.cs">
       <DisabledProperties>DebuggerSupport</DisabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
