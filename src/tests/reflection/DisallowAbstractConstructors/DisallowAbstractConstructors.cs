@@ -40,7 +40,7 @@ public class X
         Type type = null;
         try
         {
-            type = typeof(ItemCreator<>).MakeGenericType(typeof(AbstractClassWithConstructor))
+            type = typeof(ItemCreator<>).MakeGenericType(typeof(AbstractClassWithConstructor));
         }
         catch
         {
