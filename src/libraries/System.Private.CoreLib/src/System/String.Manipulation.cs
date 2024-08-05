@@ -1233,7 +1233,14 @@ namespace System
 
                 // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
                 // If this is the case, we behave as if there are no more substitutions to be made.
-
+                // HybridGlobalization does not support IndexOf with matchLength param - allow weightless substitutions.
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid && index < 0)
+                {
+                    break;
+                }
+                else
+#endif
                 if (index < 0 || matchLength == 0)
                 {
                     break;
