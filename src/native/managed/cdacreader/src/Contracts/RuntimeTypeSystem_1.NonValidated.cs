@@ -122,7 +122,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 => int.PopCount(_desc.Flags & (ushort)extraFlags);
 
             // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
-            // in the order: [non-vtable; native code; method-impl].
+            // in the order: [non-vtable; methhod impl; native code].
             internal int NonVtableSlotIndex => HasNonVtableSlot ? 0 : throw new InvalidOperationException("no non-vtable slot");
             internal int MethodImplIndex
             {
@@ -132,7 +132,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     {
                         throw new InvalidOperationException("no method impl slot");
                     }
-                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot);
+                    return AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot);
                 }
             }
             internal int NativeCodeSlotIndex
@@ -143,7 +143,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     {
                         throw new InvalidOperationException("no native code slot");
                     }
-                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasMethodImpl);
+                    return AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasMethodImpl);
                 }
             }
 
