@@ -1086,10 +1086,17 @@ int LinearScan::BuildNode(GenTree* tree)
                     }
                     setInternalRegsDelayFree = true;
                 }
+                buildInternalRegisterUses();
+                if (dstCount == 1)
+                {
+                    BuildDef(tree);
+                }
             }
-            buildInternalRegisterUses();
-            if (dstCount == 1)
+            else
             {
+                // We always need the target reg for LSE, even if
+                // return value is unused, see genLockedInstructions
+                buildInternalRegisterUses();
                 BuildDef(tree);
             }
         }
