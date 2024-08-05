@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly struct TrimAnalysisPatternStore
+	internal readonly struct TrimAnalysisPatternStore
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
@@ -60,7 +60,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			FieldAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+			FieldAccessPatterns[pattern.Operation] = pattern.Merge (FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisGenericInstantiationPattern pattern)
@@ -90,7 +90,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, FeatureContextLattice, existingPattern);
+			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (FeatureContextLattice, existingPattern);
 		}
 
 		public void Add (FeatureCheckReturnValuePattern pattern)

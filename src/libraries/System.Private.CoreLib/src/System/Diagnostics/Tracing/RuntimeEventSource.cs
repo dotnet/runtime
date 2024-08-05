@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tracing
 
 #if NATIVEAOT
         // If EventSource feature is enabled, RuntimeEventSource needs to be initialized for NativeAOT
-        // In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
+        // In CoreCLR, this is done via a call from the runtime as part of coreclr_initialize
 #pragma warning disable CA2255
         [ModuleInitializer]
 #pragma warning restore CA2255
