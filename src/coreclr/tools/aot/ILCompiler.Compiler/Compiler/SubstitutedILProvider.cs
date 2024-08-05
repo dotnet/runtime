@@ -663,7 +663,7 @@ namespace ILCompiler
         {
             method = method.GetTypicalMethodDefinition();
 
-            TypeFlags returnType = method.Signature.ReturnType.Category;
+            TypeFlags returnType = method.Signature.ReturnType.UnderlyingType.Category;
             if (returnType is < TypeFlags.Boolean or > TypeFlags.UInt32
                 || method.IsIntrinsic
                 || _nestedILProvider.GetMethodIL(method) is not MethodIL methodIL)
