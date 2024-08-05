@@ -959,10 +959,10 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
 
             {
-                DomainAssembly *pTargetModule = pModule->LoadModule(metaTOK);
+                Module *pTargetModule = pModule->LoadModule(metaTOK);
                 if (pTargetModule == NULL)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-                th = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
+                th = TypeHandle(pTargetModule->GetGlobalMethodTable());
                 if (th.IsNull())
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
             }

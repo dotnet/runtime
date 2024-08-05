@@ -112,17 +112,6 @@ public:
     // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
     OBJECTREF GetExposedAssemblyObject();
 
-    OBJECTREF GetExposedModuleObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedModuleObject, &objRet);
-        return objRet;
-    }
-
-    OBJECTREF GetExposedModuleObject();
-
     BOOL IsSystem()
     {
         WRAPPER_NO_CONTRACT;
@@ -409,7 +398,6 @@ private:
     FileLoadLevel               m_level;
     BOOL                        m_loading;
 
-    LOADERHANDLE                m_hExposedModuleObject;
     LOADERHANDLE                m_hExposedAssemblyObject;
 
     ExInfo*                     m_pError;
