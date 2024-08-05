@@ -13232,16 +13232,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 #endif
 
-        if (fgHasNoReturnCall)
-        {
-            fgHasNoReturnCall = false;
-            if (gtRemoveTreesAfterNoReturnCall(block, stmt))
-            {
-                fgRemoveRestOfBlock = true;
-                morphedTree         = stmt->GetRootNode();
-            }
-        }
-
         /* Check for morphedTree as a GT_COMMA with an unconditional throw */
         if (!gtIsActiveCSE_Candidate(morphedTree) && fgIsCommaThrow(morphedTree, true))
         {
@@ -13254,6 +13244,17 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 
         stmt->SetRootNode(morphedTree);
+
+        if (fgHasNoReturnCall)
+        {
+            fgHasNoReturnCall = false;
+
+            if ((fgGetTopLevelQmark(stmt->GetRootNode()) == nullptr) && gtRemoveTreesAfterNoReturnCall(block, stmt))
+            {
+                fgRemoveRestOfBlock = true;
+                morphedTree         = stmt->GetRootNode();
+            }
+        }
 
         if (fgRemoveRestOfBlock)
         {
