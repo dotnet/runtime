@@ -85,14 +85,15 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else if (OperatingSystem.IsBrowser())
+#if NETFRAMEWORK
+            return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
+#else
+            else if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
             {
                 return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
-            else
-            {
-                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
-            }
+            return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+#endif
         }
     }
 }

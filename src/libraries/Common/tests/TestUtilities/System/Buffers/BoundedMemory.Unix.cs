@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
+#if !NETFRAMEWORK
     public static unsafe partial class BoundedMemory
     {
         private static UnixImplementation<T> AllocateWithoutDataPopulationUnix<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
@@ -198,4 +199,5 @@ namespace System.Buffers
             internal static extern int MUnmap(IntPtr addr, ulong len);
         }
     }
+#endif
 }

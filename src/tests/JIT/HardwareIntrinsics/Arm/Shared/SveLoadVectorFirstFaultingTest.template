@@ -118,7 +118,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private struct TestStruct
         {
-            public {RetVectorType}<{RetBaseType}> _fld1;
+            public {Op1VectorType}<{RetBaseType}> _fld1;
 
             public static TestStruct Create()
             {
@@ -150,7 +150,7 @@ namespace JIT.HardwareIntrinsics.Arm
         private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
         private static {RetBaseType}[] _falseData = new {RetBaseType}[RetElementCount];
 
-        private {RetVectorType}<{RetBaseType}> _fld1;
+        private {Op1VectorType}<{RetBaseType}> _fld1;
 
         private {Op1VectorType}<{Op1BaseType}> _mask;
         private {Op1VectorType}<{Op1BaseType}> _falseFld;
