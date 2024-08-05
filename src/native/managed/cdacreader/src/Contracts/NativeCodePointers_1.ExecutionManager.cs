@@ -25,7 +25,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     {
         public readonly TargetPointer RawValue;
 
-        public TargetPointer Address => RawValue & (ulong)~1u;
+        public TargetPointer Address => RawValue & ~1ul;
 
         public bool IsNull => Address == TargetPointer.Null;
 
