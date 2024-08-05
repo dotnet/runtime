@@ -540,7 +540,6 @@ FCClassElement("GCSettings", "System.Runtime", gGCSettingsFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("IEnumerable", "System.Collections", gStdMngIEnumerableFuncs)
 FCClassElement("IEnumerator", "System.Collections", gStdMngIEnumeratorFuncs)
-FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
 FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)
