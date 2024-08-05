@@ -52,6 +52,7 @@ set(COMMON_RUNTIME_SOURCES
 
     ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
     ${CLR_SRC_NATIVE_DIR}/minipal/time.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
 set(SERVER_GC_SOURCES
