@@ -10,7 +10,7 @@ Commonly Used Types:
 - `Microsoft.Extensions.Diagnostics.Metrics.MetricsBuilderExtensions`
 - `Microsoft.Extensions.Diagnostics.Metrics.MetricsOptions`
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/diagnostics.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/diagnostics.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

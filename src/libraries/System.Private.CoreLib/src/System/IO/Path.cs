@@ -108,7 +108,7 @@ namespace System.IO
             }
 
             bool result = ExistsCore(fullPath, out bool isDirectory);
-            if (result && PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
+            if (result && PathInternal.IsDirectorySeparator(fullPath[^1]))
             {
                 // Some sys-calls remove all trailing slashes and may give false positives for existing files.
                 // We want to make sure that if the path ends in a trailing slash, it's truly a directory.
@@ -406,7 +406,7 @@ namespace System.IO
                     maxSize += paths[i].Length;
                 }
 
-                char ch = paths[i][paths[i].Length - 1];
+                char ch = paths[i][^1];
                 if (!PathInternal.IsDirectorySeparator(ch))
                     maxSize++;
             }
@@ -427,7 +427,7 @@ namespace System.IO
                 }
                 else
                 {
-                    char ch = builder[builder.Length - 1];
+                    char ch = builder[^1];
                     if (!PathInternal.IsDirectorySeparator(ch))
                     {
                         builder.Append(PathInternal.DirectorySeparatorChar);
@@ -568,7 +568,7 @@ namespace System.IO
                 }
                 else
                 {
-                    if (!PathInternal.IsDirectorySeparator(builder[builder.Length - 1]) && !PathInternal.IsDirectorySeparator(path[0]))
+                    if (!PathInternal.IsDirectorySeparator(builder[^1]) && !PathInternal.IsDirectorySeparator(path[0]))
                     {
                         builder.Append(PathInternal.DirectorySeparatorChar);
                     }
@@ -731,7 +731,6 @@ namespace System.IO
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             var state = new JoinInternalState
             {
                 ReadOnlySpanPtr1 = (IntPtr)(&first),
@@ -782,7 +781,6 @@ namespace System.IO
                     Debug.Assert(fourth.Length == destination.Length);
                     fourth.CopyTo(destination);
                 });
-#pragma warning restore CS8500
         }
 
         private struct JoinInternalState // used to avoid rooting ValueTuple`7

@@ -27,10 +27,7 @@ namespace System
             RuntimeType targetType = (RuntimeType)target.GetType();
             for (int i = 0; i < flds.Length; i++)
             {
-                RuntimeFieldInfo? field = flds[i] as RuntimeFieldInfo;
-                if (field == null)
-                    throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
-
+                RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
                 if (field.IsStatic)
                     throw new ArgumentException(SR.Format(SR.Argument_TypedReferenceInvalidField, field.Name));
 
@@ -53,9 +50,7 @@ namespace System
             // reference to TypedReference is banned, so have to pass result as pointer
             unsafe
             {
-#pragma warning disable CS8500 // Takes a pointer to a managed type
                 InternalMakeTypedReference(&result, target, fields, targetType);
-#pragma warning restore CS8500
             }
             return result;
         }

@@ -2435,15 +2435,7 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	if (sig->ret)
 		sigsize += mono_sizeof_type (sig->ret);
 
-	if (image) {
-		ret = (MonoMethodSignature *)mono_image_alloc (image, (guint)sigsize);
-	} else if (mp) {
-		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sigsize);
-	} else if (mem_manager) {
-		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sigsize);
-	} else {
-		ret = (MonoMethodSignature *)g_malloc (sigsize);
-	}
+	ret = mono_metadata_signature_allocate_internal (image, mp, mem_manager, sigsize);
 
 	memcpy (ret, sig, sig_header_size - padding);
 
@@ -2456,6 +2448,29 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	}
 
 	return ret;
+}
+
+/**
+ * Allocates memory for a MonoMethodSignature based on the provided parameters.
+ *
+ * @param image MonoImage for allocation.
+ * @param mp MonoMemPool for allocation.
+ * @param mem_manager MonoMemoryManager for allocation.
+ * @param sig_size Size of the signature to allocate.
+ * @return Pointer to the allocated MonoMethodSignature.
+ */
+MonoMethodSignature*
+mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size)
+{
+    if (image) {
+        return (MonoMethodSignature *)mono_image_alloc (image, (guint)sig_size);
+    } else if (mp) {
+        return (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sig_size);
+    } else if (mem_manager) {
+        return (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sig_size);
+    } else {
+        return (MonoMethodSignature *)g_malloc (sig_size);
+    }
 }
 
 /*
@@ -2548,24 +2563,25 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 
 /**
  * mono_metadata_signature_dup_new_params:
- * @param mp The memory pool to allocate the duplicated signature from.
+ * @param mp The mempool to allocate the new signature from.
+ * @param mem_manager The memory manager to allocate the new signature from.
  * @param sig The original method signature.
  * @param num_params The number parameters in the new signature.
  * @param new_params An array of MonoType pointers representing the new parameters.
- * 
+ *
  * Duplicate an existing \c MonoMethodSignature but with a new set of parameters.
  * This is a Mono runtime internal function.
- * 
+ *
  * @return the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
-mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
 {
 	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
 	if (sig->ret)
 		new_sig_size += mono_sizeof_type (sig->ret);
-	
-	MonoMethodSignature *res = (MonoMethodSignature *)mono_mempool_alloc0 (mp, (unsigned int)new_sig_size);
+
+	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (NULL, mp, mem_manager, new_sig_size);
 	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
 	res->param_count = GUINT32_TO_UINT16 (num_params);
 
@@ -3323,7 +3339,7 @@ MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context)
 {
 	MonoInflatedMethodSignature helper;
-	MonoInflatedMethodSignature *res;
+	MonoInflatedMethodSignature *res = NULL;
 	CollectData data;
 
 	helper.sig = sig;
@@ -3338,16 +3354,19 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	mono_mem_manager_lock (mm);
 
 	if (!mm->gsignature_cache)
-		mm->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+		// FIXME: Pick a better pre-reserved size
+		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
+
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (mm->gsignature_cache, &helper);
+	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
 		res->sig = sig;
 		res->context.class_inst = context->class_inst;
 		res->context.method_inst = context->method_inst;
-		g_hash_table_insert (mm->gsignature_cache, res, res);
+		// FIXME: We're wasting memory and cpu by storing key and value redundantly for this table
+		dn_simdhash_ght_insert (mm->gsignature_cache, res, res);
 	}
 
 	mono_mem_manager_unlock (mm);

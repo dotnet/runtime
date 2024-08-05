@@ -545,7 +545,7 @@ namespace ILCompiler.PEWriter
                     return rva + sectionRvaDelta.DeltaRVA;
                 }
             }
-            Debug.Assert(false, "RVA is not within any of the input sections - output PE may be inconsistent");
+            Debug.Fail("RVA is not within any of the input sections - output PE may be inconsistent");
             return rva;
         }
 

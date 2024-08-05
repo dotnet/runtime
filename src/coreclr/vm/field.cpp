@@ -138,6 +138,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
              type == ELEMENT_TYPE_STRING ||
              type == ELEMENT_TYPE_TYPEDBYREF ||
              type == ELEMENT_TYPE_SZARRAY ||
+             type == ELEMENT_TYPE_ARRAY ||
              type == ELEMENT_TYPE_VAR
              );
 
@@ -259,7 +260,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         Module* pModule = GetModule();
         PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
-        _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
+        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
 
         return(ret);
     }

@@ -340,7 +340,7 @@ namespace Microsoft.Interop
             marshallerType = marshallerType with
             {
                 FullTypeName = marshallerTypeSyntax.ToString(),
-                DiagnosticFormattedName = marshallerTypeSyntax.ToString(),
+                DiagnosticFormattedName = marshallerTypeSyntax.ToString()
             };
             string newNativeTypeName = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerData.NativeType.Syntax, marshalInfo, unmanagedElementType).ToFullString();
             ManagedTypeInfo nativeType = marshallerData.NativeType with

@@ -571,7 +571,7 @@ jobs:
       targetRid: android-x64
       platform: android_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -611,7 +611,7 @@ jobs:
       targetRid: android-x86
       platform: android_x86
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -631,7 +631,7 @@ jobs:
       targetRid: android-arm
       platform: android_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}
@@ -651,7 +651,7 @@ jobs:
       targetRid: android-arm64
       platform: android_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: linux_bionic
+      container: android
       jobParameters:
         runtimeFlavor: mono
         buildConfig: ${{ parameters.buildConfig }}

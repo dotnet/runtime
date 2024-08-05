@@ -497,7 +497,13 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 #ifdef CALLDESCR_REGTYPEMAP
     callDescrData.dwRegTypeMap = 0;
 #endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Temporary conversion to old flags, CallDescrWorker needs to be overhauled anyway
+    // to work with arbitrary field offsets and sizes, and support struct size > 16 on RISC-V.
+    callDescrData.fpReturnSize = FpStructInRegistersInfo{FpStruct::Flags(argit.GetFPReturnSize())}.ToOldFlags();
+#else
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#endif
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -632,7 +638,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         UINT structSize = argit.GetArgSize();
 
-        bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -647,7 +652,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             *(PVOID *)pArgDst = pStackCopy;
 
             // save the info into ValueClassInfo
-            if (pMT->ContainsPointers())
+            if (pMT->ContainsGCPointers())
             {
                 pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pStackCopy, pMT, pValueClasses);
             }
@@ -1246,16 +1251,40 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     // IsFastPathSupported needs to checked before calling this method.
     _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
 
-    PTR_BYTE base = 0;
-    if (!pFieldDesc->IsRVA())
+    if (pFieldDesc->IsRVA())
     {
-        // For RVA the base is ignored and offset is used.
-        base = pFieldDesc->GetBase();
+        Module* pModule = pFieldDesc->GetModule();
+        return pModule->GetRvaField(pFieldDesc->GetOffset());
     }
-
-    return PTR_VOID(base + pFieldDesc->GetOffset());
+    else
+    {
+        PTR_BYTE base = pFieldDesc->GetBase();
+        return PTR_VOID(base + pFieldDesc->GetOffset());
+    }
 }
 FCIMPLEND
+
+extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
+
+    if (pField != NULL && pField->IsRVA())
+    {
+        Module* pModule = pField->GetModule();
+        *address = pModule->GetRvaField(pField->GetOffset());
+        *size = pField->LoadSize();
+        
+        ret = TRUE;
+    }
+
+    END_QCALL;
+
+    return ret;
+}
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD)
 {
@@ -1282,7 +1311,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
         return;
 
     MethodTable *pMT = typeHnd.AsMethodTable();
-    if (pMT->IsClassInited())
+    // The ContainsGenericVariables check is to preserve back-compat where we assume the generic type is already initialized
+    if (pMT->IsClassInited() || pMT->ContainsGenericVariables())
         return;
 
     BEGIN_QCALL;
@@ -1694,7 +1724,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     QCall::ObjectHandleOnStack pRuntimeType,
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
-    PCODE* ppfnCtor,
+    PCODE* ppfnRefCtor,
+    PCODE* ppfnValueCtor,
     BOOL* pfCtorIsPublic
 )
 {
@@ -1703,11 +1734,13 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
-        PRECONDITION(CheckPointer(ppfnCtor));
+        PRECONDITION(CheckPointer(ppfnRefCtor));
+        PRECONDITION(CheckPointer(ppfnValueCtor));
         PRECONDITION(CheckPointer(pfCtorIsPublic));
         PRECONDITION(*ppfnAllocator == NULL);
         PRECONDITION(*pvAllocatorFirstArg == NULL);
-        PRECONDITION(*ppfnCtor == NULL);
+        PRECONDITION(*ppfnRefCtor == NULL);
+        PRECONDITION(*ppfnValueCtor == NULL);
         PRECONDITION(*pfCtorIsPublic == FALSE);
     }
     CONTRACTL_END;
@@ -1761,7 +1794,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         // managed sig: ComClassFactory* -> object (via FCALL)
         *ppfnAllocator = CoreLibBinder::GetMethod(METHOD__RT_TYPE_HANDLE__ALLOCATECOMOBJECT)->GetMultiCallableAddrOfCode();
         *pvAllocatorFirstArg = pClassFactory;
-        *ppfnCtor = NULL; // no ctor call needed; activation handled entirely by the allocator
+        *ppfnRefCtor = NULL; // no ctor call needed; activation handled entirely by the allocator
+        *ppfnValueCtor = NULL; // no value ctor for reference type
         *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
     else
@@ -1771,7 +1805,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         // CreateInstance returns null given Nullable<T>
         *ppfnAllocator = (PCODE)NULL;
         *pvAllocatorFirstArg = NULL;
-        *ppfnCtor = (PCODE)NULL;
+        *ppfnRefCtor = (PCODE)NULL;
+        *ppfnValueCtor = (PCODE)NULL;
         *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
     }
     else
@@ -1781,22 +1816,34 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
         *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
         *pvAllocatorFirstArg = pMT;
 
+        BOOL isValueType = pMT->IsValueType();
         if (pMT->HasDefaultConstructor())
         {
             // managed sig: object -> void
             // for ctors on value types, lookup boxed entry point stub
-            MethodDesc* pMD = pMT->GetDefaultConstructor(pMT->IsValueType() /* forceBoxedEntryPoint */);
+            MethodDesc* pMD = pMT->GetDefaultConstructor(isValueType /* forceBoxedEntryPoint */);
             _ASSERTE(pMD != NULL);
 
             PCODE pCode = pMD->GetMultiCallableAddrOfCode();
             _ASSERTE(pCode != (PCODE)NULL);
 
-            *ppfnCtor = pCode;
+            *ppfnRefCtor = pCode;
             *pfCtorIsPublic = pMD->IsPublic();
+
+            // If we have a value type, get the non-boxing entry point too.
+            if (isValueType)
+            {
+                pMD = pMT->GetDefaultConstructor(FALSE /* forceBoxedEntryPoint */);
+                _ASSERTE(pMD != NULL);
+                pCode = pMD->GetMultiCallableAddrOfCode();
+                _ASSERTE(pCode != (PCODE)NULL);
+                *ppfnValueCtor = pCode;
+            }
         }
-        else if (pMT->IsValueType())
+        else if (isValueType)
         {
-            *ppfnCtor = (PCODE)NULL; // no ctor call needed; we're creating a boxed default(T)
+            *ppfnRefCtor = (PCODE)NULL; // no ctor call needed; we're creating a boxed default(T)
+            *ppfnValueCtor = (PCODE)NULL;
             *pfCtorIsPublic = TRUE; // no ctor call needed => assume 'public' equivalent
         }
         else
@@ -1909,25 +1956,6 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
 
     END_QCALL;
 }
-
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-//      ReflectionEnum
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-
-FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
-    FCALL_CONTRACT;
-
-    _ASSERTE(pMT->IsEnum());
-
-    // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
-    // Call EEClass::GetInternalCorElementType directly to avoid it
-    return pMT->GetClass()->GetInternalCorElementType();
-}
-FCIMPLEND
 
 //*******************************************************************************
 struct TempEnumValue
@@ -2051,4 +2079,50 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
         return -1;
 
     return handle.GetSize();
+}
+
+extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
+    QCall::TypeHandle pType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg,
+    int32_t* pValueOffset,
+    uint32_t* pValueSize)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(ppfnAllocator));
+        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
+        PRECONDITION(*ppfnAllocator == NULL);
+        PRECONDITION(*pvAllocatorFirstArg == NULL);
+    }
+    CONTRACTL_END;
+
+    BEGIN_QCALL;
+
+    TypeHandle type = pType.AsTypeHandle();
+
+    RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(type, true /* fForGetUninitializedInstance */);
+
+    MethodTable* pMT = type.AsMethodTable();
+
+    _ASSERTE(pMT->IsValueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+
+    *pValueOffset = 0;
+
+    // If it is a nullable, return the allocator for the underlying type instead.
+    if (pMT->IsNullable())
+    {
+        *pValueOffset = Nullable::GetValueAddrOffset(pMT);
+        pMT = pMT->GetInstantiation()[0].GetMethodTable();
+    }
+
+    bool fHasSideEffectsUnused;
+    *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
+    *pvAllocatorFirstArg = pMT;
+    *pValueSize = pMT->GetNumInstanceFieldBytes();
+
+    pMT->EnsureInstanceActive();
+
+    END_QCALL;
 }

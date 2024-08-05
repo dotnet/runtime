@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return contentType;
                 }
 
-                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                if (X509CertificateLoader.IsPkcs12(rawData))
                 {
                     return X509ContentType.Pkcs12;
                 }

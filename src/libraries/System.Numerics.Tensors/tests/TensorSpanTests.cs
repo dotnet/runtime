@@ -1,26 +1,1054 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
     public class TensorSpanTests
     {
-        [Fact]
-        public static void ConstructorTests()
+        #region TensorPrimitivesForwardsTests
+        private void FillTensor<T>(Span<T> span)
+            where T : INumberBase<T>
         {
-            int[] a = [1, 2, 3];
-            TensorSpan<int> span = new TensorSpan<int>(a, 0, [3, 3], [0, 1]);
+            for (int i = 0; i < span.Length; i++)
+            {
+                span[i] = T.CreateChecked((Random.Shared.NextSingle() * 100) - 50);
+            }
+        }
 
+        private static nint CalculateTotalLength(ReadOnlySpan<nint> lengths)
+        {
+            if (lengths.IsEmpty)
+                return 0;
+            nint totalLength = 1;
+            for (int i = 0; i < lengths.Length; i++)
+            {
+                totalLength *= lengths[i];
+            }
 
+            return totalLength;
+        }
 
+        public delegate void TensorPrimitivesSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
+        public delegate ref readonly TensorSpan<T> TensorSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination);
+        public delegate ref readonly TensorSpan<T> TensorSpanInSpanOutInPlace<T>(in TensorSpan<T> input);
+
+        public static IEnumerable<object[]> SpanInSpanOutData()
+        {
+            yield return Create<float>(TensorPrimitives.Abs<float>, Tensor.Abs);
+            yield return Create<float>(TensorPrimitives.Acos, Tensor.Acos);
+            yield return Create<float>(TensorPrimitives.Acosh, Tensor.Acosh);
+            yield return Create<float>(TensorPrimitives.AcosPi, Tensor.AcosPi);
+            yield return Create<float>(TensorPrimitives.Asin, Tensor.Asin);
+            yield return Create<float>(TensorPrimitives.Asinh, Tensor.Asinh);
+            yield return Create<float>(TensorPrimitives.AsinPi, Tensor.AsinPi);
+            yield return Create<float>(TensorPrimitives.Atan, Tensor.Atan);
+            yield return Create<float>(TensorPrimitives.Atanh, Tensor.Atanh);
+            yield return Create<float>(TensorPrimitives.AtanPi, Tensor.AtanPi);
+            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.Cbrt);
+            yield return Create<float>(TensorPrimitives.Ceiling, Tensor.Ceiling);
+            yield return Create<float>(TensorPrimitives.Cos, Tensor.Cos);
+            yield return Create<float>(TensorPrimitives.Cosh, Tensor.Cosh);
+            yield return Create<float>(TensorPrimitives.CosPi, Tensor.CosPi);
+            yield return Create<float>(TensorPrimitives.DegreesToRadians, Tensor.DegreesToRadians);
+            yield return Create<float>(TensorPrimitives.Exp, Tensor.Exp);
+            yield return Create<float>(TensorPrimitives.Exp10, Tensor.Exp10);
+            yield return Create<float>(TensorPrimitives.Exp10M1, Tensor.Exp10M1);
+            yield return Create<float>(TensorPrimitives.Exp2, Tensor.Exp2);
+            yield return Create<float>(TensorPrimitives.Exp2M1, Tensor.Exp2M1);
+            yield return Create<float>(TensorPrimitives.ExpM1, Tensor.ExpM1);
+            yield return Create<float>(TensorPrimitives.Floor, Tensor.Floor);
+            yield return Create<int>(TensorPrimitives.LeadingZeroCount, Tensor.LeadingZeroCount);
+            yield return Create<float>(TensorPrimitives.Log, Tensor.Log);
+            yield return Create<float>(TensorPrimitives.Log10, Tensor.Log10);
+            yield return Create<float>(TensorPrimitives.Log10P1, Tensor.Log10P1);
+            yield return Create<float>(TensorPrimitives.Log2, Tensor.Log2);
+            yield return Create<float>(TensorPrimitives.Log2P1, Tensor.Log2P1);
+            yield return Create<float>(TensorPrimitives.LogP1, Tensor.LogP1);
+            yield return Create<float>(TensorPrimitives.Negate, Tensor.Negate);
+            yield return Create<float>(TensorPrimitives.OnesComplement, Tensor.OnesComplement);
+            yield return Create<int>(TensorPrimitives.PopCount, Tensor.PopCount);
+            yield return Create<float>(TensorPrimitives.RadiansToDegrees, Tensor.RadiansToDegrees);
+            yield return Create<float>(TensorPrimitives.Reciprocal, Tensor.Reciprocal);
+            yield return Create<float>(TensorPrimitives.Round, Tensor.Round);
+            yield return Create<float>(TensorPrimitives.Sigmoid, Tensor.Sigmoid);
+            yield return Create<float>(TensorPrimitives.Sin, Tensor.Sin);
+            yield return Create<float>(TensorPrimitives.Sinh, Tensor.Sinh);
+            yield return Create<float>(TensorPrimitives.SinPi, Tensor.SinPi);
+            yield return Create<float>(TensorPrimitives.SoftMax, Tensor.SoftMax);
+            yield return Create<float>(TensorPrimitives.Sqrt, Tensor.Sqrt);
+            yield return Create<float>(TensorPrimitives.Tan, Tensor.Tan);
+            yield return Create<float>(TensorPrimitives.Tanh, Tensor.Tanh);
+            yield return Create<float>(TensorPrimitives.TanPi, Tensor.TanPi);
+            yield return Create<float>(TensorPrimitives.Truncate, Tensor.Truncate);
+
+            static object[] Create<T>(TensorPrimitivesSpanInSpanOut<T> tensorPrimitivesMethod, TensorSpanInSpanOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+        }
+
+        [Theory, MemberData(nameof(SpanInSpanOutData))]
+        public void TensorExtensionsSpanInSpanOut<T>(TensorPrimitivesSpanInSpanOut<T> tensorPrimitivesOperation, TensorSpanInSpanOut<T> tensorOperation)
+            where T : INumberBase<T>
+        {
+            Assert.All(Helpers.TensorShapes, tensorLength =>
+            {
+                nint length = CalculateTotalLength(tensorLength);
+                T[] data = new T[length];
+                T[] data2 = new T[length];
+                T[] expectedOutput = new T[length];
+
+                FillTensor<T>(data);
+                TensorSpan<T> x = Tensor.Create<T>(data, tensorLength, []);
+                TensorSpan<T> destination = Tensor.Create<T>(data2, tensorLength, []);
+                tensorPrimitivesOperation((ReadOnlySpan<T>)data, expectedOutput);
+                TensorSpan<T> results = tensorOperation(x, destination);
+
+                Assert.Equal(tensorLength, results.Lengths);
+                nint[] startingIndex = new nint[tensorLength.Length];
+
+                // the "Return" value
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref results[startingIndex], (int)length);
+                // the "destination" value
+                ReadOnlySpan<T> destSpan = MemoryMarshal.CreateSpan(ref destination[startingIndex], (int)length);
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    Assert.Equal(expectedOutput[i], span[i]);
+                    Assert.Equal(expectedOutput[i], destSpan[i]);
+                }
+            });
+        }
+
+        public delegate T TensorPrimitivesSpanInTOut<T>(ReadOnlySpan<T> input);
+        public delegate T TensorSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input);
+        public static IEnumerable<object[]> SpanInFloatOutData()
+        {
+            yield return Create<float>(TensorPrimitives.Max, Tensor.Max);
+            yield return Create<float>(TensorPrimitives.MaxMagnitude, Tensor.MaxMagnitude);
+            yield return Create<float>(TensorPrimitives.MaxNumber, Tensor.MaxNumber);
+            yield return Create<float>(TensorPrimitives.Min, Tensor.Min);
+            yield return Create<float>(TensorPrimitives.MinMagnitude, Tensor.MinMagnitude);
+            yield return Create<float>(TensorPrimitives.MinNumber, Tensor.MinNumber);
+            yield return Create<float>(TensorPrimitives.Norm, Tensor.Norm);
+            yield return Create<float>(TensorPrimitives.Product, Tensor.Product);
+            yield return Create<float>(TensorPrimitives.Sum, Tensor.Sum);
+
+            static object[] Create<T>(TensorPrimitivesSpanInTOut<T> tensorPrimitivesMethod, TensorSpanInTOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+        }
+
+        [Theory, MemberData(nameof(SpanInFloatOutData))]
+        public void TensorExtensionsSpanInTOut<T>(TensorPrimitivesSpanInTOut<T> tensorPrimitivesOperation, TensorSpanInTOut<T> tensorOperation)
+            where T : INumberBase<T>
+        {
+            Assert.All(Helpers.TensorShapes, tensorLength =>
+            {
+                nint length = CalculateTotalLength(tensorLength);
+                T[] data = new T[length];
+
+                FillTensor<T>(data);
+                Tensor<T> x = Tensor.Create<T>(data, tensorLength, []);
+                T expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)data);
+                T results = tensorOperation(x);
+
+                Assert.Equal(expectedOutput, results);
+            });
+        }
+
+        public delegate void TensorPrimitivesTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
+        public delegate ref readonly TensorSpan<T> TensorTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo, in TensorSpan<T> destination);
+        public delegate ref readonly TensorSpan<T> TensorTwoSpanInSpanOutInPlace<T>(in TensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
+        public static IEnumerable<object[]> TwoSpanInSpanOutData()
+        {
+            yield return Create<float>(TensorPrimitives.Add, Tensor.Add);
+            yield return Create<float>(TensorPrimitives.Atan2, Tensor.Atan2);
+            yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2Pi);
+            yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySign);
+            yield return Create<float>(TensorPrimitives.Divide, Tensor.Divide);
+            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypot);
+            yield return Create<float>(TensorPrimitives.Ieee754Remainder, Tensor.Ieee754Remainder);
+            yield return Create<float>(TensorPrimitives.Multiply, Tensor.Multiply);
+            yield return Create<float>(TensorPrimitives.Pow, Tensor.Pow);
+            yield return Create<float>(TensorPrimitives.Subtract, Tensor.Subtract);
+
+            static object[] Create<T>(TensorPrimitivesTwoSpanInSpanOut<T> tensorPrimitivesMethod, TensorTwoSpanInSpanOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+        }
+
+        [Theory, MemberData(nameof(TwoSpanInSpanOutData))]
+        public void TensorExtensionsTwoSpanInSpanOut<T>(TensorPrimitivesTwoSpanInSpanOut<T> tensorPrimitivesOperation, TensorTwoSpanInSpanOut<T> tensorOperation)
+            where T : INumberBase<T>
+        {
+            Assert.All(Helpers.TensorShapes, tensorLength =>
+            {
+                nint length = CalculateTotalLength(tensorLength);
+                T[] data1 = new T[length];
+                T[] data2 = new T[length];
+                T[] destData = new T[length];
+                T[] expectedOutput = new T[length];
+
+                FillTensor<T>(data1);
+                FillTensor<T>(data2);
+                TensorSpan<T> x = Tensor.Create<T>(data1, tensorLength, []);
+                TensorSpan<T> y = Tensor.Create<T>(data2, tensorLength, []);
+                TensorSpan<T> destination = Tensor.Create<T>(destData, tensorLength, []);
+                tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2, expectedOutput);
+                TensorSpan<T> results = tensorOperation(x, y, destination);
+
+                Assert.Equal(tensorLength, results.Lengths);
+                nint[] startingIndex = new nint[tensorLength.Length];
+                // the "Return" value
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref results[startingIndex], (int)length);
+                // the "destination" value
+                ReadOnlySpan<T> destSpan = MemoryMarshal.CreateSpan(ref destination[startingIndex], (int)length);
+
+                for (int i = 0; i < data1.Length; i++)
+                {
+                    Assert.Equal(expectedOutput[i], span[i]);
+                    Assert.Equal(expectedOutput[i], destSpan[i]);
+                }
+            });
+        }
+
+        public delegate T TensorPrimitivesTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
+        public delegate T TensorTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
+        public static IEnumerable<object[]> TwoSpanInFloatOutData()
+        {
+            yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);
+            yield return Create<float>(TensorPrimitives.Dot, Tensor.Dot);
+
+            static object[] Create<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesMethod, TensorTwoSpanInTOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+        }
+
+        [Theory, MemberData(nameof(TwoSpanInFloatOutData))]
+        public void TensorExtensionsTwoSpanInFloatOut<T>(TensorPrimitivesTwoSpanInTOut<T> tensorPrimitivesOperation, TensorTwoSpanInTOut<T> tensorOperation)
+            where T : INumberBase<T>
+        {
+            Assert.All(Helpers.TensorShapes, tensorLength =>
+            {
+                nint length = CalculateTotalLength(tensorLength);
+                T[] data1 = new T[length];
+                T[] data2 = new T[length];
+
+                FillTensor<T>(data1);
+                FillTensor<T>(data2);
+                TensorSpan<T> x = Tensor.Create<T>(data1, tensorLength, []);
+                TensorSpan<T> y = Tensor.Create<T>(data2, tensorLength, []);
+                T expectedOutput = tensorPrimitivesOperation((ReadOnlySpan<T>)data1, data2);
+                T results = tensorOperation(x, y);
+
+                Assert.Equal(expectedOutput, results);
+            });
+        }
+
+        #endregion
+
+        [Fact]
+        public static void TensorSpanSystemArrayConstructorTests()
+        {
+            // Make sure basic T[,] constructor works
+            int[,] a = new int[,] { { 91, 92, -93, 94 } };
+            scoped TensorSpan<int> spanInt = new TensorSpan<int>(a);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(4, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[0, 2]);
+            Assert.Equal(94, spanInt[0, 3]);
+
+            // Make sure null works
+            // Should be a tensor with 0 elements and Rank 0 and no strides or lengths
+            int[,] n = null;
+            spanInt = new TensorSpan<int>(n);
+            Assert.Equal(0, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths.Length);
+            Assert.Equal(0, spanInt.Strides.Length);
+
+            // Make sure empty array works
+            // Should be a Tensor with 0 elements but Rank 2 with dimension 0 length 0
+            int[,] b = { { } };
+            spanInt = new TensorSpan<int>(b);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(0, spanInt.Lengths[1]);
+            Assert.Equal(0, spanInt.FlattenedLength);
+            Assert.Equal(0, spanInt.Strides[0]);
+            Assert.Equal(0, spanInt.Strides[1]);
+            // Make sure it still throws on index 0, 0
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(b);
+                var x = spanInt[0, 0];
+            });
+
+            // Make sure 2D array works
+            spanInt = new TensorSpan<int>(a, (int[])[0, 0], [2, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure can use only some of the array
+            spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                var x = spanInt[1, 1];
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                var x = spanInt[0, -1];
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                var x = spanInt[-1, 0];
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], default);
+                var x = spanInt[1, 0];
+            });
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a, (int[])[0, 1], [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(92, spanInt[0, 0]);
+            Assert.Equal(-93, spanInt[0, 1]);
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a, (int[])[0, 2], [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+
+            // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
+            spanInt = new TensorSpan<int>(a, (int[])[0, 3], [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure we catch that there aren't enough elements in the array for the lengths
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 3], [1, 2], default);
+            });
+
+            // Make sure 2D array works with basic strides
+            spanInt = new TensorSpan<int>(a, (int[])[0, 0], [2, 2], [2, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+            spanInt = new TensorSpan<int>(a, (int[])[0, 0], [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(91, spanInt[1, 0]);
+            Assert.Equal(92, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
+            spanInt = new TensorSpan<int>(a, (int[])[0, 2], [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure strides can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], [-1, 0]);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, 2], [0, -1]);
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [-1, 2], []);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[0, 0], [1, -2], []);
+            });
+
+            // Make sure 2D array works with strides to hit element 0,0,2,2
+            spanInt = new TensorSpan<int>(a, (int[])[], [2, 2], [2, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(91, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(-93, spanInt[1, 1]);
+
+            // Make sure you can't overlap elements using strides
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                var spanInt = new TensorSpan<int>(a, (int[])[], [2, 2], [1, 1]);
+            });
+
+            a = new int[,] { { 91, 92 }, { -93, 94 } };
+            spanInt = new TensorSpan<int>(a, (int[])[1, 1], [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            //Make sure it works with NIndex
+            spanInt = new TensorSpan<int>(a, (NIndex[])[1, 1], [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            //Make sure it works with NIndex
+            spanInt = new TensorSpan<int>(a, (NIndex[])[^1, ^1], [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+        }
+
+        [Fact]
+        public static void TensorSpanArrayConstructorTests()
+        {
+            // Make sure basic T[] constructor works
+            int[] a = { 91, 92, -93, 94 };
+            scoped TensorSpan<int> spanInt = new TensorSpan<int>(a);
+            Assert.Equal(1, spanInt.Rank);
+            Assert.Equal(4, spanInt.Lengths[0]);
+            Assert.Equal(91, spanInt[0]);
+            Assert.Equal(92, spanInt[1]);
+            Assert.Equal(-93, spanInt[2]);
+            Assert.Equal(94, spanInt[3]);
+
+            // Make sure null works
+            // Should be a tensor with 0 elements and Rank 0 and no strides or lengths
+            spanInt = new TensorSpan<int>(null);
+            Assert.Equal(0, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths.Length);
+            Assert.Equal(0, spanInt.Strides.Length);
+
+            // Make sure empty array works
+            // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
+            int[] b = { };
+            spanInt = new TensorSpan<int>(b);
+            Assert.Equal(1, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths[0]);
+            Assert.Equal(0, spanInt.FlattenedLength);
+            Assert.Equal(0, spanInt.Strides[0]);
+            // Make sure it still throws on index 0
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(b);
+                var x = spanInt[0];
+            });
+
+            // Make sure empty array works
+            // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
+            spanInt = new TensorSpan<int>(b, 0, [], default);
+            Assert.Equal(1, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths[0]);
+            Assert.Equal(0, spanInt.FlattenedLength);
+            Assert.Equal(0, spanInt.Strides[0]);
+
+            // Make sure 2D array works
+            spanInt = new TensorSpan<int>(a, new Index(0), [2, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure can use only some of the array
+            spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
+                var x = spanInt[1, 1];
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(0), [1, 2], default);
+                var x = spanInt[1, 0];
+            });
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a, new Index(1), [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(92, spanInt[0, 0]);
+            Assert.Equal(-93, spanInt[0, 1]);
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a, new Index(2), [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+
+            // Make sure we catch that there aren't enough elements in the array for the lengths
+            Assert.Throws<ArgumentException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(3), [1, 2], default);
+            });
+
+            // Make sure 2D array works with basic strides
+            spanInt = new TensorSpan<int>(a, new Index(0), [2, 2], [2, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+            spanInt = new TensorSpan<int>(a, new Index(0), [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(91, spanInt[1, 0]);
+            Assert.Equal(92, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
+            spanInt = new TensorSpan<int>(a, new Index(2), [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
+            spanInt = new TensorSpan<int>(a, new Index(3), [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure strides can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(3), [1, 2], [-1, 0]);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(3), [1, 2], [0, -1]);
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(3), [-1, 2], []);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, new Index(3), [1, -2], []);
+            });
+
+            // Make sure 2D array works with strides to hit element 0,0,2,2
+            spanInt = new TensorSpan<int>(a, 0, [2, 2], [2, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(91, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(-93, spanInt[1, 1]);
+
+            // Make sure you can't overlap elements using strides
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                var spanInt = new TensorSpan<int>(a, 0, [2, 2], [1, 1]);
+            });
+        }
+
+        [Fact]
+        public static void TensorSpanSpanConstructorTests()
+        {
+            // Make sure basic T[] constructor works
+            Span<int> a = [91, 92, -93, 94];
+            scoped TensorSpan<int> spanInt = new TensorSpan<int>(a);
+            Assert.Equal(1, spanInt.Rank);
+            Assert.Equal(4, spanInt.Lengths[0]);
+            Assert.Equal(91, spanInt[0]);
+            Assert.Equal(92, spanInt[1]);
+            Assert.Equal(-93, spanInt[2]);
+            Assert.Equal(94, spanInt[3]);
+
+            // Make sure empty span works
+            // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
+            Span<int> b = [];
+            spanInt = new TensorSpan<int>(b);
+            Assert.Equal(1, spanInt.Rank);
+            Assert.Equal(0, spanInt.Lengths[0]);
+            Assert.Equal(0, spanInt.FlattenedLength);
+            Assert.Equal(0, spanInt.Strides[0]);
+            // Make sure it still throws on index 0
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                Span<int> b = [];
+                var spanInt = new TensorSpan<int>(b);
+                var x = spanInt[0];
+            });
+
+            // Make sure 2D array works
+            spanInt = new TensorSpan<int>(a, [2, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure can use only some of the array
+            spanInt = new TensorSpan<int>(a, [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [1, 2], default);
+                var x = spanInt[1, 1];
+            });
+
+            Assert.Throws<IndexOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [1, 2], default);
+                var x = spanInt[1, 0];
+            });
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a.Slice(1), [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(92, spanInt[0, 0]);
+            Assert.Equal(-93, spanInt[0, 1]);
+
+            // Make sure Index offset works correctly
+            spanInt = new TensorSpan<int>(a.Slice(2), [1, 2], default);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+
+            // Make sure we catch that there aren't enough elements in the array for the lengths
+            Assert.Throws<ArgumentException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a.Slice(3), [1, 2], default);
+            });
+
+            // Make sure 2D array works with basic strides
+            spanInt = new TensorSpan<int>(a, [2, 2], [2, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+            spanInt = new TensorSpan<int>(a, [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(92, spanInt[0, 1]);
+            Assert.Equal(91, spanInt[1, 0]);
+            Assert.Equal(92, spanInt[1, 1]);
+
+            // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
+            spanInt = new TensorSpan<int>(a.Slice(2), [2, 2], [0, 1]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(-93, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
+            spanInt = new TensorSpan<int>(a.Slice(3), [2, 2], [0, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(94, spanInt[0, 0]);
+            Assert.Equal(94, spanInt[0, 1]);
+            Assert.Equal(94, spanInt[1, 0]);
+            Assert.Equal(94, spanInt[1, 1]);
+
+            // Make sure strides can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [1, 2], [-1, 0]);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [1, 2], [0, -1]);
+            });
+
+            // Make sure lengths can't be negative
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [-1, 2], []);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [1, -2], []);
+            });
+
+            // Make sure 2D array works with strides to hit element 0,0,2,2
+            spanInt = new TensorSpan<int>(a, [2, 2], [2, 0]);
+            Assert.Equal(2, spanInt.Rank);
+            Assert.Equal(2, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(91, spanInt[0, 0]);
+            Assert.Equal(91, spanInt[0, 1]);
+            Assert.Equal(-93, spanInt[1, 0]);
+            Assert.Equal(-93, spanInt[1, 1]);
+
+            // Make sure you can't overlap elements using strides
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                Span<int> a = [91, 92, -93, 94];
+                var spanInt = new TensorSpan<int>(a, [2, 2], [1, 1]);
+            });
+        }
+
+        [Fact]
+        public static unsafe void TensorSpanPointerConstructorTests()
+        {
+            // Make sure basic T[] constructor works
+            Span<int> a = [91, 92, -93, 94];
+            TensorSpan<int> spanInt;
+            fixed (int* p = a)
+            {
+                spanInt = new TensorSpan<int>(p, 4);
+                Assert.Equal(1, spanInt.Rank);
+                Assert.Equal(4, spanInt.Lengths[0]);
+                Assert.Equal(91, spanInt[0]);
+                Assert.Equal(92, spanInt[1]);
+                Assert.Equal(-93, spanInt[2]);
+                Assert.Equal(94, spanInt[3]);
+            }
+
+            // Make sure empty span works
+            // Should be a Tensor with 0 elements but Rank 1 with dimension 0 length 0
+            Span<int> b = [];
+            fixed (int* p = b)
+            {
+                spanInt = new TensorSpan<int>(p, 0);
+                Assert.Equal(1, spanInt.Rank);
+                Assert.Equal(0, spanInt.Lengths[0]);
+                Assert.Equal(0, spanInt.FlattenedLength);
+                Assert.Equal(0, spanInt.Strides[0]);
+                // Make sure it still throws on index 0
+                Assert.Throws<IndexOutOfRangeException>(() =>
+                {
+                    Span<int> b = [];
+                    fixed (int* p = b)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 0);
+                        var x = spanInt[0];
+                    }
+                });
+            }
+
+            // Make sure 2D array works
+            fixed (int* p = a)
+            {
+                spanInt = new TensorSpan<int>(p, 4, [2, 2], default);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(91, spanInt[0, 0]);
+                Assert.Equal(92, spanInt[0, 1]);
+                Assert.Equal(-93, spanInt[1, 0]);
+                Assert.Equal(94, spanInt[1, 1]);
+
+                // Make sure can use only some of the array
+                spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(1, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(91, spanInt[0, 0]);
+                Assert.Equal(92, spanInt[0, 1]);
+                Assert.Throws<IndexOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
+                        var x = spanInt[1, 1];
+                    }
+                });
+
+                Assert.Throws<IndexOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [1, 2], default);
+                        var x = spanInt[1, 0];
+                    }
+                });
+
+                // Make sure Index offset works correctly
+                spanInt = new TensorSpan<int>(p + 1, 3, [1, 2], default);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(1, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(92, spanInt[0, 0]);
+                Assert.Equal(-93, spanInt[0, 1]);
+
+                // Make sure Index offset works correctly
+                spanInt = new TensorSpan<int>(p + 2, 2, [1, 2], default);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(1, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(-93, spanInt[0, 0]);
+                Assert.Equal(94, spanInt[0, 1]);
+
+                // Make sure we catch that there aren't enough elements in the array for the lengths
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p + 3, 1, [1, 2], default);
+                    }
+                });
+
+                // Make sure 2D array works with basic strides
+                spanInt = new TensorSpan<int>(p, 4, [2, 2], [2, 1]);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(91, spanInt[0, 0]);
+                Assert.Equal(92, spanInt[0, 1]);
+                Assert.Equal(-93, spanInt[1, 0]);
+                Assert.Equal(94, spanInt[1, 1]);
+
+                // Make sure 2D array works with stride of 0 to loop over first 2 elements again
+                spanInt = new TensorSpan<int>(p, 4, [2, 2], [0, 1]);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(91, spanInt[0, 0]);
+                Assert.Equal(92, spanInt[0, 1]);
+                Assert.Equal(91, spanInt[1, 0]);
+                Assert.Equal(92, spanInt[1, 1]);
+
+                // Make sure 2D array works with stride of 0 and initial offset to loop over last 2 elements again
+                spanInt = new TensorSpan<int>(p + 2, 2, [2, 2], [0, 1]);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(-93, spanInt[0, 0]);
+                Assert.Equal(94, spanInt[0, 1]);
+                Assert.Equal(-93, spanInt[1, 0]);
+                Assert.Equal(94, spanInt[1, 1]);
+
+                // Make sure 2D array works with strides of all 0 and initial offset to loop over last element again
+                spanInt = new TensorSpan<int>(p + 3, 1, [2, 2], [0, 0]);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(94, spanInt[0, 0]);
+                Assert.Equal(94, spanInt[0, 1]);
+                Assert.Equal(94, spanInt[1, 0]);
+                Assert.Equal(94, spanInt[1, 1]);
+
+                // Make sure strides can't be negative
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [1, 2], [-1, 0]);
+                    }
+                });
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [1, 2], [0, -1]);
+                    }
+                });
+
+                // Make sure lengths can't be negative
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [-1, 2], []);
+                    }
+                });
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [1, -2], []);
+                    }
+                });
+
+                // Make sure can't use negative data length amount
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, -1, [1, -2], []);
+                    }
+                });
+
+                // Make sure 2D array works with strides to hit element 0,0,2,2
+                spanInt = new TensorSpan<int>(p, 4, [2, 2], [2, 0]);
+                Assert.Equal(2, spanInt.Rank);
+                Assert.Equal(2, spanInt.Lengths[0]);
+                Assert.Equal(2, spanInt.Lengths[1]);
+                Assert.Equal(91, spanInt[0, 0]);
+                Assert.Equal(91, spanInt[0, 1]);
+                Assert.Equal(-93, spanInt[1, 0]);
+                Assert.Equal(-93, spanInt[1, 1]);
+
+                // Make sure you can't overlap elements using strides
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    Span<int> a = [91, 92, -93, 94];
+                    fixed (int* p = a)
+                    {
+                        var spanInt = new TensorSpan<int>(p, 4, [2, 2], [1, 1]);
+                    }
+                });
+            }
+        }
+
+        [Fact]
+        public static void TensorSpanLargeDimensionsTests()
+        {
+            int[] a = { 91, 92, -93, 94, 95, -96 };
+            int[] results = new int[6];
+            TensorSpan<int> spanInt = a.AsTensorSpan(1, 1, 1, 1, 1, 6);
+            Assert.Equal(6, spanInt.Rank);
+
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(1, spanInt.Lengths[1]);
+            Assert.Equal(1, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(6, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(6, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(6, spanInt.Strides[2]);
+            Assert.Equal(6, spanInt.Strides[3]);
+            Assert.Equal(6, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 0, 0, 0, 3]);
+            Assert.Equal(95, spanInt[0, 0, 0, 0, 0, 4]);
+            Assert.Equal(-96, spanInt[0, 0, 0, 0, 0, 5]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
+
+            a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
+            results = new int[12];
+            spanInt = a.AsTensorSpan(1, 2, 2, 1, 1, 3);
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(2, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(3, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(12, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(3, spanInt.Strides[2]);
+            Assert.Equal(3, spanInt.Strides[3]);
+            Assert.Equal(3, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 1, 0, 0, 0]);
+            Assert.Equal(95, spanInt[0, 0, 1, 0, 0, 1]);
+            Assert.Equal(-96, spanInt[0, 0, 1, 0, 0, 2]);
+            Assert.Equal(-91, spanInt[0, 1, 0, 0, 0, 0]);
+            Assert.Equal(-92, spanInt[0, 1, 0, 0, 0, 1]);
+            Assert.Equal(93, spanInt[0, 1, 0, 0, 0, 2]);
+            Assert.Equal(-94, spanInt[0, 1, 1, 0, 0, 0]);
+            Assert.Equal(-95, spanInt[0, 1, 1, 0, 0, 1]);
+            Assert.Equal(96, spanInt[0, 1, 1, 0, 0, 2]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
         }
 
         [Fact]

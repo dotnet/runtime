@@ -112,9 +112,10 @@ namespace ObjectStackAllocation
                 Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
-            else if (!SPCOptimizationsEnabled() && !Crossgen2Test()) {
-                Console.WriteLine("System.Private.CoreLib.dll optimizations are disabled");
-                expectedAllocationKind = AllocationKind.Heap;
+
+            if (expectedAllocationKind == AllocationKind.Stack)
+            {
+                ZeroAllocTest();
             }
 
             classA = new SimpleClassA(f1, f2);
@@ -152,6 +153,9 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);
 
+            // Stack allocation of boxed structs is now enabled
+            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
+
             // The remaining tests currently never allocate on the stack
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
@@ -163,30 +167,12 @@ namespace ObjectStackAllocation
             // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
-            // Stack allocation of boxed structs is currently disabled
-            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
-
             return methodResult;
-        }
-
-        static bool SPCOptimizationsEnabled()
-        {
-            Assembly objectAssembly = Assembly.GetAssembly(typeof(object));
-            object[] attribs = objectAssembly.GetCustomAttributes(typeof(DebuggableAttribute),
-                                                        false);
-            DebuggableAttribute debuggableAttribute = attribs[0] as DebuggableAttribute;
-            return ((debuggableAttribute == null) || !debuggableAttribute.IsJITOptimizerDisabled);
         }
 
         static bool GCStressEnabled()
         {
             return Environment.GetEnvironmentVariable("DOTNET_GCStress") != null;
-        }
-
-        static bool Crossgen2Test()
-        {
-            // CrossGen2 doesn't respect the debuggable attribute
-            return Environment.GetEnvironmentVariable("RunCrossGen2") != null;
         }
 
         static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)
@@ -352,5 +338,66 @@ namespace ObjectStackAllocation
             GC.Collect();
             return c.i;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ZeroAllocTest()
+        {
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            Case1();
+            EnsureZeroAllocated(before);
+            Case2();
+            EnsureZeroAllocated(before);
+            Case3(null);
+            EnsureZeroAllocated(before);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void EnsureZeroAllocated(long before)
+        {
+            long after = GC.GetAllocatedBytesForCurrentThread();
+            if (after - before != 0)
+                throw new InvalidOperationException($"Unexpected allocation: {after - before} bytes");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long Case1()
+        {
+            // Explicit object allocation, but the object
+            // never escapes the method.
+            MyRecord obj = new MyRecord(1, 2, default);
+            return obj.A + obj.B;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Case2()
+        {
+            // Box it
+            object o = new Guid();
+            Consume(42);
+            // Unbox it (multi-use)
+            Consume((Guid)o);
+            Consume((Guid)o);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Case3(object? o)
+        {
+            // A condition to make it more complicated
+            // (and trigger CORINFO_HELP_UNBOX_TYPETEST)
+            if (o == null)
+            {
+                // Box it
+                o = new Guid();
+            }
+            // Unbox it
+            Consume((Guid)o);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Consume<T>(T _)
+        {
+        }
+
+        private record class MyRecord(int A, long B, Guid C);
     }
 }

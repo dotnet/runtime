@@ -4,5 +4,6 @@
 
   <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 </Project>

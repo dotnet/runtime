@@ -28,11 +28,17 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "", "", "", "", "", "", "" } };
         }
 
+        public static IEnumerable<object[]> MonthNames_Get_TestData_ICU()
+        {
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" } };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre", "" } };
+        }
+
         public static IEnumerable<object[]> MonthNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
-            if (PlatformDetection.IsFirefox)
+            if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
             {
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "ጃንዩወሪ", "ፌብሩወሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", "" } };
             }
@@ -225,6 +231,13 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } }; // "一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月", ""
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(MonthNames_Get_TestData_ICU))]
+        public void MonthNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected)
+        {
+            Assert.Equal(expected, format.MonthNames);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

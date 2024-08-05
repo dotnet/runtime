@@ -34,7 +34,7 @@ namespace BinderTracing
 
         struct BindRequest
         {
-            AssemblySpec *AssemblySpec;
+            AssemblySpec *AssemblySpecPtr;
             SString AssemblyName;
             SString AssemblyPath;
             SString RequestingAssembly;

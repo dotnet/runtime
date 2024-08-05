@@ -340,7 +340,7 @@ namespace TestLibrary
             public const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
             /// <summary>
-            /// https://docs.microsoft.com/en-us/windows/desktop/api/sysinfoapi/nf-sysinfoapi-getproductinfo
+            /// https://learn.microsoft.com/windows/desktop/api/sysinfoapi/nf-sysinfoapi-getproductinfo
             /// </summary>
             [DllImport(nameof(Kernel32), SetLastError = false)]
             public static extern bool GetProductInfo(

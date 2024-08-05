@@ -389,30 +389,12 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
         Begin();
         break;
 
-    case FILE_LOAD_FIND_NATIVE_IMAGE:
-        break;
-
-    case FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES:
-        break;
-
     case FILE_LOAD_ALLOCATE:
         Allocate();
         break;
 
-    case FILE_LOAD_ADD_DEPENDENCIES:
-        AddDependencies();
-        break;
-
-    case FILE_LOAD_PRE_LOADLIBRARY:
-        PreLoadLibrary();
-        break;
-
-    case FILE_LOAD_LOADLIBRARY:
-        LoadLibrary();
-        break;
-
-    case FILE_LOAD_POST_LOADLIBRARY:
-        PostLoadLibrary();
+    case FILE_LOAD_POST_ALLOCATE:
+        PostAllocate();
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
@@ -453,29 +435,7 @@ BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainAssembly::PreLoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-} // DomainAssembly::PreLoadLibrary
-
-void DomainAssembly::LoadLibrary()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-}
-
-void DomainAssembly::PostLoadLibrary()
+void DomainAssembly::PostAllocate()
 {
     CONTRACTL
     {
@@ -509,11 +469,6 @@ void DomainAssembly::PostLoadLibrary()
     }
 
 #endif
-}
-
-void DomainAssembly::AddDependencies()
-{
-    STANDARD_VM_CONTRACT;
 }
 
 void DomainAssembly::EagerFixups()
@@ -550,10 +505,6 @@ void DomainAssembly::FinishLoad()
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
-
-    // Set a bit to indicate that the module has been loaded in some domain, and therefore
-    // typeloads can involve types from this module. (Used for candidate instantiations.)
-    GetModule()->SetIsReadyForTypeLoad();
 }
 
 void DomainAssembly::Activate()
@@ -748,18 +699,16 @@ void DomainAssembly::Allocate()
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(m_pAssembly == NULL);
     }
     CONTRACTL_END;
 
     AllocMemTracker   amTracker;
     AllocMemTracker * pamTracker = &amTracker;
 
-    Assembly * pAssembly = m_pAssembly;
-
-    if (pAssembly==NULL)
+    Assembly * pAssembly;
     {
-        //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
-        //! the Assembly holder must destruct before the AllocMemTracker declared above.
+        // Order is important here - in the case of an exception, the Assembly holder must destruct before the AllocMemTracker declared above.
         NewHolder<Assembly> assemblyHolder(NULL);
 
         assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
@@ -770,6 +719,9 @@ void DomainAssembly::Allocate()
     }
 
     SetAssembly(pAssembly);
+
+    // Creating the Assembly should have ensured the PEAssembly is loaded
+    _ASSERT(GetPEAssembly()->IsLoaded());
 }
 
 void DomainAssembly::DeliverAsyncEvents()
@@ -818,42 +770,6 @@ void DomainAssembly::DeliverSyncEvents()
     }
 #endif // DEBUGGING_SUPPORTED
 }
-
-/*
-  // The enum for dwLocation from managed code:
-    public enum ResourceLocation
-    {
-        Embedded = 1,
-        ContainedInAnotherAssembly = 2,
-        ContainedInManifestFile = 4
-    }
-*/
-
-BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                                 PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                                 LPCSTR *szFileName, DWORD *dwLocation,
-                                 BOOL fSkipRaiseResolveEvent)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    return GetPEAssembly()->GetResource( szName,
-                                   cbResource,
-                                   pbInMemoryResource,
-                                   pAssemblyRef,
-                                   szFileName,
-                                   dwLocation,
-                                   fSkipRaiseResolveEvent,
-                                   this,
-                                   AppDomain::GetCurrentDomain() );
-}
-
 
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {

@@ -34,6 +34,8 @@ namespace Microsoft.Interop.JavaScript
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            var assemblyName = context.CompilationProvider.Select(static (c, _) => c.AssemblyName);
+
             // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(Constants.JSExportAttribute,
@@ -96,7 +98,8 @@ namespace Microsoft.Interop.JavaScript
                 .Collect();
 
             IncrementalValueProvider<string> registration = regSyntax
-                .Select(static (data, ct) => GenerateRegSource(data))
+                .Combine(assemblyName)
+                .Select(static (data, ct) => GenerateRegSource(data.Left, data.Right))
                 .Select(static (data, ct) => data.NormalizeWhitespace().ToFullString());
 
             IncrementalValueProvider<ImmutableArray<(string, string)>> generated = generateSingleStub
@@ -210,7 +213,7 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static NamespaceDeclarationSyntax GenerateRegSource(
-            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods)
+            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods, string assemblyName)
         {
             const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
             const string initializerClass = "__GeneratedInitializer";
@@ -270,8 +273,13 @@ namespace Microsoft.Interop.JavaScript
                                                                             IdentifierName("NonPublicMethods")))),
                                                                 Token(SyntaxKind.CommaToken),
                                                                 AttributeArgument(
-                                                                    TypeOfExpression(
-                                                                        IdentifierName(initializerClass)))})))}))))
+                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal($"{generatedNamespace}.{initializerClass}"))
+                                                                ),
+                                                                Token(SyntaxKind.CommaToken),
+                                                                AttributeArgument(
+                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(assemblyName))
+                                                                )
+                                                            })))}))))
                             .WithModifiers(TokenList(new[] {
                                 Token(SyntaxKind.StaticKeyword),
                                 Token(SyntaxKind.InternalKeyword)

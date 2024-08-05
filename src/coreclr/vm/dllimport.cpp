@@ -688,16 +688,6 @@ public:
             pcsDispatch->EmitCALL(METHOD__STUBHELPERS__SET_LAST_ERROR, 0, 0);
         }
 
-#if defined(TARGET_X86)
-        if (SF_IsForwardDelegateStub(m_dwStubFlags))
-        {
-            // the delegate may have an intercept stub attached to its sync block so we should
-            // prevent it from being garbage collected when the call is in progress
-            pcsDispatch->EmitLoadThis();
-            pcsDispatch->EmitCALL(METHOD__GC__KEEP_ALIVE, 1, 0);
-        }
-#endif // defined(TARGET_X86)
-
 #ifdef VERIFY_HEAP
         if (SF_IsForwardStub(m_dwStubFlags) && g_pConfig->InteropValidatePinnedObjects())
         {
@@ -1150,7 +1140,7 @@ public:
             NDIRECTSTUB_FL_FIELDGETTER              |
             NDIRECTSTUB_FL_FIELDSETTER              |
 #endif // FEATURE_COMINTEROP
-            NULL;
+            0;
 
         DWORD dwUnknownFlags = dwStubFlags & ~dwKnownMask;
         if (0 != dwUnknownFlags)
@@ -2272,15 +2262,7 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
 
-    if (SF_IsForwardStub(dwStubFlags))
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
-    else
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
 
     // In the unmanaged delegate case, we need the "this" object to retrieve the MD
     // in StubHelpers::ProfilerEnterCallback().
@@ -2444,7 +2426,7 @@ public:
 
         if (SF_IsCOMLateBoundStub(m_dwStubFlags) && pInfo->GetDispWrapperType() != 0)
         {
-            m_lateBoundFlags |= ComPlusCallInfo::kRequiresArgumentWrapping;
+            m_lateBoundFlags |= CLRToCOMCallInfo::kRequiresArgumentWrapping;
         }
     }
 
@@ -2482,14 +2464,14 @@ public:
         STANDARD_VM_CONTRACT;
 
         // set flags directly on the interop MD
-        _ASSERTE(pMD->IsComPlusCall());
+        _ASSERTE(pMD->IsCLRToCOMCall());
 
-        ((ComPlusCallMethodDesc *)pMD)->SetLateBoundFlags(m_lateBoundFlags);
+        ((CLRToCOMCallMethodDesc *)pMD)->SetLateBoundFlags(m_lateBoundFlags);
     }
 
 protected:
     DWORD        m_dwStubFlags;
-    BYTE         m_lateBoundFlags; // ComPlusCallMethodDesc::Flags
+    BYTE         m_lateBoundFlags; // CLRToCOMCallMethodDesc::Flags
 };
 
 #endif // FEATURE_COMINTEROP
@@ -2882,7 +2864,7 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
     if (!pGetLastError)
     {
         // No need to use a holder here, since no cleanup is necessary.
-        HMODULE hMod = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
+        HMODULE hMod = GetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
         if (hMod)
         {
             pGetLastError = (LPBYTE)GetProcAddress(hMod, "GetLastError");
@@ -3232,7 +3214,7 @@ BOOL NDirect::MarshalingRequired(
     if (pMD != NULL)
     {
         // HRESULT swapping is handled by stub
-        if (pMD->IsNDirect() || pMD->IsComPlusCall())
+        if (pMD->IsNDirect() || pMD->IsCLRToCOMCall())
         {
             if (!IsMiPreserveSig(pMD->GetImplAttrs()))
                 return TRUE;
@@ -3306,7 +3288,7 @@ BOOL NDirect::MarshalingRequired(
     // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
     bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
 #ifdef FEATURE_COMINTEROP
-    runtimeMarshallingEnabled |= pMD && pMD->IsComPlusCall();
+    runtimeMarshallingEnabled |= pMD && pMD->IsCLRToCOMCall();
 #endif
 
     for (ULONG i = 0; i < numArgs; i++)
@@ -3368,7 +3350,7 @@ BOOL NDirect::MarshalingRequired(
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
                 if (!runtimeMarshallingEnabled &&
                     !hndArgType.IsEnum() &&
-                    (hndArgType.GetMethodTable()->ContainsPointers()
+                    (hndArgType.GetMethodTable()->ContainsGCPointers()
                         || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
                     return TRUE;
@@ -3453,10 +3435,10 @@ BOOL NDirect::MarshalingRequired(
             ((NDirectMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize), callConv);
         }
 #ifdef FEATURE_COMINTEROP
-        else if (pMD->IsComPlusCall())
+        else if (pMD->IsCLRToCOMCall())
         {
             // calling convention is always stdcall
-            ((ComPlusCallMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize));
+            ((CLRToCOMCallMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize));
         }
 #endif // FEATURE_COMINTEROP
     }
@@ -4516,7 +4498,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             // interfaces forwarded to CustomMarshalers.dll such as IEnumerable::GetEnumerator)
             return E_FAIL;
         }
-        _ASSERTE(pTargetMD->IsComPlusCall());
+        _ASSERTE(pTargetMD->IsCLRToCOMCall());
 
         if (pTargetMD->IsInterface())
         {
@@ -5151,8 +5133,6 @@ namespace
             // copy the stack arg byte count from the stub MD to the target MD - this number is computed
             // during stub generation and is copied to all target MDs that share the stub
             // (we don't set it for varargs - the number is call site specific)
-            // also copy the "takes parameters with copy constructors" flag which is needed to generate
-            // appropriate intercept stub
 
             WORD cbStackArgSize = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
             if (pTargetMD->IsNDirect())
@@ -5166,7 +5146,7 @@ namespace
             {
                 if (SF_IsCOMStub(dwStubFlags))
                 {
-                    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pTargetMD);
+                    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
 
                     if (pComInfo != NULL)
                     {
@@ -5573,7 +5553,7 @@ namespace
             StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
             WCHAR wszEPName[50];
-            if (WszMultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            if (MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
             {
                 wszEPName[0] = W('?');
                 wszEPName[1] = W('\0');
@@ -5716,7 +5696,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
+        PRECONDITION(pMD->IsNDirect() || pMD->IsCLRToCOMCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
     CONTRACT_END;
 
@@ -5730,9 +5710,9 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     }
 #ifdef FEATURE_COMINTEROP
     else
-    if (pMD->IsComPlusCall())
+    if (pMD->IsCLRToCOMCall())
     {
-        pStub = ComPlusCall::GetStubForILStub(pMD, &pStubMD);
+        pStub = CLRToCOMCall::GetStubForILStub(pMD, &pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else
@@ -5783,8 +5763,8 @@ void CreateCLRToDispatchCOMStub(
     // COM event call information.
     if (SF_IsCOMEventCallStub(dwStubFlags))
     {
-        _ASSERTE(pMD->IsComPlusCall()); //  no generic COM eventing
-        ((ComPlusCallMethodDesc *)pMD)->InitComEventCallInfo();
+        _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
+        ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
     }
 
     // Get the call signature information
@@ -5817,8 +5797,8 @@ void CreateCLRToDispatchCOMStub(
                             pParamTokenArray,
                             iLCIDArg);
 
-    _ASSERTE(pMD->IsComPlusCall()); // no generic disp-calls
-    ((ComPlusCallMethodDesc *)pMD)->InitRetThunk();
+    _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
+    ((CLRToCOMCallMethodDesc *)pMD)->InitRetThunk();
 }
 
 

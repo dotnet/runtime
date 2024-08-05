@@ -11,7 +11,6 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../roll_forward_option.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fx_definition.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fx_reference.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../version_compatibility_range.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../runtime_config.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/info.cpp

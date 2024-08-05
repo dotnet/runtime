@@ -10,8 +10,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable CS8500 // Takes the address of a managed type
-
 namespace System.Buffers
 {
     /// <summary>Data structure used to optimize checks for whether a char is in a set of chars.</summary>
@@ -411,7 +409,7 @@ namespace System.Buffers
 
             if (searchSpaceLength > 32)
             {
-                Vector512<byte> charMap512 = Vector512.Create(charMap256, charMap256);
+                Vector512<byte> charMap512 = Vector512.Create(charMap256);
 
                 if (searchSpaceLength > 64)
                 {
@@ -499,8 +497,8 @@ namespace System.Buffers
             if (Avx2.IsSupported && searchSpaceLength >= 32)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
-                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);
+                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower);
+                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper);
 
                 ref char lastStartVectorAvx2 = ref Unsafe.Subtract(ref searchSpaceEnd, 32);
 
@@ -586,7 +584,7 @@ namespace System.Buffers
 
             if (searchSpaceLength > 32)
             {
-                Vector512<byte> charMap512 = Vector512.Create(charMap256, charMap256);
+                Vector512<byte> charMap512 = Vector512.Create(charMap256);
 
                 if (searchSpaceLength > 64)
                 {
@@ -676,8 +674,8 @@ namespace System.Buffers
             if (Avx2.IsSupported && searchSpaceLength >= 32)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
-                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);
+                Vector256<byte> charMapLower256 = Vector256.Create(charMapLower);
+                Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper);
 
                 ref char lastStartVectorAvx2 = ref Unsafe.Add(ref searchSpace, 32);
 

@@ -8,7 +8,7 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
-    <NoWarn>RS2008;RS1038;$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);RS2008;RS1038</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_COMINTERFACEGENERATOR</DefineConstants>
     <StringResourcesPath>../Common/Resources/Strings.resx</StringResourcesPath>

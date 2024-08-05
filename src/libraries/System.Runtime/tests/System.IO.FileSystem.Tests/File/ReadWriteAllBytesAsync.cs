@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -16,6 +17,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await File.WriteAllBytesAsync(null, new byte[0]));
+            await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await File.WriteAllBytesAsync(null, ReadOnlyMemory<byte>.Empty));
             await Assert.ThrowsAsync<ArgumentNullException>("bytes", async () => await File.WriteAllBytesAsync(path, null));
             await Assert.ThrowsAsync<ArgumentNullException>("path", async () => await File.ReadAllBytesAsync(null));
         }
@@ -24,6 +26,7 @@ namespace System.IO.Tests
         public async Task InvalidParametersAsync()
         {
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.WriteAllBytesAsync(string.Empty, new byte[0]));
+            await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.WriteAllBytesAsync(string.Empty, ReadOnlyMemory<byte>.Empty));
             await Assert.ThrowsAsync<ArgumentException>("path", async () => await File.ReadAllBytesAsync(string.Empty));
         }
 
@@ -39,6 +42,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             await File.WriteAllBytesAsync(path, new byte[0]);
+            await File.WriteAllBytesAsync(path, ReadOnlyMemory<byte>.Empty);
             Assert.True(File.Exists(path));
             Assert.Empty(await File.ReadAllTextAsync(path));
             File.Delete(path);
@@ -53,29 +57,41 @@ namespace System.IO.Tests
             byte[] buffer = Encoding.UTF8.GetBytes(new string('c', size));
             await File.WriteAllBytesAsync(path, buffer);
             Assert.Equal(buffer, await File.ReadAllBytesAsync(path));
+            await File.WriteAllBytesAsync(path, buffer.AsMemory());
+            Assert.Equal(buffer, await File.ReadAllBytesAsync(path));
             File.Delete(path);
         }
 
         [Fact]
-        public Task AlreadyCanceledAsync()
+        public async Task AlreadyCanceledAsync()
         {
             string path = GetTestFilePath();
             CancellationTokenSource source = new CancellationTokenSource();
             CancellationToken token = source.Token;
             source.Cancel();
             Assert.True(File.WriteAllBytesAsync(path, new byte[0], token).IsCanceled);
-            return Assert.ThrowsAsync<TaskCanceledException>(
-                async () => await File.WriteAllBytesAsync(path, new byte[0], token));
+            Assert.True(File.WriteAllBytesAsync(path, ReadOnlyMemory<byte>.Empty, token).IsCanceled);
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await File.WriteAllBytesAsync(path, new byte[0], token));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await File.WriteAllBytesAsync(path, ReadOnlyMemory<byte>.Empty, token));
         }
 
-        [Fact]
-        public async Task OverwriteAsync()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OverwriteAsync(bool useMemory)
         {
             string path = GetTestFilePath();
             byte[] bytes = Encoding.UTF8.GetBytes(new string('c', 100));
             byte[] overwriteBytes = Encoding.UTF8.GetBytes(new string('b', 50));
             await File.WriteAllBytesAsync(path, bytes);
-            await File.WriteAllBytesAsync(path, overwriteBytes);
+            if (useMemory)
+            {
+                await File.WriteAllBytesAsync(path, overwriteBytes);
+            }
+            else
+            {
+                await File.WriteAllBytesAsync(path, overwriteBytes);
+            }
             Assert.Equal(overwriteBytes, await File.ReadAllBytesAsync(path));
         }
 
@@ -87,6 +103,7 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 await Assert.ThrowsAsync<IOException>(async () => await File.WriteAllBytesAsync(path, bytes));
+                await Assert.ThrowsAsync<IOException>(async () => await File.WriteAllBytesAsync(path, bytes.AsMemory()));
                 await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
             }
         }
@@ -107,10 +124,14 @@ namespace System.IO.Tests
                 if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     await File.WriteAllBytesAsync(path, "text"u8.ToArray());
-                    Assert.Equal("text"u8.ToArray(), await File.ReadAllBytesAsync(path));
+                    await File.WriteAllBytesAsync(path, "text"u8.ToArray().AsMemory());
+                    Assert.Equal("texttext"u8.ToArray(), await File.ReadAllBytesAsync(path));
                 }
                 else
+                {
                     await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, "text"u8.ToArray()));
+                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, "text"u8.ToArray().AsMemory()));
+                }
             }
             finally
             {

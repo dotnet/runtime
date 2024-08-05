@@ -8,6 +8,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+// This type is used by FtpWebRequest (already obsolete) and SmtpClient (discouraged).
+
 namespace System.Net
 {
     internal sealed class TlsStream : NetworkStream

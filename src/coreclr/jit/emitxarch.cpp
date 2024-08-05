@@ -5620,7 +5620,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 //     varNum         - the variable on the stack to use as a base;
 //     offset         - the offset from the varNum;
 //     dataReg        - the src reg with SIMD12 value;
-//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//     tmpRegProvider - a tree to grab a tmp reg from if needed (can be null).
 //
 void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
@@ -5635,7 +5635,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
     }
-    else
+    else if (tmpRegProvider != nullptr)
     {
         regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         assert(isFloatReg(tmpReg));
@@ -5645,6 +5645,19 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
 
         // Store upper 4 bytes
         emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
+    else
+    {
+        // We don't have temp regs - let's do two shuffles then
+
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
+
+        //  Store upper 4 bytes
+        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
     }
 }
 #endif // FEATURE_SIMD
@@ -7451,6 +7464,9 @@ void emitter::emitIns_R_C(
         else
 #endif // TARGET_X86
         {
+            SetEvexBroadcastIfNeeded(id, instOptions);
+            SetEvexEmbMaskIfNeeded(id, instOptions);
+
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
 
@@ -7464,9 +7480,6 @@ void emitter::emitIns_R_C(
             sz += 2; // Needs SIB byte as well.
         }
     }
-
-    SetEvexBroadcastIfNeeded(id, instOptions);
-    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     id->idCodeSize(sz);
 
@@ -9282,8 +9295,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
         return;
     }
 
-    instrDesc*     id = emitNewInstr(attr);
-    UNATIVE_OFFSET sz;
+    instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -9292,7 +9304,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -19665,6 +19677,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpermt2pd:
         case INS_vpermt2ps:
         case INS_vpermt2q:
+        case INS_vpmultishiftqb:
         case INS_vshuff32x4:
         case INS_vshuff64x2:
         case INS_vshufi32x4:
@@ -20056,6 +20069,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_serialize:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_50C;
+            result.insLatency    = PERFSCORE_LATENCY_105C;
             break;
         }
 

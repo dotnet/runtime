@@ -296,6 +296,6 @@ namespace System.Globalization
             // Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
             CalendarId.GREGORIAN;
 
-        public override int[] Eras => new int[] { ChineseEra };
+        public override int[] Eras => [ChineseEra];
     }
 }

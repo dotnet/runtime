@@ -23,6 +23,12 @@ namespace System.Collections.Generic
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             // If that happens, the compiler ensures we generate data structures to make the fallback work
             // when this method is compiled.
+
+            if (typeof(T) == typeof(string))
+            {
+                return Unsafe.As<EqualityComparer<T>>(new StringEqualityComparer());
+            }
+
             if (SupportsGenericIEquatableInterfaces)
             {
                 return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));

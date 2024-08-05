@@ -20,24 +20,13 @@
 #define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
+#include "minipal/cpufeatures.h"
 
-#if defined(TARGET_OSX) && defined(TARGET_AMD64)
+#ifdef TARGET_OSX
+
 #include <mach/mach.h>
-#include <sys/sysctl.h>
 
-bool IsProcessTranslated()
-{
-   int ret = 0;
-   size_t size = sizeof(ret);
-   if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) == -1)
-   {
-      return false;
-   }
-   return ret == 1;
-}
-#endif // TARGET_OSX && TARGET_AMD64
-
-#ifndef TARGET_OSX
+#else // TARGET_OSX
 
 #ifdef TARGET_64BIT
 static const off_t MaxDoubleMappedSize = 2048ULL*1024*1024*1024;
@@ -49,6 +38,12 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
+    if (minipal_detect_rosetta())
+    {
+        // Rosetta doesn't support double mapping correctly
+        return false;
+    }
+
 #ifndef TARGET_OSX
 
 #ifdef TARGET_FREEBSD
@@ -77,14 +72,6 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     *pMaxExecutableCodeSize = MaxDoubleMappedSize;
     *pHandle = (void*)(size_t)fd;
 #else // !TARGET_OSX
-
-#ifdef TARGET_AMD64
-    if (IsProcessTranslated())
-    {
-        // Rosetta doesn't support double mapping correctly
-        return false;
-    }
-#endif // TARGET_AMD64
 
     *pMaxExecutableCodeSize = SIZE_MAX;
     *pHandle = NULL;

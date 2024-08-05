@@ -12,7 +12,7 @@ import { postCancelThreads, terminateAllThreads } from "./pthreads";
 import { call_entry_point } from "./managed-exports";
 
 /**
- * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ * Possible signatures are described here  https://learn.microsoft.com/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
 export async function mono_run_main_and_exit (main_assembly_name?: string, args?: string[]): Promise<number> {
     try {
@@ -33,7 +33,7 @@ export async function mono_run_main_and_exit (main_assembly_name?: string, args?
 }
 
 /**
- * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ * Possible signatures are described here  https://learn.microsoft.com/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
 export async function mono_run_main (main_assembly_name?: string, args?: string[]): Promise<number> {
     if (main_assembly_name === undefined || main_assembly_name === null || main_assembly_name === "") {

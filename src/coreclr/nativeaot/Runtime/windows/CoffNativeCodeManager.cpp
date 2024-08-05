@@ -152,7 +152,7 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     PTR_uint32_t xdata = dac_cast<PTR_uint32_t>(pRuntimeFunction->UnwindData + moduleBase);
     int size = 4;
 
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 
@@ -790,6 +790,10 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
+        if (pRegisterSet->SSP)
+        {
+            pRegisterSet->SSP += 8;
+        }
     }
 #elif defined(TARGET_ARM64)
     if (!(flags & USFF_GcUnwind))

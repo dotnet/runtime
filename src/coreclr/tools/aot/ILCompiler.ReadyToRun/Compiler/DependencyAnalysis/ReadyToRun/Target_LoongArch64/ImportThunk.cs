@@ -23,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case Kind.DelayLoadHelper:
                 case Kind.VirtualStubDispatch:
+                {
                     // T8 contains indirection cell
                     // Do nothing T8=R20 contains our first param
 
@@ -35,26 +36,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     // get pc
                     // pcaddi T1=R13, 0
-                    instructionEncoder.EmitPC(Register.R13);
+                    instructionEncoder.EmitPCADDI(Register.R13);
 
+                    int offset = _helperCell.RepresentsIndirectionCell ? 0x24 : 0x14;
                     // load Module* -> T1
-                    instructionEncoder.EmitLD(Register.R13, Register.R13, 0x24);
+                    instructionEncoder.EmitLD(Register.R13, Register.R13, offset);
 
                     // ld_d R13, R13, 0
                     instructionEncoder.EmitLD(Register.R13, Register.R13, 0);
                     break;
+                }
 
                 case Kind.Lazy:
+                {
                     // get pc
                     // pcaddi R5, 0
-                    instructionEncoder.EmitPC(Register.R5);
+                    instructionEncoder.EmitPCADDI(Register.R5);
 
+                    int offset = _helperCell.RepresentsIndirectionCell ? 0x24 : 0x14;
                     // load Module* -> R5=A1
-                    instructionEncoder.EmitLD(Register.R5, Register.R5, 0x24);
+                    instructionEncoder.EmitLD(Register.R5, Register.R5, offset);
 
                     // ld_d R5, R5, 0
                     instructionEncoder.EmitLD(Register.R5, Register.R5, 0);
                     break;
+                }
 
                 default:
                     throw new NotImplementedException();

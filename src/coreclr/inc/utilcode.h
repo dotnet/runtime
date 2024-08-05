@@ -166,6 +166,12 @@ typedef LPSTR   LPUTF8;
 #define DEBUGARG(x)
 #endif
 
+#if defined(FEATURE_READYTORUN)
+#define R2RARG(x)           , x
+#else
+#define R2RARG(x)
+#endif
+
 #ifndef sizeofmember
 // Returns the size of a class or struct member.
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
@@ -213,7 +219,7 @@ typedef LPSTR   LPUTF8;
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
     CQuickBytes __CQuickBytes##ptrname; \
     __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
+    DWORD __cBytes##ptrname = WideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
     if (__cBytes##ptrname == 0 && __l##ptrname != 0) { \
         MAKE_TRANSLATIONFAILED; \
     } \
@@ -230,14 +236,14 @@ typedef LPSTR   LPUTF8;
         ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
     } \
     if (ptrname) { \
-        INT32 __lresult##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
+        INT32 __lresult##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
         DWORD __dwCaptureLastError##ptrname = ::GetLastError(); \
         if ((__lresult##ptrname==0) && (((LPCWSTR)widestr)[0] != W('\0'))) { \
             if (__dwCaptureLastError##ptrname==ERROR_INSUFFICIENT_BUFFER) { \
-                INT32 __lsize##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
+                INT32 __lsize##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
                 ptrname = (LPSTR) __qb##ptrname .AllocNoThrow(__lsize##ptrname); \
                 if (ptrname) { \
-                    if (WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
+                    if (WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
                         ptrname[__l##ptrname] = 0; \
                     } else { \
                         ptrname = NULL; \
@@ -256,11 +262,11 @@ typedef LPSTR   LPUTF8;
     CQuickBytes __qb##ptrname; \
     int __l##ptrname; \
     LPWSTR ptrname = NULL; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
+    __l##ptrname = MultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
         if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
+            if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
                 ptrname[__l##ptrname] = 0; \
             } else { \
                 ptrname = NULL; \
@@ -3306,6 +3312,26 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
+//  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
+//*****************************************************************************
+INT64 GetLoongArch64PC12(UINT32 * pCode);
+
+//*****************************************************************************
+//  Extract the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+INT64 GetLoongArch64JIR(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative page address and page offset into pcalau12i+add/ld
+//*****************************************************************************
+void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
+//  Deposit the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
 // Returns whether the offset fits into bl instruction
 //*****************************************************************************
 inline bool FitsInThumb2BlRel24(INT32 imm24)
@@ -3425,16 +3451,6 @@ inline BOOL IsGCSpecialThread ()
     return !!(t_ThreadType & ThreadType_GC);
 }
 
-// check if current thread is a Gate thread
-inline BOOL IsGateSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Gate);
-}
-
 // check if current thread is a debugger helper thread
 inline BOOL IsDbgHelperSpecialThread ()
 {
@@ -3475,33 +3491,6 @@ inline BOOL IsShutdownSpecialThread ()
     return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
-inline BOOL IsThreadPoolIOCompletionSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
-}
-
-inline BOOL IsThreadPoolWorkerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
-}
-
-inline BOOL IsWaitSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Wait);
-}
-
 // check if current thread is a thread which is performing shutdown
 inline BOOL IsSuspendEEThread ()
 {
@@ -3519,15 +3508,6 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Finalizer);
-}
-
-inline BOOL IsShutdownHelperThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()

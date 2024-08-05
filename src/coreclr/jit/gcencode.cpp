@@ -4011,40 +4011,52 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 //
 // Encoder should be either GcInfoEncoder or GcInfoEncoderWithLogging
 //
-struct InterruptibleRangeReporter
+class InterruptibleRangeReporter
 {
-    unsigned prevStart;
-    Encoder* gcInfoEncoderWithLog;
+    unsigned m_uninterruptibleEnd;
+    Encoder* m_gcInfoEncoder;
 
-    InterruptibleRangeReporter(unsigned _prevStart, Encoder* _gcInfo)
-        : prevStart(_prevStart)
-        , gcInfoEncoderWithLog(_gcInfo)
+public:
+    InterruptibleRangeReporter(unsigned prologSize, Encoder* gcInfo)
+        : m_uninterruptibleEnd(prologSize)
+        , m_gcInfoEncoder(gcInfo)
     {
     }
 
-    // This callback is called for each insGroup marked with
-    // IGF_NOGCINTERRUPT (currently just prologs and epilogs).
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     // Report everything between the previous region and the current
     // region as interruptible.
 
-    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize)
+    bool operator()(
+        unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInPrologOrEpilog)
     {
-        if (igOffs < prevStart)
+        if (igOffs < m_uninterruptibleEnd)
         {
-            // We're still in the main method prolog, which has already
-            // had it's interruptible range reported.
+            // We're still in the main method prolog, which we know is not interruptible.
             assert(igFuncIdx == 0);
-            assert(igOffs + igSize <= prevStart);
+            assert(igOffs + igSize <= m_uninterruptibleEnd);
             return true;
         }
 
-        assert(igOffs >= prevStart);
-        if (igOffs > prevStart)
+        assert(igOffs >= m_uninterruptibleEnd);
+        if (igOffs > m_uninterruptibleEnd)
         {
-            gcInfoEncoderWithLog->DefineInterruptibleRange(prevStart, igOffs - prevStart);
+            // Once the first instruction in IG executes, we cannot have GC.
+            // But it is ok to have GC while the IP is on the first instruction, unless we are in prolog/epilog.
+            unsigned interruptibleEnd = igOffs;
+            if (!isInPrologOrEpilog)
+            {
+                interruptibleEnd += firstInstrSize;
+            }
+            m_gcInfoEncoder->DefineInterruptibleRange(m_uninterruptibleEnd, interruptibleEnd - m_uninterruptibleEnd);
         }
-        prevStart = igOffs + igSize;
+        m_uninterruptibleEnd = igOffs + igSize;
         return true;
+    }
+
+    unsigned UninterruptibleEnd()
+    {
+        return m_uninterruptibleEnd;
     }
 };
 
@@ -4053,9 +4065,14 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO: Decide on whether we should enable this optimization for all
+    // targets: https://github.com/dotnet/runtime/issues/103917
+#ifdef TARGET_XARCH
     const bool noTrackedGCSlots =
-        (compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-         !JitConfig.JitMinOptsTrackGCrefs());
+        compiler->opts.MinOpts() && !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+#else
+    const bool noTrackedGCSlots = false;
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4396,17 +4413,16 @@ void GCInfo::gcMakeRegPtrTable(
         {
             assert(prologSize <= codeSize);
 
-            // Now exempt any other region marked as IGF_NOGCINTERRUPT
-            // Currently just prologs and epilogs.
+            // Now exempt any region marked as IGF_NOGCINTERRUPT
 
             InterruptibleRangeReporter reporter(prologSize, gcInfoEncoderWithLog);
             compiler->GetEmitter()->emitGenNoGCLst(reporter);
-            prologSize = reporter.prevStart;
+            unsigned uninterruptibleEnd = reporter.UninterruptibleEnd();
 
             // Report any remainder
-            if (prologSize < codeSize)
+            if (uninterruptibleEnd < codeSize)
             {
-                gcInfoEncoderWithLog->DefineInterruptibleRange(prologSize, codeSize - prologSize);
+                gcInfoEncoderWithLog->DefineInterruptibleRange(uninterruptibleEnd, codeSize - uninterruptibleEnd);
             }
         }
     }
@@ -4471,8 +4487,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4558,9 +4574,11 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     // This is a true call site.
 
-                    regMaskSmall gcrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs);
+                    regMaskSmall gcrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs).GetIntRegSet();
 
-                    regMaskSmall byrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs);
+                    regMaskSmall byrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs).GetIntRegSet();
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4620,7 +4638,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestBit(regMask);
+        regMaskSmall tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.

@@ -1,13 +1,22 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
 	[ExpectedNoWarnings ()]
+	[Define ("IL_ASSEMBLY_AVAILABLE")]
+	[SetupCompileBefore ("EscapedTypeNames.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
+	[SetupCompileBefore ("RequireHelper.dll", new[] { "Dependencies/RequireHelper.cs" })]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested")]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested+Nes\\\\ted")]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested+Nes/ted")]
+	[RemovedTypeInAssembly ("RequireHelper", typeof (TypeDefinedInSameAssemblyAsGetType))]
 	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
 	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
@@ -25,8 +34,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestReference ();
 			TestArray ();
 			TestArrayOfArray ();
-			TestGenericArray ();
-			TestGenericArrayFullString ();
+			TestGenericInstantiation ();
+			TestGenericInstantiationFullString ();
+			TestGenericInstantiationOverCoreLib ();
 			TestMultiDimensionalArray ();
 			TestMultiDimensionalArrayFullString ();
 			TestMultiDimensionalArrayAsmName ();
@@ -47,8 +57,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			BaseTypeInterfaces.Test ();
 
-
 			TestInvalidTypeCombination ();
+			TestEscapedTypeName ();
+			AssemblyTypeResolutionBehavior.Test ();
 		}
 
 		[Kept]
@@ -86,30 +97,42 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		public class GenericArray<T> { }
+		public class GenericInstantiation<T> { }
 
 		[Kept]
 		public class GenericArgument { }
 
 		[Kept]
-		public static void TestGenericArray ()
+		public static void TestGenericInstantiation ()
 		{
-			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArray`1[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgument]]";
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiation`1[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgument]]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 
 		[Kept]
-		public class GenericArrayFullString<T> { }
+		public class GenericInstantiationFullString<T> { }
 
 		[Kept]
 		public class GenericArgumentFullString { }
 
 		[Kept]
-		public static void TestGenericArrayFullString ()
+		public static void TestGenericInstantiationFullString ()
 		{
-			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArrayFullString`1" +
-				"[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgumentFullString, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]," +
-				" test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiationFullString`1["
+					+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericArgumentFullString, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]"
+				+ "], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			var typeKept = Type.GetType (reflectionTypeKeptString, false);
+		}
+
+		[Kept]
+		public class GenericInstantiationOverCoreLib<T> { }
+
+		[Kept]
+		public static void TestGenericInstantiationOverCoreLib ()
+		{
+			// Note: the argument type should not be assembly-qualified for this test, which is checking that
+			// we can resolve non-assembly-qualified generic argument types from corelib.
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericInstantiationOverCoreLib`1[[System.String]], test";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 
@@ -414,9 +437,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestGenericTypeWithAnnotations ()
 		{
-			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_OuterType`1" +
-				"[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_InnerType, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]," +
-				" test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_OuterType`1["
+					+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_InnerType, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]"
+				+ "], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			Type.GetType (reflectionTypeKeptString);
 		}
 
@@ -464,6 +487,80 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				// This should throw at runtime, but should not warn nor fail the compilation
 				Console.WriteLine (Type.GetType ("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime"));
 			} catch (Exception e) { }
+		}
+
+		[Kept]
+		static void TestEscapedTypeName ()
+		{
+			var typeKept = Type.GetType ("Library.Not\\+Nested, EscapedTypeNames");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, EscapedTypeNames");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, EscapedTypeNames");
+		}
+
+		[Kept]
+		class AssemblyTypeResolutionBehavior
+		{
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeInSameAssemblyAsGetType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.Dependencies.TypeDefinedInSameAssemblyAsGetType");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeInSameAssemblyAsCallToRequireType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+TypeDefinedInSameAssemblyAsCallToRequireType");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedGenericArguments () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1[[System.Int32]], test");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedArrayType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementGenericArgumentType]"
+					+ "][], test");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedPointerType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementGenericArgumentType]"
+					+ "]*, test");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedByRefType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementGenericArgumentType]"
+					+ "]&, test");
+			}
+
+			[Kept]
+			public static void Test () {
+				TestRequireTypeInSameAssemblyAsGetType ();
+				TestRequireTypeInSameAssemblyAsCallToRequireType ();
+				TestRequireTypeWithNonAssemblyQualifiedGenericArguments ();
+				TestRequireTypeWithNonAssemblyQualifiedArrayType ();
+				TestRequireTypeWithNonAssemblyQualifiedPointerType ();
+				TestRequireTypeWithNonAssemblyQualifiedByRefType ();
+			}
+
+			class TypeDefinedInSameAssemblyAsCallToRequireType {}
+
+			class Generic<T> {}
+
+			class ArrayElementGenericArgumentType {}
+
+			class PointerElementGenericArgumentType {}
+
+			class ByRefElementGenericArgumentType {}
 		}
 	}
 }

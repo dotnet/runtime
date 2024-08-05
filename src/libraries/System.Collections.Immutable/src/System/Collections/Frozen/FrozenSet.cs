@@ -237,7 +237,7 @@ namespace System.Collections.Frozen
     [CollectionBuilder(typeof(FrozenSet), nameof(FrozenSet.Create))]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]
-    public abstract class FrozenSet<T> : ISet<T>,
+    public abstract partial class FrozenSet<T> : ISet<T>,
 #if NET
         IReadOnlySet<T>,
 #endif
@@ -328,6 +328,19 @@ namespace System.Collections.Frozen
         /// <param name="item">The value to lookup.</param>
         /// <returns>The index of the value, or -1 if not found.</returns>
         private protected abstract int FindItemIndex(T item);
+
+        /// <summary>Finds the index of a specific value in a set.</summary>
+        /// <param name="item">The value to lookup.</param>
+        /// <returns>The index of the value, or -1 if not found.</returns>
+        private protected virtual int FindItemIndex<TAlternate>(TAlternate item)
+#if NET9_0_OR_GREATER
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            where TAlternate : allows ref struct
+#endif
+            => -1;
 
         /// <summary>Returns an enumerator that iterates through the set.</summary>
         /// <returns>An enumerator that iterates through the set.</returns>

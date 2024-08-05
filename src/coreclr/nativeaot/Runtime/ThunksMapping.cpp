@@ -22,6 +22,8 @@
 #define THUNK_SIZE  20
 #elif TARGET_ARM64
 #define THUNK_SIZE  16
+#elif TARGET_LOONGARCH64
+#define THUNK_SIZE  16
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
@@ -231,6 +233,28 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD43E0000;
             pCurrentThunkAddress += 4;
+
+#elif TARGET_LOONGARCH64
+
+            //pcaddi    $t7, <delta PC to thunk data address>
+            //pcaddi    $t8, -
+            //ld.d      $t8, $t8, <delta to get to last qword in data page>
+            //jirl      $r0, $t8, 0
+
+            int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            *((uint32_t*)pCurrentThunkAddress) = 0x18000013 | (((delta & 0x3FFFFC) >> 2) << 5);
+            pCurrentThunkAddress += 4;
+
+            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            *((uint32_t*)pCurrentThunkAddress) = 0x18000014 | (((delta & 0x3FFFFC) >> 2) << 5);
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x28C00294;
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x4C000280;
+            pCurrentThunkAddress += 4;
+
 #else
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);

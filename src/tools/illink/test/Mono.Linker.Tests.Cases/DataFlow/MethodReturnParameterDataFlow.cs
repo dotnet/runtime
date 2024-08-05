@@ -220,15 +220,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequirePublicFields (t);
 			}
 
-			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestCtorReturnValue () {
 				var t = new UnsupportedType ();
 				RequirePublicFields (t);
 			}
 
+			class StringRefReturnValue
+			{
+				string f;
+
+				ref string GetRefString () => ref f;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				public static void Test ()
+				{
+					var instance = new StringRefReturnValue ();
+					ref var s = ref instance.GetRefString ();
+					RequirePublicFields (ref s);
+				}
+			}
+
 			public static void Test () {
 				TestMethodReturnValue ();
 				TestCtorReturnValue ();
+				StringRefReturnValue.Test ();
 			}
 		}
 

@@ -30,13 +30,11 @@
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
-    <!-- ILLink.Tasks is architecture independent, so TargetArch and TargetOS should not be specified -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"
-                      SetConfiguration="Configuration=$(ToolsConfiguration)"
-                      GlobalPropertiesToRemove="TargetArchitecture;TargetOS" >
+                      SetConfiguration="Configuration=$(ToolsConfiguration)">
         <!-- Keep TFMs in sync with ILLink.Tasks.csproj -->
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">TargetFramework=$(NetCoreAppToolCurrent)</SetTargetFramework>
         <SetTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">TargetFramework=$(NetFrameworkToolCurrent)</SetTargetFramework>

@@ -234,12 +234,9 @@ if(HOST_WIN32)
   # Dynamic lookup using ac_check_headers/ac_check_functions is extremly slow on Windows, espacially on msbuild.
   # Since majority of the checks above will fail on Windows host, we can just directly define the available static
   # API surface.
-  set(HAVE_ATEXIT 1)
   set(HAVE_GETADDRINFO 1)
   set(HAVE_GETPEERNAME 1)
   set(HAVE_GETHOSTBYNAME 1)
-  set(HAVE_SETJMP_H 1)
-  set(HAVE_SIGNAL_H 1)
   set(HAVE_STDINT_H 1)
   set(HAVE_STRTOK_R 1)
   set(HAVE_STRUCT_SOCKADDR_IN6 1)

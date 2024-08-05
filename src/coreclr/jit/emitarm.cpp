@@ -6867,9 +6867,9 @@ void emitter::emitDispRegmask(int imm, bool encodedPC_LR)
     }
     else
     {
-        hasPC = (imm & RBM_PC) != 0;
-        hasLR = (imm & RBM_LR) != 0;
-        imm &= ~(RBM_PC | RBM_LR);
+        hasPC = (imm & SRBM_PC) != 0;
+        hasLR = (imm & SRBM_LR) != 0;
+        imm &= ~(SRBM_PC | SRBM_LR);
     }
 
     regNumber reg = REG_R0;

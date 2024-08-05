@@ -267,7 +267,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [OuterLoop("This test is very slow.")]
+        [OuterLoop("This test is very slow.", ~TestPlatforms.Browser)]
         public void RecursiveDelete_DeepNesting()
         {
             // Create a 2000 level deep directory and recursively delete from the root.

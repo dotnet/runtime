@@ -14,17 +14,40 @@ namespace Microsoft.Interop
     /// <summary>
     /// Information about a Com interface, but not its methods.
     /// </summary>
-    internal sealed record ComInterfaceInfo(
-        ManagedTypeInfo Type,
-        string ThisInterfaceKey, // For associating interfaces to its base
-        string? BaseInterfaceKey, // For associating interfaces to its base
-        InterfaceDeclarationSyntax Declaration,
-        ContainingSyntaxContext TypeDefinitionContext,
-        ContainingSyntax ContainingSyntax,
-        Guid InterfaceId,
-        ComInterfaceOptions Options,
-        Location DiagnosticLocation)
+    internal sealed record ComInterfaceInfo
     {
+        public ManagedTypeInfo Type { get; init; }
+        public string ThisInterfaceKey { get; init; }
+        public string? BaseInterfaceKey { get; init; }
+        public InterfaceDeclarationSyntax Declaration { get; init; }
+        public ContainingSyntaxContext TypeDefinitionContext { get; init; }
+        public ContainingSyntax ContainingSyntax { get; init; }
+        public Guid InterfaceId { get; init; }
+        public ComInterfaceOptions Options { get; init; }
+        public Location DiagnosticLocation { get; init; }
+
+        private ComInterfaceInfo(
+            ManagedTypeInfo type,
+            string thisInterfaceKey,
+            string? baseInterfaceKey,
+            InterfaceDeclarationSyntax declaration,
+            ContainingSyntaxContext typeDefinitionContext,
+            ContainingSyntax containingSyntax,
+            Guid interfaceId,
+            ComInterfaceOptions options,
+            Location diagnosticLocation)
+        {
+            Type = type;
+            ThisInterfaceKey = thisInterfaceKey;
+            BaseInterfaceKey = baseInterfaceKey;
+            Declaration = declaration;
+            TypeDefinitionContext = typeDefinitionContext;
+            ContainingSyntax = containingSyntax;
+            InterfaceId = interfaceId;
+            Options = options;
+            DiagnosticLocation = diagnosticLocation;
+        }
+
         public static DiagnosticOrInterfaceInfo From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, StubEnvironment env, CancellationToken _)
         {
             if (env.Compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
@@ -179,7 +202,7 @@ namespace Microsoft.Interop
                 var baseAttr = GeneratedComInterfaceData.From(baseAttrInfo);
                 // The base type must specify at least the same wrappers as the derived type.
                 if ((attrInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper))
-                    || (attrInfo.Options.HasFlag(ComInterfaceOptions.ManagedObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper)))
+                    || (attrInfo.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper) && !baseAttr.Options.HasFlag(ComInterfaceOptions.ComObjectWrapper)))
                 {
                     optionsDiagnostic = DiagnosticInfo.Create(
                         GeneratorDiagnostics.InvalidOptionsOnInterface,

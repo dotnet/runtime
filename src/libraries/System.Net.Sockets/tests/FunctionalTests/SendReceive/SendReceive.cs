@@ -1187,9 +1187,9 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
+        public async Task BlockingRead_DoesntRequireAnotherThreadPoolThread()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 // Set the max number of worker threads to a low value.
                 ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
@@ -1232,7 +1232,7 @@ namespace System.Net.Sockets.Tests
                         pair.Item2.Dispose();
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

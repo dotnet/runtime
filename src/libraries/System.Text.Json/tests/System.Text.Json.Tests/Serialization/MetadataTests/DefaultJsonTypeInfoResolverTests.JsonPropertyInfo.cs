@@ -695,6 +695,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // The generic parameter of the property metadata type
             // should match that of property type and not the converter type.
+            Assert.Equal(typeof(MyClass), jpi.DeclaringType);
             Assert.Equal(typeof(string), jpi.GetType().GetGenericArguments()[0]); 
             Assert.Equal(typeof(string), jpi.PropertyType);
         }
