@@ -183,6 +183,7 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
     void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+    void     InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* lclVar);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

@@ -1523,6 +1523,58 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
     BlockRange().InsertAfter(arg, putArgOrBitcast);
 }
 
+void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* lclVar)
+{
+    assert(putArgStk != nullptr);
+    assert(lclVar != nullptr);
+
+    GenTree* dest;
+
+#if FEATURE_FIXED_OUT_ARGS
+    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL), comp->gtNewIconNode(putArgStk->getArgOffset()));
+#else
+    dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+#endif
+
+    GenTree* src = comp->gtNewLclAddrNode(lclVar->GetLclNum(), lclVar->GetLclOffs(), TYP_I_IMPL);
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* srcPlaceholder = comp->gtNewZeroConNode(genActualType(src));
+
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->GetSpecialCopyHelper(lclVar->GetLayout(comp)->GetClassHandle()), TYP_VOID);
+
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
+
+    comp->fgMorphArgs(call);
+
+    LIR::Range callRange      = LIR::SeqTree(comp, call);
+    GenTree*   callRangeStart = callRange.FirstNode();
+    GenTree*   callRangeEnd   = callRange.LastNode();
+
+    BlockRange().InsertAfter(putArgStk, std::move(callRange));
+    BlockRange().InsertAfter(putArgStk, dest);
+    BlockRange().InsertAfter(putArgStk, src);
+
+    LIR::Use destUse;
+    LIR::Use srcUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+    destUse.ReplaceWith(dest);
+    srcUse.ReplaceWith(src);
+    destPlaceholder->SetUnusedValue();
+    srcPlaceholder->SetUnusedValue();
+
+    LowerRange(callRangeStart, callRangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(srcPlaceholder);
+}
+
 //------------------------------------------------------------------------
 // NewPutArg: rewrites the tree to put an arg in a register or on the stack.
 //
@@ -1878,6 +1930,12 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         if (arg != putArg)
         {
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
+        }
+
+        if (putArg->OperIsPutArgStk()
+            && arg->OperIs(GT_LCL_VAR) && comp->lvaTable[arg->AsLclVar()->GetLclNum()].lvRequiresSpecialCopy)
+        {
+            InsertSpecialCopyArg(putArg->AsPutArgStk(), arg->AsLclVar());
         }
     }
 

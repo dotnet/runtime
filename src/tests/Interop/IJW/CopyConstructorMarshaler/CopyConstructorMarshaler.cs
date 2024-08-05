@@ -26,31 +26,32 @@ namespace CopyConstructorMarshaler
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("PInvokeNumCopies");
 
-                // On x86, we have an additional copy on every P/Invoke from the "native" parameter to the actual location on the stack.
+                // On x86, we will copy when we spill before the call and copy into the final arg slot.
                 int platformExtra = 0;
                 if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
                 {
-                    platformExtra = 1;
+                    platformExtra = 2;
                 }
     
-                // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
+                // PInvoke will copy once. Once from the managed to native parameter.
+                // On x86, we will copy when we spill before the call and copy into the final arg slot.
                 Assert.Equal(1 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopies");
 
-                // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
-                // and the third is from the reverse P/Invoke call.
+                // Reverse PInvoke will copy 2 times. One from the same path as the PInvoke,
+                // and one from the reverse P/Invoke call.
                 Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("PInvokeNumCopiesDerivedType");
 
-                // PInvoke will copy twice. Once from argument to parameter, and once from the managed to native parameter.
+                // PInvoke will copy once from the managed to native parameter.
                 Assert.Equal(1 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
                 testMethod = testType.GetMethod("ReversePInvokeNumCopiesDerivedType");
 
-                // Reverse PInvoke will copy 3 times. Two are from the same paths as the PInvoke,
-                // and the third is from the reverse P/Invoke call.
+                // Reverse PInvoke will copy 2 times. One from the same path as the PInvoke,
+                // and one from the reverse P/Invoke call.
                 Assert.Equal(2 + platformExtra, (int)testMethod.Invoke(testInstance, null));
             }
             catch (Exception ex)
