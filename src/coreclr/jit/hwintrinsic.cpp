@@ -1597,11 +1597,14 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
 #ifdef TARGET_ARM64
             switch (intrinsic)
             {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
                 case NI_AdvSimd_ShiftRightLogical:
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                case NI_AdvSimd_ShiftRightArithmetic:
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
                     *useFallback = true;
                     break;
-
-                    // TODO: Implement more AdvSimd fallbacks in Compiler::impNonConstFallback
 
                 default:
                     assert(*useFallback == false);
@@ -1633,7 +1636,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
                 }
             }
             else
-#endif // TARGET_XARCH
+#endif // TARGET_X86
             {
                 *useFallback = true;
                 return false;
