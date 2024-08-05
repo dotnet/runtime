@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,7 +21,7 @@ namespace System.Net.Sockets.Tests
         }
 
         private const int SmallTimeoutMicroseconds = 10 * 1000;
-        private const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
+        internal const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
 
         [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Theory]
@@ -79,6 +79,82 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Select_ReadError_Success(bool dispose)
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            if (dispose)
+            {
+                sender.Dispose();
+            }
+            else
+            {
+                sender.Send(new byte[] { 1 });
+            }
+
+            var readList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(readList, null, errorList, -1);
+            if (dispose)
+            {
+                 Assert.True(readList.Count == 1 || errorList.Count == 1);
+            }
+            else
+            {
+                Assert.Equal(1, readList.Count);
+                Assert.Equal(0, errorList.Count);
+            }
+        }
+
+        [Fact]
+        public void Select_WriteError_Success()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            var writeList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(null, writeList, errorList, -1);
+            Assert.Equal(1, writeList.Count);
+            Assert.Equal(0, errorList.Count);
+        }
+
+        [Fact]
+        public void Select_ReadWriteError_Success()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            sender.Send(new byte[] { 1 });
+            receiver.Poll(FailTimeoutMicroseconds, SelectMode.SelectRead);
+            var readList = new List<Socket> { receiver };
+            var writeList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(readList, writeList, errorList, -1);
+            Assert.Equal(1, readList.Count);
+            Assert.Equal(1, writeList.Count);
+            Assert.Equal(0, errorList.Count);
+        }
+
+        [Theory]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
         [InlineData(2, 2)]
@@ -109,7 +185,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_ReadError_NoneReady_ManySockets()
@@ -245,7 +320,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static KeyValuePair<Socket, Socket> CreateConnectedSockets()
+        internal static KeyValuePair<Socket, Socket> CreateConnectedSockets()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -341,6 +416,30 @@ namespace System.Net.Sockets.Tests
                     }
                 }
             }
+        }
+
+        [ConditionalFact]
+        public void Select_LargeNumber_Succcess()
+        {
+            const int MaxSockets = 1025;
+            KeyValuePair<Socket, Socket>[] socketPairs;
+            try
+            {
+                // we try to shoot for more socket than FD_SETSIZE (that is typically 1024)
+                socketPairs = Enumerable.Range(0, MaxSockets).Select(_ => SelectTest.CreateConnectedSockets()).ToArray();
+            }
+            catch
+            {
+                throw new SkipTestException("Unable to open large count number of socket");
+            }
+
+            var readList = new List<Socket>(socketPairs.Select(p => p.Key).ToArray());
+
+            // Try to write and read on last sockets
+            (Socket reader, Socket writer) =  socketPairs[MaxSockets - 1];
+            writer.Send(new byte[1]);
+            Socket.Select(readList, null, null, SelectTest.FailTimeoutMicroseconds);
+            Assert.Equal(1, readList.Count);
         }
     }
 }

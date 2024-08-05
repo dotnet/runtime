@@ -385,6 +385,7 @@ namespace System.Tests
             Assert.False(lazy.IsValueCreated);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_SimpleRefTypes()
         {
@@ -416,6 +417,7 @@ namespace System.Tests
             Assert.Equal(strTemplate, d);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_SimpleRefTypes_Invalid()
         {
@@ -428,6 +430,7 @@ namespace System.Tests
             Assert.Throws<MissingMemberException>(() => LazyInitializer.EnsureInitialized(ref ndc));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_ComplexRefTypes()
         {
@@ -484,6 +487,7 @@ namespace System.Tests
             Assert.Null(LazyInitializer.EnsureInitialized(ref e, ref einit, ref elock, () => { initCount++; return null; }));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_ComplexRefTypes_Invalid()
         {
@@ -494,6 +498,7 @@ namespace System.Tests
             Assert.Throws<MissingMemberException>(() => LazyInitializer.EnsureInitialized(ref ndc, ref ndcInit, ref ndcLock));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void LazyInitializerComplexValueTypes()
         {
@@ -548,6 +553,7 @@ namespace System.Tests
             VerifyLazy(lazyObject, 123, hasValue: true, isValueCreated: true);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_FuncInitializationWithoutTrackingBool_Uninitialized()
         {
@@ -559,6 +565,7 @@ namespace System.Tests
             Assert.NotNull(syncLock);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitialized_FuncInitializationWithoutTrackingBool_Initialized()
         {
@@ -570,6 +577,7 @@ namespace System.Tests
             Assert.Null(syncLock);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105251", TestPlatforms.tvOS)]
         [Fact]
         public static void EnsureInitializer_FuncInitializationWithoutTrackingBool_Null()
         {

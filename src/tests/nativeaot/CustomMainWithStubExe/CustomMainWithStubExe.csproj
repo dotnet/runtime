@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CustomNativeMain>true</CustomNativeMain>
+    <NativeLib>Shared</NativeLib>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+mkdir native 2>nul
+copy /y clang_rt.* native\
+copy /y CustomMainWithStubExeNative.exe native\CustomMainWithStubExe.exe
+]]></CLRTestBatchPreCommands>
+
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+mkdir -p native
+cp libclang_rt.* native/
+cp CustomMainWithStubExeNative native/CustomMainWithStubExe
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CustomMainWithStubExe.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

@@ -39,4 +39,7 @@ public enum DataType
     DynamicMetadata,
     Object,
     String,
+    MethodDesc,
+    MethodDescChunk,
+    Array,
 }

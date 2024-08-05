@@ -33,9 +33,18 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
+#if LLVM_API_VERSION < 1900
 #include "llvm-c/Transforms/InstCombine.h"
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm-c/Transforms/IPO.h"
+#else
+// llvm 19 doesn't have the old pass manager
+// it is only used in the LLVM/JIT
+// we don't support that anymore. it will need to be rewritten to use the new pass manager if we want to support it again
+#ifdef _MSC_VER
+#pragma message("llvm 19 doesn't have the old pass manager")
+#endif
+#endif
 
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
@@ -6478,7 +6487,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MOVE_I4_TO_F: {
-			values [ins->dreg] = LLVMBuildFPExt (builder, LLVMBuildBitCast (builder, lhs, LLVMFloatType (), ""), LLVMDoubleType (), "");
+			LLVMValueRef cast = convert (ctx, lhs, LLVMInt32Type ());
+			values [ins->dreg] = LLVMBuildFPExt (builder, LLVMBuildBitCast (builder, cast, LLVMFloatType (), ""), LLVMDoubleType (), "");
 			break;
 		}
 		case OP_MOVE_F_TO_I8: {
@@ -14169,11 +14179,13 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		mono_llvm_set_is_constant (module->sentinel_exception);
 	}
 
+#if LLVM_API_VERSION < 1900
 	module->func_pass_manager = LLVMCreateFunctionPassManagerForModule (module->lmodule);
 	if (module->func_pass_manager) {
 		LLVMAddCFGSimplificationPass (module->func_pass_manager);
 		LLVMAddInstructionCombiningPass (module->func_pass_manager);
 	}
+#endif
 }
 
 void

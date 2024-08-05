@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisGenericInstantiationPattern
+	internal readonly record struct TrimAnalysisGenericInstantiationPattern
 	{
 		public ISymbol GenericInstantiation { get; init; }
 		public IOperation Operation { get; init; }

@@ -388,7 +388,7 @@ namespace System.Runtime
                     return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArray;
 
                 default:
-                    Debug.Assert(false, "Unknown RuntimeHelperKind");
+                    Debug.Fail("Unknown RuntimeHelperKind");
                     return IntPtr.Zero;
             }
         }

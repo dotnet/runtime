@@ -11,32 +11,35 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyCtxCreate")]
-        internal static partial SafeEvpPKeyCtxHandle EvpPKeyCtxCreate(SafeEvpPKeyHandle pkey, SafeEvpPKeyHandle peerkey, out uint secretLength);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyDeriveSecretAgreement")]
         private static partial int EvpPKeyDeriveSecretAgreement(
+            SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
+            SafeEvpPKeyHandle peerKey,
             ref byte secret,
-            uint secretLength,
-            SafeEvpPKeyCtxHandle ctx);
+            uint secretLength);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyCtxDestroy")]
-        internal static partial void EvpPKeyCtxDestroy(IntPtr ctx);
-
-        internal static void EvpPKeyDeriveSecretAgreement(SafeEvpPKeyCtxHandle ctx, Span<byte> destination)
+        internal static int EvpPKeyDeriveSecretAgreement(SafeEvpPKeyHandle pkey, SafeEvpPKeyHandle peerKey, Span<byte> destination)
         {
-            Debug.Assert(ctx != null);
-            Debug.Assert(!ctx.IsInvalid);
+            Debug.Assert(pkey != null);
+            Debug.Assert(!pkey.IsInvalid);
+            Debug.Assert(peerKey != null);
+            Debug.Assert(!peerKey.IsInvalid);
 
-            int ret = EvpPKeyDeriveSecretAgreement(
+            int written = EvpPKeyDeriveSecretAgreement(
+                pkey,
+                pkey.ExtraHandle,
+                peerKey,
                 ref MemoryMarshal.GetReference(destination),
-                (uint)destination.Length,
-                ctx);
+                (uint)destination.Length);
 
-            if (ret != 1)
+            if (written <= 0)
             {
+                Debug.Assert(written == 0);
                 throw CreateOpenSslCryptographicException();
             }
+
+            return written;
         }
     }
 }

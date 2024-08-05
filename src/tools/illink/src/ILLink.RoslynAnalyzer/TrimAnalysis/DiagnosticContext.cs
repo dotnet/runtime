@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal readonly partial struct DiagnosticContext
+	public readonly partial struct DiagnosticContext
 	{
 		public List<Diagnostic> Diagnostics { get; } = new ();
 
@@ -26,14 +26,6 @@ namespace ILLink.Shared.TrimAnalysis
 		public Diagnostic CreateDiagnostic (DiagnosticId id, params string[] args)
 		{
 			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args);
-		}
-
-		public void AddDiagnostic (Diagnostic diagnostic)
-		{
-			if (Location == null)
-				return;
-
-			Diagnostics.Add (diagnostic);
 		}
 
 		public partial void AddDiagnostic (DiagnosticId id, params string[] args)

@@ -449,7 +449,7 @@ namespace System.Collections.Concurrent.Tests
         [Fact]
         public static void TryRemove_KeyValuePair_ArgumentValidation()
         {
-            AssertExtensions.Throws<ArgumentNullException>("item", () => new ConcurrentDictionary<string, int>().TryRemove(new KeyValuePair<string, int>(null, 42)));
+            AssertExtensions.Throws<ArgumentNullException>("item.Key", () => new ConcurrentDictionary<string, int>().TryRemove(new KeyValuePair<string, int>(null, 42)));
             new ConcurrentDictionary<int, int>().TryRemove(new KeyValuePair<int, int>(0, 0)); // no error when using default value type
             new ConcurrentDictionary<int?, int>().TryRemove(new KeyValuePair<int?, int>(0, 0)); // or nullable
         }

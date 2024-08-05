@@ -19,6 +19,9 @@
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
+    <XunitShowProgress>true</XunitShowProgress>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JSImportTest.cs" />

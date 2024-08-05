@@ -1341,7 +1341,11 @@ class StrengthReductionContext
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
-    BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
+    BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors, Statement** afterStmt);
+    BasicBlock* FindPostUseUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors,
+                                                BasicBlock*             backEdgeDominator,
+                                                Statement**             afterStmt);
+    bool        InsertionPointPostDominatesUses(BasicBlock* insertionPoint, ArrayStack<CursorInfo>* cursors);
 
     bool StressProfitability()
     {
@@ -1845,16 +1849,32 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 //
 bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec)
 {
-    int64_t offset;
-    Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
-    offset           = static_cast<target_ssize_t>(offset);
+    ValueNumPair addRecStartVNP = m_scevContext.MaterializeVN(addRec->Start);
+    if (!addRecStartVNP.BothDefined())
+    {
+        return false;
+    }
 
-    // We only support arrays and strings here. To strength reduce Span<T>
-    // accesses we need additional properies on the range designated by a
-    // Span<T> that we currently do not specify, or we need to prove that the
-    // byref we may form in the IV update would have been formed anyway by the
-    // loop.
-    if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
+    ValueNumPair   addRecStartBase    = addRecStartVNP;
+    target_ssize_t offsetLiberal      = 0;
+    target_ssize_t offsetConservative = 0;
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetLiberalAddr(), &offsetLiberal);
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetConservativeAddr(), &offsetConservative);
+
+    if (offsetLiberal != offsetConservative)
+    {
+        return false;
+    }
+
+    target_ssize_t offset = offsetLiberal;
+
+    // We only support objects here (targeting array/strings). To strength
+    // reduce Span<T> accesses we need additional properties on the range
+    // designated by a Span<T> that we currently do not specify, or we need to
+    // prove that the byref we may form in the IV update would have been formed
+    // anyway by the loop.
+    if ((m_comp->vnStore->TypeOfVN(addRecStartBase.GetConservative()) != TYP_REF) ||
+        (m_comp->vnStore->TypeOfVN(addRecStartBase.GetLiberal()) != TYP_REF))
     {
         return false;
     }
@@ -1888,22 +1908,14 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         return false;
     }
 
-    ScevLocal* local = (ScevLocal*)baseScev;
-
-    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
-    if (!vnp.BothDefined())
-    {
-        return false;
-    }
-
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(addRecStartBase.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
 
-    // We have a non-null array/string. Check that the 'start' offset looks
-    // fine. TODO: We could also use assertions on the length of the
+    // We have a non-null object as the base. Check that the 'start' offset
+    // looks fine. TODO: We could also use assertions on the length of the
     // array/string. E.g. if we know the length of the array is > 3, then we
     // can allow the add rec to have a later start. Maybe range check can be
     // used?
@@ -1914,7 +1926,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     // Now see if we have a bound that guarantees that we iterate fewer times
     // than the array/string's length.
-    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, vnp.GetLiberal());
+    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
     for (int i = 0; i < m_backEdgeBounds.Height(); i++)
     {
@@ -1992,7 +2004,8 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         return false;
     }
 
-    BasicBlock* insertionPoint = FindUpdateInsertionPoint(cursors);
+    Statement*  afterStmt;
+    BasicBlock* insertionPoint = FindUpdateInsertionPoint(cursors, &afterStmt);
     if (insertionPoint == nullptr)
     {
         JITDUMP("    Skipping: could not find a legal insertion point for the new IV update\n");
@@ -2024,7 +2037,14 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         m_comp->gtNewOperNode(GT_ADD, iv->Type, m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
     GenTree*   stepStore = m_comp->gtNewTempStore(newPrimaryIV, nextValue);
     Statement* stepStmt  = m_comp->fgNewStmtFromTree(stepStore);
-    m_comp->fgInsertStmtNearEnd(insertionPoint, stepStmt);
+    if (afterStmt != nullptr)
+    {
+        m_comp->fgInsertStmtAfter(insertionPoint, afterStmt, stepStmt);
+    }
+    else
+    {
+        m_comp->fgInsertStmtNearEnd(insertionPoint, stepStmt);
+    }
 
     JITDUMP("    Inserting step statement in " FMT_BB "\n", insertionPoint->bbNum);
     DISPSTMT(stepStmt);
@@ -2076,22 +2096,27 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
 // of a new primary IV introduced by strength reduction.
 //
 // Parameters:
-//   cursors - The list of cursors pointing to uses that are being replaced by
-//             the new IV
+//   cursors   - The list of cursors pointing to uses that are being replaced by
+//               the new IV
+//   afterStmt - [out] Statement to insert the update after. Set to nullptr if
+//               update should be inserted near the end of the block.
 //
 // Returns:
 //   Basic block; the insertion point is the end (before a potential
 //   terminator) of this basic block. May return null if no insertion point
 //   could be found.
 //
-BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors)
+BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors, Statement** afterStmt)
 {
+    *afterStmt = nullptr;
+
     // Find insertion point. It needs to post-dominate all uses we are going to
     // replace and it needs to dominate all backedges.
     // TODO-CQ: Canonicalizing backedges would make this simpler and work in
     // more cases.
 
     BasicBlock* insertionPoint = nullptr;
+
     for (FlowEdge* backEdge : m_loop->BackEdges())
     {
         if (insertionPoint == nullptr)
@@ -2104,6 +2129,18 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
         }
     }
 
+#ifdef TARGET_ARM64
+    // For arm64 we try to place the IV update after a use if possible. This
+    // sets the backend up for post-indexed addressing mode.
+    BasicBlock* postUseInsertionPoint = FindPostUseUpdateInsertionPoint(cursors, insertionPoint, afterStmt);
+    if (postUseInsertionPoint != nullptr)
+    {
+        JITDUMP("    Found a legal insertion point after a last use of the IV in " FMT_BB " after " FMT_STMT "\n",
+                postUseInsertionPoint->bbNum, (*afterStmt)->GetID());
+        return postUseInsertionPoint;
+    }
+#endif
+
     while ((insertionPoint != nullptr) && m_loop->ContainsBlock(insertionPoint) &&
            m_loop->MayExecuteBlockMultipleTimesPerIteration(insertionPoint))
     {
@@ -2115,6 +2152,124 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
         return nullptr;
     }
 
+    if (!InsertionPointPostDominatesUses(insertionPoint, cursors))
+    {
+        return nullptr;
+    }
+
+    JITDUMP("    Found a legal insertion point in " FMT_BB "\n", insertionPoint->bbNum);
+    return insertionPoint;
+}
+
+//------------------------------------------------------------------------
+// FindPostUseUpdateInsertionPoint: Try finding an insertion point for the IV
+// update that is right after one of the uses of it.
+//
+// Parameters:
+//   cursors           - The list of cursors pointing to uses that are being replaced by
+//                       the new IV
+//   backEdgeDominator - A basic block that dominates all backedges
+//   afterStmt         - [out] Statement to insert the update after, if the
+//                       return value is non-null.
+//
+// Returns:
+//   nullptr if no such insertion point could be found. Otherwise returns the
+//   basic block and statement after which the update can be inserted.
+//
+BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors,
+                                                                      BasicBlock*             backEdgeDominator,
+                                                                      Statement**             afterStmt)
+{
+    BitVecTraits poTraits = m_loop->GetDfsTree()->PostOrderTraits();
+
+#ifdef DEBUG
+    // We will be relying on the fact that the cursors are ordered in a useful
+    // way here: loop locals are visited in post order within each basic block,
+    // meaning that "cursors" has the last uses first for each basic block.
+    // Assert that here.
+
+    BitVec seenBlocks(BitVecOps::MakeEmpty(&poTraits));
+    for (int i = 1; i < cursors->Height(); i++)
+    {
+        CursorInfo& prevCursor = cursors->BottomRef(i - 1);
+        CursorInfo& cursor     = cursors->BottomRef(i);
+
+        if (cursor.Block != prevCursor.Block)
+        {
+            assert(BitVecOps::TryAddElemD(&poTraits, seenBlocks, prevCursor.Block->bbPostorderNum));
+            continue;
+        }
+
+        Statement* curStmt = cursor.Stmt;
+        while ((curStmt != nullptr) && (curStmt != prevCursor.Stmt))
+        {
+            curStmt = curStmt->GetNextStmt();
+        }
+
+        assert(curStmt == prevCursor.Stmt);
+    }
+#endif
+
+    BitVec blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+        BitVecOps::AddElemD(&poTraits, blocksWithUses, cursor.Block->bbPostorderNum);
+    }
+
+    while ((backEdgeDominator != nullptr) && m_loop->ContainsBlock(backEdgeDominator))
+    {
+        if (!BitVecOps::IsMember(&poTraits, blocksWithUses, backEdgeDominator->bbPostorderNum))
+        {
+            backEdgeDominator = backEdgeDominator->bbIDom;
+            continue;
+        }
+
+        if (m_loop->MayExecuteBlockMultipleTimesPerIteration(backEdgeDominator))
+        {
+            return nullptr;
+        }
+
+        for (int i = 0; i < cursors->Height(); i++)
+        {
+            CursorInfo& cursor = cursors->BottomRef(i);
+            if (cursor.Block != backEdgeDominator)
+            {
+                continue;
+            }
+
+            if (!InsertionPointPostDominatesUses(cursor.Block, cursors))
+            {
+                return nullptr;
+            }
+
+            *afterStmt = cursor.Stmt;
+            return cursor.Block;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// InsertionPointPostDominatesUses: Check if a basic block post-dominates all
+// locations specified by the cursors.
+//
+// Parameters:
+//   insertionPoint - The insertion point
+//   cursors        - Cursors specifying locations
+//
+// Returns:
+//   True if so.
+//
+// Remarks:
+//   For cursors inside "insertionPoint", the function expects that the
+//   insertion point is _after_ the use, except if the use is in a terminator
+//   statement.
+//
+bool StrengthReductionContext::InsertionPointPostDominatesUses(BasicBlock*             insertionPoint,
+                                                               ArrayStack<CursorInfo>* cursors)
+{
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
@@ -2123,19 +2278,19 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
         {
             if (insertionPoint->HasTerminator() && (cursor.Stmt == insertionPoint->lastStmt()))
             {
-                return nullptr;
+                return false;
             }
         }
         else
         {
             if (!m_loop->IsPostDominatedOnLoopIteration(cursor.Block, insertionPoint))
             {
-                return nullptr;
+                return false;
             }
         }
     }
 
-    return insertionPoint;
+    return true;
 }
 
 //------------------------------------------------------------------------

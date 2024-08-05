@@ -39,6 +39,12 @@ function set_env_vars()
         export USE_WEBCIL_FOR_TESTS=true
     fi
 
+    if [ "x$TEST_USING_FINGERPRINTING" = "xfalse" ]; then
+        export USE_FINGERPRINTING_FOR_TESTS=false
+    else
+        export USE_FINGERPRINTING_FOR_TESTS=true
+    fi
+
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         cp -r $BASE_DIR/$SDK_DIR_NAME $EXECUTION_DIR

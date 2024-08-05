@@ -25,8 +25,8 @@
 //
 // Put ranges first so we can override individual opcodes after
 //
-OPRANGE(MINT_BR, MINT_BR_S, BEGIN_BRANCH_BLOCK)
-OPRANGE(MINT_CALL_HANDLER, MINT_CALL_HANDLER_S, BEGIN_BRANCH_BLOCK)
+OP(MINT_BR, BEGIN_BRANCH_BLOCK)
+OP(MINT_CALL_HANDLER, BEGIN_BRANCH_BLOCK)
 OPRANGE(MINT_BRFALSE_I4, MINT_BLT_UN_I8_IMM_SP, BEGIN_BRANCH_BLOCK)
 
 OPRANGE(MINT_CALL, MINT_CALLI_NAT_FAST, ABORT_OUTSIDE_BRANCH_BLOCK_NONE)
@@ -85,7 +85,6 @@ OP(MINT_SDB_SEQ_POINT, NONE)
 // These are only generated inside catch clauses, so it's safe to assume that
 //  during normal execution they won't run, and compile them as a bailout.
 OP(MINT_LEAVE_CHECK, NONE)
-OP(MINT_LEAVE_S_CHECK, NONE)
 
 OP(MINT_CKNULL, NORMAL)
 OP(MINT_LDLOCA_S, NORMAL)

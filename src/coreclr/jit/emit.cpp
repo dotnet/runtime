@@ -10459,6 +10459,11 @@ void emitter::emitDisableGC()
     }
 }
 
+bool emitter::emitGCDisabled()
+{
+    return emitNoGCIG == true;
+}
+
 //------------------------------------------------------------------------
 // emitEnableGC(): Removes a request that the following instruction groups are not GC-interruptible.
 //

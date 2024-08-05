@@ -550,8 +550,8 @@ namespace System
                 // Wrong number of digits
                 return false;
             }
-            Debug.Assert(hourOffset >= 0 && hourOffset <= 99, "hourOffset >= 0 && hourOffset <= 99");
-            Debug.Assert(minuteOffset >= 0 && minuteOffset <= 99, "minuteOffset >= 0 && minuteOffset <= 99");
+            Debug.Assert(hourOffset >= 0 && hourOffset <= 99);
+            Debug.Assert(minuteOffset >= 0 && minuteOffset <= 99);
             if (minuteOffset < 0 || minuteOffset >= 60)
             {
                 return false;
@@ -2066,7 +2066,7 @@ namespace System
 
         private static bool GetTimeOfNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
-            Debug.Assert(raw.numCount >= 2, "raw.numCount >= 2");
+            Debug.Assert(raw.numCount >= 2);
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
                 // Multiple times in the input string
@@ -2088,7 +2088,7 @@ namespace System
                 result.SetBadDateTimeFailure();
                 return false;
             }
-            Debug.Assert(raw.numCount >= 3, "raw.numCount >= 3");
+            Debug.Assert(raw.numCount >= 3);
             result.Hour = raw.GetNumber(0);
             result.Minute = raw.GetNumber(1);
             result.Second = raw.GetNumber(2);
@@ -2806,7 +2806,7 @@ namespace System
                 else
                 {
                     // No time zone and no Assume flags, so DateTimeKind.Unspecified is fine
-                    Debug.Assert(result.parsedDate.Kind == DateTimeKind.Unspecified, "result.parsedDate.Kind == DateTimeKind.Unspecified");
+                    Debug.Assert(result.parsedDate.Kind == DateTimeKind.Unspecified);
                     return true;
                 }
             }
@@ -3142,9 +3142,9 @@ namespace System
 
         internal static bool ParseDigits(ref __DTString str, int minDigitLen, int maxDigitLen, out int result)
         {
-            Debug.Assert(minDigitLen > 0, "minDigitLen > 0");
-            Debug.Assert(maxDigitLen < 9, "maxDigitLen < 9");
-            Debug.Assert(minDigitLen <= maxDigitLen, "minDigitLen <= maxDigitLen");
+            Debug.Assert(minDigitLen > 0);
+            Debug.Assert(maxDigitLen < 9);
+            Debug.Assert(minDigitLen <= maxDigitLen);
             int localResult = 0;
             int startingIndex = str.Index;
             int tokenLength = 0;
@@ -5300,7 +5300,7 @@ namespace System
             }
 
             buffer.Append(',');
-            s = Hex(strs[strs.Length - 1]);
+            s = Hex(strs[^1]);
             if (s.Length > MaxLineLength || (curLineLength + s.Length + 6) > MaxLineLength)
             {
                 buffer.AppendLine();
@@ -5915,7 +5915,7 @@ namespace System
                         return sub;
                     }
                     int number = ch - '0';
-                    Debug.Assert(number >= 0 && number <= 9, "number >= 0 && number <= 9");
+                    Debug.Assert(number >= 0 && number <= 9);
                     sub.value = sub.value * 10 + number;
                 }
                 else
@@ -5937,7 +5937,7 @@ namespace System
 
         internal void ConsumeSubString(DTSubString sub)
         {
-            Debug.Assert(sub.index == Index, "sub.index == Index");
+            Debug.Assert(sub.index == Index);
             Debug.Assert(sub.index + sub.length <= Length, "sub.index + sub.length <= len");
             Index = sub.index + sub.length;
             if (Index < Length)

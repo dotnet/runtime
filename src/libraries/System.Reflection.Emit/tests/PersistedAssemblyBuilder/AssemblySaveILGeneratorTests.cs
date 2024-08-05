@@ -2740,5 +2740,22 @@ internal class Dummy
                 Assert.Equal(1, result);
             }
         }
+
+        [Fact]
+        public void ExplicitFieldOffsetSavesAndLoads()
+        {
+            PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyForExplicitLayout"), typeof(object).Assembly);
+            ModuleBuilder mob = ab.DefineDynamicModule("MyModule");
+            TypeBuilder tb = mob.DefineType("ExplicitLayoutType", TypeAttributes.ExplicitLayout);
+            FieldBuilder f1 = tb.DefineField("field1", typeof(int), 0);
+            f1.SetOffset(0);
+            tb.CreateType();
+
+            using var stream = new MemoryStream();
+            ab.Save(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+            var method = assembly.GetType("ExplicitLayoutType")!;
+        }
     }
 }
