@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.io.v0_2_0;
+using WasiPollWorld.wit.imports.wasi.io.v0_2_1;
 
 namespace System.Threading
 {
