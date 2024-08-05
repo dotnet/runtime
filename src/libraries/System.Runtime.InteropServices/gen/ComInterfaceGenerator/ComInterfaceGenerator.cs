@@ -85,7 +85,9 @@ namespace Microsoft.Interop
                     return ComMethodContext.CalculateAllMethods(data, ct);
                 })
                 // Now that we've determined method offsets, we can remove all externally defined methods.
-                .Where(context => !context.OwningInterface.IsExternallyDefined);
+                // We'll also filter out methods originally declared on externally defined base interfaces
+                // as we may not be able to emit them into our assembly.
+                .Where(context => !context.Method.OriginalDeclaringInterface.IsExternallyDefined);
 
             // Now that we've determined method offsets, we can remove all externally defined interfaces.
             var interfaceContextsToGenerate = interfaceContexts.Where(context => !context.IsExternallyDefined);

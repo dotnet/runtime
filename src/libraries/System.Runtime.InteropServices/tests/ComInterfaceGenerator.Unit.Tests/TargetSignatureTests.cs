@@ -355,7 +355,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
-                public partial interface IComInterface2
+                public partial interface IComInterface2 : IComInterface
                 {
                     void MiddleMethod();
                 }
@@ -386,8 +386,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface2").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
 
-        
-
         [Fact]
         public async Task ComInterfaceInheritingAcrossCompilationsChainInDerivedCalculatesCorrectVTableIndex()
         {
@@ -411,14 +409,14 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
-                public partial interface IComInterface2 : IComInterface
+                public partial interface {|#1:IComInterface2|} : IComInterface
                 {
                     void MiddleMethod();
                 }
 
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
-                partial interface {|#1:IComInterface3|} : IComInterface2
+                partial interface IComInterface3 : IComInterface2
                 {
                     void DerivedMethod();
                 }
