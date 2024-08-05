@@ -342,7 +342,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     }
     CONTRACTL_END
 
-    PREFIX_ASSUME(pAssembly != NULL);
+    PREFIX_ASSUME(m_pAssembly != NULL);
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
