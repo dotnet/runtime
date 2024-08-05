@@ -143,7 +143,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     {
                         throw new InvalidOperationException("no native code slot");
                     }
-                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasNativeCodeSlot);
+                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasMethodImpl);
                 }
             }
 
