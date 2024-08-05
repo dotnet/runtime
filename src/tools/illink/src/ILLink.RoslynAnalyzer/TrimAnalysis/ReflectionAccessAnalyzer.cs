@@ -85,20 +85,19 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (methodSymbol.IsInRequiresUnreferencedCodeAttributeScope (out var requiresUnreferencedCodeAttributeData)) {
 				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresUnreferencedCodeAttributeData, methodSymbol);
 			} else {
-				foreach (var diagnostic in GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, methodSymbol))
-					diagnosticContext.AddDiagnostic (diagnostic);
+				GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, methodSymbol);
 			}
 		}
 
-		internal static IEnumerable<Diagnostic> GetDiagnosticsForReflectionAccessToDAMOnMethod (DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
+		internal static void GetDiagnosticsForReflectionAccessToDAMOnMethod (DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
 		{
 			if (methodSymbol.IsVirtual && FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol) != DynamicallyAccessedMemberTypes.None) {
-				yield return diagnosticContext.CreateDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
+				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
 			} else {
 				foreach (var parameter in methodSymbol.GetParameters ()) {
 					if (FlowAnnotations.GetMethodParameterAnnotation (parameter) != DynamicallyAccessedMemberTypes.None) {
-						yield return diagnosticContext.CreateDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
-						yield break;
+						diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
+						break;
 					}
 				}
 			}

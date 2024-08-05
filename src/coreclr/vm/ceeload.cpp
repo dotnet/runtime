@@ -3469,21 +3469,26 @@ void Module::RunEagerFixups()
 
 #ifdef _DEBUG
     // Loading types during eager fixup is not a tested scenario. Make bugs out of any attempts to do so in a
-    // debug build. Use holder to recover properly in case of exception.
+    // debug build. Use holder to recover properly in case of exception. We make a narrow exception for
+    // System.Private.CoreLib so we can lazily load JIT helpers written in managed code.
     class ForbidTypeLoadHolder
     {
+        BOOL _isCoreLib;
     public:
-        ForbidTypeLoadHolder()
+        ForbidTypeLoadHolder(BOOL isCoreLib)
+            : _isCoreLib{ isCoreLib }
         {
-            BEGIN_FORBID_TYPELOAD();
+            if (!_isCoreLib)
+                BEGIN_FORBID_TYPELOAD();
         }
 
         ~ForbidTypeLoadHolder()
         {
-            END_FORBID_TYPELOAD();
+            if (!_isCoreLib)
+                END_FORBID_TYPELOAD();
         }
     }
-    forbidTypeLoad;
+    forbidTypeLoad{ GetPEAssembly()->GetHostAssembly()->GetAssemblyName()->IsCoreLib() };
 #endif
 
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
@@ -4425,11 +4430,6 @@ VOID Module::EnsureAllocated()
     GetDomainAssembly()->EnsureAllocated();
 }
 
-VOID Module::EnsureLibraryLoaded()
-{
-    STANDARD_VM_CONTRACT;
-    GetDomainAssembly()->EnsureLibraryLoaded();
-}
 #endif // !DACCESS_COMPILE
 
 CHECK Module::CheckActivated()
