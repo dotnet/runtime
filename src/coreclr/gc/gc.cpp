@@ -22342,6 +22342,27 @@ size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t 
 //internal part of gc used by the serial and concurrent version
 void gc_heap::gc1()
 {
+#ifdef FEATURE_EVENT_TRACE
+    EventArray<uint8_t> arr1;
+    arr1.Count = 10;
+    arr1.Data = new (nothrow) uint8_t[10];
+    for (uint8_t i = 0; i < 10; i++)
+    {
+        arr1.Data[i] = i * i + i + 1;
+    }
+
+    EventArray<uint16_t> arr2;
+    arr2.Count = 6;
+    arr2.Data = new (nothrow) uint16_t[6];
+    for (uint16_t i = 0; i < 6; i++)
+    {
+        arr2.Data[i] = i * (i + 1);
+    }
+
+    GCEventFireTestArray_V1 (arr1, arr2);
+    delete[] arr1.Data;
+    delete[] arr2.Data;
+#endif //FEATURE_EVENT_TRACE
 #ifdef BACKGROUND_GC
     assert (settings.concurrent == (uint32_t)(bgc_thread_id.IsCurrentThread()));
 #endif //BACKGROUND_GC

@@ -48,8 +48,133 @@
 #define ByteSwap64 __builtin_bswap64
 #endif // MSC_VER
 
+template<class T>
+class EventArray
+{
+public:
+    uint8_t Count;
+    T* Data;
+};
+
 namespace gc_event
 {
+/*
+ * `PrimitiveEventSerializatonTraits` is a trait implemented by types that
+ * can be serialized to the payload of a dynamic event with a fixed size.
+ */
+template<class T>
+struct PrimitiveEventSerializationTraits
+{
+    /*
+     * Serializes the value `value` to the buffer `buffer`, incrementing
+     * the buffer double-pointer to point to the next byte to be written.
+     *
+     * It is the responsibility of the caller to ensure that the buffer is
+     * large enough to accommodate the serialized form of T.
+     */
+    static void Serialize(const T& value, uint8_t** buffer) = delete;
+    /*
+     * Returns the size required for serializing this type.
+     */
+    static size_t SerializedSize() = delete;
+};
+
+/*
+ * PrimitiveEventSerializationTraits implementation for uint8_t. Other integral types
+ * can follow this pattern.
+ *
+ * The convention here is that integral types are always serialized as
+ * little-endian.
+ */
+template<>
+struct PrimitiveEventSerializationTraits<uint8_t>
+{
+    static void Serialize(const uint8_t& value, uint8_t** buffer)
+    {
+        **((uint8_t**)buffer) = value;
+        *buffer += sizeof(uint8_t);
+    }
+
+    static size_t SerializedSize()
+    {
+        return sizeof(uint8_t);
+    }
+};
+
+template<>
+struct PrimitiveEventSerializationTraits<uint16_t>
+{
+    static void Serialize(const uint16_t& value, uint8_t** buffer)
+    {
+#if defined(BIGENDIAN)
+        uint16_t swapped = ByteSwap16(value);
+        memcpy(*buffer, &swapped, sizeof(uint16_t));
+#else
+        memcpy(*buffer, &value, sizeof(uint16_t));
+#endif // BIGENDIAN
+        *buffer += sizeof(uint16_t);
+    }
+
+    static size_t SerializedSize()
+    {
+        return sizeof(uint16_t);
+    }
+};
+
+template<>
+struct PrimitiveEventSerializationTraits<uint32_t>
+{
+    static void Serialize(const uint32_t& value, uint8_t** buffer)
+    {
+#if defined(BIGENDIAN)
+        uint32_t swapped = ByteSwap32(value);
+        memcpy(*buffer, &swapped, sizeof(uint32_t));
+#else
+        memcpy(*buffer, &value, sizeof(uint32_t));
+#endif // BIGENDIAN
+        *buffer += sizeof(uint32_t);
+    }
+
+    static size_t SerializedSize()
+    {
+        return sizeof(uint32_t);
+    }
+};
+
+template<>
+struct PrimitiveEventSerializationTraits<uint64_t>
+{
+    static void Serialize(const uint64_t& value, uint8_t** buffer)
+    {
+#if defined(BIGENDIAN)
+        uint64_t swapped = ByteSwap64(value);
+        memcpy(*buffer, &swapped, sizeof(uint64_t));
+#else
+        memcpy(*buffer, &value, sizeof(uint64_t));
+#endif // BIGENDIAN
+        *buffer += sizeof(uint64_t);
+    }
+
+    static size_t SerializedSize()
+    {
+        return sizeof(uint64_t);
+    }
+};
+
+template<>
+struct PrimitiveEventSerializationTraits<float>
+{
+    static void Serialize(const float& value, uint8_t** buffer)
+    {
+        memcpy(*buffer, &value, sizeof(float));
+        *buffer += sizeof(float);
+    }
+
+    static size_t SerializedSize()
+    {
+        return sizeof(float);
+    }
+};
 
 /*
  * `EventSerializatonTraits` is a trait implemented by types that
@@ -65,108 +190,38 @@ struct EventSerializationTraits
      * It is the responsibility of the caller to ensure that the buffer is
      * large enough to accommodate the serialized form of T.
      */
-    static void Serialize(const T& value, uint8_t** buffer) = delete;
+    static void Serialize(const T& value, uint8_t** buffer)
+    {
+        PrimitiveEventSerializationTraits<T>::Serialize(value, buffer);
+    }
 
     /*
      * Returns the size of the value `value` if it were to be serialized.
      */
-    static size_t SerializedSize(const T& value) = delete;
-};
-
-/*
- * EventSerializationTraits implementation for uint16_t. Other integral types
- * can follow this pattern.
- *
- * The convention here is that integral types are always serialized as
- * little-endian.
- */
-template<>
-struct EventSerializationTraits<uint8_t>
-{
-    static void Serialize(const uint8_t& value, uint8_t** buffer)
+    static size_t SerializedSize(const T& value)
     {
-        **((uint8_t**)buffer) = value;
-        *buffer += sizeof(uint8_t);
-    }
-
-    static size_t SerializedSize(const uint8_t& value)
-    {
-        return sizeof(uint8_t);
+        return PrimitiveEventSerializationTraits<T>::SerializedSize();
     }
 };
 
-template<>
-struct EventSerializationTraits<uint16_t>
+template<class T>
+struct EventSerializationTraits<EventArray<T>>
 {
-    static void Serialize(const uint16_t& value, uint8_t** buffer)
+    static void Serialize(const EventArray<T>& value, uint8_t** pBuffer)
     {
-#if defined(BIGENDIAN)
-        uint16_t swapped = ByteSwap16(value);
-        memcpy(*buffer, &swapped, sizeof(uint16_t));
-#else
-        memcpy(*buffer, &value, sizeof(uint16_t));
-#endif // BIGENDIAN
-        *buffer += sizeof(uint16_t);
+        uint8_t* buffer = *pBuffer;
+        buffer[0] = value.Count;
+        buffer += 1;
+        for (uint8_t i = 0; i < value.Count; i++)
+        {
+            PrimitiveEventSerializationTraits<T>::Serialize(value.Data[i], &buffer);
+        }
+        *pBuffer = buffer;
     }
 
-    static size_t SerializedSize(const uint16_t& value)
+    static size_t SerializedSize(const EventArray<T>& value)
     {
-        return sizeof(uint16_t);
-    }
-};
-
-template<>
-struct EventSerializationTraits<uint32_t>
-{
-    static void Serialize(const uint32_t& value, uint8_t** buffer)
-    {
-#if defined(BIGENDIAN)
-        uint32_t swapped = ByteSwap32(value);
-        memcpy(*buffer, &swapped, sizeof(uint32_t));
-#else
-        memcpy(*buffer, &value, sizeof(uint32_t));
-#endif // BIGENDIAN
-        *buffer += sizeof(uint32_t);
-    }
-
-    static size_t SerializedSize(const uint32_t& value)
-    {
-        return sizeof(uint32_t);
-    }
-};
-
-template<>
-struct EventSerializationTraits<uint64_t>
-{
-    static void Serialize(const uint64_t& value, uint8_t** buffer)
-    {
-#if defined(BIGENDIAN)
-        uint64_t swapped = ByteSwap64(value);
-        memcpy(*buffer, &swapped, sizeof(uint64_t));
-#else
-        memcpy(*buffer, &value, sizeof(uint64_t));
-#endif // BIGENDIAN
-        *buffer += sizeof(uint64_t);
-    }
-
-    static size_t SerializedSize(const uint64_t& value)
-    {
-        return sizeof(uint64_t);
-    }
-};
-
-template<>
-struct EventSerializationTraits<float>
-{
-    static void Serialize(const float& value, uint8_t** buffer)
-    {
-        memcpy(*buffer, &value, sizeof(float));
-        *buffer += sizeof(float);
-    }
-
-    static size_t SerializedSize(const float& value)
-    {
-        return sizeof(float);
+        return sizeof(uint8_t)  + PrimitiveEventSerializationTraits<T>::SerializedSize() * value.Count;
     }
 };
 
