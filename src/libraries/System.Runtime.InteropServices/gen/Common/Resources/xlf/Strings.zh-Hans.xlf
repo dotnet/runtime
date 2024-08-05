@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
-        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="translated">此类型至少实现一个具有“GeneratedComInterfaceAttribute”属性的类型。添加“GeneratedComClassAttribute”以允许将此类型传递到 COM，并公开具有此类型的对象的“GeneratedComInterfaceAttribute”的类型的 COM 接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
@@ -490,11 +490,6 @@
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
         <target state="translated">[In] 和 [Out] 属性</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InVariantShouldBeRef">
-        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
-        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
@@ -1025,6 +1020,11 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">必须通过将 \"System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute\" 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">无法通过引用封送派生自 “SafeHandle” 的抽象类型。提供的类型必须是具体的。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
