@@ -18,17 +18,38 @@ using MethodDebugInformation = Internal.IL.MethodDebugInformation;
 
 namespace ILCompiler
 {
-    public class SubstitutedILProvider : ILProvider
+    public class SubstitutedILProviderBase : ILProvider
     {
-        private readonly ILProvider _nestedILProvider;
-        private readonly SubstitutionProvider _substitutionProvider;
-        private readonly DevirtualizationManager _devirtualizationManager;
-
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
+        protected readonly ILProvider _nestedILProvider;
+        protected readonly SubstitutionProvider _substitutionProvider;
+        public SubstitutedILProviderBase(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
+        }
+
+        public override MethodIL GetMethodIL(MethodDesc method)
+        {
+            BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
+            if (substitution != null)
+            {
+                return substitution.EmitIL(method);
+            }
+
+            return _nestedILProvider.GetMethodIL(method);
+        }
+    }
+
+    public class SubstitutedILProvider : SubstitutedILProviderBase
+    {
+        private readonly DevirtualizationManager _devirtualizationManager;
+        private readonly SubstitutedILProviderBase _nested;
+
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
+            : base(nestedILProvider, substitutionProvider)
+        {
             _devirtualizationManager = devirtualizationManager;
+            _nested = new SubstitutedILProviderBase(nestedILProvider, substitutionProvider);
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -670,6 +691,13 @@ namespace ILCompiler
             {
                 constant = 0;
                 return false;
+            }
+
+            if (!method.HasInstantiation && !method.OwningType.HasInstantiation
+                && method.Signature.Length == 0
+                && TypePreinit.TryGetConstant(_nested, method, out constant))
+            {
+                return true;
             }
 
             var reader = new ILReader(methodIL.GetILBytes());
