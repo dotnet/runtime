@@ -1899,6 +1899,33 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_AVX512F_Fixup:
+        case NI_AVX512F_FixupScalar:
+        case NI_AVX512F_VL_Fixup:
+        case NI_AVX10v1_Fixup:
+        case NI_AVX10v1_FixupScalar:
+        {
+            if (!node->isRMWHWIntrinsic(comp))
+            {
+                GenTree* op1 = node->Op(1);
+
+                if (!op1->IsCnsVec())
+                {
+                    // op1 is never selected by the table so
+                    // we replaced it with a containable constant
+
+                    var_types simdType = node->TypeGet();
+
+                    op1->SetUnusedValue();
+                    op1 = comp->gtNewZeroConNode(simdType);
+
+                    BlockRange().InsertBefore(node, op1);
+                    node->Op(1) = op1;
+                }
+            }
+            break;
+        }
+
         case NI_EVEX_CompareEqualMask:
         case NI_EVEX_CompareNotEqualMask:
         {
@@ -11435,10 +11462,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             if (!node->isRMWHWIntrinsic(comp))
                             {
                                 // op1 is never selected by the table so
-                                // we can contain and ignore any register
-                                // allocated to it resulting in better
-                                // non-RMW based codegen.
+                                // we should've replaced it with a containable
+                                // constant, allowing us to get better non-RMW
+                                // codegen
 
+                                assert(op1->IsCnsVec());
                                 MakeSrcContained(node, op1);
                             }
                             break;
