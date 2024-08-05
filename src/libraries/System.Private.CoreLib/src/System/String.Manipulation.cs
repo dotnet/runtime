@@ -1229,18 +1229,17 @@ namespace System
 
             while (true)
             {
-                int index = compareInfo.IndexOf(searchSpace, oldValue, options, out int matchLength);
-
+                // HybridGlobalization does not support IndexOf with matchLength param - throws PNSE
+                int matchLength = -1;
+                int index =
+#if TARGET_BROWSER
+                    GlobalizationMode.Hybrid ?
+                        compareInfo.IndexOf(searchSpace, oldValue, options) :
+#endif
+                        compareInfo.IndexOf(searchSpace, oldValue, options, out matchLength);
                 // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
                 // If this is the case, we behave as if there are no more substitutions to be made.
-                // HybridGlobalization does not support IndexOf with matchLength param - allow weightless substitutions.
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid && index < 0)
-                {
-                    break;
-                }
-                else
-#endif
+
                 if (index < 0 || matchLength == 0)
                 {
                     break;
