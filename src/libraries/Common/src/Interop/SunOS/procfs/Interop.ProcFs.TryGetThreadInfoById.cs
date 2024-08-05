@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.IO;
 
@@ -28,25 +29,22 @@ internal static partial class Interop
         {
             result = default;
 
-            int size = sizeof(lwpsinfo);
-            Debug.Assert(size <= 1024, "lwpsinfo struct size exceeds 1024 bytes.");
-            byte* buffer = stackalloc byte[size];
-            lwpsinfo* pr = (lwpsinfo*) buffer;
-
             try
             {
                 string fileName = GetInfoFilePathForThread(pid, tid);
                 using FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-                fs.ReadExactly(new Span<byte>(buffer, size));
+                lwpsinfo pr;
+                Unsafe.SkipInit(out pr);
+                fs.ReadExactly(MemoryMarshal.AsBytes(new Span<lwpsinfo>(ref pr)));
 
-                result.Tid = pr->pr_lwpid;
-                result.Priority = pr->pr_pri;
-                result.NiceVal = (int)pr->pr_nice;
-                result.Status = (char)pr->pr_sname;
-                result.StartTime.TvSec = pr->pr_start.tv_sec;
-                result.StartTime.TvNsec = pr->pr_start.tv_nsec;
-                result.CpuTotalTime.TvSec = pr->pr_time.tv_sec;
-                result.CpuTotalTime.TvNsec = pr->pr_time.tv_nsec;
+                result.Tid = pr.pr_lwpid;
+                result.Priority = pr.pr_pri;
+                result.NiceVal = (int)pr.pr_nice;
+                result.Status = (char)pr.pr_sname;
+                result.StartTime.TvSec = pr.pr_start.tv_sec;
+                result.StartTime.TvNsec = pr.pr_start.tv_nsec;
+                result.CpuTotalTime.TvSec = pr.pr_time.tv_sec;
+                result.CpuTotalTime.TvNsec = pr.pr_time.tv_nsec;
 
                 return true;
             }
