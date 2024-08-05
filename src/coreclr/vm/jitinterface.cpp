@@ -3743,8 +3743,18 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if (pClass->IsUnsafeValueClass())
+            // In Reverse P/Invoke stubs, we are generating the code
+            // and we are not generating the code patterns that the GS checks
+            // are meant to catch.
+            // As a result, we can skip setting this flag.
+            // We do this as the GS checks (emitted when this flag is set)
+            // can break C++/CLI's copy-constructor semantics by missing copies.
+            if (pClass->IsUnsafeValueClass()
+                && !(m_pMethodBeingCompiled->IsILStub()
+                    && dac_cast<PTR_DynamicMethodDesc>(m_pMethodBeingCompiled)->GetILStubType() == DynamicMethodDesc::StubNativeToCLRInterop))
+            {
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
+            }
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
