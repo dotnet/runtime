@@ -957,6 +957,208 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
     }
 }
+
+/*****************************************************************************
+ *
+ *  Sanity check two instruction are valid when placed next to each other
+ */
+
+void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
+{
+    if (firstId == nullptr || secondId == nullptr)
+    {
+        return;
+    }
+
+    // Currently only concerned with instructions that follow movprfx
+    if (firstId->idIns() != INS_sve_movprfx)
+    {
+        return;
+    }
+
+    // Quoted sections are taken fron the Arm Arm.
+
+    // "It is required that the prefixed instruction at PC+4 must be an SVE destructive binary or ternary
+    // instruction encoding, or a unary operation with merging predication, but excluding other MOVPRFX instructions."
+    // "The prefixed instruction must not use the destination register in any other operand position, even if
+    // they have different names but refer to the same architectural register state."
+    switch (secondId->idInsFmt())
+    {
+        case IF_SVE_AM_2A:   // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, #<const>
+        case IF_SVE_BN_1A:   // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BP_1A:   // <Zdn>.D{, <pattern>{, MUL #<imm>}}
+        case IF_SVE_BS_1A:   // <Zdn>.<T>, <Zdn>.<T>, #<const>
+        case IF_SVE_BU_2A:   // <Zd>.<T>, <Pg>/M, #<const>
+        case IF_SVE_BV_2A_A: // <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+        case IF_SVE_BV_2A_J: // <Zd>.<T>, <Pg>/M, #<imm>{, <shift>}
+        case IF_SVE_BV_2B:   // <Zd>.<T>, <Pg>/M, #0.0
+        case IF_SVE_CD_2A:   // <Zdn>.<T>, <R><m>
+        case IF_SVE_CQ_3A:   // <Zd>.<T>, <Pg>/M, <R><n|SP>
+        case IF_SVE_DN_2A:   // <Zdn>.<T>, <Pm>.<T>
+        case IF_SVE_DP_2A:   // <Zdn>.<T>, <Pm>.<T>
+        case IF_SVE_EC_1A:   // <Zdn>.<T>, <Zdn>.<T>, #<imm>{, <shift>}
+        case IF_SVE_ED_1A:   // <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        case IF_SVE_EE_1A:   // <Zdn>.<T>, <Zdn>.<T>, #<imm>
+        case IF_SVE_HM_2A:   // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
+            break;
+
+        case IF_SVE_CC_2A: // <Zdn>.<T>, <V><m>
+        case IF_SVE_FU_2A: // <Zda>.<T>, <Zn>.<T>, #<const>
+            assert(secondId->idReg1() != secondId->idReg2());
+            break;
+
+        case IF_SVE_AP_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_AQ_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_AW_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<const>
+        case IF_SVE_CP_3A: // <Zd>.<T>, <Pg>/M, <V><n>
+        case IF_SVE_CT_3A: // <Zd>.Q, <Pg>/M, <Zn>.Q
+        case IF_SVE_CU_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_ES_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_EQ_3A: // <Zda>.<T>, <Pg>/M, <Zn>.<Tb>
+        case IF_SVE_FV_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HN_2A: // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
+        case IF_SVE_HO_3A: // <Zd>.H, <Pg>/M, <Zn>.S
+        case IF_SVE_HO_3B: // <Zd>.D, <Pg>/M, <Zn>.S
+        case IF_SVE_HO_3C: // <Zd>.S, <Pg>/M, <Zn>.D
+        case IF_SVE_HP_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HP_3B: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
+        case IF_SVE_HQ_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HR_3A: // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+        case IF_SVE_HS_3A: // <Zd>.<H|S|D>, <Pg>/M, <Zn>.<H|S|D>
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_EF_3A: // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_EG_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_EH_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
+        case IF_SVE_EI_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_EJ_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
+        case IF_SVE_EK_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_EL_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
+        case IF_SVE_EM_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_EW_3A:   // <Zda>.D, <Zn>.D, <Zm>.D
+        case IF_SVE_EW_3B:   // <Zdn>.D, <Zm>.D, <Za>.D
+        case IF_SVE_EY_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_EY_3B:   // <Zda>.D, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_EZ_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_FA_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>], <const>
+        case IF_SVE_FA_3B:   // <Zda>.D, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FB_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FB_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_FC_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FC_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_FF_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FF_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FF_3C:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_FG_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FG_3B:   // <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FJ_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FJ_3B:   // <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FK_3A:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_FK_3B:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_FK_3C:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_FO_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_FW_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_FY_3A:   // <Zda>.<T>, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_GM_3A:   // <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GN_3A:   // <Zda>.H, <Zn>.B, <Zm>.B
+        case IF_SVE_GO_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_GU_3A:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>]
+        case IF_SVE_GU_3B:   // <Zda>.D, <Zn>.D, <Zm>.D[<imm>]
+        case IF_SVE_GU_3C:   // <Zda>.H, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_GV_3A:   // <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_GW_3B:   // <Zd>.H, <Zn>.H, <Zm>.H
+        case IF_SVE_GY_3A:   // <Zda>.H, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GY_3B:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_GY_3B_D: // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_GZ_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_HA_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HA_3A_E: // <Zda>.H, <Zn>.B, <Zm>.B
+        case IF_SVE_HA_3A_F: // <Zda>.S, <Zn>.B, <Zm>.B
+        case IF_SVE_HB_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HC_3A:   // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
+        case IF_SVE_HD_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_HD_3A_A: // <Zda>.D, <Zn>.D, <Zm>.D
+            assert(secondId->idReg1() != secondId->idReg2());
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        case IF_SVE_AB_3B: // <Zdn>.D, <Pg>/M, <Zdn>.D, <Zm>.D
+        case IF_SVE_AA_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
+        case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_HL_3B: // <Zdn>.H, <Pg>/M, <Zdn>.H, <Zm>.H
+            assert(secondId->idReg1() != secondId->idReg4());
+            break;
+
+        case IF_SVE_AV_3A: // <Zdn>.D, <Zdn>.D, <Zm>.D, <Zk>.D
+            assert(secondId->idReg1() != secondId->idReg2());
+            assert(secondId->idReg1() != secondId->idReg3());
+            assert(secondId->idReg1() != secondId->idReg4());
+            break;
+
+        case IF_SVE_AR_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_AS_4A: // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+        case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_GT_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_HU_4A: // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>
+        case IF_SVE_HU_4B: // <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
+        case IF_SVE_HV_4A: // <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+            assert(secondId->idReg1() != secondId->idReg3());
+            assert(secondId->idReg1() != secondId->idReg4());
+            break;
+
+        case IF_SVE_AT_3A: // <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+            // Only a subset of this group is valid
+            switch (secondId->idIns())
+            {
+                case INS_sve_sclamp:
+                case INS_sve_uclamp:
+                case INS_sve_eorbt:
+                case INS_sve_eortb:
+                case INS_sve_fclamp:
+                    break;
+                default:
+                    assert(false);
+            }
+            assert(secondId->idReg1() != secondId->idReg2());
+            assert(secondId->idReg1() != secondId->idReg3());
+            break;
+
+        default:
+            assert(false);
+            break;
+    }
+
+    if (firstId->idInsFmt() == IF_SVE_AH_3A)
+    {
+        // 3 operand version
+
+        // "The prefixed instruction must specify the same predicate register"
+        assert(isPredicateRegister(firstId->idReg2()));
+        assert(isPredicateRegister(secondId->idReg2()));
+        assert(firstId->idReg2() == secondId->idReg2());
+
+        // "and have the same maximum element size (ignoring a fixed 64-bit "wide vector" operand),"
+        assert(firstId->idInsOpt() == secondId->idInsOpt());
+
+        // "and the same destination vector as the MOVPRFX instruction."
+        assert(firstId->idReg1() == secondId->idReg1());
+    }
+    else
+    {
+        // 2 operand version
+        assert(firstId->idInsFmt() == IF_SVE_BI_2A);
+
+        // "The prefixed instruction must specify the same destination vector as the MOVPRFX instruction."
+        assert(firstId->idReg1() == secondId->idReg1());
+    }
+}
+
 #endif // DEBUG
 
 bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
