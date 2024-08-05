@@ -376,7 +376,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
             // Populate COM data if this is a COM object
             if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
-                && objectContract.GetComData(objAddr, out TargetPointer rcw, out TargetPointer ccw))
+                && objectContract.GetBuiltInComData(objAddr, out TargetPointer rcw, out TargetPointer ccw))
             {
                 data->RCW = rcw;
                 data->CCW = ccw;

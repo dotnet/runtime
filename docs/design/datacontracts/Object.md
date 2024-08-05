@@ -14,8 +14,8 @@ string GetStringValue(TargetPointer address);
 // Get the pointer to the data corresponding to a managed array object. Error if address does not represent a array.
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
 
-// Get COM data for the object if available. Returns false, if address does not represent a COM object
-bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+// Get built-in COM data for the object if available. Returns false, if address does not represent a COM object using built-in COM
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 ```
 
 ## Version 1
@@ -101,7 +101,7 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     return address + dataOffset;
 }
 
-bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 {
     uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 

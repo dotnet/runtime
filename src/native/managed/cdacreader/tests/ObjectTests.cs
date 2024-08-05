@@ -184,13 +184,13 @@ public unsafe class ObjectTests
                 Contracts.IObject contract = target.Contracts.Object;
                 Assert.NotNull(contract);
                 {
-                    bool res = contract.GetComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
                     Assert.True(res);
                     Assert.Equal(expectedRCW.Value, rcw.Value);
                     Assert.Equal(expectedCCW.Value, ccw.Value);
                 }
                 {
-                    bool res = contract.GetComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
                     Assert.False(res);
                     Assert.Equal(TargetPointer.Null.Value, rcw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);

@@ -94,7 +94,7 @@ internal readonly struct Object_1 : IObject
         return address + dataOffset;
     }
 
-    public bool GetComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw)
+    public bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw)
     {
         rcw = TargetPointer.Null;
         ccw = TargetPointer.Null;
