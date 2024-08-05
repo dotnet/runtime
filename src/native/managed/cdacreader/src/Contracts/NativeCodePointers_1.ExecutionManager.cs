@@ -246,7 +246,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 }
                 rangeSectionFragmentPtr = new ExMgrPtr(fragment.Next); // TODO: load?
             }
-            if (rangeSectionFragmentPtr.IsNull)
+            if (!rangeSectionFragmentPtr.IsNull)
             {
                 Data.RangeSectionFragment fragment = rangeSectionFragmentPtr.Load<Data.RangeSectionFragment>(_target);
                 Data.RangeSection rangeSection = _target.ProcessedData.GetOrAdd<Data.RangeSection>(fragment.RangeSection);
