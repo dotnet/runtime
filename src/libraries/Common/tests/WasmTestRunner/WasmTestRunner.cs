@@ -3,16 +3,50 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.TestRunners.Common;
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
+using System.Runtime.CompilerServices;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
 {
     protected int MaxParallelThreadsFromArg { get; set; }
     protected override int? MaxParallelThreads => RunInParallel ? MaxParallelThreadsFromArg : base.MaxParallelThreads;
 
-    public static async Task<int> Main(string[] args)
+#if TARGET_WASI
+    public static int Main(string[] args)
+    {
+        var task = MainAsync(args);
+        while (!task.IsCompleted)
+        {
+            DispatchWasiEventLoop();
+        }
+        var exception = task.Exception;
+        if (exception is not null)
+        {
+            throw exception;
+        }
+
+        return task.Result;
+    }
+
+    internal static void DispatchWasiEventLoop()
+    {
+        CallDispatchWasiEventLoop((Thread)null!);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
+        static extern void CallDispatchWasiEventLoop(Thread t);
+    }
+
+#else
+    public static Task<int> Main(string[] args)
+    {
+        return MainAsync(args);
+    }
+#endif
+
+    public static async Task<int> MainAsync(string[] args)
     {
         if (args.Length == 0)
         {

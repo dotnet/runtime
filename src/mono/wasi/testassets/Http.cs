@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
-// keep in sync with src\mono\wasi\testassets\Http.cs
+// keep in sync with src\mono\sample\wasi\http-p2\Program.cs
 public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync()
@@ -28,7 +28,7 @@ public static class WasiMainWrapper
         Console.WriteLine();
         Console.WriteLine(json);
 
-        return 0;
+        return 42;
     }
 
     public static int Main(string[] args)

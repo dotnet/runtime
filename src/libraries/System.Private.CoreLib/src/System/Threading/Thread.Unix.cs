@@ -12,9 +12,9 @@ namespace System.Threading
     {
         // these methods are temporarily accessed via UnsafeAccessor from generated code until we have it in public API, probably in WASI preview3 and promises
 #if TARGET_WASI
-        internal static System.Threading.Tasks.Task RegisterWasiPollable(int handle)
+        internal static System.Threading.Tasks.Task RegisterWasiPollableHandle(int handle)
         {
-            return WasiEventLoop.RegisterWasiPollable(handle);
+            return WasiEventLoop.RegisterWasiPollableHandle(handle);
         }
 
         internal static void DispatchWasiEventLoop()

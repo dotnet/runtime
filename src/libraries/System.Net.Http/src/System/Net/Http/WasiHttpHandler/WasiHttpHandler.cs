@@ -466,11 +466,16 @@ namespace System.Net.Http
             internal static Task RegisterWasiPollable(IPoll.Pollable pollable)
             {
                 var handle = pollable.Handle;
-                pollable.Handle = 0;
-                return CallRegisterWasiPollable((Thread)null!, handle);
 
-                [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollable")]
-                static extern Task CallRegisterWasiPollable(Thread t, int handle);
+                // this will effectively neutralize Dispose() of the Pollable()
+                // because in the CoreLib we create another instance, which will dispose it
+                pollable.Handle = 0;
+                GC.SuppressFinalize(pollable);
+
+                return CallRegisterWasiPollableHandle((Thread)null!, handle);
+
+                [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollableHandle")]
+                static extern Task CallRegisterWasiPollableHandle(Thread t, int handle);
             }
         }
 
