@@ -5,6 +5,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
     <Compile Include="AutoResetEventTests.cs" />
@@ -14,9 +17,10 @@
     <Compile Include="CountdownEventTests.cs" />
     <Compile Include="EtwTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
-    <Compile Include="InterlockedTests.cs" />
     <Compile Include="HostExecutionContextTests.cs" />
     <Compile Include="HostExecutionContextManagerTests.cs" />
+    <Compile Include="InterlockedTests.cs" />
+    <Compile Include="LockTests.cs" />
     <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />

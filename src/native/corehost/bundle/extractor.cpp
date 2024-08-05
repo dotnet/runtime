@@ -63,7 +63,7 @@ pal::string_t& extractor_t::extraction_dir()
         append_path(&m_extraction_dir, host_name.c_str());
         append_path(&m_extraction_dir, m_bundle_id.c_str());
 
-        trace::info(_X("Files embedded within the bundled will be extracted to [%s] directory."), m_extraction_dir.c_str());
+        trace::info(_X("Files embedded within the bundle will be extracted to [%s] directory."), m_extraction_dir.c_str());
     }
 
     return m_extraction_dir;
@@ -219,7 +219,7 @@ void extractor_t::commit_dir()
     // Retry the move operation with some wait in between the attempts. This is to workaround for possible file locking
     // caused by AV software. Basically the extraction process above writes a bunch of executable files to disk
     // and some AV software may decide to scan them on write. If this happens the files will be locked which blocks
-    // our ablity to move them.
+    // our ability to move them.
 
     bool extracted_by_concurrent_process = false;
     bool extracted_by_current_process =

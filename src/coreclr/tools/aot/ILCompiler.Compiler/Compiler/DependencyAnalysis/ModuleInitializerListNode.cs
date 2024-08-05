@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -18,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__module_initializers");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__module_initializers"u8);
         }
 
         public int Offset => 0;
@@ -113,9 +114,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var module in allModules)
                     {
-                        if (!markedModules.Contains(module))
+                        if (markedModules.Add(module))
                         {
-                            markedModules.Add(module);
                             if (modulesWithCctor.Contains(module.Module))
                                 sortedModules.Add(module.Module);
                             break;
@@ -204,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         try
                         {
-                            var reference = module.Context.ResolveAssembly(new System.Reflection.AssemblyName(assemblyName));
+                            var reference = module.Context.ResolveAssembly(new AssemblyNameInfo(assemblyName));
                             referencedAssemblies.Add(reference);
                         }
                         catch (TypeSystemException) { }

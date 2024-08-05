@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- By default, build the NetCoreAppCurrent vertical only. -->
     <BuildTargetFramework Condition="'$(BuildAllConfigurations)' != 'true'">$(NetCoreAppCurrent)</BuildTargetFramework>
+     <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
+    <ExplicitlyImportCustomILLinkTargets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">true</ExplicitlyImportCustomILLinkTargets>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -11,11 +13,13 @@
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
+    <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
+    <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <!-- Support building reference projects only. -->
@@ -24,11 +28,6 @@
     <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="oob-ref.proj" />
   </ItemGroup>
-
-  <ImportGroup Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
-    <!-- Import the illink file which contains some of the logic required to illink the out-of-band assemblies. -->
-    <Import Project="$(RepositoryEngineeringDir)illink.targets" />
-  </ImportGroup>
 
   <Target Name="GetTrimOOBAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
@@ -58,7 +57,7 @@
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
       <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />

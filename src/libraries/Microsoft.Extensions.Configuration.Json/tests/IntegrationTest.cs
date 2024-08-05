@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         {
             if (key != configurationSection.Key || value != configurationSection.Value)
             {
-                throw new EqualException(
+                throw EqualException.ForMismatchedValues(
                     expected: GetString(key, value),
                     actual: GetString(configurationSection));
             }

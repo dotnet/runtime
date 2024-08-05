@@ -52,6 +52,14 @@ internal static partial class Interop
             [CustomMarshaller(typeof(HttpHeader), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
+                public static HttpHeader ConvertToManaged(WEB_SOCKET_HTTP_HEADER unmanaged)
+                {
+                    HttpHeader m;
+                    m.Name = Marshal.PtrToStringAnsi(unmanaged.Name, (int)unmanaged.NameLength);
+                    m.Value = Marshal.PtrToStringAnsi(unmanaged.Value, (int)unmanaged.ValueLength);
+                    return m;
+                }
+
                 public static WEB_SOCKET_HTTP_HEADER ConvertToUnmanaged(HttpHeader managed)
                 {
                     WEB_SOCKET_HTTP_HEADER n;

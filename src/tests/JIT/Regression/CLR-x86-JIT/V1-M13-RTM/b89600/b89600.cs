@@ -24,10 +24,9 @@ public class AA
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Main1();
-        return 100;
     }
 
     static void Main1()

@@ -21,13 +21,13 @@ namespace System
         }
 
         public DataMisalignedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DataMisalignedException)
         {
             HResult = HResults.COR_E_DATAMISALIGNED;
         }
 
         public DataMisalignedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_DataMisalignedException, innerException)
         {
             HResult = HResults.COR_E_DATAMISALIGNED;
         }

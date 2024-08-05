@@ -18,11 +18,10 @@ namespace Test
     public static class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new DerivedClass<int>(3);
             new DerivedClass<int>(8);
-            return 100;
         }
     }
 

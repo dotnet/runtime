@@ -4,15 +4,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
-using System.Xml.XPath;
-using System.Xml.Schema;
-using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.XPath;
 using System.Xml.Xsl.Runtime;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.IlGen
 {
@@ -35,7 +35,12 @@ namespace System.Xml.Xsl.IlGen
     /// True--Branch if boolean expression evaluates to true
     /// False--Branch if boolean expression evaluates to false
     /// </summary>
-    internal enum BranchingContext { None, OnTrue, OnFalse };
+    internal enum BranchingContext
+    {
+        None,
+        OnTrue,
+        OnFalse
+    };
 
     /// <summary>
     /// Describes the Clr type and location of items returned by an iterator.

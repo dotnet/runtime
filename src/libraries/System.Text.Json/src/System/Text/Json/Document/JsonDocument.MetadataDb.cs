@@ -6,6 +6,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
+
 namespace System.Text.Json
 {
     public sealed partial class JsonDocument
@@ -236,7 +240,7 @@ namespace System.Text.Json
                 // Note: Array.MaxLength exists only on .NET 6 or greater,
                 // so for the other versions value is hardcoded
                 const int MaxArrayLength = 0x7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
                 Debug.Assert(MaxArrayLength == Array.MaxLength);
 #endif
 

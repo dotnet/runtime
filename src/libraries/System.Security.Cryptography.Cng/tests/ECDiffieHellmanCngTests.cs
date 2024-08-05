@@ -189,12 +189,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             Assert.Equal(key1, key2);
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void PlatformCryptoProvider_DeriveKeyMaterial()
         {
-            using (CngPlatformProviderKey platformKey1 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key1"))
-            using (CngPlatformProviderKey platformKey2 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key2"))
+            using (CngKeyWrapper platformKey1 = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.ECDiffieHellmanP256, "key1"))
+            using (CngKeyWrapper platformKey2 = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(CngAlgorithm.ECDiffieHellmanP256, "key2"))
             using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(platformKey1.Key))
             using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(platformKey2.Key))
             {

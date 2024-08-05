@@ -89,7 +89,7 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e, httpRequestError: HttpRequestError.SecureConnectionError);
+                HttpRequestException ex = new HttpRequestException(HttpRequestError.SecureConnectionError, SR.net_http_ssl_connection_failed, e);
                 if (request.IsExtendedConnectRequest)
                 {
                     // Extended connect request is negotiating strictly for ALPN = "h2" because HttpClient is unaware of a possible downgrade.
@@ -109,10 +109,10 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        [SupportedOSPlatform("windows")]
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, Action<QuicConnection, QuicStreamCapacityChangedArgs> streamCapacityCallback, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
@@ -126,7 +126,8 @@ namespace System.Net.Http
                     DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
                     DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
                     RemoteEndPoint = endPoint,
-                    ClientAuthenticationOptions = clientAuthenticationOptions
+                    ClientAuthenticationOptions = clientAuthenticationOptions,
+                    StreamCapacityCallback = streamCapacityCallback,
                 }, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -139,17 +140,21 @@ namespace System.Net.Http
         {
             return CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken) ?
                 CancellationHelper.CreateOperationCanceledException(exception, cancellationToken) :
-                new HttpRequestException($"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy, DeduceError(exception));
+                new HttpRequestException(DeduceError(exception), $"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy);
 
             static HttpRequestError DeduceError(Exception exception)
             {
-                // TODO: Deduce quic errors from QuicException.TransportErrorCode once https://github.com/dotnet/runtime/issues/87262 is implemented.
                 if (exception is AuthenticationException)
                 {
                     return HttpRequestError.SecureConnectionError;
                 }
 
-                if (exception is SocketException socketException && socketException.SocketErrorCode == SocketError.HostNotFound)
+                // Resolving a non-existent hostname often leads to EAI_AGAIN/TryAgain on Linux, indicating a non-authoritative failure, eg. timeout.
+                // Getting EAGAIN/TryAgain from a TCP connect() is not possible on Windows or Mac according to the docs and indicates lack of kernel resources on Linux,
+                // which should be a very rare error in practice. As a result, mapping SocketError.TryAgain to HttpRequestError.NameResolutionError
+                // leads to a more reliable distinction between NameResolutionError and ConnectionError.
+                if (exception is SocketException socketException &&
+                    socketException.SocketErrorCode is SocketError.HostNotFound or SocketError.TryAgain)
                 {
                     return HttpRequestError.NameResolutionError;
                 }

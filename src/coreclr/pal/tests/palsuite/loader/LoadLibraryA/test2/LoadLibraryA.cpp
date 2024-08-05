@@ -6,7 +6,7 @@
 ** Source: loadlibrarya.c
 **
 ** Purpose: Negative test the LoadLibraryA API.
-**          Call LoadLibraryA with a not exist module Name 
+**          Call LoadLibraryA with a not exist module Name
 **
 **
 **============================================================*/
@@ -24,12 +24,12 @@ PALTEST(loader_LoadLibraryA_test2_paltest_loadlibrarya_test2, "loader/LoadLibrar
     {
         return FAIL;
     }
-    
+
     /*try to load a not exist module */
-    ModuleHandle = LoadLibraryA(pModuleName);
+    ModuleHandle = LoadLibraryExA(pModuleName, NULL, 0);
     if(NULL != ModuleHandle)
     {
-        Trace("Failed to call LoadLibraryA with a not exist mudule name, "
+        Trace("Failed to call LoadLibraryExA with a not exist mudule name, "
             "a NULL module handle is expected, but no NULL module handle "
             "is returned, error code=%u\n", GetLastError());
 

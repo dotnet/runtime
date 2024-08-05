@@ -134,6 +134,13 @@ int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
         privateKey, pbData, cbData, pDecryptedOut, pErrorOut, mgfAlgorithm, SecKeyCreateDecryptedData);
 }
 
+int32_t AppleCryptoNative_RsaDecryptRaw(
+    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        privateKey, pbData, cbData, pDecryptedOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateDecryptedData);
+}
+
 int32_t AppleCryptoNative_RsaDecryptPkcs(
     SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut)
 {

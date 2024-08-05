@@ -63,7 +63,7 @@ public class TestStruct
         x.f.i1 = 77;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         SimpleStruct st;
         newStruct newst;
@@ -77,7 +77,6 @@ public class TestStruct
         newst = cMethod_Inline();
         Console.WriteLine(st.i);
         dMethod_Inline();
-        return 100;
     }
 }
 

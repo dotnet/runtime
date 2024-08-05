@@ -8,8 +8,9 @@
 # In SslStress it's a thin utility to generate a runscript for running the app with the live-built testhost.
 # The main reason to use an equivalent solution in SslStress is consistency with HttpStress.
 
-version=8.0
+version=9.0
 repo_root=$(git rev-parse --show-toplevel)
+daily_dotnet_root=./.dotnet-daily
 
 stress_configuration="Release"
 if [ "$1" != "" ]; then
@@ -39,7 +40,7 @@ if [[ ! -d $daily_dotnet_root ]]; then
     echo "Downloading daily SDK to $daily_dotnet_root"
     mkdir $daily_dotnet_root
     wget https://dot.net/v1/dotnet-install.sh -O $daily_dotnet_root/dotnet-install.sh
-    bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version.1xx --quality daily --install-dir $daily_dotnet_root
+    bash $daily_dotnet_root/dotnet-install.sh --no-path --channel $version --quality daily --install-dir $daily_dotnet_root
 else
     echo "Daily SDK found in $daily_dotnet_root"
 fi

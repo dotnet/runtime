@@ -127,7 +127,7 @@ namespace System
         /// called when the input reference points to a value with an actual location and not an "rvalue" (an expression that may appear on the right side but not left side of an assignment). That is, if this API is called and the input reference
         /// points to a value that is produced by the compiler as a defensive copy or a temporary copy, the behavior might not match the desired one.
         /// </remarks>
-        public static ref readonly T GetValueRefOrDefaultRef<T>(in T? nullable)
+        public static ref readonly T GetValueRefOrDefaultRef<T>(ref readonly T? nullable)
             where T : struct
         {
             return ref nullable.value;

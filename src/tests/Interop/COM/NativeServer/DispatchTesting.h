@@ -90,14 +90,14 @@ private:
 
 public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
-            /* [out] */ __RPC__out UINT *pctinfo)
+            /* [out] */ __RPC__out uint32_t *pctinfo)
         {
             *pctinfo = 0;
             return S_OK;
         }
 
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfo(
-            /* [in] */ UINT iTInfo,
+            /* [in] */ uint32_t iTInfo,
             /* [in] */ LCID lcid,
             /* [out] */ __RPC__deref_out_opt ITypeInfo **ppTInfo)
         {
@@ -107,13 +107,13 @@ public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames(
             /* [in] */ __RPC__in REFIID,
             /* [size_is][in] */ __RPC__in_ecount_full(cNames) LPOLESTR *rgszNames,
-            /* [range][in] */ __RPC__in_range(0,16384) UINT cNames,
+            /* [range][in] */ __RPC__in_range(0,16384) uint32_t cNames,
             /* [in] */ LCID,
             /* [size_is][out] */ __RPC__out_ecount_full(cNames) DISPID *rgDispId)
         {
             bool containsUnknown = false;
             DISPID *curr = rgDispId;
-            for (UINT i = 0; i < cNames; ++i)
+            for (uint32_t i = 0; i < cNames; ++i)
             {
                 *curr = DISPID_UNKNOWN;
                 LPOLESTR name = rgszNames[i];
@@ -138,11 +138,11 @@ public: // IDispatch
             /* [annotation][in] */ _In_  DISPID dispIdMember,
             /* [annotation][in] */ _In_  REFIID riid,
             /* [annotation][in] */ _In_  LCID lcid,
-            /* [annotation][in] */ _In_  WORD wFlags,
+            /* [annotation][in] */ _In_  uint16_t wFlags,
             /* [annotation][out][in] */ _In_  DISPPARAMS *pDispParams,
             /* [annotation][out] */ _Out_opt_  VARIANT *pVarResult,
             /* [annotation][out] */ _Out_opt_  EXCEPINFO *pExcepInfo,
-            /* [annotation][out] */ _Out_opt_  UINT *puArgErr)
+            /* [annotation][out] */ _Out_opt_  uint32_t *puArgErr)
         {
             //
             // Note that arguments are received in reverse order for IDispatch::Invoke()
@@ -243,6 +243,8 @@ public: // IDispatchTesting
             return DISP_E_EXCEPTION;
         case IDispatchTesting_Exception_HResult:
             return HRESULT_FROM_WIN32(errorCode);
+        case IDispatchTesting_Exception_Int:
+            return errorCode;
         default:
             return S_FALSE; // Return a success case to indicate failure to trigger a failure.
         }
@@ -285,7 +287,7 @@ private:
             + ARRAY_SIZE(ui_args)
             + ARRAY_SIZE(l_args)
             + ARRAY_SIZE(ul_args);
-        RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
         VARIANTARG *currArg;
@@ -372,7 +374,7 @@ private:
 
         float *args[2];
         size_t expectedArgCount = ARRAY_SIZE(args);
-        RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
             return E_POINTER;
@@ -402,7 +404,7 @@ private:
 
         double *args[2];
         size_t expectedArgCount = ARRAY_SIZE(args);
-        RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         if (pVarResult == nullptr)
             return E_POINTER;
@@ -429,13 +431,13 @@ private:
     HRESULT TriggerException_Proxy(
         _In_ DISPPARAMS *pDispParams,
         _Out_ EXCEPINFO *pExcepInfo,
-        _Out_ UINT *puArgErr)
+        _Out_ uint32_t *puArgErr)
     {
         HRESULT hr;
 
         int *args[2];
         size_t expectedArgCount = ARRAY_SIZE(args);
-        RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
         VARIANTARG *currArg;
@@ -475,7 +477,7 @@ private:
 
         HFA_4 *args[1];
         size_t expectedArgCount = ARRAY_SIZE(args);
-        RETURN_IF_FAILED(VerifyValues(UINT(expectedArgCount), pDispParams->cArgs));
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
 
         VARENUM currType;
         VARIANTARG *currArg;

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using static TestHelpers;
 
-class GetMainProgramHandleTests
+public class GetMainProgramHandleTests
 {
     // Mobile test runs aren't hosted by corerun, so we don't have a well-known export to test here
     [ConditionalFact(nameof(IsHostedByCoreRun))]

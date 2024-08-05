@@ -168,7 +168,7 @@ namespace System.Speech.Internal.SrgsParser
                 }
 
                 string sToken = sChars.Substring(i, iTokenEnd - i);
-                if (sToken.IndexOf('"') != -1)
+                if (sToken.Contains('"'))
                 {
                     // "The token string is not allowed to contain double quote character."
                     XmlParser.ThrowSrgsException(SRID.InvalidTokenString);

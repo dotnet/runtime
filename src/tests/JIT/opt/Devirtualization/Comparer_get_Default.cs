@@ -271,33 +271,36 @@ public class Program
                 Compare_Struct1_Nullable(null, null);
                 Compare_Struct2_Nullable(null, null);
 
-                // workaround for: https://github.com/dotnet/roslyn/issues/68770
-                static T Bitcast<T>(long l) => Unsafe.As<long, T>(ref l);
+                if (TestLibrary.PlatformDetection.IsRareEnumsSupported)
+                {
+                    // workaround for: https://github.com/dotnet/roslyn/issues/68770
+                    static T Bitcast<T>(long l) => Unsafe.As<long, T>(ref l);
 
-                var enumCharA = Bitcast<CharEnum>(a);
-                var enumCharB = Bitcast<CharEnum>(b);
-                Compare_Generic_Enum(enumCharA, enumCharB);
+                    var enumCharA = Bitcast<CharEnum>(a);
+                    var enumCharB = Bitcast<CharEnum>(b);
+                    Compare_Generic_Enum(enumCharA, enumCharB);
 
-                var enumBoolA = Bitcast<BoolEnum>(a);
-                var enumBoolB = Bitcast<BoolEnum>(b);
-                Compare_Generic_Enum(enumBoolA, enumBoolB);
+                    var enumBoolA = Bitcast<BoolEnum>(a);
+                    var enumBoolB = Bitcast<BoolEnum>(b);
+                    Compare_Generic_Enum(enumBoolA, enumBoolB);
 
-                var enumFloatA = Bitcast<FloatEnum>(a);
-                var enumFloatB = Bitcast<FloatEnum>(b);
-                Compare_Generic_Enum(enumFloatA, enumFloatB);
+                    var enumFloatA = Bitcast<FloatEnum>(a);
+                    var enumFloatB = Bitcast<FloatEnum>(b);
+                    Compare_Generic_Enum(enumFloatA, enumFloatB);
 
-                var enumDoubleA = Bitcast<DoubleEnum>(a);
-                var enumDoubleB = Bitcast<DoubleEnum>(b);
-                Compare_Generic_Enum(enumDoubleA, enumDoubleB);
-                Compare_Double_Enum(enumDoubleA, enumDoubleB);
+                    var enumDoubleA = Bitcast<DoubleEnum>(a);
+                    var enumDoubleB = Bitcast<DoubleEnum>(b);
+                    Compare_Generic_Enum(enumDoubleA, enumDoubleB);
+                    Compare_Double_Enum(enumDoubleA, enumDoubleB);
 
-                var enumIntPtrA = Bitcast<IntPtrEnum>(a);
-                var enumIntPtrB = Bitcast<IntPtrEnum>(b);
-                Compare_Generic_Enum(enumIntPtrA, enumIntPtrB);
+                    var enumIntPtrA = Bitcast<IntPtrEnum>(a);
+                    var enumIntPtrB = Bitcast<IntPtrEnum>(b);
+                    Compare_Generic_Enum(enumIntPtrA, enumIntPtrB);
 
-                var enumUIntPtrA = Bitcast<UIntPtrEnum>(a);
-                var enumUIntPtrB = Bitcast<UIntPtrEnum>(b);
-                Compare_Generic_Enum(enumUIntPtrA, enumUIntPtrB);
+                    var enumUIntPtrA = Bitcast<UIntPtrEnum>(a);
+                    var enumUIntPtrB = Bitcast<UIntPtrEnum>(b);
+                    Compare_Generic_Enum(enumUIntPtrA, enumUIntPtrB);
+                }
             }
         }
 
@@ -384,7 +387,7 @@ public class Program
 
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Byte]", EqualityComparer<byte>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Int32]", EqualityComparer<int>.Default.GetType().ToString());
-        AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.String]", EqualityComparer<string>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.StringEqualityComparer", EqualityComparer<string>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.GenericEqualityComparer`1[System.Guid]", EqualityComparer<Guid>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.EnumEqualityComparer`1[CharEnum]", EqualityComparer<CharEnum>.Default.GetType().ToString());

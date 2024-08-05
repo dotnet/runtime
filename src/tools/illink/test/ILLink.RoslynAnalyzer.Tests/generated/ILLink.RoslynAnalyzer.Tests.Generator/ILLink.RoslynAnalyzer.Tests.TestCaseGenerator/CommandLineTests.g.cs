@@ -16,7 +16,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task CustomStepApplyPreserve ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task CustomStepData ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task DuplicateRootAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

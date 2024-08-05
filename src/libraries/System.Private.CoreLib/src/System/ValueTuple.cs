@@ -7,8 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -1125,6 +1125,7 @@ namespace System
             comparer.Equals(Item1, vt.Item1) &&
             comparer.Equals(Item2, vt.Item2) &&
             comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item4, vt.Item4) &&
             comparer.Equals(Item5, vt.Item5);
 
         int IComparable.CompareTo(object? other)
@@ -1366,6 +1367,7 @@ namespace System
             comparer.Equals(Item1, vt.Item1) &&
             comparer.Equals(Item2, vt.Item2) &&
             comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item4, vt.Item4) &&
             comparer.Equals(Item5, vt.Item5) &&
             comparer.Equals(Item6, vt.Item6);
 
@@ -1625,6 +1627,7 @@ namespace System
             comparer.Equals(Item1, vt.Item1) &&
             comparer.Equals(Item2, vt.Item2) &&
             comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item4, vt.Item4) &&
             comparer.Equals(Item5, vt.Item5) &&
             comparer.Equals(Item6, vt.Item6) &&
             comparer.Equals(Item7, vt.Item7);
@@ -1908,6 +1911,7 @@ namespace System
             comparer.Equals(Item1, vt.Item1) &&
             comparer.Equals(Item2, vt.Item2) &&
             comparer.Equals(Item3, vt.Item3) &&
+            comparer.Equals(Item4, vt.Item4) &&
             comparer.Equals(Item5, vt.Item5) &&
             comparer.Equals(Item6, vt.Item6) &&
             comparer.Equals(Item7, vt.Item7) &&

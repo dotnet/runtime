@@ -227,10 +227,14 @@ extern "C"
     CallStackFrame* GetEbp()
     {
         CallStackFrame *frame=NULL;
+#ifdef TARGET_WINDOWS
         __asm
         {
             mov frame, ebp
         }
+#else
+        frame = (CallStackFrame*)__builtin_frame_address(0);
+#endif
         return frame;
     }
 }
@@ -263,11 +267,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // The stack walk performed below can cause allocations (thus entering the host). But
-    // this is acceptable, since we're not supporting the use of SQL/F1 profiling and
-    // full-blown ETW CLR stacks (which would be redundant).
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonUnsupportedForSQLF1Profiling);
 
     m_FrameCount = 0;
     ETW::SamplingLog::EtwStackWalkStatus stackwalkStatus = SaveCurrentStack();
@@ -582,7 +581,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -595,7 +594,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -648,7 +647,7 @@ public:
     static bool IsNull(const element_t &e)
     {
         LIMITED_METHOD_CONTRACT;
-        return (e.th.AsTAddr() == NULL);
+        return (e.th.AsTAddr() == 0);
     }
 
     static const element_t Null()
@@ -1254,10 +1253,6 @@ VOID ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
     }
 
     TypeHandle th = TypeHandle::FromTAddr((TADDR) thAsAddr);
-    if (!th.IsRestored())
-    {
-        return;
-    }
 
     // Check to see if we've already logged this type.  If so, bail immediately.
     // Otherwise, mark that it's getting logged (by adding it to the hash), and fall
@@ -2764,7 +2759,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 #ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
 #else
-        PTR_ExceptionTracker pExInfo = NULL;
+        PTR_ExceptionTrackerBase pExInfo = NULL;
 #endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);
@@ -3258,7 +3253,7 @@ HRESULT ETW::CodeSymbolLog::GetInMemorySymbolsLength(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3344,7 +3339,7 @@ HRESULT ETW::CodeSymbolLog::ReadInMemorySymbols(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3454,22 +3449,22 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             }
 
             ULONG ulMethodToken=0;
-            auto pModule = method->GetModule_NoLogging();
+            auto pModule = method->GetModule();
             bool bIsDynamicMethod = method->IsDynamicMethod();
             BOOL bIsGenericMethod = FALSE;
-            if(method->GetMethodTable_NoLogging())
-                bIsGenericMethod = method->HasClassOrMethodInstantiation_NoLogging();
+            if(method->GetMethodTable())
+                bIsGenericMethod = method->HasClassOrMethodInstantiation();
 
             // Use MethodDesc if Dynamic or Generic methods
             if( bIsDynamicMethod || bIsGenericMethod)
             {
                 if(bIsGenericMethod)
-                    ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+                    ulMethodToken = (ULONG)method->GetMemberDef();
                 if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
                     ulMethodToken = (ULONG)0;
             }
             else
-                ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
+                ulMethodToken = (ULONG)method->GetMemberDef();
 
             SString tNamespace, tMethodName, tMethodSignature;
             method->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
@@ -3555,7 +3550,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 /*************************************************/
 /* This is called by the runtime when method jitting started */
 /*************************************************/
-VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER* methodDecoder, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
 {
     CONTRACTL {
         NOTHROW;
@@ -3570,7 +3565,7 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOr
                                         CLR_JIT_KEYWORD))
         {
             pMethodDesc->GetMethodInfo(*namespaceOrClassName, *methodName, *methodSignature);
-            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, namespaceOrClassName, methodName, methodSignature);
+            ETW::MethodLog::SendMethodJitStartEvent(pMethodDesc, methodDecoder, namespaceOrClassName, methodName, methodSignature);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3684,7 +3679,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
                 for (; iter.IsValid(); iter.Next())
                 {
                     MethodDesc *pMD = (MethodDesc *)(iter.GetMethodDesc());
-                    if(pMD && pMD->GetMethodTable_NoLogging() == pMethodTable)
+                    if(pMD && pMD->GetMethodTable() == pMethodTable)
                         ETW::MethodLog::SendMethodEvent(pMD, ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad, FALSE);
                 }
             }
@@ -3872,7 +3867,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagNgenMethodSet && bTraceFlagStartRundownSet)
                     enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad;
 
-                if(pModule->IsManifest() && bTraceFlagLoaderSet)
+                if(bTraceFlagLoaderSet)
                     ETW::LoaderLog::SendAssemblyEvent(pModule->GetAssembly(), enumerationOptions);
 
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
@@ -4075,7 +4070,7 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     BOOL bIsReadyToRun = pAssembly->GetPEAssembly()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
-    ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
+    ULONGLONG ullDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
     ULONGLONG ullBindingID = 0;
     ULONG ulAssemblyFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
@@ -4220,7 +4215,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
         // Some compilers set PointerToRawData but not AddressOfRawData as they put the
         // data at the end of the file in an unmapped part of the file
-        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != NULL) ?
+        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != 0) ?
             rgDebugEntries[i].AddressOfRawData :
             pLayout->OffsetToRva(rgDebugEntries[i].PointerToRawData);
 
@@ -4326,8 +4321,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bIsManifestModule = pModule->IsManifest();
-    ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4339,7 +4332,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
     ULONG ulReservedFlags = 0;
     ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
-                     (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
+                     // Always the manifest module - multi-module assemblies are no longer supported
+                     ETW::LoaderLog::LoaderStructs::ManifestModule |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
                      (bIsPartialReadyToRun ? ETW::LoaderLog::LoaderStructs::PartialReadyToRunModule : 0));
@@ -4353,13 +4347,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PWCHAR ModuleILPath=(PWCHAR)W(""), ModuleNativePath=(PWCHAR)W("");
 
-    if(bFireDomainModuleEvents)
-    {
-        ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
-    }
-
     LPCWSTR pEmptyString = W("");
-    SString moduleName = SString::Empty();
+    SString moduleName{ SString::Empty() };
 
     if(!bIsDynamicAssembly)
     {
@@ -4385,6 +4374,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
+        ULONGLONG ullAppDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
         if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
         {
             FireEtwDomainModuleLoad_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());
@@ -4463,7 +4453,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             BulkTypeEventLogger typeLogger;
 
-            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable_NoLogging();
+            ULONGLONG typeID = (ULONGLONG)pMethodDesc->GetMethodTable();
             ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, typeID, ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
             ULONGLONG loaderModuleID = (ULONGLONG)pMethodDesc->GetLoaderModule();
 
@@ -4498,7 +4488,7 @@ VOID ETW::MethodLog::SendMethodDetailsEvent(MethodDesc *pMethodDesc)
 
             FireEtwMethodDetails((ULONGLONG)pMethodDesc, // MethodID
                                         typeID,  // MethodType
-                                        pMethodDesc->GetMemberDef_NoLogging(), // MethodToken
+                                        pMethodDesc->GetMemberDef(), // MethodToken
                                         cParams,
                                         loaderModuleID,
                                         rgTypeParameters.OpenRawBuffer());
@@ -4528,7 +4518,12 @@ VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc,
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
-VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::SendMethodJitStartEvent(
+    MethodDesc *pMethodDesc,
+    COR_ILMETHOD_DECODER* methodDecoder,
+    SString *namespaceOrClassName,
+    SString *methodName,
+    SString *methodSignature)
 {
     CONTRACTL {
         THROWS;
@@ -4545,14 +4540,14 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W(""),szDtraceOutput3=W("");
 
     if(pMethodDesc) {
-        pModule = pMethodDesc->GetModule_NoLogging();
+        pModule = pMethodDesc->GetModule();
 
         SendMethodDetailsEvent(pMethodDesc);
 
         bool bIsDynamicMethod = pMethodDesc->IsDynamicMethod();
         BOOL bIsGenericMethod = FALSE;
-        if(pMethodDesc->GetMethodTable_NoLogging())
-            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+        if(pMethodDesc->GetMethodTable())
+            bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
         ullModuleID = (ULONGLONG)(TADDR) pModule;
         ullMethodIdentifier = (ULONGLONG)pMethodDesc;
@@ -4561,19 +4556,17 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
         if( bIsDynamicMethod || bIsGenericMethod)
         {
             if(bIsGenericMethod)
-                ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+                ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
             if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
                 ulMethodToken = (ULONG)0;
         }
         else
-            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
-
-        if(pMethodDesc->IsIL())
         {
-            COR_ILMETHOD_DECODER::DecoderStatus decoderstatus = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-            COR_ILMETHOD_DECODER ILHeader(pMethodDesc->GetILHeader(), pMethodDesc->GetMDImport(), &decoderstatus);
-            ulMethodILSize = (ULONG)ILHeader.GetCodeSize();
+            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
         }
+
+        if (methodDecoder != NULL)
+            ulMethodILSize = methodDecoder->GetCodeSize();
 
         SString tNamespace, tMethodName, tMethodSignature;
         if(!namespaceOrClassName|| !methodName|| !methodSignature || (methodName->IsEmpty() && namespaceOrClassName->IsEmpty() && methodSignature->IsEmpty()))
@@ -4645,12 +4638,12 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
             KEYWORDZERO);
     }
 
-    pModule = pMethodDesc->GetModule_NoLogging();
+    pModule = pMethodDesc->GetModule();
     bIsDynamicMethod = (BOOL)pMethodDesc->IsDynamicMethod();
     bHasSharedGenericCode = pMethodDesc->IsSharedByGenericInstantiations();
 
-    if(pMethodDesc->GetMethodTable_NoLogging())
-        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
+    if(pMethodDesc->GetMethodTable())
+        bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation();
 
     NativeCodeVersionId nativeCodeId = 0;
     ulMethodFlags = ulMethodFlags |
@@ -4711,12 +4704,12 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     {
         bShowVerboseOutput = TRUE;
         if(bIsGenericMethod)
-            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+            ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
         if(bIsDynamicMethod) // if its a generic and a dynamic method, we would set the methodtoken to 0
             ulMethodToken = (ULONG)0;
     }
     else
-        ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
+        ulMethodToken = (ULONG)pMethodDesc->GetMemberDef();
 
     SString tNamespace, tMethodName, tMethodSignature;
 
@@ -5524,11 +5517,8 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            if(pAssembly->GetDomain()->IsAppDomain())
-            {
-                Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
-                ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
-            }
+            Module* pModule = pAssembly->GetModule();
+            ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 
         // DC End or Unload events for Assembly
@@ -5806,13 +5796,38 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
         return false;
     }
 
-    if (Level <= Context.EventPipeProvider.Level)
+    if ((Level <= Context.EventPipeProvider.Level) ||
+        (Context.EventPipeProvider.Level == EP_EVENT_LEVEL_LOGALWAYS))
     {
         return (Keyword == (ULONGLONG)0) || (Keyword & Context.EventPipeProvider.EnabledKeywordsBitmask) != 0;
     }
 
     return false;
 }
+
+#ifdef TARGET_LINUX
+#include "user_events.h"
+bool UserEventsHelper::Enabled()
+{
+    return IsUserEventsEnabled();
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
+}
+#else // TARGET_LINUX
+bool UserEventsHelper::Enabled()
+{
+    return false;
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return false;
+}
+#endif // TARGET_LINUX
+
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)

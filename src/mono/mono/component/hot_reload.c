@@ -933,6 +933,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 			tbl->row_size = prev_table->row_size;
 			tbl->size_bitfield = prev_table->size_bitfield;
 		}
+		mono_metadata_compute_column_offsets (tbl);
 		tbl->rows_ = rows;
 		g_assert (tbl->rows_ > 0 && tbl->row_size != 0);
 
@@ -1463,239 +1464,27 @@ prepare_mutated_rows (const MonoTableInfo *table_enclog, MonoImage *image_base, 
 	}
 }
 
-/* Run some sanity checks first. If we detect unsupported scenarios, this
- * function will fail and the metadata update should be aborted. This should
- * run before anything in the metadata world is updated. */
+/*
+ * Returns TRUE if modifications or additions to the table imply that the execution engine should
+ * invalidate existing methods. It's better to be pessimistic (say TRUE more often) - most EnC
+ * deltas will lead to a change in behavior.
+ */
 static gboolean
-apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, gboolean *should_invalidate_transformed_code, MonoError *error)
+table_should_invalidate_transformed_code (int token_table)
 {
-	*should_invalidate_transformed_code = false;
-	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	guint32 rows = table_info_get_rows (table_enclog);
-
-	gboolean unsupported_edits = FALSE;
-
-	/* hack: make a pass over it, looking only for table method updates, in
-	 * order to give more meaningful error messages first */
-
-	for (guint32 i = 0; i < rows ; ++i) {
-		guint32 cols [MONO_ENCLOG_SIZE];
-		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
-
-		// FIXME: the top bit 0x8000000 of log_token is some kind of
-		// indicator see IsRecId in metamodelrw.cpp and
-		// MDInternalRW::EnumDeltaTokensInit which skips over those
-		// records when EditAndContinueModule::ApplyEditAndContinue is
-		// iterating.
-		int log_token = cols [MONO_ENCLOG_TOKEN];
-		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
-
-		int token_table = mono_metadata_token_table (log_token);
-		guint32 token_index = mono_metadata_token_index (log_token);
-
-		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
-
-
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows; prev gen had 0x%04x rows)\t%s\tfunc=0x%02x (\"%s\")\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), delta_info->count[token_table].prev_gen_rows, (is_addition ? "ADD" : "UPDATE"), func_code, funccode_to_str (func_code));
-
-
-		if (token_table != MONO_TABLE_METHOD)
-			continue;
-
-		/* adding a new parameter to a new method is ok */
-		if (func_code == ENC_FUNC_ADD_PARAM && is_addition)
-			continue;
-
-		g_assert (func_code == 0); /* anything else doesn't make sense here */
+	switch (token_table) {
+	case MONO_TABLE_METHOD:
+	case MONO_TABLE_PROPERTYMAP:
+	case MONO_TABLE_PROPERTY:
+	case MONO_TABLE_EVENTMAP:
+	case MONO_TABLE_METHODSEMANTICS:
+	case MONO_TABLE_CUSTOMATTRIBUTE:
+	case MONO_TABLE_PARAM:
+	case MONO_TABLE_TYPEDEF:
+		return TRUE;
+	default:
+		return FALSE;
 	}
-
-	for (guint32 i = 0; i < rows ; ++i) {
-		guint32 cols [MONO_ENCLOG_SIZE];
-		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
-
-		int log_token = cols [MONO_ENCLOG_TOKEN];
-		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
-
-		int token_table = mono_metadata_token_table (log_token);
-		guint32 token_index = mono_metadata_token_index (log_token);
-
-		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
-
-		switch (token_table) {
-		case MONO_TABLE_ASSEMBLYREF:
-			/* okay, supported */
-			break;
-		case MONO_TABLE_METHOD:
-			*should_invalidate_transformed_code = true;
-			if (func_code == ENC_FUNC_ADD_PARAM)
-				continue; /* ok, allowed */
-			/* handled above */
-			break;
-		case MONO_TABLE_FIELD:
-			/* ok */
-			g_assert (func_code == ENC_FUNC_DEFAULT);
-			break;
-		case MONO_TABLE_PROPERTYMAP: {
-			*should_invalidate_transformed_code = true;
-			if (func_code == ENC_FUNC_ADD_PROPERTY) {
-				g_assert (i + 1 < rows);
-				i++; /* skip the next record */
-				continue;
-			}
-			if (!is_addition) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
-				unsupported_edits = TRUE;
-				continue;
-			}
-			/* new rows, ok */
-			break;
-		}
-		case MONO_TABLE_PROPERTY: {
-			/* ok */
-			*should_invalidate_transformed_code = true;
-			g_assert (func_code == ENC_FUNC_DEFAULT);
-			break;
-		}
-		case MONO_TABLE_EVENTMAP: {
-			*should_invalidate_transformed_code = true;
-			if (func_code == ENC_FUNC_ADD_EVENT) {
-				g_assert (i + 1 < rows);
-				i++; /* skip the next record */
-				continue;
-			}
-			if (!is_addition) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
-				unsupported_edits = TRUE;
-				continue;
-			}
-			/* new rows, ok */
-			break;
-		}
-		case MONO_TABLE_METHODSEMANTICS: {
-			*should_invalidate_transformed_code = true;
-			if (is_addition) {
-				/* new rows are fine */
-				break;
-			} else {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
-				unsupported_edits = TRUE;
-				continue;
-			}
-		}
-		case MONO_TABLE_CUSTOMATTRIBUTE: {
-			*should_invalidate_transformed_code = true;
-			if (!is_addition) {
-				/* modifying existing rows is ok, as long as the parent and ctor are the same */
-				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
-				guint32 ca_base_cols [MONO_CUSTOM_ATTR_SIZE];
-				int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
-				g_assert (mapped_token != -1);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update.  mapped index = 0x%08x\n", i, log_token, mapped_token);
-
-				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_CUSTOMATTRIBUTE], mapped_token - 1, ca_upd_cols, MONO_CUSTOM_ATTR_SIZE);
-				mono_metadata_decode_row (&image_base->tables [MONO_TABLE_CUSTOMATTRIBUTE], token_index - 1, ca_base_cols, MONO_CUSTOM_ATTR_SIZE);
-
-				/* compare the ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] to ca_base_cols [MONO_CUSTOM_ATTR_PARENT]. */
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old Parent 0x%08x New Parent 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_PARENT], ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]);
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old ctor 0x%08x New ctor 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_TYPE], ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]);
-
-				/* TODO: when we support the ChangeCustomAttribute capability, the
-				 * parent might become 0 to delete attributes.  It may also be the
-				 * case that the MONO_CUSTOM_ATTR_TYPE will change.  Without that
-				 * capability, we trust that if the TYPE is not the same token, it
-				 * still resolves to the same MonoMethod* (but we can't check it in
-				 * pass1 because we haven't added the new AssemblyRefs yet.
-				 */
-				/* NOTE: Apparently Roslyn sometimes sends NullableContextAttribute
-				 * deletions even if the ChangeCustomAttribute capability is unset.
-				 * So tacitly accept updates where a custom attribute is deleted
-				 * (its parent is set to 0).  Once we support custom attribute
-				 * changes, we will support this kind of deletion for real.
-				 */
-				/* FIXME: https://github.com/dotnet/roslyn/issues/60125
-				 * Roslyn seems to emit CA rows out of order which puts rows with unexpected Parent values in the wrong place.
-				 */
-#ifdef DISALLOW_BROKEN_PARENT
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] && ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] != 0) {
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
-					unsupported_edits = TRUE;
-					continue;
-				}
-#endif
-				break;
-			} else  {
-				/* Added a row. ok */
-				break;
-			}
-		}
-		case MONO_TABLE_PARAM: {
-			*should_invalidate_transformed_code = true;
-			break;
-		}
-		case MONO_TABLE_TYPEDEF: {
-			*should_invalidate_transformed_code = true;
-			if (func_code == ENC_FUNC_ADD_METHOD) {
-				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
-				g_assert (i + 1 < rows);
-				guint32 next_cols [MONO_ENCLOG_SIZE];
-				mono_metadata_decode_row (table_enclog, i + 1, next_cols, MONO_ENCLOG_SIZE);
-				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
-				int next_token = next_cols [MONO_ENCLOG_TOKEN];
-				int next_table = mono_metadata_token_table (next_token);
-				guint32 next_index = mono_metadata_token_index (next_token);
-				g_assert (next_table == MONO_TABLE_METHOD);
-				/* expecting an added method */
-				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
-				i++; /* skip the next record */
-				continue;
-			}
-
-			if (func_code == ENC_FUNC_ADD_FIELD) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x AddField to klass 0x%08x, skipping next EnClog record", i, log_token, token_index);
-				g_assert (i + 1 < rows);
-				guint32 next_cols [MONO_ENCLOG_SIZE];
-				mono_metadata_decode_row (table_enclog, i + 1, next_cols, MONO_ENCLOG_SIZE);
-				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
-				int next_token = next_cols [MONO_ENCLOG_TOKEN];
-				int next_table = mono_metadata_token_table (next_token);
-				guint32 next_index = mono_metadata_token_index (next_token);
-				g_assert (next_table == MONO_TABLE_FIELD);
-				/* expecting an added field */
-				g_assert (next_index-1 >= delta_info->count[next_table].prev_gen_rows);
-				i++; /* skip the next record */
-				continue;
-			}
-			/* fallthru */
-		}
-		default:
-			if (!is_addition) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
-				unsupported_edits = TRUE;
-				continue;
-			}
-		}
-
-
-		/*
-		 * So the way a non-default func_code works is that it's attached to the EnCLog
-		 * record preceding the new member definition (so e.g. an addMethod code will be on
-		 * the preceding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
-		 */
-		switch (func_code) {
-			case ENC_FUNC_DEFAULT: /* default */
-				break;
-			default:
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x FunCode %d (%s) not supported (token=0x%08x)", i, log_token, func_code, funccode_to_str (func_code), log_token);
-				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: FuncCode %d (%s) not supported (token=0x%08x)", func_code, funccode_to_str (func_code), log_token);
-				unsupported_edits = TRUE;
-				continue;
-		}
-	}
-	return !unsupported_edits;
 }
 
 static void
@@ -2046,9 +1835,14 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 
 }
 
-/* do actual enclog application */
+/*
+ * Apply the entries from the EnC log to the runtime type system (as opposed to just mutating the
+ * metadata table contents).  This is "pass2" because historically there was a "pass1" that just
+ * validated the EnC log to ensure that Mono didn't see any changes that it was not prepared to
+ * handle yet.  Pass1 was non-destructive, while Pass2 actually makes changes that are hard to undo.
+ */
 static gboolean
-apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
+apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, gboolean *should_invalidate_transformed_code, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	guint32 rows = table_info_get_rows (table_enclog);
@@ -2096,6 +1890,8 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
 
+		*should_invalidate_transformed_code |= table_should_invalidate_transformed_code (token_table);
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d:\t%s", i, log_token, mono_meta_table_name (token_table), func_code, (is_addition ? "ADD" : "UPDATE"));
 
 
@@ -2134,7 +1930,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 
 		default:
-			g_error ("EnC: unsupported FuncCode, should be caught by pass1");
+			g_error ("EnC: unsupported FuncCode");
 			break;
 		}
 
@@ -2193,7 +1989,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			if (is_addition) {
-				g_assertf (add_member_typedef, "EnC: new method added but I don't know the class, should be caught by pass1");
+				g_assertf (add_member_typedef, "EnC: malformed EnC delta, new method added but I don't know the class");
 				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to new class 0x%08x", log_token, add_member_typedef);
 					pass2_context_add_skeleton_member (ctx, add_member_typedef, log_token);
@@ -2279,16 +2075,42 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					 * especially since from the next generation's point of view
 					 * that's what adding a field/method will be. */
 					break;
-				case ENC_FUNC_ADD_EVENT:
-					g_assert_not_reached (); /* FIXME: implement me */
 				default:
 					g_assert_not_reached (); /* unknown func_code */
 				}
 				break;
+			} else {
+				switch (func_code) {
+				case ENC_FUNC_DEFAULT:
+					// Roslyn sends this sometimes when it deletes a custom
+					// attribute.  In this case no rows of the table def have
+					// should have changed from the previous generation.
+
+					// Note: we may want to check that Parent and Interfaces
+					// haven't changed.  But note that's tricky to do: we can't
+					// just compare tokens: the parent could be a TypeRef token,
+					// and roslyn does send a new typeref row (that ends up
+					// referencing the same type definition).  But we also don't
+					// want to convert to a `MonoClass*` too eagerly - if the
+					// class hasn't been used yet we don't want to kick off
+					// class initialization (which could mention the current
+					// class thanks to generic arguments - see class-init.c)
+					// Same with Interfaces.  Fields and Methods in an EnC
+					// updated row are zero.  So that only really leaves
+					// Attributes as the only column we can compare, which
+					// wouldn't tell us much (and perhaps in the future Roslyn
+					// could allow changing visibility, so we wouldn't want to
+					// compare for equality, anyway) So... we're done.
+					break;
+				case ENC_FUNC_ADD_METHOD:
+				case ENC_FUNC_ADD_FIELD:
+					/* modifying an existing class by adding a method or field, etc. */
+					break;
+				default:
+					/* not expecting anything else */
+					g_assert_not_reached ();
+				}
 			}
-			/* modifying an existing class by adding a method or field, etc. */
-			g_assert (!is_addition);
-			g_assert (func_code != ENC_FUNC_DEFAULT);
 			break;
 		}
 		case MONO_TABLE_NESTEDCLASS: {
@@ -2406,11 +2228,9 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			break;
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
-			/* ok, pass1 checked for disallowed modifications */
 			break;
 		}
 		case MONO_TABLE_PARAM: {
-			/* ok, pass1 checked for disallowed modifications */
 			/* if there were multiple added methods, this comes in as several method
 			 * additions, followed by the parameter additions.
 			 *
@@ -2451,7 +2271,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
 			g_assert (is_addition);
-			/* added rows ok (for new or existing classes). modifications rejected by pass1 */
+			/* added rows ok (for new or existing classes). don't expect modifications */
 			uint32_t sema_cols[MONO_METHOD_SEMA_SIZE];
 
 			uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
@@ -2627,8 +2447,6 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	/* Process EnCMap and compute number of added/modified rows from this
 	 * delta.  This enables computing row indexes relative to the delta.
-	 * We use it in pass1 to bail out early if the EnCLog has unsupported
-	 * edits.
 	 */
 	if (!delta_info_compute_table_records (image_dmeta, image_base, base_info, delta_info)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on computing delta table info (base=%s)", basename);
@@ -2642,13 +2460,6 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Populated mutated tables for delta image %p", image_dmeta);
 
-	gboolean should_invalidate_transformed_code = false;
-	if (!apply_enclog_pass1 (image_base, image_dmeta, delta_info, dil_bytes, dil_length, &should_invalidate_transformed_code, error)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error on sanity-checking delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
-		hot_reload_update_cancel (generation);
-		return;
-	}
-
 	/* if there are updates, start tracking the tables of the base image, if we weren't already. */
 	if (table_info_get_rows (table_enclog))
 		table_to_image_add (image_base);
@@ -2659,9 +2470,10 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
 
+	gboolean should_invalidate_transformed_code = FALSE;
 	Pass2Context pass2ctx = {0,};
 	pass2_context_init (&pass2ctx);
-	if (!apply_enclog_pass2 (&pass2ctx, image_base, base_info, generation, image_dmeta, delta_info, dil_bytes, dil_length, error)) {
+	if (!apply_enclog_pass2 (&pass2ctx, image_base, base_info, generation, image_dmeta, delta_info, dil_bytes, dil_length, &should_invalidate_transformed_code, error)) {
 		pass2_context_destroy (&pass2ctx);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		hot_reload_update_cancel (generation);
@@ -2964,14 +2776,6 @@ add_param_info_for_method (BaselineInfo *base_info, uint32_t param_token, uint32
 	}
 }
 
-/* HACK - keep in sync with locator_t in metadata/metadata.c */
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} upd_locator_t;
-
 void*
 hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
 {
@@ -2992,11 +2796,10 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	g_assert (success);
 	uint32_t rows = table_info_get_rows (latest_mod_table);
 
-	upd_locator_t *loc = (upd_locator_t*)key;
+	mono_locator_t *loc = (mono_locator_t*)key;
 	g_assert (loc);
-	loc->result = 0;
 	/* HACK: this is so that the locator can compute the row index of the given row. but passing the mutant table to other metadata functions could backfire. */
-	loc->t = (MonoTableInfo*)latest_mod_table;
+	*loc = mono_locator_init ((MonoTableInfo*)latest_mod_table, loc->idx, loc->col_idx);
 	for (uint32_t idx = 0; idx < rows; ++idx) {
 		const char *row = latest_mod_table->base + idx * latest_mod_table->row_size;
 		if (!comparer (loc, row))
@@ -3123,7 +2926,7 @@ add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, 
 	parent_info->generation = generation;
 
 	return prop;
-	
+
 }
 
 MonoClassMetadataUpdateEvent *
@@ -3151,7 +2954,7 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 	parent_info->generation = generation;
 
 	return evt;
-	
+
 }
 
 
@@ -3206,7 +3009,7 @@ add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base
 	g_assert (m_event_is_from_update (evt));
 
 	MonoMethod **dest = NULL;
-	
+
 	switch (semantics) {
 	case METHOD_SEMANTIC_ADD_ON:
 		dest = &evt->add;
@@ -3614,7 +3417,7 @@ recompute_ginst_props (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateProperty *gtd_added_prop = (MonoClassMetadataUpdateProperty *)ptr->data;
 		MonoClassMetadataUpdateProperty *added_prop = mono_class_new0 (ginst, MonoClassMetadataUpdateProperty, 1);
-		
+
 		added_prop->prop = gtd_added_prop->prop;
 		added_prop->token = gtd_added_prop->token;
 
@@ -3642,7 +3445,7 @@ recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateEvent *gtd_added_event = (MonoClassMetadataUpdateEvent *)ptr->data;
 		MonoClassMetadataUpdateEvent *added_event = mono_class_new0 (ginst, MonoClassMetadataUpdateEvent, 1);
-		
+
 		added_event->evt = gtd_added_event->evt;
 
 		if (added_event->evt.add)
@@ -3655,7 +3458,7 @@ recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 			added_event->evt.raise = mono_class_inflate_generic_method_full_checked (
 				added_event->evt.raise, ginst, mono_class_get_context (ginst), error);
 		mono_error_assert_ok (error); /*FIXME proper error handling*/
-		
+
 		added_event->evt.parent = ginst;
 
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
@@ -3695,7 +3498,7 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 {
 	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
-  
+
 	if (!info)
 		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
 
@@ -3706,13 +3509,13 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 
 	recompute_ginst_events (ginst, info, gtd, gtd_info, error);
 	mono_error_assert_ok (error);
-	
+
 	recompute_ginst_fields (ginst, info, gtd, gtd_info, error);
 	mono_error_assert_ok (error);
 
 	// finally, update the generation of the ginst info to the same one as the gtd
 	info->generation = gtd_info->generation;
-	// we're done info is now up to date    
+	// we're done info is now up to date
 }
 
 static MonoProperty *

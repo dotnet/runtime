@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -83,7 +84,7 @@ namespace Internal.Cryptography
 
             ReadOnlySpan<char> s = hexString;
 
-            if (s.Length != 0 && s[0] == '\u200E')
+            if (s.StartsWith('\u200E'))
             {
                 s = s.Slice(1);
             }
@@ -118,7 +119,7 @@ namespace Internal.Cryptography
                 // so add it to the buffer.
                 if (!byteInProgress)
                 {
-                    Debug.Assert(index < cbHex, "index < cbHex");
+                    Debug.Assert(index < cbHex);
 
                     hex[index] = accum;
                     index++;
@@ -129,7 +130,7 @@ namespace Internal.Cryptography
             // The .NET Framework algorithm removed all whitespace before the loop, then went up to length/2
             // of what was left.  This means that in the event of odd-length input the last char is
             // ignored, no exception should be raised.
-            Debug.Assert(index == cbHex, "index == cbHex");
+            Debug.Assert(index == cbHex);
 
             return hex;
         }
@@ -336,6 +337,15 @@ namespace Internal.Cryptography
         {
             // Based on the internal implementation from MemoryMarshal.
             return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+        }
+
+        internal static ReadOnlySpan<byte> ArrayToSpanOrThrow(
+            byte[] arg,
+            [CallerArgumentExpression(nameof(arg))] string? paramName = null)
+        {
+            ArgumentNullException.ThrowIfNull(arg, paramName);
+
+            return arg;
         }
     }
 }

@@ -9,7 +9,7 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -22,7 +22,7 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -228,11 +228,11 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
         /* A?andBC:xorBC */   { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* xnorAandBC */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* andCB */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* B?C:norAC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?C:norAC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* A?andBC:C */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* B?C:!A */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?C:!A */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* A?andBC:B */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* C?B:!A */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?B:!A */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* A?andBC:orBC */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* nandAnandBC */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* andAxnorBC */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
@@ -246,80 +246,80 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
         /* A?xnorBC:andBC */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* xnorCB */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* A?xnorBC:C */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* B?C:nandAC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?C:nandAC */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* A?xnorBC:B */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* C?B:nandBA */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?B:nandBA */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* A?xnorBC:orBC */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* nandAxorBC */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* andCA */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?C:norBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:norBC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* B?andAC:C */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* A?C:!B */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:!B */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* B?xnorAC:andAC */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* xnorCA */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?C:xorBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* A?C:nandBC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:xorBC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:nandBC */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* andCorAB */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* xnorCorBA */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* C */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orCnorBA */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?C:B */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:B */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* C?orBA:!A */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
-        /* A?C:orBC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:orBC */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* orC!A */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* B?andAC:A */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* C?A:!B */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?A:!B */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* B?andAC:orAC */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* nandBnandAC */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* B?xnorAC:A */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* C?A:nandBA */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?A:nandBA */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* B?xnorAC:orAC */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* nandBxorAC */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* B?C:A */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?C:A */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* C?orBA:!B */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
-        /* B?C:orAC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?C:orAC */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* orC!B */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* C?orBA:xorBA */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* C?orBA:nandBA */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* orCxorBA */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orCnandBA */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* andBA */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?B:norBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:norBC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* C?xnorBA:andBA */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* xnorBA */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* C?andBA:B */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
-        /* A?B:!C */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* A?B:xorBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* A?B:nandBC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:!C */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:xorBC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:nandBC */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* andBorAC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* xnorBorAC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?B:C */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:C */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* B?orAC:!A */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* B */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orBnorAC */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* A?B:orBC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:orBC */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* orB!A */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* C?andBA:A */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
-        /* B?A:!C */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* B?A:xorAC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* B?A:nandAC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:!C */          { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:xorAC */       { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:nandAC */      { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* C?andBA:orBA */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* nandCnandBA */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* C?xnorBA:orBA */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* nandCxorBA */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* C?B:A */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?B:A */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* B?orAC:!C */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* B?orAC:xorAC */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* B?orAC:nandAC */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
-        /* C?B:orBA */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?B:orBA */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* orB!C */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orBxorAC */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orBnandAC */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* andAorBC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* xnorAorBC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* B?A:C */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:C */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* A?orBC:!B */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
-        /* C?A:B */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?A:B */           { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* A?orBC:!C */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* A?orBC:xorBC */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
         /* A?orBC:nandBC */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
@@ -333,9 +333,9 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
         /* nandAnorBC */      { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* A */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orAnorBC */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* B?A:orAC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:orAC */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
         /* orA!B */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
-        /* C?A:orBA */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?A:orBA */        { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
         /* orA!C */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orAxorBC */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
         /* orAnandBC */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
@@ -351,6 +351,365 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
     // clang-format on
 
     return ternaryLogicFlags[control];
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given the oper and two existing control bytes
+//
+// Arguments:
+//    oper -- the operation being performed
+//    op1  -- the control byte for op1
+//    op2  -- the control byte for op2
+//
+// Return Value:
+//    The new control byte evaluated from performing oper on op1 and op2
+//
+uint8_t TernaryLogicInfo::GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2)
+{
+    switch (oper)
+    {
+        case GT_AND:
+        {
+            return static_cast<uint8_t>(op1 & op2);
+        }
+
+        case GT_AND_NOT:
+        {
+            return static_cast<uint8_t>(~op1 & op2);
+        }
+
+        case GT_OR:
+        {
+            return static_cast<uint8_t>(op1 | op2);
+        }
+
+        case GT_XOR:
+        {
+            return static_cast<uint8_t>(op1 ^ op2);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given a ternary logic oper and two inputs
+//
+// Arguments:
+//    oper -- the operation being performed
+//    op1  -- the control byte for op1, this is ignored for unary oper
+//    op2  -- the control byte for op2
+//
+// Return Value:
+//    The new control byte evaluated from performing oper on op1 and op2
+//
+uint8_t TernaryLogicInfo::GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2)
+{
+    switch (oper)
+    {
+        case TernaryLogicOperKind::Select:
+        {
+            return op2;
+        }
+
+        case TernaryLogicOperKind::Not:
+        {
+            return ~op2;
+        }
+
+        case TernaryLogicOperKind::And:
+        {
+            return op1 & op2;
+        }
+
+        case TernaryLogicOperKind::Nand:
+        {
+            return ~(op1 & op2);
+        }
+
+        case TernaryLogicOperKind::Or:
+        {
+            return op1 | op2;
+        }
+
+        case TernaryLogicOperKind::Nor:
+        {
+            return ~(op1 | op2);
+        }
+
+        case TernaryLogicOperKind::Xor:
+        {
+            return op1 ^ op2;
+        }
+
+        case TernaryLogicOperKind::Xnor:
+        {
+            return ~(op1 ^ op2);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// GetTernaryControlByte: Get the control byte for a TernaryLogic operation
+//   given an existing info and three control bytes
+//
+// Arguments:
+//    info -- the info describing the operation being performed
+//    op1  -- the control byte for op1
+//    op2  -- the control byte for op2
+//    op3  -- the control byte for op3
+//
+// Return Value:
+//    The new control byte evaluated from performing info on op1, op2, and op3
+//
+uint8_t TernaryLogicInfo::GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3)
+{
+    uint8_t oper1Result;
+
+    switch (info.oper1Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper2 == TernaryLogicOperKind::None);
+            assert(info.oper2Use == TernaryLogicUseFlags::None);
+
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            switch (info.oper1)
+            {
+                case TernaryLogicOperKind::False:
+                {
+                    oper1Result = 0x00;
+                    break;
+                }
+
+                case TernaryLogicOperKind::True:
+                {
+                    oper1Result = 0xFF;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, 0x00, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AB:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op1, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AC:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op1, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::BC:
+        {
+            oper1Result = GetTernaryControlByte(info.oper1, op2, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::ABC:
+        {
+            assert(info.oper2 == TernaryLogicOperKind::None);
+            assert(info.oper2Use == TernaryLogicUseFlags::None);
+
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            switch (info.oper1)
+            {
+                case TernaryLogicOperKind::Nor:
+                {
+                    oper1Result = ~(op1 | op2 | op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::Minor:
+                {
+                    oper1Result = 0x17;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Xnor:
+                {
+                    oper1Result = ~(op1 ^ op2 ^ op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::Nand:
+                {
+                    oper1Result = ~(op1 & op2 & op3);
+                    break;
+                }
+
+                case TernaryLogicOperKind::And:
+                {
+                    oper1Result = op1 & op2 & op3;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Xor:
+                {
+                    oper1Result = op1 ^ op2 ^ op3;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Major:
+                {
+                    oper1Result = 0xE8;
+                    break;
+                }
+
+                case TernaryLogicOperKind::Or:
+                {
+                    oper1Result = op1 | op2 | op3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint8_t oper2Result;
+
+    switch (info.oper2Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            assert(info.oper3Use == TernaryLogicUseFlags::None);
+
+            oper2Result = oper1Result;
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, oper1Result, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AB:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, op1, op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::AC:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, op1, op3);
+            break;
+        }
+
+        case TernaryLogicUseFlags::BC:
+        {
+            oper2Result = GetTernaryControlByte(info.oper2, op2, op3);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint8_t oper3Result;
+
+    switch (info.oper3Use)
+    {
+        case TernaryLogicUseFlags::None:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::None);
+            oper3Result = oper2Result;
+            break;
+        }
+
+        case TernaryLogicUseFlags::A:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op1) | (oper2Result & ~op1);
+            break;
+        }
+
+        case TernaryLogicUseFlags::B:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op2) | (oper2Result & ~op2);
+            break;
+        }
+
+        case TernaryLogicUseFlags::C:
+        {
+            assert(info.oper3 == TernaryLogicOperKind::Cond);
+            oper3Result = (oper1Result & op3) | (oper2Result & ~op3);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return oper3Result;
 }
 #endif // TARGET_XARCH
 
@@ -400,74 +759,210 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return simdBaseJitType;
 }
 
-//------------------------------------------------------------------------
-// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
-//
-// Arguments:
-//    hwIntrinsicID -- The id for the HW intrinsic
-//
-// Return Value:
-//   Returns true if this intrinsic requires value numbering to add an
-//   extra SimdType argument that encodes the resulting type.
-//   If we don't do this overloaded versions can return the same VN
-//   leading to incorrect CSE substitutions.
-//
-/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
+struct HWIntrinsicIsaRange
 {
-    // No extra type information is needed for scalar/special HW Intrinsic.
-    //
-    unsigned simdSize = 0;
-    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
-    {
-        return false;
-    }
+    NamedIntrinsic FirstId;
+    NamedIntrinsic LastId;
+};
 
-    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
-
-    // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give them a unique value number, and don't add an extra argument.
-    //
-    if (numArgs == -1)
-    {
-        return false;
-    }
-
-    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
-    // We set  diffInsCount to the number of instructions that can execute differently.
-    //
-    unsigned diffInsCount = 0;
-#ifdef TARGET_XARCH
-    instruction lastIns = INS_invalid;
+static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
+// clang-format off
+#if defined(TARGET_XARCH)
+    { FIRST_NI_X86Base, LAST_NI_X86Base },
+    { FIRST_NI_SSE, LAST_NI_SSE },
+    { FIRST_NI_SSE2, LAST_NI_SSE2 },
+    { FIRST_NI_SSE3, LAST_NI_SSE3 },
+    { FIRST_NI_SSSE3, LAST_NI_SSSE3 },
+    { FIRST_NI_SSE41, LAST_NI_SSE41 },
+    { FIRST_NI_SSE42, LAST_NI_SSE42 },
+    { FIRST_NI_AVX, LAST_NI_AVX },
+    { FIRST_NI_AVX2, LAST_NI_AVX2 },
+    { FIRST_NI_AES, LAST_NI_AES },
+    { FIRST_NI_BMI1, LAST_NI_BMI1 },
+    { FIRST_NI_BMI2, LAST_NI_BMI2 },
+    { FIRST_NI_FMA, LAST_NI_FMA },
+    { FIRST_NI_LZCNT, LAST_NI_LZCNT },
+    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },
+    { FIRST_NI_POPCNT, LAST_NI_POPCNT },
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },
+    { FIRST_NI_Vector256, LAST_NI_Vector256 },
+    { FIRST_NI_Vector512, LAST_NI_Vector512 },
+    { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },
+    { NI_Illegal, NI_Illegal },                                 // MOVBE
+    { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },
+    { NI_Illegal, NI_Illegal },                                 // EVEX
+    { FIRST_NI_AVX512F, LAST_NI_AVX512F },
+    { FIRST_NI_AVX512F_VL, LAST_NI_AVX512F_VL },
+    { FIRST_NI_AVX512BW, LAST_NI_AVX512BW },
+    { FIRST_NI_AVX512BW_VL, LAST_NI_AVX512BW_VL },
+    { FIRST_NI_AVX512CD, LAST_NI_AVX512CD },
+    { FIRST_NI_AVX512CD_VL, LAST_NI_AVX512CD_VL },
+    { FIRST_NI_AVX512DQ, LAST_NI_AVX512DQ },
+    { FIRST_NI_AVX512DQ_VL, LAST_NI_AVX512DQ_VL },
+    { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },
+    { FIRST_NI_AVX512VBMI_VL, LAST_NI_AVX512VBMI_VL },
+    { FIRST_NI_AVX10v1, LAST_NI_AVX10v1 },
+    { FIRST_NI_AVX10v1_V512, LAST_NI_AVX10v1_V512 },
+    { NI_Illegal, NI_Illegal },                                 // VectorT128
+    { NI_Illegal, NI_Illegal },                                 // VectorT256
+    { NI_Illegal, NI_Illegal },                                 // VectorT512
+    { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },
+    { FIRST_NI_SSE_X64, LAST_NI_SSE_X64 },
+    { FIRST_NI_SSE2_X64, LAST_NI_SSE2_X64 },
+    { NI_Illegal, NI_Illegal },                                 // SSE3_X64
+    { NI_Illegal, NI_Illegal },                                 // SSSE3_X64
+    { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },
+    { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX2_X64
+    { NI_Illegal, NI_Illegal },                                 // AES_X64
+    { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },
+    { FIRST_NI_BMI2_X64, LAST_NI_BMI2_X64 },
+    { NI_Illegal, NI_Illegal },                                 // FMA_X64
+    { FIRST_NI_LZCNT_X64, LAST_NI_LZCNT_X64 },
+    { NI_Illegal, NI_Illegal },                                 // PCLMULQDQ_X64
+    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVXVNNI_X64
+    { NI_Illegal, NI_Illegal },                                 // MOVBE_X64
+    { NI_Illegal, NI_Illegal },                                 // X86Serialize_X64
+    { NI_Illegal, NI_Illegal },                                 // EVEX_X64
+    { FIRST_NI_AVX512F_X64, LAST_NI_AVX512F_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX512F_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512BW_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512BW_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512CD_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512CD_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_VL_X64
+    { FIRST_NI_AVX10v1_X64, LAST_NI_AVX10v1_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX10v1_V512_X64
+#elif defined (TARGET_ARM64)
+    { FIRST_NI_ArmBase, LAST_NI_ArmBase },
+    { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },
+    { FIRST_NI_Aes, LAST_NI_Aes },
+    { FIRST_NI_Crc32, LAST_NI_Crc32 },
+    { FIRST_NI_Dp, LAST_NI_Dp },
+    { FIRST_NI_Rdm, LAST_NI_Rdm },
+    { FIRST_NI_Sha1, LAST_NI_Sha1 },
+    { FIRST_NI_Sha256, LAST_NI_Sha256 },
+    { NI_Illegal, NI_Illegal },                         // Atomics
+    { FIRST_NI_Vector64, LAST_NI_Vector64 },
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },
+    { NI_Illegal, NI_Illegal },                         // Dczva
+    { NI_Illegal, NI_Illegal },                         // Rcpc
+    { NI_Illegal, NI_Illegal },                         // VectorT128
+    { NI_Illegal, NI_Illegal },                         // Rcpc2
+    { FIRST_NI_Sve, LAST_NI_Sve },
+    { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },
+    { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Aes_Arm64
+    { FIRST_NI_Crc32_Arm64, LAST_NI_Crc32_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Dp_Arm64
+    { FIRST_NI_Rdm_Arm64, LAST_NI_Rdm_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+#else
+#error Unsupported platform
 #endif
-    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
+    // clang-format on
+};
+
+#if defined(DEBUG)
+static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic ni, const HWIntrinsicInfo& info)
+{
+    // We should have found the entry we expected to find here
+    assert(info.id == ni);
+
+    // It should belong to the expected ISA
+    assert(info.isa == isa);
+
+    if ((info.simdSize != -1) && (info.simdSize != 0))
     {
-        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
-        if (curIns != INS_invalid)
-        {
-#ifdef TARGET_XARCH
-            if (curIns != lastIns)
-            {
-                diffInsCount++;
-                // remember the last valid instruction that we saw
-                lastIns = curIns;
-            }
-#elif defined(TARGET_ARM64)
-            // On ARM64 we use the same instruction and specify an insOpt arrangement
-            // so we always consider the instruction operation to be different
-            //
-            diffInsCount++;
-#endif // TARGET
-            if (diffInsCount >= 2)
-            {
-                // We can  early exit the loop now
-                break;
-            }
-        }
+        // We should only have known SIMD sizes
+#if defined(TARGET_ARM64)
+        assert((info.simdSize == 8) || (info.simdSize == 16));
+#elif defined(TARGET_XARCH)
+        assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#else
+        unreached();
+#endif
     }
 
-    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
-    return (diffInsCount >= 2);
+    if (info.numArgs != -1)
+    {
+        // We should only have an expected number of arguments
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+        assert((info.numArgs >= 0) && (info.numArgs <= 5));
+#else
+        unreached();
+#endif
+    }
+
+    // TODO: There's more we could validate here in terms of flags, instructions used, etc.
+    // Some of this is already done ad-hoc elsewhere throughout the JIT
 }
+
+static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntrinsicIsaRange& isaRange)
+{
+    // Both entries should be illegal if either is
+    if (isaRange.FirstId == NI_Illegal)
+    {
+        assert(isaRange.LastId == NI_Illegal);
+        return;
+    }
+    assert(isaRange.LastId != NI_Illegal);
+
+    // Both entries should belong to the expected ISA
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
+
+    // The last ID should be the same as or after the first ID
+    assert(isaRange.FirstId <= isaRange.LastId);
+
+    // The ID before the range should not be part of the expected ISA
+    NamedIntrinsic prevId = static_cast<NamedIntrinsic>(isaRange.FirstId - 1);
+    assert((prevId == NI_HW_INTRINSIC_START) || (HWIntrinsicInfo::lookupIsa(prevId) != isa));
+
+    // The ID after the range should not be part of the expected ISA
+    NamedIntrinsic nextId = static_cast<NamedIntrinsic>(isaRange.LastId + 1);
+#if defined(TARGET_ARM64)
+    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa) ||
+           (nextId == SPECIAL_NI_Sve));
+#else
+    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa));
+#endif
+
+    NamedIntrinsic         ni       = static_cast<NamedIntrinsic>(isaRange.FirstId);
+    const HWIntrinsicInfo* prevInfo = &HWIntrinsicInfo::lookup(ni);
+    ValidateHWIntrinsicInfo(isa, ni, *prevInfo);
+
+    size_t count = (isaRange.LastId - isaRange.FirstId) + 1;
+
+    for (size_t i = 1; i < count; i++)
+    {
+        ni                          = static_cast<NamedIntrinsic>(isaRange.FirstId + i);
+        const HWIntrinsicInfo* info = &HWIntrinsicInfo::lookup(ni);
+        ValidateHWIntrinsicInfo(isa, ni, *info);
+
+        // The current name should be sorted after the previous
+        assert(strcmp(info->name, prevInfo->name) > 0);
+
+        prevInfo = info;
+    }
+}
+
+static void ValidateHWIntrinsicIsaRangeArray()
+{
+    for (size_t i = 0; i < ARRAY_SIZE(hwintrinsicIsaRangeArray); i++)
+    {
+        CORINFO_InstructionSet isa = static_cast<CORINFO_InstructionSet>(i + 1);
+        ValidateHWIntrinsicIsaRange(isa, hwintrinsicIsaRangeArray[i]);
+    }
+}
+#endif
 
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
@@ -487,7 +982,16 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          const char*       methodName,
                                          const char*       enclosingClassName)
 {
-    // TODO-Throughput: replace sequential search by binary search
+#if defined(DEBUG)
+    static bool validationCompleted = false;
+
+    if (!validationCompleted)
+    {
+        ValidateHWIntrinsicIsaRangeArray();
+        validationCompleted = true;
+    }
+#endif // DEBUG
+
     CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
@@ -496,8 +1000,21 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 
     bool     isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
-    bool     isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    bool     isHardwareAcceleratedProp = false;
+    bool     isSupportedProp           = false;
     uint32_t vectorByteLength          = 0;
+
+    if (strncmp(methodName, "get_Is", 6) == 0)
+    {
+        if (strcmp(methodName + 6, "HardwareAccelerated") == 0)
+        {
+            isHardwareAcceleratedProp = true;
+        }
+        else if (strcmp(methodName + 6, "Supported") == 0)
+        {
+            isSupportedProp = true;
+        }
+    }
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -507,25 +1024,28 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
         // not important enough to bump the minimal Sse version here)
 
-        if (strcmp(className, "Vector128") == 0)
+        if (isa == InstructionSet_Vector128)
         {
             isa              = InstructionSet_SSE2;
             vectorByteLength = 16;
         }
-        else if (strcmp(className, "Vector256") == 0)
+        else if (isa == InstructionSet_Vector256)
         {
             isa              = InstructionSet_AVX2;
             vectorByteLength = 32;
         }
-        else if (strcmp(className, "Vector512") == 0)
+        else if (isa == InstructionSet_Vector512)
         {
             isa              = InstructionSet_AVX512F;
             vectorByteLength = 64;
         }
+        else
+        {
+            assert((strcmp(className, "Vector128") != 0) && (strcmp(className, "Vector256") != 0) &&
+                   (strcmp(className, "Vector512") != 0));
+        }
     }
 #endif
-
-    bool isSupportedProp = (strcmp(methodName, "get_IsSupported") == 0);
 
     if (isSupportedProp && (strncmp(className, "Vector", 6) == 0))
     {
@@ -621,25 +1141,41 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif
 
-    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
+    size_t isaIndex = static_cast<size_t>(isa) - 1;
+    assert(isaIndex < ARRAY_SIZE(hwintrinsicIsaRangeArray));
+
+    const HWIntrinsicIsaRange& isaRange = hwintrinsicIsaRangeArray[isaIndex];
+
+    if (isaRange.FirstId == NI_Illegal)
     {
-        const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
+        return NI_Illegal;
+    }
 
-        if (isa != hwIntrinsicInfoArray[i].isa)
+    size_t rangeLower = isaRange.FirstId;
+    size_t rangeUpper = isaRange.LastId;
+
+    while (rangeLower <= rangeUpper)
+    {
+        // This is safe since rangeLower and rangeUpper will never be negative
+        size_t rangeIndex = (rangeUpper + rangeLower) / 2;
+
+        NamedIntrinsic         ni            = static_cast<NamedIntrinsic>(rangeIndex);
+        const HWIntrinsicInfo& intrinsicInfo = HWIntrinsicInfo::lookup(ni);
+
+        int sortOrder = strcmp(methodName, intrinsicInfo.name);
+
+        if (sortOrder < 0)
         {
-            continue;
+            rangeUpper = rangeIndex - 1;
         }
-
-        int numArgs = static_cast<unsigned>(intrinsicInfo.numArgs);
-
-        if ((numArgs != -1) && (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs)))
+        else if (sortOrder > 0)
         {
-            continue;
+            rangeLower = rangeIndex + 1;
         }
-
-        if (strcmp(methodName, intrinsicInfo.name) == 0)
+        else
         {
-            NamedIntrinsic ni = intrinsicInfo.id;
+            assert(sortOrder == 0);
+            assert((intrinsicInfo.numArgs == -1) || (sig->numArgs == static_cast<uint8_t>(intrinsicInfo.numArgs)));
 
 #if defined(TARGET_XARCH)
             // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
@@ -647,7 +1183,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             {
                 return NI_Illegal;
             }
-#endif
+#endif // TARGET_XARCH
+
             return ni;
         }
     }
@@ -745,16 +1282,11 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 // Arguments:
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
-//    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
-                                        CORINFO_CLASS_HANDLE argClass,
-                                        bool                 expectAddr,
-                                        GenTree*             newobjThis)
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
 {
     GenTree* arg = nullptr;
 
@@ -768,31 +1300,12 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         assert(varTypeIsSIMD(argType));
 
-        if (newobjThis == nullptr)
-        {
-            if (expectAddr)
-            {
-                arg = gtNewLoadValueNode(argType, impPopStack().val);
-            }
-            else
-            {
-                arg = impSIMDPopStack();
-            }
-            assert(varTypeIsSIMD(arg));
-        }
-        else
-        {
-            assert(newobjThis->IsLclVarAddr());
-            arg = newobjThis;
-
-            // push newobj result on type stack
-            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(argClass));
-        }
+        arg = impSIMDPopStack();
+        assert(varTypeIsSIMDOrMask(arg));
     }
     else
     {
-        assert(varTypeIsArithmetic(argType) || ((argType == TYP_BYREF) && (newobjThis == nullptr)));
+        assert(varTypeIsArithmetic(argType) || (argType == TYP_BYREF));
 
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
@@ -832,10 +1345,10 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 #ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic) && !HWIntrinsicInfo::HasFullRangeImm(intrinsic)
 #endif
-            )
+    )
     {
         assert(!immOp->IsCnsIntOrI());
-        assert(varTypeIsUnsigned(immOp));
+        assert(varTypeIsIntegral(immOp));
 
         return addRangeCheckForHWIntrinsic(immOp, immLowerBound, immUpperBound);
     }
@@ -1033,6 +1546,114 @@ struct HWIntrinsicSignatureReader final
 };
 
 //------------------------------------------------------------------------
+// CheckHWIntrinsicImmRange: Check if an immediate is within the valid range
+//
+// Arguments:
+//    intrinsicId       -- HW intrinsic id
+//    simdBaseJitType   -- The base JIT type of SIMD type of the intrinsic
+//    immOp             -- Immediate to check is within range
+//    mustExpand        -- true if the intrinsic must expand to a GenTree*; otherwise, false
+//    immLowerBound     -- the lower valid bound of the immediate
+//    immLowerBound     -- the upper valid bound of the immediate
+//    hasFullRangeImm   -- the range has all valid values. The immediate is always within range.
+//    useFallback [OUT] -- Only set if false is returned. A fallback can be used instead.
+//
+// Return Value:
+//    returns true if immOp is within range. Otherwise false.
+//
+bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
+                                        CorInfoType    simdBaseJitType,
+                                        GenTree*       immOp,
+                                        bool           mustExpand,
+                                        int            immLowerBound,
+                                        int            immUpperBound,
+                                        bool           hasFullRangeImm,
+                                        bool*          useFallback)
+{
+    *useFallback = false;
+
+    if (!hasFullRangeImm && immOp->IsCnsIntOrI())
+    {
+        const int ival = (int)immOp->AsIntCon()->IconValue();
+        bool      immOutOfRange;
+#ifdef TARGET_XARCH
+        if (HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic))
+        {
+            immOutOfRange = (ival != 1) && (ival != 2) && (ival != 4) && (ival != 8);
+        }
+        else
+#endif
+        {
+            immOutOfRange = (ival < immLowerBound) || (ival > immUpperBound);
+        }
+
+        if (immOutOfRange)
+        {
+            assert(!mustExpand);
+            // The imm-HWintrinsics that do not accept all imm8 values may throw
+            // ArgumentOutOfRangeException when the imm argument is not in the valid range,
+            // unless the intrinsic can be transformed into one that does accept all imm8 values
+
+#ifdef TARGET_ARM64
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftRightLogical:
+                    *useFallback = true;
+                    break;
+
+                    // TODO: Implement more AdvSimd fallbacks in Compiler::impNonConstFallback
+
+                default:
+                    assert(*useFallback == false);
+                    break;
+            }
+#endif // TARGET_ARM64
+
+            return false;
+        }
+    }
+    else if (!immOp->IsCnsIntOrI())
+    {
+        if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
+        {
+            *useFallback = true;
+            return false;
+        }
+#if defined(TARGET_XARCH)
+        else if (HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic))
+        {
+#if defined(TARGET_X86)
+            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (!mustExpand)
+                {
+                    return false;
+                }
+            }
+            else
+#endif // TARGET_XARCH
+            {
+                *useFallback = true;
+                return false;
+            }
+        }
+#endif // TARGET_XARCH
+        else if (!mustExpand)
+        {
+            // When the imm-argument is not a constant and we are not being forced to expand, we need to
+            // return false so a GT_CALL to the intrinsic method is emitted instead. The
+            // intrinsic method is recursive and will be forced to expand, at which point
+            // we emit some less efficient fallback code.
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impHWIntrinsic: Import a hardware intrinsic as a GT_HWINTRINSIC node if possible
 //
 // Arguments:
@@ -1040,6 +1661,7 @@ struct HWIntrinsicSignatureReader final
 //    clsHnd     -- class handle containing the intrinsic function.
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
+//    entryPoint -- The entry point information required for R2R scenarios
 //    mustExpand -- true if the intrinsic must return a GenTree*; otherwise, false
 
 // Return Value:
@@ -1048,7 +1670,7 @@ struct HWIntrinsicSignatureReader final
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
-                                  CORINFO_SIG_INFO*     sig,
+                                  CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                   bool                  mustExpand)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
@@ -1060,7 +1682,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
     CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
     int                    numArgs         = sig->numArgs;
-    var_types              retType         = JITtype2varType(sig->retType);
+    var_types              retType         = genActualType(JITtype2varType(sig->retType));
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
 
@@ -1071,9 +1693,53 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            // We don't have generic multireg APIs
             assert(sizeBytes == 0);
         }
+
+#ifdef TARGET_ARM64
+        else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
+        {
+            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
+
+            if (retFieldType == TYP_STRUCT)
+            {
+                CORINFO_CLASS_HANDLE structType;
+                unsigned int         sizeBytes = 0;
+
+                // LoadAndInsertScalar that returns 2,3 or 4 vectors
+                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
+                unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
+                assert(fieldCount > 1);
+                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
+                CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
+                        break;
+                    case 3:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
+                        break;
+                    case 4:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
+                        break;
+                    default:
+                        assert("unsupported");
+                }
+            }
+            else
+            {
+                assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
+                assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                retType = getSIMDTypeForSize(sizeBytes);
+            }
+        }
+#endif
         else
         {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
@@ -1106,7 +1772,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+
+#if defined(TARGET_ARM64)
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
+            {
+                // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
+
+                assert(sizeBytes == 0);
+                intrinsic = HWIntrinsicInfo::GetScalarInputVariant(intrinsic);
+                category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+                isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+                simdBaseJitType = sig->retType;
+                assert(simdBaseJitType != CORINFO_TYPE_VOID);
+                assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+                assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
+            }
+            else
+#endif
+            {
+                assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            }
         }
     }
 
@@ -1118,187 +1804,90 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     var_types simdBaseType = TYP_UNKNOWN;
-    GenTree*  immOp        = nullptr;
 
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     }
 
+    const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
+
     HWIntrinsicSignatureReader sigReader;
     sigReader.Read(info.compCompHnd, sig);
 
+    GenTree* immOp1          = nullptr;
+    GenTree* immOp2          = nullptr;
+    int      immLowerBound   = 0;
+    int      immUpperBound   = 0;
+    bool     hasFullRangeImm = false;
+    bool     useFallback     = false;
+    bool     setMethodHandle = false;
+
+    getHWIntrinsicImmOps(intrinsic, sig, &immOp1, &immOp2);
+
+    // Validate the second immediate
 #ifdef TARGET_ARM64
-    if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+    if (immOp2 != nullptr)
     {
-        assert(sig->numArgs == 3);
-        immOp = impStackTop(1).val;
-        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
-    }
-    else if (intrinsic == NI_AdvSimd_Arm64_InsertSelectedScalar)
-    {
-        // InsertSelectedScalar intrinsic has two immediate operands.
-        // Since all the remaining intrinsics on both platforms have only one immediate
-        // operand, in order to not complicate the shared logic even further we ensure here that
-        // 1) The second immediate operand immOp2 is constant and
-        // 2) its value belongs to [0, sizeof(op3) / sizeof(op3.BaseType)).
-        // If either is false, we should fallback to the managed implementation Insert(dst, dstIdx, Extract(src,
-        // srcIdx)).
-        // The check for the first immediate operand immOp will use the same logic as other intrinsics that have an
-        // immediate operand.
+        unsigned  immSimdSize     = simdSize;
+        var_types immSimdBaseType = simdBaseType;
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
-        GenTree* immOp2 = nullptr;
-
-        assert(sig->numArgs == 4);
-
-        immOp  = impStackTop(2).val;
-        immOp2 = impStackTop().val;
-
-        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp));
-        assert(HWIntrinsicInfo::isImmOp(intrinsic, immOp2));
-
-        if (!immOp2->IsCnsIntOrI())
+        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
+                                      false, &useFallback))
         {
-            assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
-            return impNonConstFallback(intrinsic, retType, simdBaseJitType);
-        }
-
-        unsigned int otherSimdSize    = 0;
-        CorInfoType  otherBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, &otherSimdSize);
-        var_types    otherBaseType    = JitType2PreciseVarType(otherBaseJitType);
-
-        assert(otherBaseJitType == simdBaseJitType);
-
-        int immLowerBound2 = 0;
-        int immUpperBound2 = 0;
-
-        HWIntrinsicInfo::lookupImmBounds(intrinsic, otherSimdSize, otherBaseType, &immLowerBound2, &immUpperBound2);
-
-        const int immVal2 = (int)immOp2->AsIntCon()->IconValue();
-
-        if ((immVal2 < immLowerBound2) || (immVal2 > immUpperBound2))
-        {
-            assert(!mustExpand);
-            return nullptr;
-        }
-    }
-    else
-#endif
-        if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
-    {
-        // NOTE: The following code assumes that for all intrinsics
-        // taking an immediate operand, that operand will be last.
-        immOp = impStackTop().val;
-    }
-
-    const unsigned simdSize = HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig);
-
-    int  immLowerBound   = 0;
-    int  immUpperBound   = 0;
-    bool hasFullRangeImm = false;
-
-    if (immOp != nullptr)
-    {
-#ifdef TARGET_XARCH
-        immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
-        hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
-#elif defined(TARGET_ARM64)
-        if (category == HW_Category_SIMDByIndexedElement)
-        {
-            CorInfoType  indexedElementBaseJitType;
-            var_types    indexedElementBaseType;
-            unsigned int indexedElementSimdSize = 0;
-
-            if (numArgs == 3)
-            {
-                indexedElementBaseJitType =
-                    getBaseJitTypeAndSizeOfSIMDType(sigReader.op2ClsHnd, &indexedElementSimdSize);
-                indexedElementBaseType = JitType2PreciseVarType(indexedElementBaseJitType);
-            }
-            else
-            {
-                assert(numArgs == 4);
-                indexedElementBaseJitType =
-                    getBaseJitTypeAndSizeOfSIMDType(sigReader.op3ClsHnd, &indexedElementSimdSize);
-                indexedElementBaseType = JitType2PreciseVarType(indexedElementBaseJitType);
-
-                if (intrinsic == NI_Dp_DotProductBySelectedQuadruplet)
-                {
-                    assert(((simdBaseType == TYP_INT) && (indexedElementBaseType == TYP_BYTE)) ||
-                           ((simdBaseType == TYP_UINT) && (indexedElementBaseType == TYP_UBYTE)));
-                    // The second source operand of sdot, udot instructions is an indexed 32-bit element.
-                    indexedElementBaseJitType = simdBaseJitType;
-                    indexedElementBaseType    = simdBaseType;
-                }
-            }
-
-            assert(indexedElementBaseType == simdBaseType);
-            HWIntrinsicInfo::lookupImmBounds(intrinsic, indexedElementSimdSize, simdBaseType, &immLowerBound,
-                                             &immUpperBound);
-        }
-        else
-        {
-            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, &immLowerBound, &immUpperBound);
-        }
-#endif
-
-        if (!hasFullRangeImm && immOp->IsCnsIntOrI())
-        {
-            const int ival = (int)immOp->AsIntCon()->IconValue();
-            bool      immOutOfRange;
-#ifdef TARGET_XARCH
-            if (HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic))
-            {
-                immOutOfRange = (ival != 1) && (ival != 2) && (ival != 4) && (ival != 8);
-            }
-            else
-#endif
-            {
-                immOutOfRange = (ival < immLowerBound) || (ival > immUpperBound);
-            }
-
-            if (immOutOfRange)
-            {
-                assert(!mustExpand);
-                // The imm-HWintrinsics that do not accept all imm8 values may throw
-                // ArgumentOutOfRangeException when the imm argument is not in the valid range
-                return nullptr;
-            }
-        }
-        else if (!immOp->IsCnsIntOrI())
-        {
-            if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
+            if (useFallback)
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
-#if defined(TARGET_XARCH)
-            else if (HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic))
+            else if (!opts.OptimizationEnabled())
             {
-#if defined(TARGET_X86)
-                var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-
-                if (varTypeIsLong(simdBaseType))
-                {
-                    if (!mustExpand)
-                    {
-                        return nullptr;
-                    }
-                }
-                else
-#endif // TARGET_XARCH
-                {
-                    return impNonConstFallback(intrinsic, retType, simdBaseJitType);
-                }
-            }
-#endif // TARGET_XARCH
-            else if (!mustExpand)
-            {
-                // When the imm-argument is not a constant and we are not being forced to expand, we need to
-                // return nullptr so a GT_CALL to the intrinsic method is emitted instead. The
-                // intrinsic method is recursive and will be forced to expand, at which point
-                // we emit some less efficient fallback code.
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
                 return nullptr;
+            }
+            else
+            {
+                setMethodHandle = true;
+            }
+        }
+    }
+#else
+    assert(immOp2 == nullptr);
+#endif
+
+    // Validate the first immediate
+    if (immOp1 != nullptr)
+    {
+#ifdef TARGET_ARM64
+        unsigned  immSimdSize     = simdSize;
+        var_types immSimdBaseType = simdBaseType;
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
+                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
+#else
+        immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
+        hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
+#endif
+
+        if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
+                                      hasFullRangeImm, &useFallback))
+        {
+            if (useFallback)
+            {
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else if (!opts.OptimizationEnabled())
+            {
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
+                return nullptr;
+            }
+            else
+            {
+                setMethodHandle = true;
             }
         }
     }
@@ -1309,6 +1898,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // where no SIMD local vars are in use. This is the same logic as is used for FEATURE_SIMD.
         compFloatingPointUsed = true;
     }
+
+    var_types nodeRetType = retType;
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
+    {
+        // Ensure the result is generated to a mask.
+        nodeRetType = TYP_MASK;
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
@@ -1343,17 +1941,45 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         switch (numArgs)
         {
+            case 4:
+                op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
+                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
+                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 3:
+                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 2:
+                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
+                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            case 1:
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                break;
+
+            default:
+                break;
+        }
+
+        switch (numArgs)
+        {
             case 0:
             {
                 assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
                 break;
             }
 
             case 1:
             {
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
                 if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
                 {
                     // Although the API specifies a pointer, if what we have is a BYREF, that's what
@@ -1364,8 +1990,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
 
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
@@ -1380,6 +2006,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
+                    case NI_AVX2_BroadcastVector128ToVector256:
+                    case NI_AVX512F_BroadcastVector128ToVector512:
+                    case NI_AVX512F_BroadcastVector256ToVector512:
                     {
                         // These intrinsics have both pointer and vector overloads
                         // We want to be able to differentiate between them so lets
@@ -1402,6 +2031,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         break;
                     }
                 }
+#elif defined(TARGET_ARM64)
+                switch (intrinsic)
+                {
+                    case NI_Sve_ConvertToDouble:
+                    case NI_Sve_ConvertToInt32:
+                    case NI_Sve_ConvertToInt64:
+                    case NI_Sve_ConvertToSingle:
+                    case NI_Sve_ConvertToUInt32:
+                    case NI_Sve_ConvertToUInt64:
+                        // Save the base type of return SIMD. It is used to contain this intrinsic inside
+                        // ConditionalSelect.
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));
+                        break;
+                    default:
+                        break;
+                }
 #endif // TARGET_XARCH
 
                 break;
@@ -1409,12 +2054,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 2:
             {
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar
+                              ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, intrinsic)
+                              : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
@@ -1456,6 +2098,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         break;
 
+                    case NI_Sve_CreateWhileLessThanMask8Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
+                    case NI_Sve_CreateWhileLessThanMask16Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
+                    case NI_Sve_CreateWhileLessThanMask32Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
+                    case NI_Sve_CreateWhileLessThanMask64Bit:
+                    case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(sigReader.op1JitType);
+                        break;
+
+                    case NI_Sve_ShiftLeftLogical:
+                    case NI_Sve_ShiftRightArithmetic:
+                    case NI_Sve_ShiftRightLogical:
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
                     default:
                         break;
                 }
@@ -1465,10 +2124,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 3:
             {
-                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
 #ifdef TARGET_ARM64
                 if (intrinsic == NI_AdvSimd_LoadAndInsertScalar)
                 {
@@ -1494,30 +2149,71 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
                 }
 
-                retNode = isScalar
-                              ? gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic)
-                              : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
+                                                              simdSize);
 
-#ifdef TARGET_XARCH
-                if ((intrinsic == NI_AVX2_GatherVector128) || (intrinsic == NI_AVX2_GatherVector256))
+                switch (intrinsic)
                 {
-                    assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
-                }
+#if defined(TARGET_XARCH)
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
+#elif defined(TARGET_ARM64)
+                    case NI_Sve_GatherVector:
+                    case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorFirstFaulting:
+                    case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt16ZeroExtend:
+                    case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsets:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        if (numArgs == 3)
+                        {
+                            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(
+                                getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        }
+                        break;
 #endif
+
+                    default:
+                        break;
+                }
+
                 break;
             }
 
             case 4:
             {
-                op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
-                op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
-                op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
-                op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-
                 assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+                retNode =
+                    gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+
+                switch (intrinsic)
+                {
+#if defined(TARGET_ARM64)
+                    case NI_Sve_Scatter:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        if (numArgs == 4)
+                        {
+                            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(
+                                getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        }
+                        break;
+#endif
+
+                    default:
+                        break;
+                }
                 break;
             }
 
@@ -1527,8 +2223,96 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, simdBaseJitType, retType, simdSize);
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
+                                      simdSize, mustExpand);
     }
+
+    if (setMethodHandle && (retNode != nullptr))
+    {
+        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+    }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+    auto convertToMaskIfNeeded = [&](GenTree*& op) {
+        if (!varTypeIsMask(op))
+        {
+            op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+        }
+    };
+
+    if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
+    {
+        assert(numArgs > 0);
+
+        switch (intrinsic)
+        {
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                // HWInstrinsic requires a mask for op3
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                FALLTHROUGH;
+            }
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakBeforeMask:
+            case NI_Sve_CreateMaskForFirstActiveElement:
+            case NI_Sve_CreateMaskForNextActiveElement:
+            case NI_Sve_GetActiveElementCount:
+            case NI_Sve_TestAnyTrue:
+            case NI_Sve_TestFirstTrue:
+            case NI_Sve_TestLastTrue:
+            {
+                // HWInstrinsic requires a mask for op2
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                FALLTHROUGH;
+            }
+            default:
+            {
+                // HWInstrinsic requires a mask for op1
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                break;
+            }
+        }
+
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
+        {
+            assert(HWIntrinsicInfo::IsExplicitMaskedOperation(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            assert(HWIntrinsicInfo::IsMultiReg(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
+            retNode =
+                impStoreMultiRegValueToVar(retNode, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+        }
+    }
+
+    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsic))
+    {
+        switch (intrinsic)
+        {
+            case NI_Sve_CreateBreakPropagateMask:
+            {
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (retType != nodeRetType)
+    {
+        // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
+        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
+        assert(nodeRetType == TYP_MASK);
+
+        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
+
+        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
+        unsigned    simdSize        = op->GetSimdSize();
+
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
     {

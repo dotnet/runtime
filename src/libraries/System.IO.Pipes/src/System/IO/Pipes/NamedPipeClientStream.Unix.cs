@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
-using System.Security;
-using System.Threading;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security;
+using System.Security.Principal;
+using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {
@@ -18,6 +19,16 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
     {
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public NamedPipeClientStream(string serverName, string pipeName, PipeAccessRights desiredAccessRights,
+            PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
+            : base(PipeDirection.InOut, 0)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_PipeAccessRights);
+        }
+
+        private static int AccessRightsFromDirection(PipeDirection _) => 0;
+
         private bool TryConnect(int _ /* timeout */)
         {
             // timeout isn't used as Connect will be very fast,

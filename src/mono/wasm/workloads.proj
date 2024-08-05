@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <!-- helper project for workload testing -->
+
+  <ItemGroup Label="Build Cross compiler package">
+    <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
+    <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+
+    <!-- AOT Cross compiler -->
+    <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />
+    <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
+    <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
+    <_PropsForAOTCrossBuild Include="TargetCrossRid=browser-wasm" />
+    <_PropsForAOTCrossBuild Include="DisableSourceLink=true" />
+
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+                      AdditionalProperties="@(_PropsForAOTCrossBuild,';')" />
+  </ItemGroup>
+</Project>

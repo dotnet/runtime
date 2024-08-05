@@ -28,6 +28,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");
+            pathsDict.UpdateTo(unchanged: true, "driver.o");
             if (!buildArgs.AOT) // relinking
                 pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
 

@@ -131,6 +131,11 @@ namespace Microsoft.Extensions.Primitives
 
             lock (compositeChangeTokenState._callbackLock)
             {
+                if (compositeChangeTokenState._cancellationTokenSource.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 try
                 {
                     compositeChangeTokenState._cancellationTokenSource.Cancel();

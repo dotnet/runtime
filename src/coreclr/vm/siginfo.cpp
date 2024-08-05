@@ -130,9 +130,9 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_INTERNAL,       -1,                   TYPE_GC
 
 unsigned GetSizeForCorElementType(CorElementType etyp)
 {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
-        return gElementTypeInfo[etyp].m_cbSize;
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
+    return gElementTypeInfo[etyp].m_cbSize;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1988,9 +1988,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
-#ifndef DACCESS_COMPILE
-        //        POSTCONDITION(RETVAL.IsNull() || RETVAL.IsRestored() || RETVAL.GetMethodTable()->IsRestoring());
-#endif
         MODE_ANY;
     }
     CONTRACT_END
@@ -2603,7 +2600,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     if ((UINT)etype >= ARRAY_SIZE(gElementTypeInfo))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_COMPLUS_SIG);
 
-    int cbsize = gElementTypeInfo[(UINT)etype].m_cbSize;
+    int cbsize = GetSizeForCorElementType(etype);
     if (cbsize != -1)
         return(cbsize);
 
@@ -4204,8 +4201,6 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
     SigPointer inst1 = pSubst1->GetInst();
     SigPointer inst2 = pSubst2->GetInst();
 
-    TokenPairList visited { pVisited };
-    CompareState state{ &visited };
     for (DWORD i = 0; i < pTypeDef1->GetNumGenericArgs(); i++)
     {
         PCCOR_SIGNATURE startInst1 = inst1.GetPtr();
@@ -4214,6 +4209,8 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
         PCCOR_SIGNATURE startInst2 = inst2.GetPtr();
         IfFailThrow(inst2.SkipExactlyOne());
         PCCOR_SIGNATURE endInst2ptr = inst2.GetPtr();
+        TokenPairList visited{ pVisited };
+        CompareState state{ &visited };
         if (!CompareElementType(
                 startInst1,
                 startInst2,
@@ -4312,35 +4309,6 @@ MetaSig::CompareMethodSigs(
 
 //---------------------------------------------------------------------------------------
 //
-//static
-HRESULT
-MetaSig::CompareMethodSigsNT(
-    PCCOR_SIGNATURE      pSignature1,
-    DWORD                cSig1,
-    Module *             pModule1,
-    const Substitution * pSubst1,
-    PCCOR_SIGNATURE      pSignature2,
-    DWORD                cSig2,
-    Module *             pModule2,
-    const Substitution * pSubst2,
-    TokenPairList *      pVisited) //= NULL
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
-            hr = S_OK;
-        else
-            hr = S_FALSE;
-    }
-    EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-    return hr;
-}
-
-//---------------------------------------------------------------------------------------
-//
 // Compare two method sigs and return whether they are the same.
 // @GENERICS: instantiation of the type variables in the second signature
 //
@@ -4392,7 +4360,7 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    __int8 callConv = *pSig1;
+    int8_t callConv = *pSig1;
 
     pSig1++;
     pSig2++;
@@ -4410,8 +4378,6 @@ MetaSig::CompareMethodSigs(
 
     IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &ArgCount1));
     IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &ArgCount2));
-
-    TokenPairList visited{ pVisited };
 
     if (ArgCount1 != ArgCount2)
     {
@@ -4434,7 +4400,6 @@ MetaSig::CompareMethodSigs(
         // to correctly handle overloads, where there are a number of varargs methods
         // to pick from, like m1(int,...) and m2(int,int,...), etc.
 
-        CompareState state{ &visited };
         // <= because we want to include a check of the return value!
         for (i = 0; i <= ArgCount1; i++)
         {
@@ -4466,6 +4431,8 @@ MetaSig::CompareMethodSigs(
             else
             {
                 // We are in bounds on both sides.  Compare the element.
+                TokenPairList visited{ pVisited };
+                CompareState state{ &visited };
                 if (!CompareElementType(
                     pSig1,
                     pSig2,
@@ -4490,7 +4457,6 @@ MetaSig::CompareMethodSigs(
     }
 
     // do return type as well
-    CompareState state{ &visited };
     for (i = 0; i <= ArgCount1; i++)
     {
         if (i == 0 && skipReturnTypeSig)
@@ -4505,6 +4471,8 @@ MetaSig::CompareMethodSigs(
         }
         else
         {
+            TokenPairList visited{ pVisited };
+            CompareState state{ &visited };
             if (!CompareElementType(
                 pSig1,
                 pSig2,
@@ -4845,9 +4813,11 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & (gpDefaultConstructorConstraint | gpNotNullableValueTypeConstraint)) == 0)
                 return FALSE;
         }
-        if ((specialConstraints1 & gpAcceptByRefLike) != 0)
+
+        // Constraints that 'allow' must check the overridden first
+        if ((specialConstraints2 & gpAllowByRefLike) != 0)
         {
-            if ((specialConstraints2 & gpAcceptByRefLike) == 0)
+            if ((specialConstraints1 & gpAllowByRefLike) == 0)
                 return FALSE;
         }
     }
@@ -4991,11 +4961,6 @@ void PromoteCarefully(promote_func   fn,
 
 #if !defined(DACCESS_COMPILE)
 
-    //
-    // Sanity check the stack scan limit
-    //
-    assert(sc->stack_limit != 0);
-
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.
     // To check whether the object is in the stack or not, we also need to check the sc->stack_limit.
@@ -5097,7 +5062,7 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
         reporter.Find(pMT, 0 /* baseOffset */);
     }
 
-    if (!pMT->ContainsPointers())
+    if (!pMT->ContainsGCPointers())
         return;
 
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -5126,7 +5091,7 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!pMT->ContainsPointers() && !pMT->IsByRefLike())
+    if (!pMT->ContainsGCPointers() && !pMT->IsByRefLike())
     {
         return;
     }

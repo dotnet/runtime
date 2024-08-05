@@ -45,10 +45,6 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -58,8 +54,11 @@
 typedef int BOOL;
 typedef uint32_t DWORD;
 typedef uint64_t DWORD64;
+#ifdef _MSC_VER
+typedef unsigned long ULONG;
+#else
 typedef uint32_t ULONG;
-
+#endif
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 
@@ -100,14 +99,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#endif
 
 #define C_ASSERT(cond) static_assert( cond, #cond )
 
@@ -300,12 +291,12 @@ inline uint8_t BitScanReverse(uint32_t *bitIndex, uint32_t mask)
 #ifdef _MSC_VER
     return _BitScanReverse((unsigned long*)bitIndex, mask);
 #else // _MSC_VER
-    // The result of __builtin_clzl is undefined when mask is zero,
+    // The result of __builtin_clz is undefined when mask is zero,
     // but it's still OK to call the intrinsic in that case (just don't use the output).
     // Unconditionally calling the intrinsic in this way allows the compiler to
     // emit branchless code for this function when possible (depending on how the
     // intrinsic is implemented for the target platform).
-    int lzcount = __builtin_clzl(mask);
+    int lzcount = __builtin_clz(mask);
     *bitIndex = static_cast<uint32_t>(31 - lzcount);
     return mask != 0 ? TRUE : FALSE;
 #endif // _MSC_VER
@@ -389,17 +380,11 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
     return reinterpret_cast<void*>(ALIGN_DOWN(as_size_t, alignment));
 }
 
-inline int GetRandomInt(int max)
-{
-    return rand() % max;
-}
-
 typedef struct _PROCESSOR_NUMBER {
     uint16_t Group;
     uint8_t Number;
     uint8_t Reserved;
 } PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
-
 #endif // _INC_WINDOWS
 
 // -----------------------------------------------------------------------------------------------------------

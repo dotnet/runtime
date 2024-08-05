@@ -133,7 +133,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible v))
+            if (value is not IConvertible v)
             {
                 throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
@@ -239,7 +239,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible ic))
+            if (value is not IConvertible ic)
             {
                 if (value.GetType() == conversionType)
                 {
@@ -2046,7 +2046,7 @@ namespace System
         //
         // Parses value in base base.  base can only
         // be 2, 8, 10, or 16.  If base is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static byte ToByte(string? value, int fromBase)
         {
@@ -2068,7 +2068,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static sbyte ToSByte(string? value, int fromBase)
@@ -2094,7 +2094,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static short ToInt16(string? value, int fromBase)
         {
@@ -2119,7 +2119,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ushort ToUInt16(string? value, int fromBase)
@@ -2142,7 +2142,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static int ToInt32(string? value, int fromBase)
         {
@@ -2157,7 +2157,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static uint ToUInt32(string? value, int fromBase)
@@ -2173,7 +2173,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static long ToInt64(string? value, int fromBase)
         {
@@ -2188,7 +2188,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ulong ToUInt64(string? value, int fromBase)
@@ -2202,11 +2202,11 @@ namespace System
                 0;
         }
 
-        // Convert the byte value to a string in base fromBase
+        // Convert the byte value to a string in base toBase
         public static string ToString(byte value, int toBase) =>
             ToString((int)value, toBase);
 
-        // Convert the Int16 value to a string in base fromBase
+        // Convert the Int16 value to a string in base toBase
         public static string ToString(short value, int toBase)
         {
             string format = "d";
@@ -2397,7 +2397,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
-            if (inArrayLength == 0)
+            if (length == 0)
                 return 0;
 
             // This is the maximally required length that must be available in the char array
@@ -2798,7 +2798,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
-            if (inArray.Length == 0)
+            if (length == 0)
             {
                 return Array.Empty<byte>();
             }
@@ -2949,9 +2949,79 @@ namespace System
 
             byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length >> 1);
 
-            if (!HexConverter.TryDecodeFromUtf16(chars, result))
+            if (!HexConverter.TryDecodeFromUtf16(chars, result, out _))
                 throw new FormatException(SR.Format_BadHexChar);
 
+            return result;
+        }
+
+        /// <summary>
+        /// Converts the string, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The string to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <exception cref="ArgumentNullException">Passed string <paramref name="source"/> is null.</exception>
+        public static OperationStatus FromHexString(string source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return FromHexString(source.AsSpan(), destination, out charsConsumed, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Converts the span of chars, which encodes binary data as hex characters, to an equivalent 8-bit unsigned integer span.
+        /// </summary>
+        /// <param name="source">The span to convert.</param>
+        /// <param name="destination">
+        /// The span in which to write the converted 8-bit unsigned integers. When this method returns value different than <see cref="OperationStatus.Done"/>,
+        /// either the span remains unmodified or contains an incomplete conversion of <paramref name="source"/>,
+        /// up to the last valid character.
+        /// </param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="charsConsumed">When this method returns, contains the number of characters that were consumed from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        public static OperationStatus FromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
+        {
+            (int quotient, int remainder) = Math.DivRem(source.Length, 2);
+
+            if (quotient == 0)
+            {
+                charsConsumed = 0;
+                bytesWritten = 0;
+
+                return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
+            }
+
+            var result = OperationStatus.Done;
+
+            if (destination.Length < quotient)
+            {
+                source = source.Slice(0, destination.Length * 2);
+                quotient = destination.Length;
+                result = OperationStatus.DestinationTooSmall;
+            }
+            else if (remainder == 1)
+            {
+                source = source.Slice(0, source.Length - 1);
+                destination = destination.Slice(0, destination.Length - 1);
+                result = OperationStatus.NeedMoreData;
+            }
+
+            if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
+            {
+                bytesWritten = charsConsumed / 2;
+                return OperationStatus.InvalidData;
+            }
+
+            bytesWritten = quotient;
+            charsConsumed = source.Length;
             return result;
         }
 
@@ -3005,6 +3075,108 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
+        }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with uppercase hex characters.
+        /// </summary>
+        /// <param name="source">A span of 8-bit unsigned integers.</param>
+        /// <param name="destination">The span representation in hex of the elements in <paramref name="source"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+        {
+            if (source.Length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
+            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            HexConverter.EncodeToUtf16(source, destination);
+            charsWritten = source.Length * 2;
+            return true;
+        }
+
+        /// <summary>
+        /// Converts an array of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="inArray"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(byte[] inArray)
+        {
+            ArgumentNullException.ThrowIfNull(inArray);
+
+            return ToHexStringLower(new ReadOnlySpan<byte>(inArray));
+        }
+
+        /// <summary>
+        /// Converts a subset of an array of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// Parameters specify the subset as an offset in the input array and the number of elements in the array to convert.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <param name="offset">An offset in <paramref name="inArray"/>.</param>
+        /// <param name="length">The number of elements of <paramref name="inArray"/> to convert.</param>
+        /// <returns>The string representation in hex of <paramref name="length"/> elements of <paramref name="inArray"/>, starting at position <paramref name="offset"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> plus <paramref name="length"/> is greater than the length of <paramref name="inArray"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(byte[] inArray, int offset, int length)
+        {
+            ArgumentNullException.ThrowIfNull(inArray);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
+
+            return ToHexStringLower(new ReadOnlySpan<byte>(inArray, offset, length));
+        }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="bytes">A span of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="bytes"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bytes"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.Length == 0)
+                return string.Empty;
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
+
+            return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
+        }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="source">A span of 8-bit unsigned integers.</param>
+        /// <param name="destination">The span representation in hex of the elements in <paramref name="source"/>.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written in <paramref name="destination"/>.</param>
+        /// <returns>true if the conversion was successful; otherwise, false.</returns>
+        public static bool TryToHexStringLower(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+        {
+            if (source.Length == 0)
+            {
+                charsWritten = 0;
+                return true;
+            }
+            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            HexConverter.EncodeToUtf16(source, destination, HexConverter.Casing.Lower);
+            charsWritten = source.Length * 2;
+            return true;
         }
     }  // class Convert
 }  // namespace

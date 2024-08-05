@@ -116,10 +116,10 @@ namespace System.Net.Primitives.Functional.Tests
             Cookie c = new Cookie();
             Assert.False(c.Expired);
 
-            c.Expires = DateTime.Now.AddDays(-1);
+            c.Expires = DateTime.UtcNow.AddDays(-1);
             Assert.True(c.Expired);
 
-            c.Expires = DateTime.Now.AddDays(1);
+            c.Expires = DateTime.UtcNow.AddDays(1);
             Assert.False(c.Expired);
 
             c.Expired = true;
@@ -135,7 +135,7 @@ namespace System.Net.Primitives.Functional.Tests
             Cookie c = new Cookie();
             Assert.Equal(c.Expires, DateTime.MinValue);
 
-            DateTime dt = DateTime.Now;
+            DateTime dt = DateTime.UtcNow;
             c.Expires = dt;
             Assert.Equal(dt, c.Expires);
         }
@@ -149,12 +149,9 @@ namespace System.Net.Primitives.Functional.Tests
             c1.Name = "hello";
             Assert.Equal("hello", c1.Name);
 
-            if (!PlatformDetection.IsNetFramework)
-            {
-                Cookie c2 = new Cookie();
-                c2.Name = "hello world";
-                Assert.Equal("hello world", c2.Name);
-            }
+            Cookie c2 = new Cookie();
+            c2.Name = "hello world";
+            Assert.Equal("hello world", c2.Name);
         }
 
         [Theory]
@@ -229,7 +226,9 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Timestamp_GetSet_Success()
         {
-            DateTime dt = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, 0); //DateTime.Now changes as the test runs
+            //DateTime.UtcNow changes as the test runs
+            DateTime dt = DateTime.UtcNow;
+            dt = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
             Cookie c = new Cookie();
             Assert.True(c.TimeStamp >= dt);
         }

@@ -9,7 +9,7 @@ using Mono.Cecil;
 namespace Mono.Linker
 {
 	[SuppressMessage ("ApiDesign", "RS0030:Do not used banned APIs", Justification = "This class provides wrapper methods around the banned Parameters property")]
-	internal static class MethodDefinitionExtensions
+	public static class MethodDefinitionExtensions
 	{
 		public static bool IsDefaultConstructor (this MethodDefinition method)
 		{
@@ -107,7 +107,7 @@ namespace Mono.Linker
 		/// Returns null if <paramref name="index"/> is not a valid parameter index for <paramref name="method"/>.
 		/// <see cref="GetParameter(MethodDefinition, ParameterIndex)"/> for a non-nullable version if you know the index is valid.
 		/// </summary>
-		public static ParameterProxy? TryGetParameter (this MethodDefinition method, ParameterIndex index)
+		internal static ParameterProxy? TryGetParameter (this MethodDefinition method, ParameterIndex index)
 		{
 			if (method.GetParametersCount () <= (int) index || (int) index < 0)
 				return null;
@@ -119,7 +119,7 @@ namespace Mono.Linker
 		/// Throws if <paramref name="index"/> is not a valid parameter index for <paramref name="method"/>.
 		/// <see cref="TryGetParameter(MethodDefinition, ParameterIndex)"/> for a non-throwing version if you're not sure the parameter exists on the method.
 		/// </summary>
-		public static ParameterProxy GetParameter (this MethodDefinition method, ParameterIndex index)
+		internal static ParameterProxy GetParameter (this MethodDefinition method, ParameterIndex index)
 		{
 			if (method.TryGetParameter (index) is not ParameterProxy param)
 				throw new InvalidOperationException ($"Cannot get parameter #{(int) index} of method {method.GetDisplayName ()} with {method.GetParametersCount ()} parameters");
@@ -129,7 +129,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns a foreach-enumerable collection of the parameters pushed onto the stack before the method call (including the implicit 'this' parameter)
 		/// </summary>
-		public static ParameterProxyEnumerable GetParameters (this MethodDefinition method)
+		internal static ParameterProxyEnumerable GetParameters (this MethodDefinition method)
 		{
 			int implicitThisOffset = method.HasImplicitThis () ? 1 : 0;
 			return new ParameterProxyEnumerable (0, method.Parameters.Count + implicitThisOffset, method);
@@ -138,7 +138,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns a list of ParameterProxy representing the parameters listed in the "Parameters" metadata section (i.e. not including the implicit 'this' parameter)
 		/// </summary>
-		public static ParameterProxyEnumerable GetMetadataParameters (this MethodDefinition method)
+		internal static ParameterProxyEnumerable GetMetadataParameters (this MethodDefinition method)
 		{
 			int implicitThisOffset = method.HasImplicitThis () ? 1 : 0;
 			return new ParameterProxyEnumerable (implicitThisOffset, method.Parameters.Count + implicitThisOffset, method);

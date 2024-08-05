@@ -120,7 +120,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 XmlSchema a = Schema;
                 _output.WriteLine("should never enter this loop");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

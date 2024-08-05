@@ -228,7 +228,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     ThrowKeyedDescriptor();
                 }
-                return (Func<IServiceProvider, object>?) _implementationFactory;
+                return (Func<IServiceProvider, object>?)_implementationFactory;
             }
         }
 
@@ -243,10 +243,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     ThrowNonKeyedDescriptor();
                 }
-                return (Func<IServiceProvider, object?, object>?) _implementationFactory;
+                return (Func<IServiceProvider, object?, object>?)_implementationFactory;
             }
         }
 
+        /// <summary>
+        /// Indicates whether the service is a keyed service.
+        /// </summary>
         public bool IsKeyedService => ServiceKey != null;
 
         /// <inheritdoc />
@@ -327,7 +330,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            Debug.Assert(false, "ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
+            Debug.Fail("ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
             return null;
         }
 

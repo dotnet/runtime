@@ -180,7 +180,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>The data to display in the debugger display attribute.</summary>
         private object DebuggerDisplayContent =>
-            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, BatchSize={BatchSize}, OutputCount={OutputCountForDebugger}";
+            $"{Common.GetNameForDebugger(this, _source.DataflowBlockOptions)}, BatchSize = {BatchSize}, OutputCount = {OutputCountForDebugger}";
 
         /// <summary>Gets the data to display in the debugger display attribute for this instance.</summary>
         object IDebuggerDisplay.Content { get { return DebuggerDisplayContent; } }
@@ -1162,7 +1162,7 @@ namespace System.Threading.Tasks.Dataflow
                 get
                 {
                     var displayBatch = _owningBatch as IDebuggerDisplay;
-                    return $"Block=\"{(displayBatch != null ? displayBatch.Content : _owningBatch)}\"";
+                    return $"Block = \"{(displayBatch != null ? displayBatch.Content : _owningBatch)}\"";
                 }
             }
 

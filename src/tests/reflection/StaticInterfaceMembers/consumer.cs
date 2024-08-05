@@ -3,10 +3,12 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         {
             FieldInfo fi = typeof(IFoo<object>).GetField("O");
@@ -28,7 +30,5 @@ class Program
             if (!object.ReferenceEquals(val, typeof(string)))
                 throw new Exception();
         }
-
-        return 100;
     }
 }

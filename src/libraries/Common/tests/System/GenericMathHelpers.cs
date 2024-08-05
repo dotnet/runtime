@@ -151,6 +151,12 @@ namespace System
     {
         public static TSelf Ceiling(TSelf x) => TSelf.Ceiling(x);
 
+        public static TInteger ConvertToInteger<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger> => TSelf.ConvertToInteger<TInteger>(x);
+
+        public static TInteger ConvertToIntegerNative<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger> => TSelf.ConvertToIntegerNative<TInteger>(x);
+
         public static TSelf Floor(TSelf x) => TSelf.Floor(x);
 
         public static TSelf Round(TSelf x) => TSelf.Round(x);

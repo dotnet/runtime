@@ -42,7 +42,7 @@ struct ArgLocDesc
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
+    FpStructInRegistersInfo m_structFields; // Struct field info when using floating-point register(s)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -97,7 +97,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        m_structFields = STRUCT_NO_FLOAT_FIELD;
+        m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -305,6 +305,11 @@ struct TransitionBlock
         LIMITED_METHOD_CONTRACT;
     #if defined(UNIX_AMD64_ABI)
         if (offset == TransitionBlock::StructInRegsOffset)
+        {
+            return argLocDescForStructInRegs->m_cFloatReg > 0;
+        }
+    #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        if (argLocDescForStructInRegs != NULL)
         {
             return argLocDescForStructInRegs->m_cFloatReg > 0;
         }
@@ -849,8 +854,9 @@ public:
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Get layout information for the argument that the ArgIterator is currently visiting.
+    // TODO-RISCV64: support SIMD.
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
     {
         LIMITED_METHOD_CONTRACT;
@@ -869,7 +875,7 @@ public:
             const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
             _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
 
-            pLoc->m_idxFloatReg = floatRegOfsInBytes / 8;
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
 
             pLoc->m_cFloatReg = 1;
 
@@ -899,60 +905,7 @@ public:
         return;
     }
 
-#endif // TARGET_LOONGARCH64
-
-#ifdef TARGET_RISCV64
-    // Get layout information for the argument that the ArgIterator is currently visiting.
-    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        pLoc->Init();
-
-        if (m_hasArgLocDescForStructInRegs)
-        {
-            *pLoc = m_argLocDescForStructInRegs;
-            return;
-        }
-
-        if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
-        {
-            // TODO-RISCV64: support SIMD.
-            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-            const int floatRegOfsInBytes = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
-            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
-            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
-
-            assert(!m_argTypeHandle.IsHFA());
-
-            pLoc->m_cFloatReg = 1;
-
-            return;
-        }
-
-        int cSlots = (GetArgSize() + 7)/ 8;
-
-        // Composites greater than 16bytes are passed by reference
-        if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        {
-            cSlots = 1;
-        }
-
-        if (!TransitionBlock::IsStackArgumentOffset(argOffset))
-        {
-            // At least one used integer register passed.
-            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = cSlots;
-        }
-        else
-        {
-            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
-            pLoc->m_byteStackSize = cSlots << 3;
-        }
-
-        return;
-    }
-#endif // TARGET_RISCV64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -1717,18 +1670,14 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #elif defined(TARGET_LOONGARCH64)
 
     int cFPRegs = 0;
-    int flags = 0;
+    FpStructInRegistersInfo info = {};
 
     switch (argType)
     {
 
     case ELEMENT_TYPE_R4:
-        // 32-bit floating point argument.
-        cFPRegs = 1;
-        break;
-
     case ELEMENT_TYPE_R8:
-        // 64-bit floating point argument.
+        // Floating point argument
         cFPRegs = 1;
         break;
 
@@ -1744,20 +1693,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* pMethodTable = nullptr;
-
-            if (!thValueType.IsTypeDesc())
-                pMethodTable = thValueType.AsMethodTable();
-            else
+            info = MethodTable::GetFpStructInRegistersInfo(thValueType);
+            if (info.flags != FpStruct::UseIntCallConv)
             {
-                _ASSERTE(thValueType.IsNativeValueType());
-                pMethodTable = thValueType.AsNativeValueType();
-            }
-            _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
-            {
-                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
+                cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
             }
         }
 
@@ -1774,23 +1713,31 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     if (cFPRegs > 0 && !this->IsVarArg())
     {
-        if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
-            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
+            assert((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat)) == 0);
 
-            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
+            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (1 + m_idxGenReg <= NUM_ARGUMENT_REGISTERS))
             {
+                int argOfs = 0;
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                m_idxFPReg += 1;
-
-                m_argLocDescForStructInRegs.m_structFields = flags;
-
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
+                m_argLocDescForStructInRegs.m_structFields = info;
+
+                if (info.flags & FpStruct::IntFloat)
+                {
+                    argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+                }
+                else
+                {
+                    argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                }
+
+                m_idxFPReg  += 1;
                 m_idxGenReg += 1;
 
                 m_hasArgLocDescForStructInRegs = true;
@@ -1801,7 +1748,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two float-fields.
+            static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
+                | (2 << FpStruct::PosSizeShift1st)
+                | (2 << FpStruct::PosSizeShift2nd));
+            if (info.flags == twoFloats) // struct with two float-fields.
             {
                 m_argLocDescForStructInRegs.Init();
                 m_hasArgLocDescForStructInRegs = true;
@@ -1809,7 +1759,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 assert(cFPRegs == 2);
                 m_argLocDescForStructInRegs.m_cFloatReg = 2;
                 assert(argSize == 8);
-                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                m_argLocDescForStructInRegs.m_structFields = info;
             }
             m_idxFPReg += cFPRegs;
             return argOfs;
@@ -1839,20 +1789,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_RISCV64)
-
+    assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
-    int flags = 0;
+    FpStructInRegistersInfo info = {};
 
     switch (argType)
     {
-
     case ELEMENT_TYPE_R4:
-        // 32-bit floating point argument.
-        cFPRegs = 1;
-        break;
-
     case ELEMENT_TYPE_R8:
-        // 64-bit floating point argument.
+        // Floating point argument
         cFPRegs = 1;
         break;
 
@@ -1868,20 +1813,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* pMethodTable = nullptr;
-
-            if (!thValueType.IsTypeDesc())
-                pMethodTable = thValueType.AsMethodTable();
-            else
+            info = MethodTable::GetFpStructInRegistersInfo(thValueType);
+            if (info.flags != FpStruct::UseIntCallConv)
             {
-                _ASSERTE(thValueType.IsNativeValueType());
-                pMethodTable = thValueType.AsNativeValueType();
-            }
-            _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
-            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
-            {
-                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
+                cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
             }
         }
 
@@ -1898,20 +1833,22 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     if (cFPRegs > 0 && !this->IsVarArg())
     {
-        if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
-            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
+            assert((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat)) == 0);
 
-            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
+            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (1 + m_idxGenReg <= NUM_ARGUMENT_REGISTERS))
             {
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                int argOfs = (info.flags & FpStruct::IntFloat)
+                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
+                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
                 m_idxFPReg += 1;
 
-                m_argLocDescForStructInRegs.m_structFields = flags;
+                m_argLocDescForStructInRegs.m_structFields = info;
 
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
@@ -1925,7 +1862,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two float-fields.
+            static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
+                | (2 << FpStruct::PosSizeShift1st)
+                | (2 << FpStruct::PosSizeShift2nd));
+            if (info.flags == twoFloats) // struct with two float-fields.
             {
                 m_argLocDescForStructInRegs.Init();
                 m_hasArgLocDescForStructInRegs = true;
@@ -1933,7 +1873,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 assert(cFPRegs == 2);
                 m_argLocDescForStructInRegs.m_cFloatReg = 2;
                 assert(argSize == 8);
-                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                m_argLocDescForStructInRegs.m_structFields = info;
             }
             m_idxFPReg += cFPRegs;
             return argOfs;
@@ -1998,7 +1938,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
     case ELEMENT_TYPE_R4:
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        flags |= STRUCT_FLOAT_FIELD_ONLY_ONE << RETURN_FP_SIZE_SHIFT;
+        flags |= (FpStruct::OnlyOne | (2 << FpStruct::PosSizeShift1st)) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
         flags |= sizeof(float) << RETURN_FP_SIZE_SHIFT;
@@ -2008,7 +1948,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
     case ELEMENT_TYPE_R8:
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        flags |= (STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8) << RETURN_FP_SIZE_SHIFT;
+        flags |= (FpStruct::OnlyOne | (3 << FpStruct::PosSizeShift1st)) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
         flags |= sizeof(double) << RETURN_FP_SIZE_SHIFT;
@@ -2081,18 +2021,16 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-
-                MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
+                flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #elif defined(TARGET_RISCV64)
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-
-                MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
+                flags |= info.flags << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else
@@ -2373,6 +2311,16 @@ public:
     {
         m_pSig = pSig;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
+    {
+        m_pSig = pSig;
+        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            m_pSig->ClearHasThis();
+    }
+#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()

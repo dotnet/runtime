@@ -5,52 +5,86 @@
 
 #include <errno.h>
 
+FORCEINLINE void PalInterlockedOperationBarrier()
+{
+#if (defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT) && !defined(__clang__)) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
+    // On arm64, most of the __sync* functions generate a code sequence like:
+    //   loop:
+    //     ldaxr (load acquire exclusive)
+    //     ...
+    //     stlxr (store release exclusive)
+    //     cbnz loop
+    //
+    // It is possible for a load following the code sequence above to be reordered to occur prior to the store above due to the
+    // release barrier, this is substantiated by https://github.com/dotnet/coreclr/pull/17508. Interlocked operations in the PAL
+    // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
+    // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
+    __sync_synchronize();
+#endif
+}
+
 FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)
 {
-    return __sync_add_and_fetch(pDst, 1);
+    int32_t result = __sync_add_and_fetch(pDst, 1);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE int32_t PalInterlockedDecrement(_Inout_ int32_t volatile *pDst)
 {
-    return __sync_sub_and_fetch(pDst, 1);
+    int32_t result = __sync_sub_and_fetch(pDst, 1);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE uint32_t PalInterlockedOr(_Inout_ uint32_t volatile *pDst, uint32_t iValue)
 {
-    return __sync_or_and_fetch(pDst, iValue);
+    int32_t result = __sync_or_and_fetch(pDst, iValue);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE uint32_t PalInterlockedAnd(_Inout_ uint32_t volatile *pDst, uint32_t iValue)
 {
-    return __sync_and_and_fetch(pDst, iValue);
+    int32_t result = __sync_and_and_fetch(pDst, iValue);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32_t iValue)
 {
 #ifdef __clang__
-    return __sync_swap(pDst, iValue);
+    int32_t result =__sync_swap(pDst, iValue);
 #else
-    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+    int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
 #endif
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
 #ifdef __clang__
-    return __sync_swap(pDst, iValue);
+    int32_t result =__sync_swap(pDst, iValue);
 #else
-    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+    int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
 #endif
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)
 {
-    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    int32_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)
 {
-    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    int64_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
+    PalInterlockedOperationBarrier();
+    return result;
 }
 
 #if defined(HOST_AMD64) || defined(HOST_ARM64)
@@ -58,6 +92,7 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
     __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
+    PalInterlockedOperationBarrier();
     pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
     return iComparand == iResult;
 }

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#endif
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -8,7 +11,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -25,6 +27,7 @@
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
+#include <minipal/cpufeatures.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -33,13 +36,13 @@
 #ifndef DACCESS_COMPILE
 
 #ifdef PROFILE_STARTUP
-unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
+uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
-#ifdef TARGET_UNIX
-int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
+#ifdef HOST_WINDOWS
+EXTERN_C LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
-int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
 
 extern "C" void PopulateDebugHeaders();
@@ -47,11 +50,6 @@ extern "C" void PopulateDebugHeaders();
 static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
-
-EXTERN_C bool g_fHasFastFxsave;
-bool g_fHasFastFxsave = false;
-
-CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
@@ -72,12 +70,7 @@ typedef size_t GSCookie;
 
 #ifdef FEATURE_READONLY_GS_COOKIE
 
-#ifdef __APPLE__
-#define READONLY_ATTR_ARGS section("__DATA,__const")
-#else
-#define READONLY_ATTR_ARGS section(".rodata")
-#endif
-#define READONLY_ATTR __attribute__((READONLY_ATTR_ARGS))
+#define READONLY_ATTR __attribute__((section(".rodata")))
 
 // const is so that it gets placed in the .text section (which is read-only)
 // volatile is so that accesses to it do not get optimized away because of the const
@@ -90,6 +83,12 @@ extern "C" volatile GSCookie __security_cookie = 0;
 
 #endif // TARGET_UNIX
 
+static RhConfig g_sRhConfig;
+RhConfig* g_pRhConfig = &g_sRhConfig;
+
+void InitializeGCEventLock();
+bool InitializeGC();
+
 static bool InitDLL(HANDLE hPalInstance)
 {
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -100,12 +99,14 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
+    InitializeGCEventLock();
+
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
-    EventPipeAdapter_Initialize();
+    EventPipe_Initialize();
     // Initialize DS
-    DiagnosticServerAdapter_Initialize();
-    DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+    DiagnosticServer_Initialize();
+    DiagnosticServer_PauseForDiagnosticsMonitor();
 #endif
 #ifdef FEATURE_EVENT_TRACE
     EventTracing_Initialize();
@@ -125,14 +126,12 @@ static bool InitDLL(HANDLE hPalInstance)
 
     // Note: The global exception handler uses RuntimeInstance
 #if !defined(USE_PORTABLE_HELPERS)
-#ifndef TARGET_UNIX
-    PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+#ifdef HOST_WINDOWS
+    AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
 #endif // !USE_PORTABLE_HELPERS
-
-    InitializeYieldProcessorNormalizedCrst();
 
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
@@ -150,7 +149,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!RedhawkGCInterface::InitializeSubsystems())
+    if (!InitializeGC())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
@@ -159,7 +158,7 @@ static bool InitDLL(HANDLE hPalInstance)
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
     // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
     // EventPipe initialization, so this is done after the GC has been fully initialized.
-    EventPipeAdapter_FinishInitialize();
+    EventPipe_FinishInitialize();
 #endif
 
 #ifndef USE_PORTABLE_HELPERS
@@ -172,9 +171,6 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
-        return false;
-
     return true;
 }
 
@@ -183,203 +179,7 @@ static bool InitDLL(HANDLE hPalInstance)
 bool DetectCPUFeatures()
 {
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-
-    int cpuidInfo[4];
-
-    const int CPUID_EAX = 0;
-    const int CPUID_EBX = 1;
-    const int CPUID_ECX = 2;
-    const int CPUID_EDX = 3;
-
-    __cpuid(cpuidInfo, 0x00000000);
-    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
-
-    if (maxCpuId >= 1)
-    {
-        __cpuid(cpuidInfo, 0x00000001);
-
-        const int requiredBaselineEdxFlags = (1 << 25)                                                                  // SSE
-                                           | (1 << 26);                                                                 // SSE2
-
-        if ((cpuidInfo[CPUID_EDX] & requiredBaselineEdxFlags) == requiredBaselineEdxFlags)
-        {
-            g_cpuFeatures |= XArchIntrinsicConstants_VectorT128;
-
-            if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                                // AESNI
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Aes;
-            }
-
-            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                                 // PCLMULQDQ
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
-            }
-
-            if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                                 // SSE3
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
-
-                if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                             // SSSE3
-                {
-                    g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
-
-                    if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                        // SSE4.1
-                    {
-                        g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
-
-                        if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                                    // SSE4.2
-                        {
-                            g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
-
-                            if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                                // MOVBE
-                            {
-                                g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
-                            }
-
-                            if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                                // POPCNT
-                            {
-                                g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
-                            }
-
-                            const int requiredAvxEcxFlags = (1 << 27)                                                   // OSXSAVE
-                                                          | (1 << 28);                                                  // AVX
-
-                            if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
-                            {
-                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
-                                {
-                                    g_cpuFeatures |= XArchIntrinsicConstants_Avx;
-
-                                    if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                        // FMA
-                                    {
-                                        g_cpuFeatures |= XArchIntrinsicConstants_Fma;
-                                    }
-
-                                    if (maxCpuId >= 0x07)
-                                    {
-                                        __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
-
-                                        if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
-                                        {
-                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
-                                            g_cpuFeatures |= XArchIntrinsicConstants_VectorT256;
-
-                                            if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
-                                            {
-                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
-                                                {
-                                                    g_cpuFeatures |= XArchIntrinsicConstants_Avx512f;
-                                                    g_cpuFeatures |= XArchIntrinsicConstants_VectorT512;
-
-                                                    bool isAVX512_VLSupported = false;
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
-                                                    {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512f_vl;
-                                                        isAVX512_VLSupported = true;
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
-                                                    {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw;
-                                                        if (isAVX512_VLSupported)                                       // AVX512BW_VL
-                                                        {
-                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw_vl;
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
-                                                    {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd;
-                                                        if (isAVX512_VLSupported)                                       // AVX512CD_VL
-                                                        {
-                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd_vl;
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
-                                                    {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq;
-                                                        if (isAVX512_VLSupported)                                       // AVX512DQ_VL
-                                                        {
-                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq_vl;
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
-                                                    {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi;
-                                                        if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
-                                                        {
-                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi_vl;
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-
-                                            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
-                                            {
-                                                g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (maxCpuId >= 0x07)
-        {
-            __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
-
-            if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Bmi1;
-            }
-
-            if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Bmi2;
-            }
-
-            if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
-            {
-                g_cpuFeatures |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
-            }
-        }
-    }
-
-    __cpuid(cpuidInfo, 0x80000000);
-    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
-
-    if (maxCpuIdEx >= 0x80000001)
-    {
-        __cpuid(cpuidInfo, 0x80000001);
-
-        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
-        {
-            g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
-        }
-
-#ifdef HOST_AMD64
-        // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
-        // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-        // fxsr_opt is bit 25 of CPUID_EDX
-        if ((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0)
-            g_fHasFastFxsave = true;
-#endif
-    }
-#endif // HOST_X86 || HOST_AMD64
-
-#if defined(HOST_ARM64)
-    PAL_GetCpuCapabilityFlags (&g_cpuFeatures);
-#endif
+    g_cpuFeatures = minipal_getcpufeatures();
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
@@ -485,7 +285,7 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
 //
@@ -493,11 +293,22 @@ static void UninitDLL()
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
+
+static BOOLEAN WINAPI RtlDllShutdownInProgressFallback()
+{
+    return g_threadPerformingShutdown == ThreadStore::GetCurrentThread();
+}
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress = &RtlDllShutdownInProgressFallback;
+#endif
+
+#if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
+bool g_safeToShutdownTracing;
 #endif
 
 static void __cdecl OnProcessExit()
 {
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
     // The process is exiting and the current thread is performing the shutdown.
     // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
@@ -507,25 +318,26 @@ static void __cdecl OnProcessExit()
 #endif
 
 #ifdef FEATURE_PERFTRACING
-    EventPipeAdapter_Shutdown();
-    DiagnosticServerAdapter_Shutdown();
+#ifdef HOST_WINDOWS
+    // We forgo shutting down event pipe if it wouldn't be safe and could lead to a hang.
+    // If there was an active trace session, the trace will likely be corrupted without
+    // orderly shutdown. See https://github.com/dotnet/runtime/issues/89346.
+    if (g_safeToShutdownTracing)
+#endif
+    {
+        EventPipe_Shutdown();
+        DiagnosticServer_Shutdown();
+    }
 #endif
 }
 
 void RuntimeThreadShutdown(void* thread)
 {
-    // Note: loader lock is normally *not* held here!
-    // The one exception is that the loader lock may be held during the thread shutdown callback
-    // that is made for the single thread that runs the final stages of orderly process
-    // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
-    // process is being torn down via an ExitProcess call).
-    // In such case we do not detach.
-
-#ifdef _WIN32
+#ifdef HOST_WINDOWS
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-    // Do not try detaching the thread that performs the shutdown.
-    if (g_threadPerformingShutdown == thread)
+    // Do not try detaching the thread during process shutdown.
+    if (g_pfnRtlDllShutdownInProgress())
     {
         // At this point other threads could be terminated rudely while leaving runtime
         // in inconsistent state, so we would be risking blocking the process from exiting.
@@ -540,15 +352,31 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 
     ThreadStore::DetachCurrentThread();
+
+#ifdef FEATURE_PERFTRACING
+    EventPipe_ThreadShutdown();
+#endif
 }
 
-extern "C" bool RhInitialize()
+extern "C" bool RhInitialize(bool isDll)
 {
     if (!PalInit())
         return false;
 
-#if defined(_WIN32) || defined(FEATURE_PERFTRACING)
+#if defined(HOST_WINDOWS)
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    PRTLDLLSHUTDOWNINPROGRESS pfn = (PRTLDLLSHUTDOWNINPROGRESS)GetProcAddress(GetModuleHandleW(W("ntdll.dll")), "RtlDllShutdownInProgress");
+    if (pfn != NULL)
+        g_pfnRtlDllShutdownInProgress = pfn;
+#endif
+
+#if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
+#endif
+
+#if defined(HOST_WINDOWS) && defined(FEATURE_PERFTRACING)
+    g_safeToShutdownTracing = !isDll;
 #endif
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))

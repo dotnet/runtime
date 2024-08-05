@@ -25,17 +25,9 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-#if DEBUG
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
-            }
-#endif
-
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
+            JsonPropertyInfo? jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);
@@ -47,7 +39,7 @@ namespace System.Text.Json
             state.Current.JsonPropertyName = utf8PropertyName;
 
             // Handle missing properties
-            if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
+            if (jsonPropertyInfo is null)
             {
                 if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
@@ -70,6 +62,11 @@ namespace System.Text.Json
                     jsonPropertyInfo = dataExtProperty;
                     useExtensionProperty = true;
                 }
+                else
+                {
+                    // Populate with a placeholder value required by JsonPath calculations
+                    jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
+                }
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
@@ -80,29 +77,29 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
             scoped ref ReadStack state,
-            ref Utf8JsonReader reader)
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            out bool isAlreadyReadMetadataProperty)
         {
-            ReadOnlySpan<byte> unescapedPropertyName;
-            ReadOnlySpan<byte> propertyName = reader.GetSpan();
-
-            if (reader.ValueIsEscaped)
-            {
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName);
-            }
-            else
-            {
-                unescapedPropertyName = propertyName;
-            }
+            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
+            isAlreadyReadMetadataProperty = false;
 
             if (state.Current.CanContainMetadata)
             {
                 if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
-                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    if (options.AllowOutOfOrderMetadataProperties)
+                    {
+                        isAlreadyReadMetadataProperty = true;
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    }
                 }
             }
 
-            return unescapedPropertyName;
+            return propertyName;
         }
 
         internal static void CreateExtensionDataProperty(

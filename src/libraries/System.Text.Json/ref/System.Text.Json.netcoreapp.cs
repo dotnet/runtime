@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<System.Half> HalfConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.TimeOnly> TimeOnlyConverter { get { throw null; } }
 
-#if NET7_0_OR_GREATER
+#if NET
         public static System.Text.Json.Serialization.JsonConverter<System.Int128> Int128Converter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<System.UInt128> UInt128Converter { get { throw null; } }

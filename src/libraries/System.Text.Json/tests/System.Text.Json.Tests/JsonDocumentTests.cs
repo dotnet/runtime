@@ -3407,6 +3407,37 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
+
+            using JsonDocument doc1 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc1.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            using JsonDocument doc2 = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[43]", doc2.RootElement.GetRawText());
+
+            Assert.False(reader.Read());
+        }
+
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            using JsonDocument doc = JsonDocument.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", doc.RootElement.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
+        }
+
+        [Fact]
         public static void EnsureResizeSucceeds()
         {
             // This test increases coverage, so it's based on a lot of implementation detail,
@@ -3738,6 +3769,14 @@ namespace System.Text.Json.Tests
                 Assert.True(uniqueAddresses.Add(arr));
                 count--;
             }
+        }
+
+        [Fact]
+        public static void DeserializeNullAsNullLiteral()
+        {
+            var jsonDocument = JsonSerializer.Deserialize<JsonDocument>("null");
+            Assert.NotNull(jsonDocument);
+            Assert.Equal(JsonValueKind.Null, jsonDocument.RootElement.ValueKind);
         }
     }
 

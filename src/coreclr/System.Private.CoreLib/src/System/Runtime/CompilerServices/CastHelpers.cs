@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    [StackTraceHidden]
+    [DebuggerStepThrough]
     internal static unsafe class CastHelpers
     {
+        // In coreclr the table is allocated and written to on the native side.
+        internal static int[]? s_table;
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
 
@@ -21,22 +23,20 @@ namespace System.Runtime.CompilerServices
         private static extern ref byte Unbox_Helper(void* toTypeHnd, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void WriteBarrier(ref object? dst, object obj);
+        private static extern void WriteBarrier(ref object? dst, object? obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
+        internal static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    CastResult result = CastCache.TryGet((nuint)mt, (nuint)toTypeHnd);
+                    CastResult result = CastCache.TryGet(s_table!, (nuint)mt, (nuint)toTypeHnd);
                     if (result == CastResult.CanCast)
                     {
                         // do nothing
@@ -60,8 +60,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             const int unrollSize = 4;
@@ -131,8 +129,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -181,12 +177,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstance_Helper(void* toTypeHnd, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
+            CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -204,9 +198,7 @@ namespace System.Runtime.CompilerServices
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        private static object? ChkCastAny(void* toTypeHnd, object? obj)
+        internal static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
 
@@ -215,7 +207,7 @@ namespace System.Runtime.CompilerServices
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    result = CastCache.TryGet((nuint)mt, (nuint)toTypeHnd);
+                    result = CastCache.TryGet(s_table!, (nuint)mt, (nuint)toTypeHnd);
                     if (result != CastResult.CanCast)
                     {
                         goto slowPath;
@@ -234,12 +226,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? ChkCast_Helper(void* toTypeHnd, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
+            CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -250,8 +240,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
             const int unrollSize = 4;
@@ -318,8 +306,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static object? ChkCastClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -330,9 +316,9 @@ namespace System.Runtime.CompilerServices
             return ChkCastClassSpecial(toTypeHnd, obj);
         }
 
+        // Optimized helper for classes. Assumes that the trivial cases
+        // has been taken care of by the inlined check
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
@@ -379,54 +365,53 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static ref byte Unbox(void* toTypeHnd, object obj)
         {
-            // this will throw NullReferenceException if obj is null, attributed to the user code, as expected.
+            // This will throw NullReferenceException if obj is null.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return ref obj.GetRawData();
 
             return ref Unbox_Helper(toTypeHnd, obj);
         }
 
-        internal struct ArrayElement
+        [DebuggerHidden]
+        private static void ThrowIndexOutOfRangeException()
         {
-            public object? Value;
+            throw new IndexOutOfRangeException();
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        private static ref object? ThrowArrayMismatchException()
+        private static void ThrowArrayMismatchException()
         {
             throw new ArrayTypeMismatchException();
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static ref object? LdelemaRef(Array array, nint index, void* type)
+        private static ref object? LdelemaRef(object?[] array, nint index, void* type)
         {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            // This will throw NullReferenceException if array is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException();
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
-            if (elementType == type)
-                return ref element;
+            if (elementType != type)
+                ThrowArrayMismatchException();
 
-            return ref ThrowArrayMismatchException();
+            return ref element;
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private static void StelemRef(Array array, nint index, object? obj)
+        private static void StelemRef(object?[] array, nint index, object? obj)
         {
-            // this will throw appropriate exceptions if array is null or access is out of range.
-            ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+            // This will throw NullReferenceException if array is null.
+            if ((nuint)index >= (uint)array.Length)
+                ThrowIndexOutOfRangeException();
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
             if (obj == null)
@@ -451,12 +436,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void StelemRef_Helper(ref object? element, void* elementType, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
+            CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
                 WriteBarrier(ref element, obj);
@@ -467,20 +450,47 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        [StackTraceHidden]
-        [DebuggerStepThrough]
         private static void StelemRef_Helper_NoCacheLookup(ref object? element, void* elementType, object obj)
         {
             Debug.Assert(obj != null);
 
             obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj != null)
+            if (obj == null)
             {
-                WriteBarrier(ref element, obj);
+                ThrowArrayMismatchException();
+            }
+
+            WriteBarrier(ref element, obj);
+        }
+
+        [DebuggerHidden]
+        private static unsafe void ArrayTypeCheck(object obj, Array array)
+        {
+            Debug.Assert(obj != null);
+
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            Debug.Assert(elementType != RuntimeHelpers.GetMethodTable(obj)); // Should be handled by caller
+
+            CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
+            if (result == CastResult.CanCast)
+            {
                 return;
             }
 
-            throw new ArrayTypeMismatchException();
+            ArrayTypeCheck_Helper(obj, elementType);
+        }
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void ArrayTypeCheck_Helper(object obj, void* elementType)
+        {
+            Debug.Assert(obj != null);
+
+            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj == null)
+            {
+                ThrowArrayMismatchException();
+            }
         }
     }
 }

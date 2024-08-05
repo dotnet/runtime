@@ -1532,6 +1532,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => array.RemoveRange(array.Length + 1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(0, array.Length + 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.RemoveRange(array.Length, int.MaxValue));
         }
 
         [Theory]
@@ -2552,7 +2553,7 @@ namespace System.Collections.Immutable.Tests
             var array = new[] { 1, 2, 3 }.ToImmutableArray();
 
             ref readonly int safeRef = ref array.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, array.ItemRef(1));
 

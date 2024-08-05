@@ -9,6 +9,10 @@
 #include "gcinfo.h"
 #endif
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif // _MSC_VER
+
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
@@ -22,35 +26,33 @@
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
-
-//--------------------------------------------------------------------------------
-// It turns out, that ((size_t)x) << y == x, when y is not a literal
-//      and its value is BITS_PER_SIZE_T
-// I guess the processor only shifts of the right operand modulo BITS_PER_SIZE_T
-// In many cases, we want the above operation to yield 0,
-//      hence the following macros
-//--------------------------------------------------------------------------------
-__forceinline size_t SAFE_SHIFT_LEFT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x << 1) << (count - 1);
-}
-__forceinline size_t SAFE_SHIFT_RIGHT(size_t x, size_t count)
-{
-    _ASSERTE(count <= BITS_PER_SIZE_T);
-    return (x >> 1) >> (count - 1);
-}
-
 inline UINT32 CeilOfLog2(size_t x)
 {
+    // it is ok to use bsr or clz unconditionally
     _ASSERTE(x > 0);
-    UINT32 result = (x & (x - 1)) ? 1 : 0;
-    while (x != 1)
-    {
-        result++;
-        x >>= 1;
-    }
-    return result;
+
+    x = (x << 1) - 1;
+
+#ifdef TARGET_64BIT
+#ifdef _MSC_VER
+    DWORD result;
+    _BitScanReverse64(&result, (unsigned long)x);
+    return (UINT32)result;
+#else // _MSC_VER
+    // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+    // 63 ^ LZCNT here is equivalent to 63 - LZCNT since the LZCNT result is always between 0 and 63.
+    // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+    return (UINT32)63 ^ (UINT32)__builtin_clzl((unsigned long)x);
+#endif // _MSC_VER
+#else // TARGET_64BIT
+#ifdef _MSC_VER
+    DWORD result;
+    _BitScanReverse(&result, (unsigned int)x);
+    return (UINT32)result;
+#else // _MSC_VER
+    return (UINT32)31 ^ (UINT32)__builtin_clz((unsigned int)x);
+#endif // _MSC_VER
+#endif
 }
 
 enum GcSlotFlags
@@ -838,8 +840,8 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define DENORMALIZE_STACK_SLOT(x) ((x)<<3)
 #define NORMALIZE_CODE_LENGTH(x) ((x)>>2)   // All Instructions are 4 bytes long
 #define DENORMALIZE_CODE_LENGTH(x) ((x)<<2)
-#define NORMALIZE_STACK_BASE_REGISTER(x) ((x)^8) // Encode Frame pointer X8 as zero
-#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x)^8)
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 8 ? 0 : 1) // Encode Frame pointer X8 as zero, sp/x2 as 1
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 8 : 2)
 #define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x)>>3)
 #define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x)<<3)
 #define CODE_OFFSETS_NEED_NORMALIZATION 0
@@ -860,7 +862,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
 #define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
 #define STACK_BASE_REGISTER_ENCBASE 2
-// FP encoded as 0, SP as 2??
+// FP encoded as 0, SP as 1
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
 #define SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE 4

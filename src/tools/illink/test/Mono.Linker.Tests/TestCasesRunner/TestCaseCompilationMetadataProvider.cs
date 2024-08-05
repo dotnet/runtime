@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return "WIN32";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore))
-				yield return "NETCOREAPP";
+				yield return "NET";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.SupportsDefaultInterfaceMethods))
 				yield return "SUPPORTS_DEFAULT_INTERFACE_METHODS";
@@ -148,13 +148,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				yield return Path.Combine (referenceDir, "mscorlib.dll");
 				yield return Path.Combine (referenceDir, "System.Collections.dll");
+				yield return Path.Combine (referenceDir, "System.Collections.Immutable.dll");
 				yield return Path.Combine (referenceDir, "System.ComponentModel.TypeConverter.dll");
 				yield return Path.Combine (referenceDir, "System.Console.dll");
 				yield return Path.Combine (referenceDir, "System.Linq.Expressions.dll");
+				yield return Path.Combine (referenceDir, "System.Memory.dll");
 				yield return Path.Combine (referenceDir, "System.ObjectModel.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.Extensions.dll");
 				yield return Path.Combine (referenceDir, "System.Runtime.InteropServices.dll");
+				yield return Path.Combine (referenceDir, "System.Threading.dll");
 			} else {
 				yield return "mscorlib.dll";
 			}

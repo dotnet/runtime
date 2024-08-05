@@ -55,10 +55,10 @@ namespace Sample
 
             string output;
 
-            instance.formatter = new PlainFormatter();
-            instance.tasks.RemoveAll(t => t.BrowserOnly);
+            Instance.formatter = new PlainFormatter();
+            Instance.tasks.RemoveAll(t => t.BrowserOnly);
 
-            if (instance.tasks.Count < 1)
+            if (Instance.tasks.Count < 1)
             {
                 Console.WriteLine("No task(s) to run");
                 Environment.Exit(0);
@@ -66,7 +66,7 @@ namespace Sample
 
             do
             {
-                output = await instance.RunTasks();
+                output = await Instance.RunTasks();
                 Console.Write(output);
             } while (!string.IsNullOrEmpty(output));
 

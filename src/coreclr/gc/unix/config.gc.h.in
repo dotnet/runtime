@@ -32,5 +32,6 @@
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_NON_LEGACY_STATFS
+#cmakedefine01 HAVE_PROCFS_STATM
 
 #endif // __CONFIG_H__

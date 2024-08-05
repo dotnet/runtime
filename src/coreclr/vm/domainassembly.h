@@ -35,13 +35,8 @@ enum FileLoadLevel
 
     FILE_LOAD_CREATE,
     FILE_LOAD_BEGIN,
-    FILE_LOAD_FIND_NATIVE_IMAGE,
-    FILE_LOAD_VERIFY_NATIVE_IMAGE_DEPENDENCIES,
     FILE_LOAD_ALLOCATE,
-    FILE_LOAD_ADD_DEPENDENCIES,
-    FILE_LOAD_PRE_LOADLIBRARY,
-    FILE_LOAD_LOADLIBRARY,
-    FILE_LOAD_POST_LOADLIBRARY,
+    FILE_LOAD_POST_ALLOCATE,
     FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
     FILE_LOAD_VTABLE_FIXUPS,
@@ -75,13 +70,6 @@ public:
     ~DomainAssembly();
     DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
-
-    PTR_AppDomain GetAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_pDomain;
-    }
 
     PEAssembly *GetPEAssembly()
     {
@@ -161,12 +149,6 @@ public:
         return m_fCollectible;
     }
 
-    ULONG HashIdentity()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->HashIdentity();
-    }
-
     // ------------------------------------------------------------
     // Loading state checks
     // ------------------------------------------------------------
@@ -235,12 +217,6 @@ public:
         return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
     }
 
-    void EnsureLibraryLoaded()
-    {
-        WRAPPER_NO_CONTRACT;
-        return EnsureLoadLevel(FILE_LOAD_LOADLIBRARY);
-    }
-
     // EnsureLoadLevel is a generic routine used to ensure that the file is not in a delay loaded
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
@@ -303,15 +279,6 @@ public:
         return m_pLoaderAllocator;
     }
 
-// ------------------------------------------------------------
-// Resource access
-// ------------------------------------------------------------
-
-    BOOL GetResource(LPCSTR szName, DWORD* cbResource,
-        PBYTE* pbInMemoryResource, DomainAssembly** pAssemblyRef,
-        LPCSTR* szFileName, DWORD* dwLocation,
-        BOOL fSkipRaiseResolveEvent);
-
  private:
     // ------------------------------------------------------------
     // Loader API
@@ -322,7 +289,7 @@ public:
     friend class Module;
     friend class FileLoadLock;
 
-    DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
+    DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -331,10 +298,7 @@ public:
 #ifndef DACCESS_COMPILE
     void Begin();
     void Allocate();
-    void AddDependencies();
-    void PreLoadLibrary();
-    void LoadLibrary();
-    void PostLoadLibrary();
+    void PostAllocate();
     void EagerFixups();
     void VtableFixups();
     void DeliverSyncEvents();
@@ -435,7 +399,6 @@ private:
     // ------------------------------------------------------------
 
     PTR_Assembly                m_pAssembly;
-    PTR_AppDomain               m_pDomain;
     PTR_PEAssembly              m_pPEAssembly;
     PTR_Module                  m_pModule;
 

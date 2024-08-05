@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NonPublicCtors_NotSupported(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
-            Assert.Contains("JsonConstructorAttribute", ex.ToString());
+            Assert.Contains("JsonConstructorAttribute", ex.Message);
         }
 
         [Theory]
@@ -35,7 +35,25 @@ namespace System.Text.Json.Serialization.Tests
             else
             {
                 NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
-                Assert.Contains("JsonConstructorAttribute", ex.ToString());
+                Assert.Contains("JsonConstructorAttribute", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(typeof(PrivateParameterlessCtor_WithAttribute), false)]
+        [InlineData(typeof(InternalParameterlessCtor_WithAttribute), true)]
+        [InlineData(typeof(ProtectedParameterlessCtor_WithAttribute), false)]
+        public async Task NonPublicParameterlessCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        {
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
+            {
+                object? result = await Serializer.DeserializeWrapper("{}", type);
+                Assert.IsType(type, result);
+            }
+            else
+            {
+                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+                Assert.Contains("JsonConstructorAttribute", ex.Message);
             }
         }
 

@@ -33,9 +33,9 @@ namespace System.Runtime.InteropServices.Tests
                 {
                     Assert.NotEqual(IntPtr.Zero, ptr);
 
-                    // Unix uses UTF8 for Ansi marshalling.
+                    // The check is incorrect for UTF8 encoding of non-Ansi chars. Detect UTF8 encoding via SystemMaxDBCSCharSize.
                     bool containsNonAnsiChars = s.Any(c => c > 0xFF);
-                    if (!containsNonAnsiChars || PlatformDetection.IsWindows)
+                    if (!containsNonAnsiChars || Marshal.SystemMaxDBCSCharSize < 3)
                     {
                         // Make sure the native memory is correctly laid out.
                         for (int i = 0; i < s.Length; i++)

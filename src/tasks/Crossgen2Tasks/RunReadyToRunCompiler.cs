@@ -397,7 +397,7 @@ namespace Microsoft.NET.Build.Tasks
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {
-            if (!ShowCompilerWarnings && singleLine.IndexOf("warning:", StringComparison.OrdinalIgnoreCase) != -1)
+            if (!ShowCompilerWarnings && singleLine.Contains("warning:", StringComparison.OrdinalIgnoreCase))
             {
                 Log.LogMessage(MessageImportance.Normal, singleLine);
                 WarningsDetected = true;

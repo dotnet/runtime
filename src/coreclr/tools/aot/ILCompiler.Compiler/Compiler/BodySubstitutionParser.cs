@@ -40,7 +40,7 @@ namespace ILCompiler
             ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
         }
 
-        // protected override TypeDesc? ProcessExportedType(ExportedType exported, ModuleDesc assembly, XPathNavigator nav) => null;
+        protected override MetadataType ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav) => null;
 
         protected override bool ProcessTypePattern(string fullname, ModuleDesc assembly, XPathNavigator nav) => false;
 
@@ -72,11 +72,15 @@ namespace ILCompiler
                     _methodSubstitutions.Add(method, BodySubstitution.ThrowingBody);
                     break;
                 case "stub":
-                    BodySubstitution stubBody;
+                    BodySubstitution stubBody = null;
                     if (method.Signature.ReturnType.IsVoid)
                         stubBody = BodySubstitution.EmptyBody;
                     else
-                        stubBody = BodySubstitution.Create(TryCreateSubstitution(method.Signature.ReturnType, GetAttribute(methodNav, "value")));
+                    {
+                        object substitution = TryCreateSubstitution(method.Signature.ReturnType, GetAttribute(methodNav, "value"));
+                        if (substitution != null)
+                            stubBody = BodySubstitution.Create(substitution);
+                    }
 
                     if (stubBody != null)
                     {

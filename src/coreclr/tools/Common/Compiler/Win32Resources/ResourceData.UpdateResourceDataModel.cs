@@ -3,12 +3,17 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {
-        private void AddResource(object type, object name, ushort language, byte[] data)
+        private void AddResourceInternal(object name, object type, ushort language, byte[] data)
         {
             ResType resType;
 
@@ -22,6 +27,7 @@ namespace ILCompiler.Win32Resources
             }
             else
             {
+                Debug.Assert(type is string);
                 if (!_resTypeHeadName.TryGetValue((string)type, out resType))
                 {
                     resType = new ResType();
@@ -41,6 +47,7 @@ namespace ILCompiler.Win32Resources
             }
             else
             {
+                Debug.Assert(name is string);
                 if (!resType.NameHeadName.TryGetValue((string)name, out resName))
                 {
                     resName = new ResName();
@@ -53,28 +60,30 @@ namespace ILCompiler.Win32Resources
 
         private byte[] FindResourceInternal(object name, object type, ushort language)
         {
-            ResType resType = null;
+            ResType resType;
 
             if (type is ushort)
             {
                 _resTypeHeadID.TryGetValue((ushort)type, out resType);
             }
-            if (type is string)
+            else
             {
+                Debug.Assert(type is string);
                 _resTypeHeadName.TryGetValue((string)type, out resType);
             }
 
             if (resType == null)
                 return null;
 
-            ResName resName = null;
+            ResName resName;
 
             if (name is ushort)
             {
                 resType.NameHeadID.TryGetValue((ushort)name, out resName);
             }
-            if (name is string)
+            else
             {
+                Debug.Assert(name is string);
                 resType.NameHeadName.TryGetValue((string)name, out resName);
             }
 

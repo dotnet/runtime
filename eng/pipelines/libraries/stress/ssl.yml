@@ -11,8 +11,7 @@ schedules:
   branches:
     include:
     - main
-    - release/6.0
-    - release/7.0
+    - release/8.0
 
 variables:
   - template: ../variables.yml
@@ -36,7 +35,7 @@ extends:
         timeoutInMinutes: 120
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         steps:
         - checkout: self
@@ -75,6 +74,9 @@ extends:
           lfs: false
 
         - powershell: |
+            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
+            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
+
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
           displayName: Build CLR and Libraries
 

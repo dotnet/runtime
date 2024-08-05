@@ -9,7 +9,6 @@ using Xunit;
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public class ResolveComponentDependencies :
-        ComponentDependencyResolutionBase,
         IClassFixture<ResolveComponentDependencies.SharedTestState>
     {
         private readonly SharedTestState sharedTestState;

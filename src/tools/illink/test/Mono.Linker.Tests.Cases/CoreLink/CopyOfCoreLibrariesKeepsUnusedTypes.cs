@@ -11,8 +11,6 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 
 	[KeptAssembly (PlatformAssemblies.CoreLib)]
 	[KeptAllTypesAndMembersInAssembly (PlatformAssemblies.CoreLib)]
-
-	[SkipPeVerify]
 	class CopyOfCoreLibrariesKeepsUnusedTypes
 	{
 		public static void Main ()

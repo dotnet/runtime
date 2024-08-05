@@ -20,7 +20,8 @@ namespace TestIntLimits
     public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckMulNeg()
+        [Fact]
+        public static int CheckMulNeg()
         {
             bool fail = false;
             if (MulNeg7(3) != -7 * 3)
@@ -88,7 +89,6 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckMulNeg failed");
                 return 101;
             }
             return 100;
@@ -125,7 +125,8 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckNegMul()
+        [Fact]
+        public static int CheckNegMul()
         {
             bool fail = false;
             if (NegMul7(3) != -7 * 3)
@@ -163,7 +164,6 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckNegMul failed");
                 return 101;
             }
             return 100;
@@ -190,7 +190,8 @@ namespace TestIntLimits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckDivNeg()
+        [Fact]
+        public static int CheckDivNeg()
         {
             bool fail = false;
 
@@ -220,7 +221,6 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckDivNeg failed");
                 return 101;
             }
             return 100;
@@ -264,7 +264,8 @@ namespace TestIntLimits
         static long LongDivNeg1(long a) => -a / 1;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CheckNegDiv()
+        [Fact]
+        public static int CheckNegDiv()
         {
             bool fail = false;
 
@@ -310,7 +311,6 @@ namespace TestIntLimits
 
             if (fail)
             {
-                Console.WriteLine("CheckNegDiv failed");
                 return 101;
             }
             return 100;
@@ -339,28 +339,5 @@ namespace TestIntLimits
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long LongNegDivMinus1(long a) => -(a / -1);
-
-        [Fact]
-        public static int TestEntryPoint()
-        {
-            if (CheckMulNeg() != 100)
-            {
-                return 101;
-            }
-            if (CheckNegMul() != 100)
-            {
-                return 101;
-            }
-            if (CheckDivNeg() != 100)
-            {
-                return 101;
-            }
-            if (CheckNegDiv() != 100)
-            {
-                return 101;
-            }
-
-            return 100;
-        }
     }
 }

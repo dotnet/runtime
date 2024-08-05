@@ -23,14 +23,13 @@ public class Runtime_57752_1
     internal static bool s_53;
     internal static int[][] s_56;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         s_rt = new C();
         var vr9 = new ushort[]{0};
         var vr10 = new bool[]{true};
         var vr11 = new int[]{0};
         M51(s_27, vr9, vr10, 0, vr11, ref s_28);
-        return 100;
     }
 
     internal static void M51(bool[] arg0, ushort[] arg5, bool[] arg9, ulong arg10, int[] arg11, ref short arg12)

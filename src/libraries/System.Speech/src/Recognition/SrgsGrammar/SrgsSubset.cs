@@ -11,7 +11,7 @@ namespace System.Speech.Recognition.SrgsGrammar
     // Note that currently if multiple words are stored in a Subset they are treated internally
     // and in the result as multiple tokens.
     [Serializable]
-    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsSubset : SrgsElement, ISubset
     {
         #region Constructors

@@ -121,13 +121,20 @@ handle_enum:
 		if (m_class_is_enumtype (type->data.klass)) {
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
-		} else
-			return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
+		} else {
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
+				return calli? OP_XCALL_REG: virt? OP_XCALL_MEMBASE: OP_XCALL;
+			else
+				return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
+		}
 	case MONO_TYPE_TYPEDBYREF:
 		return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
+			return calli? OP_XCALL_REG: virt? OP_XCALL_MEMBASE: OP_XCALL;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
+	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* gsharedvt */
@@ -412,6 +419,8 @@ callvirt_to_call (int opcode)
 		return OP_RCALL;
 	case OP_VCALL_MEMBASE:
 		return OP_VCALL;
+	case OP_XCALL_MEMBASE:
+		return OP_XCALL;
 	case OP_LCALL_MEMBASE:
 		return OP_LCALL;
 	default:

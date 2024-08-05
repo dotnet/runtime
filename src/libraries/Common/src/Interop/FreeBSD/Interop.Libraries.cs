@@ -5,7 +5,6 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string Odbc32 = "libodbc.so.2";
         internal const string MsQuic = "libmsquic.so";
     }
 }

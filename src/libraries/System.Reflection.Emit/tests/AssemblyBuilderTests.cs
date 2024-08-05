@@ -145,14 +145,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("<In Memory Module>", module.Name);
 
             // The coreclr ignores the name passed to AssemblyBuilder.DefineDynamicModule
-            if (PlatformDetection.IsNetFramework)
-            {
-                Assert.Equal(name, module.FullyQualifiedName);
-            }
-            else
-            {
-                Assert.Equal("RefEmit_InMemoryManifestModule", module.FullyQualifiedName);
-            }
+            Assert.Equal("RefEmit_InMemoryManifestModule", module.FullyQualifiedName);
 
             Assert.Equal(module, assembly.GetDynamicModule(module.FullyQualifiedName));
         }

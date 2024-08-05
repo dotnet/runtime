@@ -5,7 +5,11 @@ using System;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {
@@ -51,7 +55,7 @@ namespace ILCompiler.Win32Resources
                             if (!resourceFilter(typeName, name, (ushort)languageName))
                                 return;
                         }
-                        AddResource(typeName, name, (ushort)languageName, data);
+                        AddResourceInternal(name, typeName, (ushort)languageName, data);
                     }
                 }
             }

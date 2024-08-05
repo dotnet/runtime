@@ -24,7 +24,6 @@
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
   #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
@@ -53,9 +52,9 @@
                                            // target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.
-
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
-                                           // protected by "cloned finally" clauses.
+#if !defined(UNIX_X86_ABI)
+  #define FEATURE_EH_WINDOWS_X86   1       // Enable support for SEH regions
+#endif
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
@@ -92,11 +91,9 @@
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
-#if !defined(UNIX_X86_ABI)
-  #define RBM_ALLMASK              RBM_K1
-#else
-  #define RBM_ALLMASK              (0)
-#endif
+  #define RBM_ALLMASK_INIT         (0)
+  #define RBM_ALLMASK_EVEX         (RBM_K1 | RBM_K2 | RBM_K3 | RBM_K4 | RBM_K5 | RBM_K6 | RBM_K7)
+  #define RBM_ALLMASK              get_RBM_ALLMASK()
 
   #define CNT_HIGHFLOAT           0
 
@@ -105,12 +102,17 @@
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE
   #define RBM_FLT_CALLEE_TRASH     RBM_ALLFLOAT
   #define REG_VAR_ORDER_FLT        REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7
+  #define REG_VAR_ORDER_MSK        REG_K1,REG_K2,REG_K3,REG_K4,REG_K5,REG_K6,REG_K7
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM7
 
+  /* NOTE: Sync with variable name defined in compiler.h */
+  #define RBM_MSK_CALLEE_TRASH_INIT (0)
+  #define RBM_MSK_CALLEE_TRASH_EVEX RBM_ALLMASK_EVEX
+
   #define RBM_MSK_CALLEE_SAVED    (0)
-  #define RBM_MSK_CALLEE_TRASH    RBM_ALLMASK
+  #define RBM_MSK_CALLEE_TRASH    get_RBM_MSK_CALLEE_TRASH()
 
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
@@ -133,9 +135,8 @@
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI)
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX)
 
-  // TODO-AVX512: Add RBM_MSK_CALLEE_*
-  #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
-  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
+  #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED | RBM_MSK_CALLEE_SAVED)
+  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
 
@@ -143,15 +144,24 @@
   #define MAX_VAR_ORDER_SIZE       6
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
-  #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  #define RBM_CALL_GC_REGS         (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP)
 
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)
+
+  #define CNT_CALLEE_SAVED_MASK        (0)
+
+  #define CNT_CALLEE_TRASH_MASK_INIT   (0)
+  #define CNT_CALLEE_TRASH_MASK_EVEX   (7)
+  #define CNT_CALLEE_TRASH_MASK      get_CNT_CALLEE_TRASH_MASK()
 
   #define CALLEE_SAVED_REG_MAXSZ  (CNT_CALLEE_SAVED*REGSIZE_BYTES)  // EBX,ESI,EDI,EBP
 
@@ -219,7 +229,6 @@
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
   // a call to a "general" write barrier.
-  CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)

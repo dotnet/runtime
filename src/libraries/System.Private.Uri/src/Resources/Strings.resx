@@ -144,9 +144,6 @@
   <data name="net_uri_BadScheme" xml:space="preserve">
     <value>Invalid URI: The URI scheme is not valid.</value>
   </data>
-  <data name="net_uri_BadString" xml:space="preserve">
-    <value>Invalid URI: There is an invalid sequence in the string.</value>
-  </data>
   <data name="net_uri_BadUserPassword" xml:space="preserve">
     <value>Invalid URI: The username:password construct is badly formed.</value>
   </data>

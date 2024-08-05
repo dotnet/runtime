@@ -97,7 +97,12 @@ namespace System.Runtime.InteropServices
                 else if ((callingAssembly != null) && searchAssemblyDirectory)
                 {
                     // Try to load the module alongside the assembly where the PInvoke was declared.
-                    // This only makes sense in dynamic scenarios (JIT/interpreter), so leaving this out for now.
+                    // For PInvokes where the DllImportSearchPath.AssemblyDirectory is specified, look next to the application.
+                    ret = LoadLibraryHelper(Path.Combine(AppContext.BaseDirectory, currLibNameVariation), loadWithAlteredPathFlags | dllImportSearchPathFlags, ref errorTracker);
+                    if (ret != IntPtr.Zero)
+                    {
+                        return ret;
+                    }
                 }
 
                 ret = LoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);

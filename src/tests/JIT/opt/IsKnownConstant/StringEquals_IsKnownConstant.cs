@@ -8,7 +8,7 @@ using Xunit;
 public class Program
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         AssertEquals(true, TestEquals1(""));
         AssertEquals(false, TestEquals1(null));
@@ -44,8 +44,6 @@ public class Program
         AssertEquals(true, TestStartWith("c"));
         AssertEquals(false, TestStartWith("C"));
         AssertThrowsNRE(() => TestStartWith(null));
-        
-        return 100;
     }
 
     private static void AssertEquals(bool expected, bool actual, [CallerLineNumber]int l = 0)

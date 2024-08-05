@@ -34,21 +34,21 @@ namespace LibraryImportGenerator.UnitTests
                     [LibraryImportAttribute("DoesNotExist")]
                     public static partial S Method1();
                 }
-                
+
                 [NativeMarshalling(typeof(Marshaller))]
                 struct S
                 {
                 }
-                
+
                 struct Native
                 {
                 }
-                
+
                 [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
                 static class Marshaller
                 {
                     public static Native ConvertToUnmanaged(S s) => default;
-                
+
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
@@ -242,21 +242,21 @@ namespace LibraryImportGenerator.UnitTests
                     [LibraryImportAttribute("DoesNotExist")]
                     public static partial S Method1();
                 }
-                
+
                 [NativeMarshalling(typeof(Marshaller))]
                 struct S
                 {
                 }
-                
+
                 struct Native
                 {
                 }
-                
+
                 [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
                 static class Marshaller
                 {
                     public static Native ConvertToUnmanaged(S s) => default;
-                
+
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
@@ -331,80 +331,6 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
-        [Fact]
-        [OuterLoop("Uses the network for downlevel ref packs")]
-        public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
-        {
-            // This code is invalid configuration from the source generator's perspective.
-            // We just use it as validation for forwarding the In and Out attributes.
-            string source = """
-                using System.Runtime.CompilerServices;
-                using System.Runtime.InteropServices;
-                partial class C
-                {
-                    [LibraryImportAttribute("DoesNotExist")]
-                    [return: MarshalAs(UnmanagedType.Bool)]
-                    public static partial bool Method1([In, Out] int {|SYSLIB1051:a|});
-                }
-                """ + CodeSnippets.LibraryImportAttributeDeclaration;
-
-            await VerifySourceGeneratorAsync(
-                source,
-                (targetMethod, newComp) =>
-                {
-                    INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-                    INamedTypeSymbol inAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
-                    INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
-                    Assert.Collection(targetMethod.Parameters,
-                        param => Assert.Collection(param.GetAttributes(),
-                            attr =>
-                            {
-                                Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                                Assert.Empty(attr.ConstructorArguments);
-                                Assert.Empty(attr.NamedArguments);
-                            },
-                            attr =>
-                            {
-                                Assert.Equal(outAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                                Assert.Empty(attr.ConstructorArguments);
-                                Assert.Empty(attr.NamedArguments);
-                            }));
-                },
-                TestTargetFramework.Standard);
-        }
-
-        [Fact]
-        [OuterLoop("Uses the network for downlevel ref packs")]
-        public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
-        {
-            string source = """
-                using System.Runtime.CompilerServices;
-                using System.Runtime.InteropServices;
-                partial class C
-                {
-                    [LibraryImportAttribute("DoesNotExist")]
-                    [return: MarshalAs(UnmanagedType.Bool)]
-                    public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
-                }
-                """ + CodeSnippets.LibraryImportAttributeDeclaration;
-
-            await VerifySourceGeneratorAsync(
-                source,
-                (targetMethod, newComp) =>
-                {
-                    INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-                    Assert.Collection(targetMethod.Parameters,
-                        param => Assert.Collection(param.GetAttributes(),
-                            attr =>
-                            {
-                                Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                                Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                                Assert.Empty(attr.NamedArguments);
-                            }));
-                },
-                TestTargetFramework.Standard);
-        }
-
         private static Task VerifySourceGeneratorAsync(string source, Action<IMethodSymbol, Compilation> targetPInvokeAssertion, TestTargetFramework targetFramework = TestTargetFramework.Net)
         {
             var test = new GeneratedTargetPInvokeTest(targetPInvokeAssertion, targetFramework)
@@ -436,7 +362,9 @@ namespace LibraryImportGenerator.UnitTests
                     .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
                     .ToList();
                 LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+#pragma warning disable RS1039 // This call to 'SemanticModel.GetDeclaredSymbol()' will always return 'null' https://github.com/dotnet/roslyn-analyzers/issues/7061
                 IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(innerDllImport)!;
+#pragma warning restore RS1039 // This call to 'SemanticModel.GetDeclaredSymbol()' will always return 'null'
                 return targetMethod;
             }
 

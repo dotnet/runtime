@@ -131,7 +131,7 @@ NativeImage *NativeImage::Open(
         }
     }
 
-    SString path = componentModule->GetPath();
+    SString path{ componentModule->GetPath() };
     SString::Iterator lastPathSeparatorIter = path.End();
     size_t pathDirLength = 0;
     if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -142,7 +142,7 @@ NativeImage *NativeImage::Open(
     SString compositeImageFileName(SString::Utf8, nativeImageFileName);
     SString fullPath;
     fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
-    fullPath += compositeImageFileName;
+    fullPath.Append(compositeImageFileName);
     LPWSTR searchPathsConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
 
@@ -194,7 +194,7 @@ NativeImage *NativeImage::Open(
                 }
 
                 fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
-                fullPath += compositeImageFileName;
+                fullPath.Append(compositeImageFileName);
 
                 EX_TRY
                 {
@@ -261,7 +261,7 @@ NativeImage *NativeImage::Open(
 #endif
 
 #ifndef DACCESS_COMPILE
-Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly)
+Assembly *NativeImage::LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly)
 {
     STANDARD_VM_CONTRACT;
 

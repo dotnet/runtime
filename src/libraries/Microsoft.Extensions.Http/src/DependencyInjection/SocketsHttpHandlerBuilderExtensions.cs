@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NET5_0_OR_GREATER
+#if NET
 using System;
 using System.Net;
 using System.Net.Http;
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static void FillFromConfig(SocketsHttpHandler handler, SocketsHttpHandlerConfiguration config)
+        private static void FillFromConfig(SocketsHttpHandler handler, in SocketsHttpHandlerConfiguration config)
         {
             if (config.PooledConnectionIdleTimeout is not null)
             {

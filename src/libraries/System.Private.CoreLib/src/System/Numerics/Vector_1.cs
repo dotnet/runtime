@@ -28,7 +28,7 @@ namespace System.Numerics
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(VectorDebugView<>))]
-    public readonly struct Vector<T> : IEquatable<Vector<T>>, IFormattable
+    public readonly unsafe struct Vector<T> : ISimdVector<Vector<T>, T>, IFormattable
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
         internal readonly ulong _00;
@@ -52,7 +52,7 @@ namespace System.Numerics
         /// <param name="values">The array from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values)
         {
@@ -71,7 +71,7 @@ namespace System.Numerics
         /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values, int index)
         {
@@ -107,7 +107,7 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <c>sizeof(<see cref="Vector{T}" />)</c> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe Vector(ReadOnlySpan<byte> values)
+        public Vector(ReadOnlySpan<byte> values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -124,7 +124,6 @@ namespace System.Numerics
         /// <param name="values">The span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(Span<T> values) : this((ReadOnlySpan<T>)values)
         {
         }
@@ -134,33 +133,46 @@ namespace System.Numerics
         public static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                T scalar = Scalar<T>.AllBitsSet;
-                return new Vector<T>(scalar);
-            }
+            get => Vector.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public static unsafe int Count
+        public static int Count
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
                 return sizeof(Vector<T>) / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+
+        /// <summary>Gets a new <see cref="Vector{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector<T> Indices
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
+            }
+        }
 
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
                    (typeof(T) == typeof(double)) ||
@@ -181,12 +193,7 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                T scalar = Scalar<T>.One;
-                return new Vector<T>(scalar);
-            }
+            get => Vector.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to zero.</summary>
@@ -194,7 +201,6 @@ namespace System.Numerics
         public static Vector<T> Zero
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -202,13 +208,7 @@ namespace System.Numerics
             }
         }
 
-        internal string DisplayString
-        {
-            get
-            {
-                return IsSupported ? ToString() : SR.NotSupported_Type;
-            }
-        }
+        internal string DisplayString => IsSupported ? ToString() : SR.NotSupported_Type;
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="index">The index of the element to get.</param>
@@ -218,11 +218,7 @@ namespace System.Numerics
         public T this[int index]
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return this.GetElement(index);
-            }
+            get => this.GetElement(index);
         }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
@@ -374,7 +370,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<byte>(Vector<T> value) => value.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
@@ -382,7 +377,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<double>(Vector<T> value) => value.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
@@ -390,7 +384,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<short>(Vector<T> value) => value.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
@@ -398,7 +391,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<int>(Vector<T> value) => value.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
@@ -406,7 +398,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<long>(Vector<T> value) => value.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
@@ -414,7 +405,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<nint>(Vector<T> value) => value.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
@@ -423,7 +413,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<nuint>(Vector<T> value) => value.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
@@ -432,7 +421,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<sbyte>(Vector<T> value) => value.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
@@ -440,7 +428,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<float>(Vector<T> value) => value.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
@@ -449,7 +436,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<ushort>(Vector<T> value) => value.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
@@ -458,7 +444,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<uint>(Vector<T> value) => value.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
@@ -467,7 +452,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Vector<ulong>(Vector<T> value) => value.As<T, ulong>();
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -475,18 +459,7 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector<T> left, Vector<T> right)
-        {
-            for (int index = 0; index < Count; index++)
-            {
-                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public static bool operator !=(Vector<T> left, Vector<T> right) => !(left == right);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -531,26 +504,13 @@ namespace System.Numerics
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <returns>The product of <paramref name="value" /> and <paramref name="factor" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator *(Vector<T> value, T factor)
-        {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.Multiply(value.GetElementUnsafe(index), factor);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector<T> operator *(Vector<T> value, T factor) => value * Vector.Create(factor);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <param name="value">The vector to multiply with <paramref name="factor" />.</param>
         /// <returns>The product of <paramref name="factor" /> and <paramref name="value" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value) => value * factor;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
@@ -617,14 +577,27 @@ namespace System.Numerics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> operator -(Vector<T> value) => Zero - value;
+        public static Vector<T> operator -(Vector<T> value)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return value ^ Vector.Create(-0.0f).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return value ^ Vector.Create(-0.0).As<double, T>();
+            }
+            else
+            {
+                return Zero - value;
+            }
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
         /// <returns><paramref name="value" /></returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator +(Vector<T> value)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -695,7 +668,7 @@ namespace System.Numerics
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void CopyTo(Span<byte> destination)
+        public void CopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -724,7 +697,6 @@ namespace System.Numerics
         /// <summary>Returns a boolean indicating whether the given Object is equal to this vector instance.</summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector<T> other) && Equals(other);
 
         /// <summary>Returns a boolean indicating whether the given vector is equal to this vector instance.</summary>
@@ -817,7 +789,7 @@ namespace System.Numerics
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool TryCopyTo(Span<byte> destination)
+        public bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -844,5 +816,359 @@ namespace System.Numerics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
             return true;
         }
+
+        //
+        // ISimdVector
+        //
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
+        static int ISimdVector<Vector<T>, T>.Alignment => Vector.Alignment;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
+        static bool ISimdVector<Vector<T>, T>.IsHardwareAccelerated
+        {
+            [Intrinsic]
+            get => Vector.IsHardwareAccelerated;
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Abs(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Abs(Vector<T> vector) => Vector.Abs(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Add(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Add(Vector<T> left, Vector<T> right) => left + right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.AndNot(Vector<T> left, Vector<T> right) => Vector.AndNot(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.BitwiseAnd(Vector<T> left, Vector<T> right) => left & right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseOr(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.BitwiseOr(Vector<T> left, Vector<T> right) => left | right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Ceiling(Vector<T> vector) => Vector.Ceiling(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Clamp(Vector<T> value, Vector<T> min, Vector<T> max) => Vector.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.ClampNative(Vector<T> value, Vector<T> min, Vector<T> max) => Vector.ClampNative(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right) => Vector.ConditionalSelect(condition, left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.CopySign(Vector<T> value, Vector<T> sign) => Vector.CopySign(value, sign);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
+        static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, T[] destination) => vector.CopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[], int)" />
+        static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, T[] destination, int startIndex) => vector.CopyTo(destination, startIndex);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, Span{T})" />
+        static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, Span<T> destination) => vector.CopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Create(T value) => Vector.Create(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T[])" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Create(T[] values) => new Vector<T>(values);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T[], int)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Create(T[] values, int index) => new Vector<T>(values, index);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(ReadOnlySpan{T})" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Create(ReadOnlySpan<T> values) => Vector.Create(values);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalar(T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.CreateScalar(T value) => Vector.CreateScalar(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalarUnsafe(T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.CreateScalarUnsafe(T value) => Vector.CreateScalarUnsafe(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Divide(Vector<T> left, Vector<T> right) => left / right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Divide(Vector<T> left, T right) => left / right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Dot(TSelf, TSelf)" />
+        [Intrinsic]
+        static T ISimdVector<Vector<T>, T>.Dot(Vector<T> left, Vector<T> right) => Vector.Dot(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Equals(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Equals(Vector<T> left, Vector<T> right) => Vector.Equals(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAll(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.EqualsAll(Vector<T> left, Vector<T> right) => left == right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAny(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.EqualsAny(Vector<T> left, Vector<T> right) => Vector.EqualsAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Floor(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Floor(Vector<T> vector) => Vector.Floor(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GetElement(TSelf, int)" />
+        [Intrinsic]
+        static T ISimdVector<Vector<T>, T>.GetElement(Vector<T> vector, int index) => vector.GetElement(index);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThan(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.GreaterThan(Vector<T> left, Vector<T> right) => Vector.GreaterThan(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAll(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.GreaterThanAll(Vector<T> left, Vector<T> right) => Vector.GreaterThanAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAny(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.GreaterThanAny(Vector<T> left, Vector<T> right) => Vector.GreaterThanAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.GreaterThanOrEqual(Vector<T> left, Vector<T> right) => Vector.GreaterThanOrEqual(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.GreaterThanOrEqualAll(Vector<T> left, Vector<T> right) => Vector.GreaterThanOrEqualAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.GreaterThanOrEqualAny(Vector<T> left, Vector<T> right) => Vector.GreaterThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LessThan(Vector<T> left, Vector<T> right) => Vector.LessThan(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAll(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.LessThanAll(Vector<T> left, Vector<T> right) => Vector.LessThanAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAny(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.LessThanAny(Vector<T> left, Vector<T> right) => Vector.LessThanAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LessThanOrEqual(Vector<T> left, Vector<T> right) => Vector.LessThanOrEqual(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.LessThanOrEqualAll(Vector<T> left, Vector<T> right) => Vector.LessThanOrEqualAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.LessThanOrEqualAny(Vector<T> left, Vector<T> right) => Vector.LessThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Load(T* source) => Vector.Load(source);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LoadAligned(T* source) => Vector.LoadAligned(source);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LoadAlignedNonTemporal(T* source) => Vector.LoadAlignedNonTemporal(source);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LoadUnsafe(ref readonly T source) => Vector.LoadUnsafe(in source);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T, nuint)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.LoadUnsafe(ref readonly T source, nuint elementOffset) => Vector.LoadUnsafe(in source, elementOffset);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Max(Vector<T> left, Vector<T> right) => Vector.Max(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxMagnitude(Vector<T> left, Vector<T> right) => Vector.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxMagnitudeNumber(Vector<T> left, Vector<T> right) => Vector.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxNative(Vector<T> left, Vector<T> right) => Vector.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxNumber(Vector<T> left, Vector<T> right) => Vector.MaxNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Min(Vector<T> left, Vector<T> right) => Vector.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MinMagnitude(Vector<T> left, Vector<T> right) => Vector.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MinMagnitudeNumber(Vector<T> left, Vector<T> right) => Vector.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MinNative(Vector<T> left, Vector<T> right) => Vector.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MinNumber(Vector<T> left, Vector<T> right) => Vector.MinNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Multiply(Vector<T> left, Vector<T> right) => left * right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Multiply(Vector<T> left, T right) => left * right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.MultiplyAddEstimate(Vector<T> left, Vector<T> right, Vector<T> addend) => Vector.MultiplyAddEstimate(left, right, addend);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Negate(Vector<T> vector) => -vector;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.OnesComplement(Vector<T> vector) => ~vector;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Round(Vector<T> vector) => Vector.Round(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.ShiftLeft(Vector<T> vector, int shiftCount) => vector << shiftCount;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightArithmetic(TSelf, int)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.ShiftRightArithmetic(Vector<T> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightLogical(TSelf, int)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.ShiftRightLogical(Vector<T> vector, int shiftCount) => vector >>> shiftCount;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Sqrt(Vector<T> vector) => Vector.SquareRoot(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
+        [Intrinsic]
+        static void ISimdVector<Vector<T>, T>.Store(Vector<T> source, T* destination) => source.Store(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
+        [Intrinsic]
+        static void ISimdVector<Vector<T>, T>.StoreAligned(Vector<T> source, T* destination) => source.StoreAligned(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
+        [Intrinsic]
+        static void ISimdVector<Vector<T>, T>.StoreAlignedNonTemporal(Vector<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
+        [Intrinsic]
+        static void ISimdVector<Vector<T>, T>.StoreUnsafe(Vector<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T, nuint)" />
+        [Intrinsic]
+        static void ISimdVector<Vector<T>, T>.StoreUnsafe(Vector<T> vector, ref T destination, nuint elementOffset) => vector.StoreUnsafe(ref destination, elementOffset);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Subtract(TSelf, TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Subtract(Vector<T> left, Vector<T> right) => left - right;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Sum(TSelf)" />
+        [Intrinsic]
+        static T ISimdVector<Vector<T>, T>.Sum(Vector<T> vector) => Vector.Sum(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
+        [Intrinsic]
+        static T ISimdVector<Vector<T>, T>.ToScalar(Vector<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Truncate(Vector<T> vector) => Vector.Truncate(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
+        static bool ISimdVector<Vector<T>, T>.TryCopyTo(Vector<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.WithElement(TSelf, int, T)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.WithElement(Vector<T> vector, int index, T value) => vector.WithElement(index, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.Xor(Vector<T> left, Vector<T> right) => left ^ right;
+
+        //
+        // New Surface Area
+        //
+
+        static bool ISimdVector<Vector<T>, T>.AnyWhereAllBitsSet(Vector<T> vector) => Vector.EqualsAny(vector, AllBitsSet);
+
+        static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.EqualsAny(vector, Vector.Create(value));
+
+        static int ISimdVector<Vector<T>, T>.IndexOfLastMatch(Vector<T> vector)
+        {
+            if (sizeof(Vector<T>) == 64)
+            {
+                ulong mask = vector.AsVector512().ExtractMostSignificantBits();
+                return 63 - BitOperations.LeadingZeroCount(mask); // 63 = 64 (bits in Int64) - 1 (indexing from zero)
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                uint mask = vector.AsVector256().ExtractMostSignificantBits();
+                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                uint mask = vector.AsVector128().ExtractMostSignificantBits();
+                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+            }
+        }
+
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
+
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
+
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
+
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
+
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
     }
 }

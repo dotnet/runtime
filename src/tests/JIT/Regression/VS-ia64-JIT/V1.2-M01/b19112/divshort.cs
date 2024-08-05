@@ -9,15 +9,12 @@ public class foo
     public static short a, b, c;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
-
         a = 19;
         b = 3;
 
         div();
-
-        return 100;
     }
 
     internal static void div()

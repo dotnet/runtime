@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 9;
+        public const ushort CurrentMajorVersion = 10;
         public const ushort CurrentMinorVersion = 1;
     }
 #if READYTORUN
@@ -45,7 +45,12 @@ namespace Internal.Runtime
     // This list should be kept in sync with the runtime version at
     // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
-    public enum ReadyToRunSectionType
+#if SYSTEM_PRIVATE_CORELIB
+    internal
+#else
+    public
+#endif
+    enum ReadyToRunSectionType
     {
         //
         // CoreCLR ReadyToRun sections

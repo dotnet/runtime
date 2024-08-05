@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -138,7 +138,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
-        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed. Consider using " + nameof(DiagnosticMethodInfo) + "." + nameof(DiagnosticMethodInfo.Create) + " instead")]
         public virtual MethodBase? GetMethod()
         {
             return _method;

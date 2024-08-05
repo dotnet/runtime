@@ -36,20 +36,9 @@ else()
     windows/Native.rc)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  set (GC_SOURCES
-    ${GC_SOURCES}
-    vxsort/isa_detection.cpp
-    vxsort/do_vxsort_avx2.cpp
-    vxsort/do_vxsort_avx512.cpp
-    vxsort/machine_traits.avx2.cpp
-    vxsort/smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
-    vxsort/smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
-    vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
-    vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
-    vxsort/smallsort/avx2_load_mask_tables.cpp
-)
-endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_subdirectory(vxsort)
+endif (CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
@@ -87,7 +76,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     handletablepriv.h
     objecthandle.h
     softwarewritewatch.h
-    vxsort/do_vxsort.h)
+  )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -100,16 +89,35 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
+    list(APPEND GC_LINK_LIBRARIES
+        gc_vxsort
+    )
+endif(CLR_CMAKE_TARGET_ARCH_AMD64)
+
+
 list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
+# clrgcexp is build with standalone+regions
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_library_clr(clrgcexp SHARED ${GC_SOURCES})
+  add_dependencies(clrgcexp eventing_headers)
+  target_link_libraries(clrgcexp PRIVATE ${GC_LINK_LIBRARIES})
+  target_compile_definitions(clrgcexp PRIVATE -DUSE_REGIONS)
+  install_clr(TARGETS clrgcexp DESTINATIONS . COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+# clrgc is build with standalone+segments
 add_library_clr(clrgc SHARED ${GC_SOURCES})
 add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DFEATURE_CONSERVATIVE_GC)
+
 add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
 if(CLR_CMAKE_HOST_APPLE)
@@ -123,3 +131,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
 
 install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  install_clr(TARGETS clrgcexp DESTINATIONS . sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

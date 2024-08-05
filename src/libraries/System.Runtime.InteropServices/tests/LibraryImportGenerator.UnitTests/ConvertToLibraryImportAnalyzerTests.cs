@@ -34,8 +34,6 @@ namespace LibraryImportGenerator.UnitTests
             new object[] { typeof(int*) },
             new object[] { typeof(bool*) },
             new object[] { typeof(char*) },
-            // See issue https://github.com/dotnet/runtime/issues/71891
-            // new object[] { typeof(delegate* <void>) },
             new object[] { typeof(IntPtr) },
             new object[] { typeof(ConsoleKey) }, // enum
         };
@@ -50,10 +48,23 @@ namespace LibraryImportGenerator.UnitTests
         [Theory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
+            await VerifyCS.VerifyAnalyzerAsync(
+                source,
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
+                    .WithLocation(0)
+                    .WithArguments("Method_Parameter"),
+                VerifyCS.Diagnostic(ConvertToLibraryImport)
+                    .WithLocation(1)
+                    .WithArguments("Method_Return"));
+        }
+
+        [Fact]
+        public async Task FunctionPointer_ReportsDiagnostic()
+        {
+            string source = DllImportWithType("delegate* unmanaged<void>");
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToLibraryImport)

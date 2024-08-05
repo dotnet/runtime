@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Xunit.Abstractions;
+using Wasm.Build.Tests.Blazor;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
@@ -22,74 +23,117 @@ public abstract class AppTestBase : BlazorWasmTestBase
     protected string Id { get; set; }
     protected string LogPath { get; set; }
 
-    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null)
+    protected void CopyTestAsset(string assetName, string generatedProjectNamePrefix = null, string? projectDirSuffix = null)
     {
-        Id = $"{generatedProjectNamePrefix ?? assetName}_{Path.GetRandomFileName()}";
+        Id = $"{generatedProjectNamePrefix ?? assetName}_{GetRandomId()}";
         InitBlazorWasmProjectDir(Id);
 
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+
+        if (!string.IsNullOrEmpty(projectDirSuffix))
+        {
+             _projectDir = Path.Combine(_projectDir, projectDirSuffix);
+        }
     }
 
-    protected void BuildProject(string configuration)
+    protected void BlazorHostedBuild(
+        string config,
+        string assetName,
+        string projectDirSuffix,
+        string clientDirRelativeToProjectDir = "",
+        string? generatedProjectNamePrefix = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        CommandResult result = CreateDotNetCommand().ExecuteWithCapturedOutput("build", $"-bl:{GetBinLogFilePath()}", $"-p:Configuration={configuration}");
+        CopyTestAsset(assetName, generatedProjectNamePrefix, projectDirSuffix);
+        string frameworkDir = FindBlazorHostedBinFrameworkDir(config,
+            forPublish: false,
+            clientDirRelativeToProjectDir: clientDirRelativeToProjectDir);
+        BuildProject(configuration: config,
+            binFrameworkDir: frameworkDir,
+            runtimeType: runtimeType);
+    }
+
+    protected void BuildProject(
+        string configuration,
+        string? binFrameworkDir = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        bool expectSuccess = true,
+        params string[] extraArgs)
+    {
+        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            BinFrameworkDir: binFrameworkDir,
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle,
+            ExpectSuccess: expectSuccess), extraArgs);
+        if (expectSuccess)
+        {
+            result.EnsureSuccessful();
+        }
+        else
+        {
+            result.EnsureFailed();
+        }
+    }
+
+    protected void PublishProject(
+        string configuration,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        params string[] extraArgs)
+    {
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
-    }
-
-    protected void PublishProject(string configuration)
-    {
-        CommandResult result = CreateDotNetCommand().ExecuteWithCapturedOutput("publish", $"-bl:{GetBinLogFilePath()}", $"-p:Configuration={configuration}");
-        result.EnsureSuccessful();
-    }
-
-    protected string GetBinLogFilePath(string suffix = null)
-    {
-        if (!string.IsNullOrEmpty(suffix))
-            suffix = "_" + suffix;
-
-        return Path.Combine(LogPath, $"{Id}{suffix}.binlog");
     }
 
     protected ToolCommand CreateDotNetCommand() => new DotNetCommand(s_buildEnv, _testOutput)
         .WithWorkingDirectory(_projectDir!)
         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
-    protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
+    protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
+
+    protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.WebServer);
+
+    private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
     {
-        string runArgs = $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files";
-        string workingDirectory = Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(options.Configuration, forPublish: options.ForPublish), ".."));
+        var query = options.BrowserQueryString ?? new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(options.TestScenario))
+            query.Add("test", options.TestScenario);
 
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-            .WithWorkingDirectory(workingDirectory);
-
+        var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
         var tcs = new TaskCompletionSource<int>();
-
         List<string> testOutput = new();
         List<string> consoleOutput = new();
+        List<string> serverOutput = new();
         Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
-        await using var runner = new BrowserRunner(_testOutput);
+        BlazorRunOptions blazorRunOptions = new(
+                CheckCounter: false,
+                Config: options.Configuration,
+                ServerEnvironment: options.ServerEnvironment,
+                OnConsoleMessage: OnConsoleMessage,
+                OnServerMessage: OnServerMessage,
+                BrowserPath: options.BrowserPath,
+                QueryString: queryString,
+                Host: host,
+                ExtraArgs: options.ExtraArgs);
 
-        IPage page = null;
+        await BlazorRunTest(blazorRunOptions);
 
-        string queryString = "?test=" + options.TestScenario;
-        if (options.BrowserQueryString != null)
-            queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
-
-        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + queryString);
-
-        void OnConsoleMessage(IConsoleMessage msg)
+        void OnConsoleMessage(IPage page, IConsoleMessage msg)
         {
-            if (EnvironmentVariables.ShowBuildOutput)
-                Console.WriteLine($"[{msg.Type}] {msg.Text}");
-
-            _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
             consoleOutput.Add(msg.Text);
 
-            const string testOutputPrefix = "TestOutput -> ";
-            if (msg.Text.StartsWith(testOutputPrefix))
-                testOutput.Add(msg.Text.Substring(testOutputPrefix.Length));
+            OnTestOutput(msg.Text);
 
             var exitMatch = exitRegex.Match(msg.Text);
             if (exitMatch.Success)
@@ -99,33 +143,53 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 throw new Exception(msg.Text);
 
             if (options.OnConsoleMessage != null)
-                options.OnConsoleMessage(msg, page);
+                options.OnConsoleMessage(page, msg);
         }
 
-        TimeSpan timeout = TimeSpan.FromMinutes(2);
-        await Task.WhenAny(tcs.Task, Task.Delay(timeout));
-        if (!tcs.Task.IsCompleted)
-            throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for process to exit");
+        void OnServerMessage(string msg)
+        {
+            serverOutput.Add(msg);
+            OnTestOutput(msg);
+
+            if (options.OnServerMessage != null)
+                options.OnServerMessage(msg);
+        }
+
+        void OnTestOutput(string msg)
+        {
+            const string testOutputPrefix = "TestOutput -> ";
+            if (msg.StartsWith(testOutputPrefix))
+                testOutput.Add(msg.Substring(testOutputPrefix.Length));
+        }
+
+        //TimeSpan timeout = TimeSpan.FromMinutes(2);
+        //await Task.WhenAny(tcs.Task, Task.Delay(timeout));
+        //if (!tcs.Task.IsCompleted)
+            //throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for process to exit");
 
         int wasmExitCode = tcs.Task.Result;
         if (options.ExpectedExitCode != null && wasmExitCode != options.ExpectedExitCode)
             throw new Exception($"Expected exit code {options.ExpectedExitCode} but got {wasmExitCode}");
 
-        return new(wasmExitCode, testOutput, consoleOutput);
+        return new(wasmExitCode, testOutput, consoleOutput, serverOutput);
     }
 
     protected record RunOptions(
         string Configuration,
-        string TestScenario,
+        string BrowserPath = "",
+        string? TestScenario = null,
         Dictionary<string, string> BrowserQueryString = null,
-        bool ForPublish = false,
-        Action<IConsoleMessage, IPage> OnConsoleMessage = null,
-        int? ExpectedExitCode = 0
+        Dictionary<string, string> ServerEnvironment = null,
+        Action<IPage, IConsoleMessage> OnConsoleMessage = null,
+        Action<string> OnServerMessage = null,
+        int? ExpectedExitCode = 0,
+        string? ExtraArgs = null
     );
 
     protected record RunResult(
         int ExitCode,
         IReadOnlyCollection<string> TestOutput,
-        IReadOnlyCollection<string> ConsoleOutput
+        IReadOnlyCollection<string> ConsoleOutput,
+        IReadOnlyCollection<string> ServerOutput
     );
 }

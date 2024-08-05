@@ -25,9 +25,7 @@ namespace Sample
         public JSInteropTask()
         {
             measurements = new Measurement[] {
-                new LegacyExportIntMeasurement(),
                 new JSExportIntMeasurement(),
-                new LegacyExportStringMeasurement(),
                 new JSExportStringMeasurement(),
                 new JSImportIntMeasurement(),
                 new JSImportStringMeasurement(),
@@ -38,18 +36,6 @@ namespace Sample
             };
         }
 
-        public class LegacyExportIntMeasurement : BenchTask.Measurement
-        {
-            public override int InitialSamples => 3;
-            public override string Name => "LegacyExportInt";
-            // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
-            public override void RunStep()
-            {
-                ImportsExportsHelper.RunLegacyExportInt(10000);
-            }
-        }
-
         public class JSExportIntMeasurement : BenchTask.Measurement
         {
             public override int InitialSamples => 10;
@@ -57,19 +43,6 @@ namespace Sample
             public override void RunStep()
             {
                 ImportsExportsHelper.RunJSExportInt(10000);
-            }
-        }
-
-        public class LegacyExportStringMeasurement : BenchTask.Measurement
-        {
-            public override int InitialSamples => 3;
-            public override string Name => "LegacyExportString";
-
-            // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
-            public override void RunStep()
-            {
-                ImportsExportsHelper.RunLegacyExportString(10000);
             }
         }
 
@@ -187,14 +160,8 @@ namespace Sample
 
     partial class ImportsExportsHelper
     {
-        [JSImport("Sample.Test.runLegacyExportInt", "main.js")]
-        public static partial void RunLegacyExportInt(int count);
-
         [JSImport("Sample.Test.runJSExportInt", "main.js")]
         public static partial void RunJSExportInt(int count);
-
-        [JSImport("Sample.Test.runLegacyExportString", "main.js")]
-        public static partial void RunLegacyExportString(int count);
 
         [JSImport("Sample.Test.runJSExportString", "main.js")]
         public static partial void RunJSExportString(int count);
@@ -211,12 +178,6 @@ namespace Sample
         [JSImport("Sample.Test.importTargetThrows", "main.js")]
         public static partial void ImportTargetThrows(int value);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static int LegacyExportTargetInt(int value)
-        {
-            return value + 1;
-        }
-
         [JSImport("Sample.Test.importTargetManyArgs", "main.js")]
         public static partial double ImportTargetManyArgs(int arg1, int arg2, string arg3, string arg4, IntPtr arg5, bool arg6,
             [JSMarshalAs<JSType.Number>] long arg7, int? arg8, double arg9,
@@ -227,12 +188,6 @@ namespace Sample
         public static int JSExportTargetInt(int value)
         {
             return value + 1;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static string LegacyExportTargetString(string value)
-        {
-            return value + "A";
         }
 
         [JSExport]

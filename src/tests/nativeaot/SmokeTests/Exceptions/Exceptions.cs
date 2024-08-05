@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 
@@ -160,6 +161,8 @@ public class BringUpTest
 
         TestFirstChanceExceptionEvent();
 
+        TestUnwindInFunclet();
+
         throw new Exception("UnhandledException");
 
         return Fail;
@@ -299,6 +302,28 @@ public class BringUpTest
         GC.Collect();
         CreateSomeGarbage();
         return true;
+    }
+
+    static void TestUnwindInFunclet()
+    {
+        try
+        {
+            throw new Exception();
+        }
+        catch (Exception e)
+        {
+            // x86 pushes the call arguments on the stack and moves the stack pointer.
+            // We use a non-inlined call with enough parameters to force this to happen,
+            // so we can verify that the unwinder can walk through this funclet. The
+            // unwinding is triggered by the GC.Collect call.
+            MultiparameterCallWithGC(0, 1, 2, 3, 4);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MultiparameterCallWithGC(nint a, nint b, nint c, nint d, nint f)
+    {
+        GC.Collect();
     }
 }
 

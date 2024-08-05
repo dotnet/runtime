@@ -415,7 +415,7 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(address != NULL);
+    _ASSERTE(address != (PCODE)NULL);
 
     return ExecutionManager::GetCodeStartAddress(address);
 }
@@ -546,11 +546,11 @@ void EEDbgInterfaceImpl::GetMethodRegionInfo(const PCODE    pStart,
     }
     CONTRACTL_END;
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
 
     EECodeInfo codeInfo(pStart);
 
-    if (codeInfo.IsValid() != NULL)
+    if (codeInfo.IsValid() != (TADDR)NULL)
     {
         codeInfo.GetMethodRegionInfo(&methodRegionInfo);
     }
@@ -611,7 +611,7 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
 
     PCODE methodStart = pFD->GetNativeCode();
 
-    if (methodStart == NULL)
+    if (methodStart == (PCODE)NULL)
         return 0;
 
     EECodeInfo codeInfo(methodStart);
@@ -630,7 +630,6 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
     return pFD->GetNativeCode();
 }
 
@@ -653,7 +652,7 @@ void EEDbgInterfaceImpl::EnablePreemptiveGC(void)
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS); // Disabled because disabled in RareEnablePreemptiveGC()
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -1089,7 +1088,7 @@ void EEDbgInterfaceImpl::MarkDebuggerUnattached(void)
 }
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 // Apply an EnC edit to the specified module
 HRESULT EEDbgInterfaceImpl::EnCApplyChanges(EditAndContinueModule *pModule,
@@ -1132,7 +1131,7 @@ void EEDbgInterfaceImpl::ResumeInUpdatedFunction(EditAndContinueModule *pModule,
                                      pContext);
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 bool EEDbgInterfaceImpl::CrawlFrameIsGcSafe(CrawlFrame *pCF)
 {

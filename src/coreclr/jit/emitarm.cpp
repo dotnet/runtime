@@ -700,8 +700,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 }
 
 // INST_FP is 1
-#define LD 2
-#define ST 4
+#define LD  2
+#define ST  4
 #define CMP 8
 
 // clang-format off
@@ -1708,10 +1708,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction    ins,
-                          emitAttr       attr,
-                          regNumber      reg,
-                          target_ssize_t imm,
+void emitter::emitIns_R_I(instruction                                ins,
+                          emitAttr                                   attr,
+                          regNumber                                  reg,
+                          target_ssize_t                             imm,
                           insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
@@ -1738,7 +1738,7 @@ void emitter::emitIns_R_I(instruction    ins,
                         ins = INS_sub;
                     else // ins == INS_sub
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 fmt = IF_T1_J0;
                 sf  = INS_FLAGS_SET;
@@ -2607,7 +2607,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 fmt = IF_T1_G;
                 sf  = INS_FLAGS_SET;
@@ -2621,7 +2621,7 @@ void emitter::emitIns_R_R_I(instruction ins,
                         ins = INS_sub;
                     else
                         ins = INS_add;
-                    imm     = -imm;
+                    imm = -imm;
                 }
                 // Use Thumb-1 encoding
                 emitIns_R_I(ins, attr, reg1, imm, flags);
@@ -2982,9 +2982,9 @@ void emitter::emitIns_R_R_I(instruction ins,
                     }
                 }
             }
-        //
-        // If we did not find a thumb-1 encoding above
-        //
+            //
+            // If we did not find a thumb-1 encoding above
+            //
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
@@ -3185,8 +3185,8 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_mul:
             if (insMustSetFlags(flags))
             {
-                assert(reg1 !=
-                       REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this
+                                        // instruction.
                 assert(reg2 != REG_PC);
                 assert(reg3 != REG_PC);
 
@@ -3995,7 +3995,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     }
 
     int     doff = Compiler::eeGetJitDataOffs(fldHnd);
-    ssize_t addr = NULL;
+    ssize_t addr = 0;
 
     if (doff >= 0)
     {
@@ -4334,7 +4334,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
     if (dst != NULL)
     {
-        assert(dst->bbFlags & BBF_HAS_LABEL);
+        assert(dst->HasFlag(BBF_HAS_LABEL));
     }
     else
     {
@@ -4345,6 +4345,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     switch (ins)
     {
         case INS_b:
+        case INS_bl:
             fmt = IF_T2_J2; /* Assume the jump will be long */
             break;
 
@@ -4368,7 +4369,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         default:
             unreached();
     }
-    assert((fmt == IF_LARGEJMP) || (fmt == IF_T2_J2));
 
     instrDescJmp* id  = emitNewInstrJmp();
     insSize       isz = emitInsSize(fmt);
@@ -4379,7 +4379,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_b && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if ((ins == INS_bl) && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -4391,7 +4391,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     if (dst != NULL)
     {
         id->idAddr()->iiaBBlabel = dst;
-        id->idjKeepLong          = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+        id->idjKeepLong          = (ins == INS_bl) || emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 
 #ifdef DEBUG
         if (emitComp->opts.compLongAddress) // Force long branches
@@ -4492,7 +4492,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     insFormat     fmt = IF_NONE;
     instrDescJmp* id;
@@ -4523,7 +4523,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -4598,7 +4598,7 @@ void emitter::emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumb
 
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    assert(dst->bbFlags & BBF_HAS_LABEL);
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     insFormat fmt = IF_NONE;
     switch (ins)
@@ -4660,6 +4660,8 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *
  * For ARM xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -4677,7 +4679,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -4754,11 +4757,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark R0 appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_R0;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_R0;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -4769,8 +4783,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (callType == EC_INDIR_R)
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
-
-        id->idSetIsCallRegPtr();
 
         if (isJump)
         {
@@ -4838,7 +4850,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (m_debugInfoSize > 0)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
@@ -4850,6 +4862,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     dispIns(id);
     appendToCurIG(id);
+    emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
 }
 
 /*****************************************************************************
@@ -5237,7 +5250,7 @@ unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, code_t code)
 unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = (code >> 16) & 0xffff;
-    unsigned short word2 = (code)&0xffff;
+    unsigned short word2 = (code) & 0xffff;
     assert((code_t)((word1 << 16) | word2) == code);
 
 #ifdef DEBUG
@@ -5343,7 +5356,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     if (dstOffs <= srcOffs)
     {
-/* This is a backward jump - distance is known at this point */
+        /* This is a backward jump - distance is known at this point */
 
 #if DEBUG_EMIT
         if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
@@ -5415,7 +5428,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4; // Thumb-2 pretends all instructions are 4-bytes long for computing jump offsets?
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
     }
 #endif
@@ -5524,8 +5537,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 }
                 else
                 {
-                    assert(distVal >= CALL_DIST_MAX_NEG);
-                    assert(distVal <= CALL_DIST_MAX_POS);
+                    if ((distVal < CALL_DIST_MAX_NEG) || (distVal > CALL_DIST_MAX_POS))
+                        IMPL_LIMITATION("Method is too large");
 
                     if (distVal < 0)
                         code |= 1 << 26;
@@ -5732,7 +5745,7 @@ BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t co
 #endif // FEATURE_ITINSTRUCTION
 
 /*****************************************************************************
-*
+ *
  *  Append the machine code corresponding to the given instruction descriptor
  *  to the code block at '*dp'; the base of the code block is 'bp', and 'ig'
  *  is the instruction group that contains the instruction. Updates '*dp' to
@@ -5758,15 +5771,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(REG_NA == (int)REG_NA);
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     /* What instruction format have we got? */
 
     switch (fmt)
     {
-        int       imm;
-        BYTE*     addr;
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        int   imm;
+        BYTE* addr;
 
         case IF_T1_A: // T1_A    ................
             sz   = SMALL_IDSC_SIZE;
@@ -6505,7 +6518,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (immHi << 16);
                 code |= immLo;
 
-                disp = abs(disp);
+                disp = std::abs(disp);
                 assert((disp & 0x00fffffe) == disp);
 
                 callInstrSize = SafeCvtAssert<unsigned char>(emitOutput_Thumb2Instr(dst, code));
@@ -6562,9 +6575,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             break;
 
-        /********************************************************************/
-        /*                            oops                                  */
-        /********************************************************************/
+            /********************************************************************/
+            /*                            oops                                  */
+            /********************************************************************/
 
         default:
 
@@ -6854,9 +6867,9 @@ void emitter::emitDispRegmask(int imm, bool encodedPC_LR)
     }
     else
     {
-        hasPC = (imm & RBM_PC) != 0;
-        hasLR = (imm & RBM_LR) != 0;
-        imm &= ~(RBM_PC | RBM_LR);
+        hasPC = (imm & SRBM_PC) != 0;
+        hasLR = (imm & SRBM_LR) != 0;
+        imm &= ~(SRBM_PC | SRBM_LR);
     }
 
     regNumber reg = REG_R0;
@@ -6935,7 +6948,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
             else
             {
                 assert(regIndex < 100);
-                printf("d%c%c", (regIndex / 10), (regIndex % 10));
+                printf("d%c%c", (regIndex / 10) + '0', (regIndex % 10) + '0');
             }
         }
         else
@@ -7870,15 +7883,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->AsStoreInd()->Data()->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_Mov(INS_vmov_f2i, EA_4BYTE, tmpReg, dataReg, /* canSkip */ false);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg, indir, 0);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, tmpReg1, tmpReg2, dataReg);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg2, indir, 4);
@@ -7890,15 +7903,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg, indir, 0);
                 emitIns_Mov(INS_vmov_i2f, EA_4BYTE, dataReg, tmpReg, /* canSkip */ false);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg2, indir, 4);
                 emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, dataReg, tmpReg1, tmpReg2);
@@ -7941,7 +7954,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // If the LEA produces a GCREF or BYREF, we need to be careful to mark any temp register
                 // computed with the base register as a BYREF.
@@ -8024,7 +8037,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -8176,7 +8189,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)

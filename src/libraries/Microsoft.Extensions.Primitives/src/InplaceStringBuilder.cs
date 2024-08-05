@@ -8,6 +8,9 @@ using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.Primitives
 {
+    /// <summary>
+    /// Provides a mechanism for fast, non-allocating string concatenation.
+    /// </summary>
     [DebuggerDisplay("Value = {_value}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [Obsolete("This type is retained only for compatibility. The recommended alternative is string.Create<TState> (int length, TState state, System.Buffers.SpanAction<char,TState> action).", error: true)]
@@ -17,6 +20,10 @@ namespace Microsoft.Extensions.Primitives
         private int _capacity;
         private string? _value;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InplaceStringBuilder"/> class.
+        /// </summary>
+        /// <param name="capacity">The suggested starting size of the <see cref="InplaceStringBuilder"/> instance.</param>
         public InplaceStringBuilder(int capacity) : this()
         {
             if (capacity < 0)
@@ -27,6 +34,9 @@ namespace Microsoft.Extensions.Primitives
             _capacity = capacity;
         }
 
+        /// <summary>
+        /// Gets the number of characters that the current <see cref="InplaceStringBuilder"/> object can contain.
+        /// </summary>
         public int Capacity
         {
             get => _capacity;
@@ -47,6 +57,10 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        /// <summary>
+        /// Appends a string to the end of the current <see cref="InplaceStringBuilder"/> instance.
+        /// </summary>
+        /// <param name="value">The string to append.</param>
         public void Append(string? value)
         {
             if (value == null)
@@ -57,11 +71,21 @@ namespace Microsoft.Extensions.Primitives
             Append(value, 0, value.Length);
         }
 
+        /// <summary>
+        /// Appends a string segment to the end of the current <see cref="InplaceStringBuilder"/> instance.
+        /// </summary>
+        /// <param name="segment">The string segment to append.</param>
         public void Append(StringSegment segment)
         {
             Append(segment.Buffer, segment.Offset, segment.Length);
         }
 
+        /// <summary>
+        /// Appends a substring to the end of the current <see cref="InplaceStringBuilder"/> instance.
+        /// </summary>
+        /// <param name="value">The string that contains the substring to append.</param>
+        /// <param name="offset">The starting position of the substring within value.</param>
+        /// <param name="count">The number of characters in value to append.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Append(string? value, int offset, int count)
         {
@@ -83,6 +107,10 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        /// <summary>
+        /// Appends a character to the end of the current <see cref="InplaceStringBuilder"/> instance.
+        /// </summary>
+        /// <param name="c">The character to append.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void Append(char c)
         {
@@ -99,6 +127,10 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        /// <summary>
+        /// Converts the value of this instance to a String.
+        /// </summary>
+        /// <returns>A string whose value is the same as this instance.</returns>
         public override string? ToString()
         {
             if (Capacity != _offset)

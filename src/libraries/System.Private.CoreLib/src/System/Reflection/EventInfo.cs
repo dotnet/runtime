@@ -45,7 +45,7 @@ namespace System.Reflection
             get
             {
                 MethodInfo m = GetAddMethod(true)!;
-                ParameterInfo[] p = m.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> p = m.GetParametersAsSpan();
                 Type del = typeof(Delegate);
                 for (int i = 0; i < p.Length; i++)
                 {
@@ -61,24 +61,16 @@ namespace System.Reflection
         [DebuggerStepThrough]
         public virtual void AddEventHandler(object? target, Delegate? handler)
         {
-            MethodInfo? addMethod = GetAddMethod(nonPublic: false);
-
-            if (addMethod == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
-
-            addMethod.Invoke(target, new object?[] { handler });
+            MethodInfo addMethod = GetAddMethod(nonPublic: false) ?? throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
+            addMethod.Invoke(target, [handler]);
         }
 
         [DebuggerHidden]
         [DebuggerStepThrough]
         public virtual void RemoveEventHandler(object? target, Delegate? handler)
         {
-            MethodInfo? removeMethod = GetRemoveMethod(nonPublic: false);
-
-            if (removeMethod == null)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
-
-            removeMethod.Invoke(target, new object?[] { handler });
+            MethodInfo removeMethod = GetRemoveMethod(nonPublic: false) ?? throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
+            removeMethod.Invoke(target, [handler]);
         }
 
         public override bool Equals(object? obj) => base.Equals(obj);

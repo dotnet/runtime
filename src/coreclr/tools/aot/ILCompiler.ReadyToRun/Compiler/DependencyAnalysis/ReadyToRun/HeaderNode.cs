@@ -220,7 +220,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunHeader");
+            sb.Append("__ReadyToRunHeader"u8);
         }
 
         protected override void EmitHeaderPrefix(ref ObjectDataBuilder builder)
@@ -258,7 +258,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAssemblyHeader__");
+            sb.Append("__ReadyToRunAssemblyHeader__"u8);
             sb.Append(_index.ToString());
         }
 

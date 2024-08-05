@@ -1,0 +1,10 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <!-- Ensure we can use top-level statements. -->
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+</Project>

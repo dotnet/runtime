@@ -35,6 +35,7 @@ static DebuggerEngineCallbacks rt_callbacks;
 static int log_level;
 static FILE *log_file;
 
+static bool using_icordbg = FALSE;
 
 /*
  * Locking
@@ -61,15 +62,9 @@ mono_de_unlock (void)
  */
 
 
-/* A hash table containing all active domains */
-/* Protected by the loader lock */
-static GHashTable *domains;
-
-
 static void
 domains_init (void)
 {
-	domains = g_hash_table_new (mono_aligned_addr_hash, NULL);
 }
 
 static void
@@ -88,7 +83,8 @@ domains_cleanup (void)
 void
 mono_de_foreach_domain (GHFunc func, gpointer user_data)
 {
-	g_hash_table_foreach (domains, func, user_data);
+	MonoDomain *domain = mono_get_root_domain ();
+	func (domain, domain, user_data);
 }
 
 /*
@@ -97,9 +93,7 @@ mono_de_foreach_domain (GHFunc func, gpointer user_data)
 void
 mono_de_domain_add (MonoDomain *domain)
 {
-	mono_loader_lock ();
-	g_hash_table_insert (domains, domain, domain);
-	mono_loader_unlock ();
+	g_assert (domain == mono_get_root_domain ());
 }
 
 /*
@@ -126,7 +120,7 @@ breakpoints_init (void)
  * JI.
  */
 static void
-insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo *ji, MonoBreakpoint *bp, MonoError *error)
+insert_breakpoint (MonoSeqPointInfo *seq_points, MonoJitInfo *ji, MonoBreakpoint *bp, MonoError *error)
 {
 	int count;
 	BreakpointInstance *inst;
@@ -160,6 +154,19 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 		}
 	}
 
+	if (!it_has_sp && using_icordbg)
+	{
+		mono_seq_point_iterator_init (&it, seq_points);
+		while (mono_seq_point_iterator_next (&it)) {
+			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
+				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
+				it.seq_point.il_offset > bp->il_offset) {
+				it_has_sp = TRUE;
+				break;
+			}
+		}
+	}
+
 	if (!it_has_sp) {
 		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%ld", mono_method_full_name (jinfo_get_method (ji), TRUE), bp->il_offset);
 
@@ -184,7 +191,6 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	inst->native_offset = it.seq_point.native_offset;
 	inst->ip = (guint8*)ji->code_start + it.seq_point.native_offset;
 	inst->ji = ji;
-	inst->domain = domain;
 
 	mono_loader_lock ();
 
@@ -284,12 +290,9 @@ void
 mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 {
 	MonoSeqPointInfo *seq_points;
-	MonoDomain *domain;
 
 	if (!breakpoints)
 		return;
-
-	domain = mono_domain_get ();
 
 	mono_loader_lock ();
 
@@ -324,7 +327,7 @@ mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				/* Could be AOT code, or above "search_all_backends" call could have failed */
 				continue;
 
-			insert_breakpoint (seq_points, domain, ji, bp, NULL);
+			insert_breakpoint (seq_points, ji, bp, NULL);
 		}
 	}
 
@@ -332,7 +335,7 @@ mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 }
 
 static void
-set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_points, MonoBreakpoint *bp, MonoError *error)
+set_bp_in_method (MonoMethod *method, MonoSeqPointInfo *seq_points, MonoBreakpoint *bp, MonoError *error)
 {
 	MonoJitInfo *ji;
 
@@ -342,37 +345,43 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 	(void)mono_jit_search_all_backends_for_jit_info (method, &ji);
 	g_assert (ji);
 
-	insert_breakpoint (seq_points, domain, ji, bp, error);
+	insert_breakpoint (seq_points, ji, bp, error);
 }
 
 typedef struct {
 	MonoBreakpoint *bp;
 	GPtrArray *methods;
-	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
 } CollectDomainData;
 
 static void
-collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
+collect_domain_bp_inner (gpointer key, gpointer value, gpointer user_data)
 {
-	GHashTableIter iter;
-	MonoSeqPointInfo *seq_points;
-	MonoDomain *domain = (MonoDomain*)key;
+	MonoMethod *m = (MonoMethod *)key;
+	MonoSeqPointInfo *seq_points = (MonoSeqPointInfo *)value;
 	CollectDomainData *ud = (CollectDomainData*)user_data;
-	MonoMethod *m;
 
+	if (!bp_matches_method (ud->bp, m))
+		return;
+
+	/* Save the info locally to simplify the code inside the domain lock */
+	g_ptr_array_add (ud->methods, m);
+	g_ptr_array_add (ud->method_seq_points, seq_points);
+}
+
+// HACK: Address some sort of linker problem on arm64
+void
+mono_jit_memory_manager_foreach_seq_point (dn_simdhash_ght_t *seq_points, dn_simdhash_ght_foreach_func func, gpointer user_data);
+
+static void
+collect_domain_bp (CollectDomainData *ud)
+{
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	g_hash_table_iter_init (&iter, jit_mm->seq_points);
-	while (g_hash_table_iter_next (&iter, (void**)&m, (void**)&seq_points)) {
-		if (bp_matches_method (ud->bp, m)) {
-			/* Save the info locally to simplify the code inside the domain lock */
-			g_ptr_array_add (ud->methods, m);
-			g_ptr_array_add (ud->method_domains, domain);
-			g_ptr_array_add (ud->method_seq_points, seq_points);
-		}
-	}
+	// FIXME: This previously used an iterator instead of foreach, so introducing
+	//  an iterator API to simdhash might make it faster.
+	mono_jit_memory_manager_foreach_seq_point (jit_mm->seq_points, collect_domain_bp_inner, ud);
 	jit_mm_unlock (jit_mm);
 }
 
@@ -390,11 +399,9 @@ MonoBreakpoint*
 mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError *error)
 {
 	MonoBreakpoint *bp;
-	MonoDomain *domain;
 	MonoMethod *m;
 	MonoSeqPointInfo *seq_points;
 	GPtrArray *methods;
-	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
 
 	if (error)
@@ -415,7 +422,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	PRINT_DEBUG_MSG  (1, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset);
 
 	methods = g_ptr_array_new ();
-	method_domains = g_ptr_array_new ();
 	method_seq_points = g_ptr_array_new ();
 
 	mono_loader_lock ();
@@ -424,15 +430,23 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	memset (&user_data, 0, sizeof (user_data));
 	user_data.bp = bp;
 	user_data.methods = methods;
-	user_data.method_domains = method_domains;
 	user_data.method_seq_points = method_seq_points;
-	mono_de_foreach_domain (collect_domain_bp, &user_data);
+	collect_domain_bp (&user_data);
 
 	for (guint i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);
-		domain = (MonoDomain *)g_ptr_array_index (method_domains, i);
 		seq_points = (MonoSeqPointInfo *)g_ptr_array_index (method_seq_points, i);
-		set_bp_in_method (domain, m, seq_points, bp, error);
+		set_bp_in_method (m, seq_points, bp, error);
+	}
+
+	// trying to get the seqpoints directly from the jit info of the method
+	// the seqpoints in get_default_jit_mm may not be found for AOTed methods in arm64
+	if (methods->len == 0)
+	{
+		MonoJitInfo *ji;
+		(void)mono_jit_search_all_backends_for_jit_info (method, &ji);
+		if (ji && ji->seq_points)
+			set_bp_in_method (method, ji->seq_points, bp, error);
 	}
 
 	g_ptr_array_add (breakpoints, bp);
@@ -440,7 +454,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	mono_loader_unlock ();
 
 	g_ptr_array_free (methods, TRUE);
-	g_ptr_array_free (method_domains, TRUE);
 	g_ptr_array_free (method_seq_points, TRUE);
 
 	if (error && !is_ok (error)) {
@@ -533,15 +546,11 @@ mono_de_clear_breakpoints_for_domain (MonoDomain *domain)
 		while (j < bp->children->len) {
 			BreakpointInstance *inst = (BreakpointInstance *)g_ptr_array_index (bp->children, j);
 
-			if (inst->domain == domain) {
-				remove_breakpoint (inst);
+			remove_breakpoint (inst);
 
-				g_free (inst);
+			g_free (inst);
 
-				g_ptr_array_remove_index_fast (bp->children, j);
-			} else {
-				j ++;
-			}
+			g_ptr_array_remove_index_fast (bp->children, j);
 		}
 	}
 	mono_loader_unlock ();
@@ -581,10 +590,10 @@ ss_req_cleanup (void)
 void
 mono_de_start_single_stepping (void)
 {
-	int val = mono_atomic_inc_i32 (&ss_count);
+		int val = mono_atomic_inc_i32 (&ss_count);
 
 	if (val == 1) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_start_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->start_single_stepping ();
@@ -594,10 +603,10 @@ mono_de_start_single_stepping (void)
 void
 mono_de_stop_single_stepping (void)
 {
-	int val = mono_atomic_dec_i32 (&ss_count);
+		int val = mono_atomic_dec_i32 (&ss_count);
 
 	if (val == 0) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_stop_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->stop_single_stepping ();
@@ -605,14 +614,12 @@ mono_de_stop_single_stepping (void)
 }
 
 static MonoJitInfo*
-get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
+get_top_method_ji (gpointer ip, gpointer *out_ip)
 {
 	MonoJitInfo *ji;
 
 	if (out_ip)
 		*out_ip = ip;
-	if (domain)
-		*domain = mono_get_root_domain ();
 
 	ji = mini_jit_info_table_find (ip);
 	if (!ji) {
@@ -627,8 +634,6 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 		g_assert (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX);
 		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
 		ji = mini_get_interp_callbacks_api ()->frame_get_jit_info (frame);
-		if (domain)
-			*domain = mono_domain_get ();
 		if (out_ip)
 			*out_ip = mini_get_interp_callbacks_api ()->frame_get_ip (frame);
 	}
@@ -759,7 +764,6 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	guint8 *ip;
 	GPtrArray *reqs;
 	int il_offset;
-	MonoDomain *domain;
 	MonoContext *ctx = rt_callbacks.tls_get_restore_state (tls);
 	MonoMethod *method;
 	SeqPoint sp;
@@ -782,7 +786,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 		return;
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
-	ji = get_top_method_ji (ip, &domain, (gpointer*)&ip);
+	ji = get_top_method_ji (ip, (gpointer*)&ip);
 	g_assert (ji && !ji->is_trampoline);
 
 	if (log_level > 0) {
@@ -1020,7 +1024,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
-	ji = get_top_method_ji (ip, NULL, (gpointer*)&ip);
+	ji = get_top_method_ji (ip, (gpointer*)&ip);
 	g_assert (ji && !ji->is_trampoline);
 	method = jinfo_get_method (ji);
 
@@ -1532,6 +1536,12 @@ mono_de_set_log_level (int level, FILE *file)
 {
 	log_level = level;
 	log_file = file;
+}
+
+void
+mono_de_set_using_icordbg (void)
+{
+	using_icordbg = TRUE;
 }
 
 /*

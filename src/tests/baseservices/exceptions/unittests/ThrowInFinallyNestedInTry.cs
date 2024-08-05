@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using Xunit;
 
 //
 // main
@@ -22,7 +23,8 @@ public class TestSet
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int nSuccesses = 0;
         int nFailures = 0;

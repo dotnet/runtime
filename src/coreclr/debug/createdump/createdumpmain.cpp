@@ -71,11 +71,10 @@ int createdump_main(const int argc, const char* argv[])
     options.Signal = 0;
     options.CrashThread = 0;
     options.Pid = 0;
-#if defined(HOST_UNIX) && !defined(HOST_OSX)
     options.SignalCode = 0;
     options.SignalErrno = 0;
-    options.SignalAddress = nullptr;
-#endif
+    options.SignalAddress = 0;
+    options.ExceptionRecord = 0;
     bool help = false;
     int exitCode = 0;
 
@@ -141,7 +140,11 @@ int createdump_main(const int argc, const char* argv[])
             }
             else if (strcmp(*argv, "--address") == 0)
             {
-                options.SignalAddress = (void*)atoll(*++argv);
+                options.SignalAddress = atoll(*++argv);
+            }
+            else if (strcmp(*argv, "--exception-record") == 0)
+            {
+                options.ExceptionRecord = atoll(*++argv);
             }
 #endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
@@ -202,7 +205,7 @@ int createdump_main(const int argc, const char* argv[])
     ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
     if (options.DumpPathTemplate == nullptr)
     {
-        if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
+        if (GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
         {
             printf_error("GetTempPath failed\n");
             return -1;
@@ -226,6 +229,7 @@ int createdump_main(const int argc, const char* argv[])
         exitCode = -1;
     }
 
+    fflush(stderr);
     fflush(g_stdout);
 
     if (g_logfile != nullptr)
@@ -349,7 +353,7 @@ GetTimeStamp()
 #ifdef HOST_UNIX
 
 static void
-trace_prefix()
+trace_prefix(const char* format, va_list args)
 {
     // Only add this prefix if logging to the console
     if (g_logfile == nullptr)
@@ -357,6 +361,8 @@ trace_prefix()
         fprintf(g_stdout, "[createdump] ");
     }
     fprintf(g_stdout, "%08" PRIx64 " ", GetTimeStamp());
+    vfprintf(g_stdout, format, args);
+    fflush(g_stdout);
 }
 
 void
@@ -366,9 +372,7 @@ trace_printf(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
-        trace_prefix();
-        vfprintf(g_stdout, format, args);
-        fflush(g_stdout);
+        trace_prefix(format, args);
         va_end(args);
     }
 }
@@ -380,9 +384,7 @@ trace_verbose_printf(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
-        trace_prefix();
-        vfprintf(g_stdout, format, args);
-        fflush(g_stdout);
+        trace_prefix(format, args);
         va_end(args);
     }
 }
@@ -394,9 +396,7 @@ CrashInfo::Trace(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
-        trace_prefix();
-        vfprintf(g_stdout, format, args);
-        fflush(g_stdout);
+        trace_prefix(format, args);
         va_end(args);
     }
 }
@@ -408,9 +408,7 @@ CrashInfo::TraceVerbose(const char* format, ...)
     {
         va_list args;
         va_start(args, format);
-        trace_prefix();
-        vfprintf(g_stdout, format, args);
-        fflush(g_stdout);
+        trace_prefix(format, args);
         va_end(args);
     }
 }

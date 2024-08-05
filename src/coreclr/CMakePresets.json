@@ -1,0 +1,169 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/../../artifacts/obj/coreclr/${presetName}",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/../../artifacts/bin/coreclr/${presetName}"
+      }
+    },
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "CLR_CMAKE_TARGET_OS": "windows",
+        "CLI_CMAKE_FALLBACK_OS": "win10"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [
+            "Windows"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Debug",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Release",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "Checked",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Checked"
+      }
+    },
+    {
+      "name": "x64",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CLR_CMAKE_HOST_ARCH": "x64"
+      }
+    },
+    {
+      "name": "x86",
+      "hidden": true,
+      "architecture": {
+        "value": "x86",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CLR_CMAKE_HOST_ARCH": "x86"
+      }
+    },
+    {
+      "name": "ARM64",
+      "hidden": true,
+      "architecture": {
+        "value": "arm64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CLR_CMAKE_HOST_ARCH": "arm64"
+      }
+    },
+    {
+      "name": "windows.x64.Debug",
+      "displayName": "windows.x64.Debug",
+      "inherits": [
+        "windows-base",
+        "Debug",
+        "x64"
+      ]
+    },
+    {
+      "name": "windows.x64.Release",
+      "displayName": "windows.x64.Release",
+      "inherits": [
+        "windows-base",
+        "Release",
+        "x64"
+      ]
+    },
+    {
+      "name": "windows.x64.Checked",
+      "displayName": "windows.x64.Checked",
+      "inherits": [
+        "windows-base",
+        "Checked",
+        "x64"
+      ]
+    },
+    {
+      "name": "windows.x86.Debug",
+      "displayName": "windows.x86.Debug",
+      "inherits": [
+        "windows-base",
+        "Debug",
+        "x86"
+      ]
+    },
+    {
+      "name": "windows.x86.Release",
+      "displayName": "windows.x86.Release",
+      "inherits": [
+        "windows-base",
+        "Release",
+        "x86"
+      ]
+    },
+    {
+      "name": "windows.x86.Checked",
+      "displayName": "windows.x86.Checked",
+      "inherits": [
+        "windows-base",
+        "Checked",
+        "x86"
+      ]
+    },
+    {
+      "name": "windows.arm64.Debug",
+      "displayName": "windows.arm64.Debug",
+      "inherits": [
+        "windows-base",
+        "Debug",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "windows.arm64.Release",
+      "displayName": "windows.arm64.Release",
+      "inherits": [
+        "windows-base",
+        "Release",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "windows.arm64.Checked",
+      "displayName": "windows.arm64.Checked",
+      "inherits": [
+        "windows-base",
+        "Checked",
+        "ARM64"
+      ]
+    }
+  ]
+}

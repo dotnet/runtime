@@ -24,7 +24,6 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
@@ -35,6 +34,8 @@ namespace Microsoft.Interop.JavaScript
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            var assemblyName = context.CompilationProvider.Select(static (c, _) => c.AssemblyName);
+
             // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(Constants.JSExportAttribute,
@@ -57,10 +58,6 @@ namespace Microsoft.Interop.JavaScript
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
-            // Compute generator options
-            IncrementalValueProvider<JSGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
-                .Select(static (options, ct) => new JSGeneratorOptions(options.GlobalOptions));
-
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
             // Validate environment that is being used to generate stubs.
@@ -77,16 +74,14 @@ namespace Microsoft.Interop.JavaScript
 
             IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
-                .Combine(stubOptions)
                 .Select(static (data, ct) => new
                 {
-                    data.Left.Left.Syntax,
-                    data.Left.Left.Symbol,
-                    Environment = data.Left.Right,
-                    Options = data.Right
+                    data.Left.Syntax,
+                    data.Left.Symbol,
+                    Environment = data.Right,
                 })
                 .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, ct)
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Select(
@@ -103,7 +98,8 @@ namespace Microsoft.Interop.JavaScript
                 .Collect();
 
             IncrementalValueProvider<string> registration = regSyntax
-                .Select(static (data, ct) => GenerateRegSource(data))
+                .Combine(assemblyName)
+                .Select(static (data, ct) => GenerateRegSource(data.Left, data.Right))
                 .Select(static (data, ct) => data.NormalizeWhitespace().ToFullString());
 
             IncrementalValueProvider<ImmutableArray<(string, string)>> generated = generateSingleStub
@@ -172,7 +168,6 @@ namespace Microsoft.Interop.JavaScript
             MethodDeclarationSyntax originalSyntax,
             IMethodSymbol symbol,
             StubEnvironment environment,
-            JSGeneratorOptions options,
             CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -214,23 +209,16 @@ namespace Microsoft.Interop.JavaScript
                 methodSyntaxTemplate,
                 locations,
                 jsExportData,
-                CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
-        private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
-        {
-            JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory();
-            return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);
-        }
-
         private static NamespaceDeclarationSyntax GenerateRegSource(
-            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods)
+            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods, string assemblyName)
         {
             const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
             const string initializerClass = "__GeneratedInitializer";
             const string initializerName = "__Register_";
-            const string selfInitName = "__Net7SelfInit_";
+            const string trimmingPreserveName = "__TrimmingPreserve_";
 
             if (methods.IsEmpty) return NamespaceDeclaration(IdentifierName(generatedNamespace));
 
@@ -256,22 +244,47 @@ namespace Microsoft.Interop.JavaScript
                             .WithModifiers(TokenList(new[] { Token(SyntaxKind.StaticKeyword) }))
                             .WithBody(Block(registerStatements));
 
-            // when we are running code generated by .NET8 on .NET7 runtime we need to auto initialize the assembly, because .NET7 doesn't call the registration from JS
-            // this also keeps the code protected from trimming
-            MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(selfInitName))
-                            .WithAttributeLists(List(new[]{
-                                    AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.ModuleInitializerAttributeGlobal)))),
-                                }))
+            // HACK: protect the code from trimming with DynamicDependency attached to a ModuleInitializer
+            MemberDeclarationSyntax initializerMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(trimmingPreserveName))
+                            .WithAttributeLists(
+                                SingletonList<AttributeListSyntax>(
+                                    AttributeList(
+                                        SeparatedList<AttributeSyntax>(
+                                            new SyntaxNodeOrToken[]{
+                                                Attribute(
+                                                    IdentifierName(Constants.ModuleInitializerAttributeGlobal)),
+                                                Token(SyntaxKind.CommaToken),
+                                                Attribute(
+                                                    IdentifierName(Constants.DynamicDependencyAttributeGlobal))
+                                                .WithArgumentList(
+                                                    AttributeArgumentList(
+                                                        SeparatedList<AttributeArgumentSyntax>(
+                                                            new SyntaxNodeOrToken[]{
+                                                                AttributeArgument(
+                                                                    BinaryExpression(
+                                                                        SyntaxKind.BitwiseOrExpression,
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
+                                                                            IdentifierName("PublicMethods")),
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            IdentifierName(Constants.DynamicallyAccessedMemberTypesGlobal),
+                                                                            IdentifierName("NonPublicMethods")))),
+                                                                Token(SyntaxKind.CommaToken),
+                                                                AttributeArgument(
+                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal($"{generatedNamespace}.{initializerClass}"))
+                                                                ),
+                                                                Token(SyntaxKind.CommaToken),
+                                                                AttributeArgument(
+                                                                    LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(assemblyName))
+                                                                )
+                                                            })))}))))
                             .WithModifiers(TokenList(new[] {
                                 Token(SyntaxKind.StaticKeyword),
                                 Token(SyntaxKind.InternalKeyword)
                             }))
-                            .WithBody(Block(
-                                IfStatement(BinaryExpression(SyntaxKind.EqualsExpression,
-                                    IdentifierName("Environment.Version.Major"),
-                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(7))),
-                                    Block(SingletonList<StatementSyntax>(
-                                        ExpressionStatement(InvocationExpression(IdentifierName(initializerName))))))));
+                            .WithBody(Block());
 
             var ns = NamespaceDeclaration(IdentifierName(generatedNamespace))
                         .WithMembers(
@@ -294,13 +307,11 @@ namespace Microsoft.Interop.JavaScript
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
-                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
-                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
                 incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
                 incrementalContext.JSExportData,
                 incrementalContext.SignatureContext,
                 diagnostics,
-                incrementalContext.GeneratorFactoryKey.GeneratorFactory);
+                new JSGeneratorResolver());
 
             var wrapperName = "__Wrapper_" + incrementalContext.StubMethodSyntaxTemplate.Identifier + "_" + incrementalContext.SignatureContext.TypesHash;
 

@@ -359,7 +359,7 @@ CrashReportWriter::WriteValue(const char* key, const char* value)
     WriteSeparator(text);
     text.append("\"");
     text.append(key);
-    text.append("\" : \"");
+    text.append("\": \"");
     text.append(value);
     text.append("\"");
     m_comma = true;

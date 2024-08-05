@@ -7,6 +7,8 @@
     <TargetArchitecture>wasm</TargetArchitecture>
     <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
     -->
+    <TestArchiveTestsRoot>$(TestArchiveRoot)wasmtimeonly/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>
@@ -33,5 +35,5 @@
   </ItemGroup>
 
   <!-- Import late, so properties like $(ArtifactsBinDir) are set -->
-  <Import Project="$(MonoProjectRoot)wasi\build\WasiApp.InTree.props" />
+  <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.props" />
 </Project>

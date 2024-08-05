@@ -8,7 +8,6 @@ using Xunit;
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public abstract class PerAssemblyVersionResolutionBase :
-        ComponentDependencyResolutionBase,
         IClassFixture<PerAssemblyVersionResolutionBase.SharedTestState>
     {
         protected readonly SharedTestState SharedState;

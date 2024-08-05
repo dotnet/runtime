@@ -19,8 +19,9 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-browser.targets" Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-superpmi-collect.targets" Condition="'$(SuperPmiCollect)' == 'true'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -30,14 +31,16 @@
         '$(Scenario)' == 'gcstress0x3' or
         '$(Scenario)' == 'gcstress0xc' or
         '$(Scenario)' == 'heapverify1' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_heapverify1' or
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android')">00:30:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos')">00:45:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">00:20:00</_workItemTimeout>
@@ -114,6 +117,14 @@
        setting up the per-scenario environment.
   -->
 
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
@@ -147,6 +158,8 @@
     <HelixCommandPrefixEnvVarItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWebcil)' == 'false'" Include="TEST_USING_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingFingerprinting)' == 'false'" Include="TEST_USING_FINGERPRINTING=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">
@@ -173,7 +186,6 @@
     <HelixPostCommand Include="docker stop grpc-server" />
     <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
   </ItemGroup>
-
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
@@ -232,6 +244,21 @@
     </ItemGroup>
   </Target>
 
+  <!-- XUnitLogChecker required configuration -->
+  <ItemGroup Condition="Exists('$(XUnitLogCheckerLibrariesOutDir)')">
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
+    <HelixCorrelationPayload Condition="'$(WindowsShell)' == 'true'" Include="dotnet-sos">
+      <Destination>sos</Destination>
+      <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <NtSymbolPathEnvVar>set _NT_SYMBOL_PATH=%25HELIX_CORRELATION_PAYLOAD%25%3B%25HELIX_CORRELATION_PAYLOAD%25\PDB%3B%25HELIX_CORRELATION_PAYLOAD%25\shared\$(MicrosoftNetCoreAppFrameworkName)\$(ProductVersion)</NtSymbolPathEnvVar>
+    <ExecuteDotNetSos>%25HELIX_CORRELATION_PAYLOAD%25\dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)</ExecuteDotNetSos>
+    <HelixPreCommands>$(HelixPreCommands);$(NtSymbolPathEnvVar);$(ExecuteDotNetSos)</HelixPreCommands>
+  </PropertyGroup>
+
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
     test assembly. All will have the same command line. Note that this target is listed in the
@@ -239,7 +266,6 @@
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
   <Target Name="BuildHelixWorkItems" DependsOnTargets="$(BuildHelixWorkItemsDependsOn)">
-
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
@@ -260,6 +286,14 @@
       </HelixPostCommands>
     </PropertyGroup>
 
+    <!-- ad-hoc sign createdump on the helix machine to allow us to collect dumps -->
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'osx'">
+      <HelixPreCommands>
+        $(HelixPreCommands);
+        find $HELIX_CORRELATION_PAYLOAD -name createdump | xargs -n 1 codesign -s - -f --preserve-metadata=entitlements
+      </HelixPreCommands>
+    </PropertyGroup>
+
     <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"
            Text="Could not find workload at %24(SdkWithWorkloadForTestingPath)=$(SdkWithWorkloadForTestingPath)" />
 
@@ -269,8 +303,6 @@
     <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
       <HelixCorrelationPayload Include="$(SdkWithWorkloadForTestingPath)"     Destination="$(SdkForWorkloadTestingDirName)" Condition="'$(TestUsingWorkloads)' == 'true'" />
       <HelixCorrelationPayload Include="$(SdkWithNoWorkloadForTestingPath)"   Destination="$(SdkForWorkloadTestingDirName)" Condition="'$(TestUsingWorkloads)' != 'true'" />
-
-      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)"     Destination="microsoft.netcore.app.ref" />
     </ItemGroup>
 
     <ItemGroup>
@@ -288,16 +320,23 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
       </HelixWorkItem>
     </ItemGroup>
 
-    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(HelixWorkItem->Count())" />
-    <Message Condition="'$(Scenario)' == '' and '$(TargetOS)' != 'android' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst'" Importance="High" Text="Done building Helix work items. Work item count: @(HelixWorkItem->Count())" />
+    <ItemGroup>
+      <HelixWorkItemOrXHarnessTest Include="@(HelixWorkItem)" />
+      <HelixWorkItemOrXHarnessTest Include="@(XHarnessAppBundleToTest)" />
+      <HelixWorkItemOrXHarnessTest Include="@(XHarnessApkToTest)" />
+    </ItemGroup>
+
+    <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Done building Helix work items for scenario $(Scenario). Work item count: @(HelixWorkItemOrXHarnessTest->Count())" />
+    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(HelixWorkItemOrXHarnessTest->Count())" />
 
     <Message Text="HelixCorrelationPayload: %(HelixCorrelationPayload.Identity)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
     <Message Text="HelixWorkItem: %(HelixWorkItem.Identity), Command: %(HelixWorkItem.Command), PreCommands: %(HelixWorkItem.PreCommands) with PayloadArchive: %(HelixWorkItem.PayloadArchive)" Condition="'$(HelixDryRun)' == 'true'" Importance="High" />
 
-    <Error Condition="@(XHarnessApkToTest->Count()) == 0 and @(XHarnessAppBundleToTest->Count()) == 0 and @(HelixWorkItem->Count()) == 0"
+    <Error Condition="@(HelixWorkItemOrXHarnessTest->Count()) == 0"
            Text="No helix work items, or APKs, or AppBundles found to test" />
 
     <Error Condition="'%(HelixWorkItem.Identity)' != '' and ('%(HelixWorkItem.PayloadArchive)' == '' or !Exists(%(HelixWorkItem.PayloadArchive)))"
@@ -309,7 +348,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil), TestUsingFingerprinting: $(TestUsingFingerprinting)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

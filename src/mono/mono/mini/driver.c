@@ -42,7 +42,6 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/coree.h>
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -190,10 +189,8 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 				exit (1);
 			}
 		}
-
-		g_free (arg);
 	}
-	g_free (parts);
+	g_strfreev (parts);
 
 	return opt;
 }
@@ -1387,6 +1384,7 @@ typedef struct
 	char **argv;
 	guint32 opts;
 	char *aot_options;
+	GPtrArray *runtime_args;
 } MainThreadArgs;
 
 static void
@@ -1414,7 +1412,7 @@ main_thread_handler (gpointer user_data)
 				MonoImage *img;
 
 				img = mono_image_open (main_args->argv [i], &status);
-				if (img && strcmp (img->name, assembly->image->name)) {
+				if (img && g_strcasecmp (img->name, assembly->image->name)) {
 					fprintf (stderr, "Error: Loaded assembly '%s' doesn't match original file name '%s'. Set MONO_PATH to the assembly's location.\n", assembly->image->name, img->name);
 					exit (1);
 				}
@@ -1422,7 +1420,7 @@ main_thread_handler (gpointer user_data)
 			assemblies [i] = assembly;
 		}
 
-		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->runtime_args, main_args->aot_options);
 		if (res)
 			exit (1);
 		return;
@@ -1597,26 +1595,18 @@ mini_usage (void)
 		"    --help-devel           Shows more options available to developers\n"
 		"\n"
 		"Runtime:\n"
-		"    --config FILE          Loads FILE as the Mono config\n"
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
 		"    --version, -V          Show version information\n"
 		"    --version=number       Show version number\n"
-		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
 		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
-	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
-#ifdef TARGET_OSX
-		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
-#endif
-#ifdef HOST_WIN32
-	        "    --mixed-mode           Enable mixed-mode image support.\n"
-#endif
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
+		"    --path=DIR             Add DIR to the list of directories to search for assemblies.\n"
 	  );
 
 	g_print ("\nOptions:\n");
@@ -1688,7 +1678,6 @@ mono_get_version_info (void)
 #endif
 
 	g_string_append_printf (output, "\tArchitecture:  %s\n", MONO_ARCHITECTURE);
-	g_string_append_printf (output, "\tDisabled:      %s\n", DISABLED_FEATURES);
 
 	g_string_append_printf (output, "\tMisc:          ");
 #ifdef MONO_SMALL_CONFIG
@@ -1771,7 +1760,7 @@ mono_jit_parse_options (int argc, char * argv[])
 	memcpy (copy_argv, argv, sizeof (char*) * argc);
 	argv = copy_argv;
 
-	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	mono_options_parse_options ((const char**)argv, argc, &argc, NULL, error);
 	if (!is_ok (error)) {
 		g_printerr ("%s", mono_error_get_message (error));
 		mono_error_cleanup (error);
@@ -1882,34 +1871,6 @@ mono_set_use_smp (int use_smp)
 }
 
 static void
-switch_gc (char* argv[], const char* target_gc)
-{
-	GString *path;
-
-	if (!strcmp (mono_gc_get_gc_name (), target_gc)) {
-		return;
-	}
-
-	path = g_string_new (argv [0]);
-
-	/*Running mono without any argument*/
-	if (strstr (argv [0], "-sgen"))
-		g_string_truncate (path, path->len - 5);
-	else if (strstr (argv [0], "-boehm"))
-		g_string_truncate (path, path->len - 6);
-
-	g_string_append_c (path, '-');
-	g_string_append (path, target_gc);
-
-#ifdef HAVE_EXECVP
-	execvp (path->str, argv);
-	fprintf (stderr, "Error: Failed to switch to %s gc. mono-%s is not installed.\n", target_gc, target_gc);
-#else
-	fprintf (stderr, "Error: --gc=<NAME> option not supported on this platform.\n");
-#endif
-}
-
-static void
 increase_descriptor_limit (void)
 {
 #if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
@@ -1929,37 +1890,6 @@ increase_descriptor_limit (void)
 	}
 #endif
 }
-
-#ifdef TARGET_OSX
-
-static void
-switch_arch (char* argv[], const char* target_arch)
-{
-	GString *path;
-	gsize arch_offset;
-
-	if ((strcmp (target_arch, "32") == 0 && strcmp (MONO_ARCHITECTURE, "x86") == 0) ||
-		(strcmp (target_arch, "64") == 0 && strcmp (MONO_ARCHITECTURE, "amd64") == 0)) {
-		return; /* matching arch loaded */
-	}
-
-	path = g_string_new (argv [0]);
-	arch_offset = path->len -2; /* last two characters */
-
-	/* Remove arch suffix if present */
-	if (strstr (&path->str[arch_offset], "32") || strstr (&path->str[arch_offset], "64")) {
-		g_string_truncate (path, arch_offset);
-	}
-
-	g_string_append (path, target_arch);
-
-	if (execvp (path->str, argv) < 0) {
-		fprintf (stderr, "Error: --arch=%s Failed to switch to '%s'.\n", target_arch, path->str);
-		exit (1);
-	}
-}
-
-#endif
 
 #define MONO_HANDLERS_ARGUMENT "--handlers="
 #define MONO_HANDLERS_ARGUMENT_LEN STRING_LENGTH(MONO_HANDLERS_ARGUMENT)
@@ -2070,11 +2000,10 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
+	GList *paths = NULL;
+	GPtrArray *args;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
-#endif
-#ifdef HOST_WIN32
-	int mixed_mode = FALSE;
 #endif
 	ERROR_DECL (error);
 
@@ -2101,7 +2030,9 @@ mono_main (int argc, char* argv[])
 
 	enable_debugging = TRUE;
 
-	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, error);
+	args = g_ptr_array_new ();
+
+	mono_options_parse_options ((const char**)argv + 1, argc - 1, &argc, args, error);
 	argc ++;
 	if (!is_ok (error)) {
 		g_printerr ("%s", mono_error_get_message (error));
@@ -2109,9 +2040,11 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+	g_ptr_array_add (args, argv [0]);
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
 			break;
+		g_ptr_array_add (args, argv [i]);
 		if (strcmp (argv [i], "--regression") == 0) {
 			action = DO_REGRESSION;
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
@@ -2174,32 +2107,19 @@ mono_main (int argc, char* argv[])
 			guint32 bisect_opt = parse_optimizations (0, bisect_opt_string, FALSE);
 			g_free (bisect_opt_string);
 			mono_set_bisect_methods (bisect_opt, sep + 1);
-		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
-			switch_gc (argv, "sgen");
-		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
-			switch_gc (argv, "boehm");
+		} else if (strncmp (argv [i], "--gc=", 5) == 0) {
+			// ignore
 		} else if (strncmp (argv[i], "--gc-params=", 12) == 0) {
 			mono_gc_params_set (argv[i] + 12);
 		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
 			mono_gc_debug_set (argv[i] + 11);
 		}
-#ifdef TARGET_OSX
-		else if (strcmp (argv [i], "--arch=32") == 0) {
-			switch_arch (argv, "32");
-		} else if (strcmp (argv [i], "--arch=64") == 0) {
-			switch_arch (argv, "64");
+		else if (strncmp (argv [i], "--arch=", 7) == 0) {
+			// ignore
 		}
-#endif
 		else if (strcmp (argv [i], "--config") == 0) {
-			if (i +1 >= argc){
-				fprintf (stderr, "error: --config requires a filename argument\n");
-				return 1;
-			}
 			++i;
-#ifdef HOST_WIN32
-		} else if (strcmp (argv [i], "--mixed-mode") == 0) {
-			mixed_mode = TRUE;
-#endif
+			// ignore
 #ifndef DISABLE_JIT
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			if (i + 1 >= argc){
@@ -2286,15 +2206,15 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **split;
+			char **split, **ptr;
 
 			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*split) {
-				char *tmp = *split;
-				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
-				g_free (tmp);
-				split++;
+			for (ptr = split; ptr && *ptr; ptr++) {
+				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (*ptr));
 			}
+			g_strfreev (split);
+		} else if (strncmp (argv [i], "--path=", 7) == 0) {
+			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;
 			recompilation_times = atoi (argv [i] + 14);
@@ -2472,7 +2392,7 @@ mono_main (int argc, char* argv[])
 
 			/* Parse newly added options */
 			int n = argc;
-			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, error);
+			mono_options_parse_options ((const char**)(argv + orig_argc), argc - orig_argc, &n, args, error);
 			if (!is_ok (error)) {
 				g_printerr ("%s", mono_error_get_message (error));
 				mono_error_cleanup (error);
@@ -2503,6 +2423,16 @@ mono_main (int argc, char* argv[])
 
 	if (g_hasenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
+
+	if (paths) {
+		char **p = g_new0 (char *, g_list_length (paths) + 1);
+		int pindex = 0;
+		for (GList *l = paths; l; l = l->next)
+			p [pindex ++] = (char*)l->data;
+		g_list_free (paths);
+
+		mono_set_assemblies_path_direct (p);
+	}
 
 #ifdef MONO_CROSS_COMPILE
 	if (!mono_compile_aot) {
@@ -2544,11 +2474,6 @@ mono_main (int argc, char* argv[])
 		return 1;
 	} else if (enable_debugging)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-
-#ifdef HOST_WIN32
-	if (mixed_mode)
-		mono_load_coree (argv [i]);
-#endif
 
 	mono_set_defaults (mini_verbose_level, opt);
 
@@ -2652,6 +2577,7 @@ mono_main (int argc, char* argv[])
 		main_args.argv = argv + i;
 		main_args.opts = opt;
 		main_args.aot_options = aot_options;
+		main_args.runtime_args = args;
 		main_thread_handler (&main_args);
 		mono_thread_manage_internal ();
 

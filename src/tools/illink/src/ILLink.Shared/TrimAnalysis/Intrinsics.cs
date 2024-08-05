@@ -38,6 +38,11 @@ namespace ILLink.Shared.TrimAnalysis
 				// static System.Type.MakeGenericType (Type [] typeArguments)
 				"MakeGenericType" when calledMethod.IsDeclaredOnType ("System.Type") => IntrinsicId.Type_MakeGenericType,
 
+				// static System.Reflection.RuntimeReflectionExtensions.GetMethodInfo (this Delegate del)
+				"GetMethodInfo" when calledMethod.IsDeclaredOnType ("System.Reflection.RuntimeReflectionExtensions")
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.Delegate")
+					=> IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo,
+
 				// static System.Reflection.RuntimeReflectionExtensions.GetRuntimeEvent (this Type type, string name)
 				"GetRuntimeEvent" when calledMethod.IsDeclaredOnType ("System.Reflection.RuntimeReflectionExtensions")
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.Type")
@@ -288,6 +293,12 @@ namespace ILLink.Shared.TrimAnalysis
 				"Empty" when calledMethod.IsDeclaredOnType ("System.Array")
 					=> IntrinsicId.Array_Empty,
 
+				// static System.Array.CreateInstance (System.Type type, int length)
+				"CreateInstance" when calledMethod.IsDeclaredOnType ("System.Array")
+					&& calledMethod.HasMetadataParametersCount (2)
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Int32")
+					=> IntrinsicId.Array_CreateInstance,
+
 				// static System.Activator.CreateInstance (System.Type type)
 				// static System.Activator.CreateInstance (System.Type type, bool nonPublic)
 				// static System.Activator.CreateInstance (System.Type type, params object?[]? args)
@@ -395,6 +406,12 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.IsStatic ()
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.Type")
 					=> IntrinsicId.Nullable_GetUnderlyingType,
+
+				// static System.Delegate.Method getter
+				"get_Method" when calledMethod.IsDeclaredOnType ("System.Delegate")
+					&& calledMethod.HasImplicitThis ()
+					&& calledMethod.HasMetadataParametersCount (0)
+					=> IntrinsicId.Delegate_get_Method,
 
 				_ => IntrinsicId.None,
 			};

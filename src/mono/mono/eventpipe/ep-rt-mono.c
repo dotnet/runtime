@@ -59,6 +59,9 @@ EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Co
 #define RUNTIME_STRESS_PROVIDER_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context
 #define RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Context
 
+void
+ep_rt_mono_thread_exited (void);
+
 bool
 ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
@@ -102,7 +105,7 @@ ep_rt_mono_file_open_write (const ep_char8_t *path)
 	if (!path)
 		return INVALID_HANDLE_VALUE;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
 
 	if (!path_utf16)
 		return INVALID_HANDLE_VALUE;
@@ -325,6 +328,22 @@ ep_rt_mono_thread_detach (void)
 		mono_thread_internal_detach (current_thread);
 }
 
+void
+ep_rt_mono_thread_exited (void)
+{
+	if (_eventpipe_initialized) {
+		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
+		if (thread_holder)
+			thread_holder_free_func (thread_holder);
+		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
+
+		EventPipeMonoThreadData *thread_data = (EventPipeMonoThreadData *)mono_native_tls_get_value (_thread_data_tls_id);
+		if (thread_data)
+			ep_rt_object_free (thread_data);
+		mono_native_tls_set_value (_thread_data_tls_id, NULL);
+	}
+}
+
 #ifdef HOST_WIN32
 int64_t
 ep_rt_mono_perf_counter_query (void)
@@ -375,7 +394,6 @@ ep_rt_mono_system_timestamp_get (void)
 #else
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <utime.h>
 #include <time.h>
 
 #if HAVE_SYS_TIME_H
@@ -581,7 +599,7 @@ ep_rt_mono_os_environment_get_utf16 (dn_vector_ptr_t *os_env)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		dn_vector_ptr_push_back (os_env, ep_rt_utf8_to_utf16le_string (*next, -1));
+		dn_vector_ptr_push_back (os_env, ep_rt_utf8_to_utf16le_string (*next));
 #endif
 }
 
@@ -734,18 +752,7 @@ thread_stopped_callback (
 	uintptr_t tid)
 {
 	ep_rt_mono_runtime_provider_thread_stopped_callback (prof, tid);
-
-	if (_eventpipe_initialized) {
-		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
-		if (thread_holder)
-			thread_holder_free_func (thread_holder);
-		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
-
-		EventPipeMonoThreadData *thread_data = (EventPipeMonoThreadData *)mono_native_tls_get_value (_thread_data_tls_id);
-		if (thread_data)
-			ep_rt_object_free (thread_data);
-		mono_native_tls_set_value (_thread_data_tls_id, NULL);
-	}
+	ep_rt_mono_thread_exited ();
 }
 
 void
@@ -848,39 +855,20 @@ ep_rt_mono_fini (void)
 	ep_rt_mono_runtime_provider_fini ();
 	ep_rt_mono_profiler_provider_fini ();
 
-	if (_eventpipe_initialized)
-		mono_rand_close (_rand_provider);
-
-	_rand_provider = NULL;
-	_eventpipe_initialized = FALSE;
-
-	_ep_rt_mono_runtime_initialized = FALSE;
-
 	if (_ep_rt_mono_default_profiler_provider) {
 		mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, NULL);
 	}
-	_ep_rt_mono_default_profiler_provider = NULL;
-
-	if (_ep_rt_mono_thread_holder_tls_id)
-		mono_native_tls_free (_ep_rt_mono_thread_holder_tls_id);
-	_ep_rt_mono_thread_holder_tls_id = 0;
-
-	if (_thread_data_tls_id)
-		mono_native_tls_free (_thread_data_tls_id);
-	_thread_data_tls_id = 0;
-
-	_ep_rt_mono_os_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_os_cmd_line = NULL;
-
-	_ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-	_ep_rt_mono_managed_cmd_line = NULL;
-
-	ep_rt_spin_lock_free (&_ep_rt_mono_config_lock);
+	
+	// We were cleaning up resources (mutexes, tls data, etc) here but it races with
+	// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
+	// and not leaking these threads becomes a priority we will have to reimplement
+	// cleanup here.
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -896,6 +884,7 @@ EventPipeEtwCallbackDotNETRuntimeRundown (
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -911,6 +900,7 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 }
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
 	unsigned long is_enabled,

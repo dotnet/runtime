@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /* RDawson - 11/2/200
 
   Check that comtype names == (MAX_CLASS_NAME-1) are legal
@@ -16,6 +17,9 @@
 }
 
 .method public static int32 main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 8
 	ldstr	"PASSED - 2.5.5 - Was allowed to use a comtype name equal to (MAX_CLASS_NAME-1)"

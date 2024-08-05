@@ -122,6 +122,16 @@
         <target state="translated">為 'ValidateObjectMembersAttribute' 或 'ValidateEnumeratedItemsAttribute' 屬性指定的 Null 驗證程式類型。</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">選項驗證來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">來源產生器不支援 C# 語言版本。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">成員 {0} 具備驗證註釋，但成員 {1} 未指定 [ValidateObjectMembers] (可能為監督)。</target>
@@ -140,6 +150,16 @@
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
         <target state="translated">成員可能遺漏轉移的驗證。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">驗證屬性 {0} 只能套用至類型字串、陣列或 ICollection 的屬性。搭配 {1} 類型使用可能會導致執行階段失敗。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">驗證屬性只適用於類型字串、陣列或 ICollection 的屬性;無法與其他類型搭配使用。</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">

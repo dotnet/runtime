@@ -18,13 +18,13 @@ namespace System
         }
 
         public AppDomainUnloadedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AppDomainUnloadedException)
         {
             HResult = HResults.COR_E_APPDOMAINUNLOADED;
         }
 
         public AppDomainUnloadedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_AppDomainUnloadedException, innerException)
         {
             HResult = HResults.COR_E_APPDOMAINUNLOADED;
         }

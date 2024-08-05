@@ -25,12 +25,11 @@ public class AppSettingsTests : AppTestBase
     [InlineData("Production")]
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
-        CopyTestAsset("WasmBasicTestApp", "AppSettingsTests");
+        CopyTestAsset("WasmBasicTestApp", "AppSettingsTests", "App");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
-            ForPublish: true,
             TestScenario: "AppSettingsTest",
             BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }
         ));

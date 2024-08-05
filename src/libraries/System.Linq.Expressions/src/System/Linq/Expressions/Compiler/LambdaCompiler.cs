@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -23,6 +24,7 @@ namespace System.Linq.Expressions.Compiler
     /// contain multiple lambdas, the Compiler class is responsible for compiling the whole tree, individual
     /// lambdas are then compiled by the LambdaCompiler.
     /// </summary>
+    [RequiresDynamicCode(Expression.LambdaCompilerRequiresDynamicCode)]
     internal sealed partial class LambdaCompiler : ILocalCache
     {
         private static int s_lambdaMethodIndex;

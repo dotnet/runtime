@@ -98,7 +98,6 @@ namespace System.Formats.Tar
             get => _header._aTime;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 _header._aTime = value;
             }
         }
@@ -112,7 +111,6 @@ namespace System.Formats.Tar
             get => _header._cTime;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 _header._cTime = value;
             }
         }

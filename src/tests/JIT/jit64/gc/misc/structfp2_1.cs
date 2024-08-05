@@ -94,12 +94,11 @@ public class Test_structfp2_1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
 
         c(sM, 1, sM2);
-        return 100;
     }
 }

@@ -1,6 +1,39 @@
 <Project>
-  <!-- TODO: Consolidate the Publishing.props files into here. -->
+
   <PropertyGroup>
-    <PublishingVersion>3</PublishingVersion>
+    <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
   </PropertyGroup>
+
+  <!-- Include installer archives and packages which aren't globbed by default.
+       Don't include Symbols archive as it is already included in Arcade's Publish.proj, with correct blob path. -->
+  <Target Name="PublishRuntimeInstallers"
+          BeforeTargets="BeforePublish"
+          Condition="'$(DotNetBuildRepo)' == 'true'">
+    <!-- Retrieve runtime's runtime pack product version.
+         Don't stabilize the package version in order to retrieve the VersionSuffix. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="IsShipping=false;
+                         Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimeRuntimePackProductVersion" />
+    </MSBuild>
+
+    <ItemGroup>
+      <InstallerToPublish Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                                   $(ArtifactsPackagesDir)**\*.zip;
+                                   $(ArtifactsPackagesDir)**\*.deb;
+                                   $(ArtifactsPackagesDir)**\*.rpm;
+                                   $(ArtifactsPackagesDir)**\*.pkg;
+                                   $(ArtifactsPackagesDir)**\*.exe;
+                                   $(ArtifactsPackagesDir)**\*.msi"
+                          Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz" />
+
+      <ItemsToPushToBlobFeed Include="@(InstallerToPublish)"
+                             IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
+                             PublishFlatContainer="true"
+                             RelativeBlobPath="Runtime/$(RuntimeRuntimePackProductVersion)/%(Filename)%(Extension)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

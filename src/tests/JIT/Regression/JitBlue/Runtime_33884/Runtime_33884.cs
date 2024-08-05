@@ -22,7 +22,7 @@ public class TestStructs
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         RefWrapper a = new RefWrapper();
         arr = new RefWrapper[1];
@@ -30,6 +30,5 @@ public class TestStructs
 
         RefWrapper e = GetElement(); // force struct retyping to ref.
         arr[0] = e; // a struct typed copy.
-        return 100;
     }
 }

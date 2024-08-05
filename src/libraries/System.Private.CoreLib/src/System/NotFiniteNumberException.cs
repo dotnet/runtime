@@ -27,27 +27,27 @@ namespace System
         }
 
         public NotFiniteNumberException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_NotFiniteNumberException)
         {
             _offendingNumber = 0;
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
         public NotFiniteNumberException(string? message, double offendingNumber)
-            : base(message)
+            : base(message ?? SR.Arg_NotFiniteNumberException)
         {
             _offendingNumber = offendingNumber;
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
         public NotFiniteNumberException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_NotFiniteNumberException, innerException)
         {
             HResult = HResults.COR_E_NOTFINITENUMBER;
         }
 
         public NotFiniteNumberException(string? message, double offendingNumber, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_NotFiniteNumberException, innerException)
         {
             _offendingNumber = offendingNumber;
             HResult = HResults.COR_E_NOTFINITENUMBER;

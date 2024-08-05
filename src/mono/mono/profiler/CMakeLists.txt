@@ -12,7 +12,7 @@ include_directories(
 if(NOT DISABLE_LIBS)
   if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
     # Build the logging profiler only for certain platforms
-    add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_SOURCES})
+    add_library(mono-profiler-log SHARED helper.c log.c log-args.c)
     target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
     target_link_libraries(mono-profiler-log PRIVATE monosgen-shared monoapi eglib_objects)
     if(HOST_ANDROID)
@@ -26,7 +26,11 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
-      target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      if (CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      else()
+        target_link_libraries(mono-profiler-log PRIVATE zlib)
+      endif()
     endif()
   endif()
 

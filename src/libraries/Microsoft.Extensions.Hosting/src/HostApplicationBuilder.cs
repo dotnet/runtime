@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ namespace Microsoft.Extensions.Hosting
         private readonly ServiceCollection _serviceCollection = new();
         private readonly IHostEnvironment _environment;
         private readonly LoggingBuilder _logging;
+        private readonly MetricsBuilder _metrics;
 
         private Func<IServiceProvider> _createServiceProvider;
         private Action<object> _configureContainer = _ => { };
@@ -94,7 +96,7 @@ namespace Microsoft.Extensions.Hosting
                 Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
 
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
 
             ServiceProviderOptions? serviceProviderOptions = null;
             if (!settings.DisableDefaults)
@@ -120,7 +122,7 @@ namespace Microsoft.Extensions.Hosting
             settings ??= new HostApplicationBuilderSettings();
             Configuration = settings.Configuration ?? new ConfigurationManager();
 
-            Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
+            Initialize(settings, out _hostBuilderContext, out _environment, out _logging, out _metrics);
 
             _createServiceProvider = () =>
             {
@@ -131,7 +133,7 @@ namespace Microsoft.Extensions.Hosting
             };
         }
 
-        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging)
+        private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging, out MetricsBuilder metrics)
         {
             // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
             // they wouldn't have set them on the settings.
@@ -180,6 +182,7 @@ namespace Microsoft.Extensions.Hosting
                 () => _appServices!);
 
             logging = new LoggingBuilder(Services);
+            metrics = new MetricsBuilder(Services);
         }
 
         IDictionary<object, object> IHostApplicationBuilder.Properties => _hostBuilderContext.Properties;
@@ -202,6 +205,9 @@ namespace Microsoft.Extensions.Hosting
 
         /// <inheritdoc />
         public ILoggingBuilder Logging => _logging;
+
+        /// <inheritdoc />
+        public IMetricsBuilder Metrics => _metrics;
 
         /// <inheritdoc />
         public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull
@@ -393,6 +399,11 @@ namespace Microsoft.Extensions.Hosting
             }
 
             public IServiceCollection Services { get; }
+        }
+
+        private sealed class MetricsBuilder(IServiceCollection services) : IMetricsBuilder
+        {
+            public IServiceCollection Services { get; } = services;
         }
     }
 }

@@ -1,9 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- always set SelfContained when running to use Mono on desktop -->
     <SelfContained>true</SelfContained>
+    <PublishTrimmed Condition="'$(SampleTrim)' == 'true'">true</PublishTrimmed>
+    <RunAOTCompilation Condition="'$(SampleUseAOT)' == 'true' or '$(SampleUseFullAOT)' == 'true'">true</RunAOTCompilation>
+    <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseAOT)' == 'true'">normal</SampleAOTMode>
+    <SampleAOTMode Condition="'$(SampleAOTMode)' == '' and '$(SampleUseFullAOT)' == 'true'">full</SampleAOTMode>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler"
@@ -18,7 +23,6 @@
 
     <ItemGroup>
       <AotInputAssemblies Include="$(PublishDir)\*.dll" />
-      <ReferenceAssembliesForPGO Include="$(PublishDir)\*.dll" />
     </ItemGroup>
 
     <MonoAOTCompiler
@@ -27,15 +31,15 @@
       LibraryFormat="$(_AotLibraryFormat)"
       Assemblies="@(AotInputAssemblies)"
       OutputDir="$(PublishDir)"
-      CollectCompiledMethods="$(StripILCode)"
-      CompiledMethodsOutputDirectory="$(CompiledMethodsOutputDirectory)"
+      CollectTrimmingEligibleMethods="$(StripILCode)"
+      TrimmingEligibleMethodsOutputDirectory="$(TrimmingEligibleMethodsOutputDirectory)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
       UseAotDataFile="$(UseAotDataFile)"
-      CacheFilePath="$(IntermediateOutputPath)aot_compiler_cache.json"
-      NetTracePath="$(NetTracePath)"
-      PgoBinaryPath="$(PgoBinaryPath)"
-      ReferenceAssembliesForPGO="@(ReferenceAssembliesForPGO)"
-      MibcProfilePath="$(MibcProfilePath)">
+      MibcProfilePath="$(MibcProfilePath)"
+      UseLLVM="$(MonoEnableLLVM)"
+      LLVMPath="$(MonoAotCrossDir)"
+      Mode="$(SampleAOTMode)"
+       >
       <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
   </Target>

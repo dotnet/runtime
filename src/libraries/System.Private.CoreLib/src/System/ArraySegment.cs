@@ -19,6 +19,8 @@ namespace System
     // (ie, users could assign a new value to the old location).
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
+    [DebuggerDisplay("Count = {Count}")]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
     public readonly struct ArraySegment<T> : IList<T>, IReadOnlyList<T>
 #pragma warning restore CA1066
@@ -31,9 +33,9 @@ namespace System
 
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
-#pragma warning disable CA1825
+#pragma warning disable CA1825, IDE0300
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
 
         private readonly T[]? _array; // Do not rename (binary serialization)
         private readonly int _offset; // Do not rename (binary serialization)

@@ -133,15 +133,21 @@ namespace System.Linq.Tests
         [MemberData(nameof(Int_TestData))]
         public void Int(IEnumerable<int> source, double expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Theory, MemberData(nameof(Int_TestData))]
         public void IntRunOnce(IEnumerable<int> source, double expected)
         {
-            Assert.Equal(expected, source.RunOnce().Average());
-            Assert.Equal(expected, source.RunOnce().Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Average());
+                Assert.Equal(expected, source.RunOnce().Average(x => x));
+            });
         }
 
         [Fact]
@@ -172,8 +178,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(NullableInt_TestData))]
         public void NullableInt(int?[] source, double? expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -255,8 +264,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(Long_TestData))]
         public void Long(IEnumerable<long> source, double expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -295,8 +307,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(NullableLong_TestData))]
         public void NullableLong(long?[] source, double? expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -379,8 +394,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(Double_TestData))]
         public void Average_Double(IEnumerable<double> source, double expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -412,8 +430,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(NullableDouble_TestData))]
         public void NullableDouble(double?[] source, double? expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -495,8 +516,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(Decimal_TestData))]
         public void Decimal(IEnumerable<decimal> source, decimal expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -527,8 +551,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(NullableDecimal_TestData))]
         public void NullableDecimal(decimal?[] source, decimal? expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]
@@ -618,8 +645,11 @@ namespace System.Linq.Tests
         [MemberData(nameof(Float_TestData))]
         public void Float(IEnumerable<float> source, float expected)
         {
-            Assert.Equal(expected, source.Average());
-            Assert.Equal(expected, source.Average(x => x));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Average());
+                Assert.Equal(expected, source.Average(x => x));
+            });
         }
 
         [Fact]

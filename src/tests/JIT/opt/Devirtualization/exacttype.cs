@@ -35,7 +35,7 @@ public class Test_exacttype
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // Declared type of 'd' has final method Foo(), so calls to
         // Foo() will devirtualize.
@@ -62,8 +62,6 @@ public class Test_exacttype
         new Base().Bar();
         new Derived().Foo();
         new Derived().Bar();
-
-        return 100;
     }
 }
 

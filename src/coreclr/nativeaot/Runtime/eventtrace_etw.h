@@ -10,12 +10,25 @@
 
 #ifdef FEATURE_ETW
 
-#include "EtwEvents.h"
+#include <evntprov.h>
+extern "C" {
+    VOID EtwCallback(
+        _In_ const GUID * SourceId,
+        _In_ uint32_t ControlCode,
+        _In_ uint8_t Level,
+        _In_ uint64_t MatchAnyKeyword,
+        _In_ uint64_t MatchAllKeyword,
+        _In_opt_ EVENT_FILTER_DESCRIPTOR * FilterData,
+        _Inout_opt_ void * CallbackContext);
+}
 
-// Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context
-#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
+//
+// Python script generated code will call this function when MCGEN_PRIVATE_ENABLE_CALLBACK_V2 is defined
+// to enable runtime events
+#define MCGEN_PRIVATE_ENABLE_CALLBACK_V2(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext) \
+        EtwCallback(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext)
+
+#include "ClrEtwAll.h"
 
 #undef ETW_TRACING_INITIALIZED
 #define ETW_TRACING_INITIALIZED(RegHandle) (RegHandle != NULL)

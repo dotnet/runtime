@@ -30,7 +30,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Did not write XmlDecl when OmitXmlDecl was FALSE. NodeType = {0}", xr.NodeType.ToString());
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
             else if (xr.NodeType == XmlNodeType.XmlDeclaration)
             {
@@ -40,7 +40,7 @@ namespace System.Xml.XmlWriterApiTests
             else
             {
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
         }
 
@@ -67,7 +67,7 @@ namespace System.Xml.XmlWriterApiTests
                 {
                     CError.WriteLine("Wrote XmlDecl when OmitXmlDecl was TRUE");
                     xr.Dispose();
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             xr.Dispose();
@@ -98,7 +98,7 @@ namespace System.Xml.XmlWriterApiTests
                 {
                     CError.WriteLine("Wrote XmlDecl when OmitXmlDecl was TRUE");
                     xr.Dispose();
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             xr.Dispose();

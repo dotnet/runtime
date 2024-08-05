@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -26,11 +22,20 @@ namespace System.Linq.Tests
             Assert.Equal(100, expected);
         }
 
-        [Fact]
-        public void Range_ToArray_ProduceCorrectResult()
+        public static IEnumerable<object[]> Range_ToArray_ProduceCorrectResult_MemberData()
         {
-            var array = Enumerable.Range(1, 100).ToArray();
-            Assert.Equal(100, array.Length);
+            for (int i = 0; i < 64; i++)
+            {
+                yield return new object[] { i };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Range_ToArray_ProduceCorrectResult_MemberData))]
+        public void Range_ToArray_ProduceCorrectResult(int length)
+        {
+            var array = Enumerable.Range(1, length).ToArray();
+            Assert.Equal(length, array.Length);
             for (var i = 0; i < array.Length; i++)
                 Assert.Equal(i + 1, array[i]);
         }
@@ -238,6 +243,7 @@ namespace System.Linq.Tests
                 Assert.Throws<NotSupportedException>(() => list.Insert(0, 42));
                 Assert.Throws<NotSupportedException>(() => list.Clear());
                 Assert.Throws<NotSupportedException>(() => list.Remove(42));
+                Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
                 Assert.Throws<NotSupportedException>(() => list[0] = 42);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[-1]);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[expected.Length]);
@@ -250,6 +256,8 @@ namespace System.Linq.Tests
 
                 Assert.False(list.Contains(expected[0] - 1));
                 Assert.False(list.Contains(expected[^1] + 1));
+                Assert.Equal(-1, list.IndexOf(expected[0] - 1));
+                Assert.Equal(-1, list.IndexOf(expected[^1] + 1));
                 Assert.All(expected, i => Assert.True(list.Contains(i)));
                 Assert.All(expected, i => Assert.Equal(Array.IndexOf(expected, i), list.IndexOf(i)));
                 for (int i = 0; i < expected.Length; i++)

@@ -19,13 +19,13 @@ namespace System.Resources
         }
 
         public MissingManifestResourceException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MissingManifestResourceException)
         {
             HResult = HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
         public MissingManifestResourceException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MissingManifestResourceException, inner)
         {
             HResult = HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }

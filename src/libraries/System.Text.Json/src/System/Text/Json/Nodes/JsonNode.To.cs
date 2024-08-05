@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
+
 namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
@@ -12,8 +14,25 @@ namespace System.Text.Json.Nodes
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            using PooledByteBufferWriter output = WriteToPooledBuffer(options, options?.GetWriterOptions() ?? default);
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            JsonWriterOptions writerOptions = default;
+            int defaultBufferSize = JsonSerializerOptions.BufferSizeDefault;
+            if (options is not null)
+            {
+                writerOptions = options.GetWriterOptions();
+                defaultBufferSize = options.DefaultBufferSize;
+            }
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(writerOptions, defaultBufferSize, out PooledByteBufferWriter output);
+            try
+            {
+                WriteTo(writer, options);
+                writer.Flush();
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         /// <summary>
@@ -25,20 +44,28 @@ namespace System.Text.Json.Nodes
             // Special case for string; don't quote it.
             if (this is JsonValue)
             {
-                if (this is JsonValue<string> jsonString)
+                if (this is JsonValuePrimitive<string> jsonString)
                 {
                     return jsonString.Value;
                 }
 
-                if (this is JsonValue<JsonElement> jsonElement &&
-                    jsonElement.Value.ValueKind == JsonValueKind.String)
+                if (this is JsonValueOfElement { Value.ValueKind: JsonValueKind.String } jsonElement)
                 {
                     return jsonElement.Value.GetString()!;
                 }
             }
 
-            using PooledByteBufferWriter output = WriteToPooledBuffer(writerOptions: new JsonWriterOptions { Indented = true });
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(new JsonWriterOptions { Indented = true }, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
+            try
+            {
+                WriteTo(writer);
+                writer.Flush();
+                return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         /// <summary>
@@ -50,19 +77,5 @@ namespace System.Text.Json.Nodes
         /// </exception>
         /// <param name="options">Options to control the serialization behavior.</param>
         public abstract void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
-
-        /// <summary>
-        /// Creates a pooled buffer writer instance and serializes all contents to it.
-        /// </summary>
-        internal PooledByteBufferWriter WriteToPooledBuffer(
-            JsonSerializerOptions? options = null,
-            JsonWriterOptions writerOptions = default,
-            int bufferSize = JsonSerializerOptions.BufferSizeDefault)
-        {
-            var bufferWriter = new PooledByteBufferWriter(bufferSize);
-            using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
-            WriteTo(writer, options);
-            return bufferWriter;
-        }
     }
 }

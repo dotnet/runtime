@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Our custom .rc parser on Unix follows the #ifdef and #include rules
+// Use #ifndef here to avoid dummy verrsrc.h
+#ifndef HOST_UNIX
 #include <verrsrc.h>
+#endif
 
 #define QUOTE_MACRO_HELPER(x)       #x
 #define QUOTE_MACRO(x)              QUOTE_MACRO_HELPER(x)

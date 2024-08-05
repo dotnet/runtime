@@ -47,15 +47,7 @@ namespace Microsoft.DotNet.Cli.Build
 
             return Command.Create(DotnetExecutablePath, newArgs)
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0"); // Avoid looking at machine state by default
+                .MultilevelLookup(false); // Avoid looking at machine state by default
         }
-
-        public Command Restore(params string[] args) => Exec("restore", args);
-        public Command Build(params string[] args) => Exec("build", args);
-        public Command Pack(params string[] args) => Exec("pack", args);
-        public Command Test(params string[] args) => Exec("test", args);
-        public Command Publish(params string[] args) => Exec("publish", args);
-
-        public Command Store(params string[] args) => Exec("store", args);
     }
 }

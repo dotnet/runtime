@@ -17,13 +17,13 @@ namespace System
         }
 
         public InsufficientExecutionStackException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_InsufficientExecutionStackException)
         {
             HResult = HResults.COR_E_INSUFFICIENTEXECUTIONSTACK;
         }
 
         public InsufficientExecutionStackException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_InsufficientExecutionStackException, innerException)
         {
             HResult = HResults.COR_E_INSUFFICIENTEXECUTIONSTACK;
         }

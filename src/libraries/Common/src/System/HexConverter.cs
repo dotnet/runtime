@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Text.Unicode;
 #endif
 
@@ -192,10 +193,8 @@ namespace System
             }
             return result.ToString();
 #else
-#pragma warning disable CS8500 // takes address of managed type
             return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
                 EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
-#pragma warning restore CS8500
 #endif
         }
 
@@ -227,22 +226,22 @@ namespace System
             return (char)value;
         }
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
                 chars.Length >= Vector128<ushort>.Count * 2)
             {
-                return TryDecodeFromUtf16_Vector128(chars, bytes);
+                return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
             }
 #endif
-            return TryDecodeFromUtf16(chars, bytes, out _);
+            return TryDecodeFromUtf16_Scalar(chars, bytes, out charsProcessed);
         }
 
 #if SYSTEM_PRIVATE_CORELIB
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes)
+        public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
             Debug.Assert(chars.Length <= bytes.Length * 2);
@@ -261,7 +260,7 @@ namespace System
                 // single UTF8 ASCII vector - the implementation can be shared with UTF8 paths.
                 Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset);
                 Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count);
-                Vector128<byte> vec = Vector128.Narrow(vec1, vec2);
+                Vector128<byte> vec = Ascii.ExtractAsciiVector(vec1, vec2);
 
                 // Based on "Algorithm #3" https://github.com/WojciechMula/toys/blob/master/simd-parse-hex/geoff_algorithm.cpp
                 // by Geoff Langdale and Wojciech Mula
@@ -281,7 +280,7 @@ namespace System
                 // or some byte greater than 0x0f.
                 Vector128<byte> nibbles = Vector128.Min(t2 - Vector128.Create((byte)0xF0), t4);
                 // Any high bit is a sign that input is not a valid hex data
-                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2) ||
+                if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2) ||
                     Vector128.AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
                 {
                     // Input is either non-ASCII or invalid hex data
@@ -309,6 +308,7 @@ namespace System
                 offset += (nuint)Vector128<ushort>.Count * 2;
                 if (offset == (nuint)chars.Length)
                 {
+                    charsProcessed = chars.Length;
                     return true;
                 }
                 // Overlap with the current chunk for trailing elements
@@ -320,11 +320,13 @@ namespace System
             while (true);
 
             // Fall back to the scalar routine in case of invalid input.
-            return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out _);
+            bool fallbackResult = TryDecodeFromUtf16_Scalar(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out int fallbackProcessed);
+            charsProcessed = (int)offset + fallbackProcessed;
+            return fallbackResult;
         }
 #endif
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        private static bool TryDecodeFromUtf16_Scalar(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
             Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
             Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
@@ -422,8 +424,8 @@ namespace System
         }
 
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        public static ReadOnlySpan<byte> CharToHexLookup => new byte[]
-        {
+        public static ReadOnlySpan<byte> CharToHexLookup =>
+        [
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 47
@@ -440,6 +442,6 @@ namespace System
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 223
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 239
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF  // 255
-        };
+        ];
     }
 }

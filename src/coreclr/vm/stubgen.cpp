@@ -2044,7 +2044,7 @@ LocalSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2239,7 +2239,7 @@ FunctionSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2639,22 +2639,16 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
 
         case ELEMENT_TYPE_PTR:
         {
-#ifdef TARGET_X86
-            if (pLoc->bIsCopyConstructed)
-            {
-                // The only pointers that we don't transform to ELEMENT_TYPE_I are those that are
-                // ET_TYPE_CMOD_REQD<IsCopyConstructed>/ET_TYPE_CMOD_REQD<NeedsCopyConstructorModifier>
-                // in the original signature. This convention is understood by the UM thunk compiler
-                // (code:UMThunkMarshInfo.CompileNExportThunk) which will generate different thunk code.
-                // Such parameters come from unmanaged by value but must enter the IL stub by reference
-                // because we are not supposed to make a copy.
-            }
-            else
-#endif // TARGET_X86
-            {
-                pLoc->ElementType[0] = ELEMENT_TYPE_I;
-                pLoc->cbType = 1;
-            }
+            // Don't transform pointer types to ELEMENT_TYPE_I. The JIT can handle the correct type information,
+            // and it's required for some cases (such as SwiftError*).
+            break;
+        }
+
+        case ELEMENT_TYPE_BYREF:
+        {
+            // Transform ELEMENT_TYPE_BYREF to ELEMENT_TYPE_PTR to retain the pointed-to type information
+            // while making the type blittable.
+            pLoc->ElementType[0] = ELEMENT_TYPE_PTR;
             break;
         }
 
@@ -2663,13 +2657,13 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
             // JIT will handle structures
             if (pLoc->InternalToken.IsValueType())
             {
-                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsPointers());
+                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsGCPointers());
                 break;
             }
             FALLTHROUGH;
         }
 
-        // pointers, byrefs, strings, arrays, other ref types -> ELEMENT_TYPE_I
+        // ref types -> ELEMENT_TYPE_I
         default:
         {
             pLoc->ElementType[0] = ELEMENT_TYPE_I;
@@ -2818,6 +2812,9 @@ void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
             case CorInfoCallConvExtension::FastcallMemberFunction:
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
+                break;
+            case CorInfoCallConvExtension::Swift:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SWIFT)));
                 break;
             default:
                 _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
@@ -3130,6 +3127,18 @@ int ILStubLinker::GetToken(MethodDesc* pMD)
     return m_tokenMap.GetToken(pMD);
 }
 
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pMD, typeSignature);
+}
+
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pMD, typeSignature, methodSignature);
+}
+
 int ILStubLinker::GetToken(MethodTable* pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -3146,6 +3155,12 @@ int ILStubLinker::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(pFD);
+}
+
+int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pFD, typeSignature);
 }
 
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
@@ -3224,6 +3239,16 @@ int ILCodeStream::GetToken(MethodDesc* pMD)
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pMD);
 }
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature);
+}
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature, methodSignature);
+}
 int ILCodeStream::GetToken(MethodTable* pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -3238,6 +3263,11 @@ int ILCodeStream::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pFD);
+}
+int ILCodeStream::GetToken(FieldDesc* pFD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pFD, typeSignature);
 }
 int ILCodeStream::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
 {

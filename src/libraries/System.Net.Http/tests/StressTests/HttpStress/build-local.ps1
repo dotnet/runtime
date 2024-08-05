@@ -3,7 +3,7 @@
 ## Usage:
 ## ./build-local.ps1 [StressConfiguration] [LibrariesConfiguration]
 
-$Version="8.0"
+$Version="9.0"
 $RepoRoot="$(git rev-parse --show-toplevel)"
 $DailyDotnetRoot= "./.dotnet-daily"
 
@@ -34,7 +34,7 @@ if (-not (Test-Path -Path $DailyDotnetRoot)) {
     Write-Host "Downloading daily SDK to: $DailyDotnetRoot"
     New-Item -ItemType Directory -Path $DailyDotnetRoot
     Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile "$DailyDotnetRoot\dotnet-install.ps1"
-    & "$DailyDotnetRoot\dotnet-install.ps1" -NoPath -Channel "$Version.1xx" -Quality daily -InstallDir $DailyDotnetRoot
+    & "$DailyDotnetRoot\dotnet-install.ps1" -NoPath -Channel $Version -Quality daily -InstallDir $DailyDotnetRoot
 } else {
     Write-Host "Daily SDK found in $DailyDotnetRoot"
 }

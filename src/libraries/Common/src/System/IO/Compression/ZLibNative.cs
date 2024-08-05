@@ -98,7 +98,11 @@ namespace System.IO.Compression
         /// </summary>
         public enum CompressionStrategy : int
         {
-            DefaultStrategy = 0
+            DefaultStrategy = 0,
+            Filtered = 1,
+            HuffmanOnly = 2,
+            RunLengthEncoding = 3,
+            Fixed = 4
         }
 
         /// <summary>
@@ -187,12 +191,17 @@ namespace System.IO.Compression
         /// </summary>
         public sealed class ZLibStreamHandle : SafeHandle
         {
-            public enum State { NotInitialized, InitializedForDeflate, InitializedForInflate, Disposed }
+            public enum State
+            {
+                NotInitialized,
+                InitializedForDeflate,
+                InitializedForInflate,
+                Disposed
+            }
 
             private ZStream _zStream;
 
             private volatile State _initializationState;
-
 
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
@@ -210,7 +219,6 @@ namespace System.IO.Compression
             {
                 get { return _initializationState; }
             }
-
 
             protected override bool ReleaseHandle() =>
                 InitializationState switch
@@ -251,13 +259,11 @@ namespace System.IO.Compression
                 ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
             }
 
-
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
             }
-
 
             public unsafe ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
             {
@@ -273,7 +279,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -284,7 +289,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Deflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode DeflateEnd()
             {
@@ -300,7 +304,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
@@ -315,7 +318,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -326,7 +328,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Inflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode InflateEnd()
             {
@@ -352,7 +353,6 @@ namespace System.IO.Compression
             zLibStreamHandle = new ZLibStreamHandle();
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
-
 
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
         {

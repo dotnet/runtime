@@ -732,12 +732,12 @@ namespace Microsoft.VisualBasic.Tests
             }
             if (ex == null)
             {
-                throw new ThrowsException(typeof(TException));
+                throw ThrowsException.ForNoException(typeof(TException));
             }
 
             if (ex.GetType() != typeof(TException))
             {
-                throw new ThrowsException(typeof(TException), ex);
+                throw ThrowsException.ForIncorrectExceptionType(typeof(TException), ex);
             }
         }
     }

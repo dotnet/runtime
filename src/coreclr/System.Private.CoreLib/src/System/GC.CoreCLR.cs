@@ -12,12 +12,12 @@
 **
 ===========================================================*/
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System
 {
@@ -105,9 +105,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
@@ -290,14 +287,39 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.WeakHandle);
+            // Note - This throws an NRE if given a null weak reference.
+            object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
-            return result;
+
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
+
+            return GetGeneration(obj);
         }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
         public static int MaxGeneration => GetMaxGeneration();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+                ((delegate*<object, void>)fptr)(target!);
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
@@ -324,14 +346,20 @@ namespace System
         // for which SuppressFinalize has already been called. The other situation
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _ReRegisterForFinalize(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
+        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static unsafe void ReRegisterForFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _ReRegisterForFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
+            }
+
+            // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
         }
 
         // Returns the total number of bytes currently in use by live objects in
@@ -376,8 +404,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
@@ -385,11 +418,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
@@ -638,20 +671,21 @@ namespace System
         }
 
         /// <summary>
-        /// Register a callback to be invoked when we allocated a certain amount of memory in the no GC region.
-        /// <param name="totalSize">The total size of the no GC region. Must be a number > 0 or an ArgumentOutOfRangeException will be thrown.</param>
-        /// <param name="callback">The callback to be executed when we allocated a certain amount of memory in the no GC region..</param>
-        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="totalSize"/> argument is less than or equal to 0.</exception>
+        /// Registers a callback to be invoked when a certain amount of memory is allocated in the no GC region.
+        /// </summary>
+        /// <param name="totalSize">The total size of the no GC region.</param>
+        /// <param name="callback">The callback to be executed.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="totalSize"/> is less than or equal to 0.</exception>
         /// <exception cref="ArgumentNullException">The <paramref name="callback"/> argument is null.</exception>
-        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a NoGC region.</para>
+        /// <exception cref="InvalidOperationException"><para>The GC is not currently under a no GC region.</para>
         /// <para>-or-</para>
         /// <para>Another callback is already registered.</para>
         /// <para>-or-</para>
-        /// <para>The <paramref name="totalSize"/> exceeds the size of the No GC region.</para>
+        /// <para><paramref name="totalSize"/> exceeds the size of the no GC region.</para>
         /// <para>-or-</para>
-        /// <para>We failed to withheld memory for the callback before of already made allocation.</para>
+        /// <para>The operation to withold memory for the callback failed.</para>
         /// </exception>
-        /// </summary>
         public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
@@ -706,6 +740,14 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
 
+        internal static long GetGenerationBudget(int generation)
+        {
+            return _GetGenerationBudget(generation);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
+        internal static partial long _GetGenerationBudget(int generation);
+
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
             ArgumentNullException.ThrowIfNull(notification);
@@ -732,9 +774,6 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
@@ -748,20 +787,15 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
 
 #endif
             }
-            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-            }
 
+            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
             if (pinned)
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
@@ -775,22 +809,16 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         public static T[] AllocateArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
             if (pinned)
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
-            return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
+            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -859,7 +887,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+            _EnumerateConfigurationValues(&context, &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -902,13 +930,10 @@ namespace System
         ///
         /// This API will only handle configs that could be handled when the runtime is loaded, for example, for configs that don't have any effects on 32-bit systems (like the GCHeapHardLimit* ones), this API will not handle it.
         ///
-        /// As of now, this API is feature preview only and subject to changes as necessary.
-        ///
-        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>"
-        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>"
+        /// <exception cref="InvalidOperationException">If the hard limit is too low. This can happen if the heap hard limit that the refresh will set, either because of new AppData settings or implied by the container memory limit changes, is lower than what is already committed.</exception>
+        /// <exception cref="InvalidOperationException">If the hard limit is invalid. This can happen, for example, with negative heap hard limit percentages.</exception>
         ///
         /// </summary>
-        [RequiresPreviewFeatures("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit()
         {
             ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;

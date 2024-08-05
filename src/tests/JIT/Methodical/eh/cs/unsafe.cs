@@ -54,6 +54,7 @@ public class Test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //Start recording
@@ -70,7 +71,7 @@ public class Test
             goto done;
         }
         Console.WriteLine("After try");
-        done:
+    done:
         Console.WriteLine("Done");
         // stop recoding
         testLog.StopRecording();

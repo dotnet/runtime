@@ -171,8 +171,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		// Small formatting difference
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance), nameof (CultureInfo))]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
@@ -197,8 +197,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type)")]
 		// Small formatting difference
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", ProducedBy = Tool.Analyzer)]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
 		[Kept]
 		private static void FromParameterWithNonPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -375,7 +375,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Analyzer doesn't handle assembly resolution
-		[ExpectedWarning ("IL2061", nameof (Activator) + "." + nameof (Activator.CreateInstance), "NonExistingAssembly", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2061", nameof (Activator) + "." + nameof (Activator.CreateInstance), "NonExistingAssembly", Tool.Trimmer, "")]
 		private static void WithNonExistingAssemblyName ()
 		{
 			Activator.CreateInstance ("NonExistingAssembly", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -541,7 +541,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		private static void TestCreateInstanceOfTWithNewConstraint<T> () where T : new()
+		private static void TestCreateInstanceOfTWithNewConstraint<
+			[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : new()
 		{
 			Activator.CreateInstance<T> ();
 		}

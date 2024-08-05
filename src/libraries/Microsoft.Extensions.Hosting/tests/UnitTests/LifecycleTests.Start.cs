@@ -313,9 +313,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task StartPhasesException(bool throwAfterAsyncCall)
+        public async Task StartPhasesException_Starting(bool throwAfterAsyncCall)
         {
-            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall, throwOnStartup: true, throwOnShutdown: false);
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall,
+                throwOnStarting: true, throwOnStart: false, throwOnStarted: false);
+
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddHostedService((token) => impl);
@@ -323,23 +325,70 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             using (IHost host = hostBuilder.Build())
             {
-                AggregateException ex = await Assert.ThrowsAnyAsync<AggregateException>(async () => await host.StartAsync());
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () => await host.StartAsync());
+
+                Assert.True(impl.StartingCalled);
+                Assert.False(impl.StartCalled);
+                Assert.False(impl.StartedCalled);
+
+                Assert.Contains("(ThrowOnStarting)", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task StartPhasesException_Start(bool throwAfterAsyncCall)
+        {
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall,
+                throwOnStarting: false, throwOnStart: true, throwOnStarted: false);
+
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddHostedService((token) => impl);
+            });
+
+            using (IHost host = hostBuilder.Build())
+            {
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () => await host.StartAsync());
+
+                Assert.True(impl.StartingCalled);
+                Assert.True(impl.StartCalled);
+                Assert.False(impl.StartedCalled);
+
+                Assert.Contains("(ThrowOnStart)", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task StartPhasesException_Started(bool throwAfterAsyncCall)
+        {
+            ExceptionImpl impl = new(throwAfterAsyncCall: throwAfterAsyncCall,
+                throwOnStarting: false, throwOnStart: false, throwOnStarted: true);
+
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddHostedService((token) => impl);
+            });
+
+            using (IHost host = hostBuilder.Build())
+            {
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () => await host.StartAsync());
 
                 Assert.True(impl.StartingCalled);
                 Assert.True(impl.StartCalled);
                 Assert.True(impl.StartedCalled);
 
-                Assert.Equal(3, ex.InnerExceptions.Count);
-                Assert.Contains("(ThrowOnStarting)", ex.InnerExceptions[0].Message);
-                Assert.Contains("(ThrowOnStart)", ex.InnerExceptions[1].Message);
-                Assert.Contains("(ThrowOnStarted)", ex.InnerExceptions[2].Message);
+                Assert.Contains("(ThrowOnStarted)", ex.Message);
             }
         }
 
         [Fact]
         public async Task ValidateOnStartAbortsChain()
         {
-            ExceptionImpl impl = new(throwAfterAsyncCall: true, throwOnStartup: true, throwOnShutdown: false);
+            ExceptionImpl impl = new(throwAfterAsyncCall: false, throwOnStarting: false, throwOnStart: false, throwOnStarted: false);
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddHostedService((token) => impl)

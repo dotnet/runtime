@@ -15,14 +15,53 @@
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
-    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn>$(NoWarn);CA1866</NoWarn>
     <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <Target Name="_ComputePackRuntimeConfigFilePath">
+    <PropertyGroup>
+      <PackRuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(ProjectRuntimeConfigFilePath), pack.json))</PackRuntimeConfigFilePath>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Generate a runtimeconfig.pack.json file that has the runtime version replaced by version of dotnet/runtime being built.
+       This will be the version used by the ILLink.Tasks package. -->
+  <Target Name="GeneratePackageRuntimeConfig" AfterTargets="GenerateBuildRuntimeConfigurationFiles"
+          DependsOnTargets="_ComputePackRuntimeConfigFilePath"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
+    <PropertyGroup>
+      <_RuntimeConfigContents>$([System.IO.File]::ReadAllText('$(ProjectRuntimeConfigFilePath)'))</_RuntimeConfigContents>
+      <ReplacementPattern>"version": ".*"</ReplacementPattern>
+      <ReplacementString>"version": "$(Version)"</ReplacementString>
+      <_NewRuntimeConfigContents>$([System.Text.RegularExpressions.Regex]::Replace($(_RuntimeConfigContents), $(ReplacementPattern), $(ReplacementString)))</_NewRuntimeConfigContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(PackRuntimeConfigFilePath)"
+                      Lines="$(_NewRuntimeConfigContents)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <!-- Ensure that the pack.json file flows to ILLink.Tasks so that it can be included in the package.
+       The original runtimeconfig.json file (included by default) is also needed so that projects which use
+       the ILLink.Tasks build output can run illink using the LKG SDK. -->
+  <Target Name="AddPackageRuntimeConfigToCopyItemsForReferencingProjects"
+          DependsOnTargets="_ComputePackRuntimeConfigFilePath"
+          AfterTargets="AddDepsJsonAndRuntimeConfigToCopyItemsForReferencingProjects">
+    <ItemGroup>
+      <AllItemsFullPathWithTargetPath Include="$(PackRuntimeConfigFilePath)"
+                                      TargetPath="$([System.IO.Path]::GetFileName($(PackRuntimeConfigFilePath)))"
+                                      CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
   <!-- The default pack logic will include the implementation assembly in lib.
        This also adds the reference assembly under ref. -->
@@ -35,11 +74,16 @@
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
     <Compile Remove="ref\**\*.cs" />
-    <Compile Include="..\..\external\corert\**\*.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+    <InternalsVisibleTo Include="Mono.Linker.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
@@ -47,7 +91,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="$(MicrosoftCodeAnalysisBannedApiAnalyzersVersion)" Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="$(MicrosoftCodeAnalysisBannedApiAnalyzersVersion)" Condition="'$(DotNetBuildSourceOnly)' != 'true'">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

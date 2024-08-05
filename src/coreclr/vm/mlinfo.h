@@ -287,6 +287,8 @@ private:
 
 struct ItfMarshalInfo;
 
+bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled = true);
+
 class MarshalInfo
 {
 public:

@@ -107,7 +107,7 @@ namespace System.Reflection.Tests
                 {
                     if (!t.IsArray)  // Don't bake in assumptions about what else arrays might expose
                     {
-                        Assert.True(false, "Unexpected interface found: " + actualIfc);
+                        Assert.Fail("Unexpected interface found: " + actualIfc);
                     }
                 }
 
@@ -119,7 +119,7 @@ namespace System.Reflection.Tests
 
             foreach (Type leftOver in expectedInterfaces)
             {
-                Assert.True(false, "Expected interface not found: " + leftOver);
+                Assert.Fail("Expected interface not found: " + leftOver);
             }
         }
     }

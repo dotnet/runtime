@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="System.Runtime.InteropServices.JavaScript">
-    <type fullname="System.Runtime.InteropServices.JavaScript.LegacyExportsTrimmingRoot">
-      <method signature="System.Void TrimWhenNotWasmEnableLegacyJsInterop()" body="remove" />
-    </type>
-  </assembly>
-</linker>

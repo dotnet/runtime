@@ -67,9 +67,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
-                else if (!descriptor.HasImplementationInstance() && !descriptor.HasImplementationFactory())
+                else if (descriptor.TryGetImplementationType(out Type? implementationType))
                 {
-                    Type? implementationType = descriptor.GetImplementationType();
                     Debug.Assert(implementationType != null);
 
                     if (implementationType.IsGenericTypeDefinition ||
@@ -284,7 +283,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ServiceCallSite[] callSites;
 
                 // If item type is not generic we can safely use descriptor cache
+                // Special case for KeyedService.AnyKey, we don't want to check the cache because a KeyedService.AnyKey registration
+                // will "hide" all the other service registration
                 if (!itemType.IsConstructedGenericType &&
+                    !KeyedService.AnyKey.Equals(cacheKey.ServiceKey) &&
                     _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem descriptors))
                 {
                     callSites = new ServiceCallSite[descriptors.Count];
@@ -573,26 +575,23 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 ServiceCallSite? callSite = null;
                 Type parameterType = parameters[index].ParameterType;
-                if (parameters[index].CustomAttributes != null)
+                foreach (var attribute in parameters[index].GetCustomAttributes(true))
                 {
-                    foreach (var attribute in parameters[index].GetCustomAttributes(true))
+                    if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
                     {
-                        if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
+                        // Check if the parameter type matches
+                        if (parameterType != serviceIdentifier.ServiceKey.GetType())
                         {
-                            // Check if the parameter type matches
-                            if (parameterType != serviceIdentifier.ServiceKey.GetType())
-                            {
-                                throw new InvalidOperationException(SR.InvalidServiceKeyType);
-                            }
-                            callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
-                            break;
+                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
                         }
-                        if (attribute is FromKeyedServicesAttribute keyed)
-                        {
-                            var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
-                            callSite = GetCallSite(parameterSvcId, callSiteChain);
-                            break;
-                        }
+                        callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
+                        break;
+                    }
+                    if (attribute is FromKeyedServicesAttribute keyed)
+                    {
+                        var parameterSvcId = new ServiceIdentifier(keyed.Key, parameterType);
+                        callSite = GetCallSite(parameterSvcId, callSiteChain);
+                        break;
                     }
                 }
 
@@ -698,7 +697,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return true;
 
             if (key1 != null && key2 != null)
-                return key1.Equals(KeyedService.AnyKey) || key1.Equals(key2);
+            {
+                return key1.Equals(key2)
+                    || key1.Equals(KeyedService.AnyKey)
+                    || key2.Equals(KeyedService.AnyKey);
+            }
 
             return false;
         }

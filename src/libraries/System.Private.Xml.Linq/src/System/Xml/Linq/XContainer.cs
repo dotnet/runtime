@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Debug = System.Diagnostics.Debug;
 using IEnumerable = System.Collections.IEnumerable;
-using StringBuilder = System.Text.StringBuilder;
 using Interlocked = System.Threading.Interlocked;
-using System.Diagnostics.CodeAnalysis;
+using StringBuilder = System.Text.StringBuilder;
 
 namespace System.Xml.Linq
 {
@@ -881,8 +880,8 @@ namespace System.Xml.Linq
 
         private sealed class ContentReader
         {
-            private readonly NamespaceCache _eCache;
-            private readonly NamespaceCache _aCache;
+            private NamespaceCache _eCache;
+            private NamespaceCache _aCache;
             private readonly IXmlLineInfo? _lineInfo;
             private XContainer _currentContainer;
             private string? _baseUri;

@@ -10,6 +10,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern testclassesil
 {
   .ver 0:0:0:0
@@ -952,8 +953,11 @@
     IL_004d:  ret
   } // end of method Program::Test14
 
-  .method private hidebysig static int32 Main(string[] args) cil managed noinlining
+  .method public hidebysig static int32 Main(string[] args) cil managed noinlining
   {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       249 (0xf9)
   .maxstack  2

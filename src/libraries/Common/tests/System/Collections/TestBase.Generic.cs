@@ -110,7 +110,7 @@ namespace System.Collections.Tests
                 case EnumerableType.Lazy:
                     return CreateLazyEnumerable(enumerableToMatchTo, count, numberOfMatchingElements, numberOfDuplicateElements);
                 default:
-                    Debug.Assert(false, "Check that the 'EnumerableType' Enum returns only types that are special-cased in the CreateEnumerable function within the Iset_Generic_Tests class");
+                    Debug.Fail("Check that the 'EnumerableType' Enum returns only types that are special-cased in the CreateEnumerable function within the Iset_Generic_Tests class");
                     return null;
             }
         }
@@ -254,6 +254,24 @@ namespace System.Collections.Tests
 
             return set;
         }
+
+#if NET
+        /// <summary>
+        /// Create a HashSet with a specific initial capacity and fill it with a specific number of elements.
+        /// </summary>
+        protected HashSet<T> CreateHashSetWithCapacity(int count, int capacity)
+        {
+            var set = new HashSet<T>(capacity, GetIEqualityComparer());
+            int seed = 528;
+
+            for (int i = 0; i < count; i++)
+            {
+                while (!set.Add(CreateT(seed++)));
+            }
+
+            return set;
+        }
+#endif
 
         /// <summary>
         /// Helper function to create an SortedSet fulfilling the given specific parameters. The function will

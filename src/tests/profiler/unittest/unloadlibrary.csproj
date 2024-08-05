@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>Library</OutputType>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>

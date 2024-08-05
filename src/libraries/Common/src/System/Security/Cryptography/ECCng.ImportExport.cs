@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
 using static Internal.NativeCrypto.BCryptNative;
-
+using BCRYPT_ECC_PARAMETER_HEADER = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER;
 using BCRYPT_ECCFULLKEY_BLOB = Interop.BCrypt.BCRYPT_ECCFULLKEY_BLOB;
 using BCRYPT_ECCKEY_BLOB = Interop.BCrypt.BCRYPT_ECCKEY_BLOB;
-using BCRYPT_ECC_PARAMETER_HEADER = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER;
 using ErrorCode = Interop.NCrypt.ErrorCode;
 using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
 
@@ -60,7 +59,7 @@ namespace System.Security.Cryptography
                     }
 
                     // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Debug.Assert(offset == blobSize);
                 }
             }
             return blob;
@@ -144,7 +143,7 @@ namespace System.Security.Cryptography
                     }
 
                     // We better have computed the right allocation size above!
-                    Debug.Assert(offset == blobSize, "offset == blobSize");
+                    Debug.Assert(offset == blobSize);
                 }
 
                 return blob;
@@ -312,7 +311,7 @@ namespace System.Security.Cryptography
                 }
 
                 // We better have computed the right allocation size above!
-                Debug.Assert(offset == blobSize, "offset == blobSize");
+                Debug.Assert(offset == blobSize);
             }
 
             return blob;

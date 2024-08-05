@@ -21,13 +21,13 @@ namespace System
         }
 
         public DivideByZeroException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DivideByZero)
         {
             HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
         public DivideByZeroException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_DivideByZero, innerException)
         {
             HResult = HResults.COR_E_DIVIDEBYZERO;
         }

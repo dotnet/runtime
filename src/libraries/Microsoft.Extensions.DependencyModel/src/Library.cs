@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyModel
 {
@@ -81,6 +81,6 @@ namespace Microsoft.Extensions.DependencyModel
 
         public string? HashPath { get; }
 
-        public string? RuntimeStoreManifestName {get;}
+        public string? RuntimeStoreManifestName { get; }
     }
 }

@@ -132,7 +132,10 @@ namespace System.Linq.Tests
         {
             var largeSeq = new FastInfiniteEnumerator<byte>();
             var thrownException = Assert.ThrowsAny<Exception>(() => { largeSeq.ToArray(); });
-            Assert.True(thrownException.GetType() == typeof(OverflowException) || thrownException.GetType() == typeof(OutOfMemoryException));
+            Assert.True(
+                thrownException.GetType() == typeof(OverflowException) ||
+                thrownException.GetType() == typeof(OutOfMemoryException),
+                $"Expected OverflowException or OutOfMemoryException, got {thrownException}");
         }
 
         [Theory]
@@ -149,8 +152,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedStrings, sourceIntegers.Where(i => true).Select(i => i.ToString()).ToArray());
             Assert.Equal(Array.Empty<string>(), sourceIntegers.Where(i => false).Select(i => i.ToString()).ToArray());
 
-            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).Where(s => s != null).ToArray());
-            Assert.Equal(Array.Empty<string>(), sourceIntegers.Select(i => i.ToString()).Where(s => s == null).ToArray());
+            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).Where(s => s is not null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceIntegers.Select(i => i.ToString()).Where(s => s is null).ToArray());
         }
 
         [Theory]
@@ -169,8 +172,8 @@ namespace System.Linq.Tests
             Assert.Equal(convertedStrings, sourceList.Where(i => true).Select(i => i.ToString()).ToArray());
             Assert.Equal(Array.Empty<string>(), sourceList.Where(i => false).Select(i => i.ToString()).ToArray());
 
-            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).Where(s => s != null).ToArray());
-            Assert.Equal(Array.Empty<string>(), sourceList.Select(i => i.ToString()).Where(s => s == null).ToArray());
+            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).Where(s => s is not null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceList.Select(i => i.ToString()).Where(s => s is null).ToArray());
         }
 
         [Fact]
@@ -358,7 +361,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/85146", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void ToArray_Cast()
         {
             Enum0[] source = { Enum0.First, Enum0.Second, Enum0.Third };

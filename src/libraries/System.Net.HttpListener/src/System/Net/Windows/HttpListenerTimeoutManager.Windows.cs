@@ -8,7 +8,7 @@ namespace System.Net
 {
     //
     // See the native HTTP_TIMEOUT_LIMIT_INFO structure documentation for additional information.
-    // https://docs.microsoft.com/en-us/windows/desktop/api/http/ns-http-_http_timeout_limit_info
+    // https://learn.microsoft.com/windows/desktop/api/http/ns-http-_http_timeout_limit_info
     //
     public class HttpListenerTimeoutManager
     {

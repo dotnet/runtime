@@ -6,32 +6,6 @@ include <AsmConstants.inc>
 
 extern CallDescrWorkerUnwindFrameChainHandler:proc
 
-;;
-;;      EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
-;;
-        NESTED_ENTRY FastCallFinalizeWorker, _TEXT, CallDescrWorkerUnwindFrameChainHandler
-        alloc_stack     28h     ;; alloc callee scratch and align the stack
-        END_PROLOGUE
-
-        ;
-        ; RCX: already contains obj*
-        ; RDX: address of finalizer method to call
-        ;
-
-        ; !!!!!!!!!
-        ; NOTE:  you cannot tail call here because we must have the CallDescrWorkerUnwindFrameChainHandler
-        ;        personality routine on the stack.
-        ; !!!!!!!!!
-        call    rdx
-        xor     rax, rax
-
-        ; epilog
-        add     rsp, 28h
-        ret
-
-
-        NESTED_END FastCallFinalizeWorker, _TEXT
-
 ;;extern "C" void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
         NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHandler
@@ -94,7 +68,7 @@ Arg4:
         movsd   xmm3, real8 ptr 18h[rsp];
 DoCall:
         call    qword ptr [rbx+CallDescrData__pTarget]     ; call target function
-
+CallDescrWorkerInternalReturnAddress:
         ; Save FP return value
 
         mov     ecx, dword ptr [rbx+CallDescrData__fpReturnSize]
@@ -125,6 +99,9 @@ ReturnsFloat:
 ReturnsDouble:
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
         jmp     Epilog
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+        dq CallDescrWorkerInternalReturnAddress - CallDescrWorkerInternal
 
         NESTED_END CallDescrWorkerInternal, _TEXT
 

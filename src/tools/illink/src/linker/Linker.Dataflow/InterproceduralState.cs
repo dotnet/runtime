@@ -53,7 +53,8 @@ namespace Mono.Linker.Dataflow
 		public void TrackMethod (MethodIL methodIL)
 		{
 			// Work around the fact that ValueSet is readonly
-			var methodsList = new List<MethodIL> (MethodBodies);
+			Debug.Assert (!MethodBodies.IsUnknown ());
+			var methodsList = new List<MethodIL> (MethodBodies.GetKnownValues ());
 			methodsList.Add (methodIL);
 
 			// For state machine methods, also scan the state machine members.

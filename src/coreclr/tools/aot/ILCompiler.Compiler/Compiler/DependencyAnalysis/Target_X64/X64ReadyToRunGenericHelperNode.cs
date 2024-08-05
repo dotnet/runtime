@@ -44,32 +44,13 @@ namespace ILCompiler.DependencyAnalysis
 
             // If there's any invalid entries, we need to test for them
             //
-            // Only do this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
             // flag can change over the course of compilation and the bad slot helper dependency
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
             {
                 encoder.EmitCompareToZero(result);
                 encoder.EmitJE(GetBadSlotHelper(factory));
-            }
-
-            switch (lookup.LookupResultReferenceType(factory))
-            {
-                case GenericLookupResultReferenceType.Indirect:
-                    // Do another indirection
-                    loadEntry = new AddrMode(result, null, 0, 0, AddrModeSize.Int64);
-                    encoder.EmitMOV(result, ref loadEntry);
-                    break;
-
-                case GenericLookupResultReferenceType.ConditionalIndirect:
-                    // Test result, 0x1
-                    // JEQ L1
-                    // mov result, [result-1]
-                    // L1:
-                    throw new NotImplementedException();
-
-                default:
-                    break;
             }
         }
 

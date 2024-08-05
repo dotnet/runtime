@@ -210,6 +210,7 @@ namespace R2RDump
                     Machine.ArmThumb2 => TargetArchitecture.ARM,
                     Machine.Arm64 => TargetArchitecture.ARM64,
                     Machine.LoongArch64 => TargetArchitecture.LoongArch64,
+                    Machine.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException(r2r.Machine.ToString()),
                 };
                 TargetOS os = r2r.OperatingSystem switch
@@ -500,8 +501,7 @@ namespace R2RDump
         public static int Main(string[] args) =>
             new CliConfiguration(new R2RDumpRootCommand().UseVersion())
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }

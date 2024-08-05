@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -475,10 +476,33 @@ namespace System.Net.Http
         public Task LoadIntoBufferAsync(long maxBufferSize) =>
             LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
 
-        internal Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
+        /// <summary>
+        /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation will not block. The returned <see cref="Task"/> object will complete after all of the content has been serialized to the memory buffer.
+        /// After content is serialized to a memory buffer, calls to one of the <see cref="CopyToAsync(Stream)"/> methods will copy the content of the memory buffer to the target stream.
+        /// </remarks>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
             LoadIntoBufferAsync(MaxBufferSize, cancellationToken);
 
-        internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
+        /// <summary>
+        /// Serialize the HTTP content to a memory buffer as an asynchronous operation.
+        /// </summary>
+        /// <param name="maxBufferSize">The maximum size, in bytes, of the buffer to use.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <remarks>
+        /// This operation will not block. The returned <see cref="Task"/> object will complete after all of the content has been serialized to the memory buffer.
+        /// After content is serialized to a memory buffer, calls to one of the <see cref="CopyToAsync(Stream)"/> methods will copy the content of the memory buffer to the target stream.
+        /// </remarks>
+        /// <exception cref="OperationCanceledException">The cancellation token was canceled. This exception is stored into the returned task.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
 
@@ -608,7 +632,7 @@ namespace System.Net.Http
                 // This should only be hit when called directly; HttpClient/HttpClientHandler
                 // will not exceed this limit.
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
             }
 
@@ -720,7 +744,7 @@ namespace System.Net.Http
         {
             Debug.Assert(StreamCopyExceptionNeedsWrapping(e));
             HttpRequestError error = e is HttpIOException ioEx ? ioEx.HttpRequestError : HttpRequestError.Unknown;
-            return new HttpRequestException(SR.net_http_content_stream_copy_error, e, httpRequestError: error);
+            return new HttpRequestException(error, SR.net_http_content_stream_copy_error, e);
         }
 
         private static int GetPreambleLength(ArraySegment<byte> buffer, Encoding encoding)
@@ -835,7 +859,7 @@ namespace System.Net.Http
 
         private static HttpRequestException CreateOverCapacityException(long maxBufferSize)
         {
-            return new HttpRequestException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize), httpRequestError: HttpRequestError.ConfigurationLimitExceeded);
+            return new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }
 
         internal sealed class LimitMemoryStream : MemoryStream

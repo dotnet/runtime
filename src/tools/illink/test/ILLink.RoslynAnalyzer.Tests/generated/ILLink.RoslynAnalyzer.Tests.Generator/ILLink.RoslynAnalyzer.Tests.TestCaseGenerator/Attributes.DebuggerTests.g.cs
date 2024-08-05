@@ -46,12 +46,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Attributes
 		}
 
 		[Fact]
-		public Task DebuggerDisplayAttributeOnTypeWithNonExistentMethod ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task DebuggerTypeProxyAttributeOnAssemblyUsingTarget ()
 		{
 			return RunTest (allowMissingWarnings: true);

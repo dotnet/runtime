@@ -1,20 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>This package provides collections that are thread safe and guaranteed to never change their contents, also known as immutable collections. Like strings, any methods that perform modifications will not change the existing instance but instead return a new instance. For efficiency reasons, the implementation uses a sharing mechanism to ensure that newly created instances share as much data as possible with the previous instance while ensuring that operations have a predictable time complexity.
 
 The System.Collections.Immutable library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
-
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
     <Compile Include="System\Collections\Frozen\Constants.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\DefaultFrozenSet.cs" />
@@ -144,10 +146,24 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Runtime.InteropServices\ImmutableCollectionsMarshal.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs" Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
-    <None Include="Interfaces.cd" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Collections\Frozen\DefaultFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\DefaultFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\SmallFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\Int32\Int32FrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenSet.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary.AlternateLookup.cs" />
+    <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.AlternateLookup.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" Link="System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" />
   </ItemGroup>
 
@@ -162,9 +178,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
+
 </Project>

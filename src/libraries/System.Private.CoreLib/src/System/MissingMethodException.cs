@@ -21,13 +21,13 @@ namespace System
         }
 
         public MissingMethodException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MissingMethodException)
         {
             HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
         public MissingMethodException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MissingMethodException, inner)
         {
             HResult = HResults.COR_E_MISSINGMETHOD;
         }

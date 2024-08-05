@@ -4,7 +4,12 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Mono.Linker.Tests.Cases.DataFlow;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+
+[assembly: KeptAttributeAttribute (typeof (AttributeConstructorDataflow.KeepsPublicPropertiesAttribute))]
+[assembly: ExpectedWarning ("IL2026", "--ClassWithKeptPublicProperties--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
+[assembly: AttributeConstructorDataflow.KeepsPublicProperties (typeof (AttributeConstructorDataflow.ClassWithKeptPublicProperties))]
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -17,16 +22,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
 		[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
 		[KeepsPublicConstructor (typeof (ClassWithKeptPublicConstructor))]
-		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
+		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods, test")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
-		// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
-		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]
 		public static void Main ()
 		{
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicConstructorAttribute));
 			typeof (AttributeConstructorDataflow).GetMethod ("Main").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
 			AllOnSelf.Test ();
+			AnnotationOnTypeArray.Test ();
 		}
 
 		[Kept]
@@ -72,6 +77,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		// Used to test assembly-level attribute
+		[Kept]
+		[KeptBaseType (typeof (Attribute))]
+		public class KeepsPublicPropertiesAttribute : Attribute
+		{
+			[Kept]
+			public KeepsPublicPropertiesAttribute (
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
+				Type type)
+			{
+			}
+		}
+
 		[Kept]
 		class ClassWithKeptPublicConstructor
 		{
@@ -91,6 +110,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
 			public static void KeptMethod () { }
 			static void Method () { }
+		}
+
+		[Kept]
+		public class ClassWithKeptPublicProperties
+		{
+			[Kept]
+			public static int KeptProperty {
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicProperties--")]
+				get => 0;
+			}
+			static int Property { get; }
 		}
 
 		[Kept]
@@ -126,6 +158,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				[Kept]
 				public int Field;
+			}
+		}
+
+		[Kept]
+		class AnnotationOnTypeArray
+		{
+			[Kept]
+			[KeptBaseType (typeof (Attribute))]
+			class AttributeRequiresTypeArrayAttribute : Attribute
+			{
+				[Kept]
+				[ExpectedWarning ("IL2098")]
+				[UnexpectedWarning ("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				public AttributeRequiresTypeArrayAttribute (
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+					Type[] types)
+				{
+					RequirePublicFields (types);
+				}
+
+				[Kept]
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					Type[] types)
+				{
+				}
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AttributeRequiresTypeArrayAttribute))]
+			[UnexpectedWarning ("IL2062", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			[AttributeRequiresTypeArray (new Type[] { typeof (int) })]
+			public static void Test () {
+				typeof (AnnotationOnTypeArray).GetMethod ("Test").GetCustomAttribute (typeof (AttributeRequiresTypeArrayAttribute));
 			}
 		}
 

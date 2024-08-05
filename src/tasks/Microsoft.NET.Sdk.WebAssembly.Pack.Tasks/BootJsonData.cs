@@ -17,7 +17,12 @@ public class BootJsonData
     /// <summary>
     /// Gets the name of the assembly with the application entry point
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8. Use <see cref="mainAssemblyName"/>
+    /// </remarks>
     public string entryAssembly { get; set; }
+
+    public string mainAssemblyName { get; set; }
 
     /// <summary>
     /// Gets the set of resources needed to boot the application. This includes the transitive
@@ -34,12 +39,12 @@ public class BootJsonData
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
     /// inside a CacheStorage instance within the browser.
     /// </summary>
-    public bool cacheBootResources { get; set; }
+    public bool? cacheBootResources { get; set; }
 
     /// <summary>
     /// Gets a value that determines if this is a debug build.
     /// </summary>
-    public bool debugBuild { get; set; }
+    public bool? debugBuild { get; set; }
 
     /// <summary>
     /// Gets a value that determines what level of debugging is configured.
@@ -49,17 +54,33 @@ public class BootJsonData
     /// <summary>
     /// Gets a value that determines if the linker is enabled.
     /// </summary>
-    public bool linkerEnabled { get; set; }
+    public bool? linkerEnabled { get; set; }
 
     /// <summary>
     /// Config files for the application
     /// </summary>
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="appsettings"/>
+    /// </remarks>
     public List<string> config { get; set; }
+
+    /// <summary>
+    /// Config files for the application
+    /// </summary>
+    public List<string> appsettings { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="ICUDataMode"/> that determines how icu files are loaded.
     /// </summary>
-    public ICUDataMode icuDataMode { get; set; }
+    /// <remarks>
+    /// Deprecated since .NET 8. Use <see cref="globalizationMode"/> instead.
+    /// </remarks>
+    public GlobalizationMode? icuDataMode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="GlobalizationMode"/> that determines how icu files are loaded.
+    /// </summary>
+    public string globalizationMode { get; set; }
 
     /// <summary>
     /// Gets or sets a value that determines if the caching startup memory is enabled.
@@ -87,9 +108,14 @@ public class BootJsonData
     public object diagnosticTracing { get; set; }
 
     /// <summary>
-    /// Gets or sets pthread pool size.
+    /// Gets or sets pthread pool initial size.
     /// </summary>
-    public int? pthreadPoolSize { get; set; }
+    public int? pthreadPoolInitialSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool unused size.
+    /// </summary>
+    public int? pthreadPoolUnusedSize { get; set; }
 }
 
 public class ResourcesData
@@ -99,15 +125,54 @@ public class ResourcesData
     /// </summary>
     public string hash { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
+
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
-    public ResourceHashesByNameDictionary runtime { get; set; } = new ResourceHashesByNameDictionary();
+    /// <remarks>
+    /// Deprecated in .NET 8, use <see cref="jsModuleWorker"/>, <see cref="jsModuleNative"/>, <see cref="jsModuleRuntime"/>, <see cref="wasmNative"/>, <see cref="wasmSymbols"/>, <see cref="icu"/>.
+    /// </remarks>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary runtime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleGlobalization { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleRuntime { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmNative { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary wasmSymbols { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary icu { get; set; }
+
+    /// <summary>
+    /// "assembly" (.dll) resources needed to start MonoVM
+    /// </summary>
+    public ResourceHashesByNameDictionary coreAssembly { get; set; } = new ResourceHashesByNameDictionary();
 
     /// <summary>
     /// "assembly" (.dll) resources
     /// </summary>
     public ResourceHashesByNameDictionary assembly { get; set; } = new ResourceHashesByNameDictionary();
+
+    /// <summary>
+    /// "debug" (.pdb) resources needed to start MonoVM
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary corePdb { get; set; }
 
     /// <summary>
     /// "debug" (.pdb) resources
@@ -134,12 +199,11 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
 
-    /// <summary>
-    /// JavaScript module initializers that runtime will be in charge of loading.
-    /// Used in .NET >= 8
-    /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public TypedLibraryStartupModules libraryStartupModules { get; set; }
+    public ResourceHashesByNameDictionary modulesAfterConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary modulesAfterRuntimeReady { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -155,25 +219,19 @@ public class ResourcesData
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
 }
 
-[DataContract]
-public class TypedLibraryStartupModules
-{
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary onRuntimeConfigLoaded { get; set; }
-
-    [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary onRuntimeReady { get; set; }
-}
-
-public enum ICUDataMode : int
+public enum GlobalizationMode : int
 {
     // Note that the numeric values are serialized and used in JS code, so don't change them without also updating the JS code
+    // Note that names are serialized as string and used in JS code
 
     /// <summary>
     /// Load optimized icu data file based on the user's locale

@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -87,7 +85,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
 
-#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
@@ -101,7 +98,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
-#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -115,7 +111,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
+        public static unsafe Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
             where TFrom : struct
             where TTo : struct
         {
@@ -126,8 +122,8 @@ namespace System.Runtime.InteropServices
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
-            uint fromSize = (uint)Unsafe.SizeOf<TFrom>();
-            uint toSize = (uint)Unsafe.SizeOf<TTo>();
+            uint fromSize = (uint)sizeof(TFrom);
+            uint toSize = (uint)sizeof(TTo);
             uint fromLength = (uint)span.Length;
             int toLength;
             if (fromSize == toSize)
@@ -170,7 +166,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
+        public static unsafe ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
             where TFrom : struct
             where TTo : struct
         {
@@ -181,8 +177,8 @@ namespace System.Runtime.InteropServices
 
             // Use unsigned integers - unsigned division by constant (especially by power of 2)
             // and checked casts are faster and smaller.
-            uint fromSize = (uint)Unsafe.SizeOf<TFrom>();
-            uint toSize = (uint)Unsafe.SizeOf<TTo>();
+            uint fromSize = (uint)sizeof(TFrom);
+            uint toSize = (uint)sizeof(TTo);
             uint fromLength = (uint)span.Length;
             int toLength;
             if (fromSize == toSize)
@@ -244,7 +240,7 @@ namespace System.Runtime.InteropServices
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>
@@ -382,8 +378,61 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /></returns>
         public static IEnumerable<T> ToEnumerable<T>(ReadOnlyMemory<T> memory)
         {
-            for (int i = 0; i < memory.Length; i++)
-                yield return memory.Span[i];
+            object? obj = memory.GetObjectStartLength(out int index, out int length);
+
+            // If the memory is empty, just return an empty array as the enumerable.
+            if (length is 0 || obj is null)
+            {
+                return Array.Empty<T>();
+            }
+
+            // If the object is a string, we can optimize. If it isn't a slice, just return the string as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object; while we could
+            // use the general one for any ReadOnlyMemory, that will incur a .Span access for every element.
+            if (typeof(T) == typeof(char) && obj is string str)
+            {
+                return (IEnumerable<T>)(object)(index == 0 && length == str.Length ?
+                    str :
+                    FromString(str, index, length));
+
+                static IEnumerable<char> FromString(string s, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return s[offset + i];
+                    }
+                }
+            }
+
+            // If the object is an array, we can optimize. If it isn't a slice, just return the array as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object.
+            if (RuntimeHelpers.ObjectHasComponentSize(obj)) // Same check as in TryGetArray to confirm that obj is a T[] or a U[] which is blittable to a T[].
+            {
+                T[] array = Unsafe.As<T[]>(obj);
+                index &= ReadOnlyMemory<T>.RemoveFlagsBitMask; // the array may be prepinned, so remove the high bit from the start index in the line below.
+                return index == 0 && length == array.Length ?
+                    array :
+                    FromArray(array, index, length);
+
+                static IEnumerable<T> FromArray(T[] array, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return array[offset + i];
+                    }
+                }
+            }
+
+            // The ROM<T> wraps a MemoryManager<T>. The best we can do is iterate, accessing .Span on each MoveNext.
+            return FromMemoryManager(memory);
+
+            static IEnumerable<T> FromMemoryManager(ReadOnlyMemory<T> memory)
+            {
+                for (int i = 0; i < memory.Length; i++)
+                {
+                    yield return memory.Span[i];
+                }
+            }
         }
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
@@ -455,7 +504,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(Span<byte> destination, ref T value)
+        public static unsafe void Write<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -474,7 +523,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool TryWrite<T>(Span<byte> destination, ref T value)
+        public static unsafe bool TryWrite<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())

@@ -7,7 +7,7 @@ namespace Wasm.Build.Tests;
 
 public record XHarnessArgsOptions(string jsRelativePath, string environmentLocale, RunHost host);
 
-interface IHostRunner 
+interface IHostRunner
 {
     string GetTestCommand();
     string GetXharnessArgsWindowsOS(XHarnessArgsOptions options);

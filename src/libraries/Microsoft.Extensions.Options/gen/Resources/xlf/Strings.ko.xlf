@@ -122,6 +122,16 @@
         <target state="translated">'ValidateObjectMembersAttribute' 또는 'ValidateEnumeratedItemsAttribute' 특성에 Null 유효성 검사기 형식이 지정되었습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">옵션 유효성 검사 원본 생성기는 C# '{0}'에서 사용할 수 없습니다. {1} 이상의 언어 버전을 사용하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OptionsUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">원본 생성기에서 지원되지 않는 C# 언어 버전입니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="PotentiallyMissingEnumerableValidationMessage">
         <source>Type {0} has validation annotations, but member {1} doesn't specify [ValidateEnumeratedItems] which could be an oversight.</source>
         <target state="translated">형식 {0}은(는) 유효성 검사 주석이 있지만 멤버 {1}은(는) 참조할 수 있는 [ValidateEnumeratedItems]을(를) 지정하지 않습니다.</target>
@@ -140,6 +150,16 @@
       <trans-unit id="PotentiallyMissingTransitiveValidationTitle">
         <source>Member potentially missing transitive validation.</source>
         <target state="translated">멤버에 전이적 유효성 검사가 누락되었을 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">유효성 검사 특성 {0}은(는) 문자열, 배열 또는 ICollection 형식의 속성에만 적용해야 합니다. {1} 형식과 함께 사용하면 런타임 오류가 발생할 수 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">유효성 검사 특성은 문자열, 배열 또는 ICollection 형식의 속성에만 적용할 수 있습니다. 다른 형식과 함께 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">

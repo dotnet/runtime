@@ -15,19 +15,17 @@ namespace ILCompiler.DependencyAnalysis
         private MetadataType _type;
         private ThreadStaticsNode _inlinedThreadStatics;
 
-        public TypeThreadStaticIndexNode(MetadataType type)
+        public TypeThreadStaticIndexNode(MetadataType type, ThreadStaticsNode inlinedThreadStatics)
         {
             _type = type;
-        }
-
-        public TypeThreadStaticIndexNode(ThreadStaticsNode inlinedThreadStatics)
-        {
             _inlinedThreadStatics = inlinedThreadStatics;
         }
 
+        public bool IsInlined => _inlinedThreadStatics != null;
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(_type != null ? nameMangler.NodeMangler.ThreadStaticsIndex(_type) : "_inlinedThreadStaticsIndex");
+            sb.Append(nameMangler.NodeMangler.ThreadStaticsIndex(_type));
         }
 
         public int Offset => 0;
@@ -46,9 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            ISymbolDefinitionNode node = _type != null ?
-                        factory.TypeThreadStaticsSymbol(_type) :
-                        _inlinedThreadStatics;
+            ISymbolDefinitionNode node = _inlinedThreadStatics ?? factory.TypeThreadStaticsSymbol(_type);
 
             return new DependencyList
             {
@@ -66,20 +62,22 @@ namespace ILCompiler.DependencyAnalysis
             int typeTlsIndex = 0;
             if (!relocsOnly)
             {
-                if (_type != null)
+                if (IsInlined)
                 {
-                    ISymbolDefinitionNode node = factory.TypeThreadStaticsSymbol(_type);
-                    typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
-                }
-                else
-                {
-                    // we use -1 to specify the index of inlined threadstatics,
-                    // which are stored separately from uninlined ones.
-                    typeTlsIndex = -1;
+                    // Inlined threadstatics are stored as a single data block and thus do not need
+                    // an index in the containing storage.
+                    // We use a negative index to indicate that. Any negative value would work.
+                    // For the purpose of natvis we will encode the offset of the type storage within the block.
+                    typeTlsIndex = - (_inlinedThreadStatics.GetTypeStorageOffset(_type) + factory.Target.PointerSize);
 
                     // the type of the storage block for inlined threadstatics, if present,
                     // is serialized as the item #0 among other storage block types.
                     Debug.Assert(_inlinedThreadStatics.IndexFromBeginningOfArray == 0);
+                }
+                else
+                {
+                    ISymbolDefinitionNode node = factory.TypeThreadStaticsSymbol(_type);
+                    typeTlsIndex = ((ThreadStaticsNode)node).IndexFromBeginningOfArray;
                 }
             }
 

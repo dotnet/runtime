@@ -23,7 +23,16 @@
 
 #ifndef AllocaCheck_h
 #define AllocaCheck_h
-#include <malloc.h>			// for alloca itself
+
+#if defined(HOST_WINDOWS)
+#include <malloc.h> // for alloca itself
+#else
+#if defined(__has_include)
+#if __has_include(<alloca.h>)
+#include <alloca.h>
+#endif // __has_include(alloca.h)
+#endif // defined(__has_include)
+#endif // defined(HOST_WINDOWS)
 
 #if defined(assert) && !defined(_ASSERTE)
 #define _ASSERTE assert

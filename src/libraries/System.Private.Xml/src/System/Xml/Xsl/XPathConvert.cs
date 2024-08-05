@@ -89,11 +89,12 @@ namespace System.Xml.Xsl
 
         // Small powers of ten. These are all the powers of ten that have an exact
         // representation in IEEE double precision format.
-        public static ReadOnlySpan<double> C10toN => new double[] {
+        public static ReadOnlySpan<double> C10toN =>
+        [
             1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09,
             1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
             1e20, 1e21, 1e22,
-        };
+        ];
 
         // Returns 1 if argument is non-zero, and 0 otherwise
         public static uint NotZero(uint u)

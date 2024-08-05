@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public required string FirstName { get; set; }
             public string MiddleName { get; set; } = "";
-            public required string LastName { get; set; }
+            public required string? LastName { get; set; }
         }
 
         [Theory]
@@ -143,15 +143,95 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("Info2", exception.Message);
         }
 
+        [Fact]
+        public async Task InheritedPersonWithRequiredMembersWorksAsExpected()
+        {
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions);
+            options.MakeReadOnly();
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembers));
+            Assert.Equal(3, typeInfo.Properties.Count);
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembers>(options),
+                nameof(InheritedPersonWithRequiredMembers.FirstName),
+                nameof(InheritedPersonWithRequiredMembers.LastName));
+
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("{}", typeInfo));
+            Assert.Contains("FirstName", exception.Message);
+            Assert.Contains("LastName", exception.Message);
+            Assert.DoesNotContain("MiddleName", exception.Message);
+        }
+
+        [Fact]
+        public async Task InheritedPersonWithRequiredMembersWithAdditionalRequiredMembersWorksAsExpected()
+        {
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions);
+            options.MakeReadOnly();
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers));
+            Assert.Equal(4, typeInfo.Properties.Count);
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers>(options),
+                nameof(InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers.FirstName),
+                nameof(InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers.LastName),
+                nameof(InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers.Post));
+
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("{}", typeInfo));
+            Assert.Contains("FirstName", exception.Message);
+            Assert.Contains("LastName", exception.Message);
+            Assert.Contains("Post", exception.Message);
+            Assert.DoesNotContain("MiddleName", exception.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources))]
+        public async Task InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpected(string jsonValue,
+            InheritedPersonWithRequiredMembersSetsRequiredMembers expectedValue)
+        {
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions);
+            options.MakeReadOnly();
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(InheritedPersonWithRequiredMembersSetsRequiredMembers));
+            Assert.Equal(3, typeInfo.Properties.Count);
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<InheritedPersonWithRequiredMembersSetsRequiredMembers>(options));
+
+            InheritedPersonWithRequiredMembersSetsRequiredMembers actualValue =
+                await Serializer.DeserializeWrapper<InheritedPersonWithRequiredMembersSetsRequiredMembers>(jsonValue, options);
+            Assert.Equal(expectedValue.FirstName, actualValue.FirstName);
+            Assert.Equal(expectedValue.LastName, actualValue.LastName);
+            Assert.Equal(expectedValue.MiddleName, actualValue.MiddleName);
+        }
+
+        public class InheritedPersonWithRequiredMembers : PersonWithRequiredMembers
+        {
+        }
+
+        public class InheritedPersonWithRequiredMembersWithAdditionalRequiredMembers : PersonWithRequiredMembers
+        {
+            public required string Post { get; set; }
+        }
+
+        public class InheritedPersonWithRequiredMembersSetsRequiredMembers : PersonWithRequiredMembers
+        {
+            [SetsRequiredMembers]
+            public InheritedPersonWithRequiredMembersSetsRequiredMembers()
+            {
+                FirstName = "FirstNameValueFromConstructor";
+                LastName = "LastNameValueFromConstructor";
+                MiddleName = "MiddleNameValueFromConstructor";
+            }
+        }
+
         public class PersonWithRequiredMembersAndSmallParametrizedCtor
         {
             public required string FirstName { get; set; }
             public string MiddleName { get; set; } = "";
-            public required string LastName { get; set; }
-            public required string Info1 { get; set; }
+            public required string? LastName { get; set; }
+            public required string? Info1 { get; set; }
             public required string Info2 { get; set; }
 
-            public PersonWithRequiredMembersAndSmallParametrizedCtor(string firstName, string lastName)
+            public PersonWithRequiredMembersAndSmallParametrizedCtor(string firstName, string? lastName)
             {
                 FirstName = firstName;
                 LastName = lastName;
@@ -257,17 +337,17 @@ namespace System.Text.Json.Serialization.Tests
         public class PersonWithRequiredMembersAndLargeParametrizedCtor
         {
             // Using suffix for names so that checking if required property is missing can be done with simple string.Contains without false positives
-            public required string AProp { get; set; }
+            public required string? AProp { get; set; }
             public required string BProp { get; set; }
             public required string CProp { get; set; }
             public required string DProp { get; set; }
-            public required string EProp { get; set; }
+            public required string? EProp { get; set; }
             public required string FProp { get; set; }
             public required string GProp { get; set; }
-            public required string HProp { get; set; }
-            public required string IProp { get; set; }
+            public required string? HProp { get; set; }
+            public required string? IProp { get; set; }
 
-            public PersonWithRequiredMembersAndLargeParametrizedCtor(string aprop, string bprop, string cprop, string dprop, string eprop, string fprop, string gprop)
+            public PersonWithRequiredMembersAndLargeParametrizedCtor(string? aprop, string bprop, string cprop, string dprop, string? eprop, string fprop, string gprop)
             {
                 AProp = aprop;
                 BProp = bprop;
@@ -582,6 +662,69 @@ namespace System.Text.Json.Serialization.Tests
 
             [JsonPropertyName("PropWithInit")]
             public required int PropertyWithInitOnlySetter { get; init; }
+        }
+
+        [Fact]
+        public async Task DerivedClassWithRequiredProperty()
+        {
+            var options = Serializer.CreateOptions(includeFields: true);
+            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyString = "42", MyProp = 42.0M, MyLong = 4242, MyMember1 = 1, MyMember2 = 2, MyField = "42" };
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":"42","MyProp":42.0,"MyLong":4242,"MyMember1":1,"MyMember2":2,"MyField":"42"}""", json);
+
+            value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json, options);
+            Assert.Equal(42, value.MyInt);
+            Assert.True(value.MyBool);
+            Assert.Equal("42", value.MyString);
+            Assert.Equal(42.0M, value.MyProp);
+            Assert.Equal(4242, value.MyLong);
+            Assert.Equal(1, value.MyMember1);
+            Assert.Equal(2, value.MyMember2);
+            Assert.Equal("42", value.MyField);
+        }
+
+        public class BaseClassWithInitOnlyProperty
+        {
+            public int MyInt { get; init; }
+            public bool MyBool { get; init; }
+            public string MyString { get; set; }
+            public string MyProp { get; init; }
+
+            public string MyMember1;
+            public string MyMember2 { get; init; }
+
+            public string MyField;
+        }
+
+        public class DerivedClassWithRequiredInitOnlyProperty : BaseClassWithInitOnlyProperty
+        {
+            public new required int MyInt { get; init; }
+            public new required bool MyBool { get; set; }
+            public new string MyString { get; init; }
+            public new required decimal MyProp { get; init; }
+            public required long MyLong { get; init; }
+
+            public new required int MyMember1 { get; init; }
+            public new required int MyMember2;
+
+            public new required string MyField;
+        }
+
+        public static IEnumerable<object[]> InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources()
+        {
+            yield return new object[]
+            {
+                "{}",
+                new InheritedPersonWithRequiredMembersSetsRequiredMembers()
+            };
+            yield return new object[]
+            {
+                """{"FirstName": "FirstNameFromJson"}""",
+                new InheritedPersonWithRequiredMembersSetsRequiredMembers
+                {
+                    FirstName = "FirstNameFromJson"
+                }
+            };
         }
 
         private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)

@@ -46,11 +46,6 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
-            _ = source.Length;
-            _ = destination.Length;
-
             fixed (char* pOriginalSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pOriginalDestination = &MemoryMarshal.GetReference(destination))
             {
@@ -137,13 +132,8 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
             // NOTE: Changes to this method should be kept in sync with ToUtf16PreservingReplacement below.
             // See it for an explanation of the differences
-
-            _ = source.Length;
-            _ = destination.Length;
 
             // We'll be mutating these values throughout our loop.
 
@@ -228,8 +218,6 @@ namespace System.Text.Unicode
 
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
             //
             // This method exists to allow certain internal comparisons to function as expected under ICU.
@@ -240,9 +228,6 @@ namespace System.Text.Unicode
             // becomes 0xDF?? where ?? is the individual UTF-8 byte. Thus the above becomes 0xDFFF, 0xDFFE.
             // This allows them to compare as invalid UTF-16 sequences and thus only match with the same
             // invalid sequence.
-
-            _ = source.Length;
-            _ = destination.Length;
 
             // We'll be mutating these values throughout our loop.
 
@@ -410,15 +395,28 @@ namespace System.Text.Unicode
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
             /// <returns>true if the value could be formatted to the span; otherwise, false.</returns>
-            public bool AppendLiteral(string value) => AppendFormatted(value.AsSpan());
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // we want 'value' exposed to the JIT as a constant
+            public bool AppendLiteral(string value)
+            {
+                if (value is not null)
+                {
+                    Span<byte> dest = _destination.Slice(_pos);
 
-            // TODO https://github.com/dotnet/csharplang/issues/7072:
-            // Add this if/when C# supports u8 literals with string interpolation.
-            // If that happens prior to this type being released, the above AppendLiteral(string)
-            // should also be removed.  If that doesn't happen, we should look into ways to optimize
-            // the above AppendLiteral, such as by making the underlying encoding operation a JIT
-            // intrinsic that can emit substitute a "abc"u8 equivalent for an "abc" string literal.
-            //public bool AppendLiteral(scoped ReadOnlySpan<byte> value) => AppendFormatted(value);
+                    // The 99.999% for AppendLiteral is to be called with a const string.
+                    // ReadUtf8 is a JIT intrinsic that can do the UTF8 encoding at JIT time.
+                    int bytesWritten = UTF8Encoding.UTF8EncodingSealed.ReadUtf8(
+                        ref value.GetRawStringData(), value.Length,
+                        ref MemoryMarshal.GetReference(dest), dest.Length);
+                    if (bytesWritten < 0)
+                    {
+                        return Fail();
+                    }
+
+                    _pos += bytesWritten;
+                }
+
+                return true;
+            }
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>

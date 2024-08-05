@@ -12,7 +12,7 @@ namespace System.Net
             switch (clientOptions.Package)
             {
                 case NegotiationInfoClass.NTLM:
-                    return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
+                    return ManagedNtlmNegotiateAuthenticationPal.Create(clientOptions);
 
                 case NegotiationInfoClass.Negotiate:
                     return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions);

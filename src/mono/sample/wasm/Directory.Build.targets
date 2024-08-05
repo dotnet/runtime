@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
@@ -31,6 +31,7 @@
       Outputs="
       bin/$(Configuration)/AppBundle/dotnet.native.wasm;
       bin/$(Configuration)/AppBundle/dotnet.native.js;
+      bin/$(Configuration)/AppBundle/dotnet.globalization.js;
       bin/$(Configuration)/AppBundle/$(_WasmMainJSFileName);
       ">
     <PropertyGroup>
@@ -39,11 +40,12 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_HybridGlobalizationFlag Condition="'$(HybridGlobalization)' != ''">/p:HybridGlobalization=$(HybridGlobalization)</_HybridGlobalizationFlag>
+      <_WasmEnableThreadsFlag Condition="'$(WasmEnableThreads)' != ''">/p:WasmEnableThreads=$(WasmEnableThreads)</_WasmEnableThreadsFlag>
       <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
       <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
       <BuildAdditionalArgs Condition="'$(MonoDiagnosticsMock)' != ''">$(BuildAdditionalArgs) /p:MonoDiagnosticsMock=$(MonoDiagnosticsMock) </BuildAdditionalArgs>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
+    <Exec Command="$(_Dotnet) publish -bl:publish-browser.binlog /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_HybridGlobalizationFlag) $(_WasmEnableThreadsFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
   <Target Name="_ComputeMainJSFileName">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
@@ -55,20 +57,20 @@
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm --module $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --experimental-wasm-eh --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -S -o -d:bin/$(Configuration)/AppBundle -p:8000 $(_ServeMimeTypes) $(_ServeHeaders)" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />
-    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="..\..\..\..\simple-server\bin\$(Configuration)\net6.0\HttpServer" />
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="$(_Dotnet) run --configuration $(Configuration) --project ..\..\..\..\simple-server\HttpServer.csproj -s &quot;$(SimpleServerURLSuffix)&quot;" />
   </Target>
 
   <Target Name="TriggerGenerateRunScript"

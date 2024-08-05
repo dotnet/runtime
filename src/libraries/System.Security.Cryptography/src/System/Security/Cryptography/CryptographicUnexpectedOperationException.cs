@@ -17,12 +17,12 @@ namespace System.Security.Cryptography
         }
 
         public CryptographicUnexpectedOperationException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_CryptographyException)
         {
         }
 
         public CryptographicUnexpectedOperationException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_CryptographyException, inner)
         {
         }
 

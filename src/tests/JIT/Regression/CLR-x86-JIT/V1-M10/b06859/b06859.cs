@@ -41,11 +41,10 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             byte[] ub = new byte[0];
             ccc(ub);
-            return 100;
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropagateToThisWithSetters ();
 			AssignToThis ();
 
-			TestAnnotationOnNonTypeMethod ();
+			AnnotationOnUnsupportedThisParameter.Test ();
 			TestUnknownThis ();
 			TestFromParameterToThis (null);
 			TestFromFieldToThis ();
@@ -88,11 +88,56 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			s.AssignToThisCaptured ();
 		}
 
-		static void TestAnnotationOnNonTypeMethod ()
+		class AnnotationOnUnsupportedThisParameter
 		{
-			var t = new NonTypeType ();
-			t.GetMethod ("foo");
-			NonTypeType.StaticMethod ();
+			class UnsupportedType
+			{
+				// The AttributeTargets don't support constructors.
+				// [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				// public UnsupportedType () {
+				// 	RequirePublicFields (this);
+				// }
+
+				[ExpectedWarning ("IL2041")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public MethodInfo GetMethod (string name)
+				{
+					RequirePublicFields (this);
+					return null;
+				}
+
+				[ExpectedWarning ("IL2041")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static void StaticMethod ()
+				{
+				}
+			}
+
+			// Note: this returns a new instance, so that the GetMethod body is considered reachable.
+			// If nothing created an instance, ILLink would remove the GetMethod body and RequirePublicFields.
+			static UnsupportedType GetUnsupportedTypeInstance () => new ();
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				UnsupportedType unsupportedTypeInstance) { }
+
+			[UnexpectedWarning ("IL2075", nameof (UnsupportedType), nameof (UnsupportedType.GetMethod), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestMethodThisParameter () {
+				var t = GetUnsupportedTypeInstance ();
+				t.GetMethod ("foo");
+			}
+
+			// static void TestConstructorThisParameter () {
+			// 	new UnsupportedType ();
+			// }
+
+			public static void Test ()
+			{
+				TestMethodThisParameter ();
+				// TestConstructorThisParameter ();
+				UnsupportedType.StaticMethod ();
+			}
 		}
 
 		[ExpectedWarning ("IL2065", nameof (MethodThisDataFlowTypeTest) + "." + nameof (MethodThisDataFlowTypeTest.RequireThisNonPublicMethods), "'this'")]
@@ -136,22 +181,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetWithPublicMethods ().PropagateToReturn ();
 			GetWithPublicMethods ().PropagateToField ();
 			GetWithPublicMethods ().PropagateToThis ();
-		}
-
-		class NonTypeType
-		{
-			[ExpectedWarning ("IL2041")]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			public MethodInfo GetMethod (string name)
-			{
-				return null;
-			}
-
-			[ExpectedWarning ("IL2041")]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			public static void StaticMethod ()
-			{
-			}
 		}
 
 		struct StructType

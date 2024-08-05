@@ -32,10 +32,6 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal sealed override Type? KeyType => null;
-
-        internal sealed override Type? ElementType => null;
-
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
@@ -142,6 +138,7 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        /// <inheritdoc/>
         public sealed override Type? Type => null;
 
         internal sealed override void WriteAsPropertyNameCoreAsObject(

@@ -261,6 +261,21 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 // Just continue onto the next managed stack frame.
                 continue;
             }
+#ifdef FEATURE_EH_FUNCLETS
+            else if (g_isNewExceptionHandlingEnabled && pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            {
+                // Skip the new exception handling managed code, the debugger clients are not supposed to see them
+                MethodDesc *pMD = pIter->m_crawl.GetFunction();
+
+                // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                {
+                    continue;
+                }
+
+                fIsAtEndOfStack = FALSE;
+            }
+#endif // FEATURE_EH_FUNCLETS
             else
             {
                 fIsAtEndOfStack = FALSE;
@@ -359,8 +374,21 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                 break;
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
-                ftResult = kManagedStackFrame;
-                fInitFrameData = TRUE;
+                {
+#ifdef FEATURE_EH_FUNCLETS
+                    MethodDesc *pMD = pIter->m_crawl.GetFunction();
+                    // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
+                    if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
+                    {
+                        ftResult = kManagedExceptionHandlingCodeFrame;
+                    }
+                    else
+#endif // FEATURE_EH_FUNCLETS
+                    {
+                        ftResult = kManagedStackFrame;
+                        fInitFrameData = TRUE;
+                    }
+                }
                 break;
 
             case StackFrameIterator::SFITER_FRAME_FUNCTION:
@@ -433,6 +461,20 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     ULONG32 uCount = 0;
     while (pFrame != FRAME_TOP)
     {
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            // Skip new exception handling helpers
+            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
+            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            TADDR datum = dac_cast<TADDR>(pMD);
+            if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
+        }
+#endif // FEATURE_EH_FUNCLETS
         CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
         if (ift != STUBFRAME_NONE)
         {
@@ -463,7 +505,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     Thread *    pThread    = vmThread.GetDacPtr();
     Frame *     pFrame     = pThread->GetFrame();
-    AppDomain * pAppDomain = pThread->GetDomain(INDEBUG(TRUE));
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     // This used to be only true for Enter-Managed chains.
     // Since we don't have chains anymore, this can always be false.
@@ -472,6 +514,20 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     while (pFrame != FRAME_TOP)
     {
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        {
+            // Skip new exception handling helpers
+            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
+            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            TADDR datum = dac_cast<TADDR>(pMD);
+            if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+            {
+                pFrame = pFrame->Next();
+                continue;
+            }
+        }
+#endif // FEATURE_EH_FUNCLETS
         // check if the internal frame is interesting
         frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
         if (frameData.stubFrame.frameType != STUBFRAME_NONE)
@@ -533,7 +589,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
             }
             else
             {
-                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? NULL : pMD->GetMemberDef());
+                frameData.stubFrame.funcMetadataToken = (pMD == NULL ? mdTokenNil : pMD->GetMemberDef());
                 frameData.stubFrame.vmDomainAssembly.SetHostPtr(pDomainAssembly);
                 frameData.stubFrame.vmMethodDesc.SetHostPtr(pMD);
             }
@@ -776,7 +832,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         }
         else
         {
-            pFrameData->v.exactGenericArgsToken = NULL;
+            pFrameData->v.exactGenericArgsToken = (GENERICS_TYPE_TOKEN)NULL;
             pFrameData->v.dwExactGenericArgsTokenIndex = (DWORD)ICorDebugInfo::MAX_ILNUM;
         }
 
@@ -826,15 +882,15 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         pJITFuncData->nativeOffset = pCF->GetRelOffset();
 
         // Here we detect (and set the appropriate flag) if the nativeOffset in the current frame points to the return address of IL_Throw()
-        // (or other exception related JIT helpers like IL_Throw, IL_Rethrow, JIT_RngChkFail, IL_VerificationError, JIT_Overflow etc).
-        // Since return addres point to the next(!) instruction after [call IL_Throw] this sometimes can lead to incorrect exception stacktraces
+        // (or other exception related JIT helpers like IL_Throw, IL_Rethrow etc).
+        // Since return address point to the next(!) instruction after [call IL_Throw] this sometimes can lead to incorrect exception stacktraces
         // where a next source line is spotted as an exception origin. This happens when the next instruction after [call IL_Throw] belongs to
         // a sequence point and a source line different from a sequence point and a source line of [call IL_Throw].
         // Later on this flag is used in order to adjust nativeOffset and make ICorDebugILFrame::GetIP return IL offset within
         // the same sequence point as an actual IL throw instruction.
 
         // Here is how we detect it:
-        // We can assume that nativeOffset points to an the instruction after [call IL_Throw] when these conditioins are met:
+        // We can assume that nativeOffset points to an the instruction after [call IL_Throw] when these conditions are met:
         //  1. pCF->IsInterrupted() - Exception has been thrown by this managed frame (frame attr FRAME_ATTR_EXCEPTION)
         //  2. !pCF->HasFaulted() - It wasn't a "hardware" exception (Access violation, dev by 0, etc.)
         //  3. !pCF->IsIPadjusted() - It hasn't been previously adjusted to point to [call IL_Throw]
@@ -1193,7 +1249,7 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
 
 PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
 {
-    CORDB_ADDRESS ContextPointerAddr = NULL;
+    CORDB_ADDRESS ContextPointerAddr = (CORDB_ADDRESS)NULL;
 
     TADDR controlPC = PCODEToPINSTR(GetControlPC(pRD));
 

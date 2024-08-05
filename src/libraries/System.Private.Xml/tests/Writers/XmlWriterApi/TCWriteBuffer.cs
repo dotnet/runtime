@@ -54,7 +54,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             w.Flush();
-            Assert.True(false, "Expected exception");
+            Assert.Fail("Expected exception");
         }
 
         public byte[] StringToByteArray(string src)

@@ -442,8 +442,7 @@ namespace System.Transactions
                 unsafe
                 {
                     nint unknown = Marshal.GetIUnknownForObject(transactionNative);
-                    Guid iid = Guids.IID_ITransaction_Guid;
-                    if (Marshal.QueryInterface(unknown, ref iid, out IntPtr transactionNativePtr) == 0)
+                    if (Marshal.QueryInterface(unknown, Guids.IID_ITransaction_Guid, out IntPtr transactionNativePtr) == 0)
                     {
                         Marshal.Release(unknown);
                         myTransactionNative = ComInterfaceMarshaller<ITransaction>.ConvertToManaged((void*)transactionNativePtr)!;

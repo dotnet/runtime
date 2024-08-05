@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 
 namespace System.Linq
@@ -9,34 +10,69 @@ namespace System.Linq
     {
         public static bool Any<TSource>(this IEnumerable<TSource> source)
         {
-            return
-                TryGetNonEnumeratedCount(source, out int count) ? count != 0 :
-                WithEnumerator(source);
-
-            static bool WithEnumerator(IEnumerable<TSource> source)
-            {
-                using IEnumerator<TSource> e = source.GetEnumerator();
-                return e.MoveNext();
-            }
-        }
-
-        public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
-        {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (source is ICollection<TSource> gc)
+            {
+                return gc.Count != 0;
+            }
+
+#if !OPTIMIZE_FOR_SIZE
+            if (source is Iterator<TSource> iterator)
+            {
+                int count = iterator.GetCount(onlyIfCheap: true);
+                if (count >= 0)
+                {
+                    return count != 0;
+                }
+
+                iterator.TryGetFirst(out bool found);
+                return found;
+            }
+#endif
+
+            if (source is ICollection ngc)
+            {
+                return ngc.Count != 0;
+            }
+
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            return e.MoveNext();
+        }
+
+        public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (predicate(element))
+                foreach (TSource element in span)
                 {
-                    return true;
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -45,21 +81,34 @@ namespace System.Linq
 
         public static bool All<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (!predicate(element))
+                foreach (TSource element in span)
                 {
-                    return false;
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
                 }
             }
 

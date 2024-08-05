@@ -55,7 +55,7 @@ CrstStatic TieredCompilationManager::s_lock;
 #ifdef _DEBUG
 Thread *TieredCompilationManager::s_backgroundWorkerThread = nullptr;
 #endif
-CLREvent TieredCompilationManager::s_backgroundWorkAvailableEvent;
+CLREventStatic TieredCompilationManager::s_backgroundWorkAvailableEvent;
 bool TieredCompilationManager::s_isBackgroundWorkerRunning = false;
 bool TieredCompilationManager::s_isBackgroundWorkerProcessingWork = false;
 
@@ -98,11 +98,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         return NativeCodeVersion::OptimizationTierOptimized;
     }
 
-    if (pMethodDesc->RequestedAggressiveOptimization())
-    {
-        // Methods flagged with MethodImplOptions.AggressiveOptimization start with and stay at tier 1
-        return NativeCodeVersion::OptimizationTier1;
-    }
+    _ASSERT(!pMethodDesc->RequestedAggressiveOptimization());
 
     if (!pMethodDesc->GetLoaderAllocator()->GetCallCountingManager()->IsCallCountingEnabled(NativeCodeVersion(pMethodDesc)))
     {
@@ -229,7 +225,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
 
     if (!IsTieringDelayActive())
     {
@@ -649,7 +645,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
             }
 
             PCODE codeEntryPoint = activeCodeVersion.GetNativeCode();
-            if (codeEntryPoint == NULL)
+            if (codeEntryPoint == (PCODE)NULL)
             {
                 // The active IL/native code version has changed since the method was queued, and the currently active version
                 // doesn't have a code entry point yet
@@ -948,7 +944,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     MethodDesc* pMethod = nativeCodeVersion.GetMethodDesc();
     EX_TRY
     {
@@ -972,7 +968,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
             // point.
             // TODO: In the future, we should get some feedback from images containing pregenerated code and from tier 0 JIT
             // indicating that the method would not benefit from a rejit and avoid the rejit altogether.
-            pCode = NULL;
+            pCode = (PCODE)NULL;
         }
     }
     EX_CATCH
@@ -983,7 +979,7 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
     }
     EX_END_CATCH(RethrowTerminalExceptions)
 
-    return pCode != NULL;
+    return pCode != (PCODE)NULL;
 }
 
 // Updates the MethodDesc and precode so that future invocations of a method will
@@ -1075,50 +1071,40 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
             return flags;
         }
 
-        NativeCodeVersion::OptimizationTier newOptimizationTier;
-        if (!methodDesc->RequestedAggressiveOptimization())
+        _ASSERT(!methodDesc->RequestedAggressiveOptimization());
+
+        if (g_pConfig->TieredCompilation_QuickJit())
         {
             NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
-
-            if (g_pConfig->TieredCompilation_QuickJit())
+            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
             {
-                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                    return flags;
-                }
-
-                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
-                {
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                    return flags;
-                }
-
-                _ASSERTE(!nativeCodeVersion.IsFinalTier());
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
-                {
-                    // If we plan to only instrument hot code we have to make an exception
-                    // for cold methods with loops so if those self promote to OSR they need
-                    // some profile to optimize, so here we allow JIT to enable instrumentation
-                    // if current method has loops and is eligible for OSR.
-                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
-                }
                 return flags;
             }
 
-            newOptimizationTier = NativeCodeVersion::OptimizationTierOptimized;
-        }
-        else
-        {
-            newOptimizationTier = NativeCodeVersion::OptimizationTier1;
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
+            {
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                return flags;
+            }
+
+            _ASSERTE(!nativeCodeVersion.IsFinalTier());
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+            if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                // If we plan to only instrument hot code we have to make an exception
+                // for cold methods with loops so if those self promote to OSR they need
+                // some profile to optimize, so here we allow JIT to enable instrumentation
+                // if current method has loops and is eligible for OSR.
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+            }
+            return flags;
         }
 
         methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
-        nativeCodeVersion.SetOptimizationTier(newOptimizationTier);
+        nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
     #ifdef FEATURE_INTERPRETER
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
     #endif

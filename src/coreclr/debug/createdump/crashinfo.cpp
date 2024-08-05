@@ -9,6 +9,9 @@ typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* u
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
+// This is the NativeAOT DotNetRuntimeDebugHeader signature
+uint8_t g_debugHeaderCookie[4] = { 0x44, 0x4E, 0x44, 0x48 };
+
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
@@ -22,6 +25,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
+    m_exceptionRecord(options.ExceptionRecord),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -29,6 +33,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
+    m_runtimeBaseAddress = 0;
 #ifdef __APPLE__
     m_task = 0;
 #else
@@ -39,7 +44,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_siginfo.si_signo = options.Signal;
     m_siginfo.si_code = options.SignalCode;
     m_siginfo.si_errno = options.SignalErrno;
-    m_siginfo.si_addr = options.SignalAddress;
+    m_siginfo.si_addr = (void*)options.SignalAddress;
 }
 
 CrashInfo::~CrashInfo()
@@ -133,7 +138,8 @@ CrashInfo::EnumMemoryRegion(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 size)
 {
-    m_enumMemoryPagesAdded += InsertMemoryRegion((ULONG_PTR)address, size);
+    address = CONVERT_FROM_SIGN_EXTENDED(address);
+    m_enumMemoryPagesAdded += InsertMemoryRegion(address, size);
     return S_OK;
 }
 
@@ -193,6 +199,9 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
+    // Add the special (fake) memory region for the special diagnostics info
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + PAGE_SIZE);
+    m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
 #endif
@@ -310,7 +319,14 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
     if (m_dacModule == nullptr)
     {
-        printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        if (m_appModel == AppModelType::SingleFile)
+        {
+            printf_error("Only full dumps are supported by single file apps. Change the dump type to full (DOTNET_DbgMiniDumpType=4)\n");
+        }
+        else
+        {
+            printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
+        }
         goto exit;
     }
     pfnDllMain = (PFN_DLLMAIN)dlsym(m_dacModule, "DllMain");
@@ -441,10 +457,12 @@ CrashInfo::EnumerateManagedModules()
             DacpGetModuleData moduleData;
             if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
             {
-                TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
+                uint64_t loadedPEAddress = CONVERT_FROM_SIGN_EXTENDED(moduleData.LoadedPEAddress);
+
+                TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, loadedPEAddress, moduleData.IsDynamic,
                     moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEAssembly, (uint64_t)moduleData.InMemoryPdbAddress);
 
-                if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
+                if (!moduleData.IsDynamic && loadedPEAddress != 0)
                 {
                     ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
@@ -452,10 +470,10 @@ CrashInfo::EnumerateManagedModules()
                         std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
-                        AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
+                        AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName);
 
                         // Add managed module info
-                        AddModuleInfo(true, moduleData.LoadedPEAddress, pClrDataModule, moduleName);
+                        AddModuleInfo(true, loadedPEAddress, pClrDataModule, moduleName);
                     }
                     else {
                         TRACE("\nModule.GetFileName FAILED %08x\n", hr);
@@ -509,21 +527,21 @@ CrashInfo::UnwindAllThreads()
 // Replace an existing module mapping with one with a different name.
 //
 void
-CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
+CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& name)
 {
     // Round to page boundary (single-file managed assemblies are not page aligned)
-    ULONG_PTR start = ((ULONG_PTR)baseAddress) & PAGE_MASK;
+    uint64_t start = baseAddress & PAGE_MASK;
     assert(start > 0);
 
     // Round up to page boundary
-    ULONG_PTR end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
+    uint64_t end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
     assert(end > 0);
 
-    uint32_t flags = GetMemoryRegionFlags((ULONG_PTR)baseAddress);
+    uint32_t flags = GetMemoryRegionFlags(baseAddress);
 
-    // Make sure that the page containing the PE header for the managed asseblies is in the dump
+    // Make sure that the page containing the PE header for the managed assemblies is in the dump
     // especially on MacOS where they are added artificially.
-    MemoryRegion header(flags, start, start + PAGE_SIZE);
+    ModuleRegion header(flags, start, start + PAGE_SIZE);
     InsertMemoryRegion(header);
 
     // Add or change the module mapping for this PE image. The managed assembly images may already
@@ -533,7 +551,7 @@ CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, 
     if (found == m_moduleMappings.end())
     {
         // On MacOS the assemblies are always added.
-        MemoryRegion newRegion(flags, start, end, 0, name);
+        ModuleRegion newRegion(flags, start, end, 0, name);
         m_moduleMappings.insert(newRegion);
         m_cbModuleMappings += newRegion.Size();
 
@@ -544,7 +562,7 @@ CrashInfo::AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, 
     else if (found->FileName().compare(name) != 0)
     {
         // Create the new memory region with the managed assembly name.
-        MemoryRegion newRegion(*found, name);
+        ModuleRegion newRegion(*found, name);
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
@@ -640,15 +658,15 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
         if (isManaged)
         {
             IMAGE_DOS_HEADER dosHeader;
-            if (ReadMemory((void*)baseAddress, &dosHeader, sizeof(dosHeader)))
+            if (ReadMemory(baseAddress, &dosHeader, sizeof(dosHeader)))
             {
                 WORD magic;
-                if (ReadMemory((void*)(baseAddress + dosHeader.e_lfanew + offsetof(IMAGE_NT_HEADERS, OptionalHeader.Magic)), &magic, sizeof(magic)))
+                if (ReadMemory(baseAddress + dosHeader.e_lfanew + offsetof(IMAGE_NT_HEADERS, OptionalHeader.Magic), &magic, sizeof(magic)))
                 {
                     if (magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
                     {
                         IMAGE_NT_HEADERS32 header;
-                        if (ReadMemory((void*)(baseAddress + dosHeader.e_lfanew), &header, sizeof(header)))
+                        if (ReadMemory(baseAddress + dosHeader.e_lfanew, &header, sizeof(header)))
                         {
                             imageSize = header.OptionalHeader.SizeOfImage;
                             timeStamp = header.FileHeader.TimeDateStamp;
@@ -657,7 +675,7 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
                     else if (magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
                     {
                         IMAGE_NT_HEADERS64 header;
-                        if (ReadMemory((void*)(baseAddress + dosHeader.e_lfanew), &header, sizeof(header)))
+                        if (ReadMemory(baseAddress + dosHeader.e_lfanew, &header, sizeof(header)))
                         {
                             imageSize = header.OptionalHeader.SizeOfImage;
                             timeStamp = header.FileHeader.TimeDateStamp;
@@ -686,7 +704,7 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
 // ReadMemory from target and add to memory regions list
 //
 bool
-CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
+CrashInfo::ReadMemory(uint64_t address, void* buffer, size_t size)
 {
     size_t read = 0;
     if (!ReadProcessMemory(address, buffer, size, &read))
@@ -694,7 +712,7 @@ CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
         return false;
     }
     assert(read == size);
-    InsertMemoryRegion(reinterpret_cast<uint64_t>(address), read);
+    InsertMemoryRegion(address, read);
     return true;
 }
 
@@ -704,6 +722,7 @@ CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
 int
 CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 {
+    assert(address == CONVERT_FROM_SIGN_EXTENDED(address));
     assert(size < UINT_MAX);
 
     // Round to page boundary
@@ -795,7 +814,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;
@@ -823,7 +842,7 @@ CrashInfo::PageCanBeRead(uint64_t start)
 {
     BYTE buffer[1];
     size_t read;
-    return ReadProcessMemory((void*)start, buffer, 1, &read);
+    return ReadProcessMemory(start, buffer, 1, &read);
 }
 
 //
@@ -882,6 +901,23 @@ CrashInfo::CombineMemoryRegions()
 }
 
 //
+// Searches for a module region for a given address.
+//
+const ModuleRegion*
+CrashInfo::SearchModuleRegions(const ModuleRegion& search)
+{
+    std::set<ModuleRegion>::iterator found = m_moduleMappings.find(search);
+    for (; found != m_moduleMappings.end(); found++)
+    {
+        if (search.StartAddress() >= found->StartAddress() && search.StartAddress() < found->EndAddress())
+        {
+            return &*found;
+        }
+    }
+    return nullptr;
+}
+
+//
 // Searches for a memory region given an address.
 //
 const MemoryRegion*
@@ -896,6 +932,17 @@ CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const Memo
         }
     }
     return nullptr;
+}
+
+// Declare the prototype for the Itanium C++ ABI demangler API.
+// We may not have the Itanium C++ ABI header available even when we're building against this ABI
+// so we'll declare the prototype ourselves.
+// See Itanium C++ ABI, March 14, 2017 Revision, Chapter 3, Section 3.4
+namespace abi {
+  extern "C" char* __cxa_demangle (const char* mangled_name,
+				   char* buf,
+				   size_t* n,
+				   int* status);
 }
 
 //

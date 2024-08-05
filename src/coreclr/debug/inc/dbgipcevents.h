@@ -10,7 +10,7 @@
 #ifndef _DbgIPCEvents_h_
 #define _DbgIPCEvents_h_
 
-#include <new.hpp>
+#include <new>
 #include <cor.h>
 #include <cordebug.h>
 #include <corjit.h> // for ICorDebugInfo::VarLocType & VarLoc
@@ -24,6 +24,8 @@
 #include "dbgappdomain.h"
 
 #include "./common.h"
+
+using std::nothrow;
 
 //-----------------------------------------------------------------------------
 // V3 additions to IPC protocol between LS and RS.
@@ -768,7 +770,7 @@ public:
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == NULL; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
 
     static VMPTR_This NullPtr()
     {
@@ -780,7 +782,7 @@ public:
 #endif // _PREFAST_
 
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
 
 #ifdef _PREFAST_
@@ -1170,6 +1172,40 @@ struct MSLAYOUT DebuggerREGDISPLAY
     SIZE_T  S6;
     SIZE_T  S7;
     SIZE_T  S8;
+    SIZE_T  PC;
+#elif defined(TARGET_RISCV64)
+    #define DebuggerIPCE_FloatCount 32
+    SIZE_T  RA;
+    SIZE_T  SP;
+    SIZE_T  GP;
+    SIZE_T  TP;
+    SIZE_T  T0;
+    SIZE_T  T1;
+    SIZE_T  T2;
+    SIZE_T  FP;
+    SIZE_T  S1;
+    SIZE_T  A0;
+    SIZE_T  A1;
+    SIZE_T  A2;
+    SIZE_T  A3;
+    SIZE_T  A4;
+    SIZE_T  A5;
+    SIZE_T  A6;
+    SIZE_T  A7;
+    SIZE_T  S2;
+    SIZE_T  S3;
+    SIZE_T  S4;
+    SIZE_T  S5;
+    SIZE_T  S6;
+    SIZE_T  S7;
+    SIZE_T  S8;
+    SIZE_T  S9;
+    SIZE_T  S10;
+    SIZE_T  S11;
+    SIZE_T  T3;
+    SIZE_T  T4;
+    SIZE_T  T5;
+    SIZE_T  T6;
     SIZE_T  PC;
 #else
     #define DebuggerIPCE_FloatCount 1
@@ -2011,6 +2047,7 @@ struct MSLAYOUT DebuggerIPCEvent
             SIZE_T       offset;
             SIZE_T       encVersion;
             LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
+            CORDB_ADDRESS codeStartAddress;
         } BreakpointData;
 
         struct MSLAYOUT
@@ -2021,8 +2058,16 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
-            BOOL value;
-        } IsOptsDisabledData;
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
 
         struct MSLAYOUT
         {

@@ -204,7 +204,7 @@ namespace GenDefinedCharList
             // Ranges are represented within angle brackets, such as the following:
             // DC00;<Low Surrogate, First>;Cs;0;L;;;;;N;;;;;
             // DFFF;<Low Surrogate, Last>;Cs;0;L;;;;;N;;;;;
-            if (rawName.StartsWith("<", StringComparison.Ordinal))
+            if (rawName.StartsWith('<'))
             {
                 if (rawName.EndsWith(", First>", StringComparison.Ordinal))
                 {

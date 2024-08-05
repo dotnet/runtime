@@ -7,7 +7,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace SharedTypes.ComInterfaces
 {
-    [Guid(_guid)]
+    [Guid(IID)]
     [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
     internal partial interface ICustomStringMarshallingUtf16
     {
@@ -15,6 +15,6 @@ namespace SharedTypes.ComInterfaces
 
         public void SetString(string value);
 
-        public const string _guid = "E11D5F3E-DD57-41A6-A59E-7D110551A760";
+        public const string IID = "E11D5F3E-DD57-41A6-A59E-7D110551A760";
     }
 }

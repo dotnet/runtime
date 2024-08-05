@@ -51,11 +51,10 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             (new TestClass()).TestMain();
             Console.WriteLine("Passed.");
-            return 100;
         }
 
     };

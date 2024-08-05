@@ -13,7 +13,7 @@
 
 // The ARG_SLOT must be big enough to represent all pointer and basic types (except for 80-bit fp values).
 // So, it's guaranteed to be at least 64-bit.
-typedef unsigned __int64 ARG_SLOT;
+typedef uint64_t ARG_SLOT;
 #define SIZEOF_ARG_SLOT 8
 
 #if BIGENDIAN

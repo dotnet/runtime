@@ -74,14 +74,16 @@ namespace MonoTargetsTasks
 
         private void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
         {
-            string assyName = MetadataReader.GetAssemblyName(assyPath).Name!;
+            using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using PEReader peReader = new PEReader(file);
+            if (!peReader.HasMetadata)
+                return; // Just return. There are no metadata in the DLL to help us with remaining types.
+
+            MetadataReader mdtReader = peReader.GetMetadataReader();
+            string assyName = mdtReader.GetString(mdtReader.GetAssemblyDefinition().Name);
             HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
             if(inconclusiveTypes.Count == 0)
                 return;
-
-            using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using PEReader peReader = new PEReader(file);
-            MetadataReader mdtReader = peReader.GetMetadataReader();
 
             SignatureDecoder<Compatibility, object> decoder = new(mmtcp, mdtReader, null!);
 
@@ -106,6 +108,9 @@ namespace MonoTargetsTasks
         {
             using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new PEReader(file);
+            if (!peReader.HasMetadata)
+                return false; // No types in this DLL means no incompatible marshaling constructs.
+
             MetadataReader mdtReader = peReader.GetMetadataReader();
 
             foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)
@@ -143,7 +148,7 @@ namespace MonoTargetsTasks
                     MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
                     if(sgn.ReturnType == Compatibility.Incompatible || sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
                     {
-                        Log.LogMessage(MessageImportance.Low, string.Format("Assembly {0} requires marhsal-ilgen for method {1}.{2}:{3} (first pass).",
+                        Log.LogMessage(MessageImportance.Low, string.Format("Assembly {0} requires marshal-ilgen for method {1}.{2}:{3} (first pass).",
                             assyPath, ns, name, mdtReader.GetString(mthDef.Name)));
 
                         return true;

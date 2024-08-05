@@ -20,7 +20,7 @@ namespace System
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
-#if SYSTEM_PRIVATE_CORELIB
+#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
     public
 #else
     internal

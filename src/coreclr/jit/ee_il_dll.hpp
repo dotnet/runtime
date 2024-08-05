@@ -10,12 +10,12 @@ class CILJit : public ICorJitCompiler
                                unsigned             flags,           /* IN */
                                uint8_t**            nativeEntry,     /* OUT */
                                uint32_t*            nativeSizeOfCode /* OUT */
-                               );
+    );
 
     void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
-                              );
+    );
 
     void setTargetOS(CORINFO_OS os);
 };
@@ -51,6 +51,18 @@ FORCEINLINE
 bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 {
     return info.compCompHnd->isValueClass(clsHnd);
+}
+
+FORCEINLINE
+bool Compiler::eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd)
+{
+    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_BYREF_LIKE) != 0;
+}
+
+FORCEINLINE
+bool Compiler::eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd)
+{
+    return (info.compCompHnd->getClassAttribs(clsHnd) & CORINFO_FLG_SHAREDINST) != 0;
 }
 
 FORCEINLINE
@@ -174,7 +186,7 @@ inline var_types JITtype2varType(CorInfoType type)
         // see the definition of enum CorInfoType in file inc/corinfo.h
         TYP_UNDEF,  // CORINFO_TYPE_UNDEF           = 0x0,
         TYP_VOID,   // CORINFO_TYPE_VOID            = 0x1,
-        TYP_BOOL,   // CORINFO_TYPE_BOOL            = 0x2,
+        TYP_UBYTE,  // CORINFO_TYPE_BOOL            = 0x2,
         TYP_USHORT, // CORINFO_TYPE_CHAR            = 0x3,
         TYP_BYTE,   // CORINFO_TYPE_BYTE            = 0x4,
         TYP_UBYTE,  // CORINFO_TYPE_UBYTE           = 0x5,
@@ -235,7 +247,7 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
         // see the definition of enum CorInfoType in file inc/corinfo.h
         TYP_UNDEF,  // CORINFO_TYPE_UNDEF           = 0x0,
         TYP_VOID,   // CORINFO_TYPE_VOID            = 0x1,
-        TYP_BOOL,   // CORINFO_TYPE_BOOL            = 0x2,
+        TYP_UBYTE,  // CORINFO_TYPE_BOOL            = 0x2,
         TYP_USHORT, // CORINFO_TYPE_CHAR            = 0x3,
         TYP_BYTE,   // CORINFO_TYPE_BYTE            = 0x4,
         TYP_UBYTE,  // CORINFO_TYPE_UBYTE           = 0x5,

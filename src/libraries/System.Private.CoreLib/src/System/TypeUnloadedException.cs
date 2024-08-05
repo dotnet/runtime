@@ -18,13 +18,13 @@ namespace System
         }
 
         public TypeUnloadedException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_TypeUnloadedException)
         {
             HResult = HResults.COR_E_TYPEUNLOADED;
         }
 
         public TypeUnloadedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_TypeUnloadedException, innerException)
         {
             HResult = HResults.COR_E_TYPEUNLOADED;
         }

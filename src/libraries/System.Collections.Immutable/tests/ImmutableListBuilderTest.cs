@@ -226,14 +226,21 @@ namespace System.Collections.Immutable.Tests
             mutable.RemoveRange(4, 2);
             Assert.Equal(new[] { 1.5, 2.4, 3.6, 4.7 }, mutable);
 
+            mutable.RemoveRange(1, 0);
+            Assert.Equal(new[] { 1.5, 2.4, 3.6, 4.7 }, mutable);
+
             mutable.RemoveRange(new double[] { 2.4, 3.6 });
             Assert.Equal(new[] { 1.5, 4.7 }, mutable);
-            
+
             var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
             mutable.RemoveRange(new double[] { -1.5 }, absComparer);
             Assert.Equal(new[] { 4.7 }, mutable);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(0, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => mutable.RemoveRange(1, int.MaxValue));
         }
 
         [Fact]
@@ -431,7 +438,7 @@ namespace System.Collections.Immutable.Tests
             var builder = new ImmutableList<int>.Builder(list);
 
             ref readonly int safeRef = ref builder.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 

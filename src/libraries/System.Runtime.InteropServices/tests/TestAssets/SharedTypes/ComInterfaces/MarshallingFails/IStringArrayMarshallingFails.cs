@@ -57,7 +57,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             if (++_marshalledCount == ThrowOnNthMarshalledElement)
             {
                 _marshalledCount = 0;
-                throw new ArgumentException("This marshaller throws on the Nth element marshalled where N = " + ThrowOnNthMarshalledElement);
+                throw new MarshallingFailureException("This marshaller throws on the Nth element marshalled where N = " + ThrowOnNthMarshalledElement);
             }
             return (nint)Utf8StringMarshaller.ConvertToUnmanaged(managed);
         }

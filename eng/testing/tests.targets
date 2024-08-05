@@ -9,11 +9,9 @@
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasiRunnerAOTTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasiRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT'">WasiRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' == 'Windows_NT'">WasiRunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetsLinuxBionic)' == 'true' and '$(RunScriptWindowsCmd)' != 'true'">BionicRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetsLinuxBionic)' == 'true' and '$(RunScriptWindowsCmd)' == 'true'">BionicRunnerTemplate.cmd</RunScriptInputName>
@@ -68,6 +66,13 @@
     an empty zip because we haven't published the selfcontained app.  -->
     <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsXUnitLogCheckerSupported)' == 'true' and
+                        '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                         $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">
+    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set __IsXUnitLogCheckerSupported=1" />
+    <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export __IsXUnitLogCheckerSupported=1" />
+  </ItemGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
@@ -126,6 +131,10 @@
       <!-- Do not put anything between this and the GenerateRunScript invocation. -->
       <RunScriptCommands Include="@(PostRunScriptCommands)" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(RunScriptOutputDirectory)' != ''">
+      <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(RunScriptOutputDirectory)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    </PropertyGroup>
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
                        SetCommands="@(SetScriptCommands)"

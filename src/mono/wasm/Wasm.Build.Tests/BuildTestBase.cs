@@ -10,14 +10,12 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using Microsoft.Playwright;
 
 #nullable enable
 
@@ -27,10 +25,11 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net8.0";
-        public const string DefaultTargetFrameworkForBlazor = "net8.0";
+        public const string DefaultTargetFramework = "net9.0";
+        public const string DefaultTargetFrameworkForBlazor = "net9.0";
+        public const string TargetFrameworkForTasks = "net9.0";
         private const string DefaultEnvironmentLocale = "en-US";
-        protected static readonly char s_unicodeChar = '\u7149';
+        protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected readonly ITestOutputHelper _testOutput;
@@ -40,6 +39,14 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
 
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public bool UseWBTOverridePackTargets = false;
+
+        private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
@@ -52,10 +59,10 @@ namespace Wasm.Build.Tests
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
+        public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
-        public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
-                                                                          // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+        public static string GetNuGetConfigPathFor(string targetFramework)
+            => Path.Combine(BuildEnvironment.TestDataPath, targetFramework == "net9.0" ? "nuget9.config" : "nuget8.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
@@ -86,6 +93,7 @@ namespace Wasm.Build.Tests
                     Console.WriteLine($"=============== Using webcil-in-wasm ===============");
                 else
                     Console.WriteLine($"=============== Webcil disabled ===============");
+                Console.WriteLine ($"============== Multi-threading runtime pack for {DefaultTargetFramework} is {(IsWorkloadWithMultiThreadingForDefaultFramework ? "available" : "not available")} ==============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -103,10 +111,6 @@ namespace Wasm.Build.Tests
             _logPath = s_buildEnv.LogRootPath; // FIXME:
             _providerOfBaseType = providerBase;
         }
-
-        // Meant for special case where we *want* to set it to null,
-        // and thus avoid the ArgumentNullException
-        // protected void ResetProjectDir() => _providerOfBaseType.ProjectDir = null;
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null, string? extraArgs = null)
         {
@@ -132,6 +136,47 @@ namespace Wasm.Build.Tests
                     new object?[] { new BuildArgs("placeholder", config, aot, "placeholder", extraArgs) }.AsEnumerable()
                 };
             }
+        }
+
+        public (CommandResult res, string logPath) BuildProjectWithoutAssert(
+            string id,
+            string config,
+            BuildProjectOptions buildProjectOptions,
+            params string[] extraArgs)
+        {
+            string buildType = buildProjectOptions.Publish ? "publish" : "build";
+            string logFileSuffix = buildProjectOptions.Label == null ? string.Empty : buildProjectOptions.Label.Replace(' ', '_') + "-";
+            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{logFileSuffix}{buildType}.binlog");
+
+            _testOutput.WriteLine($"{Environment.NewLine}** -------- {buildType} -------- **{Environment.NewLine}");
+            _testOutput.WriteLine($"Binlog path: {logFilePath}");
+
+            List<string> commandLineArgs = new()
+            {
+                buildType,
+                $"-bl:{logFilePath}",
+                $"-p:Configuration={config}",
+                "-nr:false"
+            };
+            commandLineArgs.AddRange(extraArgs);
+
+            if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
+                commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
+
+            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir!)
+                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
+                cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
+
+            CommandResult res = cmd.ExecuteWithCapturedOutput(commandLineArgs.ToArray());
+            if (buildProjectOptions.ExpectSuccess)
+                res.EnsureSuccessful();
+            else if (res.ExitCode == 0)
+                throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
+
+            return (res, logFilePath);
         }
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
@@ -193,7 +238,17 @@ namespace Wasm.Build.Tests
                                 );
 
             TestUtils.AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+
+            if (s_isWindows && buildArgs.ProjectName.Contains(s_unicodeChars))
+            {
+                // unicode chars in output on Windows are decoded in unknown way, so finding utf8 string is more complicated
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
+                TestUtils.AssertMatches(@$"AOT: image '{projectNameCore}\S+' found.", output, contains: buildArgs.AOT);
+            }
+            else
+            {
+                TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+            }
 
             if (test != null)
                 test(output);
@@ -217,15 +272,9 @@ namespace Wasm.Build.Tests
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
+            // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
-
-            if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
-            {
-                if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                    throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                args.Append($" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"");
-            }
 
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
@@ -274,7 +323,7 @@ namespace Wasm.Build.Tests
             {
                 _testOutput.WriteLine($"Exit code: {exitCode}");
                 if (exitCode != expectedAppExitCode)
-                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {testCommand} {args}");
+                    throw new XunitException($"[{testCommand}] Exit code, expected {expectedAppExitCode} but got {exitCode} for command: {args}");
             }
 
             return output;
@@ -295,11 +344,13 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
+            if (UseWBTOverridePackTargets)
+                File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
             if (addNuGetSourceForLocalPackages)
@@ -319,6 +370,7 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
@@ -338,11 +390,6 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
-            if (!UseWebcil)
-            {
-                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>\n";
-            }
-
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
 
             string projectContents = projectTemplate
@@ -360,10 +407,6 @@ namespace Wasm.Build.Tests
 
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
-
-        public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-            => new BlazorWasmProjectProvider(_testOutput, _projectDir)
-                    .FindBlazorBinFrameworkDir(config, forPublish, framework);
 
         protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
         {
@@ -474,7 +517,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
@@ -550,11 +593,7 @@ namespace Wasm.Build.Tests
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
-        private static string GetEnvironmentVariableOrDefault(string envVarName, string defaultValue)
-        {
-            string? value = Environment.GetEnvironmentVariable(envVarName);
-            return string.IsNullOrEmpty(value) ? defaultValue : value;
-        }
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {
@@ -566,9 +605,9 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.4-preview.76"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.4-preview.76"" />
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.34\st\*.a"" />";
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
             public class TestClass {
@@ -578,7 +617,7 @@ namespace Wasm.Build.Tests
                 }
             }";
 
-        private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
+        private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
             RunHost.NodeJS => new NodeJSHostRunner(),
@@ -592,28 +631,6 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
-    public record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    public record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
-
-    public record BlazorBuildOptions
-    (
-        string Id,
-        string Config,
-        NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false,
-        bool ExpectFingerprintOnDotnetJs = false,
-        RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded
-    );
-
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
-        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
-    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }

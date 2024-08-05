@@ -20,13 +20,13 @@ namespace System
         }
 
         public StackOverflowException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_StackOverflowException)
         {
             HResult = HResults.COR_E_STACKOVERFLOW;
         }
 
         public StackOverflowException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_StackOverflowException, innerException)
         {
             HResult = HResults.COR_E_STACKOVERFLOW;
         }

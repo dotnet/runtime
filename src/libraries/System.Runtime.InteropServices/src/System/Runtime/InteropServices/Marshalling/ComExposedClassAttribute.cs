@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
     public sealed class ComExposedClassAttribute<T> : Attribute, IComExposedDetails
         where T : IComExposedClass
     {
-        /// <inheritdoc />
+        /// <inheritdoc cref="IComExposedDetails.GetComInterfaceEntries(out int)" />
         public unsafe ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count) => T.GetComInterfaceEntries(out count);
     }
 }

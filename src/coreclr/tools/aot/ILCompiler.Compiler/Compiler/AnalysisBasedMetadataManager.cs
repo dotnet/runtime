@@ -13,16 +13,16 @@ using Debug = System.Diagnostics.Debug;
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using ExportedTypeHandle = System.Reflection.Metadata.ExportedTypeHandle;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
     /// <summary>
     /// A metadata manager that knows the full set of metadata ahead of time.
     /// </summary>
-    public sealed class AnalysisBasedMetadataManager : GeneratingMetadataManager, ICompilationRootProvider
+    public sealed class AnalysisBasedMetadataManager : MetadataManager, ICompilationRootProvider
     {
         private readonly List<ModuleDesc> _modulesWithMetadata;
-        private readonly List<MetadataType> _typesWithRootedCctorContext;
         private readonly List<TypeDesc> _forcedTypes;
 
         private readonly Dictionary<TypeDesc, MetadataCategory> _reflectableTypes = new Dictionary<TypeDesc, MetadataCategory>();
@@ -33,10 +33,10 @@ namespace ILCompiler
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
                 new FullyBlockedManifestResourceBlockingPolicy(), null, new NoStackTraceEmissionPolicy(),
-                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
+                new NoDynamicInvokeThunkGenerationPolicy(), null, Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<MetadataType>(), default)
+                default)
         {
         }
 
@@ -47,18 +47,17 @@ namespace ILCompiler
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
+            FlowAnnotations flowAnnotations,
             IEnumerable<ModuleDesc> modulesWithMetadata,
             IEnumerable<TypeDesc> forcedTypes,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
-            IEnumerable<MetadataType> rootedCctorContexts,
             MetadataManagerOptions options)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
-            _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);
             _forcedTypes = new List<TypeDesc>(forcedTypes);
 
             foreach (var refType in reflectableTypes)
@@ -136,7 +135,7 @@ namespace ILCompiler
             out List<MetadataMapping<MetadataType>> typeMappings,
             out List<MetadataMapping<MethodDesc>> methodMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
-            out List<MetadataMapping<MethodDesc>> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping)
         {
             ComputeMetadata(new Policy(_blockingPolicy, this), factory,
                 out metadataBlob,
@@ -205,11 +204,6 @@ namespace ILCompiler
                     rootProvider.AddReflectionRoot(field, reason);
                 }
             }
-
-            foreach (var type in _typesWithRootedCctorContext)
-            {
-                rootProvider.RootNonGCStaticBaseForType(type, reason);
-            }
         }
 
         private struct Policy : IMetadataPolicy
@@ -259,6 +253,11 @@ namespace ILCompiler
                 }
 
                 return GeneratesMetadata(targetType);
+            }
+
+            public bool GeneratesInterfaceImpl(MetadataType typeDef, MetadataType interfaceImpl)
+            {
+                return _parent.IsInterfaceUsed(interfaceImpl.GetTypeDefinition());
             }
 
             public bool IsBlocked(MetadataType typeDef)

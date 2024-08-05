@@ -232,7 +232,7 @@ HRESULT StgIO::Open(                    // Return code.
             // most of the security risk anyway).
             if ((fFlags & DBPROP_TMODEF_TRYLOADLIBRARY) != 0)
             {
-                m_hModule = WszLoadLibraryEx(szName, NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+                m_hModule = WszLoadLibrary(szName, NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
                 if (m_hModule != NULL)
                 {
                     m_iType = STGIO_HMODULE;
@@ -826,7 +826,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
 
             DWORD dwProtectionFlags = PAGE_READONLY;
 
-            if ((m_hMapping = WszCreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
+            if ((m_hMapping = CreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
                 0, 0, nullptr)) == 0)
             {
                 return (MapFileError(GetLastError()));

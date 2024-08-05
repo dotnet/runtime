@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace ObjectiveCMarshalAPI
 {
     using System;
@@ -36,7 +37,7 @@ namespace ObjectiveCMarshalAPI
         public static extern IntPtr GetThrowException();
     }
 
-    unsafe class Program
+    public unsafe class Program
     {
         static void Validate_ReferenceTrackingAPIs_InvalidArgs()
         {
@@ -386,7 +387,7 @@ namespace ObjectiveCMarshalAPI
                 return (delegate* unmanaged<IntPtr, void>)NativeObjCMarshalTests.GetThrowException();
             }
 
-            Assert.True(false, "Unknown exception type");
+            Assert.Fail("Unknown exception type");
             throw new UnreachableException();
         }
 
@@ -436,7 +437,9 @@ namespace ObjectiveCMarshalAPI
                 });
         }
 
-        static int Main()
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        public static int TestEntryPoint()
         {
             try
             {

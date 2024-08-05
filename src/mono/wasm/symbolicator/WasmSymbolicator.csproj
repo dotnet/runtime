@@ -9,9 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+  </ItemGroup>
 
+  <ItemGroup>
     <None Include="..\data\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

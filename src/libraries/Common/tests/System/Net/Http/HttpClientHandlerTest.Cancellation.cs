@@ -28,7 +28,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36634", TestPlatforms.Browser)] // out of memory
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
@@ -39,6 +38,12 @@ namespace System.Net.Http.Functional.Tests
 
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (PlatformDetection.IsBrowser && LoopbackServerFactory.Version < HttpVersion20.Value)
+            {
+                // Browser request streaming is only supported on HTTP/2 or higher
                 return;
             }
 
@@ -58,6 +63,13 @@ namespace System.Net.Http.Functional.Tests
                         req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
+                        if (PlatformDetection.IsBrowser)
+                        {
+#if !NETFRAMEWORK
+                            req.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest"), true);
+#endif
+                        }
+
                         Task<HttpResponseMessage> resp = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         waitToSend.SetResult(true);
                         await Task.WhenAny(contentSending.Task, resp);
@@ -74,14 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, async server =>
             {
-                try
-                {
-                    await server.AcceptConnectionAsync(connection => serverRelease.Task);
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                }
+                await IgnoreExceptions(server.AcceptConnectionAsync(connection => serverRelease.Task));
             });
         }
 
@@ -130,15 +135,9 @@ namespace System.Net.Http.Functional.Tests
                         await getResponse;
                     });
 
-                    try
-                    {
-                        clientFinished.SetResult(true);
-                        await serverTask;
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    clientFinished.SetResult(true);
+
+                    await IgnoreExceptions(serverTask);
                 });
             }
         }
@@ -191,15 +190,9 @@ namespace System.Net.Http.Functional.Tests
                         await getResponse;
                     });
 
-                    try
-                    {
-                        clientFinished.SetResult(true);
-                        await serverTask;
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    clientFinished.SetResult(true);
+
+                    await IgnoreExceptions(serverTask);
                 });
             }
         }
@@ -267,15 +260,10 @@ namespace System.Net.Http.Functional.Tests
                         cts.Cancel();
                         await readTask;
                     }).WaitAsync(TimeSpan.FromSeconds(30));
-                    try
-                    {
-                        clientFinished.SetResult(true);
-                        await serverTask;
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+
+                    clientFinished.SetResult(true);
+
+                    await IgnoreExceptions(serverTask);
                 });
             }
         }
@@ -413,39 +401,18 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_Cancel_CancellationTokenPropagates()
         {
-            TaskCompletionSource<bool> clientCanceled = new TaskCompletionSource<bool>();
-            await LoopbackServerFactory.CreateClientAndServerAsync(
-                async uri =>
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
 
-                    using (HttpClient client = CreateHttpClient())
-                    {
-                        OperationCanceledException ex = null;
-                        try
-                        {
-                            await client.GetAsync(uri, cts.Token);
-                        }
-                        catch (OperationCanceledException e)
-                        {
-                            ex = e;
-                        }
-                        Assert.True(ex != null, "Expected OperationCancelledException, but no exception was thrown.");
+            using HttpClient client = CreateHttpClient();
 
-                        Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => client.GetAsync(TestAsync, InvalidUri, cancellationToken: cts.Token));
 
-                        // .NET Framework has bug where it doesn't propagate token information.
-                        Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
-
-                        clientCanceled.SetResult(true);
-                    }
-                },
-                async server =>
-                {
-                    Task serverTask = server.HandleRequestAsync();
-                    await clientCanceled.Task;
-                });
+            // .NET Framework has bug where it doesn't propagate token information.
+#if !NETFRAMEWORK
+            Assert.Equal(cts.Token, oce.CancellationToken);
+#endif
         }
 
         public static IEnumerable<object[]> PostAsync_Cancel_CancellationTokenPassedToContent_MemberData()

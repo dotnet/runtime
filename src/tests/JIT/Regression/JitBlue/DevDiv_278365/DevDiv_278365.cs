@@ -13,6 +13,7 @@ using Xunit;
 public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Fact]
     public static int Bar()
     {
         int sum = 0;
@@ -30,21 +31,5 @@ public class Program
         {
             return 100;
         }        
-    }
-	
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try
-        {
-            if (Bar() != 100)
-                return 0;
-        }
-        catch (Exception)
-        {
-        }
-
-        Console.WriteLine("Pass");
-        return 100;
     }
 }

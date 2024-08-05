@@ -18,12 +18,12 @@ namespace System.Security.Principal
         }
 
         public IdentityNotMappedException(string? message)
-            : base(message)
+            : base(message ?? SR.IdentityReference_IdentityNotMapped)
         {
         }
 
         public IdentityNotMappedException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.IdentityReference_IdentityNotMapped, inner)
         {
         }
 

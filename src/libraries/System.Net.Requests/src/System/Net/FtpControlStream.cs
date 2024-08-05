@@ -279,7 +279,7 @@ namespace System.Net
             // If we are already logged in and the server returns 530 then
             // the server does not support re-issuing a USER command,
             // tear down the connection and start all over again
-            if (entry.Command.IndexOf("USER", StringComparison.Ordinal) != -1)
+            if (entry.Command.Contains("USER"))
             {
                 // The server may not require a password for this user, so bypass the password command
                 if (status == FtpStatusCode.LoggedInProceed)
@@ -302,7 +302,7 @@ namespace System.Net
             }
 
             if (_loginState != FtpLoginState.LoggedIn
-                && entry.Command.IndexOf("PASS", StringComparison.Ordinal) != -1)
+                && entry.Command.Contains("PASS"))
             {
                 // Note the fact that we logged in
                 if (status == FtpStatusCode.NeedLoginAccount || status == FtpStatusCode.LoggedInProceed)
@@ -428,7 +428,7 @@ namespace System.Net
             else
             {
                 // We only use CWD to reset ourselves back to the login directory.
-                if (entry.Command.IndexOf("CWD", StringComparison.Ordinal) != -1)
+                if (entry.Command.Contains("CWD"))
                 {
                     _establishedServerDirectory = _requestedServerDirectory;
                 }
@@ -1118,6 +1118,11 @@ namespace System.Net
         /// </summary>
         private static string FormatFtpCommand(string command, string? parameter)
         {
+            if (parameter is not null && parameter.Contains("\r\n", StringComparison.Ordinal))
+            {
+                throw new FormatException(SR.net_ftp_no_newlines);
+            }
+
             return string.IsNullOrEmpty(parameter) ?
                 command + "\r\n" :
                 command + " " + parameter + "\r\n";

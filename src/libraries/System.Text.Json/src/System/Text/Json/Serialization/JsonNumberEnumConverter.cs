@@ -17,6 +17,11 @@ namespace System.Text.Json.Serialization
     public sealed class JsonNumberEnumConverter<TEnum> : JsonConverterFactory
         where TEnum : struct, Enum
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="JsonNumberEnumConverter{TEnum}"/>.
+        /// </summary>
+        public JsonNumberEnumConverter() { }
+
         /// <inheritdoc />
         public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(TEnum);
 
@@ -28,7 +33,7 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentOutOfRangeException_JsonConverterFactory_TypeNotSupported(typeToConvert);
             }
 
-            return new EnumConverter<TEnum>(EnumConverterOptions.AllowNumbers, options);
+            return EnumConverterFactory.Create<TEnum>(EnumConverterOptions.AllowNumbers, options);
         }
     }
 }

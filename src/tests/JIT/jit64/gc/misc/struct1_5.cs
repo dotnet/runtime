@@ -94,11 +94,10 @@ public class Test_struct1_5
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
 
         c(sM);
-        return 100;
     }
 }

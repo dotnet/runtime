@@ -9,7 +9,7 @@ using Xunit;
 
 namespace AssemblyDependencyResolverTests
 {
-    class AssemblyDependencyResolverTests : TestBase
+    public class AssemblyDependencyResolverTests : TestBase
     {
         string _componentDirectory;
         string _componentAssemblyPath;
@@ -74,7 +74,7 @@ namespace AssemblyDependencyResolverTests
         public void TestComponentLoadFailureWithPreviousErrorWriter()
         {
             IntPtr previousWriter = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(
-                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false); }));
+                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.Fail(); }));
 
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))
@@ -103,7 +103,7 @@ namespace AssemblyDependencyResolverTests
             string assemblyDependencyPath = CreateMockAssembly("AssemblyDependency.dll");
 
             IntPtr previousWriter = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(
-                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false); }));
+                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.Fail(); }));
 
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))
@@ -306,7 +306,8 @@ namespace AssemblyDependencyResolverTests
                 relativePath + Path.DirectorySeparatorChar + XPlatformUtils.GetStandardNativeLibraryFileName(simpleName));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return TestBase.RunTests(
                 typeof(AssemblyDependencyResolverTests),

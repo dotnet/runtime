@@ -13,10 +13,7 @@
 // 2) It can have multiple instantiations with different seeds
 // 3) It behaves the same regardless of whether we build with VC++ or GCC
 //
-// If you are working in the VM, we have a convenience method: code:GetRandomInt.  This usess a thread-local
-// Random instance if a Thread object is available, and otherwise falls back to a global instance
-// with a spin-lock.
-//
+// If you are working in the VM, we have a convenience method: code:GetRandomInt.
 
 #ifndef _CLRRANDOM_H_
 #define _CLRRANDOM_H_
@@ -27,7 +24,7 @@
 // Forbid the use of srand()/rand(), as these are globally shared facilities and our use of them would
 // interfere with native user code in the same process. This override is not compatible with stl headers.
 //
-#if !defined(DO_NOT_DISABLE_RAND) && !defined(USE_STL)
+#if !defined(DO_NOT_DISABLE_RAND)
 
 #ifdef srand
 #undef srand
@@ -39,7 +36,7 @@
 #endif
 #define rand Do_not_use_rand
 
-#endif //!DO_NOT_DISABLE_RAND && !USE_STL
+#endif //!DO_NOT_DISABLE_RAND
 
 
 class CLRRandom

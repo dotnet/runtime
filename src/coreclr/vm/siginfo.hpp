@@ -394,7 +394,7 @@ public:
 
     Substitution(
         ModuleBase *         pModuleArg,
-        const SigPointer &   sigInst,
+        SigPointer           sigInst,
         const Substitution * pNextSubstitution)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1007,24 +1007,6 @@ class MetaSig
             const Substitution* pSubst2,
             BOOL                skipReturnTypeSig,
             TokenPairList*      pVisited = NULL
-        );
-
-        // Nonthrowing version of CompareMethodSigs
-        //
-        //   Return S_OK if they match
-        //          S_FALSE if they don't match
-        //          FAILED  if OOM or some other blocking error
-        //
-        static HRESULT CompareMethodSigsNT(
-            PCCOR_SIGNATURE pSig1,
-            DWORD       cSig1,
-            Module*     pModule1,
-            const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2,
-            DWORD       cSig2,
-            Module*     pModule2,
-            const Substitution* pSubst2,
-            TokenPairList *pVisited = NULL
         );
 
         static BOOL CompareFieldSigs(

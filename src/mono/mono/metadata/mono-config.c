@@ -97,7 +97,7 @@
 /**
  * mono_config_get_os:
  *
- * Returns the operating system that Mono is running on, as used for dllmap entries.
+ * Returns the operating system that Mono is running on.
  */
 const char *
 mono_config_get_os (void)
@@ -108,7 +108,7 @@ mono_config_get_os (void)
 /**
  * mono_config_get_cpu:
  *
- * Returns the architecture that Mono is running on, as used for dllmap entries.
+ * Returns the architecture that Mono is running on.
  */
 const char *
 mono_config_get_cpu (void)
@@ -119,7 +119,7 @@ mono_config_get_cpu (void)
 /**
  * mono_config_get_wordsize:
  *
- * Returns the word size that Mono is running on, as used for dllmap entries.
+ * Returns the word size that Mono is running on.
  */
 const char *
 mono_config_get_wordsize (void)

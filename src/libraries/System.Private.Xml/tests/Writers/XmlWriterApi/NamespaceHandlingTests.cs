@@ -431,7 +431,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
                 catch (XmlException e) { CError.WriteLine(e); return; }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]

@@ -25,10 +25,10 @@
 //
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -97,8 +97,8 @@ namespace System.Reflection
         [DebuggerHidden]
         internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            bool domainInitialized = false;
-            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
+            bool isClassInitialized = false;
+            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref isClassInitialized);
         }
 
         [DebuggerStepThrough]
@@ -111,9 +111,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
             }
         }
 
@@ -127,9 +125,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
             }
         }
 
@@ -218,7 +214,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return $"{FieldType.FormatTypeName ()} {name}";
+            return $"{FieldType.FormatTypeName()} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -291,12 +287,16 @@ namespace System.Reflection
         internal static extern int get_metadata_token(RuntimeFieldInfo monoField);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern Type[] GetTypeModifiers(bool optional);
+        private extern Type[] GetTypeModifiers(bool optional, int genericArgumentPosition = -1);
 
         public override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(true);
 
         public override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(false);
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(optional) ?? Type.EmptyTypes;
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedFieldType() => ModifiedType.Create(FieldType, this);
     }
 }

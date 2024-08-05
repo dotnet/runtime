@@ -13,6 +13,7 @@ using Xunit;
 
 // we will be doing "sizeof" with arrays containing managed references.
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning disable CS9184 // 'Inline arrays' language feature is not supported for an inline array type that is not valid as a type argument, or has element type that is not valid as a type argument
 
 [InlineArray(LengthConst)]
 struct MyArray<T> : IEnumerable<T>
@@ -21,18 +22,6 @@ struct MyArray<T> : IEnumerable<T>
     private T _element;
 
     public int Length => LengthConst;
-
-    [UnscopedRef]
-    public ref T this[int i]
-    {
-        get
-        {
-            if ((uint)i >= (uint)Length)
-                throw new IndexOutOfRangeException(nameof(i));
-
-            return ref Unsafe.Add(ref _element, i);
-        }
-    }
 
     [UnscopedRef]
     public Span<T> AsSpan() => MemoryMarshal.CreateSpan<T>(ref _element, Length);
@@ -48,11 +37,11 @@ struct MyArray<T> : IEnumerable<T>
     }
 }
 
-unsafe class Validate
+public unsafe class Validate
 {
     // ====================== SizeOf ==============================================================
     [InlineArray(42)]
-    struct FourtyTwoBytes
+    struct FortyTwoBytes
     {
         byte b;
     }
@@ -61,11 +50,20 @@ unsafe class Validate
     public static void Sizeof()
     {
         Console.WriteLine($"{nameof(Sizeof)}...");
-        Assert.Equal(42, sizeof(FourtyTwoBytes));
+        Assert.Equal(42, sizeof(FortyTwoBytes));
         Assert.Equal(84, sizeof(MyArray<char>));
     }
 
     // ====================== OneElement ==========================================================
+    // These types are interesting since their layouts are
+    // identical with or without the InlineArrayAttribute.
+
+    [InlineArray(1)]
+    struct OneInt
+    {
+        public int i;
+    }
+
     [InlineArray(1)]
     struct OneObj
     {
@@ -76,6 +74,7 @@ unsafe class Validate
     public static void OneElement()
     {
         Console.WriteLine($"{nameof(OneElement)}...");
+        Assert.Equal(sizeof(int), sizeof(OneInt));
         Assert.Equal(sizeof(nint), sizeof(OneObj));
     }
 
@@ -107,9 +106,6 @@ unsafe class Validate
     {
         public const int Length = 42;
         public E e;
-
-        [UnscopedRef]
-        public ref E this[int i] => ref Unsafe.Add(ref e, i);
     }
 
     static object s;
@@ -168,10 +164,7 @@ unsafe class Validate
     struct ObjShortArr
     {
         public const int Length = 100;
-        public (object, short) element;
-
-        [UnscopedRef]
-        public ref (object o, short s) this[int i] => ref Unsafe.Add(ref element, i);
+        public (object o, short s) element;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static ObjShortArr CreateArray(int recCount) {
@@ -219,7 +212,7 @@ unsafe class Validate
         public (object, short) element;
 
         [UnscopedRef]
-        public ref (object o, short s) this[int i] => ref Unsafe.Add(ref element, i);
+        public ref (object o, short s) At(int i) => ref Unsafe.Add(ref element, i);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -229,8 +222,8 @@ unsafe class Validate
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            Assert.Equal(i * 2, arr[i].o);
-            Assert.Equal(i * 2 + 1, arr[i].s);
+            Assert.Equal(i * 2, arr.At(i).o);
+            Assert.Equal(i * 2 + 1, arr.At(i).s);
         }
     }
 
@@ -242,48 +235,28 @@ unsafe class Validate
         var arr = new ObjShortArrRef();
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            arr[i].o = i;
-            arr[i].s = (short)(i + 1);
+            arr.At(i).o = i;
+            arr.At(i).s = (short)(i + 1);
         }
 
         GC.Collect(2, GCCollectionMode.Forced, true, true);
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            Assert.Equal(i, arr[i].o);
-            Assert.Equal(i + 1, arr[i].s);
+            Assert.Equal(i, arr.At(i).o);
+            Assert.Equal(i + 1, arr.At(i).s);
         }
 
         for (short i = 0; i < ObjShortArrRef.Length; i++)
         {
-            arr[i].o = i * 2;
-            arr[i].s = (short)(i * 2 + 1);
+            arr.At(i).o = i * 2;
+            arr.At(i).s = (short)(i * 2 + 1);
         }
 
         TestRefLikeOuterMethodArg(arr);
     }
 
     // ====================== RefLikeInner ========================================================
-    [InlineArray(LengthConst)]
-    ref struct SpanArr
-    {
-        private const int LengthConst = 100;
-        public Span<object> element;
-
-        public Span<object>* this[int i]
-        {
-            get
-            {
-                fixed (Span<object>* p = &element)
-                {
-                    return p + i;
-                }
-            }
-        }
-
-        public int Length => LengthConst;
-    }
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void TestRefLikeInnerMethodArg(SpanArr arr)
     {
@@ -291,8 +264,8 @@ unsafe class Validate
 
         for (int i = 1; i < arr.Length; i++)
         {
-            Assert.Equal(i, arr[i]->Length);
-            Assert.Equal(i, (*arr[i])[0]);
+            Assert.Equal(i, arr.At(i)->Length);
+            Assert.Equal(i, (*arr.At(i))[0]);
         }
     }
 
@@ -306,7 +279,7 @@ unsafe class Validate
         {
             var objArr = new object[i];
             objArr[0] = i;
-            *arr[i] = objArr;
+            *arr.At(i) = objArr;
         }
 
         TestRefLikeInnerMethodArg(arr);
@@ -429,5 +402,51 @@ unsafe class Validate
             Assert.Equal(i, holder.arr[i].o);
             Assert.Equal(i + 1, holder.arr[i].s);
         }
+    }
+
+    struct StructHasFortyTwoBytesField
+    {
+        FortyTwoBytes _field;
+    }
+
+    struct StructHasOneIntField
+    {
+        OneInt _field;
+    }
+
+    [Fact]
+    public static void InlineArrayEqualsGetHashCode_Fails()
+    {
+        Console.WriteLine($"{nameof(InlineArrayEqualsGetHashCode_Fails)}...");
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new OneInt().Equals(new OneInt());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new StructHasOneIntField().Equals(new StructHasOneIntField());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new FortyTwoBytes().Equals(new FortyTwoBytes());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new StructHasFortyTwoBytesField().Equals(new StructHasFortyTwoBytesField());
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new OneInt().GetHashCode();
+        });
+
+        Assert.Throws<NotSupportedException>(() =>
+        {
+            new FortyTwoBytes().GetHashCode();
+        });
     }
 }

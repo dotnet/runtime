@@ -91,16 +91,29 @@ typedef struct {
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-m:e-p:32:32-i64:64-n32:64-S128"
+#ifdef TARGET_WASI
+#define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-wasip2"
+#else
 #define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-emscripten"
+#endif
 
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
+#ifdef HOST_BROWSER
+
+//JS functions imported that we use
+#ifdef DISABLE_THREADS
+void mono_wasm_execute_timer (void);
 void mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs);
+#endif // DISABLE_THREADS
 
 void mono_wasm_print_stack_trace (void);
+#endif // HOST_BROWSER
+
+
 
 gboolean
-mini_wasm_is_scalar_vtype (MonoType *type);
+mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype);
 
 #endif /* __MONO_MINI_WASM_H__ */

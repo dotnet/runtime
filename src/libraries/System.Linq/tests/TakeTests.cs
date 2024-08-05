@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -270,23 +271,23 @@ namespace System.Linq.Tests
             var iterator1 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en1 = iterator1 as IEnumerator<int>;
-            Assert.False(en1 != null && en1.MoveNext());
+            Assert.False(en1 is not null && en1.MoveNext());
 
             var iterator2 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(0..2);
             var en2 = iterator2 as IEnumerator<int>;
-            Assert.False(en2 != null && en2.MoveNext());
+            Assert.False(en2 is not null && en2.MoveNext());
 
             var iterator3 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(^3..2);
             var en3 = iterator3 as IEnumerator<int>;
-            Assert.False(en3 != null && en3.MoveNext());
+            Assert.False(en3 is not null && en3.MoveNext());
 
             var iterator4 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(0..^1);
             var en4 = iterator4 as IEnumerator<int>;
-            Assert.False(en4 != null && en4.MoveNext());
+            Assert.False(en4 is not null && en4.MoveNext());
 
             var iterator5 = NumberRangeGuaranteedNotCollectionType(0, 3).Take(^3..^1);
             var en5 = iterator5 as IEnumerator<int>;
-            Assert.False(en5 != null && en5.MoveNext());
+            Assert.False(en5 is not null && en5.MoveNext());
         }
 
         [Fact]
@@ -319,23 +320,23 @@ namespace System.Linq.Tests
             var iterator1 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(2);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en1 = iterator1 as IEnumerator<int>;
-            Assert.False(en1 != null && en1.MoveNext());
+            Assert.False(en1 is not null && en1.MoveNext());
 
             var iterator2 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(0..2);
             var en2 = iterator2 as IEnumerator<int>;
-            Assert.False(en2 != null && en2.MoveNext());
+            Assert.False(en2 is not null && en2.MoveNext());
 
             var iterator3 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(^3..2);
             var en3 = iterator3 as IEnumerator<int>;
-            Assert.False(en3 != null && en3.MoveNext());
+            Assert.False(en3 is not null && en3.MoveNext());
 
             var iterator4 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(0..^1);
             var en4 = iterator4 as IEnumerator<int>;
-            Assert.False(en4 != null && en4.MoveNext());
+            Assert.False(en4 is not null && en4.MoveNext());
 
             var iterator5 = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Take(^3..^1);
             var en5 = iterator5 as IEnumerator<int>;
-            Assert.False(en5 != null && en5.MoveNext());
+            Assert.False(en5 is not null && en5.MoveNext());
         }
 
         [Fact]
@@ -2030,6 +2031,38 @@ namespace System.Linq.Tests
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(6..^5));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(3..^8));
             Assert.Empty(EnumerablePartitionOrEmpty(source).Take(^6..^7));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        public void SkipTakeOnIListIsIList()
+        {
+            IList<int> list = new ReadOnlyCollection<int>(Enumerable.Range(0, 100).ToList());
+            IList<int> skipTake = Assert.IsAssignableFrom<IList<int>>(list.Skip(10).Take(20));
+
+            Assert.True(skipTake.IsReadOnly);
+            Assert.Equal(20, skipTake.Count);
+            int[] results = new int[20];
+            skipTake.CopyTo(results, 0);
+            for (int i = 0; i < 20; i++)
+            {
+                Assert.Equal(i + 10, skipTake[i]);
+                Assert.Equal(i + 10, results[i]);
+                Assert.True(skipTake.Contains(i + 10));
+                Assert.True(skipTake.IndexOf(i + 10) == i);
+            }
+
+            Assert.False(skipTake.Contains(9));
+            Assert.False(skipTake.Contains(30));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => skipTake[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => skipTake[20]);
+
+            Assert.Throws<NotSupportedException>(() => skipTake.Add(42));
+            Assert.Throws<NotSupportedException>(() => skipTake.Clear());
+            Assert.Throws<NotSupportedException>(() => skipTake.Insert(0, 42));
+            Assert.Throws<NotSupportedException>(() => skipTake.Remove(42));
+            Assert.Throws<NotSupportedException>(() => skipTake.RemoveAt(0));
+            Assert.Throws<NotSupportedException>(() => skipTake[0] = 42);
         }
     }
 }

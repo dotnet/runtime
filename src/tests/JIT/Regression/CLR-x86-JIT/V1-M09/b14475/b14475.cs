@@ -34,11 +34,10 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Console.WriteLine("Character.IsWhitespace() -- Bug_Cb4270 runTest started.");
             (new Bug_Cb4270()).runTest();
-            return 100;
         }
     }
 }

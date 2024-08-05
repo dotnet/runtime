@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 
 using Internal.DeveloperExperience;
+using Internal.Reflection.Augments;
 
 namespace System.Diagnostics
 {
@@ -38,11 +39,24 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
-        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed. Consider using " + nameof(DiagnosticMethodInfo) + "." + nameof(DiagnosticMethodInfo.Create) + " instead")]
         public virtual MethodBase? GetMethod()
         {
             TryInitializeMethodBase();
             return _method;
+        }
+
+        internal bool TryGetMethodStartAddress(out IntPtr startAddress)
+        {
+            if (_ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)
+            {
+                startAddress = IntPtr.Zero;
+                return false;
+            }
+
+            startAddress = _ipAddress - _nativeOffset;
+            Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == startAddress);
+            return true;
         }
 
         private bool TryInitializeMethodBase()
@@ -55,7 +69,7 @@ namespace System.Diagnostics
 
             IntPtr methodStartAddress = _ipAddress - _nativeOffset;
             Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == methodStartAddress);
-            DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
+            _method = ReflectionAugments.ReflectionCoreCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
             if (_method == null)
             {
                 _noMethodBaseAvailable = true;
@@ -142,7 +156,7 @@ namespace System.Diagnostics
         /// </summary>
         private bool AppendStackFrameWithoutMethodBase(StringBuilder builder)
         {
-            builder.Append(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, includeFileInfo: false));
+            builder.Append(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, includeFileInfo: false, out _));
             return true;
         }
 
@@ -161,11 +175,15 @@ namespace System.Diagnostics
         {
             if (_ipAddress != Exception.EdiSeparator)
             {
-                // Passing a default string for "at" in case SR.UsingResourceKeys() is true
-                // as this is a special case and we don't want to have "Word_At" on stack traces.
-                string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
-                builder.Append("   ").Append(word_At).Append(' ');
-                builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
+                string s = DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo, out bool isStackTraceHidden);
+                if (!isStackTraceHidden)
+                {
+                    // Passing a default string for "at" in case SR.UsingResourceKeys() is true
+                    // as this is a special case and we don't want to have "Word_At" on stack traces.
+                    string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
+                    builder.Append("   ").Append(word_At).Append(' ');
+                    builder.AppendLine(s);
+                }
             }
             if (_isLastFrameFromForeignExceptionStackTrace)
             {

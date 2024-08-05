@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -94,6 +95,13 @@ namespace Microsoft.Interop.Analyzers
         }
 
         protected abstract ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic);
+
+        protected abstract ImmutableDictionary<string, Option> CombineOptions(ImmutableDictionary<string, Option> fixAllOptions, ImmutableDictionary<string, Option> diagnosticOptions);
+
+        private ImmutableDictionary<string, Option> GetOptionsForIndividualFix(ImmutableDictionary<string, Option> fixAllOptions, Diagnostic diagnostic)
+        {
+            return CombineOptions(fixAllOptions, ParseOptionsFromDiagnostic(diagnostic));
+        }
 
         private static async Task<Solution> ApplyActionAndEnableUnsafe(Solution solution, DocumentId documentId, Func<DocumentEditor, CancellationToken, Task> documentBasedFix, CancellationToken ct)
         {
@@ -193,7 +201,7 @@ namespace Microsoft.Interop.Analyzers
 
                             SyntaxNode node = root.FindNode(diagnostic.Location.SourceSpan);
 
-                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, options);
+                            var documentBasedFix = codeFixProvider.CreateFixForSelectedOptions(node, codeFixProvider.GetOptionsForIndividualFix(options, diagnostic));
 
                             await documentBasedFix(editor, ct).ConfigureAwait(false);
 
@@ -258,6 +266,35 @@ namespace Microsoft.Interop.Analyzers
                          generator.MemberAccessExpression(
                              generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
                              generator.IdentifierName(unmanagedTypeMemberIdentifier))));
+        }
+
+        protected static SyntaxNode AddHResultStructAsErrorMarshalling(SyntaxGenerator generator, IMethodSymbol methodSymbol, SyntaxNode generatedDeclaration)
+        {
+            if (methodSymbol.ReturnType is { TypeKind: TypeKind.Struct }
+                && IsHResultLikeType(methodSymbol.ReturnType)
+                && !methodSymbol.GetReturnTypeAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+            {
+                generatedDeclaration = generator.AddReturnAttributes(generatedDeclaration,
+                    GeneratedMarshalAsUnmanagedTypeErrorAttribute(generator));
+            }
+
+            return generatedDeclaration;
+
+
+            static bool IsHResultLikeType(ITypeSymbol type)
+            {
+                string typeName = type.Name;
+                return typeName.Equals("hr", StringComparison.OrdinalIgnoreCase)
+                    || typeName.Equals("hresult", StringComparison.OrdinalIgnoreCase);
+            }
+
+            // MarshalAs(UnmanagedType.Error)
+            static SyntaxNode GeneratedMarshalAsUnmanagedTypeErrorAttribute(SyntaxGenerator generator)
+                 => generator.Attribute(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute,
+                     generator.AttributeArgument(
+                         generator.MemberAccessExpression(
+                             generator.DottedName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                             generator.IdentifierName(nameof(UnmanagedType.Error)))));
         }
     }
 }

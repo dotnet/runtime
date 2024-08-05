@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility;
 using Xunit;
@@ -372,12 +373,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         public void StemCorrectWithDifferentWildCards_WithInMemory()
         {
             var matcher = new Matcher();
-            matcher.AddInclude("sub/*.cs");
-            matcher.AddInclude("**/*.cs");
+            matcher.AddInclude("src/project/sub/*.cs");
+            matcher.AddInclude("src/project/**/*.cs");
 
             var files = GetFileList();
-            var directoryPath = "src/project";
-            var results = matcher.Match(directoryPath, files);
+            var results = matcher.Match("./", files);
 
             var actual = results.Files.Select(match => match.Stem);
             var expected = new string[]
@@ -425,11 +425,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         public void MultipleSubDirsAfterFirstWildcardMatch_HasCorrectStem_WithInMemory()
         {
             var matcher = new Matcher();
-            matcher.AddInclude("compiler/**/*.cs");
+            matcher.AddInclude("src/project/compiler/**/*.cs");
 
             var files = GetFileList();
-            var directoryPath = "src/project";
-            var results = matcher.Match(directoryPath, files);
+            var results = matcher.Match("./", files);
 
             var actual = results.Files.Select(match => match.Stem);
             var expected = new string[]
@@ -450,12 +449,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"root", @"**/*.0",      @"test.0")]
         public void PathIncludesAllSegmentsFromPattern_RootDirectory(string root, string includePattern, string expectedPath)
         {
-            var fileToFind = @"root/test.0";
-
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
 
-            var results = matcher.Match(root, new[] { fileToFind });
+            var results = matcher.Match(root, new[] { expectedPath });
             var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -464,7 +461,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             matcher = new Matcher();
             matcher.AddInclude("./" + includePattern);
 
-            results = matcher.Match(root, new[] { fileToFind });
+            results = matcher.Match(root, new[] { expectedPath });
             actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -480,12 +477,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"root",      @"**/*.1",         @"dir1/test.1")]
         public void PathIncludesAllSegmentsFromPattern_OneDirectoryDeep(string root, string includePattern, string expectedPath)
         {
-            var fileToFind = @"root/dir1/test.1";
-
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
 
-            var results = matcher.Match(root, new[] { fileToFind });
+            var results = matcher.Match(root, new[] { expectedPath });
             var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -494,7 +489,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             matcher = new Matcher();
             matcher.AddInclude("./" + includePattern);
 
-            results = matcher.Match(root, new[] { fileToFind });
+            results = matcher.Match(root, new[] { expectedPath });
             actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -520,12 +515,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"root",           @"**/*.2",                 @"dir1/dir2/test.2")]
         public void PathIncludesAllSegmentsFromPattern_TwoDirectoriesDeep(string root, string includePattern, string expectedPath)
         {
-            var fileToFind = @"root/dir1/dir2/test.2";
-
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
 
-            var results = matcher.Match(root, new[] { fileToFind });
+            var results = matcher.Match(root, new[] { expectedPath });
             var actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -534,7 +527,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             matcher = new Matcher();
             matcher.AddInclude("./" + includePattern);
 
-            results = matcher.Match(root, new[] { fileToFind });
+            results = matcher.Match(root, new[] { expectedPath });
             actualPath = results.Files.Select(file => file.Path).SingleOrDefault();
 
             Assert.Equal(expectedPath, actualPath);
@@ -545,7 +538,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [InlineData(@"root", @"**/*.0",      @"test.0")]
         public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_RootDirectory(string root, string includePattern, string expectedStem)
         {
-            var fileToFind = @"root/test.0";
+            string fileToFind = "test.0";
 
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
@@ -565,18 +558,16 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.Equal(expectedStem, actualStem);
         }
 
-        [Theory] // rootDir,      includePattern,    expectedStem
-        [InlineData(@"root/dir1", @"*.1",            @"test.1")]
-        [InlineData(@"root/dir1", @"**/*.1",         @"test.1")]
-        [InlineData(@"root",      @"dir1/*.1",       @"test.1")]
-        [InlineData(@"root",      @"dir1/**/*.1",    @"test.1")]
-        [InlineData(@"root",      @"**/dir1/*.1",    @"dir1/test.1")]
-        [InlineData(@"root",      @"**/dir1/**/*.1", @"dir1/test.1")]
-        [InlineData(@"root",      @"**/*.1",         @"dir1/test.1")]
-        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_OneDirectoryDeep(string root, string includePattern, string expectedStem)
+        [Theory] // rootDir,      includePattern,    fileToFind      expectedStem
+        [InlineData(@"root/dir1", @"*.1",            @"test.1",      @"test.1")]
+        [InlineData(@"root/dir1", @"**/*.1",         @"test.1",      @"test.1")]
+        [InlineData(@"root",      @"dir1/*.1",       @"dir1/test.1", @"test.1")]
+        [InlineData(@"root",      @"dir1/**/*.1",    @"dir1/test.1", @"test.1")]
+        [InlineData(@"root",      @"**/dir1/*.1",    @"dir1/test.1", @"dir1/test.1")]
+        [InlineData(@"root",      @"**/dir1/**/*.1", @"dir1/test.1", @"dir1/test.1")]
+        [InlineData(@"root",      @"**/*.1",         @"dir1/test.1", @"dir1/test.1")]
+        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_OneDirectoryDeep(string root, string includePattern, string fileToFind, string expectedStem)
         {
-            var fileToFind = @"root/dir1/test.1";
-
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
 
@@ -595,28 +586,26 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.Equal(expectedStem, actualStem);
         }
 
-        [Theory] // rootDir,           includePattern,            expectedStem
-        [InlineData(@"root/dir1/dir2", @"*.2",                    @"test.2")]
-        [InlineData(@"root/dir1/dir2", @"**/*.2",                 @"test.2")]
-        [InlineData(@"root/dir1",      @"dir2/*.2",               @"test.2")]
-        [InlineData(@"root/dir1",      @"dir2/**/*.2",            @"test.2")]
-        [InlineData(@"root/dir1",      @"**/dir2/*.2",            @"dir2/test.2")]
-        [InlineData(@"root/dir1",      @"**/dir2/**/*.2",         @"dir2/test.2")]
-        [InlineData(@"root/dir1",      @"**/*.2",                 @"dir2/test.2")]
-        [InlineData(@"root",           @"dir1/dir2/*.2",          @"test.2")]
-        [InlineData(@"root",           @"dir1/dir2/**/*.2",       @"test.2")]
-        [InlineData(@"root",           @"**/dir1/dir2/**/*.2",    @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"**/dir1/**/dir2/*.2",    @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"**/dir1/**/dir2/**/*.2", @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"dir1/**/*.2",            @"dir2/test.2")]
-        [InlineData(@"root",           @"**/dir1/**/*.2",         @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"**/dir2/*.2",            @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"**/dir2/**/*.2",         @"dir1/dir2/test.2")]
-        [InlineData(@"root",           @"**/*.2",                 @"dir1/dir2/test.2")]
-        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_TwoDirectoriesDeep(string root, string includePattern, string expectedStem)
+        [Theory] // rootDir,           includePattern,            fileToFind           expectedStem
+        [InlineData(@"root/dir1/dir2", @"*.2",                    @"test.2",           @"test.2")]
+        [InlineData(@"root/dir1/dir2", @"**/*.2",                 @"test.2",           @"test.2")]
+        [InlineData(@"root/dir1",      @"dir2/*.2",               @"dir2/test.2",      @"test.2")]
+        [InlineData(@"root/dir1",      @"dir2/**/*.2",            @"dir2/test.2",      @"test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/*.2",            @"dir2/test.2",      @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/dir2/**/*.2",         @"dir2/test.2",      @"dir2/test.2")]
+        [InlineData(@"root/dir1",      @"**/*.2",                 @"dir2/test.2",      @"dir2/test.2")]
+        [InlineData(@"root",           @"dir1/dir2/*.2",          @"dir1/dir2/test.2", @"test.2")]
+        [InlineData(@"root",           @"dir1/dir2/**/*.2",       @"dir1/dir2/test.2", @"test.2")]
+        [InlineData(@"root",           @"**/dir1/dir2/**/*.2",    @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/*.2",    @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/dir2/**/*.2", @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"dir1/**/*.2",            @"dir1/dir2/test.2", @"dir2/test.2")]
+        [InlineData(@"root",           @"**/dir1/**/*.2",         @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/*.2",            @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/dir2/**/*.2",         @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        [InlineData(@"root",           @"**/*.2",                 @"dir1/dir2/test.2", @"dir1/dir2/test.2")]
+        public void StemIncludesAllSegmentsFromPatternStartingAtWildcard_TwoDirectoriesDeep(string root, string includePattern, string fileToFind, string expectedStem)
         {
-            var fileToFind = @"root/dir1/dir2/test.2";
-
             var matcher = new Matcher();
             matcher.AddInclude(includePattern);
 
@@ -844,7 +833,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Fact] // https://github.com/dotnet/runtime/issues/36415
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50648")]
         public void VerifyInMemoryDirectoryInfo_IsNotEmpty()
         {
             IEnumerable<string> files = new[] { @"pagefile.sys" };
@@ -863,6 +851,55 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
 
             Assert.Equal(1, fileSystemInfos.Count());
+        }
+
+        [Theory]
+        [InlineData("./sdk/9.0.100-preview.4.24207.1/.version")]
+        [InlineData("././sdk/9.0.100-preview.4.24207.1/.version")]
+        public void VerifyFiles_RedundantSegment_HasMatches(string file)
+        {
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match(file).HasMatches);
+                Assert.True(matcher.Match([file]).HasMatches);
+                Assert.True(matcher.Match("X:/foo", file).HasMatches);
+                Assert.True(matcher.Match("X:/foo", [file]).HasMatches);
+            }
+        }
+
+        [ConditionalFact]
+        public void VerifyFiles_ParentRedundantSegment_HasMatches()
+        {
+            string file = "sdk/9.0.100-preview.4.24207.1/.version";
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match("X:/foo", $"../foo/{file}").HasMatches);
+                Assert.True(matcher.Match("X:/foo", [$"../foo/{file}"]).HasMatches);
+            }
+        }
+
+        [ConditionalFact]
+        public void VerifyFiles_ParentRedundantSegment_CurrentDirectory_HasMatches()
+        {
+            string cwd = Environment.CurrentDirectory;
+            string cwdFolderName = new DirectoryInfo(cwd).Name;
+            if (cwd == cwdFolderName) // cwd is root, we can't do ../C:/
+            {
+                throw new SkipTestException($"CurrentDirectory {cwd} is the root directory.");
+            }
+
+            string file = "sdk/9.0.100-preview.4.24207.1/.version";
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match($"../{cwdFolderName}/{file}").HasMatches);
+                Assert.True(matcher.Match([$"../{cwdFolderName}/{file}"]).HasMatches);
+            }
         }
     }
 }

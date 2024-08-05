@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
-        private volatile bool _stopCalled;
+        private bool _hostStarting;
         private bool _hostStopped;
 
         public Host(IServiceProvider services,
@@ -62,8 +62,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         /// <summary>
         /// Order:
-        ///  IHostLifetime.WaitForStartAsync (can abort chain)
-        ///  Services.GetService{IStartupValidator}().Validate() (can abort chain)
+        ///  IHostLifetime.WaitForStartAsync
+        ///  Services.GetService{IStartupValidator}().Validate()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -73,30 +73,21 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             _logger.Starting();
 
-            CancellationTokenSource? cts = null;
-            CancellationTokenSource linkedCts;
-            if (_options.StartupTimeout != Timeout.InfiniteTimeSpan)
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping))
             {
-                cts = new CancellationTokenSource(_options.StartupTimeout);
-                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken, _applicationLifetime.ApplicationStopping);
-            }
-            else
-            {
-                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
-            }
+                if (_options.StartupTimeout != Timeout.InfiniteTimeSpan)
+                    cts.CancelAfter(_options.StartupTimeout);
 
-            using (cts)
-            using (linkedCts)
-            {
-                CancellationToken token = linkedCts.Token;
+                cancellationToken = cts.Token;
 
                 // This may not catch exceptions.
-                await _hostLifetime.WaitForStartAsync(token).ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
+                await _hostLifetime.WaitForStartAsync(cancellationToken).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
 
                 List<Exception> exceptions = new();
-                _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
+                _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                 _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
+                _hostStarting = true;
                 bool concurrent = _options.ServicesStartConcurrently;
                 bool abortOnFirstException = !concurrent;
 
@@ -120,15 +111,15 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Call StartingAsync().
                 if (_hostedLifecycleServices is not null)
                 {
-                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
+                    await ForeachService(_hostedLifecycleServices, cancellationToken, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
 
-                    // We do not abort on exceptions from StartingAsync.
+                    // Exceptions in StartingAsync cause startup to be aborted.
+                    LogAndRethrow();
                 }
 
                 // Call StartAsync().
-                // We do not abort on exceptions from StartAsync.
-                await ForeachService(_hostedServices, token, concurrent, abortOnFirstException, exceptions,
+                await ForeachService(_hostedServices, cancellationToken, concurrent, abortOnFirstException, exceptions,
                     async (service, token) =>
                     {
                         await service.StartAsync(token).ConfigureAwait(false);
@@ -139,14 +130,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                         }
                     }).ConfigureAwait(false);
 
+                // Exceptions in StartAsync cause startup to be aborted.
+                LogAndRethrow();
+
                 // Call StartedAsync().
-                // We do not abort on exceptions from StartedAsync.
                 if (_hostedLifecycleServices is not null)
                 {
-                    await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
+                    await ForeachService(_hostedLifecycleServices, cancellationToken, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
                 }
 
+                // Exceptions in StartedAsync cause startup to be aborted.
                 LogAndRethrow();
 
                 // Call IHostApplicationLifetime.Started
@@ -195,7 +189,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // When the host is being stopped, it cancels the background services.
                 // This isn't an error condition, so don't log it as an error.
-                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                if (_applicationLifetime.ApplicationStopping.IsCancellationRequested && backgroundTask.IsCanceled && ex is OperationCanceledException)
                 {
                     return;
                 }
@@ -222,28 +216,20 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            _stopCalled = true;
             _logger.Stopping();
 
             CancellationTokenSource? cts = null;
-            CancellationTokenSource linkedCts;
             if (_options.ShutdownTimeout != Timeout.InfiniteTimeSpan)
             {
-                cts = new CancellationTokenSource(_options.ShutdownTimeout);
-                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
-            }
-            else
-            {
-                linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(_options.ShutdownTimeout);
+                cancellationToken = cts.Token;
             }
 
             using (cts)
-            using (linkedCts)
             {
-                CancellationToken token = linkedCts.Token;
-
                 List<Exception> exceptions = new();
-                if (_hostedServices is null) // Started?
+                if (!_hostStarting) // Started?
                 {
 
                     // Call IHostApplicationLifetime.ApplicationStopping.
@@ -252,6 +238,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 }
                 else
                 {
+                    Debug.Assert(_hostedServices != null, "Hosted services are resolved when host is started.");
+
                     // Ensure hosted services are stopped in LIFO order
                     IEnumerable<IHostedService> reversedServices = _hostedServices.Reverse();
                     IEnumerable<IHostedLifecycleService>? reversedLifetimeServices = _hostedLifecycleServices?.Reverse();
@@ -260,7 +248,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // Call StoppingAsync().
                     if (reversedLifetimeServices is not null)
                     {
-                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions,
+                        await ForeachService(reversedLifetimeServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions,
                             (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
                     }
 
@@ -269,13 +257,13 @@ namespace Microsoft.Extensions.Hosting.Internal
                     _applicationLifetime.StopApplication();
 
                     // Call StopAsync().
-                    await ForeachService(reversedServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
+                    await ForeachService(reversedServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
                         service.StopAsync(token)).ConfigureAwait(false);
 
                     // Call StoppedAsync().
                     if (reversedLifetimeServices is not null)
                     {
-                        await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
+                        await ForeachService(reversedLifetimeServices, cancellationToken, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
                             service.StoppedAsync(token)).ConfigureAwait(false);
                     }
                 }
@@ -287,7 +275,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // This may not catch exceptions, so we do it here.
                 try
                 {
-                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                    await _hostLifetime.StopAsync(cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -329,7 +317,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // The beginning synchronous portions of the implementations are run serially in registration order for
                 // performance since it is common to return Task.Completed as a noop.
-                // Any subsequent asynchronous portions are grouped together run concurrently.
+                // Any subsequent asynchronous portions are grouped together and run concurrently.
                 List<Task>? tasks = null;
 
                 foreach (T service in services)
@@ -354,8 +342,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     else
                     {
+                        // The task encountered an await; add it to a list to run concurrently.
                         tasks ??= new();
-                        tasks.Add(Task.Run(() => task, token));
+                        tasks.Add(task);
                     }
                 }
 
@@ -369,7 +358,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     catch (Exception ex)
                     {
-                        exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                        if (groupedTasks.IsFaulted)
+                        {
+                            exceptions.AddRange(groupedTasks.Exception.InnerExceptions);
+                        }
+                        else
+                        {
+                            exceptions.Add(ex);
+                        }
                     }
                 }
             }
@@ -413,34 +409,30 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public async ValueTask DisposeAsync()
         {
-            // The user didn't change the ContentRootFileProvider instance, we can dispose it
-            if (ReferenceEquals(_hostEnvironment.ContentRootFileProvider, _defaultProvider))
-            {
-                // Dispose the content provider
-                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
-            }
-            else
+            IFileProvider contentRootFileProvider = _hostEnvironment.ContentRootFileProvider;
+            await DisposeAsync(contentRootFileProvider).ConfigureAwait(false);
+
+            if (!ReferenceEquals(contentRootFileProvider, _defaultProvider))
             {
                 // In the rare case that the user replaced the ContentRootFileProvider, dispose it and the one
                 // we originally created
-                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
                 await DisposeAsync(_defaultProvider).ConfigureAwait(false);
             }
 
             // Dispose the service provider
             await DisposeAsync(Services).ConfigureAwait(false);
 
-            static async ValueTask DisposeAsync(object o)
+            static ValueTask DisposeAsync(object o)
             {
                 switch (o)
                 {
                     case IAsyncDisposable asyncDisposable:
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                        break;
+                        return asyncDisposable.DisposeAsync();
                     case IDisposable disposable:
                         disposable.Dispose();
                         break;
                 }
+                return default;
             }
         }
 
@@ -459,7 +451,9 @@ namespace Microsoft.Extensions.Hosting.Internal
             public IHostEnvironment Environment => host._hostEnvironment;
             public IHostApplicationLifetime ApplicationLifetime => host._applicationLifetime;
             public HostOptions Options => host._options;
-            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ?? Enumerable.Empty<IHostedService>());
+            // _hostedServices is null until the host is started. Resolve services directly from DI if host hasn't started yet.
+            // Want to resolve hosted services once because it's possible they might have been registered with a transient lifetime.
+            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ??= host.Services.GetRequiredService<IEnumerable<IHostedService>>());
             public bool IsRunning => host.IsRunning;
         }
     }

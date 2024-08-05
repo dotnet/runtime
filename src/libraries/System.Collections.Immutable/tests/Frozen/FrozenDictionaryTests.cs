@@ -86,23 +86,35 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void EmptySource_ProducedFrozenDictionaryEmpty()
         {
-            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary());
-            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary());
-            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary());
-            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary());
-
-            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default })
+            IEnumerable<KeyValuePair<TKey, TValue>>[] sources = new[]
             {
-                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(comparer));
-                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-            }
+                new Dictionary<TKey, TValue>(),
+                Enumerable.Empty<KeyValuePair<TKey, TValue>>(),
+                Array.Empty<KeyValuePair<TKey, TValue>>(),
+                new List<KeyValuePair<TKey, TValue>>()
+            };
 
-            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
-            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
-            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
-            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            foreach (IEnumerable<KeyValuePair<TKey, TValue>> source in sources)
+            {
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary());
+                Assert.Same(FrozenDictionary<TKey, KeyValuePair<TKey, TValue>>.Empty, source.ToFrozenDictionary(s => s.Key));
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary(s => s.Key, s => s.Value));
+
+                foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default })
+                {
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary(comparer));
+                    Assert.Same(FrozenDictionary<TKey, KeyValuePair<TKey, TValue>>.Empty, source.ToFrozenDictionary(s => s.Key, comparer));
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary(s => s.Key, s => s.Value, comparer));
+                }
+
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+                Assert.NotSame(FrozenDictionary<TKey, KeyValuePair<TKey, TValue>>.Empty, source.ToFrozenDictionary(s => s.Key, NonDefaultEqualityComparer<TKey>.Instance));
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, source.ToFrozenDictionary(s => s.Key, s => s.Value, NonDefaultEqualityComparer<TKey>.Instance));
+
+                Assert.Equal(0, source.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance).Count);
+                Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, NonDefaultEqualityComparer<TKey>.Instance).Count);
+                Assert.Equal(0, source.ToFrozenDictionary(s => s.Key, s => s.Value, NonDefaultEqualityComparer<TKey>.Instance).Count);
+            }
         }
 
         [Fact]
@@ -196,7 +208,6 @@ namespace System.Collections.Frozen.Tests
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88628", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =
@@ -350,6 +361,35 @@ namespace System.Collections.Frozen.Tests
         }
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(25)]
+        [InlineData(50)]
+        [InlineData(75)]
+        [InlineData(100)]
+        public void ContainsKey_WithNonAscii(int percentageWithNonAscii)
+        {
+            Random rand = new(42);
+
+            Dictionary<string, string> expected = new(GetKeyIEqualityComparer());
+            for (int i = 0; i < 100; i++)
+            {
+                int stringLength = rand.Next(4, 30);
+                byte[] bytes = new byte[stringLength];
+                rand.NextBytes(bytes);
+                string value = Convert.ToBase64String(bytes);
+                if (rand.Next(100) < percentageWithNonAscii)
+                {
+                    value = value.Replace(value[rand.Next(value.Length)], '\u05D0');
+                }
+                expected.Add(value, value);
+            }
+
+            FrozenDictionary<string, string> actual = expected.ToFrozenDictionary(GetKeyIEqualityComparer());
+
+            Assert.All(expected, kvp => actual.ContainsKey(kvp.Key));
+        }
     }
 
     public class FrozenDictionary_Generic_Tests_string_string_Default : FrozenDictionary_Generic_Tests_string_string

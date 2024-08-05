@@ -14,8 +14,7 @@ namespace System
 
         internal Module AssociatedModule => _ptr;
 
-        // Not an api but has to be public because of the Reflection.Core/CoreLib divide.
-        public ModuleHandle(Module module)
+        internal ModuleHandle(Module module)
         {
             _ptr = module;
         }

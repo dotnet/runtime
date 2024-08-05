@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading.Tasks;
+using Xunit;
 
 class Normal
 {
@@ -29,7 +30,7 @@ class Critical : CriticalFinalizerObject
     }
 }
 
-static class CriticalFinalizerTest
+public static class CriticalFinalizerTest
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void AllocateObjects(int count)
@@ -45,7 +46,8 @@ static class CriticalFinalizerTest
         GC.KeepAlive(arr);
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Count = 100;
 

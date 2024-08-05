@@ -9,15 +9,11 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
-if(POLICY CMP0075)
-    cmake_policy(SET CMP0075 NEW)
-endif()
-
 if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
+    add_compile_options(-Wno-poison-system-directories)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
@@ -38,7 +34,7 @@ endif()
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
-if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
 endif()
 
@@ -255,11 +251,6 @@ check_include_files(
     HAVE_GNU_LIBNAMES_H)
 
 check_symbol_exists(
-    arc4random_buf
-    "stdlib.h"
-    HAVE_ARC4RANDOM_BUF)
-
-check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)
@@ -268,31 +259,6 @@ check_symbol_exists(
     TIOCSWINSZ
     "sys/ioctl.h"
     HAVE_TIOCSWINSZ)
-
-check_symbol_exists(
-    tcgetattr
-    termios.h
-    HAVE_TCGETATTR)
-
-check_symbol_exists(
-    tcsetattr
-    termios.h
-    HAVE_TCSETATTR)
-
-check_symbol_exists(
-    ECHO
-    "termios.h"
-    HAVE_ECHO)
-
-check_symbol_exists(
-    ICANON
-    "termios.h"
-    HAVE_ICANON)
-
-check_symbol_exists(
-    TCSANOW
-    "termios.h"
-    HAVE_TCSANOW)
 
 check_symbol_exists(
     cfsetspeed
@@ -362,6 +328,8 @@ check_struct_has_member(
     f_fstypename
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
+
+set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
 
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
@@ -435,18 +403,6 @@ check_c_source_compiles(
     "
     KEVENT_HAS_VOID_UDATA)
 
-check_struct_has_member(
-    "struct fd_set"
-    fds_bits
-    "sys/select.h"
-    HAVE_FDS_BITS)
-
-check_struct_has_member(
-    "struct fd_set"
-    __fds_bits
-    "sys/select.h"
-    HAVE_PRIVATE_FDS_BITS)
-
 # do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
 if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     check_c_source_compiles(
@@ -498,6 +454,10 @@ check_include_files(
      "sys/proc_info.h"
      HAVE_SYS_PROCINFO_H)
 
+check_include_files(
+    "time.h;linux/errqueue.h"
+    HAVE_LINUX_ERRQUEUE_H)
+
 check_symbol_exists(
     epoll_create1
     sys/epoll.h
@@ -508,15 +468,26 @@ check_symbol_exists(
     sys/socket.h
     HAVE_ACCEPT4)
 
+set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if(CLR_CMAKE_TARGET_HAIKU)
+    set(CMAKE_REQUIRED_LIBRARIES "bsd")
+endif()
+
 check_symbol_exists(
     kqueue
     "sys/types.h;sys/event.h"
     HAVE_KQUEUE)
+set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_symbol_exists(
     disconnectx
     "sys/socket.h"
     HAVE_DISCONNECTX)
+
+check_symbol_exists(
+    connectx
+    "sys/socket.h"
+    HAVE_CONNECTX)
 
 set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
@@ -573,23 +544,22 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    # TODO: test to see if these all actually hold true on Mac Catalyst
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
@@ -600,14 +570,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        unset(HAVE_ALIGNED_ALLOC) # only exists on OSX 10.15+
-    else()
-        check_symbol_exists(
-            aligned_alloc
-            stdlib.h
-            HAVE_ALIGNED_ALLOC)
-    endif()
+    check_symbol_exists(
+        aligned_alloc
+        stdlib.h
+        HAVE_ALIGNED_ALLOC)
 
     check_c_source_runs(
         "
@@ -717,23 +683,6 @@ check_symbol_exists(
 
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
-
-check_c_source_compiles(
-    "
-    #include <stddef.h>
-    #include <sys/socket.h>
-
-    int main(void)
-    {
-        int fd = -1;
-        struct sockaddr* addr = NULL;
-        socklen_t addrLen = 0;
-
-        int err = bind(fd, addr, addrLen);
-        return 0;
-    }
-    "
-    BIND_ADDRLEN_UNSIGNED)
 
 check_c_source_compiles(
     "
@@ -1022,11 +971,6 @@ check_symbol_exists(
     unistd.h
     HAVE_GETDOMAINNAME)
 
-check_symbol_exists(
-    uname
-    sys/utsname.h
-    HAVE_UNAME)
-
 # getdomainname on OSX takes an 'int' instead of a 'size_t'
 # check if compiling with 'size_t' would cause a warning
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -1155,7 +1099,7 @@ check_symbol_exists(
     sys/sysmacros.h
     HAVE_MAKEDEV_SYSMACROSH)
 
-if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_HAIKU)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 

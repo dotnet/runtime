@@ -66,7 +66,7 @@ This shows how Blazor (or a developer) can hook into the build to opt assemblies
 
 ### Other options
 
-.NET 5 introduced a host of additional SDK options that map directly to the underlying illink options. The full list is documented at https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming-options.
+.NET 5 introduced a host of additional SDK options that map directly to the underlying illink options. The full list is documented at https://learn.microsoft.com/dotnet/core/deploying/trimming-options.
 
 ## .NET 6
 
@@ -100,7 +100,7 @@ This ItemGroup contains assembly names that get opted into trimming via `IsTrimm
 </ItemGroup>
 ```
 
-The above opts `MyAssembly.dll` into trimming. Note that the ItemGroup should contain assembly names without an extension, similar to [`TrimmerRootAssembly`](https://docs.microsoft.com/en-us/dotnet/core/deploying/trimming-options#root-assemblies). Before .NET 6 this would have been done with a target:
+The above opts `MyAssembly.dll` into trimming. Note that the ItemGroup should contain assembly names without an extension, similar to [`TrimmerRootAssembly`](https://learn.microsoft.com/dotnet/core/deploying/trimming-options#root-assemblies). Before .NET 6 this would have been done with a target:
 
 ```xml
 <Target Name="ConfigureTrimming"
@@ -182,7 +182,6 @@ If there is a use case for specifying trimmable assemblies on the command-line, 
 We will use `AssemblyMetadataAttribute` to specify `IsTrimmable` on an assembly, instead of introducing a new attribute. The existing attribute seems well-suited for this use case, as it is already similarly used to control servicing for framework assemblies, for example via:
 
 ```csharp
-[assembly: AssemblyMetadata(".NETFrameworkAssembly", "")]
 [assembly: AssemblyMetadata("Serviceable", "True")]
 [assembly: AssemblyMetadata("PreferInbox", "True")]
 ```

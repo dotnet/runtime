@@ -11,17 +11,16 @@ parameters:
   osSubgroup: ''                  # optional -- operating system subgroup
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
-  timeoutInMinutes: 120           # optional -- timeout for the job
+  timeoutInMinutes: 180           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
-  dependOnEvaluatePaths: false
   diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
   baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
   diffJitOptions: ''
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -32,7 +31,6 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if ne(parameters.displayName, '') }}:
@@ -47,11 +45,17 @@ jobs:
     - name: diffType
       value: ${{ parameters.diffType }}
 
+    - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
+    - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+      parameters:
+        runtimeFlavor: coreclr
+        testGroup: ${{ parameters.testGroup }}
+        liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'py -3'
-      - name: PipScript
-        value: 'py -3 -m pip'
       - name: SpmiCollectionLocation
         value: '$(Build.SourcesDirectory)\artifacts\spmi\'
       - name: SpmiLogsLocation
@@ -61,10 +65,6 @@ jobs:
       - name: HelixResultLocation
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: PythonScript
-        value: 'python3'
-      - name: PipScript
-        value: 'pip3'
       - name: SpmiCollectionLocation
         value: '$(Build.SourcesDirectory)/artifacts/spmi/'
       - name: SpmiLogsLocation
@@ -94,6 +94,9 @@ jobs:
     steps:
     - ${{ parameters.steps }}
 
+    - script: $(PythonSetupScript)
+      displayName: Enable python venv
+
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
           mkdir -p $(SpmiCollectionLocation)
@@ -119,7 +122,7 @@ jobs:
         helixType: 'build/tests/'
         helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
-        WorkItemTimeout: 2:00 # 2 hours
+        WorkItemTimeout: 5:00 # 5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'

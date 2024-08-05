@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("SqlClient", envConfigSrc.Get("DEFAULTCONNECTION:PROVIDER"));
             Assert.Equal("AnotherTestConnectionString", envConfigSrc.Get("Inventory:CONNECTIONSTRING"));
             Assert.Equal("MySql", envConfigSrc.Get("Inventory:Provider"));
-            Assert.Equal("EnvironmentVariablesConfigurationProvider Prefix: ''", envConfigSrc.ToString());
+            Assert.Equal("EnvironmentVariablesConfigurationProvider", envConfigSrc.ToString());
         }
 
         [Fact]

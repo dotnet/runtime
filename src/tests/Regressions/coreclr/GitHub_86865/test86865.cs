@@ -1,11 +1,13 @@
 using System;
 using System.Reflection;
+using Xunit;
 
 namespace test86865;
 
 public class test86865
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         // Regression test for https://github.com/dotnet/runtime/issues/86865

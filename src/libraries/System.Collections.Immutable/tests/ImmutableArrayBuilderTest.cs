@@ -199,7 +199,7 @@ namespace System.Collections.Immutable.Tests
 
             // AddRange
             builder.AddRange(new ReadOnlySpan<string>(rangeElements));
-            
+
             // Assert
             Assert.Equal(expectedResult, builder);
         }
@@ -214,7 +214,7 @@ namespace System.Collections.Immutable.Tests
 
             // AddRange
             builder.AddRange(rangeElements.ToImmutableArray());
-            
+
             // Assert
             Assert.Equal(expectedResult, builder);
         }
@@ -226,7 +226,7 @@ namespace System.Collections.Immutable.Tests
             // Initialize builder
             var builderBase = new ImmutableArray<object>.Builder();
             builderBase.AddRange(builderElements);
-            
+
             // Prepare another builder to add
             var builder = new ImmutableArray<string>.Builder();
             builder.AddRange(rangeElements);
@@ -369,11 +369,17 @@ namespace System.Collections.Immutable.Tests
             builder.RemoveRange(1, 2);
             Assert.Equal(new[] { 1, 4, 5 }, builder);
 
+            builder.RemoveRange(1, 0);
+            Assert.Equal(new[] { 1, 4, 5 }, builder);
+
             builder.RemoveRange(new int[] { 4, 6 });
             Assert.Equal(new[] { 1, 5 }, builder);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(-1, 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(1, 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(10, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, 10));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.RemoveRange(1, int.MaxValue));
             AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null));
         }
 
@@ -1108,7 +1114,7 @@ namespace System.Collections.Immutable.Tests
             builder.Add(3);
 
             ref readonly int safeRef = ref builder.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 

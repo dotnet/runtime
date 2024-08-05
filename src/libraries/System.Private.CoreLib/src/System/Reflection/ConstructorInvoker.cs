@@ -2,15 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
 
 namespace System.Reflection
 {
+    /// <summary>
+    /// Invokes the method reflected by the provided <see cref="ConstructorInfo"/>.
+    /// </summary>
+    /// <remarks>
+    /// Used for better performance than <seealso cref="ConstructorInfo.Invoke"/> when compatibility with that method
+    /// is not necessary and when the caller can cache the ConstructorInvoker instance for additional invoke calls.<br/>
+    /// Unlike <see cref="ConstructorInfo.Invoke"/>, the invoke methods do not look up default values for arguments when
+    /// <see cref="Type.Missing"/> is specified. In addition, the target constructor may be inlined for performance and not
+    /// appear in stack traces.
+    /// </remarks>
+    /// <seealso cref="MethodInvoker"/>
     public sealed partial class ConstructorInvoker
     {
         private InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
@@ -24,6 +35,17 @@ namespace System.Reflection
         private readonly RuntimeConstructorInfo _method;
         private readonly bool _needsByRefStrategy;
 
+        /// <summary>
+        /// Creates a new instance of ConstructorInvoker.
+        /// </summary>
+        /// <remarks>
+        /// For performance, the resulting instance should be cached for additional calls.
+        /// </remarks>
+        /// <param name="constructor">The constructor that will be invoked.</param>
+        /// <returns>An instance of a ConstructorInvoker.</returns>
+        /// <exception cref="ArgumentException">
+        /// The <paramref name="constructor"/> is not a runtime-based method.
+        /// </exception>
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
             ArgumentNullException.ThrowIfNull(constructor, nameof(constructor));
@@ -46,21 +68,96 @@ namespace System.Reflection
             Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
-        public object? Invoke() => Invoke(null, null, null, null);
-        public object? Invoke(object? arg1) => Invoke(arg1, null, null, null);
-        public object? Invoke(object? arg1, object? arg2) => Invoke(arg1, arg2, null, null);
-        public object? Invoke(object? arg1, object? arg2, object? arg3) => Invoke(arg1, arg2, arg3, null);
-        public object? Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
+        /// <summary>
+        /// Invokes the constructor.
+        /// </summary>
+        /// <returns>
+        /// An instance of the class associated with the constructor.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The type that declares the method is an open generic type.
+        /// </exception>
+        /// <exception cref="TargetParameterCountException">
+        /// The correct number of arguments were not provided.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// The calling convention or signature is not supported.
+        /// </exception>
+        public object Invoke()
         {
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
-            {
-                _method.ThrowNoInvokeException();
-            }
-
-            // Allow additional non-used arguments to simplify caller's logic.
-            if (_argCount > MaxStackAllocArgCount)
+            if (_argCount != 0)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(null, null, null, null);
+        }
+
+        /// <summary>
+        /// Invokes the constructor using the specified parameters.
+        /// </summary>
+        /// <inheritdoc cref="Invoke()"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <exception cref="ArgumentException">
+        /// The arguments do not match the signature of the invoked constructor.
+        /// </exception>
+        public object Invoke(object? arg1)
+        {
+            if (_argCount != 1)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, null, null, null);
+        }
+
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        public object Invoke(object? arg1, object? arg2)
+        {
+            if (_argCount != 2)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, null, null);
+        }
+
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
+        public object Invoke(object? arg1, object? arg2, object? arg3)
+        {
+            if (_argCount != 3)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, arg3, null);
+        }
+
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arg1">The first argument for the invoked method.</param>
+        /// <param name="arg2">The second argument for the invoked method.</param>
+        /// <param name="arg3">The third argument for the invoked method.</param>
+        /// <param name="arg4">The fourth argument for the invoked method.</param>
+        public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
+        {
+            if (_argCount != 4)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
+            return InvokeImpl(arg1, arg2, arg3, arg4);
+        }
+
+        private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
+        {
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
+            {
+                _method.ThrowNoInvokeException();
             }
 
             switch (_argCount)
@@ -82,7 +179,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_Obj4Args is not null)
             {
-                return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4);
+                return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4)!;
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0)
@@ -90,30 +187,41 @@ namespace System.Reflection
                 DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy, backwardsCompat: false);
                 if (_invokeFunc_Obj4Args is not null)
                 {
-                    return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4);
+                    return _invokeFunc_Obj4Args(obj: null, arg1, arg2, arg3, arg4)!;
                 }
             }
 
             return InvokeDirectByRef(arg1, arg2, arg3, arg4);
         }
 
-        public object? Invoke(Span<object?> arguments)
+        /// <inheritdoc cref="Invoke(object?)"/>
+        /// <param name="arguments">The arguments for the invoked constructor.</param>
+        /// <exception cref="ArgumentException">
+        /// The arguments do not match the signature of the invoked constructor.
+        /// </exception>
+        public object Invoke(Span<object?> arguments)
         {
+            int argLen = arguments.Length;
+            if (argLen != _argCount)
+            {
+                MethodBaseInvoker.ThrowTargetParameterCountException();
+            }
+
             if (!_needsByRefStrategy)
             {
                 // Switch to fast path if possible.
                 switch (_argCount)
                 {
                     case 0:
-                        return Invoke(null, null, null, null);
+                        return InvokeImpl(null, null, null, null);
                     case 1:
-                        return Invoke(arguments[0], null, null, null);
+                        return InvokeImpl(arguments[0], null, null, null);
                     case 2:
-                        return Invoke(arguments[0], arguments[1], null, null);
+                        return InvokeImpl(arguments[0], arguments[1], null, null);
                     case 3:
-                        return Invoke(arguments[0], arguments[1], arguments[2], null);
+                        return InvokeImpl(arguments[0], arguments[1], arguments[2], null);
                     case 4:
-                        return Invoke(arguments[0], arguments[1], arguments[2], arguments[3]);
+                        return InvokeImpl(arguments[0], arguments[1], arguments[2], arguments[3]);
                     default:
                         break;
                 }
@@ -124,12 +232,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (arguments.Length != _argCount)
-            {
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-            }
-
-            if (arguments.Length > MaxStackAllocArgCount)
+            if (argLen > MaxStackAllocArgCount)
             {
                 return InvokeWithManyArgs(arguments);
             }
@@ -137,13 +240,13 @@ namespace System.Reflection
             return InvokeWithFewArgs(arguments);
         }
 
-        internal object? InvokeWithFewArgs(Span<object?> arguments)
+        internal object InvokeWithFewArgs(Span<object?> arguments)
         {
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = stackArgStorage._args.AsSpan(_argCount);
-            scoped Span<bool> shouldCopyBack = stackArgStorage._shouldCopyBack.AsSpan(_argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            scoped Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
             for (int i = 0; i < _argCount; i++)
             {
@@ -155,7 +258,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj : null, copyOfArgs);
+                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 
@@ -164,22 +267,22 @@ namespace System.Reflection
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
                 if (_invokeFunc_ObjSpanArgs is not null)
                 {
-                    return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs);
+                    return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 }
             }
 
-            object? ret = InvokeDirectByRefWithFewArgs(copyOfArgs);
+            object ret = InvokeDirectByRefWithFewArgs(copyOfArgs);
             CopyBack(arguments, copyOfArgs, shouldCopyBack);
             return ret;
         }
 
-        internal object? InvokeDirectByRef(object? arg1 = null, object? arg2 = null, object? arg3 = null, object? arg4 = null)
+        internal object InvokeDirectByRef(object? arg1 = null, object? arg2 = null, object? arg3 = null, object? arg4 = null)
         {
             StackAllocatedArguments stackStorage = new(arg1, arg2, arg3, arg4);
-            return InvokeDirectByRefWithFewArgs(stackStorage._args.AsSpan(_argCount));
+            return InvokeDirectByRefWithFewArgs(((Span<object?>)stackStorage._args).Slice(0, _argCount));
         }
 
-        internal unsafe object? InvokeDirectByRefWithFewArgs(Span<object?> copyOfArgs)
+        internal unsafe object InvokeDirectByRefWithFewArgs(Span<object?> copyOfArgs)
         {
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
@@ -187,27 +290,23 @@ namespace System.Reflection
             }
 
             StackAllocatedByRefs byrefs = default;
-#pragma warning disable CS8500
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
-#pragma warning restore CS8500
 
             for (int i = 0; i < _argCount; i++)
             {
-#pragma warning disable CS8500
                 *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-#pragma warning restore CS8500
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
                     ByReference.Create(ref copyOfArgs[i]);
             }
 
-            return _invokeFunc_RefArgs!(obj: null, pByRefFixedStorage);
+            return _invokeFunc_RefArgs!(obj: null, pByRefFixedStorage)!;
         }
 
-        internal unsafe object? InvokeWithManyArgs(Span<object?> arguments)
+        internal unsafe object InvokeWithManyArgs(Span<object?> arguments)
         {
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
-            object? ret;
+            object ret;
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
@@ -232,7 +331,7 @@ namespace System.Reflection
                         copyOfArgs[i] = arg;
                     }
 
-                    ret = _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs);
+                    ret = _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                     // No need to call CopyBack here since there are no ref values.
                 }
                 finally
@@ -267,14 +366,12 @@ namespace System.Reflection
                         object? arg = arguments[i];
                         shouldCopyBack[i] = CheckArgument(ref arg, i);
                         copyOfArgs[i] = arg;
-    #pragma warning disable CS8500
                         *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-    #pragma warning restore CS8500
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
                             ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                     }
 
-                    ret = _invokeFunc_RefArgs!(obj: null, pByRefStorage);
+                    ret = _invokeFunc_RefArgs!(obj: null, pByRefStorage)!;
                     CopyBack(arguments, copyOfArgs, shouldCopyBack);
                 }
                 finally
@@ -289,7 +386,7 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // Copy modified values out. This is only done with ByRef parameters.
-        internal void CopyBack(Span<object?> dest, Span<object?> copyOfParameters, Span<bool> shouldCopyBack)
+        internal void CopyBack(Span<object?> dest, ReadOnlySpan<object?> copyOfParameters, ReadOnlySpan<bool> shouldCopyBack)
         {
             for (int i = 0; i < dest.Length; i++)
             {

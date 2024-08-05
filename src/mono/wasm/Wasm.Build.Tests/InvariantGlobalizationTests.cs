@@ -59,7 +59,7 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"), Path.Combine(_projectDir!, "Program.cs")),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : null));
+                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded));
 
             if (invariantGlobalization == true)
             {
@@ -69,8 +69,8 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
-                Assert.Contains("es-ES: Is Invariant LCID: False, NativeName: es (ES)", output);
+                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, args: "nativename=\"espa\u00F1ol (Espa\u00F1a)\"");
+                Assert.Contains("es-ES: Is Invariant LCID: False", output);
 
                 // ignoring the last line of the output which prints the current culture
             }

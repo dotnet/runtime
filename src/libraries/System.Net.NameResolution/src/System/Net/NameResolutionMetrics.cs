@@ -12,42 +12,34 @@ namespace System.Net
     {
         private static readonly Meter s_meter = new("System.Net.NameResolution");
 
-        private static readonly Counter<long> s_lookupsRequestedCounter = s_meter.CreateCounter<long>(
-            name: "dns-lookups-requested",
-            description: "Number of DNS lookups requested.");
-
-        public static bool IsEnabled() => s_lookupsRequestedCounter.Enabled;
-
-        public static void BeforeResolution(object hostNameOrAddress, out string? host)
-        {
-            if (s_lookupsRequestedCounter.Enabled)
+        private static readonly Histogram<double> s_lookupDuration = s_meter.CreateHistogram<double>(
+            name: "dns.lookup.duration",
+            unit: "s",
+            description: "Measures the time taken to perform a DNS lookup.",
+            advice: new InstrumentAdvice<double>()
             {
-                host = GetHostnameFromStateObject(hostNameOrAddress);
+                // OTel bucket boundary recommendation for 'http.request.duration':
+                // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-metrics.md#metric-httpclientrequestduration
+                // We are using these boundaries for all network requests that are expected to be short.
+                HistogramBucketBoundaries = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
+            });
 
-                s_lookupsRequestedCounter.Add(1, KeyValuePair.Create("hostname", (object?)host));
+        public static bool IsEnabled() => s_lookupDuration.Enabled;
+
+        public static void AfterResolution(TimeSpan duration, string hostName, Exception? exception)
+        {
+            var hostNameTag = KeyValuePair.Create("dns.question.name", (object?)hostName);
+
+            if (exception is null)
+            {
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag);
             }
             else
             {
-                host = null;
+                string errorType = NameResolutionTelemetry.GetErrorType(exception);
+                var errorTypeTag = KeyValuePair.Create("error.type", (object?)errorType);
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
             }
-        }
-
-        public static string GetHostnameFromStateObject(object hostNameOrAddress)
-        {
-            Debug.Assert(hostNameOrAddress is not null);
-
-            string host = hostNameOrAddress switch
-            {
-                string h => h,
-                KeyValuePair<string, AddressFamily> t => t.Key,
-                IPAddress a => a.ToString(),
-                KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
-                _ => null!
-            };
-
-            Debug.Assert(host is not null, $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
-
-            return host;
         }
     }
 }

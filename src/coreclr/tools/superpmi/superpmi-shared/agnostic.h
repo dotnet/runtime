@@ -172,6 +172,7 @@ struct Agnostic_CORINFO_EE_INFO
     struct Agnostic_InlinedCallFrameInfo
     {
         DWORD size;
+        DWORD sizeWithSecretStubArg;
         DWORD offsetOfGSCookie;
         DWORD offsetOfFrameVptr;
         DWORD offsetOfFrameLink;
@@ -179,6 +180,8 @@ struct Agnostic_CORINFO_EE_INFO
         DWORD offsetOfCalleeSavedFP;
         DWORD offsetOfCallTarget;
         DWORD offsetOfReturnAddress;
+        DWORD offsetOfSecretStubArg;
+        DWORD offsetOfSPAfterProlog;
     } inlinedCallFrameInfo;
     DWORD offsetOfThreadFrame;
     DWORD offsetOfGCState;
@@ -423,7 +426,14 @@ struct Agnostic_CheckMethodModifier
 struct Agnostic_EmbedGenericHandle
 {
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+    DWORDLONG                       hCallerHandle;
     DWORD                           fEmbedParent;
+};
+
+struct Agnostic_ExpandRawHandleIntrinsic
+{
+    Agnostic_CORINFO_RESOLVED_TOKENin ResolvedToken;
+    DWORDLONG                         hCallerHandle;
 };
 
 struct Agnostic_CORINFO_GENERICHANDLE_RESULT
@@ -459,12 +469,6 @@ struct Agnostic_FindCallSiteSig
     DWORDLONG module;
     DWORD     methTok;
     DWORDLONG context;
-};
-
-struct Agnostic_GetNewHelper
-{
-    DWORDLONG hClass;
-    DWORDLONG callerHandle;
 };
 
 struct Agnostic_GetCastingHelper
@@ -518,6 +522,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD dataByteCount;
     DWORD result;
     DWORD pgoSource;
+    DWORD dynamicPgo;
 };
 
 struct Agnostic_GetProfilingHandle
@@ -536,7 +541,23 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     DWORD                         offsetOfThreadLocalStoragePointer;
     DWORD                         offsetOfMaxThreadStaticBlocks;
     DWORD                         offsetOfThreadStaticBlocks;
-    DWORD                         offsetOfGCDataPointer;
+    DWORD                         offsetOfBaseOfThreadLocalData;
+};
+
+struct Agnostic_GetThreadStaticInfo_NativeAOT
+{
+    DWORD offsetOfThreadLocalStoragePointer;
+    Agnostic_CORINFO_CONST_LOOKUP tlsRootObject;
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndexObject;
+    Agnostic_CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    Agnostic_CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
+};
+
+struct Agnostic_GetClassCtorInitializationInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    Agnostic_CORINFO_CONST_LOOKUP targetAddr;
+    int                           size;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo
@@ -573,6 +594,12 @@ struct Agnostic_GetArgType_Value
     DWORD     exceptionCode;
 };
 
+struct Agnostic_GetExactClassesResult
+{
+    int numClasses;
+    DWORD classes;
+};
+
 // Agnostic_ConfigIntInfo combines as a single key the name
 // and defaultValue of a integer config query.
 // Note: nameIndex is treated as a DWORD index to the name string.
@@ -596,6 +623,22 @@ struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
     DWORD eightByteOffsets[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS]; // The start offset of the
                                                                                    // eightbytes (in bytes).
     DWORD result;
+};
+
+struct Agnostic_GetSwiftLowering
+{
+    DWORD byReference;
+    DWORD loweredElements[MAX_SWIFT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_SWIFT_LOWERED_ELEMENTS];
+    DWORD numLoweredElements;
+};
+
+struct Agnostic_GetFpStructLowering
+{
+    DWORD byIntegerCallConv;
+    DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD numLoweredElements;
 };
 
 struct Agnostic_ResolveVirtualMethodKey
@@ -663,6 +706,7 @@ struct GetReadyToRunHelper_TOKENin
     Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
     Agnostic_CORINFO_LOOKUP_KIND    GenericLookupKind;
     DWORD                           id;
+    DWORDLONG                       callerHandle;
 };
 
 struct GetReadyToRunHelper_TOKENout
@@ -676,6 +720,7 @@ struct GetReadyToRunDelegateCtorHelper_TOKENIn
     Agnostic_CORINFO_RESOLVED_TOKEN TargetMethod;
     mdToken                         targetConstraint;
     DWORDLONG                       delegateType;
+    DWORDLONG                       callerHandle;
 };
 
 struct Agnostic_RecordRelocation
@@ -702,12 +747,6 @@ struct allocGCInfoDetails
 {
     size_t size;
     void*  retval;
-};
-
-struct Agnostic_AddressMap
-{
-    DWORDLONG Address;
-    DWORD     size;
 };
 
 struct Agnostic_AllocGCInfo

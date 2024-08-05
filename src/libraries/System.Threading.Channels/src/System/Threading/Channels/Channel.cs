@@ -4,7 +4,7 @@
 namespace System.Threading.Channels
 {
     /// <summary>Provides static methods for creating channels.</summary>
-    public static class Channel
+    public static partial class Channel
     {
         /// <summary>Creates an unbounded channel usable by any number of readers and writers concurrently.</summary>
         /// <returns>The created channel.</returns>

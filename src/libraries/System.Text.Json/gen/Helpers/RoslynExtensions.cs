@@ -25,23 +25,20 @@ namespace System.Text.Json.SourceGeneration
             return compilation.GetBestTypeByMetadataName(type.FullName);
         }
 
-        public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-        public static Location? GetDiagnosticLocation(this ISymbol typeSymbol)
+        public static Location? GetLocation(this ISymbol typeSymbol)
             => typeSymbol.Locations.Length > 0 ? typeSymbol.Locations[0] : null;
 
-        public static Location? GetDiagnosticLocation(this AttributeData attributeData)
+        public static Location? GetLocation(this AttributeData attributeData)
         {
             SyntaxReference? reference = attributeData.ApplicationSyntaxReference;
             return reference?.SyntaxTree.GetLocation(reference.Span);
         }
 
         /// <summary>
-        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
+        /// Returns true if the specified location is contained in one of the syntax trees in the compilation.
         /// </summary>
-        [return: NotNullIfNotNull(nameof(location))]
-        public static Location? GetTrimmedLocation(this Location? location)
-            => location is null ? null : Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+        public static bool ContainsLocation(this Compilation compilation, Location location)
+            => location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
         /// <summary>
         /// Removes any type metadata that is erased at compile time, such as NRT annotations and tuple labels.
@@ -51,6 +48,12 @@ namespace System.Text.Json.SourceGeneration
             if (type.NullableAnnotation is NullableAnnotation.Annotated)
             {
                 type = type.WithNullableAnnotation(NullableAnnotation.None);
+            }
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                ITypeSymbol elementType = compilation.EraseCompileTimeMetadata(arrayType.ElementType);
+                return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
             }
 
             if (type is INamedTypeSymbol namedType)
@@ -192,6 +195,9 @@ namespace System.Text.Json.SourceGeneration
                 SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal;
         }
 
+        public static bool IsNullableType(this ITypeSymbol type)
+            => !type.IsValueType || type.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T;
+
         public static bool IsNullableValueType(this ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? elementType)
         {
             if (type.IsValueType && type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
@@ -202,28 +208,6 @@ namespace System.Text.Json.SourceGeneration
 
             elementType = null;
             return false;
-        }
-
-        public static ITypeSymbol[] GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
-        {
-            if (!type.IsGenericType)
-            {
-                return Array.Empty<ITypeSymbol>();
-            }
-
-            var args = new List<ITypeSymbol>();
-            TraverseContainingTypes(type);
-            return args.ToArray();
-
-            void TraverseContainingTypes(INamedTypeSymbol current)
-            {
-                if (current.ContainingType is INamedTypeSymbol parent)
-                {
-                    TraverseContainingTypes(parent);
-                }
-
-                args.AddRange(current.TypeArguments);
-            }
         }
 
         public static ITypeSymbol GetMemberType(this ISymbol member)
@@ -293,6 +277,108 @@ namespace System.Text.Json.SourceGeneration
                     Debug.Fail("unexpected syntax kind");
                     return null;
             }
+        }
+
+        public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        {
+            if (field.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not its instantiation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                field = field.OriginalDefinition;
+
+                isGetterNonNullable = IsOutputTypeNonNullable(field, field.Type);
+                isSetterNonNullable = IsInputTypeNonNullable(field, field.Type);
+            }
+            else
+            {
+                isGetterNonNullable = isSetterNonNullable = false;
+            }
+        }
+
+        public static void ResolveNullabilityAnnotations(this IPropertySymbol property, out bool isGetterNonNullable, out bool isSetterNonNullable)
+        {
+            if (property.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not its instantiation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                property = property.OriginalDefinition;
+
+                isGetterNonNullable = property.GetMethod != null && IsOutputTypeNonNullable(property, property.Type);
+                isSetterNonNullable = property.SetMethod != null && IsInputTypeNonNullable(property, property.Type);
+            }
+            else
+            {
+                isGetterNonNullable = isSetterNonNullable = false;
+            }
+        }
+
+        public static bool IsNullable(this IParameterSymbol parameter)
+        {
+            if (parameter.Type.IsNullableType())
+            {
+                // Because System.Text.Json cannot distinguish between nullable and non-nullable type parameters,
+                // (e.g. the same metadata is being used for both KeyValuePair<string, string?> and KeyValuePair<string, string>),
+                // we derive nullability annotations from the original definition of the field and not instation.
+                // This preserves compatibility with the capabilities of the reflection-based NullabilityInfo reader.
+                parameter = parameter.OriginalDefinition;
+                return !IsInputTypeNonNullable(parameter, parameter.Type);
+            }
+
+            return false;
+        }
+
+        private static bool IsOutputTypeNonNullable(this ISymbol symbol, ITypeSymbol returnType)
+        {
+            if (symbol.HasCodeAnalysisAttribute("MaybeNullAttribute"))
+            {
+                return false;
+            }
+
+            if (symbol.HasCodeAnalysisAttribute("NotNullAttribute"))
+            {
+                return true;
+            }
+
+            if (returnType is ITypeParameterSymbol { HasNotNullConstraint: false })
+            {
+                return false;
+            }
+
+            return returnType.NullableAnnotation is NullableAnnotation.NotAnnotated;
+        }
+
+        private static bool IsInputTypeNonNullable(this ISymbol symbol, ITypeSymbol inputType)
+        {
+            Debug.Assert(inputType.IsNullableType());
+
+            if (symbol.HasCodeAnalysisAttribute("AllowNullAttribute"))
+            {
+                return false;
+            }
+
+            if (symbol.HasCodeAnalysisAttribute("DisallowNullAttribute"))
+            {
+                return true;
+            }
+
+            if (inputType is ITypeParameterSymbol { HasNotNullConstraint: false })
+            {
+                return false;
+            }
+
+            return inputType.NullableAnnotation is NullableAnnotation.NotAnnotated;
+        }
+
+        private static bool HasCodeAnalysisAttribute(this ISymbol symbol, string attributeName)
+        {
+            return symbol.GetAttributes().Any(attr =>
+                attr.AttributeClass?.Name == attributeName &&
+                attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
         }
     }
 }

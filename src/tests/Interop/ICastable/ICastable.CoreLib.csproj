@@ -6,10 +6,15 @@
     which enables us to avoid using Reflection.Emit to provide the implementations.
   -->
   <PropertyGroup>
+    <!-- Without process isolation, this support assembly gets copied to the merged wrapper folder -->
+    <!-- where it subsequently crashes with other custom System.Private.CoreLib assemblies.  -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Library</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
+
     <AssemblyName>System.Private.CoreLib</AssemblyName>
-    <Nullable>annotations</Nullable>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ICastable.cs" />

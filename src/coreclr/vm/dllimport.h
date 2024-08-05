@@ -16,9 +16,9 @@ struct StubSigDesc
 {
 public:
     StubSigDesc(MethodDesc* pMD);
-    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
-    StubSigDesc(const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule);
+    StubSigDesc(const Signature& sig, Module* pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -56,6 +56,17 @@ public:
         }
     }
 #endif // _DEBUG
+
+#ifndef DACCESS_COMPILE
+    void InitTypeContext(Instantiation classInst, Instantiation methodInst)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_typeContext.IsEmpty());
+
+        m_typeContext = SigTypeContext(classInst, methodInst);
+    }
+#endif
 };
 
 //=======================================================================
@@ -92,6 +103,7 @@ public:
         _In_opt_ MethodDesc* pMD,
         _In_opt_ PCCOR_SIGNATURE pSig = NULL,
         _In_opt_ Module* pModule = NULL,
+        _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
     static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
@@ -179,14 +191,10 @@ enum NDirectStubFlags
 enum ILStubTypes
 {
     ILSTUB_INVALID                       = 0x80000000,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     ILSTUB_ARRAYOP_GET                   = 0x80000001,
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
     ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
-#endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
@@ -217,15 +225,11 @@ inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 
 inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_SET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
-#endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
-#endif
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
@@ -484,6 +488,9 @@ public:
     DWORD   GetCleanupWorkListLocalNum();
     DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD   GetCopyCtorChainLocalNum();
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
@@ -552,6 +559,10 @@ protected:
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
 #endif // FEATURE_COMINTEROP
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    DWORD               m_dwCopyCtorChainLocalNum;
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;

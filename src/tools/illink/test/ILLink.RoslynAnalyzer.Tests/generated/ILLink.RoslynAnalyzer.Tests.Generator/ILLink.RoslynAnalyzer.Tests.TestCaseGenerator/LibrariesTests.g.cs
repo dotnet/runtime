@@ -40,6 +40,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RootAllLibraryBehavior ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RootAllLibraryCopyBehavior ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task RootLibrary ()
 		{
 			return RunTest (allowMissingWarnings: true);

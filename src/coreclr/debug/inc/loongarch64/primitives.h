@@ -20,7 +20,7 @@ typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to land at the call instruction.
-#define STACKWALK_CONTROLPC_ADJUST_OFFSET 8
+#define STACKWALK_CONTROLPC_ADJUST_OFFSET 4
 
 #define PRD_TYPE                               LONG
 #define CORDbg_BREAK_INSTRUCTION_SIZE 4
@@ -135,7 +135,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,
@@ -146,7 +146,7 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     return *(PRD_TYPE *)ptraddr;
 }
 
@@ -219,24 +219,15 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
     return CORDbgGetInstruction(address) == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-}
+class Thread;
+// Enable single stepping.
+void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-}
+// Disable single stepping
+void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-    return false;
-}
+// Check if single stepping is enabled.
+bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)

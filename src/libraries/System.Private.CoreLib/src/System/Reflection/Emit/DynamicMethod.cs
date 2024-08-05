@@ -329,15 +329,10 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetBaseDefinition() => this;
 
-        public override ParameterInfo[] GetParameters()
-        {
-            ParameterInfo[] privateParameters = LoadParameters();
-            ParameterInfo[] parameters = new ParameterInfo[privateParameters.Length];
-            Array.Copy(privateParameters, parameters, privateParameters.Length);
-            return parameters;
-        }
+        public override ParameterInfo[] GetParameters() =>
+            GetParametersAsSpan().ToArray();
 
-        internal override ParameterInfo[] GetParametersNoCopy() => LoadParameters();
+        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() => LoadParameters();
 
         public override MethodImplAttributes GetMethodImplementationFlags() =>
             MethodImplAttributes.IL | MethodImplAttributes.NoInlining;
@@ -367,7 +362,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit)
         {
             // support for MethodImplAttribute PCA
-            return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
+            return [new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags())];
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)

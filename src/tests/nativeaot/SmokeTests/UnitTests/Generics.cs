@@ -5,7 +5,12 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
+[UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
+[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType/MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3054", Justification = "Generic expansion aborted - Intentional")]
 class Generics
 {
     internal static int Run()
@@ -13,6 +18,7 @@ class Generics
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
+        TestSynchronizedMethods.Run();
         TestDelegateFatFunctionPointers.Run();
         TestDelegateToCanonMethods.Run();
         TestVirtualMethodUseTracking.Run();
@@ -49,10 +55,15 @@ class Generics
         TestRecursionThroughGenericLookups.Run();
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
+        Test99198Regression.Run();
+        Test102259Regression.Run();
+        Test104913Regression.Run();
+        Test105397Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+        TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -602,6 +613,54 @@ class Generics
         }
     }
 
+    class TestSynchronizedMethods
+    {
+        static class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGen
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static class GenReflected<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGenReflected
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static Type s_genReflectedType = typeof(GenReflected<>);
+        static MethodInfo s_nonGenReflectedSynchronizeMethod = typeof(NonGenReflected).GetMethod("Synchronize");
+
+        public static void Run()
+        {
+            Gen<object>.Synchronize();
+            NonGen.Synchronize<object>();
+            Gen<int>.Synchronize();
+            NonGen.Synchronize<int>();
+
+            {
+                var mi = (MethodInfo)s_genReflectedType.MakeGenericType(typeof(object)).GetMemberWithSameMetadataDefinitionAs(typeof(GenReflected<>).GetMethod("Synchronize"));
+                mi.Invoke(null, Array.Empty<object>());
+            }
+
+            {
+                var mi = s_nonGenReflectedSynchronizeMethod.MakeGenericMethod(typeof(object));
+                mi.Invoke(null, Array.Empty<object>());
+            }
+        }
+    }
+
     /// <summary>
     /// Tests that lazily built vtables for canonically equivalent types have the same shape.
     /// </summary>
@@ -1106,6 +1165,24 @@ class Generics
 
             var foo = (Foo<string>)s_foo;
             if (foo.Value != 42)
+                throw new Exception();
+        }
+    }
+
+    class TestVariantDispatchUnconstructedTypes
+    {
+        interface IFoo { }
+        class Foo : IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IFoo> GetFoos() => new Foo[5];
+
+        public static void Run()
+        {
+            int j = 0;
+            foreach (var f in GetFoos())
+                j++;
+            if (j != 5)
                 throw new Exception();
         }
     }
@@ -1903,8 +1980,10 @@ class Generics
             Foo<object>.s_floatField = 12.34f;
             Foo<object>.s_longField1 = 0x1111;
 
-            var fooDynamicOfClassType = typeof(Foo<>).MakeGenericType(typeof(ClassType)).GetTypeInfo();
-            var fooDynamicOfClassType2 = typeof(Foo<>).MakeGenericType(typeof(ClassType2)).GetTypeInfo();
+            var fooDynamicOfClassType = typeof(Foo<>).MakeGenericType(GetClassType()).GetTypeInfo();
+            static Type GetClassType() => typeof(ClassType);
+            var fooDynamicOfClassType2 = typeof(Foo<>).MakeGenericType(GetClassType2()).GetTypeInfo();
+            static Type GetClassType2() => typeof(ClassType2);
 
             FieldInfo fi = fooDynamicOfClassType.GetDeclaredField("s_intField");
             FieldInfo fi2 = fooDynamicOfClassType2.GetDeclaredField("s_intField");
@@ -1958,7 +2037,8 @@ class Generics
             heh2.GenericVirtualMethod(new Program(), "ayy");
 
             // Simple method invocation
-            var dynamicBaseOfString = typeof(DynamicBase<>).MakeGenericType(typeof(string));
+            var dynamicBaseOfString = typeof(DynamicBase<>).MakeGenericType(GetString());
+            static Type GetString() => typeof(string);
             object obj = Activator.CreateInstance(dynamicBaseOfString);
             {
                 var simpleMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("SimpleMethod");
@@ -1981,7 +2061,7 @@ class Generics
             }
 
             {
-                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(GetString());
                 object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
                 var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("VirtualMethod");
                 string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "fad" });
@@ -1990,7 +2070,7 @@ class Generics
 
             // Test generic method invocation
             {
-                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericMethod").MakeGenericMethod(new[] { typeof(string) });
+                var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericMethod").MakeGenericMethod(new[] { GetString() });
                 string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
 
                 Verify("System.Stringhello", result);
@@ -1999,15 +2079,15 @@ class Generics
             // Test GVM invocation
             {
                 var genericMethod = dynamicBaseOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod");
-                genericMethod = genericMethod.MakeGenericMethod(new[] { typeof(string) });
+                genericMethod = genericMethod.MakeGenericMethod(new[] { GetString() });
                 string result = (string)genericMethod.Invoke(obj, new[] { "hey", "hello" });
                 Verify("DynamicBaseSystem.Stringhello", result);
             }
 
             {
-                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(typeof(string));
+                var dynamicDerivedOfString = typeof(DynamicDerived<>).MakeGenericType(GetString());
                 object dynamicDerivedObj = Activator.CreateInstance(dynamicDerivedOfString);
-                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod").MakeGenericMethod(new[] { typeof(string) });
+                var virtualMethodDynamicDerived = dynamicDerivedOfString.GetTypeInfo().GetDeclaredMethod("GenericVirtualMethod").MakeGenericMethod(new[] { GetString() });
                 string result = (string)virtualMethodDynamicDerived.Invoke(dynamicDerivedObj, new[] { "hey", "fad" });
                 Verify("DynamicDerivedSystem.Stringfad", result);
             }
@@ -2278,9 +2358,29 @@ class Generics
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DeepAV(int x)
+        {
+            if (x > 0)
+                DeepAV(x - 1);
+
+            // Call an instance method on something we never allocated, but overrides a used virtual.
+            // This asserted the compiler when trying to build a template for Unused<__Canon>.
+            ((Unused<object>)s_ref).Blagh();
+        }
+
         public static void Run()
         {
             new Used().DoStuff();
+
+            for (int i = 0; i < 10; i++)
+            try
+            {
+                DeepAV(i);
+            }
+            catch (NullReferenceException)
+            {
+            }
 
             try
             {
@@ -3404,6 +3504,157 @@ class Generics
         }
     }
 
+    class Test99198Regression
+    {
+        delegate void Set<T>(ref T t, IFoo ifoo);
+
+        interface IFoo
+        {
+            void Do<T>();
+        }
+
+        class Atom { }
+
+        struct Foo<T> : IFoo
+        {
+            public nint Cookie1;
+            public nint Cookie2;
+
+            public void Do<T1>()
+            {
+                Cookie1 = 42;
+            }
+        }
+
+        class C<T> where T : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static void Set(ref T t, IFoo ifoo)
+            {
+                t.Do<T>();
+                ifoo.Do<T>();
+            }
+        }
+
+        public static void RunDynamic<T>()
+        {
+            static Type GetObject() => typeof(Foo<T>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<T>>>();
+
+            Foo<T> ob = default;
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            ob = (Foo<T>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            new C<Foo<string>>().ToString();
+
+            static Type GetObject() => typeof(Foo<object>);
+            var s = typeof(C<>).MakeGenericType(GetObject()).GetMethod("Set").CreateDelegate<Set<Foo<object>>>();
+
+            Foo<object> ob = default;
+            IFoo boxed = ob;
+
+            s(ref ob, boxed);
+
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            ob = (Foo<object>)boxed;
+            if (ob.Cookie1 != 42 || ob.Cookie2 != 0)
+                throw new Exception();
+
+            static Type GetAtom() => typeof(Atom);
+            typeof(Test99198Regression).GetMethod(nameof(RunDynamic)).MakeGenericMethod(GetAtom()).Invoke(null, []);
+        }
+    }
+
+    class Test102259Regression
+    {
+        class Gen<T>
+        {
+            static Func<T, object> _theval;
+
+            public static object TheFunc(object obj) => obj;
+
+            static Gen()
+            {
+                _theval = typeof(Gen<T>).GetMethod(nameof(TheFunc), BindingFlags.Public | BindingFlags.Static).CreateDelegate<Func<T, object>>().WithObjectTResult();
+            }
+        }
+
+        public static void Run()
+        {
+            new Gen<object>();
+        }
+    }
+
+    class Test104913Regression
+    {
+        interface IFoo
+        {
+            (Type, Type) InvokeInstance<T>() where T : IBar;
+        }
+
+        class Foo : IFoo
+        {
+            public (Type, Type) InvokeInstance<T>() where T : IBar
+                => (typeof(T), T.InvokeStatic<int>());
+        }
+
+        interface IBar
+        {
+            static abstract Type InvokeStatic<T>();
+        }
+
+        class Bar : IBar
+        {
+            public static Type InvokeStatic<T>()
+                => typeof(T);
+        }
+
+        public static void Run()
+        {
+            (Type t1, Type t2) = ((IFoo)new Foo()).InvokeInstance<Bar>();
+            if (t1 != typeof(Bar) || t2 != typeof(int))
+                throw new Exception();
+        }
+    }
+
+    class Test105397Regression
+    {
+        interface IEnumerable<T> { }
+
+        interface ITest<TResult>
+        {
+            TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using);
+        }
+        class Test<TResult> : ITest<TResult>
+        {
+            public TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using)
+            {
+                return default;
+            }
+        }
+
+        struct GenStruct<T> { }
+
+        public static void Run()
+        {
+            ITest<object> t = new Test<object>();
+            t.UsingDatabaseResult<IEnumerable<IEnumerable<GenStruct<double>>>, int>(null, (x, y) => 1);
+        }
+    }
+
     class TestInvokeMemberCornerCaseInGenerics
     {
         class Generic<T>
@@ -3448,5 +3699,18 @@ class Generics
             if (TestAll(ref structValue, typeof(int)) != structValue)
                 throw new Exception();
         }
+    }
+}
+
+static class Ext
+{
+    public static Func<T, object> WithObjectTResult<T, TResult>(this Func<T, TResult> function)
+    {
+        return function.InvokeWithObjectTResult;
+    }
+
+    private static object InvokeWithObjectTResult<T, TResult>(this Func<T, TResult> func, T arg)
+    {
+        return func(arg);
     }
 }

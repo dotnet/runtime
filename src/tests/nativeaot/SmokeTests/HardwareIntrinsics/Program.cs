@@ -21,17 +21,8 @@ unsafe class Program
         Console.WriteLine("****************************************************");
 
         long lowerBound, upperBound;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            const int Meg = 1024 * 1024;
-            lowerBound = 2 * Meg; // 2 MB
-            upperBound = 4 * Meg; // 4 MB
-        }
-        else
-        {
-            lowerBound = 1300 * 1024; // ~1.3 MB
-            upperBound = 1750 * 1024; // ~1.75 MB
-        }
+        lowerBound = 1200 * 1024; // ~1.2 MB
+        upperBound = 1600 * 1024; // ~1.6 MB
 
         if (fileSize < lowerBound || fileSize > upperBound)
         {

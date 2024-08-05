@@ -50,7 +50,7 @@ public class Runtime_69612
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -60,7 +60,5 @@ public class Runtime_69612
 
         Thread.Sleep(50);
         _ = ToPython(Delegates.z, typeof(long));
-        return 100;
-
     }
 }

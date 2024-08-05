@@ -81,7 +81,7 @@ struct TailCallInfo
     TypeHandle RetTyHnd;
     ArgBufferLayout ArgBufLayout;
     bool HasGCDescriptor;
-    GCRefMapBuilder GCRefMapBuilder;
+    class GCRefMapBuilder GCRefMapBuilder;
 
     TailCallInfo(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
@@ -281,7 +281,7 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsPointers())
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

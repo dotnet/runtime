@@ -27,7 +27,7 @@ namespace Test
     public static class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             var container1 = new Container<string>();
             var container2 = new Container<object>();
@@ -35,7 +35,6 @@ namespace Test
             var container4 = new Container<Stream>();
             var container5 = new Container<BinaryReader>();
             var container6 = new Container<BinaryWriter>();
-            return 100;  //assume if no unhandled exception the test passes
         }
     }
 }

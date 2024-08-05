@@ -41,7 +41,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TSource> ToFrozenDictionary<TSource, TKey>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, comparer));
+            source.ToDictionary(keySelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TElement}"/> from an <see cref="IEnumerable{TSource}"/> according to specified key selector and element selector functions.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
@@ -55,7 +55,7 @@ namespace System.Collections.Frozen
         public static FrozenDictionary<TKey, TElement> ToFrozenDictionary<TSource, TKey, TElement>(
             this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer = null)
             where TKey : notnull =>
-            CreateFromDictionary(source.ToDictionary(keySelector, elementSelector, comparer));
+            source.ToDictionary(keySelector, elementSelector, comparer).ToFrozenDictionary(comparer);
 
         /// <summary>
         /// Extracts from the source either an existing <see cref="FrozenDictionary{TKey,TValue}"/> instance or a <see cref="Dictionary{TKey,TValue}"/>
@@ -113,6 +113,8 @@ namespace System.Collections.Frozen
         private static FrozenDictionary<TKey, TValue> CreateFromDictionary<TKey, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
         {
+            Debug.Assert(source.Count > 0, "Empty sources should have been filtered out by caller");
+
             IEqualityComparer<TKey> comparer = source.Comparer;
 
             // Optimize for value types when the default comparer is being used. In such a case, the implementation
@@ -159,10 +161,12 @@ namespace System.Collections.Frozen
 
                 // Calculate the minimum and maximum lengths of the strings in the dictionary. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
+                ulong lengthFilter = 0;
                 foreach (string key in keys)
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -213,12 +217,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 
@@ -250,7 +254,7 @@ namespace System.Collections.Frozen
     /// </remarks>
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    public abstract class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
+    public abstract partial class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         where TKey : notnull
     {
         /// <summary>Initialize the dictionary.</summary>
@@ -431,7 +435,7 @@ namespace System.Collections.Frozen
         /// <summary>Gets either a reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</summary>
         /// <param name="key">The key used for lookup.</param>
         /// <returns>A reference to a <typeparamref name="TValue"/> in the dictionary or a null reference if the key does not exist in the dictionary.</returns>
-        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef{T}(ref T)"/>.</remarks>
+        /// <remarks>The null reference can be detected by calling <see cref="Unsafe.IsNullRef"/>.</remarks>
         public ref readonly TValue GetValueRefOrNullRef(TKey key)
         {
             if (key is null)
@@ -445,6 +449,32 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="GetValueRefOrNullRef" />
         private protected abstract ref readonly TValue GetValueRefOrNullRefCore(TKey key);
 
+        /// <inheritdoc cref="GetValueRefOrNullRef" />
+        /// <remarks>
+        /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
+        /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
+        /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
+        ///
+        /// This unfortunately needs to be a generic virtual method, but the only other known option involves having a dedicated
+        /// class instance such that the generic can be baked into that, where the methods on it are still virtual but don't have
+        /// extra generic methods. But for most implementations, either a) that class would need to be allocated as part of
+        /// TryGetAlternateLookup, which would be more expensive for use cases where someone needs a lookup for just a few operations,
+        /// or b) a dictionary of those instances would need to be maintained, which just replaces the runtime's dictionary for a GVM
+        /// with a custom one here.
+        /// </remarks>
+        private protected virtual ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key)
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+            => ref Unsafe.NullRef<TValue>();
+
         /// <summary>Gets a reference to the value associated with the specified key.</summary>
         /// <param name="key">The key of the value to get.</param>
         /// <returns>A reference to the value associated with the specified key.</returns>
@@ -457,7 +487,7 @@ namespace System.Collections.Frozen
 
                 if (Unsafe.IsNullRef(ref Unsafe.AsRef(in valueRef)))
                 {
-                    ThrowHelper.ThrowKeyNotFoundException();
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
                 return ref valueRef;

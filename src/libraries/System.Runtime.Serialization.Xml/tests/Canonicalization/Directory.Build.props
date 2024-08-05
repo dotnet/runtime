@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Manually defining as the test project's name doesn't suggest that it is a test project. -->
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <Import Project="..\..\Directory.Build.props" />
+
+</Project>

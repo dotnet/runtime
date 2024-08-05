@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Quic;
 
 namespace System.Net.Quic;
@@ -51,7 +53,8 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
                 SafeHandleType.Stream => MsQuicApi.Api.ApiTable->StreamClose,
                 _ => throw new ArgumentException($"Unexpected value: {safeHandleType}", nameof(safeHandleType))
             },
-            safeHandleType) { }
+            safeHandleType)
+    { }
 
     protected override bool ReleaseHandle()
     {
@@ -85,29 +88,26 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// Holds a weak reference to the managed instance.
     /// It allows delegating MsQuic events to the managed object while it still can be collected and finalized.
     /// </summary>
-    private readonly GCHandle _context;
+    private GCHandle _context;
 
     /// <summary>
     /// Optional parent safe handle, used to increment/decrement reference count with the lifetime of this instance.
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
-#if DEBUG
     /// <summary>
-    /// Native memory to hold TLS secrets. It needs to live same cycle as the underlying connection.
+    /// Additional, dependent object to be disposed only after the safe handle gets released.
     /// </summary>
-    private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
+    private IDisposable? _disposable;
 
-    public unsafe QUIC_TLS_SECRETS* GetSecretsBuffer()
+    public IDisposable Disposable
     {
-        if (_tlsSecrets == null)
+        set
         {
-            _tlsSecrets = (QUIC_TLS_SECRETS*)NativeMemory.Alloc((nuint)sizeof(QUIC_TLS_SECRETS));
+            Debug.Assert(_disposable is null);
+            _disposable = value;
         }
-
-        return _tlsSecrets;
     }
-#endif
 
     public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
         : base(handle, safeHandleType)
@@ -140,13 +140,50 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
                 NetEventSource.Info(this, $"{this} {_parent} ref count decremented");
             }
         }
-#if DEBUG
-        if (_tlsSecrets != null)
-        {
-            NativeMemory.Clear(_tlsSecrets, (nuint)sizeof(QUIC_TLS_SECRETS));
-            NativeMemory.Free(_tlsSecrets);
-        }
-#endif
+        _disposable?.Dispose();
         return true;
+    }
+}
+
+internal sealed class MsQuicConfigurationSafeHandle : MsQuicSafeHandle, ISafeHandleCachable
+{
+    // MsQuicConfiguration handles are cached, so we need to keep track of the
+    // number of times a handle is rented. Once we decide to dispose the handle,
+    // we set the _rentCount to -1.
+    private volatile int _rentCount;
+
+    public unsafe MsQuicConfigurationSafeHandle(QUIC_HANDLE* handle)
+        : base(handle, SafeHandleType.Configuration) { }
+
+    public bool TryAddRentCount()
+    {
+        int oldCount;
+
+        do
+        {
+            oldCount = _rentCount;
+            if (oldCount < 0)
+            {
+                // The handle is already disposed.
+                return false;
+            }
+        } while (Interlocked.CompareExchange(ref _rentCount, oldCount + 1, oldCount) != oldCount);
+
+        return true;
+    }
+
+    public bool TryMarkForDispose()
+    {
+        return Interlocked.CompareExchange(ref _rentCount, -1, 0) == 0;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (Interlocked.Decrement(ref _rentCount) < 0)
+        {
+            // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+            // and is -1 when evicted from cache.
+            base.Dispose(disposing);
+        }
     }
 }

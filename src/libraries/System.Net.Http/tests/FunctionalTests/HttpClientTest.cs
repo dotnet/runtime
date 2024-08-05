@@ -370,7 +370,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetStringAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -390,7 +389,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -415,7 +413,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetStringAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -432,14 +429,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
@@ -542,7 +532,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetByteArrayAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -587,7 +576,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetByteArrayAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -604,21 +592,13 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetStreamAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -666,7 +646,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetStreamAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -683,14 +662,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
@@ -861,20 +833,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultProxy_SetGet_Roundtrips()
+        public async Task DefaultProxy_SetGet_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy proxy = new WebProxy("http://localhost:3128/");
                 HttpClient.DefaultProxy = proxy;
                 Assert.True(Object.ReferenceEquals(proxy, HttpClient.DefaultProxy));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultProxy_Credentials_SetGet_Roundtrips()
+        public async Task DefaultProxy_Credentials_SetGet_Roundtrips()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy proxy = HttpClient.DefaultProxy;
                 ICredentials nc = proxy.Credentials;
@@ -886,7 +858,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Same(nc, proxy.Credentials);
 
                 return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -1060,16 +1032,12 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
+                        await IgnoreExceptions(async () =>
                         {
                             await connection.ReadRequestHeaderAsync();
                             cts.Cancel();
                             await connection.ReadRequestBodyAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
                 });
         }
@@ -1110,15 +1078,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                            await connection.ReadRequestBodyAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestDataAsync());
                     });
                 });
         }
@@ -1158,7 +1118,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
+                        await IgnoreExceptions(async () =>
                         {
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
@@ -1170,11 +1130,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.WriteStringAsync(content);
                                 await Task.Delay(TimeSpan.FromSeconds(0.1));
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
                 });
         }
@@ -1190,9 +1146,7 @@ namespace System.Net.Http.Functional.Tests
             using var server = new LoopbackServer();
             await server.ListenAsync();
 
-            // Ignore all failures from the server. This includes being disposed of before ever accepting a connection,
-            // which is possible if the client times out so quickly that it hasn't initiated a connection yet.
-            _ = server.AcceptConnectionAsync(async connection =>
+            Task serverTask = server.AcceptConnectionAsync(async connection =>
             {
                 await connection.ReadRequestDataAsync();
                 await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Content-Length", (Content.Length * 100).ToString()) });
@@ -1210,6 +1164,12 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, server.Address));
             });
             Assert.IsType<TimeoutException>(ex.InnerException);
+
+            server.Dispose();
+
+            // Ignore all failures from the server. This includes being disposed of before ever accepting a connection,
+            // which is possible if the client times out so quickly that it hasn't initiated a connection yet.
+            await IgnoreExceptions(serverTask);
         }
 
         public static IEnumerable<object[]> VersionSelectionMemberData()
@@ -1378,7 +1338,7 @@ namespace System.Net.Http.Functional.Tests
             var handler = new StoreMessageHttpMessageInvoker();
             using (var client = new HttpClient(handler))
             {
-                var version = new Version(1, 2, 3, 4);
+                var version = new Version(1, 1);
                 client.DefaultRequestVersion = version;
                 await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
                 Assert.Same(version, handler.Message.Version);

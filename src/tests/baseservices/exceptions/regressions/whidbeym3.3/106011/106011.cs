@@ -3,6 +3,7 @@
 
 
 using System;
+using Xunit;
 
 public class GenException<T> : Exception {}
 
@@ -42,7 +43,8 @@ public class Test_106011
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen.ExceptionTest<Exception,InvalidOperationException>(new Exception());
 		Gen.ExceptionTest<Exception,GenException<int>>(new Exception());

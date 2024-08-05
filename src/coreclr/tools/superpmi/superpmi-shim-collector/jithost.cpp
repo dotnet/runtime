@@ -34,7 +34,6 @@ bool RecordVariable(const WCHAR* key)
         W("EnableExtraSuperPmiQueries"),
         W("JitDisasm"),
         W("JitDump"),
-        W("JitDasmWithAlignmentBoundaries"), // to be removed
         W("JitDisasmWithAlignmentBoundaries"),
         W("JitDumpASCII"),
         W("JitHashBreak"),
@@ -86,6 +85,8 @@ bool RecordVariable(const WCHAR* key)
         W("JitInlinePolicyDumpXml"),
         W("JitInlineReplayFile"),
         W("JitFunctionFile")
+        W("JitRawHexCode"),
+        W("JitRawHexCodeFile")
     };
 
     for (const WCHAR* ignoredVar : s_ignoredVars)

@@ -9,14 +9,13 @@ using Xunit;
 public unsafe class Runtime_58874
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         using EndOfPage endOfPage = EndOfPage.Create();
         if (endOfPage != null)
         {
             Foo(endOfPage.Pointer);
         }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

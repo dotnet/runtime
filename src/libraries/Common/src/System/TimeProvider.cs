@@ -57,6 +57,10 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             }
             TimeSpan offset = zoneInfo.GetUtcOffset(utcDateTime);
+            if (offset.Ticks is 0)
+            {
+                return utcDateTime;
+            }
 
             long localTicks = utcDateTime.Ticks + offset.Ticks;
             if ((ulong)localTicks > (ulong)s_maxDateTicks)
@@ -117,7 +121,7 @@ namespace System
         /// Gets the elapsed time since the <paramref name="startingTimestamp"/> value retrieved using <see cref="GetTimestamp"/>.
         /// </summary>
         /// <param name="startingTimestamp">The timestamp marking the beginning of the time period.</param>
-        /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting timestamp and the time of this call./></returns>
+        /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting timestamp and the time of this call.</returns>
         public TimeSpan GetElapsedTime(long startingTimestamp) => GetElapsedTime(startingTimestamp, GetTimestamp());
 
         /// <summary>Creates a new <see cref="ITimer"/> instance, using <see cref="TimeSpan"/> values to measure time intervals.</summary>

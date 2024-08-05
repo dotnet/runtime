@@ -17,7 +17,7 @@ public static class BasicTest
     {
     }
 
-    private static int Main()
+    public static int Main()
     {
         const int Pass = 100;
 
@@ -45,6 +45,7 @@ public static class BasicTest
         FooWithGeneric(RegexOptions.IgnoreCase);
 
         ProfileOptimization.StartProfile(null);
+
         return Pass;
     }
 

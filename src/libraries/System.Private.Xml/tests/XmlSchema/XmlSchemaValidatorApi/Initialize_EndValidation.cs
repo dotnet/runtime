@@ -167,7 +167,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -227,7 +227,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         break;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
             }
@@ -245,13 +245,13 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         _exVerifier.IsExceptionOk(e, "Sch_ValidateAttributeInvalidCall");
                         break;
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -305,7 +305,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         break;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
             }
@@ -320,13 +320,13 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         _exVerifier.IsExceptionOk(e, "Sch_ValidateAttributeInvalidCall");
                         break;
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -348,7 +348,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             }
             catch (XmlSchemaValidationException)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;
@@ -408,7 +408,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         break;
 
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
             }
@@ -426,13 +426,13 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                         _exVerifier.IsExceptionOk(e, "Sch_ValidateElementInvalidCall");
                         break;
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -459,7 +459,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     break;
 
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
 
@@ -472,7 +472,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -551,7 +551,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     break;
 
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
 
@@ -593,7 +593,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 try
                 {
                     val.EndValidation();
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (XmlSchemaValidationException e)
                 {

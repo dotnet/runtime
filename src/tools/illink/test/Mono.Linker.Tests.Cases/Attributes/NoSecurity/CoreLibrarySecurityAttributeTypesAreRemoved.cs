@@ -27,15 +27,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity
 	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SecurityCriticalAttribute))]
 	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SecuritySafeCriticalAttribute))]
 	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SuppressUnmanagedCodeSecurityAttribute))]
-
-	// Fails with `Runtime critical type System.Reflection.CustomAttributeData not found` which is a known short coming
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-	[SkipPeVerify ("System.dll")]
-
-	// System.Core.dll is referenced by System.dll in the .NET FW class libraries. Our GetType reflection marking code
-	// detects a GetType("SHA256CryptoServiceProvider") in System.dll, which then causes a type in System.Core.dll to be marked.
-	// PeVerify fails on the original GAC copy of System.Core.dll so it's expected that it will also fail on the stripped version we output
-	[SkipPeVerify ("System.Core.dll")]
 	public class CoreLibrarySecurityAttributeTypesAreRemoved
 	{
 		public static void Main ()

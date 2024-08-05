@@ -16,6 +16,8 @@ namespace LibraryImportGenerator.IntegrationTests
     {
         internal partial class Stateless
         {
+            public static string System = "Make sure generated code prefixes type references with global::";
+
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "stringcontainer_deepduplicate")]
             public static partial void DeepDuplicateStrings(StringContainer strings, out StringContainer pStringsOut);
 

@@ -9,7 +9,7 @@ namespace DefaultNamespace
     public class JITcrash
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             UInt32 x = (0xFFFFFFFF);
             Int64 y = x;
@@ -20,7 +20,6 @@ namespace DefaultNamespace
             Console.WriteLine("x = " + x + ".");
             Console.WriteLine("x = " + x + " y = " + y + ".");
             Console.WriteLine("Test passed.");
-            return 100;
         }
     }
 }

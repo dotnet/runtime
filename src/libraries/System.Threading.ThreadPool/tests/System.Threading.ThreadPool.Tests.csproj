@@ -4,6 +4,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
     <Compile Include="RegisteredWaitTests.cs" />

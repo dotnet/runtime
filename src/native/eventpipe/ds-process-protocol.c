@@ -667,13 +667,13 @@ process_protocol_helper_get_process_info (
 	DiagnosticsProcessInfoPayload payload;
 	DiagnosticsProcessInfoPayload *process_info_payload = NULL;
 
-	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get ());
 	ep_raise_error_if_nok (command_line != NULL);
 
-	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info ());
 	ep_raise_error_if_nok (os_info != NULL);
 
-	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info ());
 	ep_raise_error_if_nok (arch_info != NULL);
 
 	process_info_payload = ds_process_info_payload_init (
@@ -729,19 +729,19 @@ process_protocol_helper_get_process_info_2 (
 	DiagnosticsProcessInfo2Payload payload;
 	DiagnosticsProcessInfo2Payload *process_info_2_payload = NULL;
 
-	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get ());
 	ep_raise_error_if_nok (command_line != NULL);
 
-	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info ());
 	ep_raise_error_if_nok (os_info != NULL);
 
-	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info ());
 	ep_raise_error_if_nok (arch_info != NULL);
 
-	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
+	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 ());
 	ep_raise_error_if_nok (managed_entrypoint_assembly_name != NULL);
 
-	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 (), -1);
+	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 ());
 	ep_raise_error_if_nok (clr_product_version != NULL);
 
 	process_info_2_payload = ds_process_info_2_payload_init (
@@ -802,22 +802,22 @@ process_protocol_helper_get_process_info_3 (
 	DiagnosticsProcessInfo3Payload payload;
 	DiagnosticsProcessInfo3Payload *process_info_3_payload = NULL;
 
-	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get ());
 	ep_raise_error_if_nok (command_line != NULL);
 
-	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info ());
 	ep_raise_error_if_nok (os_info != NULL);
 
-	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info ());
 	ep_raise_error_if_nok (arch_info != NULL);
 
-	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
+	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 ());
 	ep_raise_error_if_nok (managed_entrypoint_assembly_name != NULL);
 
-	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 (), -1);
+	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 ());
 	ep_raise_error_if_nok (clr_product_version != NULL);
 
-	portable_rid = ep_rt_utf8_to_utf16le_string (ds_rt_get_portable_rid (), -1);
+	portable_rid = ep_rt_utf8_to_utf16le_string (ds_rt_get_portable_rid ());
 	ep_raise_error_if_nok (portable_rid != NULL);
 
 	process_info_3_payload = ds_process_info_3_payload_init (

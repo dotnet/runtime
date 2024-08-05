@@ -78,6 +78,23 @@ namespace ILLink.Shared.TrimAnalysis
 			return returnDamt;
 		}
 
+		public static DynamicallyAccessedMemberTypes GetTypeAnnotation(ITypeSymbol type)
+		{
+			var typeAnnotation = type.GetDynamicallyAccessedMemberTypes ();
+
+			ITypeSymbol? baseType = type.BaseType;
+			while (baseType != null) {
+				typeAnnotation |= baseType.GetDynamicallyAccessedMemberTypes ();
+				baseType = baseType.BaseType;
+			}
+
+			foreach (var interfaceType in type.AllInterfaces) {
+				typeAnnotation |= interfaceType.GetDynamicallyAccessedMemberTypes ();
+			}
+
+			return typeAnnotation;
+		}
+
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
 		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information
@@ -86,11 +103,14 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> RequiresDataFlowAnalysis (method.Method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new MethodReturnValue (method.Method, dynamicallyAccessedMemberTypes);
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> new MethodReturnValue (method.Method, isNewObj, dynamicallyAccessedMemberTypes);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, GetMethodReturnValueAnnotation (method.Method));
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
+			=> GetMethodReturnValue (method, isNewObj, GetMethodReturnValueAnnotation (method.Method));
+
+		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> new GenericParameterValue (genericParameter.TypeParameterSymbol, dynamicallyAccessedMemberTypes);
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.TypeParameterSymbol);
@@ -100,14 +120,6 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!method.HasImplicitThis ())
 				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
 			return GetMethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes);
-		}
-
-		// overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
-		internal MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
-		{
-			if (!method.HasImplicitThis () && !overrideIsThis)
-				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
-			return new MethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes, overrideIsThis);
 		}
 
 		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method)

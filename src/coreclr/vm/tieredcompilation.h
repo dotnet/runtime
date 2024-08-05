@@ -63,10 +63,10 @@ private:
     void BackgroundWorkerStart();
 
 private:
-    bool IsTieringDelayActive();
     bool TryDeactivateTieringDelay();
 
 public:
+    bool IsTieringDelayActive();
     void AsyncCompleteCallCounting();
 
 private:
@@ -121,7 +121,7 @@ private:
 #ifdef _DEBUG
     static Thread *s_backgroundWorkerThread;
 #endif
-    static CLREvent s_backgroundWorkAvailableEvent;
+    static CLREventStatic s_backgroundWorkAvailableEvent;
     static bool s_isBackgroundWorkerRunning;
     static bool s_isBackgroundWorkerProcessingWork;
 #endif // !DACCESS_COMPILE

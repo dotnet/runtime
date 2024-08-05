@@ -733,11 +733,11 @@ namespace System.Data.Common
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
 
-            if (!string.IsNullOrEmpty(quotePrefix) && (-1 != baseTableName.IndexOf(quotePrefix, StringComparison.Ordinal)))
+            if (!string.IsNullOrEmpty(quotePrefix) && baseTableName.Contains(quotePrefix, StringComparison.Ordinal))
             {
                 throw ADP.DynamicSQLNestedQuote(baseTableName, quotePrefix);
             }
-            if (!string.IsNullOrEmpty(quoteSuffix) && (-1 != baseTableName.IndexOf(quoteSuffix, StringComparison.Ordinal)))
+            if (!string.IsNullOrEmpty(quoteSuffix) && baseTableName.Contains(quoteSuffix, StringComparison.Ordinal))
             {
                 throw ADP.DynamicSQLNestedQuote(baseTableName, quoteSuffix);
             }

@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -269,6 +269,22 @@ namespace System.Security.Cryptography
             return _hash != null ?
                 _hash.GetCurrentHash(destination) :
                 _hmac!.GetCurrentHash(destination);
+        }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="IncrementalHash" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error has occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public IncrementalHash Clone()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+
+            return _hash is not null ?
+                new IncrementalHash(_algorithmName, _hash.Clone()) :
+                new IncrementalHash(_algorithmName, _hmac!.Clone());
         }
 
         /// <summary>

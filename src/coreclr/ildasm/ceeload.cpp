@@ -79,7 +79,7 @@ BOOL PELoader::open(LPCSTR moduleName)
         return FALSE;
     m_FileSize = dwFileSizeLow;
 
-    m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (m_hMapFile == NULL)
         return FALSE;
 
@@ -108,7 +108,7 @@ BOOL PELoader::open(const WCHAR* moduleName)
         return FALSE;
     m_FileSize = dwFileSizeLow;
 
-    m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (m_hMapFile == NULL)
         return FALSE;
 
@@ -149,7 +149,7 @@ BOOL PELoader::open(HMODULE hMod)
             }
             fileAlignment = VAL32(m_pNT32->OptionalHeader.FileAlignment)-1;
         }
-        else //For now assume not i386 is IA64
+        else
         {
             if ((m_pNT64->Signature != VAL32(IMAGE_NT_SIGNATURE)) ||
                 (m_pNT64->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))))

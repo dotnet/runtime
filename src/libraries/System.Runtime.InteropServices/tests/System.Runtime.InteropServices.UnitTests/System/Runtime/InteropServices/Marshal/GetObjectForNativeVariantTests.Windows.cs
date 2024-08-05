@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices.Tests
             };
 
             var obj = new Common.IDispatchComObject();
-            if (!PlatformDetection.IsNetCore || PlatformDetection.IsWindows)
+            if (PlatformDetection.IsWindows)
             {
                 IntPtr dispatch = Marshal.GetIDispatchForObject(obj);
                 yield return new object[]

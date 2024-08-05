@@ -254,12 +254,6 @@ namespace System.Security.Cryptography
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsBase64Character(char ch)
-        {
-            return char.IsAsciiLetterOrDigit(ch) || ch is '+' or '/';
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWhiteSpaceCharacter(char ch)
         {
             // Match white space characters from Convert.Base64
@@ -531,7 +525,6 @@ namespace System.Security.Cryptography
 
             int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-#pragma warning disable CS8500 // takes address of managed type
             return string.Create(
                 encodedSize,
                 (LabelPointer: (IntPtr)(&label), DataPointer: (IntPtr)(&data)),
@@ -548,7 +541,6 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
                 });
-#pragma warning restore CS8500
         }
     }
 }

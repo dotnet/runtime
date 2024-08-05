@@ -28,7 +28,9 @@ namespace System.Collections.Immutable.Tests
             }
             else
             {
+#pragma warning disable xUnit2005 // Do not use Assert.Same() on value type 'T'. Value types do not have identity. Use Assert.Equal instead.
                 Assert.Same((object)expected, (object)actual); //, message, formattingArgs);
+#pragma warning restore xUnit2005
             }
         }
 

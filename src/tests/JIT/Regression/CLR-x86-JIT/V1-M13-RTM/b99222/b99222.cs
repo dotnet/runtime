@@ -34,10 +34,9 @@ public class TestApp
         return AA.get_pb(px)->m_bval;
     }
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         AA loc_x = new AA(0, 100);
         test_3_0_0(&loc_x);
-        return 100;
     }
 }

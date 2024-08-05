@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// <summary>
         /// The command line arguments.
         /// </summary>
-        protected IEnumerable<string> Args { get; private set; }
+        protected IEnumerable<string> Args { get; }
 
         /// <summary>
         /// Loads the configuration data from the command line args.

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -23,7 +24,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("Name={MemberName}, Type={PropertyType.Name}")]
+    [DebuggerDisplay("Name = {MemberName}, Type = {PropertyType.Name}")]
     public sealed record PropertyGenerationSpec
     {
         /// <summary>
@@ -95,6 +96,16 @@ namespace System.Text.Json.SourceGeneration
         /// setter that can be referenced in generated source code.
         /// </summary>
         public required bool CanUseSetter { get; init; }
+
+        /// <summary>
+        /// Whether the property getter returns a nullable type with a non-nullable annotation.
+        /// </summary>
+        public required bool IsGetterNonNullableAnnotation { get; init; }
+
+        /// <summary>
+        /// Whether the property setter accepts a nullable type with a non-nullable annotation.
+        /// </summary>
+        public required bool IsSetterNonNullableAnnotation { get; init; }
 
         /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.

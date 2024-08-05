@@ -1,0 +1,392 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Collections.Generic;
+using System.Runtime.Intrinsics.X86;
+using Xunit;
+
+
+namespace JIT.HardwareIntrinsics.X86
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {Method}{RetBaseType}{RoundingMode}()
+        {
+            var test = new TernaryOpTest__{Method}{RetBaseType}{RoundingMode}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
+
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class TernaryOpTest__{Method}{RetBaseType}{RoundingMode}
+    {
+        private struct TestStruct
+        {
+            public {Op1VectorType}<{Op1BaseType}> _fld1;
+            public {Op2VectorType}<{Op2BaseType}> _fld2;
+            public {Op2VectorType}<{Op3BaseType}> _fld3;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput1}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = ({Op1BaseType}){FixedInput2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+                for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = ({Op1BaseType}){FixedInput3}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref testStruct._fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(TernaryOpTest__{Method}{RetBaseType}{RoundingMode} testClass)
+            {
+                var result = {Isa}.{Method}(_fld1, _fld2, _fld3, FloatRoundingMode.{RoundingMode});
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
+        private static readonly int Op3ElementCount = Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>() / sizeof({Op3BaseType});
+        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+
+        private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
+        private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
+        private static {Op3BaseType}[] _data3 = new {Op3BaseType}[Op3ElementCount];
+
+        private {Op1VectorType}<{Op1BaseType}> _fld1;
+        private {Op2VectorType}<{Op2BaseType}> _fld2;
+        private {Op3VectorType}<{Op3BaseType}> _fld3;
+
+        private SimpleTernaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}, {Op3BaseType}> _dataTable;
+
+        public TernaryOpTest__{Method}{RetBaseType}{RoundingMode}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = ({Op1BaseType}){FixedInput2}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = ({Op1BaseType}){FixedInput3}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _fld3), ref Unsafe.As<{Op3BaseType}, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = ({Op1BaseType}){FixedInput1}; }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = ({Op1BaseType}){FixedInput2}; }
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = ({Op1BaseType}){FixedInput3}; }
+            _dataTable = new SimpleTernaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}, {Op2BaseType}, {Op3BaseType}>(_data1, _data2, _data3, new {RetBaseType}[RetElementCount], LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            var result = {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                Unsafe.Read<{Op3VectorType}<{Op3BaseType}>>(_dataTable.inArray3Ptr),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr)),
+                {LoadIsa}.Load{Op3VectorType}(({Op3BaseType}*)(_dataTable.inArray3Ptr)),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_LoadAligned()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
+
+            var result = {Isa}.{Method}(
+                {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.LoadAligned{Op2VectorType}(({Op2BaseType}*)(_dataTable.inArray2Ptr)),
+                {LoadIsa}.LoadAligned{Op3VectorType}(({Op3BaseType}*)(_dataTable.inArray3Ptr)),
+                FloatRoundingMode.{RoundingMode}
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>), typeof({Op3VectorType}<{Op3BaseType}>), typeof(FloatRoundingMode) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr),
+                                        Unsafe.Read<{Op3VectorType}<{Op3BaseType}>>(_dataTable.inArray3Ptr),
+                                        FloatRoundingMode.{RoundingMode}
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray2Ptr);
+            var op3 = Unsafe.Read<{Op3VectorType}<{Op3BaseType}>>(_dataTable.inArray3Ptr);
+            var result = {Isa}.{Method}(op1, op2, op3, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld1, _fld2, _fld3, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, test._fld2, test._fld3, FloatRoundingMode.{RoundingMode});
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, {Op3VectorType}<{Op3BaseType}> op3, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
+            {Op3BaseType}[] inArray3 = new {Op3BaseType}[Op3ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), op2);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), op3);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+        }
+
+        private void ValidateResult(void* op1, void* op2, void* op3, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
+            {Op3BaseType}[] inArray3 = new {Op3BaseType}[Op3ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+
+            ValidateResult(inArray1, inArray2, inArray3, outArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                ulong[] answerTable = TernaryEmbRoundingAnswerTable[("{RetBaseType}", "{Method}", "{RoundingMode}")];
+
+                if (BitConverter.{CastingMethod}(result[i]) != answerTable[i])
+                {
+                    succeeded = false;
+                    Console.WriteLine("Avx512 {Method} Embedded rounding failed on {RetBaseType} with {RoundingMode}:");
+                    foreach (var item in result)
+                    {
+                        Console.Write(item + ", ");
+                    }
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, {Op2VectorType}<{Op2BaseType}>, {Op3VectorType}<{Op3BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($" thirdOp: ({string.Join(", ", thirdOp)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private static Dictionary<(string, string, string), ulong[]> TernaryEmbRoundingAnswerTable = new Dictionary<(string, string, string), ulong[]>
+        {
+            {("Double", "FusedMultiplyAdd", "ToNegativeInfinity"), new ulong[] {0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8}},
+            {("Single", "FusedMultiplyAdd", "ToNegativeInfinity"), new ulong[] {0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f}},
+            {("Double", "FusedMultiplyAdd", "ToPositiveInfinity"), new ulong[] {0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9, 0x3fe8b851eb851eb9}},
+            {("Single", "FusedMultiplyAdd", "ToPositiveInfinity"), new ulong[] {0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290, 0x3f45c290}},
+            {("Double", "FusedMultiplyAdd", "ToZero"), new ulong[] {0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8, 0x3fe8b851eb851eb8}},
+            {("Single", "FusedMultiplyAdd", "ToZero"), new ulong[] {0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f, 0x3f45c28f}},
+            {("Double", "FusedMultiplyAddNegated", "ToNegativeInfinity"), new ulong[] {0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147}},
+            {("Single", "FusedMultiplyAddNegated", "ToNegativeInfinity"), new ulong[] {0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70}},
+            {("Double", "FusedMultiplyAddNegated", "ToPositiveInfinity"), new ulong[] {0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148, 0x3fe747ae147ae148}},
+            {("Single", "FusedMultiplyAddNegated", "ToPositiveInfinity"), new ulong[] {0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71, 0x3f3a3d71}},
+            {("Double", "FusedMultiplyAddNegated", "ToZero"), new ulong[] {0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147, 0x3fe747ae147ae147}},
+            {("Single", "FusedMultiplyAddNegated", "ToZero"), new ulong[] {0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70, 0x3f3a3d70}},
+            {("Double", "FusedMultiplyAddSubtract", "ToNegativeInfinity"), new ulong[] {0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8}},
+            {("Single", "FusedMultiplyAddSubtract", "ToNegativeInfinity"), new ulong[] {0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f}},
+            {("Double", "FusedMultiplyAddSubtract", "ToPositiveInfinity"), new ulong[] {0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9}},
+            {("Single", "FusedMultiplyAddSubtract", "ToPositiveInfinity"), new ulong[] {0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290}},
+            {("Double", "FusedMultiplyAddSubtract", "ToZero"), new ulong[] {0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8}},
+            {("Single", "FusedMultiplyAddSubtract", "ToZero"), new ulong[] {0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f}},
+            {("Double", "FusedMultiplySubtract", "ToNegativeInfinity"), new ulong[] {0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148, 0xbfe747ae147ae148}},
+            {("Single", "FusedMultiplySubtract", "ToNegativeInfinity"), new ulong[] {0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71, 0xbf3a3d71}},
+            {("Double", "FusedMultiplySubtract", "ToPositiveInfinity"), new ulong[] {0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147}},
+            {("Single", "FusedMultiplySubtract", "ToPositiveInfinity"), new ulong[] {0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70}},
+            {("Double", "FusedMultiplySubtract", "ToZero"), new ulong[] {0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147, 0xbfe747ae147ae147}},
+            {("Single", "FusedMultiplySubtract", "ToZero"), new ulong[] {0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70, 0xbf3a3d70}},
+            {("Double", "FusedMultiplySubtractAdd", "ToNegativeInfinity"), new ulong[] {0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148, 0x3fe8b851eb851eb8, 0xbfe747ae147ae148}},
+            {("Single", "FusedMultiplySubtractAdd", "ToNegativeInfinity"), new ulong[] {0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71, 0x3f45c28f, 0xbf3a3d71}},
+            {("Double", "FusedMultiplySubtractAdd", "ToPositiveInfinity"), new ulong[] {0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147, 0x3fe8b851eb851eb9, 0xbfe747ae147ae147}},
+            {("Single", "FusedMultiplySubtractAdd", "ToPositiveInfinity"), new ulong[] {0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70, 0x3f45c290, 0xbf3a3d70}},
+            {("Double", "FusedMultiplySubtractAdd", "ToZero"), new ulong[] {0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147, 0x3fe8b851eb851eb8, 0xbfe747ae147ae147}},
+            {("Single", "FusedMultiplySubtractAdd", "ToZero"), new ulong[] {0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70, 0x3f45c28f, 0xbf3a3d70}},
+            {("Double", "FusedMultiplySubtractNegated", "ToNegativeInfinity"), new ulong[] {0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9, 0xbfe8b851eb851eb9}},
+            {("Single", "FusedMultiplySubtractNegated", "ToNegativeInfinity"), new ulong[] {0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290, 0xbf45c290}},
+            {("Double", "FusedMultiplySubtractNegated", "ToPositiveInfinity"), new ulong[] {0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8}},
+            {("Single", "FusedMultiplySubtractNegated", "ToPositiveInfinity"), new ulong[] {0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f}},
+            {("Double", "FusedMultiplySubtractNegated", "ToZero"), new ulong[] {0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8, 0xbfe8b851eb851eb8}},
+            {("Single", "FusedMultiplySubtractNegated", "ToZero"), new ulong[] {0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f, 0xbf45c28f}},
+            {("Double", "FusedMultiplyAddScalar", "ToNegativeInfinity"), new ulong[] {0x3fe8b851eb851eb8, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddScalar", "ToNegativeInfinity"), new ulong[] {0x3f45c28f, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplyAddScalar", "ToPositiveInfinity"), new ulong[] {0x3fe8b851eb851eb9, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddScalar", "ToPositiveInfinity"), new ulong[] {0x3f45c290, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplyAddScalar", "ToZero"), new ulong[] {0x3fe8b851eb851eb8, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddScalar", "ToZero"), new ulong[] {0x3f45c28f, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplyAddNegatedScalar", "ToNegativeInfinity"), new ulong[] {0x3fe747ae147ae147, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddNegatedScalar", "ToNegativeInfinity"), new ulong[] {0x3f3a3d70, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplyAddNegatedScalar", "ToPositiveInfinity"), new ulong[] {0x3fe747ae147ae148, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddNegatedScalar", "ToPositiveInfinity"), new ulong[] {0x3f3a3d71, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplyAddNegatedScalar", "ToZero"), new ulong[] {0x3fe747ae147ae147, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplyAddNegatedScalar", "ToZero"), new ulong[] {0x3f3a3d70, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractNegatedScalar", "ToNegativeInfinity"), new ulong[] {0xbfe8b851eb851eb9, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractNegatedScalar", "ToNegativeInfinity"), new ulong[] {0xbf45c290, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractNegatedScalar", "ToPositiveInfinity"), new ulong[] {0xbfe8b851eb851eb8, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractNegatedScalar", "ToPositiveInfinity"), new ulong[] {0xbf45c28f, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractNegatedScalar", "ToZero"), new ulong[] {0xbfe8b851eb851eb8, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractNegatedScalar", "ToZero"), new ulong[] {0xbf45c28f, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractScalar", "ToNegativeInfinity"), new ulong[] {0xbfe747ae147ae148, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractScalar", "ToNegativeInfinity"), new ulong[] {0xbf3a3d71, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractScalar", "ToPositiveInfinity"), new ulong[] {0xbfe747ae147ae147, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractScalar", "ToPositiveInfinity"), new ulong[] {0xbf3a3d70, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+            {("Double", "FusedMultiplySubtractScalar", "ToZero"), new ulong[] {0xbfe747ae147ae147, 0x3fa999999999999a}},
+            {("Single", "FusedMultiplySubtractScalar", "ToZero"), new ulong[] {0xbf3a3d70, 0x3d4ccccd, 0x3d4ccccd, 0x3d4ccccd}},
+        };
+    }
+}

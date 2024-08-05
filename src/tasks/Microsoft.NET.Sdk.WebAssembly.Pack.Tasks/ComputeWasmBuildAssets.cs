@@ -32,9 +32,6 @@ public class ComputeWasmBuildAssets : Task
     public ITaskItem[] ProjectSatelliteAssemblies { get; set; }
 
     [Required]
-    public string DotNetJsVersion { get; set; }
-
-    [Required]
     public string OutputPath { get; set; }
 
     [Required]
@@ -44,13 +41,21 @@ public class ComputeWasmBuildAssets : Task
     public bool InvariantGlobalization { get; set; }
 
     [Required]
-    public bool CopySymbols { get; set; }
+    public bool HybridGlobalization { get; set; }
 
-    public bool FingerprintDotNetJs { get; set; }
+    [Required]
+    public bool LoadFullICUData { get; set; }
+
+    [Required]
+    public bool CopySymbols { get; set; }
 
     public bool EnableThreads { get; set; }
 
     public bool EmitSourceMap { get; set; }
+
+    public bool FingerprintAssets { get; set; }
+
+    public bool FingerprintDotNetJs { get; set; }
 
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
@@ -77,16 +82,16 @@ public class ComputeWasmBuildAssets : Task
                 return true;
             }
 
-            if (AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
+            if (!AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
             {
-                var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate);
-                assetCandidates.Add(customIcuCandidate);
+                // if it's not empty then it's already in Candidates and will get filtered by ShouldFilterCandidate if needed
+                Log.LogMessage(MessageImportance.Low, "Custom icu asset was passed as empty.");
             }
 
             for (int i = 0; i < Candidates.Length; i++)
             {
                 var candidate = Candidates[i];
-                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
+                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, HybridGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                     filesToRemove.Add(candidate);
@@ -111,44 +116,8 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                string candidateFileName = candidate.GetMetadata("FileName");
-                if (candidateFileName.StartsWith("dotnet") && candidate.GetMetadata("Extension") == ".js")
-                {
-                    string newDotnetJSFileName = null;
-                    string newDotNetJSFullPath = null;
-                    if (candidateFileName != "dotnet" || FingerprintDotNetJs)
-                    {
-                        var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        newDotnetJSFileName = $"{candidateFileName}.{DotNetJsVersion}.{itemHash}.js";
-
-                        var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
-                        var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);
-
-                        newDotNetJSFullPath = Path.Combine(originalFileDirectory, newDotnetJSFileName);
-                    }
-                    else
-                    {
-                        newDotNetJSFullPath = candidate.ItemSpec;
-                        newDotnetJSFileName = Path.GetFileName(newDotNetJSFullPath);
-                    }
-
-                    var newDotNetJs = new TaskItem(newDotNetJSFullPath, candidate.CloneCustomMetadata());
-                    newDotNetJs.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
-
-                    var newRelativePath = $"_framework/{newDotnetJSFileName}";
-                    newDotNetJs.SetMetadata("RelativePath", newRelativePath);
-
-                    newDotNetJs.SetMetadata("AssetTraitName", "WasmResource");
-                    newDotNetJs.SetMetadata("AssetTraitValue", "native");
-
-                    assetCandidates.Add(newDotNetJs);
-                    continue;
-                }
-                else
-                {
-                    string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate);
-                    candidate.SetMetadata("RelativePath", relativePath);
-                }
+                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, FingerprintAssets, FingerprintDotNetJs);
+                candidate.SetMetadata("RelativePath", relativePath);
 
                 // Workaround for https://github.com/dotnet/aspnetcore/issues/37574.
                 // For items added as "Reference" in project references, the OriginalItemSpec is incorrect.
@@ -258,7 +227,10 @@ public class ComputeWasmBuildAssets : Task
                 break;
             case ".wasm":
             case ".blat":
+            case ".js" when filename.StartsWith("dotnet"):
+            case ".mjs" when filename.StartsWith("dotnet"):
             case ".dat" when filename.StartsWith("icudt"):
+            case ".json" when filename.StartsWith("segmentation-rules"):
                 candidate.SetMetadata("AssetTraitName", "WasmResource");
                 candidate.SetMetadata("AssetTraitValue", "native");
                 break;

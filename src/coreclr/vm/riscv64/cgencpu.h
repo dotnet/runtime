@@ -15,6 +15,37 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Ra) \
+    CALLEE_SAVED_REGISTER(S1) \
+    CALLEE_SAVED_REGISTER(S2) \
+    CALLEE_SAVED_REGISTER(S3) \
+    CALLEE_SAVED_REGISTER(S4) \
+    CALLEE_SAVED_REGISTER(S5) \
+    CALLEE_SAVED_REGISTER(S6) \
+    CALLEE_SAVED_REGISTER(S7) \
+    CALLEE_SAVED_REGISTER(S8) \
+    CALLEE_SAVED_REGISTER(S9) \
+    CALLEE_SAVED_REGISTER(S10) \
+    CALLEE_SAVED_REGISTER(S11) \
+    CALLEE_SAVED_REGISTER(Tp) \
+    CALLEE_SAVED_REGISTER(Gp)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(F[8]) \
+    CALLEE_SAVED_REGISTER(F[9]) \
+    CALLEE_SAVED_REGISTER(F[18]) \
+    CALLEE_SAVED_REGISTER(F[19]) \
+    CALLEE_SAVED_REGISTER(F[20]) \
+    CALLEE_SAVED_REGISTER(F[21]) \
+    CALLEE_SAVED_REGISTER(F[22]) \
+    CALLEE_SAVED_REGISTER(F[23]) \
+    CALLEE_SAVED_REGISTER(F[24]) \
+    CALLEE_SAVED_REGISTER(F[25]) \
+    CALLEE_SAVED_REGISTER(F[26]) \
+    CALLEE_SAVED_REGISTER(F[27])
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -35,8 +66,6 @@ extern PCODE GetPreStubEntryPoint();
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -75,10 +104,6 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -107,7 +132,7 @@ struct CalleeSavedRegisters {
 #define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
@@ -124,9 +149,30 @@ struct ArgumentRegisters {
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
     //TODO: not supports RISCV64-SIMD.
-    double  f[8];  // f0-f7
+    double  f[NUM_FLOAT_ARGUMENT_REGISTERS];  // f0-f7
 };
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+struct PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT64                 flags;
+    // Scratch space to reconstruct struct passed in two registers
+    BYTE                   buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
+};
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -213,7 +259,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     }
     EX_CATCH
     {
-        mem = NULL;
+        mem = (TADDR)NULL;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
     EX_END_CATCH(SwallowAllExceptions);
@@ -329,20 +375,17 @@ const IntReg RegRa  = IntReg(1);
 
 class StubLinkerCPU : public StubLinker
 {
-
 public:
-
-    // BitFlags for EmitLoadStoreReg(Pair)Imm methods
-    enum {
-        eSTORE      =   0x0,
-        eLOAD       =   0x1,
-    };
-
     static void Init();
     static bool isValidSimm12(int value) {
         return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
     }
-
+    static bool isValidSimm13(int value) {
+        return -(((int)1) << 12) <= value && value < (((int)1) << 12);
+    }
+    static bool isValidUimm20(int value) {
+        return (0 == (value >> 20));
+    }
     void EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall);
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
@@ -352,32 +395,23 @@ public:
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 #endif // FEATURE_SHARE_GENERIC_CODE
 
-#ifdef _DEBUG
-    void EmitNop() { _ASSERTE(!"RISCV64:NYI "); }
-#endif
-    void EmitBreakPoint() { _ASSERTE(!"RISCV64:NYI"); }
     void EmitMovConstant(IntReg target, UINT64 constant);
-    void EmitCmpImm(IntReg reg, int imm);
-    void EmitCmpReg(IntReg Xn, IntReg Xm);
-    void EmitCondFlagJump(CodeLabel * target, UINT cond);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
+    void EmitMovReg(FloatReg dest, FloatReg source);
 
     void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitLuImm(IntReg Xd, unsigned int value);
 
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset=0);
+    void EmitLoad(IntReg dest, IntReg srcAddr, int offset = 0);
+    void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
+    void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
+    void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
 
-    void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
-
-    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
-
-    void EmitCallRegister(IntReg reg);
-    void EmitRet(IntReg reg);
+    void EmitProlog(unsigned short cIntRegArgs, unsigned short cFpRegArgs, unsigned short cbStackSpace = 0);
+    void EmitEpilog();
 };
 
 extern "C" void SinglecastDelegateInvokeStub();
@@ -414,6 +448,13 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
 
 struct HijackArgs
 {
+    DWORD64 Fp; // frame pointer
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
+    DWORD64 S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, Gp, Tp;
     union
     {
         struct {
@@ -430,19 +471,12 @@ struct HijackArgs
          };
         size_t FPReturnValue[2];
     };
-    DWORD64 Fp; // frame pointer
-    DWORD64 Gp, Tp, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11;
-    union
-    {
-        DWORD64 Ra;
-        size_t ReturnAddress;
-    };
- };
+};
 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x2;
+    static const int Type = 0x93;
 
     UINT32  m_rgCode[6];
     TADDR   m_pTarget;

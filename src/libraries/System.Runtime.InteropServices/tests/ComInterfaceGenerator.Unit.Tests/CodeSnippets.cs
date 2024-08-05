@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,10 +14,24 @@ namespace ComInterfaceGenerator.Unit.Tests
 {
     internal partial class CodeSnippets
     {
+        internal static IComInterfaceAttributeProvider GetAttributeProvider(GeneratorKind generator)
+            => generator switch
+            {
+                GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
+                GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
+                _ => throw new UnreachableException(),
+            };
+
         private readonly IComInterfaceAttributeProvider _attributeProvider;
         public CodeSnippets(IComInterfaceAttributeProvider attributeProvider)
         {
             _attributeProvider = attributeProvider;
+        }
+
+        public CodeSnippets(GeneratorKind generator) : this(GetAttributeProvider(generator))
+        {
         }
 
         private string VirtualMethodIndex(
@@ -49,8 +65,51 @@ namespace ComInterfaceGenerator.Unit.Tests
                 + arguments + "]";
         }
 
-        public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
-        public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
+        public static string GetCustomCollectionType(string elementName) => $"StatelessCollectionAllShapes<{elementName}>";
+
+        public const string CustomCollectionAndMarshaller = CustomCollectionDefinition + CustomCollectionAllShapesMarshaller;
+        public const string CustomCollectionDefinition = """
+            internal class StatelessCollectionAllShapes<T>
+            {
+                public T _field;
+            }
+            """;
+        public const string CustomCollectionAllShapesMarshaller = """
+            [ContiguousCollectionMarshaller]
+            [CustomMarshaller(typeof(StatelessCollectionAllShapes<>), MarshalMode.Default, typeof(StatelessCollectionAllShapesMarshaller<,>))]
+            internal unsafe static class StatelessCollectionAllShapesMarshaller<TManagedElement, TUnmanagedElement> where TUnmanagedElement : unmanaged
+            {
+                public static void Free(TUnmanagedElement* unmanaged) { }
+
+                // ToUnmanaged
+                public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, out int numElements)
+                    => throw null;
+                public static System.ReadOnlySpan<TManagedElement> GetManagedValuesSource(StatelessCollectionAllShapes<TManagedElement> managed) // Can throw exceptions
+                    => throw null;
+                public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) // Can throw exceptions
+                    => throw null;
+                public static ref TUnmanagedElement* GetPinnableReference(StatelessCollectionAllShapes<TManagedElement> managed)
+                    => throw null;
+
+                // Caller Allocated buffer ToUnmanaged
+                public static int BufferSize { get; } = 10;
+                public static TUnmanagedElement* AllocateContainerForUnmanagedElements(StatelessCollectionAllShapes<TManagedElement> managed, System.Span<byte> buffer, out int numElements)
+                    => throw null;
+
+                // ToManaged
+                public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+                public static System.Span<TManagedElement> GetManagedValuesDestination(StatelessCollectionAllShapes<TManagedElement> managed)
+                    => throw null;
+                public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+
+                //ToManaged Guaranteed marshalling
+                public static StatelessCollectionAllShapes<TManagedElement> AllocateContainerForManagedElementsFinally(TUnmanagedElement* unmanaged, int numElements)
+                    => throw null;
+            }
+            """;
+
         public const string IntMarshaller = """
             [CustomMarshaller(typeof(int), MarshalMode.Default, typeof(IntMarshaller))]
             internal static class IntMarshaller
@@ -89,7 +148,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
             internal static class IntStructMarshaller
             {
-                public static nint ConvertToUnmanaged(int managed) => (nint)0;
+                public static nint ConvertToUnmanaged(IntStruct managed) => (nint)0;
                 public static IntStruct ConvertToManaged(nint unmanaged) => default;
             }
             """;
@@ -241,6 +300,31 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         public string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
+
+        public string MarshalAsParameterAndModifiers(string typeName, UnmanagedType unmanagedType) =>
+            $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+            {{GeneratedComInterface()}}
+            partial interface INativeAPI
+            {
+                {{VirtualMethodIndex(0)}}
+                [return: {|#10:MarshalAs(UnmanagedType.{{unmanagedType}})|}]
+                {{typeName}} {|#0:Method|}(
+                    [{|#11:MarshalAs(UnmanagedType.{{unmanagedType}})|}] {{typeName}} {|#1:value|},
+                    [{|#12:MarshalAs(UnmanagedType.{{unmanagedType}})|}] in {{typeName}} {|#2:inValue|},
+                    [{|#13:MarshalAs(UnmanagedType.{{unmanagedType}})|}] ref {{typeName}} {|#3:refValue|},
+                    [{|#14:MarshalAs(UnmanagedType.{{unmanagedType}})|}] out {{typeName}} {|#4:outValue|});
+            }
+
+            {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
+            """;
+
         public string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
         public string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $$"""
             using System.Runtime.CompilerServices;
@@ -267,6 +351,53 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
+
+        public string CollectionMarshallingWithCountRefKinds(
+            (string parameterType, string parameterModifiers, string[] countNames) returnType,
+            params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
+        {
+            List<string> parameterSources = new();
+            int i = 1;
+            foreach (var (parameterType, parameterModifiers, parameterName, countNames) in parameters)
+            {
+                List<string> marshalUsings = new();
+                int j = 0;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[MarshalUsing(CountElementName = {countName}, ElementIndirectionDepth = {j})]");
+                    j++;
+                }
+                parameterSources.Add($$"""
+                    {{string.Join(' ', marshalUsings)}} {{parameterModifiers}} {{parameterType}} {|#{{i}}:{{parameterName}}|}
+                    """);
+                i++;
+            }
+            string returnTypeSource;
+            {
+                List<string> marshalUsings = new();
+                var (parameterType, parameterModifiers, countNames) = returnType;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[return: MarshalUsing(CountElementName = nameof({countName}))]");
+                }
+                returnTypeSource = $"{string.Join(' ', marshalUsings)} {parameterModifiers} {parameterType}";
+            }
+            var parametersSource = string.Join(',', parameterSources);
+            return $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+
+                {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
+                {{GeneratedComInterface()}}
+                partial interface INativeAPI
+                {
+                    {{VirtualMethodIndex(0)}}
+                    {{returnTypeSource}} {|#0:Method|}({{parametersSource}});
+                }
+            """;
+        }
 
         public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
@@ -301,6 +432,87 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+        public string DerivedComInterfaceTypeWithShadowingMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeShadowsNonComMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            interface IOtherInterface
+            {
+                void Method2();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method2();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeShadowsComAndNonComMethod => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            interface IOtherInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface
+            {
+                new void Method();
+            }
+            """;
+
+        public string DerivedComInterfaceTypeTwoLevelShadows => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface()}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface1: IComInterface
+            {
+                new void Method1();
+            }
+            {{GeneratedComInterface()}}
+            partial interface IComInterface2 : IComInterface1
+            {
+                new void Method();
+            }
+            """;
+
         public string DerivedComInterfaceType => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -317,6 +529,27 @@ namespace ComInterfaceGenerator.Unit.Tests
                 void Method2();
             }
             """;
+
+        public string DerivedComInterfaceTypeMismatchInWrappers => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface IComInterface
+            {
+                void Method();
+            }
+
+            [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            partial interface {|#0:IComInterface2|} : IComInterface
+            {
+                void Method2();
+            }
+            """;
+
         public string DerivedComInterfaceTypeMultipleComInterfaceBases => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
@@ -423,17 +656,17 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public static event EventHandler StaticEvent;
             }
-            
+
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
 
             interface IOtherInterface
             {
                 int Property { get; set; }
-            
+
                 public static int StaticProperty { get; set; }
-            
+
                 event EventHandler Event;
-            
+
                 public static event EventHandler StaticEvent;
             }
             """;

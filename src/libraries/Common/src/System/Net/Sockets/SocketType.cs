@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if SYSTEM_NET_SOCKETS_DLL
 namespace System.Net.Sockets
 {
     public
-#else
-namespace System.Net.Internals
-{
-    internal
-#endif
     // Specifies the type of socket an instance of the System.Net.Sockets.Socket class represents.
     enum SocketType
     {

@@ -54,11 +54,11 @@
   }
 }
 
-.class private auto ansi beforefieldinit Fooer
+.class public auto ansi beforefieldinit Fooer
        extends [System.Runtime]System.Object
        implements IBar
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -67,67 +67,71 @@
   }
 }
 
-.method public hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit boring
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
+  .method public hidebysig static int32 Main() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<string>::Frob()
-  ldc.i4.1
-  ceq
-  brtrue IFoo_String_Frob_Okay
-  ldc.i4.1
-  ret
-IFoo_String_Frob_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<string>::Frob()
+    ldc.i4.1
+    ceq
+    brtrue IFoo_String_Frob_Okay
+    ldc.i4.1
+    ret
+  IFoo_String_Frob_Okay:
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<object>::Frob()
-  ldc.i4.1
-  ceq
-  brtrue IFoo_Object_Frob_Okay
-  ldc.i4.2
-  ret
-IFoo_Object_Frob_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<object>::Frob()
+    ldc.i4.1
+    ceq
+    brtrue IFoo_Object_Frob_Okay
+    ldc.i4.2
+    ret
+  IFoo_Object_Frob_Okay:
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<class [System.Runtime]System.ValueType>::Frob()
-  ldc.i4.2
-  ceq
-  brtrue IFoo_ValueType_Frob_Okay
-  ldc.i4.3
-  ret
-IFoo_ValueType_Frob_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<class [System.Runtime]System.ValueType>::Frob()
+    ldc.i4.2
+    ceq
+    brtrue IFoo_ValueType_Frob_Okay
+    ldc.i4.3
+    ret
+  IFoo_ValueType_Frob_Okay:
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<string>::Bark()
-  ldc.i4.3
-  ceq
-  brtrue IFoo_String_Bark_Okay
-  ldc.i4.4
-  ret
-IFoo_String_Bark_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<string>::Bark()
+    ldc.i4.3
+    ceq
+    brtrue IFoo_String_Bark_Okay
+    ldc.i4.4
+    ret
+  IFoo_String_Bark_Okay:
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<object>::Bark()
-  ldc.i4.m1
-  ceq
-  brtrue IFoo_Object_Bark_Okay
-  ldc.i4.5
-  ret
-IFoo_Object_Bark_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<object>::Bark()
+    ldc.i4.m1
+    ceq
+    brtrue IFoo_Object_Bark_Okay
+    ldc.i4.5
+    ret
+  IFoo_Object_Bark_Okay:
 
-  newobj instance void class Fooer::.ctor()
-  callvirt instance int32 class IFoo`1<class [System.Runtime]System.ValueType>::Bark()
-  ldc.i4.4
-  ceq
-  brtrue IFoo_ValueType_Bark_Okay
-  ldc.i4.6
-  ret
-IFoo_ValueType_Bark_Okay:
+    newobj instance void class Fooer::.ctor()
+    callvirt instance int32 class IFoo`1<class [System.Runtime]System.ValueType>::Bark()
+    ldc.i4.4
+    ceq
+    brtrue IFoo_ValueType_Bark_Okay
+    ldc.i4.6
+    ret
+  IFoo_ValueType_Bark_Okay:
 
-  ldc.i4 100
-  ret
+    ldc.i4 100
+    ret
+  }
 }

@@ -153,9 +153,14 @@ provider_compute_event_enable_mask (
 				// The event is enabled if:
 				//  - The provider is enabled.
 				//  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
-				//  - The event level is LogAlways or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
+				//  - The event level is LogAlways
+                //    or the provider's verbosity level is LogAlways
+                //    or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
 				bool keyword_enabled = (keywords == 0) || ((session_keyword & keywords) != 0);
-				bool level_enabled = ((event_level == EP_EVENT_LEVEL_LOGALWAYS) || (session_level >= event_level));
+				bool level_enabled = (event_level == EP_EVENT_LEVEL_LOGALWAYS) ||
+                    (session_level == EP_EVENT_LEVEL_LOGALWAYS) ||
+                    (session_level >= event_level);
+
 				if (provider_enabled && keyword_enabled && level_enabled)
 					result = result | ep_session_get_mask (session);
 			}
@@ -182,7 +187,7 @@ ep_provider_alloc (
 	instance->provider_name = ep_rt_utf8_string_dup (provider_name);
 	ep_raise_error_if_nok (instance->provider_name != NULL);
 
-	instance->provider_name_utf16 = ep_rt_utf8_to_utf16le_string (provider_name, -1);
+	instance->provider_name_utf16 = ep_rt_utf8_to_utf16le_string (provider_name);
 	ep_raise_error_if_nok (instance->provider_name_utf16 != NULL);
 
 	instance->event_list = dn_list_alloc ();

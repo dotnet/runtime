@@ -4,7 +4,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -18,8 +17,6 @@
              Link="ProductionCode\Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="ProductionCode\Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="ProductionCode\Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="ProductionCode\Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
@@ -54,6 +51,8 @@
              Link="Common\System\Net\Http\HPackEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs"
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs"
@@ -184,6 +183,8 @@
              Link="ProductionCode\System\Net\Http\Headers\ViaHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\WarningHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
+    <Compile Include="..\..\src\System\Net\Http\DiagnosticsHelper.cs"
+             Link="ProductionCode\System\Net\Http\DiagnosticsHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
@@ -254,6 +255,7 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
+    <Compile Include="DiagnosticsHelperTest.cs" />
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\HttpTelemetry.cs" />
@@ -354,6 +356,8 @@
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs" />
     <Compile Include="$(CommonPath)System\Runtime\ExceptionServices\ExceptionStackTrace.cs"

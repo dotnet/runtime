@@ -12,8 +12,8 @@ namespace System.ComponentModel.Tests
         {
             var list = new EventHandlerList();
 
-            Action action1 = () => Assert.True(false);
-            Action action2 = () => Assert.False(true);
+            Action action1 = () => Assert.Fail();
+            Action action2 = () => Assert.Fail();
 
             // Add the first delegate to the first entry.
             list.AddHandler("key1", action1);
@@ -102,8 +102,8 @@ namespace System.ComponentModel.Tests
             var list = new EventHandlerList();
 
             // Create two different delegate instances.
-            Action action1 = () => Assert.True(false);
-            Action action2 = () => Assert.False(true);
+            Action action1 = () => Assert.Fail();
+            Action action2 = () => Assert.Fail();
 
             // The list is still usable after disposal.
             for (int i = 0; i < 2; i++)

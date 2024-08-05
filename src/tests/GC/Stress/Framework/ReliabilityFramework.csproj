@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
-    <GenerateRunScript>false</GenerateRunScript>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
   </PropertyGroup>
   <ItemGroup>

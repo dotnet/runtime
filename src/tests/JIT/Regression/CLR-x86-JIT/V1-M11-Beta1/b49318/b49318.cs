@@ -25,14 +25,13 @@ namespace Test
             catch (Exception) { }
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
                 Main1();
             }
             catch (Exception) { }
-            return 100;
         }
     }
 

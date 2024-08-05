@@ -3,12 +3,10 @@
 
 using System;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
-using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 #if ECMA_METADATA_SUPPORT
@@ -18,7 +16,7 @@ using System.Reflection.Runtime.MethodInfos.EcmaFormat;
 using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
-using Internal.Runtime.Augments;
+using Internal.Runtime;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -26,20 +24,14 @@ namespace Internal.Reflection.Core.Execution
     // This singleton class acts as an entrypoint from System.Private.Reflection.Execution to System.Private.Reflection.Core.
     //
     [CLSCompliant(false)]
-    public sealed class ExecutionDomain
+    public static class ExecutionDomain
     {
-        internal ExecutionDomain(ReflectionDomainSetup executionDomainSetup, ExecutionEnvironment executionEnvironment)
-        {
-            ExecutionEnvironment = executionEnvironment;
-            ReflectionDomainSetup = executionDomainSetup;
-        }
-
         //
         // Retrieves the MethodBase for a given method handle. Helper to implement Delegate.GetMethodInfo()
         //
-        public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public static MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle();
             RuntimeNamedMethodInfo? runtimeNamedMethodInfo = null;
 
             if (methodHandle.IsNativeFormatMetadataBased)
@@ -86,7 +78,7 @@ namespace Internal.Reflection.Core.Execution
                 RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[genericMethodTypeArgumentHandles.Length];
                 for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
                 {
-                    genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+                    genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetRuntimeTypeInfoForRuntimeTypeHandle();
                 }
                 return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
             }
@@ -96,9 +88,9 @@ namespace Internal.Reflection.Core.Execution
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
         //=======================================================================================
-        public Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
+        internal static RuntimeTypeInfo GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            QTypeDefinition qTypeDefinition = ExecutionEnvironment.GetMetadataForNamedType(typeHandle);
+            QTypeDefinition qTypeDefinition = ReflectionCoreExecution.ExecutionEnvironment.GetMetadataForNamedType(typeHandle);
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsNativeFormatMetadataBased)
 #endif
@@ -115,101 +107,94 @@ namespace Internal.Reflection.Core.Execution
 #endif
         }
 
-        public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
+        internal static unsafe RuntimeTypeInfo GetRuntimeTypeInfo(MethodTable* pEEType)
         {
-            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
-        }
+            Debug.Assert(pEEType != null);
 
-        public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
-        {
-            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
-        }
+            RuntimeTypeInfo runtimeTypeInfo;
 
-        public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetPointerTypeTargetType(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
-        }
-
-        public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            ExecutionEnvironment.GetFunctionPointerTypeComponents(typeHandle, out RuntimeTypeHandle returnTypeHandle,
-                                                                              out RuntimeTypeHandle[] parameterHandles,
-                                                                              out bool isUnmanaged);
-
-            RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
-            int count = parameterHandles.Length;
-            RuntimeTypeInfo[] parameterTypes = new RuntimeTypeInfo[count];
-            for (int i = 0; i < count; i++)
+            if (pEEType->IsDefType)
             {
-                parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
+                if (pEEType->IsGeneric)
+                {
+                    runtimeTypeInfo = GetConstructedGenericTypeForHandle(pEEType);
+                }
+                else
+                {
+                    runtimeTypeInfo = GetNamedTypeForHandle(new RuntimeTypeHandle(pEEType));
+                }
+            }
+            else if (pEEType->IsArray)
+            {
+                runtimeTypeInfo = RuntimeArrayTypeInfo.GetArrayTypeInfo(
+                    new RuntimeTypeHandle(pEEType->RelatedParameterType).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    multiDim: !pEEType->IsSzArray, rank: pEEType->ArrayRank,
+                    precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
+            }
+            else if (pEEType->IsPointer)
+            {
+                runtimeTypeInfo = RuntimePointerTypeInfo.GetPointerTypeInfo(
+                    new RuntimeTypeHandle(pEEType->RelatedParameterType).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
+            }
+            else if (pEEType->IsByRef)
+            {
+                runtimeTypeInfo = RuntimeByRefTypeInfo.GetByRefTypeInfo(
+                    new RuntimeTypeHandle(pEEType->RelatedParameterType).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
+            }
+            else if (pEEType->IsFunctionPointer)
+            {
+                runtimeTypeInfo = GetFunctionPointerTypeForHandle(pEEType);
+            }
+            else
+            {
+                Debug.Fail("Invalid RuntimeTypeHandle");
+                throw new ArgumentException(SR.Arg_InvalidHandle);
             }
 
-            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
-        }
+            return runtimeTypeInfo;
 
-        public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetByRefTypeTargetType(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
-        }
-
-        public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            RuntimeTypeHandle genericTypeDefinitionHandle;
-            RuntimeTypeHandle[] genericTypeArgumentHandles;
-            genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(typeHandle, out genericTypeArgumentHandles);
-
-            RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
-            int count = genericTypeArgumentHandles.Length;
-            RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[count];
-            for (int i = 0; i < count; i++)
+            static RuntimeTypeInfo GetConstructedGenericTypeForHandle(MethodTable* pEEType)
             {
-                genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+                RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[pEEType->GenericArity];
+                MethodTableList arguments = pEEType->GenericArguments;
+                for (int i = 0; i < genericTypeArguments.Length; i++)
+                {
+                    genericTypeArguments[i] = new RuntimeTypeHandle(arguments[i]).GetRuntimeTypeInfoForRuntimeTypeHandle();
+                }
+
+                return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(
+                    new RuntimeTypeHandle(pEEType->GenericDefinition).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    genericTypeArguments,
+                    precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
             }
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
+
+            static RuntimeTypeInfo GetFunctionPointerTypeForHandle(MethodTable* pEEType)
+            {
+                RuntimeTypeInfo[] parameterTypes;
+
+                uint count = pEEType->NumFunctionPointerParameters;
+                if (count == 0)
+                {
+                    parameterTypes = Array.Empty<RuntimeTypeInfo>();
+                }
+                else
+                {
+                    parameterTypes = new RuntimeTypeInfo[count];
+                    MethodTableList parameters = pEEType->FunctionPointerParameters;
+                    for (int i = 0; i < parameterTypes.Length; i++)
+                    {
+                        parameterTypes[i] = new RuntimeTypeHandle(parameters[i]).GetRuntimeTypeInfoForRuntimeTypeHandle();
+                    }
+                }
+
+                return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(
+                    new RuntimeTypeHandle(pEEType->FunctionPointerReturnType).GetRuntimeTypeInfoForRuntimeTypeHandle(),
+                    parameterTypes,
+                    pEEType->IsUnmanagedFunctionPointer,
+                    precomputedTypeHandle: new RuntimeTypeHandle(pEEType));
+            }
         }
-
-        //=======================================================================================
-        // Missing metadata exceptions.
-        //=======================================================================================
-        public Exception CreateMissingMetadataException(Type pertainant)
-        {
-            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
-        }
-
-        public Exception CreateNonInvokabilityException(MemberInfo pertainant)
-        {
-            return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);
-        }
-
-        //=======================================================================================
-        // Miscellaneous.
-        //=======================================================================================
-        public RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
-        {
-            if (type is not RuntimeType)
-                return default(RuntimeTypeHandle);
-
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
-            if (runtimeType == null)
-                return default(RuntimeTypeHandle);
-            return runtimeType.InternalTypeHandleIfAvailable;
-        }
-
-        public static bool IsPrimitiveType(Type type)
-            => type == typeof(bool) || type == typeof(char)
-                || type == typeof(sbyte) || type == typeof(byte)
-                || type == typeof(short) || type == typeof(ushort)
-                || type == typeof(int) || type == typeof(uint)
-                || type == typeof(long) || type == typeof(ulong)
-                || type == typeof(float) || type == typeof(double)
-                || type == typeof(nint) || type == typeof(nuint);
-
-        internal ExecutionEnvironment ExecutionEnvironment { get; }
-
-        internal ReflectionDomainSetup ReflectionDomainSetup { get; }
     }
 }

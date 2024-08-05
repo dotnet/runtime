@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Primitives
         /// Returns <c>null</c> where <see cref="StringValues"/> has been initialized from an empty string array or is <see cref="StringValues.Empty"/>.
         /// </remarks>
         /// <param name="values">A <see cref="StringValues"/> to implicitly convert.</param>
-        public static implicit operator string? (StringValues values)
+        public static implicit operator string?(StringValues values)
         {
             return values.GetStringValue();
         }
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Primitives
         /// Defines an implicit conversion of a given <see cref="StringValues"/> to a string array.
         /// </summary>
         /// <param name="value">A <see cref="StringValues"/> to implicitly convert.</param>
-        public static implicit operator string?[]? (StringValues value)
+        public static implicit operator string?[]?(StringValues value)
         {
             return value.GetArrayValue();
         }
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Primitives
                         length += value.Length;
                     }
                 }
-#if NETCOREAPP
+#if NET
                 // Create the new string
                 return string.Create(length, values, (span, strings) => {
                     int offset = 0;
@@ -788,6 +788,10 @@ namespace Microsoft.Extensions.Primitives
             public Enumerator(ref StringValues values) : this(values._values)
             { }
 
+            /// <summary>
+            /// Advances the enumerator to the next element of the <see cref="StringValues"/>.
+            /// </summary>
+            /// <returns><see langword="true"/> if the enumerator was successfully advanced to the next element; <see langword="false"/> if the enumerator has passed the end of the <see cref="StringValues"/>.</returns>
             public bool MoveNext()
             {
                 int index = _index;
@@ -814,6 +818,9 @@ namespace Microsoft.Extensions.Primitives
                 return _current != null;
             }
 
+            /// <summary>
+            /// Gets the element at the current position of the enumerator.
+            /// </summary>
             public string? Current => _current;
 
             object? IEnumerator.Current => _current;
@@ -823,6 +830,9 @@ namespace Microsoft.Extensions.Primitives
                 throw new NotSupportedException();
             }
 
+            /// <summary>
+            /// Releases all resources used by the <see cref="Enumerator" />.
+            /// </summary>
             public void Dispose()
             {
             }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace NetClient
 {
     using System;
@@ -14,7 +15,7 @@ namespace NetClient
 
     using CoClass = Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static void Validate_Activation()
         {
@@ -24,7 +25,7 @@ namespace NetClient
             test.ReleaseResources();
 
             // The CoClass should be the activated type, _not_ the activation interface.
-            Assert.Equal(test.GetType(), typeof(CoClass.ConsumeNETServerTestingClass));
+            Assert.Equal(typeof(CoClass.ConsumeNETServerTestingClass), test.GetType());
             Assert.True(typeof(CoClass.ConsumeNETServerTestingClass).IsCOMObject);
             Assert.False(typeof(CoClass.ConsumeNETServerTesting).IsCOMObject);
             Assert.True(Marshal.IsComObject(test));
@@ -62,7 +63,7 @@ namespace NetClient
             // The CoClass should be the activated type, _not_ the implementation class.
             // This indicates the real implementation class is wrapped in its CCW and exposed
             // to the runtime as an RCW.
-            Assert.NotEqual(test.GetType(), typeof(ConsumeNETServerTesting));
+            Assert.NotEqual(typeof(ConsumeNETServerTesting), test.GetType());
         }
 
         static void Validate_Client_CCW_RCW()
@@ -103,7 +104,8 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

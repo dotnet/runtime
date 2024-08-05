@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net8.0";
+        public const string DefaultTargetFramework = "net9.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -35,6 +35,13 @@ namespace Wasm.Build.Tests
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
+
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public bool UseWBTOverridePackTargets = false;
 
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
@@ -48,7 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
+            Path.Combine(BuildEnvironment.TestDataPath, "nuget9.config");
                             // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
         static BuildTestBase()
@@ -86,7 +93,7 @@ namespace Wasm.Build.Tests
         {
             _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
-            _testOutput = output;
+            _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
@@ -133,6 +140,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
+            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
             if (addNuGetSourceForLocalPackages)
@@ -152,9 +160,8 @@ namespace Wasm.Build.Tests
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
+                <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -168,7 +175,6 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
             string projectContents = projectTemplate
@@ -204,7 +210,7 @@ namespace Wasm.Build.Tests
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
+                                        options.TargetFramework == "net7.0" ? "data/test-main-7.0.js" : "test-main.js"),
                             Path.Combine(_projectDir, "test-main.js"));
             }
             else if (_projectDir is null)
@@ -242,6 +248,8 @@ namespace Wasm.Build.Tests
                         envVars[kvp.Key] = kvp.Value;
                 }
                 envVars["NUGET_PACKAGES"] = _nugetPackagesDir;
+                if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
+                    envVars["WBTOverrideRuntimePack"] = "true";
                 result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
                 // check that we are using the correct runtime pack!
@@ -254,8 +262,6 @@ namespace Wasm.Build.Tests
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
-                                         options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -295,6 +301,8 @@ namespace Wasm.Build.Tests
                   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                       <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
                   </Target>
+
+                  <Import Project="WasmOverridePacks.targets" />
                 </Project>
                 """);
 
@@ -349,8 +357,6 @@ namespace Wasm.Build.Tests
         protected static void AssertBasicAppBundle(string bundleDir,
                                                    string projectName,
                                                    string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
                                                    bool dotnetWasmFromRuntimePack = true)
@@ -358,14 +364,11 @@ namespace Wasm.Build.Tests
 #if false
             AssertFilesExist(bundleDir, new []
             {
-                "index.html",
-                mainJS,
                 "dotnet.wasm",
                 "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -561,7 +564,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
@@ -591,8 +594,6 @@ namespace Wasm.Build.Tests
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine($"{label} {message}");
             }
         }
 
@@ -637,6 +638,8 @@ namespace Wasm.Build.Tests
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
 
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
+
         private static string GetEnvironmentVariableOrDefault(string envVarName, string defaultValue)
         {
             string? value = Environment.GetEnvironmentVariable(envVarName);
@@ -678,6 +681,35 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
+
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRun() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { "Debug" },
+                new object?[] { "Release" }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*propertyValue*/
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
+        protected CommandResult RunWithoutBuild(string config, string id)
+        {
+            // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+            string runArgs = $"run --no-build -c {config} --forward-exit-code --extra-host-arg=--wasi --extra-host-arg=http";
+            runArgs += " x y z";
+            int expectedExitCode = 42;
+            CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                            .WithWorkingDirectory(_projectDir!)
+                            .ExecuteWithCapturedOutput(runArgs)
+                            .EnsureExitCode(expectedExitCode);
+
+            Assert.Contains("Hello, Wasi Console!", res.Output);
+            Assert.Contains("args[0] = x", res.Output);
+            Assert.Contains("args[1] = y", res.Output);
+            Assert.Contains("args[2] = z", res.Output);
+            return res;
+        }
     }
 
     public record BuildArgs(string ProjectName,
@@ -686,8 +718,6 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
-    internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 
     public record BuildProjectOptions
     (
@@ -700,11 +730,9 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

@@ -3,10 +3,10 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -53,7 +53,7 @@ namespace System.Globalization
 
         internal static StrongBidiCategory GetBidiCategory(StringBuilder s, int index)
         {
-            Debug.Assert(s != null, "s != null");
+            Debug.Assert(s != null);
             Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
 
             // The logic below follows Table 3-5 in the Unicode Standard, Sec. 3.9.
@@ -273,13 +273,15 @@ namespace System.Globalization
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
 
-            // The offset is specified in shorts:
-            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+            // The mapped casing for the codePoint usually exists in the same plane as codePoint.
+            // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(UppercaseValues));
+            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
             int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (uint)delta + codePoint;
+
+            // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
+            return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -306,13 +308,15 @@ namespace System.Globalization
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
 
-            // If the offset is specified in shorts:
-            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+            // The mapped casing for the codePoint usually exists in the same plane as codePoint.
+            // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(LowercaseValues));
+            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
             int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (uint)delta + codePoint;
+
+            // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
+            return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
         }
 
         /*
@@ -359,7 +363,7 @@ namespace System.Globalization
         internal static UnicodeCategory GetUnicodeCategoryInternal(string value, int index)
         {
             Debug.Assert(value != null, "value can not be null");
-            Debug.Assert(index < value.Length, "index < value.Length");
+            Debug.Assert(index < value.Length);
 
             return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePointFromString(value, index));
         }
@@ -371,8 +375,8 @@ namespace System.Globalization
         internal static UnicodeCategory GetUnicodeCategoryInternal(string str, int index, out int charLength)
         {
             Debug.Assert(str != null, "str can not be null");
-            Debug.Assert(str.Length > 0, "str.Length > 0");
-            Debug.Assert(index >= 0 && index < str.Length, "index >= 0 && index < str.Length");
+            Debug.Assert(str.Length > 0);
+            Debug.Assert(index >= 0 && index < str.Length);
 
             uint codePoint = (uint)GetCodePointFromString(str, index);
             UnicodeDebug.AssertIsValidCodePoint(codePoint);
@@ -404,7 +408,7 @@ namespace System.Globalization
         /// </summary>
         private static int GetCodePointFromString(string s, int index)
         {
-            Debug.Assert(s != null, "s != null");
+            Debug.Assert(s != null);
             Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
 
             int codePoint = 0;

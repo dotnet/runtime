@@ -20,10 +20,9 @@ namespace Test
                 param1 = param2;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new AA().Method1(0u, 0);
-            return 100;
         }
     }
 }

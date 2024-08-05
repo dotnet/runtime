@@ -35,11 +35,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (PlatformDetection.IsAndroid && useSsl && host == "::1")
-            {
-                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -114,14 +109,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(exceptionMessage, innerException.Message);
             Assert.Equal("SocksException", innerException.GetType().Name);
 
-            try
-            {
-                await proxy.DisposeAsync();
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-            }
+            await IgnoreExceptions(proxy.DisposeAsync().AsTask());
         }
     }
 

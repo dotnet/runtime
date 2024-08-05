@@ -493,7 +493,7 @@ namespace System.IO.Ports.Tests
                 com1.Write(com1.NewLine);
 
                 string receivedLine = com2.ReadLine();
-                Assert.Equal(charactersToWrite, receivedLine);
+                Assert.Equal(charactersToWrite, receivedLine.ToCharArray());
             }
         }
 

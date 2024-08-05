@@ -1253,14 +1253,19 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
     {
         // It turns out we cannot really get rid of this check.  Dynamic methods
         // (including IL stubs) do not have their local sig's available after JIT time.
-        if (!m_methodDesc->IsIL())
+        // IL methods with dynamically generated IL (for example, UnsafeAccessors) may
+        // not have an IL header.
+        COR_ILMETHOD* ilHeader = m_methodDesc->IsIL()
+            ? m_methodDesc->GetILHeader()
+            : NULL;
+        if (ilHeader == NULL)
         {
             *sig = NULL;
             *count = 0;
             return E_FAIL;
         }
 
-        COR_ILMETHOD_DECODER methodDecoder(m_methodDesc->GetILHeader());
+        COR_ILMETHOD_DECODER methodDecoder(ilHeader);
         mdSignature localSig = methodDecoder.GetLocalVarSigTok() ?
             methodDecoder.GetLocalVarSigTok() : mdSignatureNil;
         if (localSig == mdSignatureNil)

@@ -16,7 +16,7 @@ namespace System.Net.Security
     public partial class SslStream
     {
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
-        private int _nestedAuth;
+        private NestedState _nestedAuth;
         private bool _isRenego;
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
@@ -32,10 +32,14 @@ namespace System.Net.Security
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
-        // 0 = no handshake
-        // 1 = handshake completed, connection opened
-        // 2 = SslStream disposed, connection closed
-        private int _connectionOpenedStatus;
+        private enum ConnectionStatus
+        {
+            NoHandshake = 0,
+            HandshakeCompleted = 1, // connection opened
+            Disposed = 2, // connection closed
+        }
+
+        private ConnectionStatus _connectionOpenedStatus;
 
         private void SetException(Exception e)
         {
@@ -56,10 +60,10 @@ namespace System.Net.Security
 
             // Ensure a Read or Auth operation is not in progress,
             // block potential future read and auth operations since SslStream is disposing.
-            // This leaves the _nestedRead = 2 and _nestedAuth = 2, but that's ok, since
+            // This leaves the _nestedRead = StreamDisposed and _nestedAuth = StreamDisposed, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.Exchange(ref _nestedRead, StreamDisposed) == StreamNotInUse &&
-                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse)
+            if (Interlocked.Exchange(ref _nestedRead, NestedState.StreamDisposed) == NestedState.StreamNotInUse &&
+                Interlocked.Exchange(ref _nestedAuth, NestedState.StreamDisposed) == NestedState.StreamNotInUse)
             {
                 _buffer.ReturnBuffer();
             }
@@ -73,14 +77,14 @@ namespace System.Net.Security
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
                 // Set the status to disposed. If it was opened before, log ConnectionClosed
-                if (Interlocked.Exchange(ref _connectionOpenedStatus, 2) == 1)
+                if (Interlocked.Exchange(ref _connectionOpenedStatus, ConnectionStatus.Disposed) == ConnectionStatus.HandshakeCompleted)
                 {
                     NetSecurityTelemetry.Log.ConnectionClosed(GetSslProtocolInternal());
                 }
             }
         }
 
-        private SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
+        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
         {
             ThrowIfExceptionalOrNotAuthenticated();
 
@@ -88,12 +92,13 @@ namespace System.Net.Security
             {
                 if (_handshakeWaiter != null)
                 {
-                    outSize = 0;
+                    ProtocolToken token = default;
                     // avoid waiting under lock.
-                    return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
+                    return token;
                 }
 
-                return Encrypt(buffer, ref outBuffer, out outSize);
+                return Encrypt(buffer);
             }
         }
 
@@ -105,7 +110,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled())
+            if (NetSecurityTelemetry.AnyTelemetryEnabled())
             {
                 return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
@@ -119,9 +124,19 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
-            long startingTimestamp = Stopwatch.GetTimestamp();
+            long startingTimestamp;
+            if (NetSecurityTelemetry.Log.IsEnabled())
+            {
+                NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
+                startingTimestamp = Stopwatch.GetTimestamp();
+            }
+            else
+            {
+                startingTimestamp = 0;
+            }
 
+            Activity? activity = NetSecurityTelemetry.StartActivity(this);
+            Exception? exception = null;
             try
             {
                 Task task = isAsync ?
@@ -130,16 +145,28 @@ namespace System.Net.Security
 
                 await task.ConfigureAwait(false);
 
-                // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
-                // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
-                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
+                if (startingTimestamp is not 0)
+                {
+                    // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == ConnectionStatus.Disposed
+                    // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                    bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, ConnectionStatus.HandshakeCompleted, ConnectionStatus.NoHandshake) == ConnectionStatus.NoHandshake;
+                    SslProtocols protocol = GetSslProtocolInternal();
+                    NetSecurityTelemetry.Log.HandshakeCompleted(protocol, startingTimestamp, connectionOpen);
+                }
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                exception = ex;
+                if (startingTimestamp is not 0)
+                {
+                    NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                }
+
                 throw;
+            }
+            finally
+            {
+                NetSecurityTelemetry.StopActivity(activity, exception, this);
             }
         }
 
@@ -164,25 +191,27 @@ namespace System.Net.Security
         private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.CompareExchange(ref _nestedAuth, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedAuth, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedAuth == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedAuth == NestedState.StreamDisposed, this);
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
-            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == NestedState.StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // Write is different since we do not do anything special in Dispose
-            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) != StreamNotInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, NestedState.StreamInUse) != NestedState.StreamNotInUse)
             {
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
+            ProtocolToken token = default;
+            token.RentBuffer = true;
             try
             {
                 if (_buffer.ActiveLength > 0)
@@ -194,38 +223,40 @@ namespace System.Net.Security
                 _isRenego = true;
 
 
-                SecurityStatusPal status = Renegotiate(out byte[]? nextmsg);
+                token = Renegotiate();
 
-                if (nextmsg is { Length: > 0 })
+                if (token.Size > 0)
                 {
-                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+                token.ReleasePayload();
+
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
                 {
-                    if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
                     {
                         // Peer does not want to renegotiate. That should keep session usable.
                         return;
                     }
 
-                    throw SslStreamPal.GetException(status);
+                    throw SslStreamPal.GetException(token.Status);
                 }
 
-                ProtocolToken message;
                 do
                 {
                     int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, out message);
+                    token = ProcessTlsFrame(frameSize);
 
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
+                    token.ReleasePayload();
                 }
-                while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+                while (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
                 CompleteHandshake(_sslAuthenticationOptions);
             }
@@ -236,8 +267,10 @@ namespace System.Net.Security
                     _buffer.ReturnBuffer();
                 }
 
-                _nestedRead = StreamNotInUse;
-                _nestedWrite = StreamNotInUse;
+                token.ReleasePayload();
+
+                _nestedRead = NestedState.StreamNotInUse;
+                _nestedWrite = NestedState.StreamNotInUse;
                 _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
@@ -247,13 +280,15 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            ProtocolToken message = default;
             bool handshakeCompleted = false;
+            ProtocolToken token = default;
+
+            token.RentBuffer = true;
 
             if (reAuthenticationData == null)
             {
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
-                if (Interlocked.Exchange(ref _nestedAuth, StreamInUse) == StreamInUse)
+                if (Interlocked.Exchange(ref _nestedAuth, NestedState.StreamInUse) == NestedState.StreamInUse)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
@@ -262,22 +297,26 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    NextMessage(reAuthenticationData, out message);
+                    token = NextMessage(reAuthenticationData, out int consumed);
+                    Debug.Assert(consumed == (reAuthenticationData?.Length ?? 0));
 
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
+                        Debug.Assert(token.Payload != null);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(token.Payload!, 0, token.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.SentFrame(this, message.Payload);
+                            NetEventSource.Log.SentFrame(this, token.Payload);
                     }
 
-                    if (message.Failed)
+                    token.ReleasePayload();
+
+                    if (token.Failed)
                     {
                         // tracing done in NextMessage()
-                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                        throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
-                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
@@ -292,14 +331,14 @@ namespace System.Net.Security
                 while (!handshakeCompleted)
                 {
                     int frameSize = await ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, out message);
+                    token = ProcessTlsFrame(frameSize);
 
                     ReadOnlyMemory<byte> payload = default;
-                    if (message.Size > 0)
+                    if (token.Size > 0)
                     {
-                        payload = new ReadOnlyMemory<byte>(message.Payload, 0, message.Size);
+                        payload = token.AsMemory();
                     }
-                    else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
+                    else if (token.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
@@ -315,20 +354,22 @@ namespace System.Net.Security
                             NetEventSource.Log.SentFrame(this, payload.Span);
                     }
 
-                    if (message.Failed)
+                    token.ReleasePayload();
+
+                    if (token.Failed)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, message.Status);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, token.Status);
 
                         if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
-                                 message.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                                 token.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
                         {
                             // Improve generic message and show details if we failed because of TLS Alert.
-                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), message.GetException());
+                            throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
                         }
 
-                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                        throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
-                    else if (message.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
@@ -341,9 +382,14 @@ namespace System.Net.Security
             {
                 if (reAuthenticationData == null)
                 {
-                    _nestedAuth = StreamNotInUse;
+                    _nestedAuth = NestedState.StreamNotInUse;
                     _isRenego = false;
                 }
+
+                token.ReleasePayload();
+
+                // reset the cached flag which has potentially outdated value.
+                _localClientCertificateUsed = -1;
             }
 
             if (NetEventSource.Log.IsEnabled())
@@ -390,7 +436,7 @@ namespace System.Net.Security
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
                         if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
                         {
-                            // macOS cannot process ALPN on server at the momennt.
+                            // macOS cannot process ALPN on server at the moment.
                             // We fallback to our own process similar to SNI bellow.
                             options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
                         }
@@ -438,21 +484,18 @@ namespace System.Net.Security
         }
 
         // Calls crypto on received data. No IO inside.
-        private void ProcessTlsFrame(int frameSize, out ProtocolToken message)
+        private ProtocolToken ProcessTlsFrame(int frameSize)
         {
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
-            // DiscardEncrypted() does not touch data, it just increases start index so next
-            // EncryptedSpan will exclude the "discarded" data.
-            _buffer.DiscardEncrypted(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+            while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan, ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
                     break;
                 }
@@ -461,17 +504,18 @@ namespace System.Net.Security
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
-                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > _buffer.EncryptedLength)
+                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > availableData.Length - chunkSize)
                 {
                     // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                     break;
                 }
 
                 chunkSize += frameSize;
-                _buffer.DiscardEncrypted(frameSize);
             }
 
-            NextMessage(availableData.Slice(0, chunkSize), out message);
+            ProtocolToken token = NextMessage(availableData.Slice(0, chunkSize), out int consumed);
+            _buffer.DiscardEncrypted(consumed);
+            return token;
         }
 
         //
@@ -507,7 +551,7 @@ namespace System.Net.Security
         {
             ProcessHandshakeSuccess();
 
-            if (_nestedAuth != StreamInUse)
+            if (_nestedAuth != NestedState.StreamInUse)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
                 // ignore certificates received outside of handshake or requested renegotiation.
@@ -578,21 +622,17 @@ namespace System.Net.Security
         private ValueTask WriteSingleChunk<TIOAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length + FrameOverhead);
-            byte[] outBuffer = rentedBuffer;
-
-            SecurityStatusPal status;
-            int encryptedBytes;
+            ProtocolToken token;
             while (true)
             {
-                status = EncryptData(buffer, ref outBuffer, out encryptedBytes);
-
+                token = EncryptData(buffer);
                 // TryAgain should be rare, when renegotiation happens exactly when we want to write.
-                if (status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
+                if (token.Status.ErrorCode != SecurityStatusPalErrorCode.TryAgain)
                 {
                     break;
                 }
 
+                // We failed to encrypt because renegotiation is pending.
                 TaskCompletionSource<bool>? waiter = _handshakeWaiter;
                 if (waiter != null)
                 {
@@ -604,67 +644,58 @@ namespace System.Net.Security
                     }
 
                     // We need to wait asynchronously as well as for the write when EncryptData is finished.
-                    return WaitAndWriteAsync(buffer, waiterTask, rentedBuffer, cancellationToken);
+                    return WaitAndWriteAsync(buffer, waiterTask, cancellationToken);
                 }
             }
 
-            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            if (token.Status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
+                token.ReleasePayload();
+                return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status))));
             }
 
-            ValueTask t = TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken);
+            ValueTask t = TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                token.ReleasePayload();
                 return t;
             }
             else
             {
-                return CompleteWriteAsync(t, rentedBuffer);
+                return CompleteWriteAsync(t, token);
             }
 
-            async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, byte[] rentedBuffer, CancellationToken cancellationToken)
+            async ValueTask WaitAndWriteAsync(ReadOnlyMemory<byte> buffer, Task waitTask, CancellationToken cancellationToken)
             {
-                byte[]? bufferToReturn = rentedBuffer;
-                byte[] outBuffer = rentedBuffer;
+                ProtocolToken token = default;
                 try
                 {
                     // Wait for renegotiation to finish.
                     await waitTask.ConfigureAwait(false);
 
-                    SecurityStatusPal status = EncryptData(buffer, ref outBuffer, out int encryptedBytes);
-                    if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
+                    token = EncryptData(buffer);
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
-                        // No need to hold on the buffer any more.
-                        byte[] tmp = bufferToReturn;
-                        bufferToReturn = null;
-                        ArrayPool<byte>.Shared.Return(tmp);
-
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk<TIOAdapter>(buffer, cancellationToken).ConfigureAwait(false);
                     }
-                    else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, token.AsMemory(), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status));
+                        throw new IOException(SR.net_io_encrypt, SslStreamPal.GetException(token.Status));
                     }
                 }
                 finally
                 {
-                    if (bufferToReturn != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
-                    }
+                    token.ReleasePayload();
                 }
             }
 
-            static async ValueTask CompleteWriteAsync(ValueTask writeTask, byte[] bufferToReturn)
+            static async ValueTask CompleteWriteAsync(ValueTask writeTask, ProtocolToken token)
             {
                 try
                 {
@@ -672,7 +703,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(bufferToReturn);
+                    token.ReleasePayload();
                 }
             }
         }
@@ -770,7 +801,7 @@ namespace System.Net.Security
                     // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                     // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
                     {
                         // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
                         // Tls1.3 does not have renegotiation. However on Windows this error code is used
@@ -793,9 +824,9 @@ namespace System.Net.Security
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
 
-            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == NestedState.StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
@@ -920,7 +951,7 @@ namespace System.Net.Security
             finally
             {
                 ReturnReadBufferIfEmpty();
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
             }
         }
 
@@ -935,7 +966,7 @@ namespace System.Net.Security
                 return;
             }
 
-            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) == StreamInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, NestedState.StreamInUse) == NestedState.StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
@@ -958,7 +989,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _nestedWrite = StreamNotInUse;
+                _nestedWrite = NestedState.StreamNotInUse;
             }
         }
 

@@ -31,9 +31,14 @@ namespace System.Security.Cryptography.X509Certificates
                     X509Pal.Instance.DecodeX509EnhancedKeyUsageExtension(RawData, out _enhancedKeyUsages);
                     _decoded = true;
                 }
-                OidCollection oids = new OidCollection();
-                foreach (Oid oid in _enhancedKeyUsages!)
+
+                OidCollection oids = new OidCollection(_enhancedKeyUsages!.Count);
+
+                foreach (Oid oid in _enhancedKeyUsages)
+                {
                     oids.Add(oid);
+                }
+
                 return oids;
             }
         }

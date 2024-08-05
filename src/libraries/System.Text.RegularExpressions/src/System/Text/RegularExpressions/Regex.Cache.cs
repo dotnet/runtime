@@ -299,20 +299,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Node for a cached Regex instance.</summary>
-        private sealed class Node
+        private sealed class Node(Key key, Regex regex)
         {
             /// <summary>The key associated with this cached instance.</summary>
-            public readonly Key Key;
+            public readonly Key Key = key;
             /// <summary>The cached Regex instance.</summary>
-            public readonly Regex Regex;
+            public readonly Regex Regex = regex;
             /// <summary>A "time" stamp representing the approximate last access time for this Regex.</summary>
             public long LastAccessStamp;
-
-            public Node(Key key, Regex regex)
-            {
-                Key = key;
-                Regex = regex;
-            }
         }
     }
 }

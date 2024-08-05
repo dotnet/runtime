@@ -221,7 +221,19 @@ namespace ILCompiler.PEWriter
                     }
 
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                    {
+                        relocationLength = 8;
+                        delta = (int)(targetRVA - (sourceRVA & ~0xfff) + ((targetRVA & 0x800) << 1));
+                        break;
+                    }
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+                    {
+                        relocationLength = 8;
+                        delta = targetRVA - sourceRVA;
+                        break;
+                    }
+
+                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     {
                         relocationLength = 8;
                         delta = targetRVA - sourceRVA;
@@ -244,7 +256,8 @@ namespace ILCompiler.PEWriter
                         if (((relocationType == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21) ||
                              (relocationType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A) ||
                              (relocationType == RelocType.IMAGE_REL_BASED_LOONGARCH64_PC) ||
-                             (relocationType == RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR)
+                             (relocationType == RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR) ||
+                             (relocationType == RelocType.IMAGE_REL_BASED_RISCV64_PC)
                              ) && (value != 0))
                         {
                             throw new NotSupportedException();

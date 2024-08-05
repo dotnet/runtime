@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         System = 4,
         Sensitive = 7,
     }
-    public partial class PhysicalDirectoryInfo : Microsoft.Extensions.FileProviders.IFileInfo
+    public partial class PhysicalDirectoryInfo : Microsoft.Extensions.FileProviders.IFileInfo, Microsoft.Extensions.FileProviders.IDirectoryContents, System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileProviders.IFileInfo>, System.Collections.IEnumerable
     {
         public PhysicalDirectoryInfo(System.IO.DirectoryInfo info) { }
         public bool Exists { get { throw null; } }
@@ -53,6 +53,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public string Name { get { throw null; } }
         public string PhysicalPath { get { throw null; } }
         public System.IO.Stream CreateReadStream() { throw null; }
+        public System.Collections.Generic.IEnumerator<IFileInfo> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
     public partial class PhysicalFileInfo : Microsoft.Extensions.FileProviders.IFileInfo
     {

@@ -1,0 +1,11 @@
+<Project>
+
+  <Import Project="..\Directory.Build.props" />
+
+  <!-- Group test projects into subfolders -->
+  <PropertyGroup Condition="'$(IsSlnGen)' == 'true'">
+    <ThisProjectRelativePath>$(MSBuildProjectFullPath.Replace('$(MSBuildThisFileDirectory)', ''))</ThisProjectRelativePath>
+    <SlnGenSolutionInnerFolder>\$(ThisProjectRelativePath.Remove($(ThisProjectRelativePath.IndexOf('$([System.IO.Path]::DirectorySeparatorChar)'))).Replace('/', '\'))</SlnGenSolutionInnerFolder>
+  </PropertyGroup>
+
+</Project>

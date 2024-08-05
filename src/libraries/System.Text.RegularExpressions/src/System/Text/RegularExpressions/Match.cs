@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -117,11 +116,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.replacement);
             }
 
-            Regex? regex = _regex;
-            if (regex is null)
-            {
-                throw new NotSupportedException(SR.NoResultOnFailed);
-            }
+            Regex? regex = _regex ?? throw new NotSupportedException(SR.NoResultOnFailed);
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
             RegexReplacement repl = RegexReplacement.GetOrCreate(regex.RegexReplacementWeakReference, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);

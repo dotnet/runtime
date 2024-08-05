@@ -8,6 +8,7 @@ using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class DelegatesFromExternalAssembly
 {
     [Fact]
@@ -16,9 +17,9 @@ public unsafe class DelegatesFromExternalAssembly
         short s = 42;
         bool b = true;
 
-        var callback = Marshal.GetDelegateForFunctionPointer<CheckStructWithShortAndBoolCallback>((IntPtr)DisabledRuntimeMarshallingNative.GetStructWithShortAndBoolCallback());
+        var cb = Marshal.GetDelegateForFunctionPointer<CheckStructWithShortAndBoolCallback>(DisabledRuntimeMarshallingNative.GetStructWithShortAndBoolCallback());
 
-        Assert.False(callback(new StructWithShortAndBool(s, b), s, b));
+        Assert.False(cb(new StructWithShortAndBool(s, b), s, b));
     }
 
     [Fact]
@@ -28,8 +29,8 @@ public unsafe class DelegatesFromExternalAssembly
         short s = 41;
         bool b = true;
 
-        var callback = Marshal.GetDelegateForFunctionPointer<CheckStructWithShortAndBoolWithMarshalAsAndVariantBoolCallback>((IntPtr)DisabledRuntimeMarshallingNative.GetStructWithShortAndBoolWithVariantBoolCallback());
+        var cb = Marshal.GetDelegateForFunctionPointer<CheckStructWithShortAndBoolWithMarshalAsAndVariantBoolCallback>(DisabledRuntimeMarshallingNative.GetStructWithShortAndBoolWithVariantBoolCallback());
 
-        Assert.True(callback(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
+        Assert.True(cb(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
     }
 }

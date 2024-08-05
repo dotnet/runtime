@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -235,6 +235,9 @@
   <data name="Arg_BogusIComparer" xml:space="preserve">
     <value>Unable to sort because the IComparer.Compare() method returns inconsistent results. Either a value does not compare equal to itself, or one value repeatedly compared to another value yields different results. IComparer: '{0}'.</value>
   </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection's comparer does not support the requested operation.</value>
+  </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Not enough space available in the buffer.</value>
   </data>
@@ -257,7 +260,7 @@
     <value>Must specify property Set or Get or method call for a COM Object.</value>
   </data>
   <data name="Arg_COMException" xml:space="preserve">
-    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
+    <value>Unexpected HRESULT has been returned from a call to a COM component.</value>
   </data>
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
@@ -273,6 +276,12 @@
   </data>
   <data name="Arg_CustomAttributeFormatException" xml:space="preserve">
     <value>Binary format of the specified custom attribute was invalid.</value>
+  </data>
+  <data name="Arg_CustomAttributeUnknownNamedArgument" xml:space="preserve">
+    <value>Known custom attribute named arg not recognized.</value>
+  </data>
+  <data name="Arg_CustomAttributeDuplicateNamedArgument" xml:space="preserve">
+    <value>Known custom attribute blob has repeated named argument.</value>
   </data>
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
@@ -376,7 +385,7 @@
   <data name="Arg_FormatException" xml:space="preserve">
     <value>One of the identified items was in an invalid format.</value>
   </data>
-  <data name= "Arg_GenericArgumentsAfterArrayOrPointerType" xml:space="preserve">
+  <data name="Arg_GenericArgumentsAfterArrayOrPointerType" xml:space="preserve">
     <value>Generic arguments after array spec or pointer type.</value>
   </data>
   <data name="Arg_GenericParameter" xml:space="preserve">
@@ -1002,8 +1011,11 @@
   <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
     <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
   </data>
-  <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
-    <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
+  <data name="InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly" xml:space="preserve">
+    <value>Resolved assembly must be a runtime Assembly object.</value>
+  </data>
+  <data name="InvalidOperation_ResolvedAssemblyRequestedNameMismatch" xml:space="preserve">
+    <value>Resolved assembly's simple name must be the same as of the requested assembly.</value>
   </data>
   <data name="Argument_CustomCultureCannotBePassedByNumber" xml:space="preserve">
     <value>Customized cultures cannot be passed by LCID, only by name.</value>
@@ -1080,7 +1092,7 @@
   <data name="Argument_FieldDoesNotBelongToConstructorClass" xml:space="preserve">
     <value>Field '{0}' does not belong to the same class as the constructor.</value>
   </data>
-   <data name="Argument_FieldDoesNotHaveAValidType" xml:space="preserve">
+  <data name="Argument_FieldDoesNotHaveAValidType" xml:space="preserve">
     <value>Field '{0}' does not have a valid type.</value>
   </data>
   <data name="Argument_FieldDoesNotHaveAValidValue" xml:space="preserve">
@@ -1094,6 +1106,12 @@
   </data>
   <data name="Argument_GenConstraintViolation" xml:space="preserve">
     <value>GenericArguments[{0}], '{1}', on '{2}' violates the constraint of type '{3}'.</value>
+  </data>
+  <data name="Argument_GenTypeConstraintsNotEqual" xml:space="preserve">
+    <value>Generic type constraints do not match.</value>
+  </data>
+  <data name="Argument_GenMethodConstraintsNotEqual" xml:space="preserve">
+    <value>Generic method constraints do not match.</value>
   </data>
   <data name="Argument_GenericArgsCount" xml:space="preserve">
     <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
@@ -1502,7 +1520,7 @@
     <value>Path cannot be the empty string or all whitespace.</value>
   </data>
   <data name="Argument_ParameterHasUnmatchedArgumentValue" xml:space="preserve">
-    <value>Value of argument {0} does not match parameter type: {1} -> {2}.</value>
+    <value>Value of argument {0} does not match parameter type: {1} -&gt; {2}.</value>
   </data>
   <data name="Argument_ParameterInvalidType" xml:space="preserve">
     <value>Parameter {0} does not have a valid type.</value>
@@ -1523,7 +1541,7 @@
     <value>Recursive fallback not allowed for bytes {0}.</value>
   </data>
   <data name="Argument_RedefinedLabel" xml:space="preserve">
-    <value>Label multiply defined.</value>
+    <value>Label defined multiple times.</value>
   </data>
   <data name="Argument_ResolveField" xml:space="preserve">
     <value>Token {0:x} is not a valid FieldInfo token in the scope of module {1}.</value>
@@ -1642,6 +1660,9 @@
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
   </data>
+  <data name="Argument_WrongSizeArrayInNativeStruct" xml:space="preserve">
+    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
+  </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
   </data>
@@ -1731,9 +1752,6 @@
   </data>
   <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
     <value>Larger than collection size.</value>
-  </data>
-  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
-    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
   </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
@@ -2074,6 +2092,9 @@
   </data>
   <data name="EventSource_ChannelTypeDoesNotMatchEventChannelValue" xml:space="preserve">
     <value>Channel {0} does not match event channel value {1}.</value>
+  </data>
+  <data name="EventSource_CouldNotEnableEventPipe" xml:space="preserve">
+    <value>Failed to open an EventPipe session for NativeRuntimeEventSource.</value>
   </data>
   <data name="EventSource_DataDescriptorsOutOfRange" xml:space="preserve">
     <value>Data descriptors are out of range.</value>
@@ -3011,6 +3032,9 @@
   <data name="NotSupported_IllegalOneByteBranch" xml:space="preserve">
     <value>Illegal one-byte branch at position: {0}. Requested branch was: {1}.</value>
   </data>
+  <data name="NotSupported_InlineArrayEqualsGetHashCode" xml:space="preserve">
+    <value>Calling built-in Equals() or GetHashCode() on type marked as InlineArray is invalid.</value>
+  </data>
   <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
     <value>Mutating a key collection derived from a dictionary is not allowed.</value>
   </data>
@@ -3335,11 +3359,17 @@
   <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
     <value>Object does not match target type.</value>
   </data>
+  <data name="RFLCT_Targ_ITargMismatch_WithType" xml:space="preserve">
+    <value>Object type {0} does not match target type {1}.</value>
+  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
   </data>
   <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
     <value>Non-static method requires a target.</value>
+  </data>
+  <data name="RuntimeInstanceNotAllowed" xml:space="preserve">
+    <value>Runtime instantiation of this attribute is not allowed.</value>
   </data>
   <data name="RuntimeWrappedException" xml:space="preserve">
     <value>An object that does not derive from System.Exception has been wrapped in a RuntimeWrappedException.</value>
@@ -3434,7 +3464,13 @@
   <data name="SetterHasNoParams" xml:space="preserve">
     <value>Setter must have parameters.</value>
   </data>
-  <data name="SpinLock_Exit_SynchronizationLockException" xml:space="preserve">
+  <data name="Lock_Enter_LockRecursionException" xml:space="preserve">
+    <value>The lock has reached the limit of recursive enters.</value>
+  </data>
+  <data name="Lock_Enter_WaiterCountOverflow_OutOfMemoryException" xml:space="preserve">
+    <value>The lock has reached the limit of how many threads may wait for the lock.</value>
+  </data>
+  <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
   </data>
   <data name="SpinLock_IsHeldByCurrentThread" xml:space="preserve">
@@ -3460,6 +3496,12 @@
   </data>
   <data name="TargetInvocation_MethodCannotBeInvoked" xml:space="preserve">
     <value>Method cannot be invoked.</value>
+  </data>
+  <data name="TargetInvocation_TargetDoesNotImplementIDispatch" xml:space="preserve">
+    <value>COM target does not implement IDispatch.</value>
+  </data>
+  <data name="TargetInvocation_InterfaceNotIDispatch" xml:space="preserve">
+    <value>The interface does not support late bound calls since it does not derive from IDispatch.</value>
   </data>
   <data name="Task_ContinueWith_ESandLR" xml:space="preserve">
     <value>The specified TaskContinuationOptions combined LongRunning and ExecuteSynchronously.  Synchronous continuations should not be long running.</value>
@@ -3520,6 +3562,9 @@
   </data>
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
+  </data>
+  <data name="Task_MustBeCompleted" xml:space="preserve">
+    <value>The provided task must have already completed.</value>
   </data>
   <data name="TaskT_ConfigureAwait_InvalidOptions" xml:space="preserve">
     <value>Task&lt;TResult&gt;.ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing. To suppress throwing, instead cast the Task&lt;TResult&gt; to its base class Task and await that with SuppressThrowing.</value>
@@ -3631,6 +3676,9 @@
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error "{0}".</value>
+  </data>
+  <data name="Unix_SystemCallErrors" xml:space="preserve">
+    <value>One or more system calls failed: {0}</value>
   </data>
   <data name="Verification_Exception" xml:space="preserve">
     <value>Operation could destabilize the runtime.</value>
@@ -3771,7 +3819,7 @@
     <value>"Property '{0}' does not have a setter.</value>
   </data>
   <data name="Argument_PropertyUnmatchingPropertyType" xml:space="preserve">
-    <value>"Value of property '{0}' does not match property type: '{1}' -> '{2}'.</value>
+    <value>"Value of property '{0}' does not match property type: '{1}' -&gt; '{2}'.</value>
   </data>
   <data name="AssemblyDependencyResolver_FailedToLoadHostpolicy" xml:space="preserve">
     <value>Cannot load hostpolicy library. AssemblyDependencyResolver is currently only supported if the runtime is hosted through hostpolicy library.</value>
@@ -4019,9 +4067,6 @@
   <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
     <value>Unable to properly load any time zone data files.</value>
   </data>
-  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
-    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
-  </data>
   <data name="ThreadState_AlreadyStarted" xml:space="preserve">
     <value>Thread is running or terminated; it cannot restart.</value>
   </data>
@@ -4090,6 +4135,9 @@
   </data>
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
     <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupportedWithReason_HybridGlobalization" xml:space="preserve">
+    <value>{0} is not supported for {1}, when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
@@ -4181,6 +4229,9 @@
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
+  <data name="InvalidOperation_ComInteropRequireComWrapperTrackerInstance" xml:space="preserve">
+    <value>COM Interop requires ComWrapper instance registered for reference tracker support.</value>
+  </data>
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
@@ -4243,5 +4294,50 @@
   </data>
   <data name="OutOfMemory_StringTooLong" xml:space="preserve">
     <value>String length exceeded supported range.</value>
+  </data>
+  <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
+    <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
+  </data>
+  <data name="ComVariant_SafeArray_PlatformNotSupported" xml:space="preserve">
+    <value>ComVariants containing SAFEARRAYs are not supported on this platform</value>
+  </data>
+  <data name="ComVariant_SizeMustMatchVariantSize" xml:space="preserve">
+    <value>Size of {0} should be the same size as the value specified by {1}</value>
+  </data>
+  <data name="ComVariant_TypeIsNotSupportedType" xml:space="preserve">
+    <value>Variant type '{0}' is not one of the supported variant types for this operation: [{1}]</value>
+  </data>
+  <data name="ComVariant_VT_DECIMAL_NotSupported_CreateRaw" xml:space="preserve">
+    <value>VT_DECIMAL is not supported in CreateRaw. Use the Create method.</value>
+  </data>
+  <data name="ComVariant_VT_DECIMAL_NotSupported_RawDataRef" xml:space="preserve">
+    <value>VT_DECIMAL is not supported in GetRawDataRef. Use the As method.</value>
+  </data>
+  <data name="ComVariant_VT_VARIANT_In_Variant" xml:space="preserve">
+    <value>VT_VARIANT is not supported in variants.</value>
+  </data>
+  <data name="UnsupportedType" xml:space="preserve">
+    <value>Unsupported type</value>
+  </data>
+  <data name="Reflection_Disabled" xml:space="preserve">
+    <value>This operation is not available because the reflection support was disabled at compile time.</value>
+  </data>
+  <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
+    <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>
+  </data>
+  <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
+    <value>Blocking wait is not supported on the JS interop threads.</value>
+  </data>
+  <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
+    <value>Emitting debug info is not supported for this member.</value>
+  </data>
+  <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
+    <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
+  </data>
+  <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
+    <value>The field is invalid for initializing array or span.</value>
+  </data>
+  <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
+    <value>Only array or span of primitive or enum types can be initialized from static data.</value>
   </data>
 </root>

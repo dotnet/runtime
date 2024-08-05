@@ -137,7 +137,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     internal class ClassWithWritableProperty_SimpleClass
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public SimpleClass Property { get; set; } = new()
+        public SimpleClass? Property { get; set; } = new()
         {
             StringValue = "InitialValue",
             IntValue = 43,
@@ -297,7 +297,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     internal class ClassWithWritableProperty_SimpleClassWithSmallParametrizedCtor
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public SimpleClassWithSmallParametrizedCtor Property { get; set; } = new("InitialValue", 43);
+        public SimpleClassWithSmallParametrizedCtor? Property { get; set; } = new("InitialValue", 43);
     }
 
     internal class SimpleClassWithSmallParametrizedCtor
@@ -422,7 +422,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     internal class ClassWithWritableProperty_SimpleClassWithLargeParametrizedCtor
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public SimpleClassWithLargeParametrizedCtor Property { get; set; } = new("InitialValue1", 43, "InitialValue2", 44, "InitialValue3", 45, "InitialValue4");
+        public SimpleClassWithLargeParametrizedCtor? Property { get; set; } = new("InitialValue1", 43, "InitialValue2", 44, "InitialValue3", 45, "InitialValue4");
     }
 
     internal class SimpleClassWithLargeParametrizedCtor
@@ -475,7 +475,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     public class ClassWithProperty_BaseClassWithPolymorphismOnSerializationOnly
     {
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-        public BaseClassWithPolymorphismOnSerializationOnly Property { get; set; } =
+        public BaseClassWithPolymorphismOnSerializationOnly? Property { get; set; } =
             new DerivedClass_DerivingFrom_BaseClassWithPolymorphismOnSerializationOnly()
             {
                 BaseClassProp = "base",
@@ -822,7 +822,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public int Value { get; set; }
 
         [JsonRequired]
-        public ClassWithRecursiveRequiredProperty Next { get; set; }
+        public ClassWithRecursiveRequiredProperty? Next { get; set; }
     }
 
     [Theory]
@@ -1145,7 +1145,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
             () => new JsonObjectCreationHandlingAttribute(handling));
 
-        Assert.Contains("handling", ex.ToString());
+        Assert.Contains("handling", ex.Message);
     }
 
     [Fact]
@@ -1164,5 +1164,53 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         [JsonObjectCreationHandling((JsonObjectCreationHandling)(-1))]
         public List<int> Property { get; }
+    }
+
+    [Theory]
+    [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateProperty))]
+    [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateType))]
+    public async Task ClassWithParameterizedCtor_UsingPopulateConfiguration_ThrowsNotSupportedException(Type type)
+    {
+        object instance = Activator.CreateInstance(type, "Jim");
+        string json = """{"Username":"Jim","PhoneNumbers":["123456"]}""";
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(instance, type));
+        await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper(json, type));
+        Assert.Throws<NotSupportedException>(() => Serializer.GetTypeInfo(type));
+    }
+
+    public class ClassWithParameterizedConstructorWithPopulateProperty(string name)
+    {
+        public string Name { get; } = name;
+
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public List<string> PhoneNumbers { get; } = new();
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public class ClassWithParameterizedConstructorWithPopulateType(string name)
+    {
+        public string Name { get; } = name;
+
+        public List<string> PhoneNumbers { get; } = new();
+    }
+
+    [Fact]
+    public async Task ClassWithParameterizedCtor_NoPopulateConfiguration_WorksWithGlobalPopulateConfiguration()
+    {
+        string json = """{"Username":"Jim","PhoneNumbers":["123456"]}""";
+
+        JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+        options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+
+        ClassWithParameterizedConstructorNoPopulate result = await Serializer.DeserializeWrapper<ClassWithParameterizedConstructorNoPopulate>(json, options);
+        Assert.Empty(result.PhoneNumbers);
+    }
+
+    public class ClassWithParameterizedConstructorNoPopulate(string name)
+    {
+        public string Name { get; } = name;
+
+        public List<string> PhoneNumbers { get; } = new();
     }
 }

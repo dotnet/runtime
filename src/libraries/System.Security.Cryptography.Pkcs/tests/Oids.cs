@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string RsaPss = "1.2.840.113549.1.1.10";
         public const string Esdh = "1.2.840.113549.1.9.16.3.5";
         public const string Dh = "1.2.840.10046.2.1";
+        public const string EcPublicKey = "1.2.840.10045.2.1";
         public const string EcdsaSha256 = "1.2.840.10045.4.3.2";
 
         // Cryptographic Attribute Types
