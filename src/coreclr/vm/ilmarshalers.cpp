@@ -2644,8 +2644,7 @@ MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -2737,8 +2736,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -3095,8 +3093,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {
@@ -3402,8 +3399,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
                                                 BOOL               fManagedToNative,
                                                 OverrideProcArgs*  pargs,
                                                 UINT*              pResID,
-                                                UINT               argidx,
-                                                UINT               nativeStackOffset)
+                                                UINT               argidx)
 {
     CONTRACTL
     {

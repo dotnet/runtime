@@ -89,8 +89,6 @@ struct OverrideProcArgs
         {
             MethodTable* m_pSigMod;
             MethodTable* m_pMT;
-            MethodDesc*  m_pCopyCtor;
-            MethodDesc*  m_pDtor;
         } mm;
 
         struct
@@ -114,27 +112,13 @@ typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
                                                 BOOL                  fManagedToNative,
                                                 OverrideProcArgs*     pargs,
                                                 UINT*                 pResID,
-                                                UINT                  argidx,
-                                                UINT                  nativeStackOffset);
+                                                UINT                  argidx);
 
 typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
                                                       BOOL                fManagedToNative,
                                                       BOOL                fHresultSwap,
                                                       OverrideProcArgs*   pargs,
                                                       UINT*               pResID);
-
-namespace IJWHelpers
-{
-    //-------------------------------------------------------------------------------------
-    // Return the copy ctor for a VC class (if any exists)
-    //-------------------------------------------------------------------------------------
-    void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
-
-    //-------------------------------------------------------------------------------------
-    // Return the destructor for a VC class (if any exists)
-    //-------------------------------------------------------------------------------------
-    void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
-}
 
 //==========================================================================
 // This structure contains the native type information for a given
@@ -370,7 +354,6 @@ public:
 
     void GenerateArgumentIL(NDirectStubLinker* psl,
                             int argOffset, // the argument's index is m_paramidx + argOffset
-                            UINT nativeStackOffset, // offset of the argument on the native stack
                             BOOL fMngToNative);
 
     void GenerateReturnIL(NDirectStubLinker* psl,

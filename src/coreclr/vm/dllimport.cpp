@@ -211,7 +211,7 @@ public:
     virtual void SetLastError(BOOL fSetLastError) = 0;
     virtual void BeginEmit(DWORD dwStubFlags) = 0;
     virtual void MarshalReturn(MarshalInfo* pInfo, int argOffset) = 0;
-    virtual void MarshalArgument(MarshalInfo* pInfo, int argOffset, UINT nativeStackOffset) = 0;
+    virtual void MarshalArgument(MarshalInfo* pInfo, int argOffset) = 0;
     virtual void MarshalLCID(int argIdx) = 0;
     virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
 
@@ -288,7 +288,7 @@ public:
                                 SF_IsHRESULTSwapping(m_dwStubFlags));
     }
 
-    void MarshalArgument(MarshalInfo* pInfo, int argOffset, UINT nativeStackOffset)
+    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
         CONTRACTL
         {
@@ -297,7 +297,7 @@ public:
         }
         CONTRACTL_END;
 
-        pInfo->GenerateArgumentIL(&m_slIL, argOffset, nativeStackOffset, SF_IsForwardStub(m_dwStubFlags));
+        pInfo->GenerateArgumentIL(&m_slIL, argOffset, SF_IsForwardStub(m_dwStubFlags));
     }
 
     void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
@@ -1620,10 +1620,6 @@ NDirectStubLinker::NDirectStubLinker(
         m_pcsSetup->EmitSTLOC(m_dwTargetInterfacePointerLocalNum);
     }
 #endif // FEATURE_COMINTEROP
-
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-    m_dwCopyCtorChainLocalNum = (DWORD)-1;
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 }
 
 void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
@@ -1835,23 +1831,6 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     LIMITED_METHOD_CONTRACT;
     return m_dwRetValLocalNum;
 }
-
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (m_dwCopyCtorChainLocalNum == (DWORD)-1)
-    {
-        // The local is created and initialized lazily when first asked.
-        m_dwCopyCtorChainLocalNum = NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN));
-        m_pcsSetup->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
-        m_pcsSetup->EmitINITOBJ(m_pcsSetup->GetToken(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN)));
-    }
-
-    return m_dwCopyCtorChainLocalNum;
-}
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 BOOL NDirectStubLinker::IsCleanupNeeded()
 {
@@ -2082,10 +2061,6 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
-#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
-EXTERN_C void STDCALL CopyConstructorCallStub(void);
-#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
-
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -2168,21 +2143,6 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
     }
-
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-    if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
-    {
-        // If we have a copy constructor chain local, we need to call the copy constructor stub
-        // to ensure that the chain is called correctly.
-        // Let's install the stub chain here and redirect the call to the stub.
-        DWORD targetLoc = NewLocal(ELEMENT_TYPE_I);
-        pcsEmit->EmitSTLOC(targetLoc);
-        pcsEmit->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
-        pcsEmit->EmitLDLOC(targetLoc);
-        pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
-        pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
-    }
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -2415,7 +2375,7 @@ public:
         CONTRACTL_END;
     }
 
-    void MarshalArgument(MarshalInfo* pInfo, int argOffset, UINT nativeStackOffset)
+    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
         CONTRACTL
         {
@@ -3457,7 +3417,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      int                argOffset,
                                                      DWORD              dwStubFlags,
                                                      MethodDesc         *pMD,
-                                                     UINT&              nativeStackOffset,
                                                      bool&              fStubNeedsCOM,
                                                      int                nativeArgIndex
                                                      DEBUG_ARG(LPCUTF8  pDebugName)
@@ -3578,19 +3537,6 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
     }
 
     return marshalType;
-}
-
-static inline UINT GetStackOffsetFromStackSize(UINT stackSize, bool fThisCall)
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef TARGET_X86
-    if (fThisCall)
-    {
-        // -1 means that the argument is not on the stack
-        return (stackSize >= TARGET_POINTER_SIZE ? (stackSize - TARGET_POINTER_SIZE) : (UINT)-1);
-    }
-#endif // TARGET_X86
-    return stackSize;
 }
 
 //---------------------------------------------------------
@@ -3782,7 +3728,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
 
         MarshalInfo &info = pParamMarshalInfo[argidx - 1];
 
-        pss->MarshalArgument(&info, argOffset, GetStackOffsetFromStackSize(nativeStackSize, fThisCall));
+        pss->MarshalArgument(&info, argOffset);
         nativeStackSize += info.GetNativeArgSize();
 
         fStubNeedsCOM |= info.MarshalerRequiresCOM();
@@ -3818,7 +3764,6 @@ static void CreateNDirectStubWorker(StubState*               pss,
                             argOffset,
                             dwStubFlags,
                             pMD,
-                            nativeStackSize,
                             fStubNeedsCOM,
                             nativeArgIndex
                             DEBUG_ARG(pSigDesc->m_pDebugName)
@@ -6113,21 +6058,415 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
-#if defined(TARGET_X86) && defined(FEATURE_IJW)
-// Copy constructor support for C++/CLI
-EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
+namespace
 {
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE; // we've already switched to preemptive
+    //-------------------------------------------------------------------------------------
+    // Return the copy ctor for a VC class (if any exists)
+    //-------------------------------------------------------------------------------------
+    void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    using ExecuteCallback = void*(STDMETHODCALLTYPE*)(void*);
+        *pMDOut = NULL;
 
-    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__COPY_CONSTRUCTOR_CHAIN__EXECUTE_CURRENT_COPIES_AND_GET_TARGET);
-    ExecuteCallback pExecute = (ExecuteCallback)pMD->GetMultiCallableAddrOfCode();
+        HRESULT     hr;
+        mdMethodDef tk;
+        mdTypeDef cl = pMT->GetCl();
+        TypeHandle th = TypeHandle(pMT);
+        SigTypeContext typeContext(th);
 
-    return pExecute(esp);
+        IMDInternalImport *pInternalImport = pModule->GetMDImport();
+        MDEnumHolder      hEnumMethod(pInternalImport);
+
+        //
+        // First try for the new syntax: <MarshalCopy>
+        //
+        IfFailThrow(pInternalImport->EnumInit(mdtMethodDef, cl, &hEnumMethod));
+
+        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
+        {
+            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
+            DWORD dwMemberAttrs;
+            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
+
+            if (IsMdSpecialName(dwMemberAttrs))
+            {
+                ULONG cSig;
+                PCCOR_SIGNATURE pSig;
+                LPCSTR pName;
+                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
+
+                const char *pBaseName = "<MarshalCopy>";
+                int ncBaseName = (int)strlen(pBaseName);
+                int nc = (int)strlen(pName);
+                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
+                {
+                    MetaSig msig(pSig, cSig, pModule, &typeContext);
+
+                    // Looking for the prototype   void <MarshalCopy>(Ptr VC, Ptr VC);
+                    if (msig.NumFixedArgs() == 2)
+                    {
+                        if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
+                        {
+                            if (msig.NextArg() == ELEMENT_TYPE_PTR)
+                            {
+                                SigPointer sp1 = msig.GetArgProps();
+                                IfFailThrow(sp1.GetElemType(NULL));
+                                CorElementType eType;
+                                IfFailThrow(sp1.GetElemType(&eType));
+                                if (eType == ELEMENT_TYPE_VALUETYPE)
+                                {
+                                    mdToken tk1;
+                                    IfFailThrow(sp1.GetToken(&tk1));
+                                    hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
+                                    if (FAILED(hr))
+                                    {
+                                        pInternalImport->EnumClose(&hEnumMethod);
+                                        ThrowHR(hr);
+                                    }
+
+                                    if (hr == S_OK)
+                                    {
+                                        if (msig.NextArg() == ELEMENT_TYPE_PTR)
+                                        {
+                                            SigPointer sp2 = msig.GetArgProps();
+                                            IfFailThrow(sp2.GetElemType(NULL));
+                                            IfFailThrow(sp2.GetElemType(&eType));
+                                            if (eType == ELEMENT_TYPE_VALUETYPE)
+                                            {
+                                                mdToken tk2;
+                                                IfFailThrow(sp2.GetToken(&tk2));
+
+                                                hr = (tk2 == tk1) ? S_OK : CompareTypeTokensNT(tk2, cl, pModule, pModule);
+                                                if (hr == S_OK)
+                                                {
+                                                    *pMDOut = pModule->LookupMethodDef(tk);
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //
+        // Next try the old syntax: global .__ctor
+        //
+        IfFailThrow(pInternalImport->EnumGlobalFunctionsInit(&hEnumMethod));
+
+        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
+        {
+            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
+            DWORD dwMemberAttrs;
+            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
+
+            if (IsMdSpecialName(dwMemberAttrs))
+            {
+                ULONG cSig;
+                PCCOR_SIGNATURE pSig;
+                LPCSTR pName;
+                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
+
+                const char *pBaseName = ".__ctor";
+                int ncBaseName = (int)strlen(pBaseName);
+                int nc = (int)strlen(pName);
+                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
+                {
+
+                    MetaSig msig(pSig, cSig, pModule, &typeContext);
+
+                    // Looking for the prototype   Ptr VC __ctor(Ptr VC, ByRef VC);
+                    if (msig.NumFixedArgs() == 2)
+                    {
+                        if (msig.GetReturnType() == ELEMENT_TYPE_PTR)
+                        {
+                            SigPointer spret = msig.GetReturnProps();
+                            IfFailThrow(spret.GetElemType(NULL));
+                            CorElementType eType;
+                            IfFailThrow(spret.GetElemType(&eType));
+                            if (eType == ELEMENT_TYPE_VALUETYPE)
+                            {
+                                mdToken tk0;
+                                IfFailThrow(spret.GetToken(&tk0));
+                                hr = CompareTypeTokensNT(tk0, cl, pModule, pModule);
+                                if (FAILED(hr))
+                                {
+                                    pInternalImport->EnumClose(&hEnumMethod);
+                                    ThrowHR(hr);
+                                }
+
+                                if (hr == S_OK)
+                                {
+                                    if (msig.NextArg() == ELEMENT_TYPE_PTR)
+                                    {
+                                        SigPointer sp1 = msig.GetArgProps();
+                                        IfFailThrow(sp1.GetElemType(NULL));
+                                        IfFailThrow(sp1.GetElemType(&eType));
+                                        if (eType == ELEMENT_TYPE_VALUETYPE)
+                                        {
+                                            mdToken tk1;
+                                            IfFailThrow(sp1.GetToken(&tk1));
+                                            hr = (tk1 == tk0) ? S_OK : CompareTypeTokensNT(tk1, cl, pModule, pModule);
+                                            if (FAILED(hr))
+                                            {
+                                                pInternalImport->EnumClose(&hEnumMethod);
+                                                ThrowHR(hr);
+                                            }
+
+                                            if (hr == S_OK)
+                                            {
+                                                if (msig.NextArg() == ELEMENT_TYPE_PTR &&
+                                                    msig.GetArgProps().HasCustomModifier(pModule, "Microsoft.VisualC.IsCXXReferenceModifier", ELEMENT_TYPE_CMOD_OPT))
+                                                {
+                                                    SigPointer sp2 = msig.GetArgProps();
+                                                    IfFailThrow(sp2.GetElemType(NULL));
+                                                    IfFailThrow(sp2.GetElemType(&eType));
+                                                    if (eType == ELEMENT_TYPE_VALUETYPE)
+                                                    {
+                                                        mdToken tk2;
+                                                        IfFailThrow(sp2.GetToken(&tk2));
+
+                                                        hr = (tk2 == tk0) ? S_OK : CompareTypeTokensNT(tk2, cl, pModule, pModule);
+                                                        if (hr == S_OK)
+                                                        {
+                                                            *pMDOut = pModule->LookupMethodDef(tk);
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    //-------------------------------------------------------------------------------------
+    // Return the destructor for a VC class (if any exists)
+    //-------------------------------------------------------------------------------------
+    void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        *pMDOut = NULL;
+
+        HRESULT     hr;
+        mdMethodDef tk;
+        mdTypeDef cl = pMT->GetCl();
+        TypeHandle th = TypeHandle(pMT);
+        SigTypeContext typeContext(th);
+
+        IMDInternalImport *pInternalImport = pModule->GetMDImport();
+        MDEnumHolder       hEnumMethod(pInternalImport);
+
+        //
+        // First try for the new syntax: <MarshalDestroy>
+        //
+        IfFailThrow(pInternalImport->EnumInit(mdtMethodDef, cl, &hEnumMethod));
+
+        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
+        {
+            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
+            DWORD dwMemberAttrs;
+            IfFailThrow(pInternalImport->GetMethodDefProps(tk, &dwMemberAttrs));
+
+            if (IsMdSpecialName(dwMemberAttrs))
+            {
+                ULONG cSig;
+                PCCOR_SIGNATURE pSig;
+                LPCSTR pName;
+                IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
+
+                const char *pBaseName = "<MarshalDestroy>";
+                int ncBaseName = (int)strlen(pBaseName);
+                int nc = (int)strlen(pName);
+                if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
+                {
+                    MetaSig msig(pSig, cSig, pModule, &typeContext);
+
+                    // Looking for the prototype   void <MarshalDestroy>(Ptr VC);
+                    if (msig.NumFixedArgs() == 1)
+                    {
+                        if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
+                        {
+                            if (msig.NextArg() == ELEMENT_TYPE_PTR)
+                            {
+                                SigPointer sp1 = msig.GetArgProps();
+                                IfFailThrow(sp1.GetElemType(NULL));
+                                CorElementType eType;
+                                IfFailThrow(sp1.GetElemType(&eType));
+                                if (eType == ELEMENT_TYPE_VALUETYPE)
+                                {
+                                    mdToken tk1;
+                                    IfFailThrow(sp1.GetToken(&tk1));
+
+                                    hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
+                                    IfFailThrow(hr);
+
+                                    if (hr == S_OK)
+                                    {
+                                        *pMDOut = pModule->LookupMethodDef(tk);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        //
+        // Next try the old syntax: global .__dtor
+        //
+        IfFailThrow(pInternalImport->EnumGlobalFunctionsInit(&hEnumMethod));
+
+        while (pInternalImport->EnumNext(&hEnumMethod, &tk))
+        {
+            _ASSERTE(TypeFromToken(tk) == mdtMethodDef);
+            ULONG cSig;
+            PCCOR_SIGNATURE pSig;
+            LPCSTR pName;
+            IfFailThrow(pInternalImport->GetNameAndSigOfMethodDef(tk, &pSig, &cSig, &pName));
+
+            const char *pBaseName = ".__dtor";
+            int ncBaseName = (int)strlen(pBaseName);
+            int nc = (int)strlen(pName);
+            if (nc >= ncBaseName && 0 == strcmp(pName + nc - ncBaseName, pBaseName))
+            {
+                MetaSig msig(pSig, cSig, pModule, &typeContext);
+
+                // Looking for the prototype   void __dtor(Ptr VC);
+                if (msig.NumFixedArgs() == 1)
+                {
+                    if (msig.GetReturnType() == ELEMENT_TYPE_VOID)
+                    {
+                        if (msig.NextArg() == ELEMENT_TYPE_PTR)
+                        {
+                            SigPointer sp1 = msig.GetArgProps();
+                            IfFailThrow(sp1.GetElemType(NULL));
+                            CorElementType eType;
+                            IfFailThrow(sp1.GetElemType(&eType));
+                            if (eType == ELEMENT_TYPE_VALUETYPE)
+                            {
+                                mdToken tk1;
+                                IfFailThrow(sp1.GetToken(&tk1));
+                                hr = CompareTypeTokensNT(tk1, cl, pModule, pModule);
+                                if (FAILED(hr))
+                                {
+                                    pInternalImport->EnumClose(&hEnumMethod);
+                                    ThrowHR(hr);
+                                }
+
+                                if (hr == S_OK)
+                                {
+                                    *pMDOut = pModule->LookupMethodDef(tk);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
-#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo)
+{
+    if (!type.IsValueType())
+        return false;
+    
+    MethodTable * pMT = type.AsMethodTable();
+
+    MethodDesc* pCopyCtor = nullptr;
+    FindCopyConstructor(pMT->GetModule(), pMT, &pCopyCtor);
+
+    MethodDesc* pDestructor = nullptr;
+    FindDestructor(pMT->GetModule(), pMT, &pDestructor);
+
+    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    ilResolver->SetStubMethodDesc(ftn);
+
+    SigTypeContext genericContext;
+    SigTypeContext::InitTypeContext(ftn, &genericContext);
+
+    ILStubLinker sl(
+        ftn->GetModule(),
+        ftn->GetSignature(),
+        &genericContext,
+        ftn,
+        ILSTUB_LINKER_FLAG_NONE);
+    
+    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+    pCode->EmitLDARG(0);
+    pCode->EmitLDARG(1);
+    if (pCopyCtor != nullptr)
+    {
+        pCode->EmitCALL(pCode->GetToken(pCopyCtor), 2, 0);
+    }
+    else
+    {
+        pCode->EmitLDC(type.GetSize());
+        pCode->EmitCPBLK();
+    }
+
+    if (pDestructor != nullptr)
+    {
+        pCode->EmitLDARG(1);
+        pCode->EmitCALL(pCode->GetToken(pDestructor), 1, 0);
+    }
+
+    pCode->EmitRET();
+
+    // Generate all IL associated data for JIT
+    {
+        UINT maxStack;
+        size_t cbCode = sl.Link(&maxStack);
+        DWORD cbSig = sl.GetLocalSigSize();
+
+        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
+        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+        sl.GenerateCode(pbBuffer, cbCode);
+        sl.GetLocalSig(pbLocalSig, cbSig);
+
+        // Store the token lookup map
+        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
+        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+        *ppResolver = (DynamicResolver*)ilResolver;
+        *ppHeader = pILHeader;
+    }
+
+    ilResolver.SuppressRelease();
+    return true;
+}
 
 #endif // #ifndef DACCESS_COMPILE
