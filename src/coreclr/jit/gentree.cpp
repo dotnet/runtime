@@ -16682,9 +16682,10 @@ GenTree* Compiler::gtNewTempStore(
     if (varDsc->lvRequiresSpecialCopy)
     {
         JITDUMP("Var V%02u requires special copy\n", tmp);
-        CORINFO_METHOD_HANDLE copyHelper = info.compCompHnd->GetSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
+        CORINFO_METHOD_HANDLE copyHelper =
+            info.compCompHnd->GetSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
         GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
-        
+
         GenTree* src;
 
         assert(val->OperIs(GT_BLK));

@@ -518,10 +518,12 @@ void Compiler::gsParamsToShadows()
 
         if (varDsc->lvRequiresSpecialCopy)
         {
-            JITDUMP("Var V%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum, shadowVarNum);
-            CORINFO_METHOD_HANDLE copyHelper = info.compCompHnd->GetSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
+            JITDUMP("Var V%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
+                    shadowVarNum);
+            CORINFO_METHOD_HANDLE copyHelper =
+                info.compCompHnd->GetSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
             GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
-            
+
             GenTree* src = gtNewLclVarAddrNode(lclNum);
             GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
 
@@ -532,7 +534,8 @@ void Compiler::gsParamsToShadows()
             compCurBB = fgFirstBB; // Needed by some morphing
             if (opts.IsReversePInvoke())
             {
-                JITDUMP("Inserting special copy helper call at the end of the first block after Reverse P/Invoke transition\n");
+                JITDUMP(
+                    "Inserting special copy helper call at the end of the first block after Reverse P/Invoke transition\n");
                 // If we are in a reverse P/Invoke, then we need to insert
                 // the call at the end of the first block as we need to do the GC transition
                 // before we can call the helper.
@@ -548,7 +551,7 @@ void Compiler::gsParamsToShadows()
         {
             GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
             src->gtFlags |= GTF_DONT_CSE;
-            
+
             GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
             fgEnsureFirstBBisScratch();

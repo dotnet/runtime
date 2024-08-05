@@ -1531,7 +1531,8 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* 
     GenTree* dest;
 
 #if FEATURE_FIXED_OUT_ARGS
-    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL), comp->gtNewIconNode(putArgStk->getArgOffset()));
+    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL),
+                               comp->gtNewIconNode(putArgStk->getArgOffset()));
 #else
     dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 #endif
@@ -1539,9 +1540,12 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* 
     GenTree* src = comp->gtNewLclAddrNode(lclVar->GetLclNum(), lclVar->GetLclOffs(), TYP_I_IMPL);
 
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* srcPlaceholder = comp->gtNewZeroConNode(genActualType(src));
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
 
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->GetSpecialCopyHelper(lclVar->GetLayout(comp)->GetClassHandle()), TYP_VOID);
+    GenTreeCall* call =
+        comp->gtNewCallNode(CT_USER_FUNC,
+                            comp->info.compCompHnd->GetSpecialCopyHelper(lclVar->GetLayout(comp)->GetClassHandle()),
+                            TYP_VOID);
 
     call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
     call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
@@ -1932,8 +1936,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
 
-        if (putArg->OperIsPutArgStk()
-            && arg->OperIs(GT_LCL_VAR) && comp->lvaTable[arg->AsLclVar()->GetLclNum()].lvRequiresSpecialCopy)
+        if (putArg->OperIsPutArgStk() && arg->OperIs(GT_LCL_VAR) &&
+            comp->lvaTable[arg->AsLclVar()->GetLclNum()].lvRequiresSpecialCopy)
         {
             InsertSpecialCopyArg(putArg->AsPutArgStk(), arg->AsLclVar());
         }
