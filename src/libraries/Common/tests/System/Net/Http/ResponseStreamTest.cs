@@ -286,7 +286,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_StreamingRequest()
         {
@@ -328,8 +327,44 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
+        public async Task BrowserHttpHandler_StreamingRequest_ServerFail()
+        {
+            var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
+
+            var requestUrl = new UriBuilder(Configuration.Http.Http2RemoteStatusCodeServer) { Query = "statuscode=500&statusdescription=test&delay=100" };
+            var req = new HttpRequestMessage(HttpMethod.Post, requestUrl.Uri);
+
+            req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
+
+            int size = 1500 * 1024 * 1024;
+            int remaining = size;
+            var content = new MultipartFormDataContent();
+            content.Add(new StreamContent(new DelegateStream(
+                canReadFunc: () => true,
+                readFunc: (buffer, offset, count) => throw new FormatException(),
+                readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                {
+                    if (remaining > 0)
+                    {
+                        int send = Math.Min(remaining, count);
+                        buffer.AsSpan(offset, send).Fill(65);
+                        remaining -= send;
+                        return Task.FromResult(send);
+                    }
+                    return Task.FromResult(0);
+                })), "test");
+            req.Content = content;
+
+            req.Content.Headers.Add("Content-MD5-Skip", "browser");
+
+            using HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server);
+            using HttpResponseMessage response = await client.SendAsync(req);
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+
         // Duplicate of PostAsync_ThrowFromContentCopy_RequestFails using remote server
-        [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [InlineData(false)]
         [InlineData(true)]
@@ -367,7 +402,6 @@ namespace System.Net.Http.Functional.Tests
                 { true, () => throw new FormatException() },
             };
 
-        [OuterLoop]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [MemberData(nameof(CancelRequestReadFunctions))]
         public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, Func<Task<int>> readFunc)

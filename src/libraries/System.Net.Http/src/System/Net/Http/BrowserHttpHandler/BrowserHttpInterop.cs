@@ -160,6 +160,10 @@ namespace System.Net.Http
                 {
                     throw Http.CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
                 }
+                if (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                {
+                    throw; // do not translate
+                }
                 Http.CancellationHelper.ThrowIfCancellationRequested(jse, cancellationToken);
                 throw new HttpRequestException(jse.Message, jse);
             }

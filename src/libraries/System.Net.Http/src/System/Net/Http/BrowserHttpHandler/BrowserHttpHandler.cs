@@ -248,9 +248,16 @@ namespace System.Net.Http
                     {
                         fetchPromise = BrowserHttpInterop.FetchStream(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues);
                         writeStream = new BrowserHttpWriteStream(this);
-                        await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
-                        var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
-                        await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        try
+                        {
+                            await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
+                            var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
+                            await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        }
+                        catch(JSException jse) when (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                        {
+                            // any error from pushing bytes will also appear in the fetch promise result
+                        }
                     }
                     else
                     {

@@ -110,9 +110,13 @@ export function http_wasm_transform_stream_write (controller: HttpController, bu
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
-        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
-        await Promise.race([controller.streamWriter.write(copy), controller.responsePromise]);
+        try {
+            // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
+            await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
+            await Promise.race([controller.streamWriter.write(copy), controller.responsePromise]);
+        } catch (ex) {
+            throw new Error("BrowserHttpWriteStream.Rejected");
+        }
     });
 }
 
@@ -121,9 +125,13 @@ export function http_wasm_transform_stream_close (controller: HttpController): C
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
-        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
-        await Promise.race([controller.streamWriter.close(), controller.responsePromise]);
+        try {
+            // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
+            await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
+            await Promise.race([controller.streamWriter.close(), controller.responsePromise]);
+        } catch (ex) {
+            throw new Error("BrowserHttpWriteStream.Rejected");
+        }
     });
 }
 
