@@ -2408,7 +2408,7 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CL
     }
     else
     {
-        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
+        hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
     }
     SOSDacLeave();
     return hr;
@@ -3535,7 +3535,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
         hr = m_cdacSos->GetUsefulGlobals(globalsData);
         if (FAILED(hr))
         {
-            hr = GetUsefulGlobals(globalsData);
+            hr = GetUsefulGlobalsImpl(globalsData);
         }
 #ifdef _DEBUG
         else
@@ -3554,7 +3554,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
     }
     else
     {
-        hr = GetUsefulGlobals(globalsData);;
+        hr = GetUsefulGlobalsImpl(globalsData);;
     }
 
     SOSDacLeave();
