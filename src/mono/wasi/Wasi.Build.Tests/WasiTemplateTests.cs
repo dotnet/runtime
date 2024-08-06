@@ -50,7 +50,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        RunWithoutBuild(config, id, true);
     }
 
     [Theory]

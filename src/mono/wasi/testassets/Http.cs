@@ -18,11 +18,12 @@ public static class WasiMainWrapper
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-        client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
+        client.DefaultRequestHeaders.Add("User-Agent", ".NET WASI unit test");
         
         var query="https://api.github.com/orgs/dotnet/repos?per_page=1";
         var json = await client.GetStringAsync(query);
 
+        Console.WriteLine("Hello, Wasi Console!");
         Console.WriteLine();
         Console.WriteLine("GET "+query);
         Console.WriteLine();
