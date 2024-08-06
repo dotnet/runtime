@@ -1574,7 +1574,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	case LLVMArgVtypeAsScalar: {
 		int size = mono_class_value_size (mono_class_from_mono_type_internal (rtype), NULL);
 		/* LLVM models this by returning an int */
-		if (size < TARGET_SIZEOF_VOID_P) {
+		if (size == 0) {
+			/* Empty struct with LayoutKind attribute and without specified size */
+			g_assert(cinfo->ret.nslots == 0);
+			ret_type = LLVMIntType (8);
+		} else if (size < TARGET_SIZEOF_VOID_P) {
 			g_assert (cinfo->ret.nslots == 1);
 			ret_type = LLVMIntType (size * 8);
 		} else {
