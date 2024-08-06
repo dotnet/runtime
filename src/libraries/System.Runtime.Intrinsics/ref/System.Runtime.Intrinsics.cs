@@ -4842,6 +4842,24 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ulong> GatherVectorByteZeroExtend(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<ulong> GatherVectorByteZeroExtend(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> GatherVectorByteZeroExtend(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        // public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> indices) { throw null; }
+        // public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> indices) { throw null; }
+        // public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorFirstFaulting(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorFirstFaulting(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> indices) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorFirstFaulting(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> indices) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVectorInt16SignExtend(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<int> indices) { throw null; }
         // public static System.Numerics.Vector<int> GatherVectorInt16SignExtend(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVectorInt16SignExtend(System.Numerics.Vector<int> mask, short* address, System.Numerics.Vector<uint> indices) { throw null; }
@@ -4946,6 +4964,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong GetActiveElementCount(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> from) { throw null; }
+        public static System.Numerics.Vector<byte> GetFfrByte() { throw null; }
+        public static System.Numerics.Vector<short> GetFfrInt16() { throw null; }
+        public static System.Numerics.Vector<int> GetFfrInt32() { throw null; }
+        public static System.Numerics.Vector<long> GetFfrInt64() { throw null; }
+        public static System.Numerics.Vector<sbyte> GetFfrSByte() { throw null; }
+        public static System.Numerics.Vector<ushort> GetFfrUInt16() { throw null; }
+        public static System.Numerics.Vector<uint> GetFfrUInt32() { throw null; }
+        public static System.Numerics.Vector<ulong> GetFfrUInt64() { throw null; }
         public static System.Numerics.Vector<byte> InsertIntoShiftedVector(System.Numerics.Vector<byte> left, byte right) { throw null; }
         public static System.Numerics.Vector<double> InsertIntoShiftedVector(System.Numerics.Vector<double> left, double right) { throw null; }
         public static System.Numerics.Vector<short> InsertIntoShiftedVector(System.Numerics.Vector<short> left, short right) { throw null; }
@@ -5032,6 +5058,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorNonTemporal(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorNonTemporal(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorNonTemporal(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> LoadVectorFirstFaulting(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<double> LoadVectorFirstFaulting(System.Numerics.Vector<double> mask, double* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorFirstFaulting(System.Numerics.Vector<short> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorFirstFaulting(System.Numerics.Vector<int> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorFirstFaulting(System.Numerics.Vector<long> mask, long* address) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> LoadVectorFirstFaulting(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<float> LoadVectorFirstFaulting(System.Numerics.Vector<float> mask, float* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorFirstFaulting(System.Numerics.Vector<ushort> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorFirstFaulting(System.Numerics.Vector<ulong> mask, ulong* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) { throw null; }
@@ -5399,6 +5435,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<byte> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<short> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<int> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<long> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<ushort> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<uint> value) { throw null; }
+        public static unsafe void SetFfr(System.Numerics.Vector<ulong> value) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftLogical(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }

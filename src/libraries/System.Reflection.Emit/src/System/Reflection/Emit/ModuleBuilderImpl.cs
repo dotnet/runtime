@@ -638,7 +638,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(field._handle == handle);
                 WriteCustomAttributes(field._customAttributes, handle);
 
-                if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                if (field._offset >= 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
                     AddFieldLayout(handle, field._offset);
                 }

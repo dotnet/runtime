@@ -29,6 +29,11 @@ namespace Internal.Runtime.TypeLoader
             return rtth.ToEETypePtr()->IsDynamicType;
         }
 
+        public static unsafe bool IsDynamicTypeWithCctor(this RuntimeTypeHandle rtth)
+        {
+            return rtth.ToEETypePtr()->IsDynamicTypeWithCctor;
+        }
+
         public static unsafe int GetNumVtableSlots(this RuntimeTypeHandle rtth)
         {
             return rtth.ToEETypePtr()->NumVtableSlots;
@@ -201,7 +206,10 @@ namespace Internal.Runtime.TypeLoader
 
                 int allocatedNonGCDataSize = state.NonGcDataSize;
                 if (state.HasStaticConstructor)
+                {
                     allocatedNonGCDataSize += -TypeBuilder.ClassConstructorOffset;
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithLazyCctor;
+                }
 
                 if (allocatedNonGCDataSize != 0)
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;

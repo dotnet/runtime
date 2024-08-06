@@ -20,7 +20,7 @@ public class Runtime_105821
     [Fact]
     public static void TestEntryPoint()
     {
-        if (Sse42.IsSupported)
+        if (Sse42.IsSupported && Bmi2.IsSupported)
         {
             Assert.Throws<DivideByZeroException>(() => M1(0));
         }
