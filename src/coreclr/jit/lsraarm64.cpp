@@ -607,9 +607,24 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         default:
+        {
             srcCount = BuildSimple(tree);
             break;
-
+        }
+        case GT_PHYSREG:
+        {
+            srcCount = 0;
+            if (varTypeIsMask(tree))
+            {
+                assert(tree->AsPhysReg()->gtSrcReg == REG_FFR);
+                BuildDef(tree, getSingleTypeRegMask(tree->AsPhysReg()->gtSrcReg, TYP_MASK));
+            }
+            else
+            {
+                BuildSimple(tree);
+            }
+            break;
+        }
         case GT_LCL_VAR:
             // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
             // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
@@ -1071,10 +1086,17 @@ int LinearScan::BuildNode(GenTree* tree)
                     }
                     setInternalRegsDelayFree = true;
                 }
+                buildInternalRegisterUses();
+                if (dstCount == 1)
+                {
+                    BuildDef(tree);
+                }
             }
-            buildInternalRegisterUses();
-            if (dstCount == 1)
+            else
             {
+                // We always need the target reg for LSE, even if
+                // return value is unused, see genLockedInstructions
+                buildInternalRegisterUses();
                 BuildDef(tree);
             }
         }
@@ -1962,10 +1984,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // Nothing needs to be done
             }
 
-            tgtPrefUse = BuildUse(emitOp1);
-            srcCount += 1;
-            srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-            srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+            GenTree* ops[] = {intrinEmb.op1, intrinEmb.op2, intrinEmb.op3};
+            for (GenTree* op : ops)
+            {
+                if (op == emitOp1)
+                {
+                    tgtPrefUse = BuildUse(op);
+                    srcCount++;
+                }
+                else if (op == emitOp2 || op == emitOp3)
+                {
+                    srcCount += BuildDelayFreeUses(op, emitOp1);
+                }
+            }
+
             srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else

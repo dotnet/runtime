@@ -23,7 +23,7 @@ public class SatelliteLoadingTests : AppTestBase
     {
     }
 
-    [Fact]
+    [Fact, TestCategory("no-fingerprinting")]
     public async Task LoadSatelliteAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests", "App");

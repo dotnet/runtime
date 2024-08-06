@@ -95,11 +95,11 @@ struct DynamicMetadata
 {
     uint32_t Size;
     BYTE Data[0];
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<DynamicMetadata>
+struct cdac_data<DynamicMetadata>
 {
     static constexpr size_t Size = offsetof(DynamicMetadata, Size);
     static constexpr size_t Data = offsetof(DynamicMetadata, Data);
@@ -547,7 +547,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -897,6 +897,7 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
 #ifdef FEATURE_CODE_VERSIONING
@@ -951,7 +952,6 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -1602,6 +1602,8 @@ private:
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
 
+    LOADERHANDLE m_hExposedObject;
+
     // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
     // the debugger to get metadata of dynamic modules from out of process.
     // A dynamic module will eagerly serialize its metadata to this buffer.
@@ -1629,11 +1631,11 @@ public:
     uint32_t GetNativeMetadataAssemblyCount();
 #endif // !defined(DACCESS_COMPILE)
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<Module>
+struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);

@@ -790,14 +790,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal bool IsHFA
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.IsHFAFlag) != 0;
-            }
-        }
-
         internal bool IsTrackedReferenceWithFinalizer
         {
             get
@@ -1076,6 +1068,14 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal bool IsDynamicTypeWithCctor
+        {
+            get
+            {
+                return (RareFlags & EETypeRareFlags.IsDynamicTypeWithLazyCctor) != 0;
+            }
+        }
+
         internal IntPtr DynamicGcStaticsData
         {
             get
@@ -1232,14 +1232,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        public bool HasCctor
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.HasCctorFlag) != 0;
-            }
-        }
-
         // This method is always called with a known constant and there's a lot of benefit in inlining it.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetFieldOffset(EETypeField eField)
@@ -1362,7 +1354,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
 
-            Debug.Assert(false, "Unknown MethodTable field type");
+            Debug.Fail("Unknown MethodTable field type");
             return 0;
         }
 

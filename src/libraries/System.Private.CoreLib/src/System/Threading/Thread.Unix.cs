@@ -10,6 +10,19 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
+        // these methods are temporarily accessed via UnsafeAccessor from generated code until we have it in public API, probably in WASI preview3 and promises
+#if TARGET_WASI
+        internal static System.Threading.Tasks.Task RegisterWasiPollable(int handle)
+        {
+            return WasiEventLoop.RegisterWasiPollable(handle);
+        }
+
+        internal static void DispatchWasiEventLoop()
+        {
+            WasiEventLoop.DispatchWasiEventLoop();
+        }
+#endif
+
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
 

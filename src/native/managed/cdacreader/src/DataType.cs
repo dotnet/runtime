@@ -37,4 +37,12 @@ public enum DataType
     TypeVarTypeDesc,
     FnPtrTypeDesc,
     DynamicMetadata,
+    Object,
+    String,
+    MethodDesc,
+    MethodDescChunk,
+    Array,
+    SyncBlock,
+    SyncTableEntry,
+    InteropSyncBlockInfo,
 }

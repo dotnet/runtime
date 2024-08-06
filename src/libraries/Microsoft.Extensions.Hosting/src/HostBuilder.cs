@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
-        private readonly bool _defaultProviderFactoryUsed;
+        private bool _defaultProviderFactoryUsed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
@@ -109,6 +109,7 @@ namespace Microsoft.Extensions.Hosting
             ThrowHelper.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 
@@ -123,6 +124,7 @@ namespace Microsoft.Extensions.Hosting
             ThrowHelper.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext!, factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 

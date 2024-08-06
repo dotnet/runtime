@@ -185,7 +185,7 @@ inline bool varTypeIsArithmetic(T vt)
 template <class T>
 inline bool varTypeIsGC(T vt)
 {
-    return ((varTypeClassification[TypeGet(vt)] & (VTF_GCR | VTF_BYR)) != 0);
+    return (TypeGet(vt) == TYP_REF) || (TypeGet(vt) == TYP_BYREF);
 }
 
 template <class T>

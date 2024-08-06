@@ -457,7 +457,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst')">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator')">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -481,6 +481,35 @@ $__Command $HARNESS_RUNNER apple just-run %5c
   --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
   --targets $(IosTestTarget) %5c
+  -v
+CLRTestExitCode=$?
+
+# Exit code of xharness is zero when tests finished successfully
+CLRTestExpectedExitCode=0
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetOS)' == 'maccatalyst'">
+      <![CDATA[
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="xharness"
+fi
+
+$__Command $HARNESS_RUNNER apple run %5c
+  --app="${__TestBinaryBase}/${__Category}.app" %5c
+  --output-directory="$__OutputDir" %5c
+  --expected-exit-code=100 %5c
+  --targets maccatalyst %5c
   -v
 CLRTestExitCode=$?
 

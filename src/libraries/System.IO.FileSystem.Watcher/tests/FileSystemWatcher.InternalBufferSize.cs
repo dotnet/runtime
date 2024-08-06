@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class InternalBufferSizeTests : FileSystemWatcherTest
     {
         // FSW works by calling ReadDirectoryChanges asynchronously, processing the changes
@@ -74,7 +75,6 @@ namespace System.IO.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("A little slow")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize_SynchronizingObject()
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);
