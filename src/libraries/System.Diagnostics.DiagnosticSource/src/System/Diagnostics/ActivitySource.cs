@@ -29,7 +29,8 @@ namespace System.Diagnostics
         public ActivitySource(string name, string? version = "") : this(name, version, tags: null) {}
 
         /// <summary>
-        /// Construct an ActivitySource object with the input name
+        /// Construct an ActivitySource object with the input name.
+        /// Objects are kept alive by a static reference added and are not garbage collected.
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
