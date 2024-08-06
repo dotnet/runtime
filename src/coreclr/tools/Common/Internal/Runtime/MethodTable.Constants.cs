@@ -84,6 +84,11 @@ namespace Internal.Runtime
         /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
         /// </summary>
         IDynamicInterfaceCastableFlag = 0x0008,
+
+        /// <summary>
+        /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
+        /// </summary>
+        RequiresAlign8 = 0x1000
     }
 
     internal enum EETypeKind : uint
@@ -116,10 +121,7 @@ namespace Internal.Runtime
     [Flags]
     internal enum EETypeRareFlags : int
     {
-        /// <summary>
-        /// This type requires 8-byte alignment for its fields on certain platforms (only ARM currently).
-        /// </summary>
-        RequiresAlign8Flag = 0x00000001,
+        // UNUSED = 0x00000001,
 
         // UNUSED1 = 0x00000002,
 

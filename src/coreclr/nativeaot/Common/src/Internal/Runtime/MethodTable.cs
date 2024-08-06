@@ -732,7 +732,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.RequiresAlign8Flag) != 0;
+                return (Flags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) == (uint)EETypeFlagsEx.RequiresAlign8Flag;
             }
         }
 
