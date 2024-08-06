@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -24,6 +25,23 @@ namespace System.Diagnostics.Metrics.Tests
         public MetricEventSourceTests(ITestOutputHelper output)
         {
             _output = output;
+        }
+
+        [Fact]
+        public void GetInstanceMethodIsReflectable()
+        {
+            // The startup code in S.P.C needs to be able to get the MetricsEventSource instance via reflection. See EventSource.InitializeDefaultEventSources() in
+            // the S.P.C source.
+            // Even though the the type isn't public this test ensures the GetInstance() API isn't removed or renamed.
+            Type? metricsEventSourceType = Type.GetType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource", throwOnError: false);
+            Assert.True(metricsEventSourceType != null, "Unable to get MetricsEventSource type via reflection");
+            
+            MethodInfo? getInstanceMethod = metricsEventSourceType.GetMethod("GetInstance", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+            Assert.True(getInstanceMethod != null, "Unable to get MetricsEventSource.GetInstance method via reflection");
+
+            object? o = getInstanceMethod.Invoke(null, null);
+            Assert.True(o != null, "Expected non-null result invoking MetricsEventSource.GetInstance() via reflection");
+            Assert.True(o is EventSource, "Expected object returned from MetricsEventSource.GetInstance() to be assignable to EventSource");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
