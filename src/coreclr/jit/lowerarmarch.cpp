@@ -1156,6 +1156,9 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
     GenTree* cur = prevIndir;
     for (int i = 0; i < POST_INDEXED_ADDRESSING_MAX_DISTANCE; i++)
     {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
         cur = cur->gtNext;
         if (cur == store)
             break;
@@ -1197,6 +1200,12 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
 
 #endif
 
+    // Unmark tree when we exit the current scope
+    auto code = [this, store] {
+        UnmarkTree(store);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
     MarkTree(store);
 
     INDEBUG(dumpWithMarks());
@@ -1214,7 +1223,6 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
-                UnmarkTree(store);
                 return false;
             }
         }
@@ -1229,7 +1237,6 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
     if (m_scratchSideEffects.InterferesWith(comp, store, true))
     {
         JITDUMP("Have interference. Giving up.\n");
-        UnmarkTree(store);
         return false;
     }
 
@@ -1260,7 +1267,6 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
     JITDUMP("Result:\n\n");
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
-    UnmarkTree(store);
     return true;
 }
 
