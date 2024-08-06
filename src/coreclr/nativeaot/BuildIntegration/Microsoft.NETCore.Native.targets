@@ -284,7 +284,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(_IlcTrimmedAssemblies->'--trim:%(Identity)')" />
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Identity)')" />
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
-      <IlcArg Include="--resilient" />
+      <IlcArg Condition="$(IlcResilient) != 'false'" Include="--resilient" />
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
