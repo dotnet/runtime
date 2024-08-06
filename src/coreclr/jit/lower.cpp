@@ -4991,14 +4991,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 }
 #endif // TARGET_XARCH
             }
-            if (varDsc->lvRequiresSpecialCopy)
-            {
-                convertToStoreObj = true;
-            }
-            else
-            {
-                convertToStoreObj = false;
-            }
+            convertToStoreObj = false;
 #else  // TARGET_ARM64
        // This optimization on arm64 allows more SIMD16 vars to be enregistered but it could cause
        // regressions when there are many calls and before/after each one we have to store/save the upper
@@ -8678,92 +8671,6 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStoreWithSpecialCopyHelper: Lower a block store node using a special copy helper
-//
-// Arguments:
-//    blkNode - The block store node to lower
-//
-void Lowering::LowerBlockStoreWithSpecialCopyHelper(GenTreeBlk* blkNode)
-{
-    LIR::Use use;
-    assert(!BlockRange().TryGetUse(blkNode, &use));
-
-    const bool isVolatile = blkNode->IsVolatile();
-
-    GenTree* dest = blkNode->Addr();
-    GenTree* data = blkNode->Data();
-
-    if (data->OperIs(GT_IND))
-    {
-        // Drop GT_IND nodes
-        BlockRange().Remove(data);
-        data = data->AsIndir()->Addr();
-    }
-    else
-    {
-        assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
-        // Convert local to LCL_ADDR
-        unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
-
-        data->ChangeOper(GT_LCL_ADDR);
-        data->ChangeType(TYP_I_IMPL);
-        data->AsLclFld()->SetLclOffs(lclOffset);
-        data->ClearContained();
-    }
-
-    // A hacky way to safely call fgMorphTree in Lower
-    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
-
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->GetSpecialCopyHelper(blkNode->GetLayout()->GetClassHandle()), TYP_VOID);
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(dataPlaceholder));
-
-    comp->fgMorphArgs(call);
-
-    LIR::Range range      = LIR::SeqTree(comp, call);
-    GenTree*   rangeStart = range.FirstNode();
-    GenTree*   rangeEnd   = range.LastNode();
-
-    BlockRange().InsertBefore(blkNode, std::move(range));
-    blkNode->gtBashToNOP();
-
-    LIR::Use destUse;
-    BlockRange().TryGetUse(destPlaceholder, &destUse);
-    destUse.ReplaceWith(dest);
-    destPlaceholder->SetUnusedValue();
-
-    LIR::Use dataUse;
-    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
-    dataUse.ReplaceWith(data);
-    dataPlaceholder->SetUnusedValue();
-
-    LowerRange(rangeStart, rangeEnd);
-
-    // Finally move all GT_PUTARG_* nodes
-    // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
-
-    BlockRange().Remove(destPlaceholder);
-    BlockRange().Remove(dataPlaceholder);
-
-// Wrap with memory barriers on weak memory models
-// if the block store was volatile
-#ifndef TARGET_XARCH
-    if (isVolatile)
-    {
-        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
-        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
-        BlockRange().InsertBefore(call, firstBarrier);
-        BlockRange().InsertAfter(call, secondBarrier);
-        LowerNode(firstBarrier);
-        LowerNode(secondBarrier);
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // GetLoadStoreCoalescingData: given a STOREIND/IND node, get the data needed to perform
 //    store/load coalescing including pointer to the previous node.
 //
@@ -10116,20 +10023,11 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
         assert(blkNode->Data()->IsIntegralConst(0));
     }
 
-    GenTree* src = blkNode->Data();
-
     // Lose the type information stored in the source - we no longer need it.
-    if (src->OperIs(GT_BLK))
+    if (blkNode->Data()->OperIs(GT_BLK))
     {
-        src->SetOper(GT_IND);
-        LowerIndir(src->AsIndir());
-    }
-
-    if ((src->OperIsIndir() && src->AsIndir()->Addr()->OperIsLocalRead() && comp->lvaTable[src->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum()].lvRequiresSpecialCopy)
-        || (src->OperIsLocalRead() && comp->lvaTable[src->AsLclVarCommon()->GetLclNum()].lvRequiresSpecialCopy))
-    {
-        LowerBlockStoreWithSpecialCopyHelper(blkNode);
-        return;
+        blkNode->Data()->SetOper(GT_IND);
+        LowerIndir(blkNode->Data()->AsIndir());
     }
 
     if (TryTransformStoreObjAsStoreInd(blkNode))
