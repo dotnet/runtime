@@ -884,7 +884,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_X86Serialize:
         case InstructionSet_X86Serialize_X64:
         case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
+        case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
         {
             return true;
