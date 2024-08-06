@@ -11,8 +11,8 @@ namespace ForegroundGC
 {
     class ForegroundGC
     {
-        volatile static bool done = false;
-        static object _lock = new object();
+        static bool done = false;
+        readonly static object _lock = new object();
         static long maxAlloc = 1024 * 1024 * 1024;  //1GB max size
         static int size = 30;
         static int Main(string[] args)
@@ -71,7 +71,8 @@ namespace ForegroundGC
                 }
             }
           
-            lock(_lock){
+            lock(_lock) 
+            {
                 done = true;
             }
             
@@ -88,7 +89,7 @@ namespace ForegroundGC
         {
             while (true)
             {
-                lock(_lock) { if (check) { break; } }
+                lock(_lock) { if (done) { break; } }
                 byte[] b = new byte[30];
                 byte[] b2 = new byte[100];
             }
