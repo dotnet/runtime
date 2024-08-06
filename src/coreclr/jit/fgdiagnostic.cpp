@@ -3292,8 +3292,48 @@ void Compiler::fgDebugCheckTypes(GenTree* tree)
                 assert(!"Unexpected small type in IR");
             }
 
+            // Validate binary ops
+            if (node->OperIsBinary())
+            {
+                GenTree* op1 = node->gtGetOp1();
+                GenTree* op2 = node->gtGetOp2();
+
+                if (op1->TypeIs(TYP_BYREF) && op2->TypeIs(TYP_BYREF))
+                {
+                    // Technically, the only case where two byrefs could be combined for a reason is a
+                    // SUB<TYP_I_IMPL> to calculate the distance between them. We don't expect the SUB
+                    // itself to be typed as BYREF. Related: https://github.com/dotnet/runtime/issues/84291
+                    if (!node->OperIs(GT_COMMA, GT_QMARK, GT_COLON) && !node->OperIsStore() && node->TypeIs(TYP_BYREF))
+                    {
+                        m_compiler->gtDispTree(node);
+                        assert(!"Unexpected type of a binary operator on two byrefs");
+                    }
+                }
+
+                // NOTE: we need to be careful with validation here as we don't want to
+                // assert too much on a semi-valid IL code.
+            }
+
+            // Validate stores
+            if (node->OperIsStore())
+            {
+                GenTree* src = node->Data();
+
+                if (varTypeIsStruct(node))
+                {
+                    if ((src->IsCall() && src->AsCall()->ShouldHaveRetBufArg()) ||
+                        (src->OperIs(GT_RET_EXPR) &&
+                         src->AsRetExpr()->gtInlineCandidate->AsCall()->ShouldHaveRetBufArg()))
+                    {
+                        m_compiler->gtDispTree(node);
+                        // It's a bit unfortunate that we have to assert it even for importer/HIR,
+                        // but we're too far away from having ABI handling only in late phases.
+                        assert(!"Calls with return buffers are expected to be spilled");
+                    }
+                }
+            }
+
             // TODO: validate types in GT_CAST nodes.
-            // Validate mismatched types in binopt's arguments, etc.
             //
             return WALK_CONTINUE;
         }
