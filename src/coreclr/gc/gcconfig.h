@@ -106,6 +106,7 @@ public:
     INT_CONFIG   (GCTotalPhysicalMemory,     "GCTotalPhysicalMemory",     NULL,                                0,                  "Specifies what the GC should consider to be total physical memory")                      \
     INT_CONFIG   (GCRegionRange,             "GCRegionRange",             NULL,                                0,                  "Specifies the range for the GC heap")                                                    \
     INT_CONFIG   (GCRegionSize,              "GCRegionSize",              NULL,                                0,                  "Specifies the size for a basic GC region")                                               \
+    INT_CONFIG   (GCLargeRegionFactor,       "GCLargeRegionFactor",       NULL,                                8,                  "Specifies the GC large region factor")                                                   \
     INT_CONFIG   (GCEnableSpecialRegions,    "GCEnableSpecialRegions",    NULL,                                0,                  "Specifies to enable special handling some regions like SIP")                             \
     STRING_CONFIG(LogFile,                   "GCLogFile",                 NULL,                                                    "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,             "GCConfigLogFile",           NULL,                                                    "Specifies the name of the GC config log file")                                           \
