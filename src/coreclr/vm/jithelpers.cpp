@@ -1212,7 +1212,8 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
     } CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context *eeAllocContext = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context *allocContext = &eeAllocContext->m_GCAllocContext;
 
     TypeHandle typeHandle(typeHnd_);
     _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
@@ -1222,8 +1223,8 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
     _ASSERTE(size % DATA_ALIGNMENT == 0);
 
     BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= allocContext->alloc_limit);
-    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
+    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
     {
         // Tail call to the slow helper
         return HCCALL1(JIT_New, typeHnd_);
@@ -1329,7 +1330,8 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         return HCCALL1(FramedAllocateString, stringLength);
     }
 
-    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context *eeAllocContext = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context *allocContext = &eeAllocContext->m_GCAllocContext;
 
     SIZE_T totalSize = StringObject::GetSize(stringLength);
 
@@ -1342,8 +1344,8 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
     totalSize = alignedTotalSize;
 
     BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= allocContext->alloc_limit);
-    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
+    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
     {
         // Tail call to the slow helper
         return HCCALL1(FramedAllocateString, stringLength);
@@ -1445,7 +1447,8 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
 
-    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
 
     MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
@@ -1463,8 +1466,8 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
     totalSize = alignedTotalSize;
 
     BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= allocContext->alloc_limit);
-    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
+    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_NewArr1, arrayMT, size);
@@ -1514,10 +1517,11 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
 
     _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
     BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= allocContext->alloc_limit);
-    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
+    if (totalSize > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_NewArr1, arrayMT, size);
@@ -1664,7 +1668,8 @@ HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* u
     }
 
     _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
 
     TypeHandle typeHandle(type);
     _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
@@ -1683,8 +1688,8 @@ HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* u
     _ASSERTE(size % DATA_ALIGNMENT == 0);
 
     BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= allocContext->alloc_limit);
-    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
+    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_Box, type, unboxedData);
