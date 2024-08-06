@@ -32,16 +32,6 @@
         <target state="translated">Parameternamen für die Protokollierungsmethode dürfen nicht mit "_" beginnen.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">Das Argument „{0}“ verwendet den nicht unterstützten Parametermodifizierer „out“.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">Das Argument verwendet den nicht unterstützten Parametermodifizierer „out“.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Protokollierungsmethoden dürfen keinen Text enthalten.</target>
@@ -67,24 +57,9 @@
         <target state="translated">Protokollierungsmethoden müssen statisch sein.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">Der Protokollierungsquellgenerator ist in C# {0} nicht verfügbar. Verwenden Sie die Sprachversion {1} oder höher.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">Die C#-Sprachversion wird vom Quellgenerator nicht unterstützt.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">Die Protokollierungsmethode „{0}“ enthält nicht wohlgeformte Formatzeichenfolgen.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">Die Protokollierungsmethode enthält nicht wohlgeformte Formatzeichenfolgen.</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -132,16 +107,6 @@
         <target state="translated">Mehrere Felder vom Typ "Microsoft.Extensions.Logging.ILogger" gefunden</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
-        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
-        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">Entfernen Sie den redundanten Qualifizierer (z. B. "Info:", "Warnung:" oder "Fehler:") aus der Protokollierungsmeldung, weil er auf der angegebenen Protokollebene implizit enthalten ist.</target>
@@ -180,16 +145,6 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Dieselbe Ereignis-ID kann nicht von mehreren Protokollierungsmethoden innerhalb einer Klasse verwendet werden</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">Der Ereignisname „{0}“ wird in der Klasse „{1}“ von mehreren Protokollierungsmethoden verwendet.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">Derselbe Ereignisname kann innerhalb einer Klasse nicht von mehreren Protokollierungsmethoden verwendet werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
