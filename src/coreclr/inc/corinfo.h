@@ -604,26 +604,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_COUNT,
 };
 
-//This describes the signature for a helper method.
-enum CorInfoHelpSig
-{
-    CORINFO_HELP_SIG_UNDEF,
-    CORINFO_HELP_SIG_NO_ALIGN_STUB,
-    CORINFO_HELP_SIG_NO_UNWIND_STUB,
-    CORINFO_HELP_SIG_REG_ONLY,
-    CORINFO_HELP_SIG_4_STACK,
-    CORINFO_HELP_SIG_8_STACK,
-    CORINFO_HELP_SIG_12_STACK,
-    CORINFO_HELP_SIG_16_STACK,
-
-    CORINFO_HELP_SIG_EBPCALL, //special calling convention that uses EDX and
-                              //EBP as arguments
-
-    CORINFO_HELP_SIG_CANNOT_USE_ALIGN_STUB,
-
-    CORINFO_HELP_SIG_COUNT
-};
-
 // The enumeration is returned in 'getSig','getType', getArgType methods
 enum CorInfoType
 {
