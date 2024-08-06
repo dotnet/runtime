@@ -1191,6 +1191,7 @@ enum mcPackets
     Packet_GetTypeForBoxOnStack = 221,
     Packet_GetTypeDefinition = 222,
     Packet_GetFpStructLowering = 223,
+    Packet_GetSpecialCopyHelper = 224,
 };
 
 void SetDebugDumpVariables();

@@ -1863,3 +1863,10 @@ uint32_t MyICJI::getExpectedTargetArchitecture()
     DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
     return result;
 }
+
+CORINFO_METHOD_HANDLE MyICJI::GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    jitInstance->mc->cr->AddCall("GetSpecialCopyHelper");
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetSpecialCopyHelper(type);
+    return result;
+}

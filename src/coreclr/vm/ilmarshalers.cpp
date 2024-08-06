@@ -3456,7 +3456,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 
         pslIL->SetStubTargetArgType(ELEMENT_TYPE_U);        // native type is a pointer
         pslILDispatch->EmitLDLOC(dwPinnedArgLocal);
-        pslILEmit->EmitCONV_U();
+        pslILDispatch->EmitCONV_U();
 #endif
 
         return OVERRIDDEN;
