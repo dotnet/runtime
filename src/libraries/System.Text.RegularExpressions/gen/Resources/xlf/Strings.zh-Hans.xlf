@@ -192,9 +192,9 @@
         <target state="translated">尝试将模式与输入字符串匹配时，Regex 引擎超时。许多原因均可能导致出现这种情况，包括由嵌套限定符、反向引用和其他因素引起的大量输入或过度回溯。</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">GeneratedRegexAttribute 方法必须是分部、无参数、非泛型、非抽象且返回 Regex。</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
