@@ -2752,6 +2752,25 @@ function append_call_handler_store_ret_ip (
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
+function getBranchImmediate (
+    ip: MintOpcodePtr, opcode: MintOpcode, unsigned: boolean
+): number | undefined {
+    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
+        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+        payloadAddress = <any>ip + 2 + (payloadOffset * 2);
+
+    let result: number;
+    switch (opArgType) {
+        case MintOpArgType.MintOpShortAndBranch:
+            result = unsigned ? getU16(payloadAddress) : getI16(payloadAddress);
+            break;
+        default:
+            return undefined;
+    }
+
+    return result;
+}
+
 function getBranchDisplacement (
     ip: MintOpcodePtr, opcode: MintOpcode
 ): number | undefined {
@@ -2785,8 +2804,10 @@ function emit_branch (
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
 
     const displacement = getBranchDisplacement(ip, opcode);
-    if (typeof (displacement) !== "number")
+    if (typeof (displacement) !== "number") {
+        mono_log_info(`Failed to decode branch displacement for ${getOpcodeName(opcode)}`);
         return false;
+    }
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2917,8 +2938,10 @@ function emit_relop_branch (
     frame: NativePointer, opcode: MintOpcode
 ): boolean {
     const relopBranchInfo = relopbranchTable[opcode];
-    if (!relopBranchInfo)
+    if (!relopBranchInfo) {
+        // mono_log_info(`No info for relop branch ${getOpcodeName(opcode)}`);
         return false;
+    }
 
     const relop = Array.isArray(relopBranchInfo)
         ? relopBranchInfo[0]
@@ -2927,8 +2950,10 @@ function emit_relop_branch (
     const relopInfo = binopTable[relop];
     const intrinsicFpBinop = intrinsicFpBinops[relop];
 
-    if (!relopInfo && !intrinsicFpBinop)
+    if (!relopInfo && !intrinsicFpBinop) {
+        // mono_log_info(`No info for relop ${getOpcodeName(opcode)} -> ${getOpcodeName(relop)}`);
         return false;
+    }
 
     const operandLoadOp = relopInfo
         ? relopInfo[1]
@@ -2945,11 +2970,13 @@ function emit_relop_branch (
 
     // Compare with immediate
     if (Array.isArray(relopBranchInfo) && relopBranchInfo[1]) {
+        const immediate = getBranchImmediate(ip, opcode, relopBranchInfo[3]);
+        mono_assert(immediate !== undefined, `Failed to decode immediate for branch opcode ${getOpcodeName(opcode)}`);
         // For i8 immediates we need to generate an i64.const even though
         //  the immediate is 16 bits, so we store the relevant opcode
         //  in the relop branch info table
         builder.appendU8(relopBranchInfo[1]);
-        builder.appendLeb(getArgI16(ip, 2));
+        builder.appendLeb(immediate);
     } else
         append_ldloc(builder, getArgU16(ip, 2), operandLoadOp);
 
