@@ -30,7 +30,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Construct an ActivitySource object with the input name.
-        /// Objects are kept alive by a static reference and are not garbage collected.
+        /// Objects are kept alive by a static reference and are not garbage collected unless explicit call to Dispose().
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
