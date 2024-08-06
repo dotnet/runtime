@@ -14,6 +14,15 @@ public unsafe class LargeStructSize
         BigArray_64_1 a;
     }
 
+    [StructLayout(LayoutKind.Explicit)] 
+    struct X_explicit_64
+    {
+        [FieldOffset(0)]
+        bool x;
+        [FieldOffset(1)]
+        BigArray_64_1 a;
+    }
+
     struct Y_64
     {
         BigArray_64_1 a;
@@ -23,6 +32,15 @@ public unsafe class LargeStructSize
     struct X_32
     {
         byte x;
+        BigArray_32_1 a;
+    }
+
+    [StructLayout(LayoutKind.Explicit)] 
+    struct X_explicit_32
+    {
+        [FieldOffset(0)]
+        bool x;
+        [FieldOffset(1)]
         BigArray_32_1 a;
     }
 
@@ -60,6 +78,7 @@ public unsafe class LargeStructSize
             Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_64_1));
             Assert.Throws<TypeLoadException>(() => sizeof(BigArray_64_2));
             Assert.Throws<TypeLoadException>(() => sizeof(X_64));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_64));
             Assert.Throws<TypeLoadException>(() => sizeof(Y_64));
         }
         else
@@ -67,6 +86,7 @@ public unsafe class LargeStructSize
             Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_32_1));
             Assert.Throws<TypeLoadException>(() => sizeof(BigArray_32_2));
             Assert.Throws<TypeLoadException>(() => sizeof(X_32));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_32));
             Assert.Throws<TypeLoadException>(() => sizeof(Y_32));
         }
     }

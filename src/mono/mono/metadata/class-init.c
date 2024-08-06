@@ -2390,7 +2390,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			/*
 			 * Calc max size.
 			 */
-			real_size = MAX (real_size, size + field_offsets [i]);
+			gint64 raw_real_size = (gint64)field_offsets [i] + size;
+			gint32 real_size_cast = (gint32)raw_real_size;
+
+			if (real_size_cast != raw_real_size)
+				mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+
+			real_size = MAX (real_size, real_size_cast);
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
