@@ -4,6 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs">
