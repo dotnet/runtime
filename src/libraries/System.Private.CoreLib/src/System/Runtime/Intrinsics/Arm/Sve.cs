@@ -4425,7 +4425,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) => GetActiveElementCount(mask, from);
 
 
-        // Read FFR, returning predicate of succesfully loaded elements
+        // Read FFR, returning predicate of successfully loaded elements
 
         /// <summary>
         /// svbool_t svrdffr()
