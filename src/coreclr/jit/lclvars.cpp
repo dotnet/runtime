@@ -914,40 +914,37 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if ((lowering != nullptr) && !lowering->byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
-            int floatNum = 0;
+            assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
             if (lowering->numLoweredElements == 1)
-            {
-                assert(argSize <= 8);
                 assert(varDsc->lvExactSize() <= argSize);
 
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
+            cSlotsToEnregister  = lowering->numLoweredElements;
+            argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
+            if (lowering->numLoweredElements == 2)
+                argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
 
-                argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
-                assert(varTypeIsFloating(argRegTypeInStruct1));
-            }
-            else
+            int floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
+            assert(floatNum > 0);
+
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
             {
+                assert(floatNum == 1);
                 assert(lowering->numLoweredElements == 2);
-                argRegTypeInStruct1 = genActualType(JITtype2varType(lowering->loweredElements[0]));
-                argRegTypeInStruct2 = genActualType(JITtype2varType(lowering->loweredElements[1]));
-                floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-                if (floatNum == 1)
-                    canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
+                assert(varTypeIsIntegralOrI(argRegTypeInStruct1) || varTypeIsIntegralOrI(argRegTypeInStruct2));
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
             }
-
-            assert((floatNum == 1) || (floatNum == 2));
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
-                // argument, integer registers (if any) are used instead.
-                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-
+                // If a struct eligible for passing according to floating-point calling convention cannot be fully
+                // enregistered, it is passed according to integer calling convention -- in up to two integer registers
+                // and/or stack slots, as a lump of bits laid out like in memory.
+                cSlotsToEnregister  = cSlots;
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
 
+                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
                 if (cSlotsToEnregister == 2)
                 {
                     if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))
@@ -1082,7 +1079,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
@@ -8074,6 +8071,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (lcl->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
             (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
+        // Ignore locals used in runtime lookups
+        if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+        {
+            assert(tree->OperIs(GT_LCL_VAR));
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
         }

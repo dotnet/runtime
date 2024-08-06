@@ -5199,6 +5199,10 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
     while (unbreakableLockCount)
