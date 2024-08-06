@@ -374,7 +374,9 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
-	// Lock should not be held when invoking callback.
+	// A lock should not be held when invoking the callback, as concurrent callbacks
+	// may trigger a deadlock with the EventListenersLock as detailed in
+	// https://github.com/dotnet/runtime/pull/105734
 	ep_requires_lock_not_held ();
 
 	const ep_char8_t *filter_data = ep_provider_callback_data_get_filter_data (provider_callback_data);
@@ -438,6 +440,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 			callback_data /* CallbackContext */);
 	}
 
+	// The callback completed, can take the lock again.
 	EP_LOCK_ENTER (section1)
 		if (callback_function != NULL) {
 			EventPipeProvider *provider = provider_callback_data->provider;
