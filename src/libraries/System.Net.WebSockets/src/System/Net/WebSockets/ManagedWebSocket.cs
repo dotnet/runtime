@@ -180,6 +180,10 @@ namespace System.Net.WebSockets
                 if (keepAliveTimeout > TimeSpan.Zero)
                 {
                     _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout);
+#if DEBUG
+                    _keepAlivePingState.Debug_WebSocket_StateUpdateLock = StateUpdateLock;
+#endif
+
                     heartBeatIntervalMs = _keepAlivePingState.HeartBeatIntervalMs;
 
                     if (NetEventSource.Log.IsEnabled())
@@ -1015,7 +1019,7 @@ namespace System.Net.WebSockets
 
                 if (_state == WebSocketState.Aborted)
                 {
-                    if (_disposed && _keepAlivePingState?.Exception is not null)
+                    if (_keepAlivePingState?.Exception is not null)
                     {
                         // it should have already been wrapped in an OperationCanceledException and thrown above,
                         // but just in case it wasn't due to some race, let's surface both exceptions
@@ -1178,8 +1182,7 @@ namespace System.Net.WebSockets
 
             bool processPing = header.Opcode == MessageOpcode.Ping;
 
-            bool processPong = header.Opcode == MessageOpcode.Pong
-                && _keepAlivePingState is not null && _keepAlivePingState.AwaitingPong
+            bool processPong = header.Opcode == MessageOpcode.Pong && _keepAlivePingState is not null
                 && header.PayloadLength == KeepAlivePingState.PingPayloadSize;
 
             if ((processPing || processPong) && _isServer)
@@ -1201,13 +1204,17 @@ namespace System.Net.WebSockets
             }
             else if (processPong)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Processing incoming Pong with a suitable payload length");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Processing incoming Pong");
 
-                _keepAlivePingState!.OnPongResponseReceived(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength));
+                long pongPayload = BinaryPrimitives.ReadInt64BigEndian(_receiveBuffer.Span.Slice(_receiveBufferOffset, (int)header.PayloadLength));
+                lock (StateUpdateLock)
+                {
+                    _keepAlivePingState!.OnPongResponseReceived(pongPayload);
+                }
             }
             else
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Ignoring incoming Unsolicited Pong");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Received Unsolicited Pong. Skipping.");
             }
 
             // Regardless of whether it was a ping or pong, we no longer need the payload.

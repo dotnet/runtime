@@ -32,6 +32,8 @@ namespace System.Net.Test.Common
             }
         }
 
+        public Action<string>? DebugLog => _options.DebugLog;
+
         public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
         public override Uri Address
@@ -185,6 +187,8 @@ namespace System.Net.Test.Common
         public bool ClientCertificateRequired { get; set; }
 
         public bool EnableTransparentPingResponse { get; set; } = true;
+
+        public Action<string>? DebugLog { get; set; }
 
         public Http2Options()
         {

@@ -24,6 +24,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [Theory]
         [MemberData(nameof(UseSsl_MemberData))]
+        [InlineData(false)]
         public Task KeepAlive_LongDelayBetweenSendReceives_Succeeds(bool useSsl)
         {
             var clientMsg = new byte[] { 1, 2, 3, 4, 5, 6 };
@@ -44,6 +45,7 @@ namespace System.Net.WebSockets.Client.Tests
                     clientOptions.KeepAliveInterval = TimeSpan.FromSeconds(100);
                     clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
                 },
+                DebugLog = DebugLog
             };
 
             return LoopbackWebSocketServer.RunAsync(
@@ -67,9 +69,13 @@ namespace System.Net.WebSockets.Client.Tests
 
                     Assert.Equal(WebSocketState.Open, clientWebSocket.State);
 
+                    DebugLog("Sending close frame from client");
+
                     await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", token);
 
                     Assert.Equal(WebSocketState.Closed, clientWebSocket.State);
+
+                    DebugLog("Client closed");
                 },
                 async (serverWebSocket, token) =>
                 {
@@ -89,15 +95,31 @@ namespace System.Net.WebSockets.Client.Tests
 
                     await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token);
 
+                    DebugLog("Receiving close frame on server");
+
                     var closeFrame = await serverWebSocket.ReceiveAsync(Array.Empty<byte>(), token);
                     Assert.Equal(WebSocketMessageType.Close, closeFrame.MessageType);
                     Assert.Equal(WebSocketState.CloseReceived, serverWebSocket.State);
 
+                    DebugLog("Sending close frame response from server");
+
                     await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token);
                     Assert.Equal(WebSocketState.Closed, serverWebSocket.State);
+
+                    DebugLog("Server closed");
                 },
                 options,
                 timeoutCts.Token);
+
+
+            void DebugLog(string str)
+            {
+                const int MaxLogLength = 3000;
+                lock (Console.Out)
+                {
+                    Console.WriteLine($"{this.GetType().Name} | useSsl={useSsl} | {str.Substring(0, Math.Min(str.Length, MaxLogLength))}{(str.Length > MaxLogLength ? "<TRUNCATED>" : "")}");
+                }
+            }
         }
 
         private static async Task VerifySendReceiveAsync(WebSocket ws, byte[] localMsg, byte[] remoteMsg,

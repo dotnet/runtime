@@ -48,13 +48,13 @@ namespace System.Net.WebSockets
                 TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
 
-            static void LogFaulted(Task task, object? state)
+            static void LogFaulted(Task task, object? thisObj)
             {
                 Debug.Assert(task.IsFaulted);
 
-                Exception? e = task.Exception!.InnerException; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
+                Exception? innerException = task.Exception!.InnerException; // accessing exception anyway, to observe it regardless of whether the tracing is enabled
 
-                if (NetEventSource.Log.IsEnabled() && e != null) NetEventSource.TraceException((ManagedWebSocket)state!, e);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(thisObj, innerException ?? task.Exception!);
             }
         }
 
@@ -102,79 +102,84 @@ namespace System.Net.WebSockets
         private void KeepAlivePingHeartBeat()
         {
             Debug.Assert(_keepAlivePingState != null);
-            Debug.Assert(_keepAlivePingState.Exception == null);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"{nameof(_keepAlivePingState.AwaitingPong)}={_keepAlivePingState.AwaitingPong}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
             try
             {
-                if (_keepAlivePingState.AwaitingPong)
+                bool timedOut = false;
+                bool sendPing = false;
+                long pingPayload = -1;
+
+                lock (StateUpdateLock)
                 {
-                    KeepAlivePingThrowIfTimedOut();
+                    if (_keepAlivePingState.Exception is not null)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"KeepAlive already faulted, skipping... (exception: {_keepAlivePingState.Exception.Message})");
+                        return;
+                    }
+
+                    long now = Environment.TickCount64;
+
+                    if (_keepAlivePingState.AwaitingPong)
+                    {
+                        Debug.Assert(_keepAlivePingState.WillTimeoutTimestamp != Timeout.Infinite);
+
+                        if (now > _keepAlivePingState.WillTimeoutTimestamp)
+                        {
+                            timedOut = true;
+                            pingPayload = _keepAlivePingState.PingPayload;
+                        }
+                    }
+                    else
+                    {
+                        if (now > _keepAlivePingState.NextPingTimestamp)
+                        {
+                            sendPing = true;
+                            pingPayload = ++_keepAlivePingState.PingPayload;
+
+                            _keepAlivePingState.AwaitingPong = true;
+                            _keepAlivePingState.WillTimeoutTimestamp = now + _keepAlivePingState.TimeoutMs;
+                        }
+                    }
                 }
-                else
+
+                if (timedOut)
                 {
-                    SendKeepAlivePingIfNeeded();
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Trace(this, $"Keep-alive ping timed out after {_keepAlivePingState.TimeoutMs}ms. Expected pong with payload {pingPayload}");
+                    }
+
+                    throw new WebSocketException(WebSocketError.Faulted, SR.net_Websockets_KeepAlivePingTimeout);
+                }
+                else if (sendPing)
+                {
+                    Observe(
+                        SendPingAsync(pingPayload));
                 }
             }
             catch (Exception e)
             {
-                if (NetEventSource.Log.IsEnabled())
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, e);
+
+                bool shouldAbort = false;
+                lock (StateUpdateLock)
                 {
-                    NetEventSource.TraceException(this, e);
-                    NetEventSource.Trace(this, $"_disposed={_disposed}");
+                    if (!_disposed)
+                    {
+                        // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
+                        // The exception needs to be assigned before _disposed is set to true
+                        _keepAlivePingState.Exception = e;
+                        shouldAbort = true;
+                    }
                 }
 
-                if (!_disposed)
+                if (shouldAbort)
                 {
-                    // We only save the exception in the keep-alive state if we will actually trigger the abort/disposal
-                    // The exception needs to be assigned before _disposed is set to true
-                    _keepAlivePingState.Exception = e;
-
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception saved in _keepAlivePingState, aborting...");
-
                     Abort();
                 }
-            }
-        }
-
-        private void KeepAlivePingThrowIfTimedOut()
-        {
-            Debug.Assert(_keepAlivePingState != null);
-            Debug.Assert(_keepAlivePingState.AwaitingPong);
-            Debug.Assert(_keepAlivePingState.WillTimeoutTimestamp != Timeout.Infinite);
-
-            long now = Environment.TickCount64;
-
-            if (now > Interlocked.Read(ref _keepAlivePingState.WillTimeoutTimestamp))
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Trace(this, $"Keep-alive ping timed out after {_keepAlivePingState.TimeoutMs}ms. Expected pong with payload {_keepAlivePingState.PingPayload}");
-                }
-
-                throw new WebSocketException(WebSocketError.Faulted, SR.net_Websockets_KeepAlivePingTimeout);
-            }
-        }
-
-        private void SendKeepAlivePingIfNeeded()
-        {
-            Debug.Assert(_keepAlivePingState != null);
-            Debug.Assert(!_keepAlivePingState.AwaitingPong);
-
-            long now = Environment.TickCount64;
-
-            // Check whether keep alive delay has passed since last frame received
-            if (now > Interlocked.Read(ref _keepAlivePingState.NextPingTimestamp))
-            {
-                // Set the status directly to ping sent and set the timestamp
-                Interlocked.Exchange(ref _keepAlivePingState.WillTimeoutTimestamp, now + _keepAlivePingState.TimeoutMs);
-                _keepAlivePingState.AwaitingPong = true;
-
-                long pingPayload = Interlocked.Increment(ref _keepAlivePingState.PingPayload);
-
-                Observe(
-                    SendPingAsync(pingPayload));
             }
         }
 
@@ -201,54 +206,62 @@ namespace System.Net.WebSockets
 
         private void OnDataReceived(int bytesRead)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={bytesRead}");
 
             if (_keepAlivePingState != null && bytesRead > 0)
             {
-                _keepAlivePingState.OnDataReceived();
+                lock (StateUpdateLock)
+                {
+                    _keepAlivePingState.OnDataReceived();
+                }
             }
         }
 
         private void ThrowIfDisposedOrKeepAliveFaulted()
+            => ThrowIfInvalidStateOrKeepAliveFaulted(validStates: null);
+
+        private void ThrowIfInvalidStateOrKeepAliveFaulted(WebSocketState[]? validStates)
         {
             Debug.Assert(_keepAlivePingState is not null);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_disposed={_disposed}, _state={_state}, _keepAlivePingState.Exception={_keepAlivePingState.Exception?.Message}");
+            // Exception order: WebSocketException -> OperationCanceledException -> ObjectDisposedException
+            //
+            // If keepAlive exception present:
+            //    1. WebSocketException(InvalidState), keepAlive exception as inner -- if invalid state
+            //    2. OperationCanceledException, keepAlive exception as inner
+            //
+            // If keepAlive exception not present:
+            //    1. WebSocketException(InvalidState) -- if invalid state
+            //    2. ObjectDisposedException
 
-            if (_disposed && _keepAlivePingState.Exception is not null)
+            bool disposed;
+            WebSocketState state;
+            Exception? keepAliveException;
+            lock (StateUpdateLock)
             {
-                // If Exception is not null, it triggered the abort which also disposed the websocket
-                // We only save the Exception if it actually triggered the abort
-                throw new OperationCanceledException(nameof(WebSocketState.Aborted), _keepAlivePingState.Exception);
+                disposed = _disposed;
+                state = _state;
+                keepAliveException = _keepAlivePingState.Exception;
             }
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
-        }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_disposed={disposed}, _state={state}, _keepAlivePingState.Exception={keepAliveException?.Message}");
 
-        private void ThrowIfInvalidStateOrKeepAliveFaulted(WebSocketState[] validStates)
-        {
-            Debug.Assert(_keepAlivePingState is not null);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_disposed={_disposed}, _state={_state}, _keepAlivePingState.Exception={_keepAlivePingState.Exception?.Message}");
-
-            try
+            string? invalidStateMessage = validStates is not null ? WebSocketValidate.GetInvalidStateMessage(state, validStates) : null;
+            if (invalidStateMessage is not null)
             {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+                // Surface keepAliveException as inner exception, if present
+                throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage, keepAliveException);
             }
-            catch (Exception exc) when (_disposed && _keepAlivePingState.Exception is not null)
-            {
-                // If Exception is not null, it triggered the abort which also disposed the websocket
-                // We only save the Exception if it actually triggered the abort
-                if (exc is ObjectDisposedException ode && ode.ObjectName == typeof(ManagedWebSocket).FullName)
-                {
-                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), _keepAlivePingState.Exception);
-                }
 
-                if (exc is WebSocketException we && we.WebSocketErrorCode == WebSocketError.InvalidState)
-                {
-                    throw new WebSocketException(WebSocketError.InvalidState, we.Message, _keepAlivePingState.Exception);
-                }
+            // If keepAliveException is not null, it triggered the abort which also disposed the websocket
+            // We only save the exception if it actually triggered the abort
+            if (keepAliveException is not null)
+            {
+                throw new OperationCanceledException(nameof(WebSocketState.Aborted), keepAliveException);
             }
+
+            // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+            ObjectDisposedException.ThrowIf(disposed, this);
         }
 
         private sealed class KeepAlivePingState
@@ -267,6 +280,8 @@ namespace System.Net.WebSockets
             internal long PingPayload;
             internal Exception? Exception;
 
+            internal object Debug_WebSocket_StateUpdateLock = null!; // for Debug.Asserts
+
             public KeepAlivePingState(TimeSpan keepAliveInterval, TimeSpan keepAliveTimeout)
             {
                 DelayMs = TimeSpanToMs(keepAliveInterval);
@@ -279,34 +294,38 @@ namespace System.Net.WebSockets
                     MinIntervalMs);
 
                 static int TimeSpanToMs(TimeSpan value) =>
-                    Math.Clamp((int)value.TotalMilliseconds, MinIntervalMs, int.MaxValue);
+                    (int)Math.Clamp((long)value.TotalMilliseconds, MinIntervalMs, int.MaxValue);
             }
 
             internal void OnDataReceived()
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+                Debug.Assert(Monitor.IsEntered(Debug_WebSocket_StateUpdateLock));
 
-                Interlocked.Exchange(ref NextPingTimestamp, Environment.TickCount64 + DelayMs);
+                NextPingTimestamp = Environment.TickCount64 + DelayMs;
             }
 
-            internal void OnPongResponseReceived(Span<byte> pongPayload)
+            internal void OnPongResponseReceived(long pongPayload)
             {
-                Debug.Assert(AwaitingPong);
-                Debug.Assert(pongPayload.Length == sizeof(long));
+                Debug.Assert(Monitor.IsEntered(Debug_WebSocket_StateUpdateLock));
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"pongPayload={pongPayload}");
 
-                long pongPayloadValue = BinaryPrimitives.ReadInt64BigEndian(pongPayload);
-                if (pongPayloadValue == Interlocked.Read(ref PingPayload))
+                if (!AwaitingPong)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.PongResponseReceived(this, pongPayloadValue);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Not waiting for Pong. Skipping.");
+                    return;
+                }
 
-                    Interlocked.Exchange(ref WillTimeoutTimestamp, Timeout.Infinite);
+                if (pongPayload == PingPayload)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.PongResponseReceived(this, pongPayload);
+
+                    WillTimeoutTimestamp = Timeout.Infinite;
                     AwaitingPong = false;
                 }
-                else if (NetEventSource.Log.IsEnabled())
+                else
                 {
-                    NetEventSource.Trace(this, $"Received pong with unexpected payload {pongPayloadValue}. Expected {Interlocked.Read(ref PingPayload)}. Skipping.");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Expected payload {PingPayload}. Skipping.");
                 }
             }
         }

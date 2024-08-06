@@ -73,9 +73,11 @@ namespace System.Net.WebSockets.Client.Tests
 
                         await loopbackServerFunc(requestData, cancellationToken).ConfigureAwait(false);
 
+                        options.DebugLog?.Invoke("loopbackServerFunc completed; disposing the connection");
+
                         await http2Connection.DisposeAsync().ConfigureAwait(false);
                     },
-                    new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl });
+                    new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, DebugLog = options.DebugLog });
             }
             else
             {
@@ -96,6 +98,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             if (options.DisposeServerWebSocket)
             {
+                options.DebugLog?.Invoke("Disposing server websocket");
                 serverWebSocket.Dispose();
             }
         }
@@ -146,6 +149,7 @@ namespace System.Net.WebSockets.Client.Tests
             public bool DisposeHttpInvoker { get; set; }
             public bool ManualServerHandshakeResponse { get; set; }
             public Action<ClientWebSocketOptions>? ConfigureClientOptions { get; set; }
+            public Action<string>? DebugLog { get; set; }
         }
     }
 }
