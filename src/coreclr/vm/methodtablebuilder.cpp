@@ -1764,9 +1764,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
-        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
-            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
-
         // For simple Blittable types we still need to check if they have any overlapping
         // fields and call the method SetHasOverlaidFields() when they are detected.
         //
@@ -1795,6 +1792,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             // Place instance fields
             PlaceInstanceFields(pByValueClassCache);
         }
+    }
+
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
     }
 
     if (CheckIfSIMDAndUpdateSize())
