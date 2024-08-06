@@ -1504,7 +1504,7 @@ namespace System.Text
             // prefer architecture specific intrinsic as they offer better perf
             if (Sse41.IsSupported)
             {
-                return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0x80));
+                return (asciiVector & Vector128.Create((byte)0x80)) != Vector128<byte>.Zero;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1521,22 +1521,15 @@ namespace System.Text
         internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             // prefer architecture specific intrinsic as they offer better perf
-            if (Sse2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer
+            if (Sse2.IsSupported && !Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
             {
-                if (Sse41.IsSupported)
-                {
-                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                }
-                else
-                {
-                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
-                }
+                Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
+                // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
+                // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
+                // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
+                return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1557,18 +1550,10 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
         {
-            if (Avx.IsSupported)
-            {
-                Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
-                return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-            }
-            else
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector256<ushort>.Zero;
-            }
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector256<ushort>.Zero;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1601,14 +1586,13 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsByte(), Vector128.Create((byte)0x80)) :
+                    Sse41.IsSupported ? (vector.AsByte() & Vector128.Create((byte)0x80)) == Vector128<byte>.Zero :
                     AdvSimd.Arm64.IsSupported ? AllBytesInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsByte(), vector.AsByte()).AsUInt64().ToScalar()) :
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsUInt16(), Vector128.Create((ushort)0xFF80)) :
                     AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
                     (vector.AsUInt16() & Vector128.Create((ushort)0xFF80)) == Vector128<ushort>.Zero;
             }
@@ -1624,14 +1608,12 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    Avx.IsSupported ? (vector.AsByte() & Vector256.Create((byte)0x80)) == Vector256<byte>.Zero:
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
-                return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
-                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+                return (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
             }
         }
 
