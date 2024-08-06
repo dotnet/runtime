@@ -156,8 +156,7 @@ internal static class TypeNameHelpers
             }
         }
 
-        TypeName? newDeclaringType = typeName.IsNested ? typeName.DeclaringType.WithAssemblyName(assemblyName) : null;
-        return typeName.MakeSimpleTypeName(newDeclaringType, assemblyName);
+        return typeName.MakeSimpleTypeName(assemblyName);
     }
 
     private static TypeName ParseWithoutAssemblyName(string rawName, PayloadOptions payloadOptions)

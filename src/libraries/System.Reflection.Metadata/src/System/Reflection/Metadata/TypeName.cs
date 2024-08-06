@@ -414,23 +414,26 @@ namespace System.Reflection.Metadata
 
 #if SYSTEM_REFLECTION_METADATA
         /// <summary>
-        /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name and declaring type.
+        /// Creates a new <see cref="TypeName" /> object that represents current simple name with provided assembly name.
         /// </summary>
-        /// <param name="declaringType">Declaring type name.</param>
         /// <param name="assemblyName">Assembly name.</param>
         /// <returns>Created simple name.</returns>
         /// <exception cref="InvalidOperationException">The current type name is not simple.</exception>
-        public TypeName MakeSimpleTypeName(TypeName? declaringType = null, AssemblyNameInfo? assemblyName = null)
+        public TypeName MakeSimpleTypeName(AssemblyNameInfo? assemblyName)
         {
             if (!IsSimple)
             {
                 TypeNameParserHelpers.ThrowInvalidOperation_NotSimpleName(FullName);
             }
 
+            TypeName? declaringType = IsNested
+                ? DeclaringType.MakeSimpleTypeName(assemblyName)
+                : null;
+
             return new TypeName(fullName: FullName,
                 assemblyName: assemblyName,
                 elementOrGenericType: null,
-                declaringType: IsNested ? declaringType ?? DeclaringType : null,
+                declaringType: declaringType,
                 genericTypeArguments: ImmutableArray<TypeName>.Empty);
         }
 

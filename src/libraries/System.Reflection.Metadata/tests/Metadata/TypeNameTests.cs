@@ -550,7 +550,58 @@ namespace System.Reflection.Metadata.Tests
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => typeName.MakeSimpleTypeName());
+                Assert.Throws<InvalidOperationException>(() => typeName.MakeSimpleTypeName(assemblyName: null));
+            }
+        }
+
+        [Theory]
+        [InlineData("Declaring+Nested")]
+        [InlineData("Declaring+Nested, Lib")]
+        [InlineData("Declaring+Deep+Deeper+Nested")]
+        [InlineData("Declaring+Deep+Deeper+Nested, Lib")]
+        public void MakeSimpleTypeName_NestedNames(string name)
+        {
+            AssemblyNameInfo assemblyName = new("New");
+            TypeName parsed = TypeName.Parse(name.AsSpan());
+            TypeName made = parsed.MakeSimpleTypeName(assemblyName);
+
+            VerifyNestedNames(parsed, made, assemblyName);
+        }
+
+        [Theory]
+        [InlineData(typeof(NestedNonGeneric_0.NestedGeneric_1<int>))]
+        [InlineData(typeof(NestedGeneric_0<int>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedNonGeneric_1))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedNonGeneric_2))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        public void MakeGenericTypeName_NestedNames(Type type)
+        {
+            AssemblyNameInfo assemblyName = new("New");
+            TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
+            TypeName made = parsed.GetGenericTypeDefinition().MakeSimpleTypeName(assemblyName).MakeGenericTypeName(parsed.GetGenericArguments());
+
+            VerifyNestedNames(parsed, made, assemblyName);
+        }
+
+        private static void VerifyNestedNames(TypeName parsed, TypeName made, AssemblyNameInfo assemblyName)
+        {
+            while (true)
+            {
+                Assert.Equal(parsed.Name, made.Name);
+                Assert.Equal(parsed.FullName, made.FullName);
+                Assert.Equal(assemblyName, made.AssemblyName);
+                Assert.NotEqual(parsed.AssemblyQualifiedName, made.AssemblyQualifiedName);
+                Assert.EndsWith(assemblyName.FullName, made.AssemblyQualifiedName);
+
+                if (!parsed.IsNested)
+                {
+                    break;
+                }
+
+                parsed = parsed.DeclaringType;
+                made = made.DeclaringType;
             }
         }
 
@@ -809,6 +860,8 @@ namespace System.Reflection.Metadata.Tests
         public class NestedNonGeneric_0
         {
             public class NestedNonGeneric_1 { }
+
+            public class NestedGeneric_1<T> { }
         }
 
         public class NestedGeneric_0<T1>
@@ -819,7 +872,10 @@ namespace System.Reflection.Metadata.Tests
                 {
                     public class NestedNonGeneric_3 { }
                 }
+
+                public class NestedNonGeneric_2 { }
             }
+            public class NestedNonGeneric_1 { }
         }
     }
 }
