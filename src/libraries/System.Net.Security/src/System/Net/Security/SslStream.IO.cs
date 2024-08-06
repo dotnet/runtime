@@ -16,7 +16,7 @@ namespace System.Net.Security
     public partial class SslStream
     {
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
-        private int _nestedAuth;
+        private NestedState _nestedAuth;
         private bool _isRenego;
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
@@ -32,10 +32,14 @@ namespace System.Net.Security
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
-        // 0 = no handshake
-        // 1 = handshake completed, connection opened
-        // 2 = SslStream disposed, connection closed
-        private int _connectionOpenedStatus;
+        private enum ConnectionStatus
+        {
+            NoHandshake = 0,
+            HandshakeCompleted = 1, // connection opened
+            Disposed = 2, // connection closed
+        }
+
+        private ConnectionStatus _connectionOpenedStatus;
 
         private void SetException(Exception e)
         {
@@ -56,10 +60,10 @@ namespace System.Net.Security
 
             // Ensure a Read or Auth operation is not in progress,
             // block potential future read and auth operations since SslStream is disposing.
-            // This leaves the _nestedRead = 2 and _nestedAuth = 2, but that's ok, since
+            // This leaves the _nestedRead = StreamDisposed and _nestedAuth = StreamDisposed, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.Exchange(ref _nestedRead, StreamDisposed) == StreamNotInUse &&
-                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse)
+            if (Interlocked.Exchange(ref _nestedRead, NestedState.StreamDisposed) == NestedState.StreamNotInUse &&
+                Interlocked.Exchange(ref _nestedAuth, NestedState.StreamDisposed) == NestedState.StreamNotInUse)
             {
                 _buffer.ReturnBuffer();
             }
@@ -73,7 +77,7 @@ namespace System.Net.Security
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
                 // Set the status to disposed. If it was opened before, log ConnectionClosed
-                if (Interlocked.Exchange(ref _connectionOpenedStatus, 2) == 1)
+                if (Interlocked.Exchange(ref _connectionOpenedStatus, ConnectionStatus.Disposed) == ConnectionStatus.HandshakeCompleted)
                 {
                     NetSecurityTelemetry.Log.ConnectionClosed(GetSslProtocolInternal());
                 }
@@ -106,7 +110,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled())
+            if (NetSecurityTelemetry.AnyTelemetryEnabled())
             {
                 return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
@@ -120,9 +124,19 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
-            long startingTimestamp = Stopwatch.GetTimestamp();
+            long startingTimestamp;
+            if (NetSecurityTelemetry.Log.IsEnabled())
+            {
+                NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
+                startingTimestamp = Stopwatch.GetTimestamp();
+            }
+            else
+            {
+                startingTimestamp = 0;
+            }
 
+            Activity? activity = NetSecurityTelemetry.StartActivity(this);
+            Exception? exception = null;
             try
             {
                 Task task = isAsync ?
@@ -131,16 +145,28 @@ namespace System.Net.Security
 
                 await task.ConfigureAwait(false);
 
-                // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
-                // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
-                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
+                if (startingTimestamp is not 0)
+                {
+                    // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == ConnectionStatus.Disposed
+                    // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                    bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, ConnectionStatus.HandshakeCompleted, ConnectionStatus.NoHandshake) == ConnectionStatus.NoHandshake;
+                    SslProtocols protocol = GetSslProtocolInternal();
+                    NetSecurityTelemetry.Log.HandshakeCompleted(protocol, startingTimestamp, connectionOpen);
+                }
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                exception = ex;
+                if (startingTimestamp is not 0)
+                {
+                    NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                }
+
                 throw;
+            }
+            finally
+            {
+                NetSecurityTelemetry.StopActivity(activity, exception, this);
             }
         }
 
@@ -165,22 +191,22 @@ namespace System.Net.Security
         private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.CompareExchange(ref _nestedAuth, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedAuth, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedAuth == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedAuth == NestedState.StreamDisposed, this);
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
-            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == NestedState.StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // Write is different since we do not do anything special in Dispose
-            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) != StreamNotInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, NestedState.StreamInUse) != NestedState.StreamNotInUse)
             {
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
@@ -243,8 +269,8 @@ namespace System.Net.Security
 
                 token.ReleasePayload();
 
-                _nestedRead = StreamNotInUse;
-                _nestedWrite = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
+                _nestedWrite = NestedState.StreamNotInUse;
                 _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
@@ -262,7 +288,7 @@ namespace System.Net.Security
             if (reAuthenticationData == null)
             {
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
-                if (Interlocked.Exchange(ref _nestedAuth, StreamInUse) == StreamInUse)
+                if (Interlocked.Exchange(ref _nestedAuth, NestedState.StreamInUse) == NestedState.StreamInUse)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
@@ -356,7 +382,7 @@ namespace System.Net.Security
             {
                 if (reAuthenticationData == null)
                 {
-                    _nestedAuth = StreamNotInUse;
+                    _nestedAuth = NestedState.StreamNotInUse;
                     _isRenego = false;
                 }
 
@@ -525,7 +551,7 @@ namespace System.Net.Security
         {
             ProcessHandshakeSuccess();
 
-            if (_nestedAuth != StreamInUse)
+            if (_nestedAuth != NestedState.StreamInUse)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
                 // ignore certificates received outside of handshake or requested renegotiation.
@@ -775,7 +801,7 @@ namespace System.Net.Security
                     // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
                     // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
 
-                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != 0)
+                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
                     {
                         // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
                         // Tls1.3 does not have renegotiation. However on Windows this error code is used
@@ -798,9 +824,9 @@ namespace System.Net.Security
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
 
-            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, NestedState.StreamInUse, NestedState.StreamNotInUse) != NestedState.StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == NestedState.StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
@@ -925,7 +951,7 @@ namespace System.Net.Security
             finally
             {
                 ReturnReadBufferIfEmpty();
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
             }
         }
 
@@ -940,7 +966,7 @@ namespace System.Net.Security
                 return;
             }
 
-            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) == StreamInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, NestedState.StreamInUse) == NestedState.StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
@@ -963,7 +989,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _nestedWrite = StreamNotInUse;
+                _nestedWrite = NestedState.StreamNotInUse;
             }
         }
 

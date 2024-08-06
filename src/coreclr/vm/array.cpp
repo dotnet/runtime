@@ -185,7 +185,6 @@ void ArrayClass::InitArrayMethodDesc(
     PCCOR_SIGNATURE pShortSig,
     DWORD   cShortSig,
     DWORD   dwVtableSlot,
-    LoaderAllocator *pLoaderAllocator,
     AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -198,7 +197,7 @@ void ArrayClass::InitArrayMethodDesc(
     pNewMD->SetStoredMethodSig(pShortSig, cShortSig);
 
     _ASSERTE(!pNewMD->MayHaveNativeCode());
-    pNewMD->SetTemporaryEntryPoint(pLoaderAllocator, pamTracker);
+    pNewMD->SetTemporaryEntryPoint(pamTracker);
 
 #ifdef _DEBUG
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
@@ -509,7 +508,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
             pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
 
-            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pAllocator, pamTracker);
+            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pamTracker);
 
             dwMethodIndex++;
         }

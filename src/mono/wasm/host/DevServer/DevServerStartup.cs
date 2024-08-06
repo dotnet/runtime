@@ -57,7 +57,9 @@ internal sealed class DevServerStartup
             });
         }
 
-        app.UseBlazorFrameworkFiles();
+        //app.UseBlazorFrameworkFiles();
+        app.UseRouting();
+
         app.UseStaticFiles(new StaticFileOptions
         {
             // In development, serve everything, as there's no other way to configure it.
@@ -92,6 +94,8 @@ internal sealed class DevServerStartup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapStaticAssets(options.StaticWebAssetsEndpointsPath);
+
             endpoints.MapFallbackToFile("index.html", new StaticFileOptions
             {
                 OnPrepareResponse = fileContext =>

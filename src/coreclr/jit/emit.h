@@ -2745,6 +2745,7 @@ private:
 #if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
+    bool emitGCDisabled();
 #endif // !defined(JIT32_GCENCODER)
 
 #if defined(TARGET_XARCH)
@@ -3159,13 +3160,14 @@ public:
     /*    The following is used to distinguish helper vs non-helper calls   */
     /************************************************************************/
 
-    static bool emitNoGChelper(CorInfoHelpFunc helpFunc);
+private:
     static bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd);
 
     /************************************************************************/
     /*         The following logic keeps track of live GC ref values        */
     /************************************************************************/
 
+public:
     bool emitFullArgInfo; // full arg info (including non-ptr arg)?
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?

@@ -59,6 +59,33 @@ internal readonly struct Loader_1 : ILoader
         return module.GetLoadedMetadata(out size);
     }
 
+    AvailableMetadataType ILoader.GetAvailableMetadataType(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+
+        AvailableMetadataType flags = AvailableMetadataType.None;
+
+        if (module.DynamicMetadata != TargetPointer.Null)
+            flags |= AvailableMetadataType.ReadWriteSavedCopy;
+        else
+            flags |= AvailableMetadataType.ReadOnly;
+
+        // TODO(cdac) implement direct reading of unsaved ReadWrite metadata
+        return flags;
+    }
+
+    TargetPointer ILoader.GetReadWriteSavedMetadataAddress(ModuleHandle handle, out ulong size)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        Data.DynamicMetadata dynamicMetadata = _target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);
+        TargetPointer result = dynamicMetadata.Data;
+        size = dynamicMetadata.Size;
+        return result;
+    }
+
+    TargetEcmaMetadata ILoader.GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
+
+
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);

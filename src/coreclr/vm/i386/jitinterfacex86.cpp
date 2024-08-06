@@ -802,8 +802,6 @@ static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
 };
 #endif // WRITE_BARRIER_CHECK
 
-#define DEBUG_RANDOM_BARRIER_CHECK DbgGetEXETimeStamp() % 7 == 4
-
 /*********************************************************************/
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
@@ -913,9 +911,8 @@ void InitJITHelpers1()
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
-        // Use the slow one from time to time in a debug build because
-        // there are some good asserts in the unoptimized one
-        if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK) {
+        // Use the slow one for write barrier checks build because it has some good asserts
+        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
             pfunc = &pBufRW[0];
             *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
             *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
@@ -959,7 +956,7 @@ void ValidateWriteBarrierHelpers()
 
 #ifdef WRITE_BARRIER_CHECK
     // write barrier checking uses the slower helpers that we don't bash so there is no need for validation
-    if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DEBUG_RANDOM_BARRIER_CHECK)
+    if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)
         return;
 #endif // WRITE_BARRIER_CHECK
 

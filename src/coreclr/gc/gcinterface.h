@@ -1046,7 +1046,9 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_FINALIZE           = 1,
     GC_ALLOC_CONTAINS_REF       = 2,
     GC_ALLOC_ALIGN8_BIAS        = 4,
-    GC_ALLOC_ALIGN8             = 8,
+    GC_ALLOC_ALIGN8             = 8, // Only implies the initial allocation is 8 byte aligned.
+                                     // Preserving the alignment across relocation depends on
+                                     // RESPECT_LARGE_ALIGNMENT also being defined.
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
     GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
     GC_ALLOC_PINNED_OBJECT_HEAP = 64,

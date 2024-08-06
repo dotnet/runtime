@@ -152,6 +152,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         {
             srcCount = 0;
 
@@ -1215,104 +1216,32 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
         }
 
-    // number of args to a call =
-    // callRegArgs + (callargs - placeholders, setup, etc)
-    // there is an explicit thisPtr but it is redundant
-
     bool callHasFloatRegArgs = false;
 
-    // First, determine internal registers.
-    // We will need one for any float arguments to a varArgs call.
-    for (CallArg& arg : call->gtArgs.LateArgs())
+#ifdef WINDOWS_AMD64_ABI
+    // First, determine internal registers. We will need one for any float
+    // arguments to a varArgs call, since they must be passed in a
+    // corresponding integer register.
+    if (compFeatureVarArg() && call->IsVarargs())
     {
-        GenTree* argNode = arg.GetLateNode();
-        if (argNode->OperIsPutArgReg())
+        for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
-        }
-        else if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                assert(use.GetNode()->OperIsPutArgReg());
-                HandleFloatVarArgs(call, use.GetNode(), &callHasFloatRegArgs);
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
+                {
+                    regNumber argReg           = seg.GetRegister();
+                    regNumber correspondingReg = compiler->getCallArgIntRegister(argReg);
+                    buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(correspondingReg));
+                    callHasFloatRegArgs = true;
+                }
             }
         }
     }
+#endif
 
-    // Now, count reg args
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        // By this point, lowering has ensured that all call arguments are one of the following:
-        // - a field list
-        // - a put arg
-        //
-        // Note that this property is statically checked by LinearScan::CheckBlock.
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        // Each register argument corresponds to one source.
-        if (argNode->OperIsPutArgReg())
-        {
-            srcCount++;
-            BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
-        }
-#ifdef UNIX_AMD64_ABI
-        else if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                assert(use.GetNode()->OperIsPutArgReg());
-                srcCount++;
-                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
-            }
-        }
-#endif // UNIX_AMD64_ABI
-
-#ifdef DEBUG
-        // In DEBUG only, check validity with respect to the arg table entry.
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            // late arg that is not passed in a register
-            assert(argNode->gtOper == GT_PUTARG_STK);
-
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-            // If the node is TYP_STRUCT and it is put on stack with
-            // putarg_stk operation, we consume and produce no registers.
-            // In this case the embedded Blk node should not produce
-            // registers too since it is contained.
-            // Note that if it is a SIMD type the argument will be in a register.
-            if (argNode->TypeGet() == TYP_STRUCT)
-            {
-                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_BLK);
-                assert(argNode->gtGetOp1()->isContained());
-            }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
-            continue;
-        }
-#ifdef UNIX_AMD64_ABI
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            assert(argNode->isContained());
-            assert(varTypeIsStruct(arg.GetSignatureType()));
-
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                const regNumber argReg = abiInfo.GetRegNum(regIndex);
-                assert(use.GetNode()->GetRegNum() == argReg);
-                regIndex++;
-            }
-        }
-        else
-#endif // UNIX_AMD64_ABI
-        {
-            const regNumber argReg = abiInfo.GetRegNum();
-            assert(argNode->GetRegNum() == argReg);
-        }
-#endif // DEBUG
-    }
+    srcCount += BuildCallArgUses(call);
 
     // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
@@ -1328,7 +1257,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
         }
 #ifdef TARGET_X86
-        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
+                 !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //

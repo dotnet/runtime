@@ -130,8 +130,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             _stream = stream;
 
@@ -288,11 +288,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    if (_streamsInUse == 0)
-                    {
-                        MarkConnectionAsNotIdle();
-                    }
-
                     _streamsInUse++;
                     return true;
                 }
@@ -324,8 +319,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse == 0)
                 {
-                    MarkConnectionAsIdle();
-
                     if (_shutdown)
                     {
                         FinalTeardown();
@@ -1606,6 +1599,11 @@ namespace System.Net.Http
                     ThrowRetry(SR.net_http_request_aborted);
                 }
 
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsNotIdle();
+                }
+
                 // Now that we're holding the lock, configure the stream.  The lock must be held while
                 // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                 // across setting the initial window size (available credit) and storing the stream into
@@ -1844,7 +1842,6 @@ namespace System.Net.Http
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
-
             _stream.Dispose();
 
             _connectionWindow.Dispose();
@@ -1988,6 +1985,7 @@ namespace System.Net.Http
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
 
             try
             {
@@ -2071,6 +2069,11 @@ namespace System.Net.Http
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
+                }
+
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsIdle();
                 }
             }
 
