@@ -442,6 +442,11 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 		if (callback_function != NULL) {
 			EventPipeProvider *provider = provider_callback_data->provider;
 			provider->uninvoked_prepared_callbacks_counter--;
+			if (provider->uninvoked_prepared_callbacks_counter == 0 && provider->callback_func == NULL) {
+				// ep_delete_provider deferred provider deletion and is waiting for all in-flight callbacks
+				// to complete. This is the last callback, so signal completion.
+				ep_rt_wait_event_set (&provider->callbacks_complete_event);
+			}
 		}
 	EP_LOCK_EXIT (section1)
 
