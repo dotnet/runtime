@@ -9327,18 +9327,9 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     JITDUMP(
         "  ..and they are close. Trying to move the following range (where * are nodes part of the data flow):\n\n");
 #ifdef DEBUG
-    bool       isClosed;
-    const bool isMarked      = (prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0;
-    GenTree*   startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
-    GenTree*   endDumpNode   = indir->gtNext;
-
-    // GetTreeRange will unset LIR::Flags::Mark on prevIndir,
-    // so make sure to restore it before continuing
-    if (isMarked)
-    {
-        assert((prevIndir->gtLIRFlags & LIR::Flags::Mark) == 0);
-        prevIndir->gtLIRFlags |= LIR::Flags::Mark;
-    }
+    bool     isClosed;
+    GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
+    GenTree* endDumpNode   = indir->gtNext;
 
     auto dumpWithMarks = [=]() {
         if (!comp->verbose)
