@@ -182,7 +182,6 @@ struct _InterpCallInfo {
 };
 
 typedef enum {
-	RELOC_SHORT_BRANCH,
 	RELOC_LONG_BRANCH,
 	RELOC_SWITCH
 } RelocType;
@@ -522,7 +521,7 @@ void
 interp_link_bblocks (TransformData *td, InterpBasicBlock *from, InterpBasicBlock *to);
 
 int
-interp_compute_native_offset_estimates (TransformData *td, gboolean final_code);
+interp_compute_native_offset_estimates (TransformData *td);
 
 void
 interp_optimize_code (TransformData *td);

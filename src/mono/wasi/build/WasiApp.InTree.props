@@ -7,7 +7,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
+    <TrimMode>full</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 </Project>

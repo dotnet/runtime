@@ -719,9 +719,9 @@ namespace System.Net.Http.Functional.Tests
                 Action<RecordedCounter> check2 = connectionNoLongerIdle;
                 Action<RecordedCounter> check3 = connectionIsActive;
 
-                if (UseVersion.Major > 1)
+                if (UseVersion.Major > 2)
                 {
-                    // With HTTP/2 and HTTP/3, the idle state change is emitted before RequestsQueueDuration.
+                    // With HTTP/3, the idle state change is emitted before RequestsQueueDuration.
                     check1 = connectionNoLongerIdle;
                     check2 = connectionIsActive;
                     check3 = requestsQueueDuration;
