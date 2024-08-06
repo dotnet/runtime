@@ -1343,34 +1343,18 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            ComputeRareFlags(factory);
+            ComputeRareFlags();
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
         }
 
-        private void ComputeRareFlags(NodeFactory factory)
+        private void ComputeRareFlags()
         {
             uint flags = 0;
-
-            MetadataType metadataType = _type as MetadataType;
-
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-            {
-                flags |= (uint)EETypeRareFlags.HasCctorFlag;
-            }
 
             if (_type.RequiresAlign8())
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-            }
-
-            TargetArchitecture targetArch = _type.Context.Target.Architecture;
-            if (metadataType != null &&
-                (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARM64) &&
-                metadataType.IsHomogeneousAggregate)
-            {
-                flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
 
             if (_type.IsByRefLike)
