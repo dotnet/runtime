@@ -732,7 +732,14 @@ namespace Internal.Runtime
         {
             get
             {
-                return (Flags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) == (uint)EETypeFlagsEx.RequiresAlign8Flag;
+                // Use the same trick as HasComponentSize. HasComponentSizeFlag is sign bit, so if
+                // it's set then _uFlags are negative. Once we mask the value we get negative value
+                // for HasComponentSize == true, 0 for HasComponentSize == false && RequiresAlign8 == false
+                // and positive value for HasComponentSize == false && RequiresAlign8 == true.
+                //
+                // return (Flags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) == (uint)EETypeFlagsEx.RequiresAlign8Flag;
+
+                return (int)(_uFlags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) > 0;
             }
         }
 
