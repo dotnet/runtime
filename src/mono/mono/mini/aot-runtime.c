@@ -2118,6 +2118,8 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		guint8 *blob;
 		void *handle;
 
+		g_assert (info);
+		
 		// Copy aotid to MonoImage
 		memcpy(&assembly->image->aotid, info->aotid, 16);
 		
