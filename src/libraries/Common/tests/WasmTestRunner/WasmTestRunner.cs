@@ -31,13 +31,13 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         return task.Result;
     }
 
-    internal static void DispatchWasiEventLoop()
+    private static void DispatchWasiEventLoop()
     {
         CallDispatchWasiEventLoop((Thread)null!);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-        static extern void CallDispatchWasiEventLoop(Thread t);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
+    private static extern void CallDispatchWasiEventLoop(Thread t);
 
 #else
     public static Task<int> Main(string[] args)

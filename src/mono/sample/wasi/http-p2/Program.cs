@@ -45,7 +45,8 @@ public static class WasiMainWrapper
         }
         return task.Result;
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-        static extern void CallDispatchWasiEventLoop(Thread t);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
+    private static extern void CallDispatchWasiEventLoop(Thread t);
 }

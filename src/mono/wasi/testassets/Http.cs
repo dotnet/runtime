@@ -13,6 +13,10 @@ public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync()
     {
+        Console.WriteLine("Hello, Wasi Console!");
+        for (int i = 0; i < args.Length; i ++)
+            Console.WriteLine($"args[{i}] = {args[i]}");
+
         using HttpClient client = new();
         client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.Accept.Clear();
@@ -23,7 +27,6 @@ public static class WasiMainWrapper
         var query="https://api.github.com/orgs/dotnet/repos?per_page=1";
         var json = await client.GetStringAsync(query);
 
-        Console.WriteLine("Hello, Wasi Console!");
         Console.WriteLine();
         Console.WriteLine("GET "+query);
         Console.WriteLine();
@@ -46,7 +49,8 @@ public static class WasiMainWrapper
         }
         return task.Result;
 
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-        static extern void CallDispatchWasiEventLoop(Thread t);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
+    private static extern void CallDispatchWasiEventLoop(Thread t);
 }
