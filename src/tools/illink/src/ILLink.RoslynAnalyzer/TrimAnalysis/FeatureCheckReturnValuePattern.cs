@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
@@ -29,22 +30,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			OwningSymbol = owningSymbol;
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
+			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation (), reportDiagnostic);
 			// For now, feature check validation is enabled only when trim analysis is enabled.
 			if (!context.EnableTrimAnalyzer)
-				return diagnosticContext.Diagnostics;
+				return;
 
 			if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean || OwningSymbol.SetMethod != null) {
 				// Warn about invalid feature checks (non-static or non-bool properties or properties with setter)
 				diagnosticContext.AddDiagnostic (
 					DiagnosticId.InvalidFeatureGuard);
-				return diagnosticContext.Diagnostics;
+				return;
 			}
 
 			if (ReturnValue == FeatureChecksValue.All)
-				return diagnosticContext.Diagnostics;
+				return;
 
 			ValueSet<string> returnValueFeatures = ReturnValue.EnabledFeatures;
 			// For any analyzer-supported feature that this property is declared to guard,
@@ -63,8 +64,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					}
 				}
 			}
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }

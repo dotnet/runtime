@@ -1,12 +1,12 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
@@ -103,37 +103,25 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			Debug.Assert (existingPattern == pattern, "Return values should be identical");
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			foreach (var assignmentPattern in AssignmentPatterns.Values) {
-				foreach (var diagnostic in assignmentPattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var assignmentPattern in AssignmentPatterns.Values)
+				assignmentPattern.ReportDiagnostics (context, reportDiagnostic);
 
-			foreach (var fieldAccessPattern in FieldAccessPatterns.Values) {
-				foreach (var diagnostic in fieldAccessPattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var fieldAccessPattern in FieldAccessPatterns.Values)
+				fieldAccessPattern.ReportDiagnostics (context, reportDiagnostic);
 
-			foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values) {
-				foreach (var diagnostic in genericInstantiationPattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var genericInstantiationPattern in GenericInstantiationPatterns.Values)
+				genericInstantiationPattern.ReportDiagnostics (context, reportDiagnostic);
 
-			foreach (var methodCallPattern in MethodCallPatterns.Values) {
-				foreach (var diagnostic in methodCallPattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var methodCallPattern in MethodCallPatterns.Values)
+				methodCallPattern.ReportDiagnostics (context, reportDiagnostic);
 
-			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
-				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values)
+				reflectionAccessPattern.ReportDiagnostics (context, reportDiagnostic);
 
-			foreach (var returnValuePattern in FeatureCheckReturnValuePatterns.Values) {
-				foreach (var diagnostic in returnValuePattern.CollectDiagnostics (context))
-					yield return diagnostic;
-			}
+			foreach (var returnValuePattern in FeatureCheckReturnValuePatterns.Values)
+				returnValuePattern.ReportDiagnostics (context, reportDiagnostic);
 		}
 	}
 }
