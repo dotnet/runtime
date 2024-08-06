@@ -832,11 +832,7 @@ namespace System.Buffers.Text
                 right &= mask8F;
             }
 
-#if NET9_0_OR_GREATER
-            return Vector128.ShuffleUnsafe(left, right);
-#else
-            return Base64Helper.ShuffleUnsafe(left, right);
-#endif
+            return Base64Helper.ShuffleUnsafeModified(left, right);
         }
 
 #if NET9_0_OR_GREATER
