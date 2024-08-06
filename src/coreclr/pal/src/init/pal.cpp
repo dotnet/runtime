@@ -240,7 +240,7 @@ Abstract:
   pthread_attr_getstack is about 128kB, but this limit is not fixed and
   the stack can grow dynamically. The problem is that it makes the
   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack
-  to fail for real life scenarios like e.g. compilation of corefx.
+  to fail for real life scenarios like e.g. compilation of runtime libraries.
   Since there is no real fixed limit for the stack, the code below
   ensures moving the stack limit to a value that makes reasonable
   real life scenarios work.

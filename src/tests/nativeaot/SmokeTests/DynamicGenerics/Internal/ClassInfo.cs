@@ -3,7 +3,7 @@
 
 using System;
 
-namespace CoreFXTestLibrary.Internal
+namespace RuntimeLibrariesTest.Internal
 {
     // This is spread over two classes so the non-generic can be used in TestInfo
     // and the generic version can be used in the generated main when creating the

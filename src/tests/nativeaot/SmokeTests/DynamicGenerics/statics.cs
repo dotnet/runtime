@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Linq;
 using System.Text;
 using System.Runtime.CompilerServices;
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 using TypeOfRepo;
 
 

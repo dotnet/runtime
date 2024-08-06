@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 using TypeOfRepo;
 
 

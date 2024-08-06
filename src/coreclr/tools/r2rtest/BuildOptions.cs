@@ -72,7 +72,7 @@ namespace R2RTest
         /// <summary>
         /// Creates compiler runner instances for each supported compiler based on the populated BuildOptions.
         /// </summary>
-        /// <param name="isFramework">True if compiling the CoreFX framework assemblies</param>
+        /// <param name="isFramework">True if compiling the runtime libraries assemblies</param>
         /// <param name="referencePaths">Optional set of reference paths to use instead of BuildOptions.ReferencePaths()</param>
         public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null, string overrideOutputPath = null)
         {

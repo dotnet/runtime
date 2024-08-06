@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 using TypeOfRepo;
 
 namespace UniversalGen

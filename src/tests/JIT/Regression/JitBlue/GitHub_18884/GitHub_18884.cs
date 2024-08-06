@@ -67,7 +67,7 @@ public static class GitHub_18884
         }
     }
 
-    // While fixing the above failures, this test (from corefx) failed.
+    // While fixing the above failures, this test (from runtime libraries) failed.
     internal static void Set_Mask_AllTest()
     {
         BitVector32 flip = new BitVector32();

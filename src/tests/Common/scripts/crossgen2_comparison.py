@@ -10,7 +10,7 @@
 # Notes:
 #
 # Script that
-#   1) runs crossgen on System.Private.CoreLib.dll and CoreFX assemblies and
+#   1) runs crossgen on System.Private.CoreLib.dll, runtime libraries assemblies and
 #   collects information about the crossgen behaviour (such as the return code,
 #   stdout/stderr streams, SHA256 hash sum of the resulting file).
 #   2) compares the collected information from two crossgen scenarios (e.g.

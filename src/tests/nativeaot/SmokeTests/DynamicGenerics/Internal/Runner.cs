@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using System.Reflection;
 
-namespace CoreFXTestLibrary.Internal
+namespace RuntimeLibrariesTest.Internal
 {
     public static class Runner
     {

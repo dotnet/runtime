@@ -583,11 +583,11 @@ else()
 
         int main(void)
         {
-            int fd = shm_open(\"/corefx_configure_shm_open\", O_CREAT | O_RDWR, 0777);
+            int fd = shm_open(\"/dotnet_configure_shm_open\", O_CREAT | O_RDWR, 0777);
             if (fd == -1)
                 return -1;
 
-            shm_unlink(\"/corefx_configure_shm_open\");
+            shm_unlink(\"/dotnet_configure_shm_open\");
 
             // NOTE: PROT_EXEC and MAP_PRIVATE don't work well with shm_open
             //       on at least the current version of Mac OS X

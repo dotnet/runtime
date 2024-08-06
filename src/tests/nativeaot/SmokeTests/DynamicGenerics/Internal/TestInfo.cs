@@ -4,7 +4,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace CoreFXTestLibrary.Internal
+namespace RuntimeLibrariesTest.Internal
 {
     public class TestInfo
     {

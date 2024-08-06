@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This was copied from corefx\src\System.Numerics.Vectors\tests\Vector3Tests.cs.
+// This was copied from src/libraries/System.Numerics.Vectors/tests/Vector3Tests.cs.
 // It exposed a bug in morph, in which a SIMD field was being morphed in
 // a MACK_Ind context, even though it was under a GT_IND(G_ADDR()).
 // This was https://github.com/dotnet/runtime/issues/20080, and was "fixed" with

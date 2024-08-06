@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 include(CheckCCompilerFlag)
 
-project(CoreFX C)
+project(RuntimeLibraries C)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)

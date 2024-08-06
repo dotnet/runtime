@@ -82,11 +82,11 @@ $(REPO_ROOT)/dotnet.sh build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Rel
 ```
 Alternatively, you could execute the following command from `$(REPO_ROOT)/src/mono`
 ```
-make run-tests-corefx-<library>
+make run-tests-libs-<library>
 ```
 For example, the following command is for running System.Runtime tests:
 ```
-make run-tests-corefx-System.Runtime
+make run-tests-libs-System.Runtime
 ```
 
 ### Debugging libraries tests on Desktop Mono

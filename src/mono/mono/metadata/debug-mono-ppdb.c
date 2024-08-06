@@ -110,7 +110,7 @@ mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age
 		}
 		if (debug_dir.type == DEBUG_DIR_ENTRY_PPDB && debug_dir.major_version >= 0x100 && debug_dir.minor_version == 0x100) {
 			/* Embedded PPDB blob */
-			/* See src/System.Reflection.Metadata/src/System/Reflection/PortableExecutable/PEReader.EmbeddedPortablePdb.cs in corefx */
+			/* See src/libraries/System.Reflection.Metadata/src/System/Reflection/PortableExecutable/PEReader.EmbeddedPortablePdb.cs */
 			data = (guint8*)(image->raw_data + debug_dir.pointer);
 			guint32 magic = read32 (data);
 			g_assert (magic == EMBEDDED_PPDB_MAGIC);

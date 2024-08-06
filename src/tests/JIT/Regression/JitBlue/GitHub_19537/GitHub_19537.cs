@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Xunit;
 
-// Test derived from dotnet/corefx src\System.Numerics.Vectors\src\System\Numerics\Matrix4x4.cs, op_Multiply().
+// Test derived from src/libraries/System.Private.CoreLib/src/System/Numerics/Matrix4x4.cs, op_Multiply().
 // This was an ARM32-specific bug for addressing local variables as floats. ARM32 floating-point instructions
 // have a different offset range than integer instructions. If the local variable itself is a struct, but the
 // instruction generated is a float local field, then we were computing the offset as integer, but the actual

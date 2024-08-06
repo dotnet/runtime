@@ -758,7 +758,7 @@ PhaseStatus Compiler::fgCloneFinally()
             continue;
         }
 
-        // Empirical studies from CoreCLR and CoreFX show that less
+        // Empirical studies from runtime repo show that less
         // that 1% of finally regions have more than 15
         // statements. So, to avoid potentially excessive code growth,
         // only clone finallys that have 15 or fewer statements.
