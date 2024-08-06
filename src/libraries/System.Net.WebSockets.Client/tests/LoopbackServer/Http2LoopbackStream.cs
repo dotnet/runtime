@@ -69,7 +69,7 @@ namespace System.Net.Test.Common
 
         public override async ValueTask DisposeAsync()
         {
-            _debugLog?.Invoke($"Http2LoopbackStream.DisposeAsync() for stream {_streamId}; readEnded={_readEnded}; stack={Environment.StackTrace}");
+            _debugLog?.Invoke($"Http2LoopbackStream.DisposeAsync() for stream {_streamId}; readEnded={_readEnded}");
             try
             {
                 await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);

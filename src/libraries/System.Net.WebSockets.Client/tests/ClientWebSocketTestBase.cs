@@ -2,18 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using TestUtilities;
 
 using Xunit;
 using Xunit.Abstractions;
-using System.Net.Http;
-using System.Diagnostics;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketTestBase
+    public class ClientWebSocketTestBase : IDisposable
     {
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
         public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoHeadersServers();
@@ -23,13 +25,40 @@ namespace System.Net.WebSockets.Client.Tests
             new object[] { o[0], true }
         }).ToArray();
 
+        public static readonly bool[] Bool_Values = new[] { false, true };
+        public static readonly bool[] UseSsl_Values = PlatformDetection.SupportsAlpn ? Bool_Values : new[] { false };
+        public static readonly object[][] UseSsl_MemberData = ToMemberData(UseSsl_Values);
+
+        public static object[][] ToMemberData<T>(IEnumerable<T> data)
+            => data.Select(a => new object[] { a }).ToArray();
+
+        public static object[][] ToMemberData<TA, TB>(IEnumerable<TA> dataA, IEnumerable<TB> dataB)
+            => dataA.SelectMany(a => dataB.Select(b => new object[] { a, b })).ToArray();
+
+        public static object[][] ToMemberData<TA, TB, TC>(IEnumerable<TA> dataA, IEnumerable<TB> dataB, IEnumerable<TC> dataC)
+            => dataA.SelectMany(a => dataB.SelectMany(b => dataC.Select(c => new object[] { a, b, c }))).ToArray();
+
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output;
+        public readonly TracingTestCollection? _collection;
 
-        public ClientWebSocketTestBase(ITestOutputHelper output)
+        public ClientWebSocketTestBase(ITestOutputHelper output, TracingTestCollection? collection = null)
         {
             _output = output;
+            _collection = collection;
+
+            if (_collection != null)
+            {
+                _collection._tracePrefix = $"{GetType().Name}#{GetHashCode()}";
+            }
+
+            Trace($"{Environment.NewLine}===== Starting {GetType().Name}#{GetHashCode()} ====={Environment.NewLine}");
+        }
+
+        public void Dispose()
+        {
+            Trace($"{Environment.NewLine}===== Disposing {GetType().Name}#{GetHashCode()} ====={Environment.NewLine}");
         }
 
         public static IEnumerable<object[]> UnavailableWebSocketServers
@@ -146,5 +175,76 @@ namespace System.Net.WebSockets.Client.Tests
             WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
+
+        public void Trace(FormattableString message) => _collection?.Trace(message);
+
+        public void Trace(string message) => _collection?.Trace(message);
+    }
+
+    [CollectionDefinition(nameof(TracingTestCollection), DisableParallelization = true)]
+    public class TracingTestCollection : ICollectionFixture<TracingTestCollection>, IDisposable
+    {
+        private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
+
+        internal string _tracePrefix = "(null)";
+
+        private readonly TestEventListener _listener;
+
+        private static readonly EventHandler<UnobservedTaskExceptionEventArgs> s_eventHandler = static (_, e) =>
+            {
+                lock (s_unobservedExceptions)
+                {
+                    string text = e.Exception.ToString();
+                    s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
+                }
+            };
+
+        private static readonly FieldInfo s_ClientWebSocket_innerWebSocketField =
+            typeof(ClientWebSocket).GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new Exception("Could not find ClientWebSocket._innerWebSocket field");
+        private static readonly PropertyInfo s_WebSocketHandle_WebSocketProperty =
+            typeof(ClientWebSocket).Assembly.GetType("System.Net.WebSockets.WebSocketHandle", throwOnError: true)!
+                .GetProperty("WebSocket", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new Exception("Could not find WebSocketHandle.WebSocket property");
+
+        private static WebSocket GetUnderlyingWebSocket(ClientWebSocket clientWebSocket)
+        {
+            object? innerWebSocket = s_ClientWebSocket_innerWebSocketField.GetValue(clientWebSocket);
+            if (innerWebSocket == null)
+            {
+                throw new Exception("ClientWebSocket._innerWebSocket is null");
+            }
+
+            return (WebSocket)s_WebSocketHandle_WebSocketProperty.GetValue(innerWebSocket);
+        }
+
+        public TracingTestCollection()
+        {
+            Console.WriteLine(Environment.NewLine + "===== Running TracingTestCollection =====" + Environment.NewLine);
+
+            TaskScheduler.UnobservedTaskException += s_eventHandler;
+
+            _listener = new TestEventListener(Trace, enableActivityId: true,  "System.Net.Http", "Private.InternalDiagnostics.System.Net.Http", "Private.InternalDiagnostics.System.Net.WebSockets");
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine(Environment.NewLine + "===== Disposing TracingTestCollection =====" + Environment.NewLine);
+            _listener.Dispose();
+
+            TaskScheduler.UnobservedTaskException -= s_eventHandler;
+            Console.WriteLine($"Unobserved exceptions of {s_unobservedExceptions.Count} different types: {Environment.NewLine}{string.Join(Environment.NewLine + new string('=', 120) + Environment.NewLine, s_unobservedExceptions.Select(pair => $"Count {pair.Value}: {pair.Key}"))}");
+        }
+
+        public void Trace(string message) => Trace((FormattableString)$"{message}");
+
+        public void Trace(FormattableString message)
+        {
+            var str = $"{DateTime.UtcNow:HH:mm:ss.fff} {_tracePrefix} | {message}";
+            lock (Console.Out)
+            {
+                Console.WriteLine(str);
+            }
+        }
     }
 }

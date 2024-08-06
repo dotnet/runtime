@@ -370,7 +370,7 @@ namespace System.Net.Test.Common
         // and will ignore any errors if client has already shutdown
         public async Task ShutdownIgnoringErrorsAsync(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
-            _debugLog?.Invoke($"Http2LoopbackConnection.DisposeAsync() with errorCode={errorCode}; stack={Environment.StackTrace}");
+            _debugLog?.Invoke($"Http2LoopbackConnection.ShutdownIgnoringErrorsAsync() with lastStreamId={lastStreamId}, errorCode={errorCode}");
             try
             {
                 await SendGoAway(lastStreamId, errorCode).ConfigureAwait(false);
