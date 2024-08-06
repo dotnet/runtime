@@ -22912,6 +22912,12 @@ size_t gc_heap::get_total_soh_stable_size()
             total_stable_size += hp->generation_size (max_generation - 1) / 2;
         }
 
+        if (!total_stable_size)
+        {
+            // Setting a temp value before a GC naturally happens (ie, due to allocation).
+            total_stable_size = dd_min_size (g_heaps[0]->dynamic_data_of (max_generation - 1));
+        }
+
         return total_stable_size;
     }
 }
