@@ -6238,6 +6238,7 @@ public:
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
+    bool fgRemoveBlocksOutsideDfsTree();
 
     PhaseStatus fgFindOperOrder();
 
@@ -9529,10 +9530,6 @@ public:
         return false;
 #endif // FEATURE_SIMD
     }
-
-#ifdef FEATURE_HW_INTRINSICS
-    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
-#endif // FEATURE_HW_INTRINSICS
 
 private:
     // Returns true if the TYP_SIMD locals on stack are aligned at their

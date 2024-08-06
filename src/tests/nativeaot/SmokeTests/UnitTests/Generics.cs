@@ -58,6 +58,7 @@ class Generics
         Test99198Regression.Run();
         Test102259Regression.Run();
         Test104913Regression.Run();
+        Test105397Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3626,6 +3627,31 @@ class Generics
             (Type t1, Type t2) = ((IFoo)new Foo()).InvokeInstance<Bar>();
             if (t1 != typeof(Bar) || t2 != typeof(int))
                 throw new Exception();
+        }
+    }
+
+    class Test105397Regression
+    {
+        interface IEnumerable<T> { }
+
+        interface ITest<TResult>
+        {
+            TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using);
+        }
+        class Test<TResult> : ITest<TResult>
+        {
+            public TReturn UsingDatabaseResult<TState, TReturn>(TState state, Func<TResult, TState, TReturn> @using)
+            {
+                return default;
+            }
+        }
+
+        struct GenStruct<T> { }
+
+        public static void Run()
+        {
+            ITest<object> t = new Test<object>();
+            t.UsingDatabaseResult<IEnumerable<IEnumerable<GenStruct<double>>>, int>(null, (x, y) => 1);
         }
     }
 

@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisReflectionAccessPattern
+	internal readonly record struct TrimAnalysisReflectionAccessPattern
 	{
 		public IMethodSymbol ReferencedMethod { get; init; }
 		public IOperation Operation { get; init; }
@@ -30,7 +30,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		public TrimAnalysisReflectionAccessPattern Merge (
-			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice,
 			TrimAnalysisReflectionAccessPattern other)
 		{
@@ -51,14 +50,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
-				foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
-					diagnosticContext.AddDiagnostic (diagnostic);
+				ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod);
 			}
 
-			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic (diag);
-			}
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
 
 			return diagnosticContext.Diagnostics;
 		}

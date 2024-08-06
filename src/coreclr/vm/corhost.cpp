@@ -664,6 +664,15 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     m_fAppDomainCreated = TRUE;
 
+#ifdef FEATURE_PERFTRACING
+    // Initialize RuntimeEventSource
+    {
+        GCX_COOP();
+        MethodDescCallSite initRuntimeEventSource(METHOD__RUNTIME_EVENT_SOURCE__INITIALIZE);
+        initRuntimeEventSource.Call(NULL);
+    }
+#endif // FEATURE_PERFTRACING
+
     END_EXTERNAL_ENTRYPOINT;
 
     return hr;

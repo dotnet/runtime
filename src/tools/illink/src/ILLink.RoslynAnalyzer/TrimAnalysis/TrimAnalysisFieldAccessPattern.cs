@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisFieldAccessPattern
+	internal readonly record struct TrimAnalysisFieldAccessPattern
 	{
 		public IFieldSymbol Field { get; init; }
 		public IFieldReferenceOperation Operation { get; init; }
@@ -31,7 +31,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		public TrimAnalysisFieldAccessPattern Merge (
-			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice,
 			TrimAnalysisFieldAccessPattern other)
 		{
@@ -49,10 +48,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic (diag);
-			}
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, FeatureContext, in diagnosticContext);
 
 			return diagnosticContext.Diagnostics;
 		}

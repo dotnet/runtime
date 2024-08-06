@@ -17,7 +17,7 @@ parameters:
   archiveType: ''
   tarCompression: ''
   framework: 'net9.0' # Framework version to get versions for and build for
-  perfRepo: 'main' # Perf repo to pull for the PerfLabExporter
+  perfBranch: 'main' # Performance branch to use for cloning
 
 
 steps:
@@ -57,20 +57,6 @@ steps:
       overwriteExistingFiles: true
       cleanDestinationFolder: false
 
-  - script: |
-      echo '{ }' > ./global.json
-      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
-      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
-      curl -Lo maui-supported-sdk-version.json 'https://maui.blob.core.windows.net/metadata/sdks/${{parameters.framework}}.json'
-      version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-supported-sdk-version.json)
-      chmod -R a+rx .
-      ./dotnet-install.sh --version $version --install-dir .
-      ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://maui.blob.core.windows.net/metadata/rollbacks/${{parameters.framework}}.json --configfile NuGet.config
-      ./dotnet workload install android --from-rollback-file https://maui.blob.core.windows.net/metadata/rollbacks/${{parameters.framework}}.json --configfile NuGet.config
-    displayName: Install MAUI workload
-    workingDirectory: $(Build.SourcesDirectory)
-
   - script: $(Build.SourcesDirectory)/eng/testing/performance/create-provisioning-profile.sh
     displayName: Create iOS code signing and provisioning profile
 
@@ -84,8 +70,31 @@ steps:
   - script: |
       set -x
       pwd
-      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfRepo}} --single-branch
+      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfBranch}} --single-branch
     displayName:  Clone performance
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      pwd
+      echo '$(Build.SourcesDirectory)/rollback.json'
+      export PYTHONPATH=$PYTHONPATH:$(Build.SourcesDirectory)/performance/scripts:$(Build.SourcesDirectory)/performance/src/scenarios
+      python -c "import mauisharedpython; roll_dict = mauisharedpython.generate_maui_rollback_dict(); mauisharedpython.dump_dict_to_json_file(roll_dict, '$(Build.SourcesDirectory)/rollback.json')"
+    displayName: Generate rollback.json
+    workingDirectory: $(Build.SourcesDirectory)/performance/src/scenarios/shared
+
+  - script: |
+      echo '{ }' > ./global.json
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
+      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
+      curl -Lo performance-version-details.xml 'https://raw.githubusercontent.com/dotnet/performance/${{parameters.perfBranch}}/eng/Version.Details.xml'
+      version=$(sed -nr 's/[[:space:]]*<Dependency Name="VS.Tools.Net.Core.SDK.Resolver" Version="(.*)"[[:space:]].*/\1/p' ./performance-version-details.xml)
+      echo dotnet-version: $version
+      chmod -R a+rx .
+      ./dotnet-install.sh --version $version --install-dir .
+      ./dotnet --info
+      ./dotnet workload install maui --from-rollback-file rollback.json --configfile NuGet.config
+      ./dotnet workload install android --from-rollback-file rollback.json --configfile NuGet.config
+    displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
   - pwsh: |

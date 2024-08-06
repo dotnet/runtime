@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct FeatureCheckReturnValuePattern
+	internal readonly record struct FeatureCheckReturnValuePattern
 	{
 		public FeatureChecksValue ReturnValue { get; init; }
 		public ValueSet<string> FeatureCheckAnnotations { get; init; }
