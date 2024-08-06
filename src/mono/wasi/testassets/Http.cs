@@ -37,20 +37,9 @@ public static class WasiMainWrapper
 
     public static int Main(string[] args)
     {
-        var task = MainAsync(args);
-        while (!task.IsCompleted)
-        {
-            CallDispatchWasiEventLoop((Thread)null!);
-        }
-        var exception = task.Exception;
-        if (exception is not null)
-        {
-            throw exception;
-        }
-        return task.Result;
+        return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
+        private static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-    private static extern void CallDispatchWasiEventLoop(Thread t);
 }

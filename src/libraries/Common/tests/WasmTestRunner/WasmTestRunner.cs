@@ -17,27 +17,12 @@ public class WasmTestRunner : WasmApplicationEntryPoint
 #if TARGET_WASI
     public static int Main(string[] args)
     {
-        var task = MainAsync(args);
-        while (!task.IsCompleted)
-        {
-            DispatchWasiEventLoop();
-        }
-        var exception = task.Exception;
-        if (exception is not null)
-        {
-            throw exception;
-        }
+        return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
-        return task.Result;
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
+        static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }
 
-    private static void DispatchWasiEventLoop()
-    {
-        CallDispatchWasiEventLoop((Thread)null!);
-    }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-    private static extern void CallDispatchWasiEventLoop(Thread t);
 
 #else
     public static Task<int> Main(string[] args)
