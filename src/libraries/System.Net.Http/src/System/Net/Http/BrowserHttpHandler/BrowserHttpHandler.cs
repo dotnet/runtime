@@ -160,7 +160,7 @@ namespace System.Net.Http
 
                 if (!_httpController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_httpController);
+                    BrowserHttpInterop.Abort(_httpController);
                 }
             }, httpController);
 
@@ -351,7 +351,7 @@ namespace System.Net.Http
             {
                 if (!_jsController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_jsController);// aborts also response
+                    BrowserHttpInterop.Abort(_jsController);// aborts also response
                 }
                 _jsController.Dispose();
             }

@@ -20,13 +20,8 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_create_controller")]
         public static partial JSObject CreateController();
 
-        [JSImport("INTERNAL.http_wasm_abort_request")]
-        public static partial void AbortRequest(
-            JSObject httpController);
-
-        [JSImport("INTERNAL.http_wasm_abort_response")]
-        public static partial void AbortResponse(
-            JSObject httpController);
+        [JSImport("INTERNAL.http_wasm_abort")]
+        public static partial void Abort(JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_transform_stream_write")]
         public static partial Task TransformStreamWrite(
@@ -143,7 +138,7 @@ namespace System.Net.Http
                     CancelablePromise.CancelPromise(_promise);
                     if (!_jsController.IsDisposed)
                     {
-                        AbortResponse(_jsController);
+                        Abort(_jsController);
                     }
                 }, (promise, jsController)))
                 {

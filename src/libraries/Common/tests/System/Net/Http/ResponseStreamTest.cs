@@ -392,19 +392,19 @@ namespace System.Net.Http.Functional.Tests
         }
 
         public static TheoryData CancelRequestReadFunctions
-            => new TheoryData<bool, Func<Task<int>>>
+            => new TheoryData<bool, int, bool>
             {
-                { false, () => Task.FromResult(0) },
-                { true, () => Task.FromResult(0) },
-                { false, () => Task.FromResult(1) },
-                { true, () => Task.FromResult(1) },
-                { false, () => throw new FormatException() },
-                { true, () => throw new FormatException() },
+                { false, 0, false },
+                { true,  0, false },
+                { false, 1, false },
+                { true,  1, false },
+                { false, 0, true },
+                { true,  0, true },
             };
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         [MemberData(nameof(CancelRequestReadFunctions))]
-        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, Func<Task<int>> readFunc)
+        public async Task BrowserHttpHandler_StreamingRequest_CancelRequest(bool cancelAsync, int bytes, bool throwException)
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
@@ -431,13 +431,26 @@ namespace System.Net.Http.Functional.Tests
                     {
                         readCancelledCount++;
                     }
-                    return await readFunc();
+                    if (throwException)
+                    {
+                        throw new FormatException("Test");
+                    }
+                    return await Task.FromResult(bytes);
                 }));
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp2Server))
             {
-                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.SendAsync(req, token));
-                Assert.Equal(token, ex.CancellationToken);
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(req, token));
+                if(throwException)
+                {
+                    Assert.IsType<FormatException>(ex);
+                    Assert.Equal("Test", ex.Message);
+                }
+                else
+                {
+                    var tce = Assert.IsType<TaskCanceledException>(ex);
+                    Assert.Equal(token, tce.CancellationToken);
+                }
                 Assert.Equal(1, readNotCancelledCount);
                 Assert.Equal(0, readCancelledCount);
             }
