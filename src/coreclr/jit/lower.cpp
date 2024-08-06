@@ -1537,7 +1537,22 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* 
     dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 #endif
 
-    GenTree* src = comp->gtNewLclAddrNode(lclVar->GetLclNum(), lclVar->GetLclOffs(), TYP_I_IMPL);
+    unsigned lclNum = lclVar->GetLclNum();
+
+    // Use the special copy locals map to map back to the original source local we need to copy-construct
+    // from. This is necessary because srcLclNum might have a bitwise copy of the source,
+    // which we can't pass to user code.
+    GenTree* src;
+    unsigned srcLclNum;
+    if (comp->GetSpecialCopyLocalsMap()->Lookup(lclNum, &srcLclNum))
+    {
+        assert(genActualType(comp->lvaGetDesc(srcLclNum)) == TYP_BYREF);
+        src = comp->gtNewLclVarNode(srcLclNum, TYP_I_IMPL);
+    }
+    else
+    {
+        src = comp->gtNewLclAddrNode(lclNum, lclVar->GetLclOffs(), TYP_I_IMPL);
+    }
 
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
     GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
@@ -1937,7 +1952,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         }
 
         if (putArg->OperIsPutArgStk() && arg->OperIs(GT_LCL_VAR) &&
-            comp->lvaTable[arg->AsLclVar()->GetLclNum()].lvRequiresSpecialCopy)
+            comp->lvaRequiresSpecialCopy(arg->AsLclVar()->GetLclNum()))
         {
             InsertSpecialCopyArg(putArg->AsPutArgStk(), arg->AsLclVar());
         }

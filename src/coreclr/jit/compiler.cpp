@@ -1989,6 +1989,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_fpStructLoweringCache = nullptr;
 #endif
 
+    m_specialCopyLocalsMap = nullptr;
+
     // check that HelperCallProperties are initialized
 
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));

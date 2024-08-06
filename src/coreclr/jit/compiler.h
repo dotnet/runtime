@@ -5702,6 +5702,32 @@ public:
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
+    // This map maps local var ids to the originally-passed-in local var that we need to use a non-bitwise copy
+    // from when passing out to user code.
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> SpecialCopyLocalsMap;
+    SpecialCopyLocalsMap* m_specialCopyLocalsMap;
+    SpecialCopyLocalsMap* GetSpecialCopyLocalsMap()
+    {
+        if (m_specialCopyLocalsMap == nullptr)
+        {
+            m_specialCopyLocalsMap = new (getAllocator()) SpecialCopyLocalsMap(getAllocator());
+        }
+        return m_specialCopyLocalsMap;
+    }
+
+    bool lvaRequiresSpecialCopy(unsigned lclNum)
+    {
+        if (lvaTable[lclNum].lvRequiresSpecialCopy)
+        {
+            return true;
+        }
+        else if (m_specialCopyLocalsMap != nullptr)
+        {
+            return m_specialCopyLocalsMap->Lookup(lclNum);
+        }
+        return false;
+    }
+
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
