@@ -14309,14 +14309,12 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     original_spin_count_unit = yp_spin_count_unit;
 
-#ifdef MULTIPLE_HEAPS
-#ifdef DYNAMIC_HEAP_COUNT
+#if (defined(MULTIPLE_HEAPS) && defined(DYNAMIC_HEAP_COUNT))
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (!gc_heap::spin_count_unit_config_p))
     {
         yp_spin_count_unit = 10;
     }
-#endif // DYNAMIC_HEAP_COUNT
-#endif // MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && DYNAMIC_HEAP_COUNT
 
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
