@@ -2805,7 +2805,7 @@ function emit_branch (
 
     const displacement = getBranchDisplacement(ip, opcode);
     if (typeof (displacement) !== "number") {
-        mono_log_info(`Failed to decode branch displacement for ${getOpcodeName(opcode)}`);
+        // mono_log_info(`Failed to decode branch displacement for ${getOpcodeName(opcode)}`);
         return false;
     }
 
