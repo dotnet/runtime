@@ -163,7 +163,7 @@ private:
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
 
         // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
-        RequiresAlign8 = 0x1000
+        RequiresAlign8Flag = 0x1000
     };
 
 public:
