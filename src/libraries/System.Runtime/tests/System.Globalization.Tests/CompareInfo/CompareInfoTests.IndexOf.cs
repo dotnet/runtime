@@ -340,6 +340,7 @@ namespace System.Globalization.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out _));
                 Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), (CompareOptions)(-1), out _));
                 Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), (CompareOptions)0x11111111, out _));
+                Assert.Throws<PlatformNotSupportedException>(() => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out _));
             }
             else
             {
@@ -347,6 +348,7 @@ namespace System.Globalization.Tests
                 AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreWidth, out _));
                 AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), (CompareOptions)(-1), out _));
                 AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), (CompareOptions)0x11111111, out _));
+                AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out _));
             }
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", CompareOptions.Ordinal | CompareOptions.IgnoreWidth));
@@ -364,7 +366,6 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'b', 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", 'c', 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
-            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's".AsSpan(), "b".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth, out _));
 
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", (CompareOptions)(-1)));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.IndexOf("Test's", "Tests", 0, (CompareOptions)(-1)));

@@ -292,6 +292,9 @@ Web API does not expose locale-sensitive indexing function. There is a discussio
 
 [CompareInfo.LastIndexOf](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.lastindexof?view=system-globalization-compareinfo-lastindexof(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
 
+- String.Replace that uses `StringComparison` argument relies internally on IndexOf with `matchLength` argument. From this reason, it throws PlatformNotSupportedException:
+[String.Replace](https://learn.microsoft.com/en-us/dotnet/api/system.string.replace?view=system-string-replace(system-string-system-string-system-stringcomparison))
+
 - Support depends on [`Intl.segmenter's support`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter#browser_compatibility).
 
 - `IgnoreSymbols`
