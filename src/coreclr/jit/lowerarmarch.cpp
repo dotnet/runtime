@@ -4067,7 +4067,8 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
     else if (op1->IsMaskAllBitsSet())
     {
         // Any case where op2 is not an embedded HWIntrinsic
-        if (!op2->OperIsHWIntrinsic() || !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
+        if (!op2->OperIsHWIntrinsic() ||
+            !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
         {
             JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
