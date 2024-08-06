@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 // keep in sync with src\mono\sample\wasi\http-p2\Program.cs
 public static class WasiMainWrapper
 {
-    public static async Task<int> MainAsync()
+    public static async Task<int> MainAsync(string[] args)
     {
         Console.WriteLine("Hello, Wasi Console!");
         for (int i = 0; i < args.Length; i ++)
@@ -37,7 +37,7 @@ public static class WasiMainWrapper
 
     public static int Main(string[] args)
     {
-        var task = MainAsync();
+        var task = MainAsync(args);
         while (!task.IsCompleted)
         {
             CallDispatchWasiEventLoop((Thread)null!);

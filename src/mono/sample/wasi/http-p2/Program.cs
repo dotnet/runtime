@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 // keep in sync with src\mono\wasi\testassets\Http.cs
 public static class WasiMainWrapper
 {
-    public static async Task<int> MainAsync()
+    public static async Task<int> MainAsync(string[] args)
     {
         using HttpClient client = new();
         client.Timeout = Timeout.InfiniteTimeSpan;
@@ -33,7 +33,7 @@ public static class WasiMainWrapper
 
     public static int Main(string[] args)
     {
-        var task = MainAsync();
+        var task = MainAsync(args);
         while (!task.IsCompleted)
         {
             CallDispatchWasiEventLoop((Thread)null!);
