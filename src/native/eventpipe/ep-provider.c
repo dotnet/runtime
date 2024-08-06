@@ -193,6 +193,9 @@ ep_provider_alloc (
 	instance->event_list = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->event_list != NULL);
 
+	ep_rt_wait_event_alloc (&instance->callbacks_complete_event, true /* bManual */, false /* bInitial */);
+	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->callbacks_complete_event));
+
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
 	instance->callback_func = callback_func;
@@ -200,6 +203,7 @@ ep_provider_alloc (
 	instance->config = config;
 	instance->delete_deferred = false;
 	instance->sessions = 0;
+	instance->uninvoked_prepared_callbacks_counter = 0;
 
 ep_on_exit:
 	return instance;
@@ -225,6 +229,7 @@ ep_provider_free (EventPipeProvider * provider)
 	}
 
 ep_on_exit:
+	ep_rt_wait_event_free (&provider->callbacks_complete_event);
 	ep_rt_utf16_string_free (provider->provider_name_utf16);
 	ep_rt_utf8_string_free (provider->provider_name);
 	ep_rt_object_free (provider);

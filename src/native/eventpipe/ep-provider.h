@@ -42,6 +42,13 @@ struct _EventPipeProvider_Internal {
 	// True if the provider has been deleted, but that deletion
 	// has been deferred until tracing is stopped.
 	bool delete_deferred;
+	// The number of EventPipeProvider callbacks that have been
+	// prepared but not yet invoked.
+	// Used to determine when it is safe to delete a provider.
+	int64_t uninvoked_prepared_callbacks_counter;
+	// Event object used to signal eventpipe provider deletion
+	// that all in flight callbacks have completed.
+	ep_rt_wait_event_handle_t callbacks_complete_event;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_PROVIDER_GETTER_SETTER)
