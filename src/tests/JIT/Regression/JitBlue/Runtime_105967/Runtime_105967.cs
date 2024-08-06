@@ -33,14 +33,17 @@ public class Runtime_105967
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr26 = new C2();
-        vr26.F4 = new C0();
-        var vr29 = vr26.F4.F3;
-        var vr30 = Vector512.Create<float>(vr29);
-        var vr31 = Vector512.CreateScalar(-193.44424f);
-        var vr32 = M17();
-        var vr33 = Avx512F.Fixup(vr30, vr31, vr32, 0);
-        M16(vr33, new long[] { 1 });
+        if (Avx512F.IsSupported)
+        {
+            var vr26 = new C2();
+            vr26.F4 = new C0();
+            var vr29 = vr26.F4.F3;
+            var vr30 = Vector512.Create<float>(vr29);
+            var vr31 = Vector512.CreateScalar(-193.44424f);
+            var vr32 = M17();
+            var vr33 = Avx512F.Fixup(vr30, vr31, vr32, 0);
+            M16(vr33, new long[] { 1 });
+        }
     }
 
     private static void M16(Vector512<float> arg0, long[] arg2)
