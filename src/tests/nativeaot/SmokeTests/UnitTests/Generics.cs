@@ -58,6 +58,7 @@ class Generics
         Test99198Regression.Run();
         Test102259Regression.Run();
         Test104913Regression.Run();
+        Test105880Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3626,6 +3627,28 @@ class Generics
             (Type t1, Type t2) = ((IFoo)new Foo()).InvokeInstance<Bar>();
             if (t1 != typeof(Bar) || t2 != typeof(int))
                 throw new Exception();
+        }
+    }
+
+    class Test105880Regression
+    {
+        public interface IFoo<T>
+        {
+            static abstract void Method<U>();
+        }
+
+        interface IBar<T> : IFoo<T>
+        {
+            static void IFoo<T>.Method<U>() => Console.WriteLine();
+        }
+
+        class Baz : IBar<Atom> { }
+
+        public struct Atom { }
+
+        public static void Run()
+        {
+            Console.WriteLine(new Baz());
         }
     }
 
