@@ -20,10 +20,9 @@ class Program
 
         // Get parameter name via trim-incompatible reflection
         var parameterName = reflectedType.GetMethod("MethodWithParameter")!.GetParameters()[0].Name;
-        Console.WriteLine("Got parameter name!" + "[" + parameterName + "]");
 
         // Parameter name should be removed
-        if (parameterName is not null)
+        if (!string.IsNullOrEmpty(parameterName))
             return -1;
 
         return 100;
