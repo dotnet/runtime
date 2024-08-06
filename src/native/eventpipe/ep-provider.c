@@ -78,6 +78,11 @@ provider_prepare_callback_data (
 	EP_ASSERT (provider != NULL);
 	EP_ASSERT (provider_callback_data != NULL);
 
+	ep_requires_lock_held ();
+
+	if (provider->callback_func != NULL)
+		provider->uninvoked_prepared_callbacks_counter++;
+
 	return ep_provider_callback_data_init (
 		provider_callback_data,
 		filter_data,
@@ -432,6 +437,13 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 			is_event_filter_desc_init ? &event_filter_desc : NULL,
 			callback_data /* CallbackContext */);
 	}
+
+	EP_LOCK_ENTER (section1)
+		if (callback_function != NULL) {
+			EventPipeProvider *provider = provider_callback_data->provider;
+			provider->uninvoked_prepared_callbacks_counter--;
+		}
+	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
 	if (is_event_filter_desc_init)
