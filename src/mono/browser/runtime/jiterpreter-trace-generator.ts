@@ -2874,9 +2874,6 @@ function emit_branch (
             if (relopbranchTable[opcode] === undefined)
                 throw new Error(`Unsupported relop branch opcode: ${getOpcodeName(opcode)}`);
 
-            if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) !== 4)
-                throw new Error(`Unsupported long branch opcode: ${getOpcodeName(opcode)}`);
-
             break;
         }
     }
