@@ -88,9 +88,7 @@ namespace ForegroundGC
         {
             while (true)
             {
-                bool check = false;
-                lock(_lock) { check = done; }
-                if (check) { break; }
+                lock(_lock) { if (check) { break; } }
                 byte[] b = new byte[30];
                 byte[] b2 = new byte[100];
             }
