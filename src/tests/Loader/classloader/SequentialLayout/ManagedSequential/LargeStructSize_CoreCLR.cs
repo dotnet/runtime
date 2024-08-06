@@ -15,9 +15,27 @@ public unsafe class LargeStructSize
         BigArray a;
     }
 
+    [StructLayout(LayoutKind.Explicit)] 
+    struct X_explicit
+    {
+        [FieldOffset(0)]
+        byte x;
+        [FieldOffset(1)]
+        BigArray a;
+    }
+
     struct Y
     {
         BigArray a;
+        byte y;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    struct Y_explict
+    {
+        [FieldOffset(0)]
+        BigArray b;
+        [FieldOffset(int.MaxValue)]
         byte y;
     }
 
@@ -31,6 +49,8 @@ public unsafe class LargeStructSize
     {
         Assert.Equal(int.MaxValue, sizeof(BigArray));
         Assert.Throws<TypeLoadException>(() => sizeof(X));
+        Assert.Throws<TypeLoadException>(() => sizeof(X_explicit));
         Assert.Throws<TypeLoadException>(() => sizeof(Y));
+        Assert.Throws<TypeLoadException>(() => sizeof(Y_explict));
     }
 }
