@@ -86,7 +86,8 @@ provider_prepare_callback_data (
 		keywords,
 		provider_level,
 		provider->sessions != 0,
-		session_id);
+		session_id,
+		provider);
 }
 
 static
