@@ -16678,36 +16678,14 @@ GenTree* Compiler::gtNewTempStore(
         compFloatingPointUsed = true;
     }
 
-    GenTree* store;
-    if (varDsc->lvRequiresSpecialCopy)
+    GenTree* store = gtNewStoreLclVarNode(tmp, val);
+
+    // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
+    store->gtType = dstTyp;
+
+    if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
-        JITDUMP("Var V%02u requires special copy\n", tmp);
-        CORINFO_METHOD_HANDLE copyHelper =
-            info.compCompHnd->GetSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
-        GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
-
-        GenTree* src;
-
-        assert(val->OperIs(GT_BLK));
-        src = val->AsBlk()->Addr();
-
-        GenTree* dst = gtNewLclVarAddrNode(tmp);
-
-        call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
-        call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
-        store = call;
-    }
-    else
-    {
-        store = gtNewStoreLclVarNode(tmp, val);
-
-        // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
-        store->gtType = dstTyp;
-
-        if (varTypeIsStruct(varDsc) && !val->IsInitVal())
-        {
-            store = impStoreStruct(store, curLevel, pAfterStmt, di, block);
-        }
+        store = impStoreStruct(store, curLevel, pAfterStmt, di, block);
     }
 
     return store;
