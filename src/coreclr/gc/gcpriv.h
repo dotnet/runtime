@@ -1402,6 +1402,7 @@ public:
     size_t get_num_free_regions();
     size_t get_size_committed_in_free() { return size_committed_in_free_regions; }
     size_t get_size_free_regions() { return size_free_regions; }
+    size_t get_size_free_regions(int max_age);
     heap_segment* get_first_free_region() { return head_free_region; }
     static void unlink_region (heap_segment* region);
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
@@ -2410,6 +2411,7 @@ private:
 #endif //!USE_REGIONS
     PER_HEAP_METHOD void delay_free_segments();
     PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
+    PER_HEAP_ISOLATED_METHOD void age_free_regions(const char* label);
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_METHOD void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED_METHOD void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
@@ -3186,7 +3188,7 @@ private:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED_METHOD void recover_bgc_settings();
 
-    PER_HEAP_METHOD BOOL is_bgc_in_progress();
+    PER_HEAP_ISOLATED_METHOD BOOL is_bgc_in_progress();
 
     PER_HEAP_METHOD void clear_commit_flag();
 
@@ -6045,6 +6047,7 @@ public:
     // the region's free list.
     #define MAX_AGE_IN_FREE 99
     #define AGE_IN_FREE_TO_DECOMMIT 20
+    #define MIN_AGE_TO_DECOMMIT_HUGE 2
     int             age_in_free;
     // This is currently only used by regions that are swept in plan -
     // we then thread this list onto the generation's free list.
