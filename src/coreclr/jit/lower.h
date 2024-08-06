@@ -353,6 +353,7 @@ private:
     GenTree* LowerIndir(GenTreeIndir* ind);
     bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     bool     TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store);
     bool     TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store);
     void     MarkTree(GenTree* root);

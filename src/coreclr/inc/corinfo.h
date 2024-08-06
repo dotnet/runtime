@@ -348,8 +348,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DBL2ULNG_OVF,
     CORINFO_HELP_FLTREM,
     CORINFO_HELP_DBLREM,
-    CORINFO_HELP_FLTROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
-    CORINFO_HELP_DBLROUND,              // unused, remove once MINIMUM_READYTORUN_MAJOR_VERSION > 9
 
     /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
        which is the right helper to use to allocate an object of a given type. */
@@ -604,26 +602,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
     CORINFO_HELP_COUNT,
-};
-
-//This describes the signature for a helper method.
-enum CorInfoHelpSig
-{
-    CORINFO_HELP_SIG_UNDEF,
-    CORINFO_HELP_SIG_NO_ALIGN_STUB,
-    CORINFO_HELP_SIG_NO_UNWIND_STUB,
-    CORINFO_HELP_SIG_REG_ONLY,
-    CORINFO_HELP_SIG_4_STACK,
-    CORINFO_HELP_SIG_8_STACK,
-    CORINFO_HELP_SIG_12_STACK,
-    CORINFO_HELP_SIG_16_STACK,
-
-    CORINFO_HELP_SIG_EBPCALL, //special calling convention that uses EDX and
-                              //EBP as arguments
-
-    CORINFO_HELP_SIG_CANNOT_USE_ALIGN_STUB,
-
-    CORINFO_HELP_SIG_COUNT
 };
 
 // The enumeration is returned in 'getSig','getType', getArgType methods

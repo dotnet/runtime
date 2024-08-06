@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "Extensibility";
 
 		[Fact]
+		public Task CustomStepCanFixAbstractMethods ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task CustomStepCanPreserveMethodsAfterMark ()
 		{
 			return RunTest (allowMissingWarnings: true);
