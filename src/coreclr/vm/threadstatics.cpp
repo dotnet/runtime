@@ -826,10 +826,12 @@ bool CanJITOptimizeTLSAccess()
     )
     {
         optimizeThreadStaticAccess = true;
-    }
-    else
-    {
-        _ASSERTE(false && "Unexpected code sequence.");
+#ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AssertNotStaticTlsResolver) != 0)
+        {
+            _ASSERTE(!"Detected static resolver in use when not expected");
+        }
+#endif
     }
 #else
     optimizeThreadStaticAccess = true;
@@ -840,6 +842,12 @@ bool CanJITOptimizeTLSAccess()
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
 #endif
+
+    if (g_pConfig->DisableOptimizedThreadStaticAccess())
+    {
+        optimizeThreadStaticAccess = false;
+    }
+
     return optimizeThreadStaticAccess;
 }
 
