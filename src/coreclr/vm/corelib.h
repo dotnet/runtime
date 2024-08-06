@@ -775,6 +775,9 @@ DEFINE_FIELD_U(rgiColumnNumber,            StackFrameHelper,   rgiColumnNumber)
 DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrameHelper,   rgiLastFrameFromForeignExceptionStackTrace)
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
+DEFINE_CLASS(RUNTIME_EVENT_SOURCE,  Tracing,                RuntimeEventSource)
+DEFINE_METHOD(RUNTIME_EVENT_SOURCE, INITIALIZE, Initialize, SM_RetVoid)
+
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_RetVoid)
