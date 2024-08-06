@@ -132,16 +132,6 @@
         <target state="translated">找到 Microsoft.Extensions.Logging.ILogger 类型的多个字段</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
-        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
-      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
-        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
-        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
-      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">从日志记录消息中删除冗余限定符(信息:、警告:、错误: 等)，因为其在指定的日志级别中为隐式内容。</target>
