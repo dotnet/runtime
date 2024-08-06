@@ -43,11 +43,9 @@
 #include "ilinstrumentation.h"
 #include "codeversion.h"
 
-class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
 class EEStringData;
@@ -56,11 +54,9 @@ class SigTypeContext;
 class Assembly;
 class BaseDomain;
 class AppDomain;
-class DomainModule;
 class SystemDomain;
 class Module;
 class SString;
-class Pending;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
@@ -615,6 +611,7 @@ class Module : public ModuleBase
 
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;        // Cached path for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
