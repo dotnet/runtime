@@ -732,14 +732,14 @@ namespace Internal.Runtime
         {
             get
             {
-                // Use the same trick as HasComponentSize. HasComponentSizeFlag is sign bit, so if
-                // it's set then _uFlags are negative. Once we mask the value we get negative value
-                // for HasComponentSize == true, 0 for HasComponentSize == false && RequiresAlign8 == false
-                // and positive value for HasComponentSize == false && RequiresAlign8 == true.
-                //
-                // return (Flags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) == (uint)EETypeFlagsEx.RequiresAlign8Flag;
-
-                return (int)(_uFlags & ((uint)EETypeFlags.HasComponentSizeFlag | (uint)EETypeFlagsEx.RequiresAlign8Flag)) > 0;
+                // NOTE: Does not work for types with HasComponentSize, ie. arrays and strings.
+                // Since this is called early through RhNewObject we cannot use regular Debug.Assert
+                // here to enforce the assumption.
+#if DEBUG
+                if (!HasComponentSize)
+                    Debug.Fail("RequiresAlign8 called for array or string");
+#endif
+                return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign8Flag) != 0;
             }
         }
 
