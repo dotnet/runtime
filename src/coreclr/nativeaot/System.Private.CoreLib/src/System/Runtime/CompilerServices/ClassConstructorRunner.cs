@@ -45,7 +45,8 @@ namespace System.Runtime.CompilerServices
         private static unsafe object CheckStaticClassConstructionReturnThreadStaticBase(TypeManagerSlot* pModuleData, int typeTlsIndex, StaticClassConstructionContext* context)
         {
             object threadStaticBase = ThreadStatics.GetThreadStaticBaseForType(pModuleData, typeTlsIndex);
-            EnsureClassConstructorRun(context);
+            if (context->cctorMethodAddress != 0)
+                EnsureClassConstructorRun(context);
             return threadStaticBase;
         }
 

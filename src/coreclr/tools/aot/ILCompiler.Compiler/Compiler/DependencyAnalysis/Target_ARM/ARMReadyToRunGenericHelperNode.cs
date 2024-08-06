@@ -77,6 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
                             encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0, (short)-cctorContextSize);
+                            encoder.EmitDMB();
                             encoder.EmitCMP(encoder.TargetRegister.Arg1, 0);
                             encoder.EmitRETIfEqual();
 
@@ -108,7 +109,8 @@ namespace ILCompiler.DependencyAnalysis
 
                             int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextSize(factory.Target);
                             encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, ((short)(factory.Target.PointerSize - cctorContextSize)));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitDMB();
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
