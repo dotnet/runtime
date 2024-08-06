@@ -3919,11 +3919,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet() && op2->IsEmbMaskOp())
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
-                    // Do this only if op1 was AllTrueMask and op2 is embedded.
+                    // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
                 }
 
@@ -4035,7 +4035,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             GenTree* nestedOp2 = nestedCndSel->Op(2);
             GenTree* nestedOp3 = nestedCndSel->Op(3);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (before):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
             JITDUMP("\n");
 
@@ -4057,11 +4057,52 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             BlockRange().Remove(nestedOp1);
             BlockRange().Remove(nestedCndSel);
 
-            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            JITDUMP("lowering nested ConditionalSelect HWIntrinisic (after):\n");
             DISPTREERANGE(BlockRange(), cndSelNode);
             JITDUMP("\n");
 
             return cndSelNode;
+        }
+    }
+    else if (op1->IsMaskAllBitsSet())
+    {
+        // Any case where op2 is not an embedded HWIntrinsic
+        if (!op2->OperIsHWIntrinsic() || !HWIntrinsicInfo::IsEmbeddedMaskedOperation(op2->AsHWIntrinsic()->GetHWIntrinsicId()))
+        {
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (before):\n");
+            DISPTREERANGE(BlockRange(), cndSelNode);
+            JITDUMP("\n");
+
+            // Transform
+            // CndSel(AllTrue, op2, op3) to
+            // op2
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(cndSelNode, &use))
+            {
+                use.ReplaceWith(op2);
+            }
+            else
+            {
+                op2->SetUnusedValue();
+            }
+
+            if (op3->IsMaskZero())
+            {
+                BlockRange().Remove(op3);
+            }
+            else
+            {
+                op3->SetUnusedValue();
+            }
+            op1->SetUnusedValue();
+            BlockRange().Remove(cndSelNode);
+
+            JITDUMP("lowering ConditionalSelect HWIntrinisic (after):\n");
+            DISPTREERANGE(BlockRange(), op2);
+            JITDUMP("\n");
+
+            return op2;
         }
     }
 
