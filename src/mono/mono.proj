@@ -347,8 +347,9 @@ JS_ENGINES = [NODE_JS]
       Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
 
     <!-- LLVM in WASI SDK 22 will call wasm-opt when found on the PATH. But it will fail because wasm-opt can't read the WASM components.
-    After we upgrade to WASI SDK 23.x, we could use no-wasm-opt LLVM option to avoid this issue.
+    After we upgrade to WASI SDK with LLVM 19, we could use no-wasm-opt LLVM option to avoid this issue.
     See https://github.com/llvm/llvm-project/pull/98373
+    See https://github.com/dotnet/runtime/issues/104773
     -->
     <Exec Command="wasm-opt --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode"/>
