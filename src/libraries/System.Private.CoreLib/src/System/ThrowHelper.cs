@@ -53,275 +53,275 @@ namespace System
     [StackTraceHidden]
     internal static partial class ThrowHelper
     {
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArithmeticException(string message)
         {
             throw new ArithmeticException(message);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowAccessViolationException()
         {
             throw new AccessViolationException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException()
         {
             throw new ArgumentException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException()
         {
             throw new ArgumentOutOfRangeException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotImplementedException()
         {
             throw new NotImplementedException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowPlatformNotSupportedException()
         {
             throw new PlatformNotSupportedException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowTypeNotSupportedException()
         {
             throw new NotSupportedException(SR.Arg_TypeNotSupported);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowVerificationException(int ilOffset)
         {
             throw new System.Security.VerificationException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_DestinationTooShort()
         {
             throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_InvalidTimeSpanStyles()
         {
             throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_InvalidEnumValue<TEnum>(TEnum value, [CallerArgumentExpression(nameof(value))] string argumentName = "")
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, value, typeof(TEnum).Name), argumentName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_OverlapAlignmentMismatch()
         {
             throw new ArgumentException(SR.Argument_OverlapAlignmentMismatch);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_ArgumentNull_TypedRefType()
         {
             throw new ArgumentNullException("value", SR.ArgumentNull_TypedRefType);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
         {
             throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_TupleIncorrectType(object obj)
         {
             throw new ArgumentException(SR.Format(SR.ArgumentException_ValueTupleIncorrectType, obj.GetType()), "other");
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_IndexMustBeLessException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_BadComparer(object? comparer)
         {
             throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.value,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.length,
                                                     ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
                                                     ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
                                                     ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.count,
                                                     ExceptionResource.ArgumentOutOfRange_Count);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_Year()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.year,
                                                     ExceptionResource.ArgumentOutOfRange_Year);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_Month(int month)
         {
             throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_DayNumber(int dayNumber)
         {
             throw new ArgumentOutOfRangeException(nameof(dayNumber), dayNumber, SR.ArgumentOutOfRange_DayNumber);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_BadYearMonthDay()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_BadHourMinuteSecond()
         {
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_TimeSpanTooLong()
         {
             throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_RoundingDigits(string name)
         {
             throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name)
         {
             throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits_MathF);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive)
         {
             throw new ArgumentOutOfRangeException(parameterName, value, SR.Format(SR.ArgumentOutOfRange_Range, minInclusive, maxInclusive));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOverflowException()
         {
             throw new OverflowException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOverflowException_NegateTwosCompNum()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOverflowException_TimeSpanDuration()
         {
             throw new OverflowException(SR.Overflow_Duration);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_Arg_CannotBeNaN()
         {
             throw new ArgumentException(SR.Arg_CannotBeNaN);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_Arg_CannotBeNaN(ExceptionArgument argument)
         {
             throw new ArgumentException(SR.Arg_CannotBeNaN, GetArgumentName(argument));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
             throw GetWrongKeyTypeArgumentException((object?)key, targetType);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowWrongValueTypeArgumentException<T>(T value, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
@@ -333,81 +333,81 @@ namespace System
             return new ArgumentException(SR.Format(SR.Argument_AddingDuplicateWithKey, key));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key)
         {
             // Generic key to move the boxing to the right hand side of throw
             throw GetAddingDuplicateWithKeyArgumentException((object?)key);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowKeyNotFoundException<T>(T key)
         {
             // Generic key to move the boxing to the right hand side of throw
             throw GetKeyNotFoundException((object?)key);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException(ExceptionResource resource)
         {
             throw GetArgumentException(resource);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             throw GetArgumentException(resource, argument);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_HandleNotSync(string paramName)
         {
             throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_HandleNotAsync(string paramName)
         {
             throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentNullException(ExceptionResource resource)
         {
             throw new ArgumentNullException(GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentNullException(ExceptionArgument argument, ExceptionResource resource)
         {
             throw new ArgumentNullException(GetArgumentName(argument), GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
         {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, resource);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument, int paramNumber, ExceptionResource resource)
         {
             throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowEndOfFileException()
         {
             throw CreateEndOfFileException();
@@ -416,259 +416,259 @@ namespace System
         internal static Exception CreateEndOfFileException() =>
             new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException()
         {
             throw new InvalidOperationException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw GetInvalidOperationException(resource);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e)
         {
             throw new InvalidOperationException(GetResourceString(resource), e);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNullReferenceException()
         {
             throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowRankException(ExceptionResource resource)
         {
             throw new RankException(GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotSupportedException(ExceptionResource resource)
         {
             throw new NotSupportedException(GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotSupportedException_UnseekableStream()
         {
             throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotSupportedException_UnreadableStream()
         {
             throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotSupportedException_UnwritableStream()
         {
             throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowObjectDisposedException(object? instance)
         {
             throw new ObjectDisposedException(instance?.GetType().FullName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowObjectDisposedException(Type? type)
         {
             throw new ObjectDisposedException(type?.FullName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowObjectDisposedException_StreamClosed(string? objectName)
         {
             throw new ObjectDisposedException(objectName, SR.ObjectDisposed_StreamClosed);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowObjectDisposedException_FileClosed()
         {
             throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowObjectDisposedException(ExceptionResource resource)
         {
             throw new ObjectDisposedException(null, GetResourceString(resource));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowNotSupportedException()
         {
             throw new NotSupportedException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowAggregateException(List<Exception> exceptions)
         {
             throw new AggregateException(exceptions);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOutOfMemoryException()
         {
             throw new OutOfMemoryException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowDivideByZeroException()
         {
             throw new DivideByZeroException();
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOutOfMemoryException_StringTooLong()
         {
             throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowOutOfMemoryException_LockEnter_WaiterCountOverflow()
         {
             throw new OutOfMemoryException(SR.Lock_Enter_WaiterCountOverflow_OutOfMemoryException);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentException_InvalidHandle(string? paramName)
         {
             throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowUnexpectedStateForKnownCallback(object? state)
         {
             throw new ArgumentOutOfRangeException(nameof(state), state, SR.Argument_UnexpectedStateForKnownCallback);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumEnded()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_EnumCurrent(int index)
         {
             throw GetInvalidOperationException_EnumCurrent(index);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidOperation_NoValue()
         {
             throw new InvalidOperationException(SR.InvalidOperation_NoValue);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_ConcurrentOperationsNotSupported()
         {
             throw new InvalidOperationException(SR.InvalidOperation_ConcurrentOperationsNotSupported);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_HandleIsNotInitialized()
         {
             throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_HandleIsNotPinned()
         {
             throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotPinned);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array? array, int offset, int count)
         {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowInvalidOperationException_InvalidUtf8()
         {
             throw new InvalidOperationException(SR.InvalidOperation_InvalidUtf8);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatException_NeedSingleChar()
         {
             throw new FormatException(SR.Format_NeedSingleChar);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatException_BadBoolean(ReadOnlySpan<char> value)
         {
             throw new FormatException(SR.Format(SR.Format_BadBoolean, new string(value)));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
         {
             throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedNonNegNum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ArgumentOutOfRangeException_Enum_Value()
         {
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowApplicationException(int hr)
         {
             // Get a message for this HR
@@ -686,25 +686,25 @@ namespace System
             throw ex;
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatInvalidString()
         {
             throw new FormatException(SR.Format_InvalidString);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatInvalidString(int offset, ExceptionResource resource)
         {
             throw new FormatException(SR.Format(SR.Format_InvalidStringWithOffsetAndReason, offset, GetResourceString(resource)));
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowFormatIndexOutOfRange()
         {
             throw new FormatException(SR.Format_IndexOutOfRange);
         }
 
-        [DoesNotReturn]
+        [DoesNotReturn, DebuggerHidden]
         internal static void ThrowSynchronizationLockException_LockExit()
         {
             throw new SynchronizationLockException(SR.Lock_Exit_SynchronizationLockException);
