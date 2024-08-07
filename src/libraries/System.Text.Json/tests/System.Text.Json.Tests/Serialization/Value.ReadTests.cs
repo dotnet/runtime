@@ -488,6 +488,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("1:2")]
+        [InlineData("01:2")]
+        [InlineData("1:02")]
+        [InlineData("01:23:1")]
+        [InlineData("1.1:1:1.0")]
         [InlineData("1:00:00")]
         [InlineData("1")]
         [InlineData("10")]
