@@ -38,6 +38,6 @@ public static class WasiMainWrapper
         return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
-        private static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
+        static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }
 }
