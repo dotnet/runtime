@@ -238,9 +238,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
 				// This will copy the values if necessary
-				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol, featureContext),
-				isReturnValue: false
-			);
+				new TrimAnalysisAssignmentPattern (source, target, operation, OwningSymbol, featureContext));
 		}
 
 		public override MultiValue HandleArrayElementRead (MultiValue arrayValue, MultiValue indexValue, IOperation operation)
@@ -350,9 +348,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				var returnParameter = new MethodReturnValue (method, isNewObj: false);
 
 				TrimAnalysisPatterns.Add (
-					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol, featureContext),
-					isReturnValue: true
-				);
+					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation, OwningSymbol, featureContext));
 			}
 		}
 
