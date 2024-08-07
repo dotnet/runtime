@@ -736,7 +736,7 @@ namespace Internal.Runtime
                 // Since this is called early through RhNewObject we cannot use regular Debug.Assert
                 // here to enforce the assumption.
 #if DEBUG
-                if (!HasComponentSize)
+                if (HasComponentSize)
                     Debug.Fail("RequiresAlign8 called for array or string");
 #endif
                 return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign8Flag) != 0;
