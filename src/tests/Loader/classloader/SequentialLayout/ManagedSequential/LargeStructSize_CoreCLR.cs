@@ -58,9 +58,13 @@ public unsafe class LargeStructSize
     {
         Assert.Equal(int.MaxValue, sizeof(BigArray));
         Assert.Throws<TypeLoadException>(() => sizeof(X));
-        Assert.Throws<TypeLoadException>(() => sizeof(X_explicit));
-        Assert.Throws<TypeLoadException>(() => sizeof(X_non_blittable));
         Assert.Throws<TypeLoadException>(() => sizeof(Y));
-        Assert.Throws<TypeLoadException>(() => sizeof(Y_explict));
+        if (Environment.Is64BitProcess)
+        {
+            // Explicit struct of big size triggers out of memory error instead of type load exception
+            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_non_blittable));
+            Assert.Throws<TypeLoadException>(() => sizeof(Y_explict));
+        }
     }
 }
