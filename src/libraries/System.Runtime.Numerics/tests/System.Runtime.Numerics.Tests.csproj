@@ -48,10 +48,12 @@
     <Compile Include="BigInteger\pow.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
+    <Compile Include="BigInteger\SampleGeneration.cs" />
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="BigInteger\TryWriteBytes.cs" />
+    <Compile Include="BigInteger\UInt32Samples.cs" />
     <Compile Include="ComplexTests.cs" />
   </ItemGroup>
   <ItemGroup>
