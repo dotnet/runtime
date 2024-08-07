@@ -75,7 +75,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                         options.DebugLog?.Invoke("loopbackServerFunc completed; disposing the connection");
 
-                        await http2Connection.DisposeAsync().ConfigureAwait(false);
+                        await http2Connection.ShutdownIgnoringErrorsAsync(http2StreamId).ConfigureAwait(false);
                     },
                     new Http2Options { WebSocketEndpoint = true, UseSsl = options.UseSsl, DebugLog = options.DebugLog });
             }

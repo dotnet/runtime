@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Channels;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -14,11 +15,11 @@ namespace System.Net.WebSockets.Client.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
     public abstract class KeepAliveTest_Loopback : ClientWebSocketTestBase
     {
-        public KeepAliveTest_Loopback(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_Loopback(ITestOutputHelper output) : base(output) { }
 
         protected virtual Version HttpVersion => Net.HttpVersion.Version11;
 
-        [ActiveIssue("")] // TODO
+        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(UseSsl_MemberData))]
         public Task KeepAlive_LongDelayBetweenSendReceives_Succeeds(bool useSsl)
@@ -41,61 +42,33 @@ namespace System.Net.WebSockets.Client.Tests
                     clientOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
                     clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
                 },
-                //DebugLog = Trace
+                DebugLog = Trace
             };
 
             return LoopbackWebSocketServer.RunAsync(
-                async (clientWebSocket, token) =>
+                async (cws, token) =>
                 {
-                    Trace("VerifySendReceiveAsync #1 starting on client");
-                    await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token);
-                    Trace("VerifySendReceiveAsync #1 completed on client");
+                    ReadAheadWebSocket clientWebSocket = new(cws);
 
-                    // We need to always have a read task active to keep processing pongs
-                    var outstandingReadTask = clientWebSocket.ReceiveAsync(Array.Empty<byte>(), token);
+                    await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token).ConfigureAwait(false);
 
-                    Trace("Client waiting for long delay by server");
-
-                    await longDelayByServerTcs.Task.WaitAsync(token);
-                    Trace("Long delay completed on client");
-
-                    var result = await outstandingReadTask;
-                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
-                    Assert.False(result.EndOfMessage);
-                    Assert.Equal(0, result.Count); // we issued a zero byte read, just to wait for data to become available
-
+                    await longDelayByServerTcs.Task.WaitAsync(token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Open, clientWebSocket.State);
 
-                    Trace("VerifySendReceiveAsync #2 starting on client");
-                    await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token);
-                    Trace("VerifySendReceiveAsync #2 completed on client");
-
+                    await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Open, clientWebSocket.State);
 
-                    Trace("Sending close frame from client");
-
-                    await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", token);
-
+                    await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Closed, clientWebSocket.State);
-
-                    Trace("Client closed");
                 },
-                async (serverWebSocket, token) =>
+                async (sws, token) =>
                 {
-                    Trace("VerifySendReceiveAsync #1 starting on server");
+                    ReadAheadWebSocket serverWebSocket = new(sws);
 
-                    await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token);
-
-                    Trace("VerifySendReceiveAsync #1 completed on server");
-
+                    await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Open, serverWebSocket.State);
 
-                    Trace("Server initiating long delay");
-
                     await Task.Delay(LongDelay);
-
-                    Trace("Server long delay completed");
-
                     Assert.Equal(WebSocketState.Open, serverWebSocket.State);
 
                     // recreate already-completed TCS for another round
@@ -104,24 +77,14 @@ namespace System.Net.WebSockets.Client.Tests
 
                     longDelayByServerTcs.SetResult();
 
-                    Trace("VerifySendReceiveAsync #2 starting on server");
+                    await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token).ConfigureAwait(false);
 
-                    await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token);
-
-                    Trace("VerifySendReceiveAsync #2 completed on server");
-
-                    Trace("Receiving close frame on server");
-
-                    var closeFrame = await serverWebSocket.ReceiveAsync(Array.Empty<byte>(), token);
+                    var closeFrame = await serverWebSocket.ReceiveAsync(Array.Empty<byte>(), token).ConfigureAwait(false);
                     Assert.Equal(WebSocketMessageType.Close, closeFrame.MessageType);
                     Assert.Equal(WebSocketState.CloseReceived, serverWebSocket.State);
 
-                    Trace("Sending close frame response from server");
-
-                    await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token);
+                    await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
                     Assert.Equal(WebSocketState.Closed, serverWebSocket.State);
-
-                    Trace("Server closed");
                 },
                 options,
                 timeoutCts.Token);
@@ -151,34 +114,32 @@ namespace System.Net.WebSockets.Client.Tests
 
     public class KeepAliveTest_Invoker_Loopback : KeepAliveTest_Loopback
     {
-        public KeepAliveTest_Invoker_Loopback(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_Invoker_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseCustomInvoker => true;
     }
 
     public class KeepAliveTest_HttpClient_Loopback : KeepAliveTest_Loopback
     {
-        public KeepAliveTest_HttpClient_Loopback(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_HttpClient_Loopback(ITestOutputHelper output) : base(output) { }
         protected override bool UseHttpClient => true;
     }
 
     public class KeepAliveTest_SharedHandler_Loopback : KeepAliveTest_Loopback
     {
-        public KeepAliveTest_SharedHandler_Loopback(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_SharedHandler_Loopback(ITestOutputHelper output) : base(output) { }
     }
 
     // --- HTTP/2 WebSocket loopback tests ---
 
-    [Collection(nameof(TracingTestCollection))]
     public class KeepAliveTest_Invoker_Http2 : KeepAliveTest_Invoker_Loopback
     {
-        public KeepAliveTest_Invoker_Http2(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version HttpVersion => Net.HttpVersion.Version20;
     }
 
-    [Collection(nameof(TracingTestCollection))]
     public class KeepAliveTest_HttpClient_Http2 : KeepAliveTest_HttpClient_Loopback
     {
-        public KeepAliveTest_HttpClient_Http2(ITestOutputHelper output, TracingTestCollection c) : base(output, c) { }
+        public KeepAliveTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version HttpVersion => Net.HttpVersion.Version20;
     }
 }

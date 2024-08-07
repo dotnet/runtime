@@ -19,7 +19,7 @@ namespace System.Net.WebSockets.Client.Tests
         public KeepAliveTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [OuterLoop] // involves long delay
+        [OuterLoop("Uses Task.Delay")]
         public async Task KeepAlive_LongDelayBetweenSendReceives_Succeeds()
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(RemoteEchoServer, TimeOutMilliseconds, _output, TimeSpan.FromSeconds(1)))
@@ -37,7 +37,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
-        [OuterLoop] // involves long delay
+        [OuterLoop("Uses Task.Delay")]
         [InlineData(1, 0)] // unsolicited pong
         [InlineData(1, 2)] // ping/pong
         public async Task KeepAlive_LongDelayBetweenReceiveSends_Succeeds(int keepAliveIntervalSec, int keepAliveTimeoutSec)

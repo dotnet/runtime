@@ -62,6 +62,7 @@
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="LoopbackServer\Http2LoopbackStream.cs" />
     <Compile Include="LoopbackServer\LoopbackWebSocketServer.cs" />
+    <Compile Include="LoopbackServer\ReadAheadWebSocket.cs" />
     <Compile Include="LoopbackServer\WebSocketHandshakeHelper.cs" />
     <Compile Include="LoopbackServer\WebSocketRequestData.cs" />
     <Compile Include="ResourceHelper.cs" />
