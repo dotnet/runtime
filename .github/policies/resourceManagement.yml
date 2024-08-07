@@ -321,6 +321,20 @@ configuration:
             label: area-Tools-ILLink
         - labelAdded:
             label: area-vm-coreclr
+        - labelAdded:
+            label: linkable-framework
+        - labelAdded:
+            label: size-reduction
+        - labelAdded:
+            label: arch-wasm
+        - labelAdded:
+            label: os-ios
+        - labelAdded:
+            label: os-tvos
+        - labelAdded:
+            label: os-maccatalyst
+        - labelAdded:
+            label: os-android
       then:
       - if:
         - hasLabel:
@@ -1595,6 +1609,112 @@ configuration:
 
               See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
             assignMentionees: False
+      - if:
+        - hasLabel:
+            label: linkable-framework
+        then:
+        - mentionUsers:
+            mentionees:
+            - eerhardt
+            - vitek-karas
+            - LakshanF
+            - sbomer
+            - joperezr
+            - marek-safar
+            replyTemplate: >-
+              Tagging subscribers to 'linkable-framework': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: size-reduction
+        then:
+        - mentionUsers:
+            mentionees:
+            - eerhardt
+            - SamMonoRT
+            - marek-safar
+            replyTemplate: >-
+              Tagging subscribers to 'size-reduction': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: arch-wasm
+        then:
+        - mentionUsers:
+            mentionees:
+            - lewing
+            replyTemplate: >-
+              Tagging subscribers to 'arch-wasm': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: os-ios
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'os-ios': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: os-android
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - simonrozsival
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'arch-android': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: os-tvos
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'os-tvos': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: os-maccatalyst
+        then:
+        - mentionUsers:
+            mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
+            - steveisok
+            - akoeplinger
+            replyTemplate: >-
+              Tagging subscribers to 'os-maccatalyst': ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
       description: Area-owners
     - if:
       - payloadType: Issues
@@ -1636,120 +1756,6 @@ configuration:
 
             Tagging @dotnet/compat for awareness of the breaking change.
       description: Add breaking change doc label to PR
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: linkable-framework
-        then:
-        - mentionUsers:
-            mentionees:
-            - eerhardt
-            - vitek-karas
-            - LakshanF
-            - sbomer
-            - joperezr
-            - marek-safar
-            replyTemplate: >-
-              Tagging subscribers to 'linkable-framework': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for linkable-framework'
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: size-reduction
-        then:
-        - mentionUsers:
-            mentionees:
-            - eerhardt
-            - SamMonoRT
-            - marek-safar
-            replyTemplate: >-
-              Tagging subscribers to 'size-reduction': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for size-reduction'
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: arch-wasm
-        then:
-        - mentionUsers:
-            mentionees:
-            - lewing
-            replyTemplate: >-
-              Tagging subscribers to 'arch-wasm': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for wasm'
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: os-ios
-        then:
-        - mentionUsers:
-            mentionees:
-            - vitek-karas
-            - kotlarmilos
-            - ivanpovazan
-            - steveisok
-            - akoeplinger
-            replyTemplate: >-
-              Tagging subscribers to 'os-ios': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for ios'
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: os-android
-        then:
-        - mentionUsers:
-            mentionees:
-            - vitek-karas
-            - simonrozsival
-            - steveisok
-            - akoeplinger
-            replyTemplate: >-
-              Tagging subscribers to 'arch-android': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for android'
     - if:
       - payloadType: Pull_Request
       - or:
@@ -1798,54 +1804,6 @@ configuration:
       - addLabel:
           label: no-recent-activity
       description: Manual Issue Cleanup
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: os-tvos
-        then:
-        - mentionUsers:
-            mentionees:
-            - vitek-karas
-            - kotlarmilos
-            - ivanpovazan
-            - steveisok
-            - akoeplinger
-            replyTemplate: >-
-              Tagging subscribers to 'os-tvos': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for tvos'
-    - if:
-      - or:
-        - payloadType: Issues
-        - payloadType: Pull_Request
-      - isAction:
-          action: Opened
-      then:
-      - if:
-        - hasLabel:
-            label: os-maccatalyst
-        then:
-        - mentionUsers:
-            mentionees:
-            - vitek-karas
-            - kotlarmilos
-            - ivanpovazan
-            - steveisok
-            - akoeplinger
-            replyTemplate: >-
-              Tagging subscribers to 'os-maccatalyst': ${mentionees}
-
-              See info in area-owners.md if you want to be subscribed.
-            assignMentionees: False
-      description: '@Mention for maccatalyst'
     - if:
       - payloadType: Issues
       - or:
