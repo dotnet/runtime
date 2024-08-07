@@ -771,7 +771,8 @@ private:
         LSRA_LIMIT_SMALL_SET = 0x3,
 #if defined(TARGET_AMD64)
         LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
-        LSRA_LIMIT_MASK           = 0x2003
+        LSRA_LIMIT_EXT_GPR_SET    = 0x4000,
+        LSRA_LIMIT_MASK           = 0x6003
 #else
         LSRA_LIMIT_MASK = 0x3
 #endif
