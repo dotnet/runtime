@@ -73,9 +73,9 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         {
             return mapIdx * BytesPerBucket + (nibble - 1) * MapUnitBytes;
         }
-        private TargetPointer GetAbsoluteAddress(TargetPointer baseAddress, ulong mapIdx, uint nibble)
+        private static TargetPointer GetAbsoluteAddress(TargetPointer baseAddress, ulong mapIdx, uint nibble)
         {
-            return baseAddress + ComputeByteOffset(mapIdx, nibble) - _codeHeaderSize;
+            return baseAddress + ComputeByteOffset(mapIdx, nibble);
         }
 
         // Given a relative address, decompose it into

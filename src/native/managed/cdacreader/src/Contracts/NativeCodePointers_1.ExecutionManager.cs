@@ -141,8 +141,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                     case JitManagerKind.EEJitManager:
                         return EEJitCodeToMethodInfo(target, jittedCodeAddress, out methodDescAddress);
                     case JitManagerKind.ReadyToRunJitManager:
-                        methodDescAddress = TargetPointer.Null;
-                        throw new NotImplementedException(); // TODO[cdac]:
+                        return ReadyToRunJitCodeToMethodInfo(target, jittedCodeAddress, out methodDescAddress);
                     default:
                         throw new InvalidOperationException($"Invalid JitManagerKind {jitManager.JitManagerKind}");
                 }
@@ -203,7 +202,12 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 return nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
 
             }
+            private bool ReadyToRunJitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            {
+                throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
+            }
         }
+
 
         // note: level is 1-indexed
         private static int EffectiveBitsForLevel(TargetCodeManagerDescriptor descriptor, TargetCodePointer address, int level)
