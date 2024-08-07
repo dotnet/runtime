@@ -263,5 +263,7 @@
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
+    <!-- Microsoft.IO.Redist version to satisfy CG -->
+    <MicrosoftIORedistVersion>6.0.1</MicrosoftIORedistVersion>
   </PropertyGroup>
 </Project>
