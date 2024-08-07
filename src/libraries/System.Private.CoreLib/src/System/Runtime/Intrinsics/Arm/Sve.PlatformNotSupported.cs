@@ -4428,6 +4428,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
 
 
+        // Read FFR, returning predicate of successfully loaded elements
+
         /// <summary>
         /// svbool_t svrdffr()
         ///   RDFFR Presult.B
@@ -7935,6 +7937,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
+
+        // Write to the first-fault register
 
         /// <summary>
         /// void svwrffr(svbool_t op)

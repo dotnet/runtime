@@ -31735,6 +31735,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         // op3 has side effects, this would require us to append a new statement
                         // to ensure that it isn't lost, which isn't safe to do from the general
                         // purpose handler here. We'll recognize this and mark it in VN instead
+                        break;
                     }
 
                     // op3 has no side effects, so we can return op2 directly

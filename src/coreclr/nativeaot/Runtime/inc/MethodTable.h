@@ -161,6 +161,9 @@ private:
         // GC depends on this bit, this type has a critical finalizer
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
+        RequiresAlign8Flag = 0x1000
     };
 
 public:
