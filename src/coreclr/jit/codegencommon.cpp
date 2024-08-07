@@ -1516,8 +1516,22 @@ void CodeGen::genExitCode(BasicBlock* block)
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
+#ifndef JIT32_GCENCODER
+        // At this point the gc info that we track in codegen is often incorrect,
+        // as it could be missing return registers or arg registers (in a case of tail call).
+        // GS cookie check will emit a call and that will pass our GC info to emit and potentially mess things up.
+        // While we could infer returns/args and force them to be live and it seems to work in JIT32_GCENCODER case,
+        // it appears to be nontrivial in more general case.
+        // So, instead, we just claim that the whole thing is not GC-interruptible.
+        // Effectively this starts the epilog a few instructions earlier.
+        //
+        // CONSIDER: is that a good place to be that codegen loses track of returns/args at this point?
+        GetEmitter()->emitDisableGC();
+#endif
+
         genEmitGSCookieCheck(jmpEpilog);
 
+#ifdef JIT32_GCENCODER
         if (jmpEpilog)
         {
             // Dev10 642944 -
@@ -1540,6 +1554,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
             GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
         }
+#endif
     }
 
     genReserveEpilog(block);
@@ -4728,43 +4743,13 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
-    regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
-    regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
-
-    /* The return value is special-cased: make sure it goes live for the epilog */
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
-
-    if (IsFullPtrRegMapRequired() && !jmpEpilog)
-    {
-        if (varTypeIsGC(compiler->info.compRetNativeType))
-        {
-            noway_assert(genTypeStSz(compiler->info.compRetNativeType) == genTypeStSz(TYP_I_IMPL));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
-
-            switch (compiler->info.compRetNativeType)
-            {
-                case TYP_REF:
-                    gcrefRegsArg |= RBM_INTRET;
-                    break;
-                case TYP_BYREF:
-                    byrefRegsArg |= RBM_INTRET;
-                    break;
-                default:
-                    break;
-            }
-
-            JITDUMP("Extending return value GC liveness to epilog\n");
-        }
-    }
-
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
     assert(block != nullptr);
-    const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
-                                          block->IsLast());
+    // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
+    // Besides, at this point the GC info that we track in CodeGen is often incorrect.
+    // See comments in genExitCode for more info.
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, block->IsLast());
 }
 
 /*****************************************************************************
