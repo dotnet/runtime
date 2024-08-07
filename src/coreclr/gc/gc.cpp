@@ -44156,7 +44156,10 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     assert ((region->flags & heap_segment_flags_ma_committed) == 0);
 #endif //BACKGROUND_GC
 
-    global_region_allocator.delete_region (get_region_start (region));
+    if (require_clearing_memory_p)
+    {
+        global_region_allocator.delete_region (get_region_start (region));
+    }
 
     return decommit_size;
 }
