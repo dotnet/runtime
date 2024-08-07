@@ -205,6 +205,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IlcRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
       <_IlcConditionallyRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
       <_IlcTrimmedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
+      <_IlcSingleWarnAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'true'" />
       <_IlcNoSingleWarnAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'false'" />
 
       <!-- Now process the raw ItemGroup into the form that ILC accepts: assembly names only -->
@@ -215,6 +216,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IlcConditionallyRootedAssemblies Include="@(_IlcConditionallyRootedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
       <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
       <_IlcTrimmedAssemblies Include="@(_IlcTrimmedAssembliesRaw)" Condition="!Exists('%(Identity)')" />
+      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
+      <_IlcSingleWarnAssemblies Include="@(_IlcSingleWarnAssembliesRaw)" Condition="!Exists('%(Identity)')" />
       <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw->'%(Filename)')" Condition="Exists('%(Identity)')" />
       <_IlcNoSingleWarnAssemblies Include="@(_IlcNoSingleWarnAssembliesRaw)" Condition="!Exists('%(Identity)')" />
     </ItemGroup>
@@ -282,6 +285,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
       <IlcArg Include="@(_IlcConditionallyRootedAssemblies->'--conditionalroot:%(Identity)')" />
       <IlcArg Include="@(_IlcTrimmedAssemblies->'--trim:%(Identity)')" />
+      <IlcArg Include="@(_IlcSingleWarnAssemblies->'--singlewarnassembly:%(Identity)')" />
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Identity)')" />
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Condition="$(IlcResilient) != 'false'" Include="--resilient" />
