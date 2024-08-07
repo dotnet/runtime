@@ -87,8 +87,8 @@ STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_CombinedLimit
 
 ;;
 ;; IMPORTS

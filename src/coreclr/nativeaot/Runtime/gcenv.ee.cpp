@@ -136,7 +136,17 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
 {
     FOREACH_THREAD(thread)
     {
-        (*fn) (thread->GetAllocContext(), param);
+        ee_alloc_context* palloc_context = thread->GetEEAllocContext();
+        gc_alloc_context* ac = palloc_context->GetGCAllocContext();
+        (*fn) (ac, param);
+        // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+        // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+        // with no synchronization. If you need to change this code think carefully about how that concurrency
+        // may affect the results.
+        if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
+        {
+            palloc_context->m_CombinedLimit = 0;
+        }
     }
     END_FOREACH_THREAD
 }

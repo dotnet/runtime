@@ -240,8 +240,8 @@ C_FUNC(\Name):
 //
 // Rename fields of nested structs
 //
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+#define OFFSETOF__Thread__m_eeAllocContext__m_CombinedLimit   OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_CombinedLimit
 
 // GC type flags
 #define GC_ALLOC_FINALIZE           1
