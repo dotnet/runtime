@@ -23,13 +23,16 @@ public class Runtime_105624
     [Fact]
     public static void TestEntryPoint()
     {
-        var vr8 = Vector128.CreateScalar(4294967294U);
-        var vr7 = Avx512F.VL.ConvertToVector256Double(vr8);
+        if (Avx512F.IsSupported)
+        {
+            var vr8 = Vector128.CreateScalar(4294967294U);
+            var vr7 = Avx512F.VL.ConvertToVector256Double(vr8);
 
-        var vr10 = Vector128.CreateScalar(4294967295U);
-        var vr9 = Avx512F.VL.ConvertToVector256Double(vr10);
+            var vr10 = Vector128.CreateScalar(4294967295U);
+            var vr9 = Avx512F.VL.ConvertToVector256Double(vr10);
 
-        var res = vr7 + vr9;
-        Assert.Equal(Vector256.CreateScalar(8589934589.0), res);
+            var res = vr7 + vr9;
+            Assert.Equal(Vector256.CreateScalar(8589934589.0), res);
+        }
     }
 }
