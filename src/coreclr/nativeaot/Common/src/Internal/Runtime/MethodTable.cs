@@ -732,7 +732,14 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.RequiresAlign8Flag) != 0;
+                // NOTE: Does not work for types with HasComponentSize, ie. arrays and strings.
+                // Since this is called early through RhNewObject we cannot use regular Debug.Assert
+                // here to enforce the assumption.
+#if DEBUG
+                if (HasComponentSize)
+                    Debug.Fail("RequiresAlign8 called for array or string");
+#endif
+                return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign8Flag) != 0;
             }
         }
 

@@ -1352,11 +1352,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint flags = 0;
 
-            if (_type.RequiresAlign8())
-            {
-                flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-            }
-
             if (_type.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
