@@ -993,7 +993,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-            bool requiresAlign8 = closestCanonDefType.ThreadGcStaticFieldAlignment.AsInt > context.Target.PointerSize;
+            bool requiresAlign8 = closestCanonDefType.GcStaticFieldAlignment.AsInt > context.Target.PointerSize;
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType), requiresAlign8);
             staticsBagKind = BagElementKind.GcStaticDesc;
 
