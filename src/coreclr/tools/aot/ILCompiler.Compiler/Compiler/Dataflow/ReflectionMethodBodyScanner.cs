@@ -187,7 +187,7 @@ namespace ILCompiler.Dataflow
         private MethodParameterValue GetMethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
             => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
-        protected override MethodReturnValue GetReturnValue (MethodIL method) => _annotations.GetMethodReturnValue (method.OwningMethod, isNewObj: false);
+        protected override MethodReturnValue GetReturnValue(MethodIL method) => _annotations.GetMethodReturnValue(method.OwningMethod, isNewObj: false);
 
         /// <summary>
         /// HandleGetField is called every time the scanner needs to represent a value of the field
