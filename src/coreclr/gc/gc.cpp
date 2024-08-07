@@ -13389,7 +13389,7 @@ void gc_heap::distribute_free_regions()
 
     dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
-    to_decommit_size_start_distribute[large_free_region] = global_regions_to_decommit[huge_free_region].get_size_free_regions();
+    to_decommit_size_start_distribute[large_free_region] += global_regions_to_decommit[huge_free_region].get_size_free_regions();
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
