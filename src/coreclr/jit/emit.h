@@ -4004,254 +4004,134 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 //
 emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
 {
+    ssize_t memSize = 0;
 
-    emitAttr    defaultSize = id->idOpSize();
-    instruction ins         = id->idIns();
+    instruction  ins         = id->idIns();
+    emitAttr     defaultSize = id->idOpSize();
+    insTupleType tupleType   = insTupleTypeInfo(ins);
 
-    switch (ins)
+    switch (tupleType)
     {
-        case INS_pextrb:
-        case INS_pinsrb:
-        case INS_vpbroadcastb:
+        case INS_TT_NONE:
         {
-            return EA_1BYTE;
+            // No tuple information available, default to full size
+            memSize = defaultSize;
+            break;
         }
 
-        case INS_pextrw:
-        case INS_pextrw_sse41:
-        case INS_pinsrw:
-        case INS_pmovsxbq:
-        case INS_pmovzxbq:
-        case INS_vpbroadcastw:
+        case INS_TT_FULL:
         {
-            return EA_2BYTE;
-        }
-
-        case INS_addss:
-        case INS_cmpss:
-        case INS_comiss:
-        case INS_cvtss2sd:
-        case INS_cvtss2si:
-        case INS_cvttss2si32:
-        case INS_cvttss2si64:
-        case INS_divss:
-        case INS_extractps:
-        case INS_insertps:
-        case INS_maxss:
-        case INS_minss:
-        case INS_movss:
-        case INS_mulss:
-        case INS_pextrd:
-        case INS_pinsrd:
-        case INS_pmovsxbd:
-        case INS_pmovsxwq:
-        case INS_pmovzxbd:
-        case INS_pmovzxwq:
-        case INS_rcpss:
-        case INS_roundss:
-        case INS_rsqrtss:
-        case INS_sqrtss:
-        case INS_subss:
-        case INS_ucomiss:
-        case INS_vbroadcastss:
-        case INS_vcvttss2usi32:
-        case INS_vcvttss2usi64:
-        case INS_vfmadd132ss:
-        case INS_vfmadd213ss:
-        case INS_vfmadd231ss:
-        case INS_vfmsub132ss:
-        case INS_vfmsub213ss:
-        case INS_vfmsub231ss:
-        case INS_vfnmadd132ss:
-        case INS_vfnmadd213ss:
-        case INS_vfnmadd231ss:
-        case INS_vfnmsub132ss:
-        case INS_vfnmsub213ss:
-        case INS_vfnmsub231ss:
-        case INS_vpbroadcastd:
-        {
-            return EA_4BYTE;
-        }
-
-        case INS_addsd:
-        case INS_cmpsd:
-        case INS_comisd:
-        case INS_cvtsd2si:
-        case INS_cvtsd2ss:
-        case INS_cvttsd2si32:
-        case INS_cvttsd2si64:
-        case INS_divsd:
-        case INS_maxsd:
-        case INS_minsd:
-        case INS_movhpd:
-        case INS_movhps:
-        case INS_movlpd:
-        case INS_movlps:
-        case INS_movq:
-        case INS_movsd:
-        case INS_mulsd:
-        case INS_pextrq:
-        case INS_pinsrq:
-        case INS_pmovsxbw:
-        case INS_pmovsxdq:
-        case INS_pmovsxwd:
-        case INS_pmovzxbw:
-        case INS_pmovzxdq:
-        case INS_pmovzxwd:
-        case INS_roundsd:
-        case INS_sqrtsd:
-        case INS_subsd:
-        case INS_ucomisd:
-        case INS_vbroadcastsd:
-        case INS_vcvttsd2usi32:
-        case INS_vcvttsd2usi64:
-        case INS_vfmadd132sd:
-        case INS_vfmadd213sd:
-        case INS_vfmadd231sd:
-        case INS_vfmsub132sd:
-        case INS_vfmsub213sd:
-        case INS_vfmsub231sd:
-        case INS_vfnmadd132sd:
-        case INS_vfnmadd213sd:
-        case INS_vfnmadd231sd:
-        case INS_vfnmsub132sd:
-        case INS_vfnmsub213sd:
-        case INS_vfnmsub231sd:
-        case INS_vpbroadcastq:
-        {
-            return EA_8BYTE;
-        }
-
-        case INS_cvtdq2pd:
-        case INS_cvtps2pd:
-        {
-            if (defaultSize == 64)
+            // Embedded broadcast supported, so either loading scalar or full vector
+            if (id->idIsEvexbContextSet())
             {
-                return EA_32BYTE;
-            }
-            else if (defaultSize == 32)
-            {
-                return EA_16BYTE;
+                memSize = GetInputSizeInBytes(id);
             }
             else
             {
-                assert(defaultSize == 16);
-                return EA_8BYTE;
+                memSize = defaultSize;
             }
+            break;
         }
 
-        case INS_psrlw:
-        case INS_psrld:
-        case INS_psrlq:
-        case INS_psraw:
-        case INS_psrad:
-        case INS_psllw:
-        case INS_pslld:
-        case INS_psllq:
+        case INS_TT_HALF:
         {
-            // These always have 16-byte memory loads
-            return EA_16BYTE;
-        }
-
-        case INS_vpmovdb:
-        case INS_vpmovdw:
-        case INS_vpmovqb:
-        case INS_vpmovqd:
-        case INS_vpmovqw:
-        case INS_vpmovwb:
-        case INS_vpmovsdb:
-        case INS_vpmovsdw:
-        case INS_vpmovsqb:
-        case INS_vpmovsqd:
-        case INS_vpmovsqw:
-        case INS_vpmovswb:
-        case INS_vpmovusdb:
-        case INS_vpmovusdw:
-        case INS_vpmovusqb:
-        case INS_vpmovusqd:
-        case INS_vpmovusqw:
-        case INS_vpmovuswb:
-        {
-            insTupleType tupleType = insTupleTypeInfo(ins);
-            unsigned     memSize   = 0;
-
-            switch (tupleType)
+            // Embedded broadcast supported, so either loading scalar or half vector
+            if (id->idIsEvexbContextSet())
             {
-                case INS_TT_HALF_MEM:
-                {
-                    memSize = defaultSize / 2;
-                    break;
-                }
-
-                case INS_TT_QUARTER_MEM:
-                {
-                    memSize = defaultSize / 4;
-                    break;
-                }
-
-                case INS_TT_EIGHTH_MEM:
-                {
-                    memSize = defaultSize / 8;
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            return EA_ATTR(memSize);
-        }
-
-        case INS_vbroadcastf128:
-        case INS_vbroadcasti128:
-        case INS_vextractf128:
-        case INS_vextracti128:
-        case INS_vinsertf128:
-        case INS_vinserti128:
-        {
-            return EA_16BYTE;
-        }
-
-        case INS_vbroadcastf32x8:
-        case INS_vbroadcasti32x8:
-        case INS_vbroadcasti64x4:
-        case INS_vbroadcastf64x4:
-        case INS_vextractf32x8:
-        case INS_vextracti32x8:
-        case INS_vextractf64x4:
-        case INS_vextracti64x4:
-        case INS_vinsertf32x8:
-        case INS_vinserti32x8:
-        case INS_vinsertf64x4:
-        case INS_vinserti64x4:
-        {
-            return EA_32BYTE;
-        }
-
-        case INS_movddup:
-        {
-            if (defaultSize == 64)
-            {
-                return EA_64BYTE;
-            }
-            else if (defaultSize == 32)
-            {
-                return EA_32BYTE;
+                memSize = GetInputSizeInBytes(id);
             }
             else
             {
-                assert(defaultSize == 16);
-                return EA_8BYTE;
+                memSize = defaultSize / 2;
             }
+            break;
+        }
+
+        case INS_TT_FULL_MEM:
+        {
+            // Embedded broadcast not supported, load full vector
+            memSize = defaultSize;
+            break;
+        }
+
+        case INS_TT_TUPLE1_SCALAR:
+        case INS_TT_TUPLE1_FIXED:
+        {
+            // Embedded broadcast not supported, load 1 scalar
+            memSize = GetInputSizeInBytes(id);
+            break;
+        }
+
+        case INS_TT_TUPLE2:
+        {
+            // Embedded broadcast not supported, load 2 scalars
+            memSize = GetInputSizeInBytes(id) * 2;
+            break;
+        }
+
+        case INS_TT_TUPLE4:
+        {
+            // Embedded broadcast not supported, load 4 scalars
+            memSize = GetInputSizeInBytes(id) * 4;
+            break;
+        }
+
+        case INS_TT_TUPLE8:
+        {
+            // Embedded broadcast not supported, load 8 scalars
+            memSize = GetInputSizeInBytes(id) * 8;
+            break;
+        }
+
+        case INS_TT_HALF_MEM:
+        {
+            // Embedded broadcast not supported, load half vector
+            memSize = defaultSize / 2;
+            break;
+        }
+
+        case INS_TT_QUARTER_MEM:
+        {
+            // Embedded broadcast not supported, load quarter vector
+            memSize = defaultSize / 4;
+            break;
+        }
+
+        case INS_TT_EIGHTH_MEM:
+        {
+            // Embedded broadcast not supported, load eighth vector
+            memSize = defaultSize / 8;
+            break;
+        }
+
+        case INS_TT_MEM128:
+        {
+            // Embedded broadcast not supported, load 128-bit vector
+            memSize = 16;
+            break;
+        }
+
+        case INS_TT_MOVDDUP:
+        {
+            // Embedded broadcast not supported, load half vector for V128; otherwise, load full vector
+            if (defaultSize == EA_16BYTE)
+            {
+                memSize = 8;
+            }
+            else
+            {
+                memSize = defaultSize;
+            }
+            break;
         }
 
         default:
         {
-            return defaultSize;
+            unreached();
         }
     }
+
+    return EA_ATTR(memSize);
 }
 
 #endif // TARGET_XARCH
