@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // takes address of managed type
-
 internal static partial class Interop
 {
     internal static partial class Sys

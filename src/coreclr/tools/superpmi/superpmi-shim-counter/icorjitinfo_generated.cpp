@@ -67,6 +67,13 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return original_ICorJitInfo->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    mcs->AddCall("getTypeDefinition");
+    return original_ICorJitInfo->getTypeDefinition(type);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -215,13 +222,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
 {
     mcs->AddCall("methodMustBeLoadedBeforeCodeIsRun");
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    mcs->AddCall("mapMethodDeclToMethodImpl");
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
 }
 
 void interceptor_ICJI::getGSCookie(
@@ -1015,18 +1015,12 @@ void interceptor_ICJI::getSwiftLowering(
     original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    mcs->AddCall("getLoongArch64PassStructInRegisterFlags");
-    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    mcs->AddCall("getRISCV64PassStructInRegisterFlags");
-    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+    mcs->AddCall("getFpStructLowering");
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

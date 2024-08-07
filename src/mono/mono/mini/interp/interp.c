@@ -625,6 +625,8 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	}
 
 	MonoMethod *virtual_method = m_class_get_vtable (vtable->klass) [slot];
+	g_assert (virtual_method);
+
 	if (m->is_inflated && mono_method_get_context (m)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
 
@@ -4472,26 +4474,12 @@ interp_call:
 #define BACK_BRANCH_PROFILE(offset)
 #endif
 
-		MINT_IN_CASE(MINT_BR_S) {
-			short br_offset = (short) *(ip + 1);
-			BACK_BRANCH_PROFILE (br_offset);
-			ip += br_offset;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BR) {
 			gint32 br_offset = (gint32) READ32(ip + 1);
 			BACK_BRANCH_PROFILE (br_offset);
 			ip += br_offset;
 			MINT_IN_BREAK;
 		}
-
-#define ZEROP_S(datatype, op) \
-	if (LOCAL_VAR (ip [1], datatype) op 0) { \
-		gint16 br_offset = (gint16) ip [2]; \
-		BACK_BRANCH_PROFILE (br_offset); \
-		ip += br_offset; \
-	} else \
-		ip += 3;
 
 #define ZEROP(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op 0) { \
@@ -4501,23 +4489,11 @@ interp_call:
 	} else \
 		ip += 4;
 
-		MINT_IN_CASE(MINT_BRFALSE_I4_S)
-			ZEROP_S(gint32, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_I8_S)
-			ZEROP_S(gint64, ==);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I4)
 			ZEROP(gint32, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I8)
 			ZEROP(gint64, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_I4_S)
-			ZEROP_S(gint32, !=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_I8_S)
-			ZEROP_S(gint64, !=);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4)
 			ZEROP(gint32, !=);
@@ -4525,15 +4501,6 @@ interp_call:
 		MINT_IN_CASE(MINT_BRTRUE_I8)
 			ZEROP(gint64, !=);
 			MINT_IN_BREAK;
-#define CONDBR_S(cond) \
-	if (cond) { \
-		gint16 br_offset = (gint16) ip [3]; \
-		BACK_BRANCH_PROFILE (br_offset); \
-		ip += br_offset; \
-	} else \
-		ip += 4;
-#define BRELOP_S(datatype, op) \
-	CONDBR_S(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
 #define CONDBR(cond) \
 	if (cond) { \
@@ -4546,24 +4513,6 @@ interp_call:
 #define BRELOP(datatype, op) \
 	CONDBR(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
-		MINT_IN_CASE(MINT_BEQ_I4_S)
-			BRELOP_S(gint32, ==)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BEQ_I8_S)
-			BRELOP_S(gint64, ==)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BEQ_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(!isunordered (f1, f2) && f1 == f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BEQ_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(!mono_isunordered (d1, d2) && d1 == d2)
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BEQ_I4)
 			BRELOP(gint32, ==)
 			MINT_IN_BREAK;
@@ -4580,24 +4529,6 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 == d2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGE_I4_S)
-			BRELOP_S(gint32, >=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGE_I8_S)
-			BRELOP_S(gint64, >=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGE_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(!isunordered (f1, f2) && f1 >= f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGE_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(!mono_isunordered (d1, d2) && d1 >= d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BGE_I4)
@@ -4618,24 +4549,6 @@ interp_call:
 			CONDBR(!mono_isunordered (d1, d2) && d1 >= d2)
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_BGT_I4_S)
-			BRELOP_S(gint32, >)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGT_I8_S)
-			BRELOP_S(gint64, >)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGT_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(!isunordered (f1, f2) && f1 > f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGT_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(!mono_isunordered (d1, d2) && d1 > d2)
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BGT_I4)
 			BRELOP(gint32, >)
 			MINT_IN_BREAK;
@@ -4652,24 +4565,6 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 > d2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLT_I4_S)
-			BRELOP_S(gint32, <)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLT_I8_S)
-			BRELOP_S(gint64, <)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLT_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(!isunordered (f1, f2) && f1 < f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLT_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(!mono_isunordered (d1, d2) && d1 < d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BLT_I4)
@@ -4690,24 +4585,6 @@ interp_call:
 			CONDBR(!mono_isunordered (d1, d2) && d1 < d2)
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_BLE_I4_S)
-			BRELOP_S(gint32, <=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLE_I8_S)
-			BRELOP_S(gint64, <=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLE_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(!isunordered (f1, f2) && f1 <= f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLE_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(!mono_isunordered (d1, d2) && d1 <= d2)
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BLE_I4)
 			BRELOP(gint32, <=)
 			MINT_IN_BREAK;
@@ -4724,24 +4601,6 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 <= d2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BNE_UN_I4_S)
-			BRELOP_S(gint32, !=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BNE_UN_I8_S)
-			BRELOP_S(gint64, !=)
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BNE_UN_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(isunordered (f1, f2) || f1 != f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BNE_UN_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(mono_isunordered (d1, d2) || d1 != d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BNE_UN_I4)
@@ -4763,14 +4622,6 @@ interp_call:
 			MINT_IN_BREAK;
 		}
 
-#define BRELOP_S_CAST(datatype, op) \
-	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
-		gint16 br_offset = (gint16) ip [3]; \
-		BACK_BRANCH_PROFILE (br_offset); \
-		ip += br_offset; \
-	} else \
-		ip += 4;
-
 #define BRELOP_CAST(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
 		gint32 br_offset = (gint32)READ32(ip + 3); \
@@ -4779,24 +4630,6 @@ interp_call:
 	} else \
 		ip += 5;
 
-		MINT_IN_CASE(MINT_BGE_UN_I4_S)
-			BRELOP_S_CAST(guint32, >=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGE_UN_I8_S)
-			BRELOP_S_CAST(guint64, >=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGE_UN_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(isunordered (f1, f2) || f1 >= f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGE_UN_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(mono_isunordered (d1, d2) || d1 >= d2)
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BGE_UN_I4)
 			BRELOP_CAST(guint32, >=);
 			MINT_IN_BREAK;
@@ -4813,24 +4646,6 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(mono_isunordered (d1, d2) || d1 >= d2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGT_UN_I4_S)
-			BRELOP_S_CAST(guint32, >);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGT_UN_I8_S)
-			BRELOP_S_CAST(guint64, >);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BGT_UN_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(isunordered (f1, f2) || f1 > f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BGT_UN_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(mono_isunordered (d1, d2) || d1 > d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BGT_UN_I4)
@@ -4851,24 +4666,6 @@ interp_call:
 			CONDBR(mono_isunordered (d1, d2) || d1 > d2)
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_BLE_UN_I4_S)
-			BRELOP_S_CAST(guint32, <=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLE_UN_I8_S)
-			BRELOP_S_CAST(guint64, <=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLE_UN_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(isunordered (f1, f2) || f1 <= f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLE_UN_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(mono_isunordered (d1, d2) || d1 <= d2)
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_BLE_UN_I4)
 			BRELOP_CAST(guint32, <=);
 			MINT_IN_BREAK;
@@ -4885,24 +4682,6 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(mono_isunordered (d1, d2) || d1 <= d2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLT_UN_I4_S)
-			BRELOP_S_CAST(guint32, <);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLT_UN_I8_S)
-			BRELOP_S_CAST(guint64, <);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BLT_UN_R4_S) {
-			float f1 = LOCAL_VAR (ip [1], float);
-			float f2 = LOCAL_VAR (ip [2], float);
-			CONDBR_S(isunordered (f1, f2) || f1 < f2)
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_BLT_UN_R8_S) {
-			double d1 = LOCAL_VAR (ip [1], double);
-			double d2 = LOCAL_VAR (ip [2], double);
-			CONDBR_S(mono_isunordered (d1, d2) || d1 < d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BLT_UN_I4)
@@ -4926,12 +4705,12 @@ interp_call:
 
 #define ZEROP_SP(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op 0) { \
-		gint16 br_offset = (gint16) ip [2]; \
+		gint32 br_offset = (gint32)READ32(ip + 2); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 3;
+		ip += 4;
 
 MINT_IN_CASE(MINT_BRFALSE_I4_SP) ZEROP_SP(gint32, ==); MINT_IN_BREAK;
 MINT_IN_CASE(MINT_BRFALSE_I8_SP) ZEROP_SP(gint64, ==); MINT_IN_BREAK;
@@ -4940,12 +4719,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define CONDBR_SP(cond) \
 	if (cond) { \
-		gint16 br_offset = (gint16) ip [3]; \
+		gint32 br_offset = (gint32)READ32(ip + 3); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 4;
+		ip += 5;
 #define BRELOP_SP(datatype, op) \
 	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
@@ -7126,31 +6905,25 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip = ret_ip;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALL_HANDLER)
-		MINT_IN_CASE(MINT_CALL_HANDLER_S) {
-			gboolean short_offset = *ip == MINT_CALL_HANDLER_S;
-			const guint16 *ret_ip = short_offset ? (ip + 3) : (ip + 4);
+		MINT_IN_CASE(MINT_CALL_HANDLER) {
+			const guint16 *ret_ip = ip + 4;
 			guint16 clause_index = *(ret_ip - 1);
 
 			*(const guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]) = ret_ip;
 
 			// jump to clause
-			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
+			ip += (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LEAVE_CHECK)
-		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
-			int leave_opcode = *ip;
-
+		MINT_IN_CASE(MINT_LEAVE_CHECK) {
 			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, ip);
 			}
 
-			gboolean const short_offset = leave_opcode == MINT_LEAVE_S_CHECK;
-			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
+			ip += (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ICALL) {
@@ -7475,6 +7248,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			error_init_reuse (error);
 
 			MonoMethod *local_cmethod = LOCAL_VAR (ip [2], MonoMethod*);
+
+			if (local_cmethod->is_generic || mono_class_is_gtd (local_cmethod->klass)) {
+				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidOperationException", "");
+				THROW_EX (ex, ip);
+			}
 
 			// FIXME push/pop LMF
 			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (local_cmethod))) {

@@ -92,7 +92,7 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/vis
 
   <!-- VN -->
   <Type Name="ValueNumPair">
-    <DisplayString>VNP=[L: ${m_liberal,xb}, C: ${m_liberal,xb}]</DisplayString>
+    <DisplayString>VNP=[L: ${m_liberal,xb}, C: ${m_conservative,xb}]</DisplayString>
   </Type>
 
   <!-- Scalar evolution -->

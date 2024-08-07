@@ -1398,8 +1398,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
     for (int i = 0; i < 2; i++)
     {
         const ValueNum phiDefVN = treeNormVNFuncApp.m_args[i];
-        VNFuncApp      phiDefFuncApp;
-        if (!vnStore->GetVNFunc(phiDefVN, &phiDefFuncApp) || (phiDefFuncApp.m_func != VNF_PhiDef))
+        VNPhiDef       phiDef;
+        if (!vnStore->GetPhiDef(phiDefVN, &phiDef))
         {
             // This input is not a phi def. If it's a func app it might depend on
             // transitively on a phi def; consider a general search utility.
@@ -1409,12 +1409,10 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // The PhiDef args tell us which local and which SSA def of that local.
         //
-        assert(phiDefFuncApp.m_arity == 3);
-        const unsigned lclNum    = unsigned(phiDefFuncApp.m_args[0]);
-        const unsigned ssaDefNum = unsigned(phiDefFuncApp.m_args[1]);
-        const ValueNum phiVN     = ValueNum(phiDefFuncApp.m_args[2]);
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:%u " FMT_VN "\n",
-                block->bbNum, i == 0 ? "first" : "second", lclNum, ssaDefNum, phiVN);
+        const unsigned lclNum    = phiDef.LclNum;
+        const unsigned ssaDefNum = phiDef.SsaDef;
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n", block->bbNum,
+                i == 0 ? "first" : "second", lclNum, ssaDefNum);
         if (!foundPhiDef)
         {
             DISPTREE(tree);
@@ -1628,6 +1626,31 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     //
     JITDUMP("Optimizing via jump threading\n");
 
+    bool setNoCseIn = false;
+
+    // If this is a phi-based threading, and the block we're bypassing has
+    // a memory phi, mark the successor blocks with BBF_NO_CSE_IN so we can
+    // block unsound CSE propagation.
+    //
+    if (jti.m_isPhiBased)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryKind == ByrefExposed) && byrefStatesMatchGcHeapStates)
+            {
+                continue;
+            }
+
+            if (jti.m_block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
+            {
+                JITDUMP(FMT_BB " has %s memory phi; will be marking blocks with BBF_NO_CSE_IN\n", jti.m_block->bbNum,
+                        memoryKindNames[memoryKind]);
+                setNoCseIn = true;
+                break;
+            }
+        }
+    }
+
     // Now reroute the flow from the predecessors.
     // If this pred is in the set that will reuse block, do nothing.
     // Else revise pred to branch directly to the appropriate successor of block.
@@ -1638,6 +1661,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         //
         if (BlockSetOps::IsMember(this, jti.m_ambiguousPreds, predBlock->bbNum))
         {
+            if (setNoCseIn && !jti.m_block->HasFlag(BBF_NO_CSE_IN))
+            {
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_block->bbNum);
+                jti.m_block->SetFlags(BBF_NO_CSE_IN);
+            }
             continue;
         }
 
@@ -1652,6 +1680,12 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
 
             fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
+
+            if (setNoCseIn && !jti.m_trueTarget->HasFlag(BBF_NO_CSE_IN))
+            {
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_trueTarget->bbNum);
+                jti.m_trueTarget->SetFlags(BBF_NO_CSE_IN);
+            }
         }
         else
         {
@@ -1660,28 +1694,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
 
             fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
-        }
-    }
 
-    // If this is a phi-based threading, and the block we're bypassing has
-    // a memory phi, mark the block with BBF_NO_CSE_IN so we can block CSE propagation
-    // into the block.
-    //
-    if (jti.m_isPhiBased)
-    {
-        for (MemoryKind memoryKind : allMemoryKinds())
-        {
-            if ((memoryKind == ByrefExposed) && byrefStatesMatchGcHeapStates)
+            if (setNoCseIn && !jti.m_falseTarget->HasFlag(BBF_NO_CSE_IN))
             {
-                continue;
-            }
-
-            if (jti.m_block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
-            {
-                JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
-                        memoryKindNames[memoryKind]);
-                jti.m_block->SetFlags(BBF_NO_CSE_IN);
-                break;
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_falseTarget->bbNum);
+                jti.m_falseTarget->SetFlags(BBF_NO_CSE_IN);
             }
         }
     }

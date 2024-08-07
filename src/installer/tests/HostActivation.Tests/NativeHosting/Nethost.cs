@@ -357,7 +357,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, sharedState.ValidInstallRoot)
                 .DotNetRoot(null)
                 .Execute()
-                .Should().NotHaveStdErrContaining($"Using global installation location [{sharedState.ValidInstallRoot}] as runtime location.");
+                .Should().NotHaveStdErrContaining($"Using global install location [{sharedState.ValidInstallRoot}] as runtime location.");
         }
 
         public class SharedTestState : SharedTestStateBase

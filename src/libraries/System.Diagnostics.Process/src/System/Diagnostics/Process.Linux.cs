@@ -31,13 +31,14 @@ namespace System.Diagnostics
             ArrayBuilder<Process> processes = default;
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat))
+                if (ProcessManager.TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) &&
+                    Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat parsedStat))
                 {
-                    string actualProcessName = GetUntruncatedProcessName(ref parsedStat);
+                    string actualProcessName = GetUntruncatedProcessName(procPid, ref parsedStat);
                     if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
-                        Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                        Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus parsedStatus))
                     {
-                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, actualProcessName);
+                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(procPid, ref parsedStat, ref parsedStatus, actualProcessName);
                         processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
                     }
                 }
@@ -52,10 +53,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get
-            {
-                return TicksToTimeSpan(GetStat().stime);
-            }
+            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : TicksToTimeSpan(GetStat().stime);
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
@@ -131,6 +129,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 Interop.procfs.ParsedStat stat = GetStat();
                 return TicksToTimeSpan(stat.utime + stat.stime);
             }
@@ -145,10 +148,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
-            get
-            {
-                return TicksToTimeSpan(GetStat().utime);
-            }
+            get => IsCurrentProcess ? Environment.CpuUsage.UserTime : TicksToTimeSpan(GetStat().utime);
         }
 
         partial void EnsureHandleCountPopulated()
@@ -160,7 +160,11 @@ namespace System.Diagnostics
                 {
                     return;
                 }
-                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(_processId);
+                if (!ProcessManager.TryGetProcPid(_processId, out Interop.procfs.ProcPid procPid))
+                {
+                    return;
+                }
+                string path = Interop.procfs.GetFileDescriptorDirectoryPathForProcess(procPid);
                 if (Directory.Exists(path))
                 {
                     try
@@ -250,18 +254,19 @@ namespace System.Diagnostics
 #pragma warning restore IDE0060
 
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
-        /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
-        internal static string? GetExePath(int processId = -1)
+        /// <param name="procPid">The pid for the target process.</param>
+        internal static string? GetExePath(Interop.procfs.ProcPid procPid)
         {
-            return processId == -1 ? Environment.ProcessPath :
-                Interop.Sys.ReadLink(Interop.procfs.GetExeFilePathForProcess(processId));
+            return procPid == Interop.procfs.ProcPid.Self ? Environment.ProcessPath :
+                Interop.Sys.ReadLink(Interop.procfs.GetExeFilePathForProcess(procPid));
         }
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
+        /// <param name="procPid">The pid for the target process.</param>
         /// <param name="stat">The stat for the target process.</param>
-        internal static string GetUntruncatedProcessName(ref Interop.procfs.ParsedStat stat)
+        internal static string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
         {
-            string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(stat.pid);
+            string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(procPid);
 
             byte[]? rentedArray = null;
             try
@@ -362,7 +367,7 @@ namespace System.Diagnostics
         {
             EnsureState(State.HaveNonExitedId);
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(_processId, out stat))
+            if (!ProcessManager.TryReadStatFile(_processId, out stat))
             {
                 throw new Win32Exception(SR.ProcessInformationUnavailable);
             }

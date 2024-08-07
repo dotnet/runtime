@@ -1787,7 +1787,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
     WRAPPER_NO_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-    InsureInit(false, NULL);
+    InsureInit(NULL);
     return m_pMD;
 #else
     if (m_MachState.isValid())
@@ -1806,10 +1806,6 @@ MethodDesc* HelperMethodFrame::GetFunction()
 // Ensures the HelperMethodFrame gets initialized, if not already.
 //
 // Arguments:
-//      * initialInit -
-//         * true: ensure the simple, first stage of initialization has been completed.
-//             This is used when the HelperMethodFrame is first created.
-//         * false: complete any initialization that was left to do, if any.
 //      * unwindState - [out] DAC builds use this to return the unwound machine state.
 //
 // Return Value:
@@ -1817,8 +1813,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //
 //
 
-BOOL HelperMethodFrame::InsureInit(bool initialInit,
-                                    MachState * unwindState)
+BOOL HelperMethodFrame::InsureInit(MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
@@ -1834,13 +1829,10 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     _ASSERTE(m_Attribs != 0xCCCCCCCC);
 
 #ifndef DACCESS_COMPILE
-    if (!initialInit)
-    {
-        m_pMD = ECall::MapTargetBackToMethod(m_FCallEntry);
+    m_pMD = ECall::MapTargetBackToMethod(m_FCallEntry);
 
-        // if this is an FCall, we should find it
-        _ASSERTE(m_FCallEntry == 0 || m_pMD != 0);
-    }
+    // if this is an FCall, we should find it
+    _ASSERTE(m_FCallEntry == 0 || m_pMD != 0);
 #endif
 
     // Because TRUE FCalls can be called from via reflection, com-interop, etc.,
@@ -1855,8 +1847,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     DWORD threadId = m_pThread->GetOSThreadId();
     MachState unwound;
 
-    if (!initialInit &&
-        m_FCallEntry == 0 &&
+    if (m_FCallEntry == 0 &&
         !(m_Attribs & Frame::FRAME_ATTR_EXACT_DEPTH)) // Jit Helper
     {
         LazyMachState::unwindLazyState(
@@ -1884,8 +1875,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
         }
 #endif // !defined(DACCESS_COMPILE)
     }
-    else if (!initialInit &&
-             (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
+    else if ((m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
         // explicitly told depth
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);

@@ -317,7 +317,7 @@ namespace System.Text.Json
         /// Gets a Regex instance for recognizing integer representations of enums.
         /// </summary>
         public static readonly Regex IntegerRegex = CreateIntegerRegex();
-        private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
 #if NET
@@ -355,48 +355,55 @@ namespace System.Text.Json
                 return false;
             }
 
-            if (leftIntegral.Length == rightIntegral.Length)
+            // Need to check that the concatenated integral and fractional parts are equal;
+            // break each representation into three parts such that their lengths exactly match.
+            ReadOnlySpan<byte> leftFirst;
+            ReadOnlySpan<byte> leftMiddle;
+            ReadOnlySpan<byte> leftLast;
+
+            ReadOnlySpan<byte> rightFirst;
+            ReadOnlySpan<byte> rightMiddle;
+            ReadOnlySpan<byte> rightLast;
+
+            int diff = leftIntegral.Length - rightIntegral.Length;
+            switch (diff)
             {
-                return leftIntegral.SequenceEqual(rightIntegral) &&
-                    leftFractional.SequenceEqual(rightFractional);
+                case < 0:
+                    leftFirst = leftIntegral;
+                    leftMiddle = leftFractional.Slice(0, -diff);
+                    leftLast = leftFractional.Slice(-diff);
+                    int rightOffset = rightIntegral.Length + diff;
+                    rightFirst = rightIntegral.Slice(0, rightOffset);
+                    rightMiddle = rightIntegral.Slice(rightOffset);
+                    rightLast = rightFractional;
+                    break;
+
+                case 0:
+                    leftFirst = leftIntegral;
+                    leftMiddle = default;
+                    leftLast = leftFractional;
+                    rightFirst = rightIntegral;
+                    rightMiddle = default;
+                    rightLast = rightFractional;
+                    break;
+
+                case > 0:
+                    int leftOffset = leftIntegral.Length - diff;
+                    leftFirst = leftIntegral.Slice(0, leftOffset);
+                    leftMiddle = leftIntegral.Slice(leftOffset);
+                    leftLast = leftFractional;
+                    rightFirst = rightIntegral;
+                    rightMiddle = rightFractional.Slice(0, diff);
+                    rightLast = rightFractional.Slice(diff);
+                    break;
             }
 
-            // There is differentiation in the integral and fractional lengths,
-            // concatenate both into singular buffers and compare them.
-            scoped Span<byte> leftDigits;
-            scoped Span<byte> rightDigits;
-            byte[]? rentedLeftBuffer;
-            byte[]? rentedRightBuffer;
-
-            if (nDigits <= JsonConstants.StackallocByteThreshold)
-            {
-                leftDigits = stackalloc byte[JsonConstants.StackallocByteThreshold];
-                rightDigits = stackalloc byte[JsonConstants.StackallocByteThreshold];
-                rentedLeftBuffer = rentedRightBuffer = null;
-            }
-            else
-            {
-                leftDigits = (rentedLeftBuffer = ArrayPool<byte>.Shared.Rent(nDigits));
-                rightDigits = (rentedRightBuffer = ArrayPool<byte>.Shared.Rent(nDigits));
-            }
-
-            leftIntegral.CopyTo(leftDigits);
-            leftFractional.CopyTo(leftDigits.Slice(leftIntegral.Length));
-            rightIntegral.CopyTo(rightDigits);
-            rightFractional.CopyTo(rightDigits.Slice(rightIntegral.Length));
-
-            bool result = leftDigits.Slice(0, nDigits).SequenceEqual(rightDigits.Slice(0, nDigits));
-
-            if (rentedLeftBuffer != null)
-            {
-                Debug.Assert(rentedRightBuffer != null);
-                rentedLeftBuffer.AsSpan(0, nDigits).Clear();
-                rentedRightBuffer.AsSpan(0, nDigits).Clear();
-                ArrayPool<byte>.Shared.Return(rentedLeftBuffer);
-                ArrayPool<byte>.Shared.Return(rentedRightBuffer);
-            }
-
-            return result;
+            Debug.Assert(leftFirst.Length == rightFirst.Length);
+            Debug.Assert(leftMiddle.Length == rightMiddle.Length);
+            Debug.Assert(leftLast.Length == rightLast.Length);
+            return leftFirst.SequenceEqual(rightFirst) &&
+                leftMiddle.SequenceEqual(rightMiddle) &&
+                leftLast.SequenceEqual(rightLast);
 
             static void ParseNumber(
                 ReadOnlySpan<byte> span,

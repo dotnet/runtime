@@ -67,7 +67,7 @@ System.AppContext|4.3.0
 System.Buffers|5.0.0
 System.Collections|4.3.0
 System.Collections.Concurrent|4.3.0
-System.Collections.Immutable|9.0.0
+System.Collections.Immutable|${ProductVersion}
 System.Collections.NonGeneric|4.3.0
 System.Collections.Specialized|4.3.0
 System.ComponentModel|4.3.0
@@ -80,7 +80,7 @@ System.Data.Common|4.3.0
 System.Data.DataSetExtensions|4.4.0
 System.Diagnostics.Contracts|4.3.0
 System.Diagnostics.Debug|4.3.0
-System.Diagnostics.DiagnosticSource|9.0.0
+System.Diagnostics.DiagnosticSource|${ProductVersion}
 System.Diagnostics.FileVersionInfo|4.3.0
 System.Diagnostics.Process|4.3.0
 System.Diagnostics.StackTrace|4.3.0
@@ -90,8 +90,8 @@ System.Diagnostics.TraceSource|4.3.0
 System.Diagnostics.Tracing|4.3.0
 System.Drawing.Primitives|4.3.0
 System.Dynamic.Runtime|4.3.0
-System.Formats.Asn1|9.0.0
-System.Formats.Tar|9.0.0
+System.Formats.Asn1|${ProductVersion}
+System.Formats.Tar|${ProductVersion}
 System.Globalization|4.3.0
 System.Globalization.Calendars|4.3.0
 System.Globalization.Extensions|4.3.0
@@ -107,7 +107,7 @@ System.IO.IsolatedStorage|4.3.0
 System.IO.MemoryMappedFiles|4.3.0
 System.IO.Pipes|4.3.0
 System.IO.Pipes.AccessControl|5.0.0
-System.IO.Pipelines|9.0.0
+System.IO.Pipelines|${ProductVersion}
 System.IO.UnmanagedMemoryStream|4.3.0
 System.Linq|4.3.0
 System.Linq.Expressions|4.3.0
@@ -115,7 +115,7 @@ System.Linq.Parallel|4.3.0
 System.Linq.Queryable|4.3.0
 System.Memory|5.0.0
 System.Net.Http|4.3.4
-System.Net.Http.Json|9.0.0
+System.Net.Http.Json|${ProductVersion}
 System.Net.NameResolution|4.3.0
 System.Net.NetworkInformation|4.3.0
 System.Net.Ping|4.3.0
@@ -136,7 +136,7 @@ System.Reflection.Emit|4.7.0
 System.Reflection.Emit.ILGeneration|4.7.0
 System.Reflection.Emit.Lightweight|4.7.0
 System.Reflection.Extensions|4.3.0
-System.Reflection.Metadata|9.0.0
+System.Reflection.Metadata|${ProductVersion}
 System.Reflection.Primitives|4.3.0
 System.Reflection.TypeExtensions|4.3.0
 System.Resources.Reader|4.3.0
@@ -168,16 +168,16 @@ System.Security.Principal|4.3.0
 System.Security.Principal.Windows|5.0.0
 System.Security.SecureString|4.3.0
 System.Text.Encoding|4.3.0
-System.Text.Encoding.CodePages|9.0.0
+System.Text.Encoding.CodePages|${ProductVersion}
 System.Text.Encoding.Extensions|4.3.0
-System.Text.Encodings.Web|9.0.0
-System.Text.Json|9.0.0
+System.Text.Encodings.Web|${ProductVersion}
+System.Text.Json|${ProductVersion}
 System.Text.RegularExpressions|4.3.1
 System.Threading|4.3.0
-System.Threading.Channels|9.0.0
+System.Threading.Channels|${ProductVersion}
 System.Threading.Overlapped|4.3.0
 System.Threading.Tasks|4.3.0
-System.Threading.Tasks.Dataflow|9.0.0
+System.Threading.Tasks.Dataflow|${ProductVersion}
 System.Threading.Tasks.Extensions|5.0.0
 System.Threading.Tasks.Parallel|4.3.0
 System.Threading.Thread|4.3.0

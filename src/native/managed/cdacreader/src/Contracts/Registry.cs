@@ -20,6 +20,7 @@ internal sealed class Registry
 
     public IException Exception => GetContract<IException>();
     public ILoader Loader => GetContract<ILoader>();
+    public IObject Object => GetContract<IObject>();
     public IThread Thread => GetContract<IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IDacStreams>();

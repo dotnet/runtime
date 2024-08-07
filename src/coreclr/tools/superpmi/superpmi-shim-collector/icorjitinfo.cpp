@@ -107,6 +107,15 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return result;
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+    CORINFO_CLASS_HANDLE type)
+{
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getTypeDefinition(type);
+    mc->recGetTypeDefinition(type, result);
+
+    return result;
+}
+
 // Decides if you have any limitations for inlining. If everything's OK, it will return
 // INLINE_PASS.
 //
@@ -314,12 +323,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE m
     mc->cr->AddCall("methodMustBeLoadedBeforeCodeIsRun");
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
     mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("mapMethodDeclToMethodImpl");
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
 }
 
 // Returns the global cookie for the /GS unsafe buffer checks
@@ -1427,20 +1430,11 @@ void interceptor_ICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     mc->recGetSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
-    uint32_t temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-    mc->recGetLoongArch64PassStructInRegisterFlags(structHnd, temp);
-    return temp;
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
-{
-    mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
-    uint32_t temp = original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
-    mc->recGetRISCV64PassStructInRegisterFlags(structHnd, temp);
-    return temp;
+    mc->cr->AddCall("getFpStructLowering");
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
+    mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
 // Stuff on ICorDynamicInfo

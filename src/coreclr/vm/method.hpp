@@ -253,7 +253,7 @@ public:
             pamTracker = NULL;
         }
 
-        // If EnsureTemporaryEntryPointCore is called, then 
+        // If EnsureTemporaryEntryPointCore is called, then
         // both GetTemporaryEntryPointIfExists and GetSlot()
         // are guaranteed to return a NON-NULL PCODE.
         EnsureTemporaryEntryPointCore(pamTracker);
@@ -316,7 +316,7 @@ public:
 
     Precode* GetOrCreatePrecode();
     void MarkPrecodeAsStableEntrypoint();
-    
+
 
     // Given a code address return back the MethodDesc whenever possible
     //
@@ -333,7 +333,9 @@ public:
     // See the TypeString class for better control over name formatting.
     LPCUTF8 GetName();
 
+#ifndef DACCESS_COMPILE
     LPCUTF8 GetName(USHORT slot);
+#endif // DACCESS_COMPILE
 
     LPCUTF8 GetNameThrowing();
 
@@ -1053,7 +1055,9 @@ public:
 
     PTR_PCODE GetAddrOfSlot();
 
+#ifndef DACCESS_COMPILE
     PTR_MethodDesc GetDeclMethodDesc(UINT32 slotNumber);
+#endif // DACCESS_COMPILE
 
 public:
     mdMethodDef GetMemberDef() const;
@@ -1905,14 +1909,14 @@ public:
     static void Init();
 #endif
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
-template<> struct cdac_offsets<MethodDesc>
+template<> struct cdac_data<MethodDesc>
 {
-    static const size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
-    static const size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
-    static const size_t Flags = offsetof(MethodDesc, m_wFlags);
+    static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
+    static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
+    static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
 };
 
 #ifndef DACCESS_COMPILE
@@ -2334,11 +2338,11 @@ private:
 
     // Followed by array of method descs...
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
 template<>
-struct cdac_offsets<MethodDescChunk>
+struct cdac_data<MethodDescChunk>
 {
     static constexpr size_t MethodTable = offsetof(MethodDescChunk, m_methodTable);
     static constexpr size_t Next = offsetof(MethodDescChunk, m_next);

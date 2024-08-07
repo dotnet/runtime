@@ -225,7 +225,7 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         internal static bool EndsInDirectorySeparator([NotNullWhen(true)] string? path) =>
-              !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
+              !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[^1]);
 
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
@@ -239,7 +239,7 @@ namespace System.IO
         /// Returns true if the path ends in a directory separator.
         /// </summary>
         internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path) =>
-            path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+            path.Length > 0 && IsDirectorySeparator(path[^1]);
 
         internal static string GetLinkTargetFullPath(string path, string pathToTarget)
             => IsPartiallyQualified(pathToTarget.AsSpan()) ?

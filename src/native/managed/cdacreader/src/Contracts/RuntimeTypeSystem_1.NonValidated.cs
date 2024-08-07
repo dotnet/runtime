@@ -86,19 +86,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
         }
 
-
         internal struct MethodDesc
         {
             private readonly Target _target;
-            private TargetPointer Address { get; init; }
             private readonly Data.MethodDesc _desc;
             private readonly Data.MethodDescChunk _chunk;
-            internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+            internal MethodDesc(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
             {
                 _target = target;
                 _desc = desc;
                 _chunk = chunk;
-                Address = methodDescPointer;
             }
 
             private bool HasFlag(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
@@ -218,30 +215,33 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    private TargetPointer GetMethodDescChunkPointerMayThrow(TargetPointer methodDescPointer, Data.MethodDesc umd)
+    private TargetPointer GetMethodDescChunkPointerThrowing(TargetPointer methodDescPointer, Data.MethodDesc umd)
     {
         ulong? methodDescChunkSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
         if (!methodDescChunkSize.HasValue)
         {
             throw new InvalidOperationException("Target has no definite MethodDescChunk size");
         }
+        // The runtime allocates a contiguous block of memory for a MethodDescChunk followed by MethodDescAlignment * Size bytes of space
+        // that is filled with MethodDesc (or its subclasses) instances.  Each MethodDesc has a ChunkIndex that indicates its
+        // offset from the end of the MethodDescChunk.
         ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize.Value - umd.ChunkIndex * MethodDescAlignment;
         return new TargetPointer(chunkAddress);
     }
 
-    private Data.MethodDescChunk GetMethodDescChunkMayThrow(TargetPointer methodDescPointer, Data.MethodDesc md, out TargetPointer methodDescChunkPointer)
+    private Data.MethodDescChunk GetMethodDescChunkThrowing(TargetPointer methodDescPointer, Data.MethodDesc md, out TargetPointer methodDescChunkPointer)
     {
-        methodDescChunkPointer = GetMethodDescChunkPointerMayThrow(methodDescPointer, md);
+        methodDescChunkPointer = GetMethodDescChunkPointerThrowing(methodDescPointer, md);
         return new Data.MethodDescChunk(_target, methodDescChunkPointer);
     }
 
-    private NonValidated.MethodDesc GetMethodDescMayThrow(TargetPointer methodDescPointer, out TargetPointer methodDescChunkPointer)
+    private NonValidated.MethodDesc GetMethodDescThrowing(TargetPointer methodDescPointer, out TargetPointer methodDescChunkPointer)
     {
         // may throw if the method desc at methodDescPointer is corrupted
         // we bypass the target data cache here because we don't want to cache non-validated data
         Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
-        Data.MethodDescChunk chunk = GetMethodDescChunkMayThrow(methodDescPointer, desc, out methodDescChunkPointer);
-        return new NonValidated.MethodDesc(_target, methodDescPointer, desc, chunk);
+        Data.MethodDescChunk chunk = GetMethodDescChunkThrowing(methodDescPointer, desc, out methodDescChunkPointer);
+        return new NonValidated.MethodDesc(_target, desc, chunk);
     }
 
     private bool ValidateMethodDescPointer(TargetPointer methodDescPointer, [NotNullWhen(true)] out TargetPointer methodDescChunkPointer)
@@ -249,11 +249,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         methodDescChunkPointer = TargetPointer.Null;
         try
         {
-            NonValidated.MethodDesc umd = GetMethodDescMayThrow(methodDescPointer, out methodDescChunkPointer);
+            NonValidated.MethodDesc umd = GetMethodDescThrowing(methodDescPointer, out methodDescChunkPointer);
             TargetPointer methodTablePointer = umd.MethodTable;
             if (methodTablePointer == TargetPointer.Null
-                || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
-                || methodTablePointer == new TargetPointer(0x00000000_fffffffful))
+                || methodTablePointer == TargetPointer.Max64Bit
+                || methodTablePointer == TargetPointer.Max32Bit)
             {
                 return false;
             }

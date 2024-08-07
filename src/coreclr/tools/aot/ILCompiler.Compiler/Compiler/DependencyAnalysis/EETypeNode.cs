@@ -91,6 +91,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
 
+            Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
@@ -534,7 +535,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
@@ -1251,9 +1253,21 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitPointerReloc(typeDefNode);
 
-                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
-                        ? factory.GenericComposition(_type.Instantiation)
-                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    ISymbolNode compositionNode;
+
+                    if (this == factory.MaximallyConstructableType(_type)
+                        && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.ConstructedGenericComposition(_type.Instantiation)
+                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                    }
+                    else
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.GenericComposition(_type.Instantiation)
+                            : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    }
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
@@ -1329,35 +1343,14 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            ComputeRareFlags(factory);
+            ComputeRareFlags();
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
         }
 
-        private void ComputeRareFlags(NodeFactory factory)
+        private void ComputeRareFlags()
         {
             uint flags = 0;
-
-            MetadataType metadataType = _type as MetadataType;
-
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-            {
-                flags |= (uint)EETypeRareFlags.HasCctorFlag;
-            }
-
-            if (_type.RequiresAlign8())
-            {
-                flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-            }
-
-            TargetArchitecture targetArch = _type.Context.Target.Architecture;
-            if (metadataType != null &&
-                (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARM64) &&
-                metadataType.IsHomogeneousAggregate)
-            {
-                flags |= (uint)EETypeRareFlags.IsHFAFlag;
-            }
 
             if (_type.IsByRefLike)
             {

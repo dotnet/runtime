@@ -9,7 +9,7 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -22,7 +22,7 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
     },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
@@ -759,75 +759,6 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return simdBaseJitType;
 }
 
-//------------------------------------------------------------------------
-// vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
-//
-// Arguments:
-//    hwIntrinsicID -- The id for the HW intrinsic
-//
-// Return Value:
-//   Returns true if this intrinsic requires value numbering to add an
-//   extra SimdType argument that encodes the resulting type.
-//   If we don't do this overloaded versions can return the same VN
-//   leading to incorrect CSE substitutions.
-//
-/* static */ bool Compiler::vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID)
-{
-    // No extra type information is needed for scalar/special HW Intrinsic.
-    //
-    unsigned simdSize = 0;
-    if (HWIntrinsicInfo::tryLookupSimdSize(hwIntrinsicID, &simdSize) && (simdSize == 0))
-    {
-        return false;
-    }
-
-    int numArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicID);
-
-    // HW Intrinsic's with -1 for numArgs have a varying number of args, so we currently
-    // give them a unique value number, and don't add an extra argument.
-    //
-    if (numArgs == -1)
-    {
-        return false;
-    }
-
-    // We iterate over all of the different baseType's for this intrinsic in the HWIntrinsicInfo table
-    // We set  diffInsCount to the number of instructions that can execute differently.
-    //
-    unsigned diffInsCount = 0;
-#ifdef TARGET_XARCH
-    instruction lastIns = INS_invalid;
-#endif
-    for (var_types baseType = TYP_BYTE; (baseType <= TYP_DOUBLE); baseType = (var_types)(baseType + 1))
-    {
-        instruction curIns = HWIntrinsicInfo::lookupIns(hwIntrinsicID, baseType);
-        if (curIns != INS_invalid)
-        {
-#ifdef TARGET_XARCH
-            if (curIns != lastIns)
-            {
-                diffInsCount++;
-                // remember the last valid instruction that we saw
-                lastIns = curIns;
-            }
-#elif defined(TARGET_ARM64)
-            // On ARM64 we use the same instruction and specify an insOpt arrangement
-            // so we always consider the instruction operation to be different
-            //
-            diffInsCount++;
-#endif // TARGET
-            if (diffInsCount >= 2)
-            {
-                // We can  early exit the loop now
-                break;
-            }
-        }
-    }
-
-    // If we see two (or more) different instructions we need the extra VNF_SimdType arg
-    return (diffInsCount >= 2);
-}
-
 struct HWIntrinsicIsaRange
 {
     NamedIntrinsic FirstId;
@@ -963,9 +894,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
     if (info.numArgs != -1)
     {
         // We should only have an expected number of arguments
-#if defined(TARGET_ARM64)
-        assert((info.numArgs >= 0) && (info.numArgs <= 4));
-#elif defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
 #else
         unreached();
@@ -1662,7 +1591,27 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
         {
             assert(!mustExpand);
             // The imm-HWintrinsics that do not accept all imm8 values may throw
-            // ArgumentOutOfRangeException when the imm argument is not in the valid range
+            // ArgumentOutOfRangeException when the imm argument is not in the valid range,
+            // unless the intrinsic can be transformed into one that does accept all imm8 values
+
+#ifdef TARGET_ARM64
+            switch (intrinsic)
+            {
+                case NI_AdvSimd_ShiftLeftLogical:
+                case NI_AdvSimd_ShiftLeftLogicalScalar:
+                case NI_AdvSimd_ShiftRightLogical:
+                case NI_AdvSimd_ShiftRightLogicalScalar:
+                case NI_AdvSimd_ShiftRightArithmetic:
+                case NI_AdvSimd_ShiftRightArithmeticScalar:
+                    *useFallback = true;
+                    break;
+
+                default:
+                    assert(*useFallback == false);
+                    break;
+            }
+#endif // TARGET_ARM64
+
             return false;
         }
     }
@@ -1687,7 +1636,7 @@ bool Compiler::CheckHWIntrinsicImmRange(NamedIntrinsic intrinsic,
                 }
             }
             else
-#endif // TARGET_XARCH
+#endif // TARGET_X86
             {
                 *useFallback = true;
                 return false;
@@ -1954,13 +1903,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     var_types nodeRetType = retType;
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
     if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
     {
         // Ensure the result is generated to a mask.
         nodeRetType = TYP_MASK;
     }
-#endif // defined(TARGET_ARM64)
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
@@ -2088,9 +2037,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                 switch (intrinsic)
                 {
+                    case NI_Sve_ConvertToDouble:
                     case NI_Sve_ConvertToInt32:
-                    case NI_Sve_ConvertToUInt32:
                     case NI_Sve_ConvertToInt64:
+                    case NI_Sve_ConvertToSingle:
+                    case NI_Sve_ConvertToUInt32:
                     case NI_Sve_ConvertToUInt64:
                         // Save the base type of return SIMD. It is used to contain this intrinsic inside
                         // ConditionalSelect.
@@ -2217,6 +2168,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorFirstFaulting:
                     case NI_Sve_GatherVectorInt16SignExtend:
                     case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
                     case NI_Sve_GatherVectorInt32SignExtend:
@@ -2283,18 +2235,29 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+    auto convertToMaskIfNeeded = [&](GenTree*& op) {
+        if (!varTypeIsMask(op))
+        {
+            op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
+        }
+    };
+
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
         assert(numArgs > 0);
-        GenTree* op1 = retNode->AsHWIntrinsic()->Op(1);
 
         switch (intrinsic)
         {
-            case NI_Sve_CreateBreakAfterMask:
             case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            {
+                // HWInstrinsic requires a mask for op3
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
+                FALLTHROUGH;
+            }
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakBeforeMask:
             case NI_Sve_CreateMaskForFirstActiveElement:
             case NI_Sve_CreateMaskForNextActiveElement:
             case NI_Sve_GetActiveElementCount:
@@ -2302,45 +2265,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_TestFirstTrue:
             case NI_Sve_TestLastTrue:
             {
-                GenTree* op2 = retNode->AsHWIntrinsic()->Op(2);
-
                 // HWInstrinsic requires a mask for op2
-                if (!varTypeIsMask(op2))
-                {
-                    retNode->AsHWIntrinsic()->Op(2) =
-                        gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
-                }
-                break;
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                FALLTHROUGH;
             }
-
             default:
-                break;
-        }
-
-        switch (intrinsic)
-        {
-            case NI_Sve_CreateBreakAfterPropagateMask:
-            case NI_Sve_CreateBreakBeforePropagateMask:
             {
-                GenTree* op3 = retNode->AsHWIntrinsic()->Op(3);
-
-                // HWInstrinsic requires a mask for op3
-                if (!varTypeIsMask(op3))
-                {
-                    retNode->AsHWIntrinsic()->Op(3) =
-                        gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
-                }
+                // HWInstrinsic requires a mask for op1
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
                 break;
             }
-
-            default:
-                break;
-        }
-
-        if (!varTypeIsMask(op1))
-        {
-            // Op1 input is a vector. HWInstrinsic requires a mask.
-            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
         }
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
@@ -2349,6 +2283,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             assert(HWIntrinsicInfo::IsMultiReg(retNode->AsHWIntrinsic()->GetHWIntrinsicId()));
             retNode =
                 impStoreMultiRegValueToVar(retNode, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+        }
+    }
+
+    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsic))
+    {
+        switch (intrinsic)
+        {
+            case NI_Sve_CreateBreakPropagateMask:
+            {
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
+                break;
+            }
+
+            default:
+                break;
         }
     }
 
@@ -2365,7 +2315,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
-#endif // defined(TARGET_ARM64)
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
     {

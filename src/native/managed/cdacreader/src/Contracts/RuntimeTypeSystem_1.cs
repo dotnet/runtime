@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
-using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -448,7 +447,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal ushort GetNumVtableSlots(TypeHandle typeHandle)
+    private ushort GetNumVtableSlots(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return 0;
@@ -468,7 +467,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (_target.ProcessedData.TryGet(methodDescPointer, out Data.MethodDesc? methodDescData))
         {
             // we already cached the data, we must have validated the address, create the representation struct for our use
-            TargetPointer mdescChunkPtr = GetMethodDescChunkPointerMayThrow(methodDescPointer, methodDescData);
+            TargetPointer mdescChunkPtr = GetMethodDescChunkPointerThrowing(methodDescPointer, methodDescData);
             // FIXME[cdac]: this isn't threadsafe
             if (!_target.ProcessedData.TryGet(mdescChunkPtr, out Data.MethodDescChunk? methodDescChunkData))
             {
@@ -483,16 +482,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             throw new InvalidOperationException("Invalid method desc pointer");
         }
-        else
-        {
-            // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
-            Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
-            Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
 
-            MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
-            _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
-            return new MethodDescHandle(methodDescPointer);
-        }
+        // ok, we validated it, cache the data and add the MethodDesc struct to the dictionary
+        Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
+        Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
+
+        MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
+        _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
+        return new MethodDescHandle(methodDescPointer);
     }
 
     public TargetPointer GetMethodTable(MethodDescHandle methodDescHandle) => _methodDescs[methodDescHandle.Address].MethodTable;

@@ -88,6 +88,10 @@ namespace ILCompiler.Compiler.Tests
                                 {
                                     expected.Offsets[i] = (uint)naturalOffset.AlignUp(size);
                                 }
+                                else
+                                {
+                                    expected.Offsets[i] = (uint)naturalOffset;
+                                }
                                 naturalOffset += size;
                             }
                         }

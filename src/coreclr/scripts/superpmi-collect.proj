@@ -165,6 +165,20 @@
   </ItemGroup>
   -->
 
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">
+    <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' ">
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>runtime</DotNetCliPackageType>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
+  </PropertyGroup>
+
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>

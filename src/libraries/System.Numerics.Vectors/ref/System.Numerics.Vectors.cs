@@ -262,6 +262,8 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<T> CopySign<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> sign) { throw null; }
+        public static System.Numerics.Vector<double> Cos(System.Numerics.Vector<double> vector) { throw null; }
+        public static System.Numerics.Vector<float> Cos(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
@@ -321,14 +323,12 @@ namespace System.Numerics
         public static bool LessThanOrEqualAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -406,15 +406,17 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> ShiftRightLogical(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ShiftRightLogical(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<double> Sin(System.Numerics.Vector<double> vector) { throw null; }
+        public static System.Numerics.Vector<float> Sin(System.Numerics.Vector<float> vector) { throw null; }
+        public static (System.Numerics.Vector<double> Sin, System.Numerics.Vector<double> Cos) SinCos(System.Numerics.Vector<double> vector) { throw null; }
+        public static (System.Numerics.Vector<float> Sin, System.Numerics.Vector<float> Cos) SinCos(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination, nuint elementOffset) { throw null; }
@@ -490,6 +492,7 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
+        public static System.Numerics.Vector2 Cos(System.Numerics.Vector2 vector) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector2 DegreesToRadians(System.Numerics.Vector2 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -539,6 +542,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector2 Reflect(System.Numerics.Vector2 vector, System.Numerics.Vector2 normal) { throw null; }
+        public static System.Numerics.Vector2 Sin(System.Numerics.Vector2 vector) { throw null; }
+        public static (System.Numerics.Vector2 Sin, System.Numerics.Vector2 Cos) SinCos(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -586,6 +591,7 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
+        public static System.Numerics.Vector3 Cos(System.Numerics.Vector3 vector) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static System.Numerics.Vector3 DegreesToRadians(System.Numerics.Vector3 degrees) { throw null; }
@@ -636,6 +642,8 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Reflect(System.Numerics.Vector3 vector, System.Numerics.Vector3 normal) { throw null; }
         public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Vector3 Sin(System.Numerics.Vector3 vector) { throw null; }
+        public static (System.Numerics.Vector3 Sin, System.Numerics.Vector3 Cos) SinCos(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -685,6 +693,7 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array) { }
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
+        public static System.Numerics.Vector4 Cos(System.Numerics.Vector4 vector) { throw null; }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector4 DegreesToRadians(System.Numerics.Vector4 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
@@ -733,6 +742,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 RadiansToDegrees(System.Numerics.Vector4 radians) { throw null; }
         public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Vector4 Sin(System.Numerics.Vector4 vector) { throw null; }
+        public static (System.Numerics.Vector4 Sin, System.Numerics.Vector4 Cos) SinCos(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }

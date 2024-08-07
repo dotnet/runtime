@@ -437,6 +437,7 @@ namespace System.Diagnostics.Metrics
         public Measurement(T value, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) { throw null; }
         public Measurement(T value, params System.Collections.Generic.KeyValuePair<string, object?>[]? tags) { throw null; }
         public Measurement(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public Measurement(T value, in System.Diagnostics.TagList tags) { throw null; }
         public ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
         public T Value { get { throw null; } }
     }

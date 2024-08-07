@@ -72,30 +72,31 @@ export function http_wasm_create_controller (): HttpController {
     return controller;
 }
 
-export function http_wasm_abort_request (controller: HttpController): void {
-    try {
-        if (controller.streamWriter) {
-            controller.streamWriter.abort();
+function handle_abort_error (promise:Promise<any>) {
+    promise.catch((err) => {
+        if (err && err !== "AbortError" && err.name !== "AbortError" ) {
+            Module.err("Unexpected error: " + err);
         }
-    } catch (err) {
-        // ignore
-    }
-    http_wasm_abort_response(controller);
+        // otherwise, it's expected
+    });
 }
 
-export function http_wasm_abort_response (controller: HttpController): void {
+export function http_wasm_abort (controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     try {
-        controller.isAborted = true;
-        if (controller.streamReader) {
-            controller.streamReader.cancel().catch((err) => {
-                if (err && err.name !== "AbortError") {
-                    Module.err("Error in http_wasm_abort_response: " + err);
-                }
-                // otherwise, it's expected
-            });
+        if (!controller.isAborted) {
+            if (controller.streamWriter) {
+                handle_abort_error(controller.streamWriter.abort());
+                controller.isAborted = true;
+            }
+            if (controller.streamReader) {
+                handle_abort_error(controller.streamReader.cancel());
+                controller.isAborted = true;
+            }
         }
-        controller.abortController.abort();
+        if (!controller.isAborted) {
+            controller.abortController.abort("AbortError");
+        }
     } catch (err) {
         // ignore
     }
@@ -110,9 +111,12 @@ export function http_wasm_transform_stream_write (controller: HttpController, bu
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
-        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
-        await Promise.race([controller.streamWriter.write(copy), controller.responsePromise]);
+        try {
+            await controller.streamWriter.ready;
+            await controller.streamWriter.write(copy);
+        } catch (ex) {
+            throw new Error("BrowserHttpWriteStream.Rejected");
+        }
     });
 }
 
@@ -121,9 +125,12 @@ export function http_wasm_transform_stream_close (controller: HttpController): C
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
         mono_assert(controller.responsePromise, "expected fetch promise");
-        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
-        await Promise.race([controller.streamWriter.ready, controller.responsePromise]);
-        await Promise.race([controller.streamWriter.close(), controller.responsePromise]);
+        try {
+            await controller.streamWriter.ready;
+            await controller.streamWriter.close();
+        } catch (ex) {
+            throw new Error("BrowserHttpWriteStream.Rejected");
+        }
     });
 }
 
@@ -131,6 +138,8 @@ export function http_wasm_fetch_stream (controller: HttpController, url: string,
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     const transformStream = new TransformStream<Uint8Array, Uint8Array>();
     controller.streamWriter = transformStream.writable.getWriter();
+    handle_abort_error(controller.streamWriter.closed);
+    handle_abort_error(controller.streamWriter.ready);
     const fetch_promise = http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, transformStream.readable);
     return fetch_promise;
 }
