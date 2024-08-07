@@ -26,5 +26,21 @@ thread_local int tls15;
 thread_local int tls16;
 
 extern "C" DLLEXPORT void initializeTLS() {
-     tls0=0;
+    tls0=0;
+    tls1=0;
+    tls2=0;
+    tls3=0;
+    tls4=0;
+    tls5=0;
+    tls6=0;
+    tls7=0;
+    tls8=0;
+    tls9=0;
+    tls10=0;
+    tls11=0;
+    tls12=0;
+    tls13=0;
+    tls14=0;
+    tls15=0;
+    tls16=0;
 }
