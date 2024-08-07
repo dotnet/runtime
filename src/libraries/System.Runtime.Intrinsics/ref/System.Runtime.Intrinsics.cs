@@ -4964,7 +4964,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong GetActiveElementCount(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> from) { throw null; }
-
         public static System.Numerics.Vector<byte> GetFfrByte() { throw null; }
         public static System.Numerics.Vector<short> GetFfrInt16() { throw null; }
         public static System.Numerics.Vector<int> GetFfrInt32() { throw null; }
@@ -4973,7 +4972,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> GetFfrUInt16() { throw null; }
         public static System.Numerics.Vector<uint> GetFfrUInt32() { throw null; }
         public static System.Numerics.Vector<ulong> GetFfrUInt64() { throw null; }
-
         public static System.Numerics.Vector<byte> InsertIntoShiftedVector(System.Numerics.Vector<byte> left, byte right) { throw null; }
         public static System.Numerics.Vector<double> InsertIntoShiftedVector(System.Numerics.Vector<double> left, double right) { throw null; }
         public static System.Numerics.Vector<short> InsertIntoShiftedVector(System.Numerics.Vector<short> left, short right) { throw null; }
@@ -5437,7 +5435,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<uint> mask, byte* address, System.Numerics.Vector<uint> offsets, System.Numerics.Vector<uint> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<long> offsets, System.Numerics.Vector<ulong> data) { throw null; }
         public static unsafe void Scatter8BitWithByteOffsetsNarrowing(System.Numerics.Vector<ulong> mask, byte* address, System.Numerics.Vector<ulong> offsets, System.Numerics.Vector<ulong> data) { throw null; }
-
         public static unsafe void SetFfr(System.Numerics.Vector<byte> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<short> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<int> value) { throw null; }
@@ -5446,7 +5443,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void SetFfr(System.Numerics.Vector<ushort> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<uint> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<ulong> value) { throw null; }
-
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftLogical(System.Numerics.Vector<short> left, System.Numerics.Vector<ushort> right) { throw null; }
