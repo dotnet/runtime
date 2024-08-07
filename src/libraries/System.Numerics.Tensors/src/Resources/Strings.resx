@@ -135,4 +135,97 @@
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>
+  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
+    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  </data>
+  <data name="DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
+  <data name="NotSupported_CannotCallEqualsOnSpan" xml:space="preserve">
+    <value>Equals() on TensorSpan and ReadOnlyTensorSpan is not supported. Use operator== instead.</value>
+  </data>
+  <data name="NotSupported_CannotCallGetHashCodeOnSpan" xml:space="preserve">
+    <value>GetHashCode() on TensorSpan and ReadOnlyTensorSpan is not supported.</value>
+  </data>
+  <data name="ThrowArgument_IndicesLengthMustEqualRank" xml:space="preserve">
+    <value>Number of Indices must equal the rank of the TensorSpan.</value>
+  </data>
+  <data name="ThrowArgument_LengthsMustEqualArrayLength" xml:space="preserve">
+    <value>The total length specified by the lengths must equal the length of the array.</value>
+  </data>
+  <data name="ThrowArgument_1DTensorRequired" xml:space="preserve">
+    <value>Must be a 1d tensor</value>
+  </data>
+  <data name="ThrowArgument_AxisLargerThanRank" xml:space="preserve">
+    <value>Cannot select an axis greater than the current Rank</value>
+  </data>
+  <data name="ThrowArgument_ConcatenateTooFewTensors" xml:space="preserve">
+    <value>Must provide at least 2 tensors to Concatenate</value>
+  </data>
+  <data name="ThrowArgument_DimensionsNotSame" xml:space="preserve">
+    <value>Number of dimensions to slice does not equal the number of dimensions in the span</value>
+  </data>
+  <data name="ThrowArgument_FilterTensorMustEqualTensorLength" xml:space="preserve">
+    <value>The total length of the filter tensor must equal the length of the tensor to be filtered.</value>
+  </data>
+  <data name="ThrowArgument_IncorrectNumberOfFilterItems" xml:space="preserve">
+    <value>Number of elements provided does not match the number of filters.</value>
+  </data>
+  <data name="ThrowArgument_InPlaceInvalidShape" xml:space="preserve">
+    <value>In place operations require the same shape for both tensors</value>
+  </data>
+  <data name="ThrowArgument_InvalidAxis" xml:space="preserve">
+    <value>Invalid axis provided. Must be greater then or equal to 0 and less than the tensor rank.</value>
+  </data>
+  <data name="ThrowArgument_InvalidConcatenateShape" xml:space="preserve">
+    <value>The tensors must have the same shape, except in the dimension corresponding to axis.</value>
+  </data>
+  <data name="ThrowArgument_InvalidReshapeDimensions" xml:space="preserve">
+    <value>Provided dimensions are not valid for reshaping</value>
+  </data>
+  <data name="ThrowArgument_InvalidSqueezeAxis" xml:space="preserve">
+    <value>Cannot select an axis to squeeze which has size not equal to one</value>
+  </data>
+  <data name="ThrowArgument_OnlyOneWildcard" xml:space="preserve">
+    <value>Provided dimensions can only include 1 wildcard.</value>
+  </data>
+  <data name="ThrowArgument_PermuteAxisOrder" xml:space="preserve">
+    <value>Must provide an axis order for each axis</value>
+  </data>
+  <data name="ThrowArgument_SetSliceInvalidShapes" xml:space="preserve">
+    <value>Provided values must have the same shape as the input tensor.</value>
+  </data>
+  <data name="ThrowArgument_SetSliceNoRange" xml:space="preserve">
+    <value>When no ranges are specified the values tensor must be equal in size as the input tensor.</value>
+  </data>
+  <data name="ThrowArgument_ShapesNotBroadcastCompatible" xml:space="preserve">
+    <value>Shapes are not broadcast compatible.</value>
+  </data>
+  <data name="ThrowArgument_SplitNotSplitEvenly" xml:space="preserve">
+    <value>The number of splits must perfectly divide the dimension.</value>
+  </data>
+  <data name="ThrowArgument_StackTooFewTensors" xml:space="preserve">
+    <value>Must provide at least 2 tensors to Stack.</value>
+  </data>
+  <data name="ThrowArgument_TransposeTooFewDimensions" xml:space="preserve">
+    <value>Must provide a tensor with at least 2 dimensions to transpose it.</value>
+  </data>
+  <data name="ThrowArgument_ValueNonNegative" xml:space="preserve">
+    <value>The provided value must be non-negative.</value>
+  </data>
+  <data name="ThrowArgument_InvalidStridesAndLengths" xml:space="preserve">
+    <value>The provided lengths and strides would allow you to access elements outside the provided memory.</value>
+  </data>
+  <data name="ThrowArgument_StrideLessThan0" xml:space="preserve">
+    <value>Strides cannot be less than 0.</value>
+  </data>
+  <data name="Argument_2DTensorRequired" xml:space="preserve">
+    <value>Must be a 2d Tensor.</value>
+  </data>
+  <data name="Argument_IncompatibleDimensions" xml:space="preserve">
+    <value>Incompatible dimensions for provided tensors. left.Lengths[1] == {0} while right.Lengths[1] == {1}.</value>
+  </data>
+  <data name="ThrowArgument_StackShapesNotSame" xml:space="preserve">
+    <value>All tensors must have the same shape.</value>
+  </data>
 </root>

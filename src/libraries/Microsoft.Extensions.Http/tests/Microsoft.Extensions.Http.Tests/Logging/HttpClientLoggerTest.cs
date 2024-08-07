@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -588,7 +588,7 @@ namespace Microsoft.Extensions.Http.Logging
                         }
                         else
                         {
-#if NET5_0_OR_GREATER
+#if NET
                             return base.Send(request, cancellationToken);
 #else
                             throw new NotImplementedException("unreachable");
@@ -609,7 +609,7 @@ namespace Microsoft.Extensions.Http.Logging
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
                 => SendAsyncCore(request, async: true, cancellationToken);
 
-#if NET5_0_OR_GREATER
+#if NET
             protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
                 => SendAsyncCore(request, async: false, cancellationToken).GetAwaiter().GetResult();
 #endif

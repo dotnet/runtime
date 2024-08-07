@@ -30,19 +30,8 @@ namespace HostActivation.Tests
                 .Execute(expectedToFail: true);
 
             result.Should().Fail()
-                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
-
-            int exitCode = result.ExitCode;
-            const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
-            if (OperatingSystem.IsWindows())
-            {
-                exitCode.Should().Be(AppHostExeNotBoundFailure);
-            }
-            else
-            {
-                // Some Unix flavors filter exit code to ubyte.
-                (exitCode & 0xFF).Should().Be(AppHostExeNotBoundFailure & 0xFF);
-            }
+                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.")
+                .And.ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
         }
 
         [Fact]
@@ -84,19 +73,8 @@ namespace HostActivation.Tests
                 .Execute(expectedToFail: true);
 
             result.Should().Fail()
-                .And.HaveStdErrContaining($"Error: cannot execute dotnet when renamed to {Path.GetFileNameWithoutExtension(sharedTestState.RenamedDotNet)}");
-
-            int exitCode = result.ExitCode;
-            const int EntryPointFailure = unchecked((int)0x80008084);
-            if (OperatingSystem.IsWindows())
-            {
-                exitCode.Should().Be(EntryPointFailure);
-            }
-            else
-            {
-                // Some Unix flavors filter exit code to ubyte.
-                (exitCode & 0xFF).Should().Be(EntryPointFailure & 0xFF);
-            }
+                .And.HaveStdErrContaining($"Error: cannot execute dotnet when renamed to {Path.GetFileNameWithoutExtension(sharedTestState.RenamedDotNet)}")
+                .And.ExitWith(Constants.ErrorCode.EntryPointFailure);
         }
 
         public class SharedTestState : IDisposable
@@ -112,16 +90,16 @@ namespace HostActivation.Tests
                 BaseDirectory = TestArtifact.Create(nameof(InvalidHost));
                 Directory.CreateDirectory(BaseDirectory.Location);
 
-                RenamedDotNet = Path.Combine(BaseDirectory.Location, Binaries.GetExeFileNameForCurrentPlatform("renamed"));
+                RenamedDotNet = Path.Combine(BaseDirectory.Location, Binaries.GetExeName("renamed"));
                 File.Copy(Binaries.DotNet.FilePath, RenamedDotNet);
 
-                UnboundAppHost = Path.Combine(BaseDirectory.Location, Binaries.GetExeFileNameForCurrentPlatform("unbound"));
+                UnboundAppHost = Path.Combine(BaseDirectory.Location, Binaries.GetExeName("unbound"));
                 File.Copy(Binaries.AppHost.FilePath, UnboundAppHost);
 
                 if (OperatingSystem.IsWindows())
                 {
                     // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
-                    UnboundAppHostGUI = Path.Combine(BaseDirectory.Location, Binaries.GetExeFileNameForCurrentPlatform("unboundgui"));
+                    UnboundAppHostGUI = Path.Combine(BaseDirectory.Location, Binaries.GetExeName("unboundgui"));
                     File.Copy(Binaries.AppHost.FilePath, UnboundAppHostGUI);
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(UnboundAppHostGUI);
                 }

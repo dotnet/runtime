@@ -41,6 +41,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/metadata-update.h>
+#include <mono/metadata/method-builder-ilgen.h>
 #include <mono/utils/mono-string.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -49,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 
@@ -1168,7 +1171,7 @@ MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result;
-	MonoMethodInflated *iresult, *cached;
+	MonoMethodInflated *iresult, *cached = NULL;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
 
@@ -1223,8 +1226,8 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	// check cache
 	mono_mem_manager_lock (mm);
 	if (!mm->gmethod_cache)
-		mm->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+		mm->gmethod_cache = dn_simdhash_ght_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method, 0, NULL);
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	mono_mem_manager_unlock (mm);
 
 	if (cached) {
@@ -1263,6 +1266,17 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 		resw->method_data = (void **)g_malloc (sizeof (gpointer) * (len + 1));
 		memcpy (resw->method_data, mw->method_data, sizeof (gpointer) * (len + 1));
+		if (mw->inflate_wrapper_data) {
+			mono_mb_inflate_generic_wrapper_data (context, (gpointer*)resw->method_data, error);
+			if (!is_ok (error)) {
+				g_free (resw->method_data);
+				goto fail;
+			}
+			// we can't set inflate_wrapper_data to 0 on the result, it's possible it
+			// will need to be inflated again (for example in the method_inst ==
+			// generic_container->context.method_inst case, below)
+			resw->inflate_wrapper_data = 1;
+		}
 	}
 
 	if (iresult->context.method_inst) {
@@ -1319,9 +1333,10 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	// check cache
 	mono_mem_manager_lock (mm);
-	cached = (MonoMethodInflated *)g_hash_table_lookup (mm->gmethod_cache, iresult);
+	cached = NULL;
+	dn_simdhash_ght_try_get_value (mm->gmethod_cache, iresult, (void **)&cached);
 	if (!cached) {
-		g_hash_table_insert (mm->gmethod_cache, iresult, iresult);
+		dn_simdhash_ght_insert (mm->gmethod_cache, iresult, iresult);
 		iresult->owner = mm;
 		cached = iresult;
 	}
@@ -1931,21 +1946,25 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 int
 mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
 {
-	int i = mono_class_interface_offset (klass, itf);
+	gboolean has_variance = mono_class_has_variant_generic_params (itf);
+	int exact_match = mono_class_interface_offset (klass, itf), i = -1;
 	*non_exact_match = FALSE;
-	if (i >= 0)
-		return i;
+
+	if (exact_match >= 0) {
+		if (!has_variance)
+			return exact_match;
+	}
 
 	int klass_interface_offsets_count = m_class_get_interface_offsets_count (klass);
 
-	if (m_class_is_array_special_interface  (itf) && m_class_get_rank (klass) < 2) {
+	if (m_class_is_array_special_interface (itf) && m_class_get_rank (klass) < 2) {
 		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
 		int found = -1;
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 
@@ -1956,7 +1975,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 		}
@@ -1965,16 +1984,55 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			return -1;
 
 		return m_class_get_interface_offsets_packed (klass) [found];
-	}
+	} else if (has_variance) {
+		int vst_count, offset = 0;
+		MonoVarianceSearchTableEntry *vst = mono_class_get_variance_search_table (klass, &vst_count);
 
-	if (!mono_class_has_variant_generic_params (itf))
-		return -1;
+		// The variance search table is a buffer containing all interfaces with in/out params in the type's inheritance
+		//  hierarchy, with a NULL separator between each level of the hierarchy. This allows us to skip recursing down
+		//  the whole chain and avoid performing duplicate compatibility checks, since duplicates are stripped from the
+		//  buffer. To comply with the spec, we do an exact-match pass and then a variance pass for each level in the
+		//  hierarchy, then move on to the next level and do two passes for that one.
+		while (offset < vst_count) {
+			// Exact match pass: Is there an exact match at this level of the type hierarchy?
+			// If so, we can use the interface_offset we computed earlier, since we're walking from most derived to least.
+			for (i = offset; i < vst_count; i++) {
+				// If we hit a null, that's the next level in the inheritance hierarchy, so stop there
+				if (vst [i].klass == NULL)
+					break;
 
-	for (i = 0; i < klass_interface_offsets_count; i++) {
-		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-			*non_exact_match = TRUE;
-			return m_class_get_interface_offsets_packed (klass) [i];
+				if (itf != vst [i].klass)
+					continue;
+
+				*non_exact_match = FALSE;
+				g_assert (vst [i].offset == exact_match);
+				return exact_match;
+			}
+
+			// Inexact match (variance) pass:
+			// Is any interface at this level of the type hierarchy variantly compatible with the desired interface?
+			// If so, select the first compatible one we find.
+			for (i = offset; i < vst_count; i++) {
+				// If we hit a null, that's the next level in the inheritance hierarchy, so bump offset past it
+				if (vst [i].klass == NULL) {
+					offset = i + 1;
+					break;
+				}
+
+				if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
+					continue;
+
+				int inexact_match = vst [i].offset;
+				// FIXME: Is it correct that this is possible?
+				// g_assert (inexact_match != exact_match);
+				*non_exact_match = inexact_match != exact_match;
+				return inexact_match;
+			}
 		}
+
+		// If the variance search failed to find a match, return the exact match search result (probably -1).
+		*non_exact_match = (exact_match < 0);
+		return exact_match;
 	}
 
 	return -1;
@@ -3567,6 +3625,7 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
 	/* FIXME test for interfaces with variant generic arguments */
 	if (check_interfaces) {
 		mono_class_init_internal (klass);
@@ -4269,13 +4328,9 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 
 		MonoClass *eclass;
 		MonoClass *eoclass;
-		if (signature_assignment) {
-			eclass = composite_type_to_reduced_element_type (klass);
-			eoclass = composite_type_to_reduced_element_type (oklass);
-		} else {
-			eclass = m_class_get_cast_class (klass);
-			eoclass = m_class_get_cast_class (oklass);
-		}
+
+		eclass = composite_type_to_reduced_element_type (klass);
+		eoclass = composite_type_to_reduced_element_type (oklass);
 
 		*result = (eclass == eoclass);
 		return;
@@ -4331,12 +4386,16 @@ mono_class_is_variant_compatible_slow (MonoClass *klass, MonoClass *oklass)
 	}
 	return TRUE;
 }
-/*Check if @candidate implements the interface @target*/
+
 static gboolean
-mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache);
+
+static gboolean
+mono_class_implement_interface_slow_uncached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
 {
 	ERROR_DECL (error);
 	int i;
+
 	gboolean is_variant = mono_class_has_variant_generic_params (target);
 
 	if (is_variant && MONO_CLASS_IS_INTERFACE_INTERNAL (candidate)) {
@@ -4365,7 +4424,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 						return TRUE;
 					if (is_variant && mono_class_is_variant_compatible_slow (target, iface_class))
 						return TRUE;
-					if (mono_class_implement_interface_slow (target, iface_class))
+					if (mono_class_implement_interface_slow_cached (target, iface_class, cache))
 						return TRUE;
 				}
 			}
@@ -4390,7 +4449,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				if (is_variant && mono_class_is_variant_compatible_slow (target, candidate_interfaces [i]))
 					return TRUE;
 
-				if (mono_class_implement_interface_slow (target, candidate_interfaces [i]))
+				if (mono_class_implement_interface_slow_cached (target, candidate_interfaces [i], cache))
 					return TRUE;
 			}
 		}
@@ -4398,6 +4457,107 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 	} while (candidate);
 
 	return FALSE;
+}
+
+// #define LOG_INTERFACE_CACHE_HITS 1
+
+#if LOG_INTERFACE_CACHE_HITS
+static gint64 implement_interface_hits = 0, implement_interface_misses = 0;
+
+static void
+log_hit_rate (dn_simdhash_ptrpair_ptr_t *cache)
+{
+	gint64 total_calls = implement_interface_hits + implement_interface_misses;
+	if ((total_calls % 500) != 0)
+		return;
+	double hit_rate = implement_interface_hits * 100.0 / total_calls;
+	g_printf ("implement_interface cache hit rate: %f (%lld total calls). Overflow count: %u\n", hit_rate, total_calls, dn_simdhash_overflow_count (cache));
+}
+#endif
+
+static gboolean
+mono_class_implement_interface_slow_cached (MonoClass *target, MonoClass *candidate, dn_simdhash_ptrpair_ptr_t *cache)
+{
+	gpointer cached_result = NULL;
+	dn_ptrpair_t key = { target, candidate };
+	gboolean result = 0, cache_hit = 0;
+
+	// Skip the caching logic for exact matches
+	if (candidate == target)
+		return TRUE;
+
+	cache_hit = dn_simdhash_ptrpair_ptr_try_get_value (cache, key, &cached_result);
+	if (cache_hit) {
+		// Testing shows a cache hit rate of 60% on S.R.Tests and S.T.J.Tests,
+		//  and 40-50% for small app startup. Near-zero overflow count.
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_hits++;
+		log_hit_rate (cache);
+#endif
+		result = (cached_result != NULL);
+#ifndef ENABLE_CHECKED_BUILD
+		return result;
+#endif
+	}
+
+	gboolean uncached_result = mono_class_implement_interface_slow_uncached (target, candidate, cache);
+
+	if (!cache_hit) {
+#if LOG_INTERFACE_CACHE_HITS
+		implement_interface_misses++;
+		log_hit_rate (cache);
+#endif
+		dn_simdhash_ptrpair_ptr_try_add (cache, key, uncached_result ? GUINT_TO_POINTER(1) : NULL);
+	}
+
+#ifdef ENABLE_CHECKED_BUILD
+	if (cache_hit) {
+		if (result != uncached_result)
+			g_print (
+				"Cache mismatch for %s.%s and %s.%s: cached=%d, uncached=%d\n",
+				m_class_get_name_space (target), m_class_get_name (target),
+				m_class_get_name_space (candidate), m_class_get_name (candidate),
+				result, uncached_result
+			);
+		g_assert (result == uncached_result);
+	}
+#endif
+	return uncached_result;
+}
+
+static dn_simdhash_ptrpair_ptr_t *implement_interface_scratch_cache = NULL;
+
+/*Check if @candidate implements the interface @target*/
+static gboolean
+mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
+{
+	gpointer cas_result;
+	gboolean result;
+	dn_simdhash_ptrpair_ptr_t *cache = (dn_simdhash_ptrpair_ptr_t *)mono_atomic_xchg_ptr ((volatile gpointer *)&implement_interface_scratch_cache, NULL);
+	if (!cache)
+		// Roughly 64KB of memory usage and big enough to have fast lookups
+		// Smaller is viable but makes the hit rate worse
+		cache = dn_simdhash_ptrpair_ptr_new (2048, NULL);
+	else if (dn_simdhash_count (cache) >= 2250) {
+		// FIXME: 2250 is arbitrary (roughly 256 11-item buckets w/load factor)
+		// One step down reduces hit rate by approximately 2-4%
+		// HACK: Only clear the scratch cache once it gets too big.
+		// The pattern is that (especially during startup), we have lots
+		//  of mono_class_implement_interface_slow calls back to back that
+		//  perform similar checks, so keeping the cache data around between
+		//  sequential calls will potentially optimize them a lot.
+		dn_simdhash_clear (cache);
+	}
+
+	result = mono_class_implement_interface_slow_cached (target, candidate, cache);
+
+	// Under most circumstances we won't have multiple threads competing to run implement_interface_slow,
+	//  so it's not worth making this thread-local and potentially keeping a cache instance around per-thread.
+	cas_result = mono_atomic_cas_ptr ((volatile gpointer *)&implement_interface_scratch_cache, cache, NULL);
+	if (cas_result != NULL)
+		dn_simdhash_free (cache);
+
+	return result;
 }
 
 /*
@@ -4416,8 +4576,9 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	/*If target is not an interface there is no need to check them.*/
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target)) {
 		return mono_class_implement_interface_slow (target, candidate);
+	}
 
 	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
 		return mono_class_is_variant_compatible (target, candidate, FALSE);
@@ -5158,7 +5319,7 @@ mono_class_get_fields_internal (MonoClass *klass, gpointer *iter)
  * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
- * This routine is an iterator routine for retrieving the fields in a class.
+ * This routine is an iterator routine for retrieving the methods in a class.
  *
  * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are

@@ -59,7 +59,7 @@ namespace System.Formats.Asn1
         {
             CheckUniversalTag(tag, UniversalTagNumber.ObjectIdentifier);
 
-#if NETCOREAPP
+#if NET
             ReadOnlySpan<byte> wellKnownContents = WellKnownOids.GetContents(oidValue);
 
             if (!wellKnownContents.IsEmpty)

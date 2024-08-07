@@ -6,6 +6,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.ComponentModel
 {
@@ -100,6 +101,10 @@ namespace System.ComponentModel
             _componentClass = componentClass ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             _realEvent = eventInfo;
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "componentClass is annotated as preserve All members, so it can call ReflectEventDescriptor ctor.")]
+        internal static ReflectEventDescriptor CreateWithRegisteredType(Type componentClass, EventInfo eventInfo) => new ReflectEventDescriptor(componentClass, eventInfo);
 
         /// <summary>
         /// This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the

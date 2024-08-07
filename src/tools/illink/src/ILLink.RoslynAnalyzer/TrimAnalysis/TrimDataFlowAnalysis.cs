@@ -21,7 +21,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
+	internal sealed class TrimDataFlowAnalysis : LocalDataFlowAnalysis<
 		MultiValue,
 		FeatureContext,
 		ValueSetLattice<SingleValue>,
@@ -41,15 +41,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			OperationBlockAnalysisContext context,
 			DataFlowAnalyzerContext dataFlowAnalyzerContext,
 			IOperation operationBlock)
-			: base (context, operationBlock, initialContext: FeatureContext.None)
+			: base (
+				context,
+				operationBlock,
+				default (ValueSetLattice<SingleValue>),
+				new FeatureContextLattice (),
+				initialContext: FeatureContext.None)
 		{
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (lattice.LocalStateLattice.Lattice.ValueLattice, lattice.ContextLattice);
 			_dataFlowAnalyzerContext = dataFlowAnalyzerContext;
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public void ReportDiagnostics (Action<Diagnostic> reportDiagnostic)
 		{
-			return TrimAnalysisPatterns.CollectDiagnostics (_dataFlowAnalyzerContext);
+			TrimAnalysisPatterns.ReportDiagnostics (_dataFlowAnalyzerContext, reportDiagnostic);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
@@ -169,6 +174,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						TraceWriteLine (line);
 					}
 				}
+			}
+		}
+
+		public override void TraceEdgeInput (
+			IControlFlowGraph<BlockProxy, RegionProxy>.ControlFlowBranch branch,
+			LocalStateValue state
+		) {
+			if (trace && showStates) {
+				var source = branch.Source.Block.Ordinal;
+				var target = branch.Destination?.Block.Ordinal;
+				WriteIndented ($"--- Edge from [{source}] to [{target}] ---", 1);
+				WriteIndented (state.ToString (), 2);
 			}
 		}
 

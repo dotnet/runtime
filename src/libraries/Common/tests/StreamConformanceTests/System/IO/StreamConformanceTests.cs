@@ -1742,7 +1742,8 @@ namespace System.IO.Tests
             from startWithFlush in new[] { false, true }
             select new object[] { mode, writeSize, startWithFlush };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [MemberData(nameof(ReadWrite_Success_Large_MemberData))]
         public virtual async Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) =>
@@ -2438,7 +2439,8 @@ namespace System.IO.Tests
             from useAsync in new bool[] { true, false }
             select new object[] { byteCount, useAsync };
 
-        [OuterLoop]
+        [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

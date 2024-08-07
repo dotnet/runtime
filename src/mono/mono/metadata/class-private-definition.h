@@ -68,9 +68,8 @@ struct _MonoClass {
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
 
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
-
-	/* next byte*/
 	guint interfaces_inited : 1; /* interfaces is initialized */
+	/* next byte*/
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
@@ -79,6 +78,9 @@ struct _MonoClass {
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
 	guint has_deferred_failure : 1;
+	/* next byte*/
+	guint is_exception_class : 1; /* is System.Exception or derived from it */
+	guint variant_search_table_inited : 1;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -126,6 +128,8 @@ struct _MonoClass {
 
 	/* Infrequently used items. See class-accessors.c: InfrequentDataKind for what goes into here. */
 	MonoPropertyBag infrequent_data;
+
+	void *variant_search_table;
 };
 
 struct _MonoClassDef {

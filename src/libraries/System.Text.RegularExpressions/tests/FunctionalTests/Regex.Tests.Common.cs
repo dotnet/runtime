@@ -187,7 +187,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Set the AppContext variable REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE to the given max value. Only used with Nonbacktracking engine.</summary>
         public static void SetSafeSizeThreshold(int maxSize)
         {
-#if NET7_0_OR_GREATER
+#if NET
             AppContext.SetData("REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE", maxSize);
 #endif
         }
@@ -195,7 +195,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>Remove the AppContext variable REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE value. Only used with Nonbacktracking engine.</summary>
         public static void RestoreSafeSizeThresholdToDefault()
         {
-#if NET7_0_OR_GREATER
+#if NET
             AppContext.SetData("REGEX_NONBACKTRACKING_MAX_AUTOMATA_SIZE", null);
 #endif
         }

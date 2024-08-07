@@ -4,6 +4,7 @@
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using static System.Net.Quic.ThrowHelper;
 
 namespace System.Net.Quic;
 
@@ -47,6 +48,21 @@ public sealed class QuicReceiveWindowSizes
             }
         }
     }
+}
+
+/// <summary>
+/// Arguments for <see cref="QuicConnectionOptions.StreamCapacityCallback"/>.
+/// </summary>
+public readonly struct QuicStreamCapacityChangedArgs
+{
+    /// <summary>
+    /// The increment saying how many additional bidirectional streams can be opened on the connection, increased via the latest MAX_STREAMS frame.
+    /// </summary>
+    public int BidirectionalIncrement { get; init; }
+    /// <summary>
+    /// The increment saying how many additional unidirectional streams can be opened on the connection, increased via the latest MAX_STREAMS frame.
+    /// </summary>
+    public int UnidirectionalIncrement { get; init; }
 }
 
 /// <summary>
@@ -97,15 +113,15 @@ public abstract class QuicConnectionOptions
     // We can safely use this to distinguish if user provided value during validation.
     public long DefaultCloseErrorCode { get; set; } = -1;
 
-    internal QuicReceiveWindowSizes? _initialRecieveWindowSizes;
+    internal QuicReceiveWindowSizes? _initialReceiveWindowSizes;
 
     /// <summary>
     /// The initial receive window sizes for the connection and individual stream types.
     /// </summary>
     public QuicReceiveWindowSizes InitialReceiveWindowSizes
     {
-        get => _initialRecieveWindowSizes ??= new QuicReceiveWindowSizes();
-        set => _initialRecieveWindowSizes = value;
+        get => _initialReceiveWindowSizes ??= new QuicReceiveWindowSizes();
+        set => _initialReceiveWindowSizes = value;
     }
 
     /// <summary>
@@ -124,6 +140,14 @@ public abstract class QuicConnectionOptions
     public TimeSpan HandshakeTimeout { get; set; } = QuicDefaults.HandshakeTimeout;
 
     /// <summary>
+    /// Optional callback that is invoked when new stream limit is released by the peer. Corresponds to receiving a MAX_STREAMS frame.
+    /// The callback values represent increments of stream limits, e.g.: current limit is 10 bidirectional streams, callback arguments notify 5 more additional bidirectional streams => 15 bidirectional streams can be opened in total at the moment.
+    /// The initial capacity is reported with the first invocation of the callback that might happen before the <see cref="QuicConnection"/> instance is handed out via either
+    /// <see cref="QuicConnection.ConnectAsync(QuicClientConnectionOptions, CancellationToken)"/> or <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)"/>.
+    /// </summary>
+    public Action<QuicConnection, QuicStreamCapacityChangedArgs>? StreamCapacityCallback { get; set; }
+
+    /// <summary>
     /// Validates the options and potentially sets platform specific defaults.
     /// </summary>
     /// <param name="argumentName">Name of the from the caller.</param>
@@ -131,29 +155,13 @@ public abstract class QuicConnectionOptions
     {
         ValidateInRange(argumentName, MaxInboundBidirectionalStreams, ushort.MaxValue);
         ValidateInRange(argumentName, MaxInboundUnidirectionalStreams, ushort.MaxValue);
-        ValidateTimespan(argumentName, IdleTimeout);
-        ValidateTimespan(argumentName, KeepAliveInterval);
-        ValidateInRange(argumentName, DefaultCloseErrorCode, QuicDefaults.MaxErrorCodeValue);
-        ValidateInRange(argumentName, DefaultStreamErrorCode, QuicDefaults.MaxErrorCodeValue);
-        ValidateTimespan(argumentName, HandshakeTimeout);
+        ValidateTimeSpan(argumentName, IdleTimeout);
+        ValidateTimeSpan(argumentName, KeepAliveInterval);
+        ValidateErrorCode(argumentName, DefaultCloseErrorCode);
+        ValidateErrorCode(argumentName, DefaultStreamErrorCode);
+        ValidateTimeSpan(argumentName, HandshakeTimeout);
 
-        _initialRecieveWindowSizes?.Validate(argumentName);
-
-        static void ValidateInRange(string argumentName, long value, long max, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
-        {
-            if (value < 0 || value > max)
-            {
-                throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_in_range, propertyName, max));
-            }
-        }
-
-        static void ValidateTimespan(string argumentName, TimeSpan value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
-        {
-            if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
-            {
-                throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_timeout_use_gt_zero, propertyName));
-            }
-        }
+        _initialReceiveWindowSizes?.Validate(argumentName);
     }
 }
 
@@ -197,16 +205,8 @@ public sealed class QuicClientConnectionOptions : QuicConnectionOptions
         base.Validate(argumentName);
 
         // The content of ClientAuthenticationOptions gets validate in MsQuicConfiguration.Create.
-        ValidateNotNull(argumentName, ClientAuthenticationOptions);
-        ValidateNotNull(argumentName, RemoteEndPoint);
-
-        static void ValidateNotNull(string argumentName, object value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
-        {
-            if (value is null)
-            {
-                throw new ArgumentNullException(argumentName, SR.Format(SR.net_quic_not_null_open_connection, propertyName));
-            }
-        }
+        ValidateNotNull(argumentName, SR.net_quic_not_null_open_connection, ClientAuthenticationOptions);
+        ValidateNotNull(argumentName, SR.net_quic_not_null_open_connection, RemoteEndPoint);
     }
 }
 
@@ -239,14 +239,6 @@ public sealed class QuicServerConnectionOptions : QuicConnectionOptions
         base.Validate(argumentName);
 
         // The content of ServerAuthenticationOptions gets validate in MsQuicConfiguration.Create.
-        ValidateNotNull(argumentName, ServerAuthenticationOptions);
-
-        static void ValidateNotNull(string argumentName, object value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
-        {
-            if (value is null)
-            {
-                throw new ArgumentNullException(argumentName, SR.Format(SR.net_quic_not_null_accept_connection, propertyName));
-            }
-        }
+        ValidateNotNull(argumentName, SR.net_quic_not_null_accept_connection, ServerAuthenticationOptions);
     }
 }

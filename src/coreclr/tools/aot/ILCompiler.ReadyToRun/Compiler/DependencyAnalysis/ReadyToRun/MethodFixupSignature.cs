@@ -152,9 +152,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(_fixupKind.ToString());
             if (IsInstantiatingStub)
             {
-                sb.Append(" [INST]");
+                sb.Append(" [INST]"u8);
             }
-            sb.Append(": ");
+            sb.Append(": "u8);
             _method.AppendMangledName(nameMangler, sb);
         }
 

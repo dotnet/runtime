@@ -3,11 +3,13 @@
 
 import { mono_wasm_imports, mono_wasm_threads_imports } from "./exports-binding";
 import gitHash from "consts:gitHash";
+import { mono_wasm_hybrid_globalization_imports } from "./globalization";
 
 export function export_linker_indexes_as_code (): string {
     const indexByName: any = {
         mono_wasm_imports: {},
         mono_wasm_threads_imports: {},
+        mono_wasm_hybrid_globalization_imports: {},
     };
     let idx = 0;
     for (const wi of mono_wasm_imports) {
@@ -16,6 +18,10 @@ export function export_linker_indexes_as_code (): string {
     }
     for (const wi of mono_wasm_threads_imports) {
         indexByName.mono_wasm_threads_imports[wi.name] = idx;
+        idx++;
+    }
+    for (const wi of mono_wasm_hybrid_globalization_imports) {
+        indexByName.mono_wasm_hybrid_globalization_imports[wi.name] = idx;
         idx++;
     }
     return `

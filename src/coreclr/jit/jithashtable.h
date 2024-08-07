@@ -76,9 +76,9 @@ public:
     // Compute `numerator` / `prime` using magic division
     unsigned magicNumberDivide(unsigned numerator) const
     {
-        unsigned __int64 num     = numerator;
-        unsigned __int64 mag     = magic;
-        unsigned __int64 product = (num * mag) >> (32 + shift);
+        uint64_t num     = numerator;
+        uint64_t mag     = magic;
+        uint64_t product = (num * mag) >> (32 + shift);
         return (unsigned)product;
     }
 
@@ -233,7 +233,7 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // Lookup: Get a pointer to the value associated to the specified key.
+    // LookupPointer: Get a pointer to the value associated to the specified key.
     // if any.
     //
     // Arguments:
@@ -262,6 +262,48 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // LookupPointerOrAdd: Get a pointer to the value associated to the specified key.
+    // If not present, add it with the specified default value and return a pointer to it.
+    //
+    // Arguments:
+    //    k - the key
+    //    defaultValue - Default value to add to the table if the key was not present
+    //
+    // Return Value:
+    //    A pointer to the value associated with the specified key.
+    //
+    Value* LookupPointerOrAdd(Key k, Value defaultValue)
+    {
+        CheckGrowth();
+
+        assert(m_tableSizeInfo.prime != 0);
+
+        unsigned index = GetIndexForKey(k);
+
+        Node* n = m_table[index];
+        while (n != nullptr)
+        {
+            if (KeyFuncs::Equals(k, n->m_key))
+            {
+                return &n->m_val;
+            }
+
+            n = n->m_next;
+        }
+
+        n              = new (m_alloc) Node(m_table[index], k, defaultValue);
+        m_table[index] = n;
+        m_tableCount++;
+        return &n->m_val;
+    }
+
+    enum SetKind
+    {
+        None,
+        Overwrite
+    };
+
+    //------------------------------------------------------------------------
     // Set: Associate the specified value with the specified key.
     //
     // Arguments:
@@ -279,12 +321,6 @@ public:
     //    If the key already exists and kind is Normal
     //    this method will assert
     //
-    enum SetKind
-    {
-        None,
-        Overwrite
-    };
-
     bool Set(Key k, Value v, SetKind kind = None)
     {
         CheckGrowth();

@@ -54,6 +54,18 @@
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY=$(CxxStandardLibrary)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(CxxStandardLibraryStatic)' == 'true'">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_STANDARD_LIBRARY_STATIC=ON" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(CxxAbiLibrary)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs -DCLR_CMAKE_CXX_ABI_LIBRARY=$(CxxAbiLibrary)" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(ClrFullNativeBuild)' != 'true'">
       <_CoreClrBuildArg Condition="'$(ClrHostsSubset)' == 'true'" Include="-component hosts" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />

@@ -578,7 +578,7 @@ namespace System
         //
         public static int[] GetBits(decimal d)
         {
-            return new int[] { (int)d.Low, (int)d.Mid, (int)d.High, d._flags };
+            return [(int)d.Low, (int)d.Mid, (int)d.High, d._flags];
         }
 
         /// <summary>
@@ -627,7 +627,7 @@ namespace System
 
         internal static void GetBytes(in decimal d, Span<byte> buffer)
         {
-            Debug.Assert(buffer.Length >= 16, "buffer.Length >= 16");
+            Debug.Assert(buffer.Length >= 16);
 
             BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)d.Low);
             BinaryPrimitives.WriteInt32LittleEndian(buffer.Slice(4), (int)d.Mid);
@@ -637,7 +637,7 @@ namespace System
 
         internal static decimal ToDecimal(ReadOnlySpan<byte> span)
         {
-            Debug.Assert(span.Length >= 16, "span.Length >= 16");
+            Debug.Assert(span.Length >= 16);
             int lo = BinaryPrimitives.ReadInt32LittleEndian(span);
             int mid = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(4));
             int hi = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(8));
@@ -1117,6 +1117,14 @@ namespace System
         // IFloatingPoint
         //
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
         int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
 
@@ -1489,6 +1497,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static decimal INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MultiplyAddEstimate(decimal left, decimal right, decimal addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -197,6 +197,7 @@ namespace System.Net.Http.Functional.Tests
                 // The request should fail due to the connection being torn down due to KeepAlivePingTimeout.
                 HttpProtocolException pex = Assert.IsType<HttpProtocolException>(ex.InnerException);
                 Assert.Equal(HttpRequestError.HttpProtocolError, pex.HttpRequestError);
+                Assert.Contains("KeepAlivePingDelay", pex.Message);
 
                 // Let connection live until server finishes:
                 await _serverFinished.Task;

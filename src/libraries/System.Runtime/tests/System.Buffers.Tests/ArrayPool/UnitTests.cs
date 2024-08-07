@@ -82,7 +82,7 @@ namespace System.Buffers.ArrayPool.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("minimumLength", () => pool.Rent(-1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public static void RentingGiganticArraySucceedsOrOOMs()
         {
             try
@@ -272,7 +272,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(id, bt.GetHashCode());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupportedOrBrowserBackgroundExec))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(BytePoolInstances))]
         public static void CanRentManySizedBuffers(ArrayPool<byte> pool)
         {

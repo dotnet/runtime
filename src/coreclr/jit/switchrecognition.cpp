@@ -86,7 +86,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
             }
 
             // We're looking for "X EQ/NE CNS" or "CNS EQ/NE X" pattern
-            if (op1->IsCnsIntOrI() ^ op2->IsCnsIntOrI())
+            if ((op1->IsCnsIntOrI() && !op1->IsIconHandle()) ^ (op2->IsCnsIntOrI() && !op2->IsIconHandle()))
             {
                 // TODO: relax this to support any side-effect free expression
                 if (!op1->OperIs(GT_LCL_VAR) && !op2->OperIs(GT_LCL_VAR))

@@ -162,6 +162,8 @@ jobs:
     - subset: tools_illink
       include:
       - src/tools/illink/*
+      - src/coreclr/tools/aot/ILCompiler.DependencyAnalysisFramework/*
+      - src/coreclr/tools/ILVerification/*
       - global.json
 
     - subset: tools_cdacreader
@@ -200,9 +202,6 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-    - subset: coreclr_jit
-      include:
-      - src/coreclr/jit/*
 
     #
     # ** WASM **

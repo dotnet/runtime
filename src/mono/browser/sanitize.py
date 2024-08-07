@@ -32,7 +32,7 @@ def rewrite_package_json(path):
 
 
 emsdk_path = sys.argv[1]
-emscripten_path = os.path.join(emsdk_path, "upstream", "emscripten")
+emscripten_path = os.path.join(emsdk_path, "emscripten")
 node_root = os.path.join(emsdk_path, "node")
 node_paths = glob(node_root)
 upgrade = True

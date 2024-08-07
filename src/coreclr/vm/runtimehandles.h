@@ -154,16 +154,12 @@ public:
 
     static FCDECL1(INT32, GetCorElementType, PTR_ReflectClassBaseObject pType);
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
-
-    static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
-    static FCDECL1(INT32, GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pType);
+    static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
     static FCDECL3(FC_BOOL_RET, GetFields, ReflectClassBaseObject *pType, INT32 **result, INT32 *pCount);
 
     static FCDECL1(MethodDesc *, GetFirstIntroducedMethod, ReflectClassBaseObject* pType);
     static FCDECL1(void, GetNextIntroducedMethod, MethodDesc **ppMethod);
-
-    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectClassBaseObject * pModuleUNSAFE);
 
     // Helper methods not called by managed code
 
@@ -181,6 +177,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg,
     PCODE* ppfnCtor,
+    PCODE* ppfnValueCtor,
     BOOL* pfCtorIsPublic);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
@@ -194,6 +191,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle p
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCall::TypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
 extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly);
@@ -310,19 +308,14 @@ public:
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
     static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
+extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size);
 
 class ModuleHandle {
 
 public:
     static FCDECL5(ReflectMethodObject*, GetDynamicMethod, ReflectMethodObject *pMethodUNSAFE, ReflectModuleBaseObject *pModuleUNSAFE, StringObject *name, U1Array *sig, Object *resolver);
     static FCDECL1(INT32, GetToken, ReflectModuleBaseObject *pModuleUNSAFE);
-
-    static
-    FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE);
-
-    static
-    FCDECL1(INT32, GetMDStreamVersion, ReflectModuleBaseObject * pModuleUNSAFE);
-
+    static FCDECL1(INT32, GetMDStreamVersion, ReflectModuleBaseObject * pModuleUNSAFE);
 };
 
 extern "C" void QCALLTYPE ModuleHandle_GetModuleType(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);

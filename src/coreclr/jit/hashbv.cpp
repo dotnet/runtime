@@ -127,7 +127,7 @@ int countBitsInWord(unsigned int bits)
     return (int)bits;
 }
 
-int countBitsInWord(unsigned __int64 bits)
+int countBitsInWord(uint64_t bits)
 {
     bits = ((bits >> 1) & 0x5555555555555555) + (bits & 0x5555555555555555);
     bits = ((bits >> 2) & 0x3333333333333333) + (bits & 0x3333333333333333);

@@ -239,6 +239,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("OPTIONS")]
         [InlineData("HEAD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
             using (HttpClient client = CreateHttpClient())
@@ -274,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, uri);
-                    request.Content = new StringContent("", null, ((MediaTypeHeaderValue)null)!);
+                    request.Content = new StringContent("", null, (MediaTypeHeaderValue)null);
 
                     Task<HttpResponseMessage> requestTask = client.SendAsync(request);
                     await server.AcceptConnectionAsync(async connection =>

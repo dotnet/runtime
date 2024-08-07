@@ -49,7 +49,7 @@ public static class Program
             delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
             ios_register_button_click(unmanagedPtr);
         }
-        const string msg = "Hello World!\n.NET 8.0";
+        const string msg = "Hello World!\n.NET Runtime";
         for (int i = 0; i < msg.Length; i++)
         {
             // a kind of an animation

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef NO_CONFIG_H
-#include <config.h>
+#include <dn-config.h>
 #endif
 #include "dn-simdhash.h"
 

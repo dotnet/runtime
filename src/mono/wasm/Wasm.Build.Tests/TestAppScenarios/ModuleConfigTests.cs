@@ -25,7 +25,7 @@ public class ModuleConfigTests : AppTestBase
     [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
+        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(
@@ -58,7 +58,7 @@ public class ModuleConfigTests : AppTestBase
     [Fact]
     public async Task OutErrOverrideWorks()
     {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks");
+        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks", "App");
         PublishProject("Debug");
 
         var result = await RunSdkStyleAppForPublish(new(

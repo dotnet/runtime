@@ -326,7 +326,7 @@ namespace System.Numerics.Tests
             Vector3 axis = Vector3.Normalize(new Vector3(1.0f, 2.0f, 3.0f));
             float angle = MathHelper.ToRadians(30.0f);
 
-            Quaternion expected = new Quaternion(0.0691723f, 0.1383446f, 0.207516879f, 0.9659258f);
+            Quaternion expected = new Quaternion(0.06917231f, 0.13834462f, 0.2075169f, 0.9659258f);
             Quaternion actual;
 
             actual = Quaternion.CreateFromAxisAngle(axis, angle);
@@ -545,10 +545,11 @@ namespace System.Numerics.Tests
         public void QuaternionInverseTest1()
         {
             Quaternion a = new Quaternion();
+
+            Quaternion expected = Quaternion.Zero;
             Quaternion actual = Quaternion.Inverse(a);
 
-            Assert.True(float.IsNaN(actual.X) && float.IsNaN(actual.Y) && float.IsNaN(actual.Z) && float.IsNaN(actual.W)
-                , $"Quaternion.Inverse - did not return the expected value: expected {new Quaternion(float.NaN, float.NaN, float.NaN, float.NaN)} actual {actual}");
+            Assert.Equal(expected, actual);
         }
 
         // A test for ToString ()
@@ -919,10 +920,10 @@ namespace System.Numerics.Tests
         {
             // A default value should be equal to a zero value.
             Assert.Equal(default(Quaternion), Quaternion.Zero);
-            
+
             // A newly constructed value should be equal to a zero value.
             Assert.Equal(new Quaternion(), Quaternion.Zero);
-            
+
             // A newly constructed value with (0, 0, 0, 0) should be equal to a zero value.
             Assert.Equal(new Quaternion(0, 0, 0, 0), Quaternion.Zero);
         }

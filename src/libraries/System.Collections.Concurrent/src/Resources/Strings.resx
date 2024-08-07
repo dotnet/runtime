@@ -126,9 +126,6 @@
   <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
     <value>The key already existed in the dictionary.</value>
   </data>
-  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
-    <value>TKey is a reference type and item.Key is null.</value>
-  </data>
   <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
     <value>The key was of an incorrect type for this dictionary.</value>
   </data>
@@ -152,5 +149,8 @@
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection's comparer does not support the requested operation.</value>
   </data>
 </root>

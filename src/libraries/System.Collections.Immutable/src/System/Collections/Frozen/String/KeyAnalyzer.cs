@@ -64,7 +64,7 @@ namespace System.Collections.Frozen
                 new JustifiedCaseInsensitiveSubstringComparer();
 
             HashSet<string> set = new HashSet<string>(
-#if NET6_0_OR_GREATER
+#if NET
                 uniqueStrings.Length,
 #endif
                 comparer);

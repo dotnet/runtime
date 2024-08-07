@@ -21,7 +21,7 @@ const char g_psBaseLibrary[]      = CoreLibName_IL_A;
 const char g_psBaseLibraryName[]  = CoreLibName_A;
 const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
-Volatile<int32_t>       g_TrapReturningThreads;
+volatile int32_t g_TrapReturningThreads;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -37,8 +37,6 @@ void *               g_LastAccessViolationEIP;  // The EIP of the place we last 
 
 #endif // #ifndef DACCESS_COMPILE
 GPTR_IMPL(IdDispenser,       g_pThinLockThreadIdDispenser);
-
-GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 
 // For [<I1, etc. up to and including [Object
 GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
@@ -195,8 +193,6 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 #ifndef DACCESS_COMPILE
 
 bool g_fManagedAttach = false;
-
-DWORD g_FinalizerWaiterStatus = 0;
 
 //
 // Do we own the lifetime of the process, ie. is it an EXE?

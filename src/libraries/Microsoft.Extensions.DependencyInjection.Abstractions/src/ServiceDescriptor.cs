@@ -330,7 +330,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            Debug.Assert(false, "ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
+            Debug.Fail("ImplementationType, ImplementationInstance, ImplementationFactory or KeyedImplementationFactory must be non null");
             return null;
         }
 

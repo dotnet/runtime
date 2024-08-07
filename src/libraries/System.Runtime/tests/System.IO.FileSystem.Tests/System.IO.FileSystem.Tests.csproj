@@ -6,6 +6,10 @@
 
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
+    <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
   </ItemGroup>
@@ -245,6 +249,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

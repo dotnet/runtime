@@ -14,6 +14,8 @@
     <Compile Include="TestNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
+    <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Aggregator.cs" Link="Aggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\AggregatorStore.cs" Link="AggregatorStore.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" Link="ExponentialHistogramAggregator.cs" />
@@ -32,6 +34,7 @@
     <Compile Include="ActivitySourceTests.cs" />
     <Compile Include="ActivityTagsCollectionTests.cs" />
     <Compile Include="MetricEventSourceTests.cs" />
+    <Compile Include="MetricsAdviceTests.cs" />
     <Compile Include="MetricsTests.cs" />
     <Compile Include="PropagatorTests.cs" />
     <Compile Include="TagListTests.cs" />
@@ -41,6 +44,9 @@
     <Compile Include="ActivityDateTimeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="RuntimeMetricsTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />

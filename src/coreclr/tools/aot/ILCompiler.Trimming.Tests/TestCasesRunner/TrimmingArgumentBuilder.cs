@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ILLink.Shared;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -186,6 +187,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 				}
 			}
+			else if (flag == "--notrimwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+			}
+			else if (flag == "--noaotwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+			}
 		}
 
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
@@ -217,7 +224,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IgnoreLinkAttributes (options.IgnoreLinkAttributes);
 
-#if !NETCOREAPP
+#if !NET
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 #endif

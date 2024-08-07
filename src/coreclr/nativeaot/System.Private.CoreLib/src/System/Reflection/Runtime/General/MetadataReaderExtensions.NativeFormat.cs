@@ -30,8 +30,8 @@ namespace System.Reflection.Runtime.General
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, string valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
-                return handle.IsNull(reader);
-            if (handle.IsNull(reader))
+                return handle.IsNil;
+            if (handle.IsNil)
                 return false;
             return handle.StringEquals(valueOrNull, reader);
         }
@@ -79,20 +79,21 @@ namespace System.Reflection.Runtime.General
             if (handleType != HandleType.ModifiedType)
                 return Array.Empty<Type>();
 
-            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            ArrayBuilder<Type> customModifiers = default;
             do
             {
                 NativeFormatModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 if (optional == modifiedType.IsOptional)
                 {
                     Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext).ToType();
-                    customModifiers.Insert(0, customModifier);
+                    customModifiers.Add(customModifier);
                 }
 
                 handle = modifiedType.Type;
                 handleType = handle.HandleType;
             }
             while (handleType == HandleType.ModifiedType);
+            customModifiers.AsSpan().Reverse();
             return customModifiers.ToArray();
         }
 

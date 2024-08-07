@@ -24,7 +24,6 @@
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
   #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
@@ -145,12 +144,15 @@
   #define MAX_VAR_ORDER_SIZE       6
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
-  #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
+  #define RBM_CALL_GC_REGS         (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP)
 
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
+  // NB: x86 GC decoder does not report return registers at call sites.
+  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)

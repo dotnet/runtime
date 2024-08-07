@@ -46,6 +46,7 @@
   <ItemGroup>
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Cryptography" />

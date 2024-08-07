@@ -3,16 +3,13 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
     
     <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
-
-  <ItemGroup>
-    <IlcArg Include="--feature:System.Resources.UseSystemResourceKeys=true" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />

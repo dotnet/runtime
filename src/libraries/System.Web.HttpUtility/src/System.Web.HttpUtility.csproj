@@ -10,11 +10,14 @@
     <Compile Include="System\Web\IHtmlString.cs" />
     <Compile Include="System\Web\HttpUtility.cs" />
     <Compile Include="System\Web\Util\HttpEncoder.cs" />
-    <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
     <Compile Include="System\Web\Util\UriUtil.cs" />
     <Compile Include="System\Web\Util\Utf16StringValidator.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
 
   <ItemGroup>

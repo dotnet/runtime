@@ -28,12 +28,7 @@ void ClrFlsSetThreadType(TlsThreadTypeFlag flag)
 
     // The historic location of ThreadType slot kept for compatibility with SOS
     // TODO: Introduce DAC API to make this hack unnecessary
-#if defined(_MSC_VER) && defined(HOST_X86)
-    // Workaround for https://developercommunity.visualstudio.com/content/problem/949233/tls-relative-fixup-overflow-tls-section-is-too-lar.html
-    gCurrentThreadInfo.m_EETlsData = (void**)(((size_t)&t_ThreadType ^ 1) - (4 * TlsIdx_ThreadType + 1));
-#else
     gCurrentThreadInfo.m_EETlsData = (void**)&t_ThreadType - TlsIdx_ThreadType;
-#endif
 }
 
 void ClrFlsClearThreadType(TlsThreadTypeFlag flag)

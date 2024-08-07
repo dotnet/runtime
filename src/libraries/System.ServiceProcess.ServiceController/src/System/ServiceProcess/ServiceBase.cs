@@ -73,7 +73,7 @@ namespace System.ServiceProcess
             }
         }
 
-#if NETCOREAPP
+#if NET
         /// <summary>
         /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
         /// the specified wait hint is passed to the

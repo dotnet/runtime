@@ -56,6 +56,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		internal partial bool HasGenericParameters ();
 		internal partial bool HasGenericParametersCount (int genericParameterCount);
 		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ();
+		internal partial bool IsConstructor ();
 		internal partial bool IsStatic ();
 		internal partial bool HasImplicitThis ();
 		internal partial bool ReturnsVoid ();

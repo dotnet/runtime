@@ -12,6 +12,7 @@ using System.Runtime.Serialization;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -254,6 +255,8 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
+            // NOTE: this implementation is mirrored in GetDiagnosticMethodInfo below
+
             // Multi-cast delegates return the Method of the last delegate in the list
             if (_helperObject is Wrapper[] invocationList)
             {
@@ -268,6 +271,52 @@ namespace System
             }
 
             return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
+        }
+
+        internal DiagnosticMethodInfo GetDiagnosticMethodInfo()
+        {
+            // NOTE: this implementation is mirrored in GetMethodImpl above
+
+            // Multi-cast delegates return the diagnostic method info of the last delegate in the list
+            if (_helperObject is Wrapper[] invocationList)
+            {
+                int invocationCount = (int)_extraFunctionPointerOrData;
+                return invocationList[invocationCount - 1].Value.GetDiagnosticMethodInfo();
+            }
+
+            // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
+            if ((_firstParameter is NativeFunctionPointerWrapper) || (_functionPointer == GetThunk(ObjectArrayThunk)))
+            {
+                Type t = GetType();
+                return new DiagnosticMethodInfo("Invoke", t.FullName, t.Module.Assembly.FullName);
+            }
+
+            IntPtr ldftnResult = GetDelegateLdFtnResult(out RuntimeTypeHandle _, out bool isOpenResolver);
+            if (isOpenResolver)
+            {
+                MethodInfo mi = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
+                Type? declaringType = mi.DeclaringType;
+                if (declaringType.IsConstructedGenericType)
+                    declaringType = declaringType.GetGenericTypeDefinition();
+                return new DiagnosticMethodInfo(mi.Name, declaringType.FullName, mi.Module.Assembly.FullName);
+            }
+            else
+            {
+                IntPtr functionPointer;
+                if (FunctionPointerOps.IsGenericMethodPointer(ldftnResult))
+                {
+                    unsafe
+                    {
+                        GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
+                        functionPointer = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
+                    }
+                }
+                else
+                {
+                    functionPointer = ldftnResult;
+                }
+                return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
+            }
         }
 
         public object? Target

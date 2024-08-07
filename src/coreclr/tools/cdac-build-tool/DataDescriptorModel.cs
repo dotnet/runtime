@@ -185,10 +185,6 @@ public class DataDescriptorModel
             var globals = new Dictionary<string, GlobalModel>();
             foreach (var (globalName, globalBuilder) in _globals)
             {
-                if (globalBuilder.Type == string.Empty)
-                {
-                    throw new InvalidOperationException($"Type must be set for global {globalName}");
-                }
                 GlobalValue? v = globalBuilder.Value;
                 if (v == null)
                 {

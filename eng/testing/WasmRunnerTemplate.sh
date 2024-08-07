@@ -26,7 +26,9 @@ else
 fi
 
 if [[ -z "$XHARNESS_COMMAND" ]]; then
-	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
+	if [[ "$SCENARIO" == "WasmTestOnFirefox" || "$SCENARIO" == "wasmtestonfirefox" ]]; then
+		XHARNESS_COMMAND="test-browser"
+	elif [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
 		XHARNESS_COMMAND="test-browser"
 	else
 		XHARNESS_COMMAND="test"
@@ -59,8 +61,17 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		fi
 	fi
 else
-	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000"
+	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
+		if [[ -z "$JS_ENGINE_ARGS" ]]; then
+			JS_ENGINE_ARGS="--browser-arg=--js-flags=--stack-trace-limit=1000"
+		fi
+	elif [[ "$SCENARIO" == "WasmTestOnFirefox" || "$SCENARIO" == "wasmtestonfirefox" ]]; then
+		if [[ -z "$JS_ENGINE" ]]; then
+			JS_ENGINE="--browser=Firefox"
+		fi
+		if [[ -z "$JS_ENGINE_ARGS" ]]; then
+			JS_ENGINE_ARGS="--browser-arg=-private-window"
+		fi
 	fi
 fi
 

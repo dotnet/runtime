@@ -81,6 +81,21 @@ struct EventSerializationTraits
  * little-endian.
  */
 template<>
+struct EventSerializationTraits<uint8_t>
+{
+    static void Serialize(const uint8_t& value, uint8_t** buffer)
+    {
+        **((uint8_t**)buffer) = value;
+        *buffer += sizeof(uint8_t);
+    }
+
+    static size_t SerializedSize(const uint8_t& value)
+    {
+        return sizeof(uint8_t);
+    }
+};
+
+template<>
 struct EventSerializationTraits<uint16_t>
 {
     static void Serialize(const uint16_t& value, uint8_t** buffer)

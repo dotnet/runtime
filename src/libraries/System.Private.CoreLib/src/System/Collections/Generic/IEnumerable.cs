@@ -9,6 +9,7 @@ namespace System.Collections.Generic
 {
     // Implement this interface if you need to support foreach semantics.
     public interface IEnumerable<out T> : IEnumerable
+        where T : allows ref struct
     {
         // Returns an IEnumerator for this enumerable Object.  The enumerator provides
         // a simple way to access all the contents of a collection.

@@ -261,7 +261,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"),
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_LegacyExceptionHandling, W("LegacyExceptionHandling"), 0, "Enable legacy exception handling.");
 
-
 ///
 /// Garbage collector
 ///
@@ -284,6 +283,7 @@ CONFIG_DWORD_INFO(INTERNAL_GcStressOnDirectCalls, W("GcStressOnDirectCalls"), 0,
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_HeapVerify, W("HeapVerify"), 0, "When set verifies the integrity of the managed heap on entry and exit of each GC")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_GCCpuGroup, W("GCCpuGroup"), 0, "Specifies if to enable GC to support CPU groups")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCName, W("GCName"), "")
+RETAIL_CONFIG_STRING_INFO(EXTERNAL_GCPath, W("GCPath"), "")
 /**
  * This flag allows us to force the runtime to use global allocation context on Windows x86/amd64 instead of thread allocation context just for testing purpose.
  * The flag is unsafe for a subtle reason. Although the access to the g_global_alloc_context is protected under a lock. The implementation of
@@ -505,6 +505,7 @@ CONFIG_DWORD_INFO(INTERNAL_DiagnosticSuspend, W("DiagnosticSuspend"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendDeadlockTimeout, W("SuspendDeadlockTimeout"), 40000, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendThreadDeadlockTimeoutMs, W("SuspendThreadDeadlockTimeoutMs"), 2000, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSuspendInjection"), 1, "Specifies whether to inject activations for thread suspension on Unix")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterruptibleCallSites, W("InterruptibleCallSites"), 1, "Specifies whether to allow asynchronous thread interruptions at call sites (requires GCInfo v3)")
 
 ///
 /// Thread (miscellaneous)
@@ -686,8 +687,13 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeConfig, W("EventPipeConfig"), "Confi
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "Enable/disable eventpipe rundown.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 0, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 1, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeEnableStackwalk, W("EventPipeEnableStackwalk"), 1, "Set to 0 to disable collecting stacks for EventPipe events.")
+
+//
+// UserEvents
+//
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_EnableUserEvents, W("EnableUserEvents"), 0, "Enable/disable writing events to user_events.  Non-zero values enable tracing.")
 
 #ifdef FEATURE_AUTO_TRACE
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_AutoTrace_N_Tracers, W("AutoTrace_N_Tracers"), 0, "", CLRConfig::LookupOptions::ParseIntegerAsBase10)
@@ -721,7 +727,12 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LTTng, W("LTTng"), 1, "If DOTNET_LTTng is s
 //
 // Executable code
 //
+// TODO: https://github.com/dotnet/runtime/issues/103465
+#ifdef TARGET_RISCV64
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
+#else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 1, "Enable W^X for executable memory.");
+#endif // TARGET_RISCV64
 
 #ifdef FEATURE_GDBJIT
 ///
@@ -817,7 +828,6 @@ CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps inform
 CONFIG_DWORD_INFO(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_ForceRelocs, W("ForceRelocs"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_GenerateLongJumpDispatchStubRatio, W("GenerateLongJumpDispatchStubRatio"), 0, "Useful for testing VSD on AMD64")
-CONFIG_DWORD_INFO(INTERNAL_HashStack, W("HashStack"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_HostManagerConfig, W("HostManagerConfig"), (DWORD)-1, "")
 CONFIG_DWORD_INFO(INTERNAL_HostTestThreadAbort, W("HostTestThreadAbort"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_InvokeHalt, W("InvokeHalt"), "Throws an assert when the given method is invoked through reflection.")

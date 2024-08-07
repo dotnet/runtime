@@ -30,8 +30,8 @@ namespace System.Threading
         private static Condition GetCondition(object obj)
         {
             Debug.Assert(
-                !(obj is Condition || obj is Lock),
-                "Do not use Monitor.Pulse or Wait on a Lock or Condition instance; use the methods on Condition instead.");
+                !(obj is Condition),
+                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
             return s_conditionTable.GetValue(obj, s_createCondition);
         }
         #endregion

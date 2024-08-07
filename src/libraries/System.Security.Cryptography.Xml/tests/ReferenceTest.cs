@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [ConditionalFact]
         public void LoadXsltTransforms()
         {
-#if NETCOREAPP
+#if NET
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 throw new SkipTestException("XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Xml.Tests
             xsltTransform += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
             xsltTransform += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
             int expectedTransformsCount = 6;
-#if NETCOREAPP
+#if NET
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 // XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389

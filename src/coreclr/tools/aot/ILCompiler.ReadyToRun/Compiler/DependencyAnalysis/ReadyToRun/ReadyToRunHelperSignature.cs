@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("ReadyToRunHelper_");
+            sb.Append("ReadyToRunHelper_"u8);
             sb.Append(_helperID.ToString());
         }
 

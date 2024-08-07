@@ -12,7 +12,7 @@ namespace System.Collections.Frozen
     /// This set type is specialized as a memory optimization, as the frozen hash table already contains the array of all
     /// int values, and we can thus use its array as the items rather than maintaining a duplicate copy.
     /// </remarks>
-    internal sealed class Int32FrozenSet : FrozenSetInternalBase<int, Int32FrozenSet.GSW>
+    internal sealed partial class Int32FrozenSet : FrozenSetInternalBase<int, Int32FrozenSet.GSW>
     {
         private readonly FrozenHashTable _hashTable;
 

@@ -91,6 +91,7 @@ namespace ILCompiler.DependencyAnalysis
             else if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 Debug.Assert((this is CanonicalEETypeNode) || (this is NecessaryCanonicalEETypeNode));
 
+            Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
@@ -426,6 +427,10 @@ namespace ILCompiler.DependencyAnalysis
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
                             factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
                         result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+
+                        result.Add(new CombinedDependencyListEntry(
+                            factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
+                            factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
                     }
 
                     if (impl.OwningType == defType)
@@ -498,11 +503,22 @@ namespace ILCompiler.DependencyAnalysis
 
                                 // If the interface method is used virtually, the implementation body is used
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the implementation is address taken
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Interface slot is delegate target"));
                             }
                             else
                             {
                                 // If the interface method is used virtually, the slot is used virtually
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the slot is virtual delegate target
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.DelegateTargetVirtualMethod(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Interface slot is delegate target"));
                             }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
@@ -519,7 +535,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
@@ -549,6 +566,11 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Slot is delegate target"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
@@ -603,6 +625,19 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+
+            // Array types that don't have generic interface methods can be created out of thin air
+            // at runtime by the type loader. We should never emit non-constructed forms of these MethodTables.
+            // There's similar logic for generic types, but that one is a conditional dependency conditioned
+            // on the presence of the type loader template for the canonical form of the type.
+            if (_type.IsArrayTypeWithoutGenericInterfaces())
+            {
+                IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
+                if (maximallyConstructableType != this)
+                {
+                    dependencies.Add(maximallyConstructableType, "Type is template-loadable");
+                }
+            }
 
             if (EmitVirtualSlots)
             {
@@ -1103,9 +1138,14 @@ namespace ILCompiler.DependencyAnalysis
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
                         && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImplMethod);
 
-                    IMethodNode implSymbol = canUseTentativeEntrypoint ?
-                        factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType) :
-                        factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    IMethodNode implSymbol;
+                    if (canUseTentativeEntrypoint)
+                        implSymbol = factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else if (factory.DelegateTargetVirtualMethod(declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                        implSymbol = factory.AddressTakenMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else
+                        implSymbol = factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+
                     objData.EmitPointerReloc(implSymbol);
                 }
                 else
@@ -1213,9 +1253,21 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitPointerReloc(typeDefNode);
 
-                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
-                        ? factory.GenericComposition(_type.Instantiation)
-                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    ISymbolNode compositionNode;
+
+                    if (this == factory.MaximallyConstructableType(_type)
+                        && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.ConstructedGenericComposition(_type.Instantiation)
+                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                    }
+                    else
+                    {
+                        compositionNode = _type.Instantiation.Length > 1
+                            ? factory.GenericComposition(_type.Instantiation)
+                            : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+                    }
 
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
@@ -1291,34 +1343,18 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            ComputeRareFlags(factory);
+            ComputeRareFlags();
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
         }
 
-        private void ComputeRareFlags(NodeFactory factory)
+        private void ComputeRareFlags()
         {
             uint flags = 0;
-
-            MetadataType metadataType = _type as MetadataType;
-
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-            {
-                flags |= (uint)EETypeRareFlags.HasCctorFlag;
-            }
 
             if (_type.RequiresAlign8())
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-            }
-
-            TargetArchitecture targetArch = _type.Context.Target.Architecture;
-            if (metadataType != null &&
-                (targetArch == TargetArchitecture.ARM ||
-                targetArch == TargetArchitecture.ARM64) &&
-                metadataType.IsHomogeneousAggregate)
-            {
-                flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
 
             if (_type.IsByRefLike)
@@ -1469,7 +1505,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
+                => sb.Append("__writableData"u8).Append(nameMangler.GetMangledTypeName(_type.Type));
             public int Offset => 0;
             public override bool IsShareable => true;
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);

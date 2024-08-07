@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__interface_gvm_table");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__interface_gvm_table"u8);
         }
         int INodeWithSize.Size => _size.Value;
         public int Offset => 0;

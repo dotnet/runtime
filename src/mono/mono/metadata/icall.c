@@ -199,12 +199,7 @@ ves_icall_System_Array_GetValueImpl (MonoObjectHandleOnStack array_handle, MonoO
 	MonoClass * const array_class = mono_object_class (array);
 	MonoClass * const element_class = m_class_get_element_class (array_class);
 
-	if (m_class_is_native_pointer (element_class)) {
-		mono_error_set_not_supported (error, NULL);
-		return;
-	}
-
-	if (m_class_is_valuetype (element_class)) {
+	if (m_class_is_valuetype (element_class) || mono_class_is_pointer (element_class)) {
 		gsize element_size = mono_array_element_size (array_class);
 		gpointer element_address = mono_array_addr_with_size_fast (array, element_size, (gsize)pos);
 		MonoObject *res = mono_value_box_checked (element_class, element_address, error);
@@ -872,13 +867,16 @@ ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int sour
 		if (m_class_is_valuetype (dest_class) || m_class_is_enumtype (dest_class) ||
 		 	m_class_is_valuetype (src_class) || m_class_is_valuetype (src_class))
 			return FALSE;
-
-		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
-		if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
-			return FALSE;
-
-		if (m_class_is_native_pointer (src_class) || m_class_is_native_pointer (dest_class))
-			return FALSE;
+		
+		if (mono_class_is_pointer (dest_class) || mono_class_is_pointer (src_class)) {
+			/* if we're copying between at least one array of pointers, only allow it if both dest_class is assignable from src_class (checked above, and src_class is assignable from dest_class).  This should only be true if both src_class and dest_class have a common cast_class. (for example: int*[] and uint*[] are ok, but void*[] and int*[] are not)). */
+			if (!mono_class_is_assignable_from_internal (dest_class, src_class))
+				return FALSE;
+		} else {
+			/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
+			if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
+				return FALSE;
+		}
 	}
 
 	if (m_class_is_valuetype (dest_class)) {
@@ -957,6 +955,9 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 void
 ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
+	if (len == 0 || destination == source)
+		return;
+
 	if (MONO_TYPE_IS_REFERENCE (type))
 		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
 	else
@@ -1210,8 +1211,8 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
-void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoObjectHandleOnStack obj, MonoError *error)
+MonoObjectHandle
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoError *error)
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -1219,15 +1220,9 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallT
 	g_assert (m_class_is_valuetype (klass));
 
 	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
+	return_val_if_nok (error, NULL_HANDLE);
 
-	MonoObject* raw_obj = mono_value_box_checked (klass, data, error);
-	goto_if_nok (error, error_ret);
-
-	HANDLE_ON_STACK_SET(obj, raw_obj);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (obj, NULL);
+	return mono_value_box_handle (klass, data, error);
 }
 
 gint32
@@ -1254,6 +1249,11 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 	gpointer iter;
 
 	klass = mono_handle_class (this_obj);
+
+	if (m_class_is_inlinearray (klass)) {
+		mono_error_set_not_supported (error, "Calling built-in GetHashCode() on type marked as InlineArray is invalid.");
+		return FALSE;
+	}
 
 	if (mono_class_num_fields (klass) == 0)
 		return result;
@@ -1329,6 +1329,11 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 		return FALSE;
 
 	klass = mono_handle_class (this_obj);
+
+	if (m_class_is_inlinearray (klass)) {
+		mono_error_set_not_supported (error, "Calling built-in Equals() on type marked as InlineArray is invalid.");
+		return FALSE;
+	}
 
 	if (m_class_is_enumtype (klass) && mono_class_enum_basetype_internal (klass) && mono_class_enum_basetype_internal (klass)->type == MONO_TYPE_I4)
 		return *(gint32*)mono_handle_get_data_unsafe (this_obj) == *(gint32*)mono_handle_get_data_unsafe (that);
@@ -7198,6 +7203,8 @@ mono_create_icall_signatures (void)
 	}
 }
 
+/* LOCKING: does not take locks. does not use an atomic write to info->wrapper
+ */
 void
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
@@ -7211,6 +7218,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 	// Fill in wrapper ahead of time, to just be func, to avoid
 	// later initializing it to anything else. So therefore, no wrapper.
 	if (avoid_wrapper) {
+		// not using CAS, because its idempotent
 		info->wrapper = func;
 	} else {
 		// Leave it alone in case of a race.

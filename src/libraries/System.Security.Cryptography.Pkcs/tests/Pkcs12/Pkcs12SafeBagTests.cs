@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Pkcs.Tests.Pkcs12
 
             Assert.Equal(Oids.Aes192, firstCall.Value);
             Assert.Equal(firstCall.Value, secondCall.Value);
-#if !NETCOREAPP
+#if !NET
             Assert.NotSame(firstCall, secondCall);
 #endif
         }

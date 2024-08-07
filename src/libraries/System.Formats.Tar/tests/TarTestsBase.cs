@@ -97,6 +97,8 @@ namespace System.Formats.Tar.Tests
         internal const char Separator = '/';
         internal const int MaxPathComponent = 255;
         internal const long LegacyMaxFileSize = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
+        internal const byte ExpectedOffsetDataSingleByte = 5;
+        internal readonly byte[] ExpectedOffsetDataMultiByte = [9, 8, 7, 6];
 
         private static readonly string[] V7TestCaseNames = new[]
         {
@@ -311,6 +313,9 @@ namespace System.Formats.Tar.Tests
 
         protected void SetCommonProperties(TarEntry entry, bool isDirectory = false)
         {
+            // The octal format limits the range.
+            bool formatIsOctalOnly = entry.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             // Length (Data is checked outside this method)
             Assert.Equal(0, entry.Length);
 
@@ -329,7 +334,14 @@ namespace System.Formats.Tar.Tests
             DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
             Assert.True(entry.ModificationTime > approxNow);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => entry.ModificationTime = DateTime.MinValue); // Minimum allowed is UnixEpoch, not MinValue
+            }
+            else
+            {
+                entry.ModificationTime = DateTimeOffset.MinValue;
+            }
             entry.ModificationTime = TestModificationTime;
 
             // Name

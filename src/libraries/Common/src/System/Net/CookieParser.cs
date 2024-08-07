@@ -665,7 +665,7 @@ namespace System.Net
                                         expiresSet = true;
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out int parsed))
                                         {
-                                            cookie!.Expires = DateTime.Now.AddSeconds(parsed);
+                                            cookie!.Expires = DateTime.UtcNow.AddSeconds(parsed);
                                         }
                                         else
                                         {

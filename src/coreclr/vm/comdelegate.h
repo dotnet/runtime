@@ -17,10 +17,6 @@ class ShuffleThunkCache;
 #include "dllimportcallback.h"
 #include "stubcache.h"
 
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-typedef ArgBasedStubCache MulticastStubCache;
-#endif
-
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, struct ShuffleEntry * pShuffleEntryArray, size_t nEntries);
 
 enum class ShuffleComputationType
@@ -34,15 +30,8 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 class COMDelegate
 {
 private:
-    // friend VOID CPUSTUBLINKER::EmitMulticastInvoke(...);
     // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
     friend class CPUSTUBLINKER;
-    friend BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
-                                TraceDestination *trace, REGDISPLAY *regs);
-
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-    static MulticastStubCache* m_pMulticastStubCache;
-#endif
 
     static CrstStatic   s_DelegateToFPtrHashCrst;   // Lock for the following hash.
     static PtrHashMap*  s_pDelegateToFPtrHash;      // Hash table containing the Delegate->FPtr pairs
@@ -56,8 +45,8 @@ public:
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
-    static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
-    static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
+    static FCDECL1(PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
+    static FCDECL1(MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
     static PCODE GetWrapperInvoke(MethodDesc* pMD);
     // determines where the delegate needs to be wrapped for non-security reason
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
@@ -71,7 +60,7 @@ public:
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
 #ifdef FEATURE_COMINTEROP
-    static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
+    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
@@ -124,6 +113,8 @@ public:
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 
 extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
 

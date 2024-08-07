@@ -10,6 +10,7 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="lifetime2.cs" />
