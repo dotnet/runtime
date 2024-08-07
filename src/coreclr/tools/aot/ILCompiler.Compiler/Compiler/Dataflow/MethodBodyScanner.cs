@@ -1116,7 +1116,7 @@ namespace ILCompiler.Dataflow
         {
         }
 
-        protected virtual void HandleReturnValue(MethodIL method, int offset, MethodReturnValue thisParameter, MultiValue sourceValue)
+        protected virtual void HandleReturnValue(MethodIL method, int offset, MethodReturnValue thisParameter, MultiValue valueToReturn)
         {
         }
 
