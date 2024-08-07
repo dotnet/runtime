@@ -13441,7 +13441,7 @@ void gc_heap::distribute_free_regions()
             if (to_decommit_size_start_distribute[kind] > 0)
             {
                 ptrdiff_t size_decommitted_since_last_distribute = to_decommit_size_last_distribute[kind] - to_decommit_size_start_distribute[kind];
-                balance = min(balance, size_decommitted_since_last_distribute);
+                balance = min(balance, static_cast<ptrdiff_t>(size_decommitted_since_last_distribute / region_size[kind]));
             }
         }
 
