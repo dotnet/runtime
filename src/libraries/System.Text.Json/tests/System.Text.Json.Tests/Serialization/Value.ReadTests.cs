@@ -654,6 +654,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("1:2", "01:02")]
         [InlineData("01:2", "01:02")]
         [InlineData("01:23:1", "01:23:01")]
         [InlineData("1:00:00")] // 'g' Format
