@@ -4010,125 +4010,134 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
     emitAttr     defaultSize = id->idOpSize();
     insTupleType tupleType   = insTupleTypeInfo(ins);
 
-    switch (tupleType)
+    if (tupleType == INS_TT_NONE)
     {
-        case INS_TT_NONE:
+        // No tuple information available, default to full size
+        memSize = defaultSize;
+    }
+    else if (tupleType == INS_TT_FULL)
+    {
+        // Embedded broadcast supported, so either loading scalar or full vector
+        if (id->idIsEvexbContextSet())
         {
-            // No tuple information available, default to full size
-            memSize = defaultSize;
-            break;
-        }
-
-        case INS_TT_FULL:
-        {
-            // Embedded broadcast supported, so either loading scalar or full vector
-            if (id->idIsEvexbContextSet())
-            {
-                memSize = GetInputSizeInBytes(id);
-            }
-            else
-            {
-                memSize = defaultSize;
-            }
-            break;
-        }
-
-        case INS_TT_HALF:
-        {
-            // Embedded broadcast supported, so either loading scalar or half vector
-            if (id->idIsEvexbContextSet())
-            {
-                memSize = GetInputSizeInBytes(id);
-            }
-            else
-            {
-                memSize = defaultSize / 2;
-            }
-            break;
-        }
-
-        case INS_TT_FULL_MEM:
-        {
-            // Embedded broadcast not supported, load full vector
-            memSize = defaultSize;
-            break;
-        }
-
-        case INS_TT_TUPLE1_SCALAR:
-        case INS_TT_TUPLE1_FIXED:
-        {
-            // Embedded broadcast not supported, load 1 scalar
             memSize = GetInputSizeInBytes(id);
-            break;
         }
-
-        case INS_TT_TUPLE2:
+        else
         {
-            // Embedded broadcast not supported, load 2 scalars
-            memSize = GetInputSizeInBytes(id) * 2;
-            break;
+            memSize = defaultSize;
         }
+    }
+    else if (tupleType == (INS_TT_FULL | INS_TT_MEM128))
+    {
+        // Embedded broadcast is supported if we have a cns operand in
+        // which case we load either a scalar or full vector; otherwise,
+        // we load a 128-bit vector
 
-        case INS_TT_TUPLE4:
-        {
-            // Embedded broadcast not supported, load 4 scalars
-            memSize = GetInputSizeInBytes(id) * 4;
-            break;
-        }
+        assert((unsigned)id->idInsFmt() < emitFmtCount);
+        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
 
-        case INS_TT_TUPLE8:
+        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
         {
-            // Embedded broadcast not supported, load 8 scalars
-            memSize = GetInputSizeInBytes(id) * 8;
-            break;
-        }
-
-        case INS_TT_HALF_MEM:
-        {
-            // Embedded broadcast not supported, load half vector
-            memSize = defaultSize / 2;
-            break;
-        }
-
-        case INS_TT_QUARTER_MEM:
-        {
-            // Embedded broadcast not supported, load quarter vector
-            memSize = defaultSize / 4;
-            break;
-        }
-
-        case INS_TT_EIGHTH_MEM:
-        {
-            // Embedded broadcast not supported, load eighth vector
-            memSize = defaultSize / 8;
-            break;
-        }
-
-        case INS_TT_MEM128:
-        {
-            // Embedded broadcast not supported, load 128-bit vector
             memSize = 16;
-            break;
         }
-
-        case INS_TT_MOVDDUP:
+        else if (id->idIsEvexbContextSet())
         {
-            // Embedded broadcast not supported, load half vector for V128; otherwise, load full vector
-            if (defaultSize == EA_16BYTE)
-            {
-                memSize = 8;
-            }
-            else
-            {
-                memSize = defaultSize;
-            }
-            break;
+            memSize = GetInputSizeInBytes(id);
         }
-
-        default:
+        else
         {
-            unreached();
+            memSize = defaultSize;
         }
+    }
+    else if (tupleType == INS_TT_HALF)
+    {
+        // Embedded broadcast supported, so either loading scalar or half vector
+        if (id->idIsEvexbContextSet())
+        {
+            memSize = GetInputSizeInBytes(id);
+        }
+        else
+        {
+            memSize = defaultSize / 2;
+        }
+    }
+    else if (tupleType == INS_TT_FULL_MEM)
+    {
+        // Embedded broadcast not supported, load full vector
+        memSize = defaultSize;
+    }
+    else if (tupleType == (INS_TT_FULL_MEM | INS_TT_MEM128))
+    {
+        // Embedded broadcast is never supported so if we have a cns operand
+        // we load a full vector; otherwise, we load a 128-bit vector
+
+        assert((unsigned)id->idInsFmt() < emitFmtCount);
+        ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+
+        if ((idOp != ID_OP_CNS) && (idOp != ID_OP_SCNS) && (idOp != ID_OP_DSP_CNS) && (idOp != ID_OP_AMD_CNS))
+        {
+            memSize = 16;
+        }
+        else
+        {
+            memSize = defaultSize;
+        }
+    }
+    else if ((tupleType == INS_TT_TUPLE1_SCALAR) || (tupleType == INS_TT_TUPLE1_FIXED))
+    {
+        // Embedded broadcast not supported, load 1 scalar
+        memSize = GetInputSizeInBytes(id);
+    }
+    else if (tupleType == INS_TT_TUPLE2)
+    {
+        // Embedded broadcast not supported, load 2 scalars
+        memSize = GetInputSizeInBytes(id) * 2;
+    }
+    else if (tupleType == INS_TT_TUPLE4)
+    {
+        // Embedded broadcast not supported, load 4 scalars
+        memSize = GetInputSizeInBytes(id) * 4;
+    }
+    else if (tupleType == INS_TT_TUPLE8)
+    {
+        // Embedded broadcast not supported, load 8 scalars
+        memSize = GetInputSizeInBytes(id) * 8;
+    }
+    else if (tupleType == INS_TT_HALF_MEM)
+    {
+        // Embedded broadcast not supported, load half vector
+        memSize = defaultSize / 2;
+    }
+    else if (tupleType == INS_TT_QUARTER_MEM)
+    {
+        // Embedded broadcast not supported, load quarter vector
+        memSize = defaultSize / 4;
+    }
+    else if (tupleType == INS_TT_EIGHTH_MEM)
+    {
+        // Embedded broadcast not supported, load eighth vector
+        memSize = defaultSize / 8;
+    }
+    else if (tupleType == INS_TT_MEM128)
+    {
+        // Embedded broadcast not supported, load 128-bit vector
+        memSize = 16;
+    }
+    else if (tupleType == INS_TT_MOVDDUP)
+    {
+        // Embedded broadcast not supported, load half vector for V128; otherwise, load full vector
+        if (defaultSize == EA_16BYTE)
+        {
+            memSize = 8;
+        }
+        else
+        {
+            memSize = defaultSize;
+        }
+    }
+    else
+    {
+        unreached();
     }
 
     return EA_ATTR(memSize);
