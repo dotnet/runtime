@@ -1089,7 +1089,15 @@ HRESULT ClrDataAccess::GetMethodDescData(
             _ASSERTE(methodDescData->wSlotNumber == mdDataLocal.wSlotNumber);
             _ASSERTE(methodDescData->NativeCodeAddr == mdDataLocal.NativeCodeAddr);
             _ASSERTE(methodDescData->AddressOfNativeCodeSlot == mdDataLocal.AddressOfNativeCodeSlot);
-            //TODO[cdac]: assert the rest of mdDataLocal contains the same info as methodDescData
+            _ASSERTE(methodDescData->MethodDescPtr == mdDataLocal.MethodDescPtr);
+            _ASSERTE(methodDescData->MethodTablePtr == mdDataLocal.MethodTablePtr);
+            _ASSERTE(methodDescData->ModulePtr == mdDataLocal.ModulePtr);
+            _ASSERTE(methodDescData->MDToken == mdDataLocal.MDToken);
+            _ASSERTE(methodDescData->GCInfo == mdDataLocal.GCInfo);
+            _ASSERTE(methodDescData->GCStressCodeCopy == mdDataLocal.GCStressCodeCopy);
+            _ASSERTE(methodDescData->managedDynamicMethodObject == mdDataLocal.managedDynamicMethodObject);
+            _ASSERTE(methodDescData->requestedIP == mdDataLocal.requestedIP);
+            _ASSERTE(methodDescData->cJittedRejitVersions == mdDataLocal.cJittedRejitVersions);
             if (rgRevertedRejitData != NULL)
             {
                 _ASSERTE (cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
