@@ -155,7 +155,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Gets the <see cref="Type"/> that implements the service,
         /// or returns <see langword="null"/> if <see cref="IsKeyedService"/> is <see langword="true"/>.
         /// </summary>
+        /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationType"/> should be called instead.
+        /// </remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? ImplementationType => IsKeyedService ? null : _implementationType;
 
@@ -165,7 +167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationType"/> should be called instead.
-        /// </remarks>>
+        /// </remarks>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? KeyedImplementationType
         {
@@ -185,7 +187,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Gets the instance that implements the service,
         /// or returns <see langword="null"/> if <see cref="IsKeyedService"/> is <see langword="true"/>.
         /// </summary>
+        /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationInstance"/> should be called instead.
+        /// </remarks>
         public object? ImplementationInstance =>  IsKeyedService ? null : _implementationInstance;
 
         /// <summary>
@@ -194,7 +198,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationInstance"/> should be called instead.
-        /// </remarks>>
+        /// </remarks>
         public object? KeyedImplementationInstance
         {
             get
@@ -215,7 +219,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="true"/>, <see cref="KeyedImplementationFactory"/> should be called instead.
-        /// </remarks>>
+        /// </remarks>
         public Func<IServiceProvider, object>? ImplementationFactory => IsKeyedService ? null : (Func<IServiceProvider, object>?) _implementationFactory;
 
         /// <summary>
@@ -224,7 +228,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// If <see cref="IsKeyedService"/> is <see langword="false"/>, <see cref="ImplementationFactory"/> should be called instead.
-        /// </remarks>>
+        /// </remarks>
         public Func<IServiceProvider, object?, object>? KeyedImplementationFactory
         {
             get
