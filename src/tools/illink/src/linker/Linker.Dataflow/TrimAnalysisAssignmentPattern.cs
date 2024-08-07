@@ -16,7 +16,7 @@ namespace Mono.Linker.Dataflow
 		public MessageOrigin Origin { get; init; }
 
 		// For assignment of a method parameter, we store the parameter index to disambiguate
-		// assignments from different out parameters ouf a single method call.
+		// assignments from different out parameters of a single method call.
 		public int? ParameterIndex { get; init; }
 
 		public TrimAnalysisAssignmentPattern (MultiValue source, MultiValue target, MessageOrigin origin, int? parameterIndex)

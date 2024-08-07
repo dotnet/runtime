@@ -18,6 +18,9 @@ namespace ILCompiler.Dataflow
         public MultiValue Source { get; init; }
         public MultiValue Target { get; init; }
         public MessageOrigin Origin { get; init; }
+
+        // For assignment of a method parameter, we store the parameter index to disambiguate
+        // assignments from different out parameters of a single method call.
         public int? ParameterIndex { get; init; }
         internal string Reason { get; init; }
 
