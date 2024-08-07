@@ -361,6 +361,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }, options);
         }
 
+        [Fact]
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_EnumType()
+        {
+            var services = new ServiceCollection();
+            services.AddKeyedScoped<TestEnums_Types.IWeatherProvider, TestEnums_Types.OpenWeatherMapWeatherProvider>(TestEnums_Types.WeatherProvider.OpenWeatherMap);
+            services.AddKeyedScoped<TestEnums_Types.IWeatherProvider, TestEnums_Types.AccuWeatherWeatherProvider>(TestEnums_Types.WeatherProvider.AccuWeather);
+            using var provider = services.BuildServiceProvider();
+
+            ObjectFactory<TestEnums_Types.WeatherController1> factory1 = ActivatorUtilities.CreateFactory<TestEnums_Types.WeatherController1>(Type.EmptyTypes);
+            TestEnums_Types.WeatherController1 value1 = factory1(provider, null);
+            Assert.Equal("AccuWeather", value1.DefaultWeatherProvider.GetWeatherForCity(""));
+
+            ObjectFactory<TestEnums_Types.WeatherController2> factory2 = ActivatorUtilities.CreateFactory<TestEnums_Types.WeatherController2>(Type.EmptyTypes);
+            TestEnums_Types.WeatherController2 value2 = factory2(provider, null);
+            Assert.Equal("OpenWeather", value2.DefaultWeatherProvider.GetWeatherForCity(""));
+        }
+
+        private class TestEnums_Types
+        {
+            public enum WeatherProvider
+            {
+                AccuWeather = 1,
+                OpenWeatherMap = 2,
+            }
+
+            public interface IWeatherProvider
+            {
+                string GetWeatherForCity(string city);
+            }
+
+            public sealed class AccuWeatherWeatherProvider : IWeatherProvider
+            {
+                public string GetWeatherForCity(string city) => "AccuWeather";
+            }
+
+            public sealed class OpenWeatherMapWeatherProvider : IWeatherProvider
+            {
+                public string GetWeatherForCity(string city) => "OpenWeather";
+            }
+
+            public sealed class WeatherController1
+            {
+                public IWeatherProvider DefaultWeatherProvider { get; }
+
+                public WeatherController1([FromKeyedServices(WeatherProvider.AccuWeather)] IWeatherProvider defaultWeatherProvider)
+                {
+                    DefaultWeatherProvider = defaultWeatherProvider;
+                }
+            }
+
+            public sealed class WeatherController2
+            {
+                public IWeatherProvider DefaultWeatherProvider { get; }
+
+                public WeatherController2([FromKeyedServices(WeatherProvider.OpenWeatherMap)] IWeatherProvider defaultWeatherProvider)
+                {
+                    DefaultWeatherProvider = defaultWeatherProvider;
+                }
+            }
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
 #if NET
