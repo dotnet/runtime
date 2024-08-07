@@ -1157,11 +1157,13 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 if ((!canUseGetter && !canUseSetter && !hasJsonIncludeButIsInaccessible) ||
-                    !IsSymbolAccessibleWithin(memberType, within: contextType))
+                    !IsSymbolAccessibleWithin(memberType, within: contextType) ||
+                    (memberType.IsRefLikeType && ignoreCondition is JsonIgnoreCondition.Always))
                 {
                     // Skip the member if either of the two conditions hold
                     // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
-                    // 2. The member type is not accessible within the generated context.
+                    // 2. The member type is not accessible within the generated context OR
+                    // 3. The member is of a ref-like type that is also ignored (we keep all other ignored members for backward compat)
                     return null;
                 }
 
@@ -1246,62 +1248,60 @@ namespace System.Text.Json.SourceGeneration
                         switch (attributeType.ToDisplayString())
                         {
                             case JsonIgnoreAttributeFullName:
-                                {
-                                    ImmutableArray<KeyValuePair<string, TypedConstant>> namedArgs = attributeData.NamedArguments;
+                            {
+                                ImmutableArray<KeyValuePair<string, TypedConstant>> namedArgs = attributeData.NamedArguments;
 
-                                    if (namedArgs.Length == 0)
-                                    {
-                                        ignoreCondition = JsonIgnoreCondition.Always;
-                                    }
-                                    else if (namedArgs.Length == 1 &&
-                                        namedArgs[0].Value.Type?.ToDisplayString() == JsonIgnoreConditionFullName)
-                                    {
-                                        ignoreCondition = (JsonIgnoreCondition)namedArgs[0].Value.Value!;
-                                    }
+                                if (namedArgs.Length == 0)
+                                {
+                                    ignoreCondition = JsonIgnoreCondition.Always;
+                                }
+                                else if (namedArgs.Length == 1 &&
+                                    namedArgs[0].Value.Type?.ToDisplayString() == JsonIgnoreConditionFullName)
+                                {
+                                    ignoreCondition = (JsonIgnoreCondition)namedArgs[0].Value.Value!;
                                 }
                                 break;
+                            }
                             case JsonIncludeAttributeFullName:
-                                {
-                                    hasJsonInclude = true;
-                                }
+                            {
+                                hasJsonInclude = true;
                                 break;
+                            }
                             case JsonNumberHandlingAttributeFullName:
-                                {
-                                    ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
-                                    numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
-                                }
+                            {
+                                ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
+                                numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
                                 break;
+                            }
                             case JsonObjectCreationHandlingAttributeFullName:
-                                {
-                                    ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
-                                    objectCreationHandling = (JsonObjectCreationHandling)ctorArgs[0].Value!;
-                                }
+                            {
+                                ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
+                                objectCreationHandling = (JsonObjectCreationHandling)ctorArgs[0].Value!;
                                 break;
+                            }
                             case JsonPropertyNameAttributeFullName:
-                                {
-                                    ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
-                                    jsonPropertyName = (string)ctorArgs[0].Value!;
-                                    // Null check here is done at runtime within JsonSerializer.
-                                }
+                            {
+                                ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
+                                jsonPropertyName = (string)ctorArgs[0].Value!;
+                                // Null check here is done at runtime within JsonSerializer.
                                 break;
+                            }
                             case JsonPropertyOrderAttributeFullName:
-                                {
-                                    ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
-                                    order = (int)ctorArgs[0].Value!;
-                                }
+                            {
+                                ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
+                                order = (int)ctorArgs[0].Value!;
                                 break;
+                            }
                             case JsonExtensionDataAttributeFullName:
-                                {
-                                    isExtensionData = true;
-                                }
+                            {
+                                isExtensionData = true;
                                 break;
+                            }
                             case JsonRequiredAttributeFullName:
-                                {
-                                    hasJsonRequiredAttribute = true;
-                                }
+                            {
+                                hasJsonRequiredAttribute = true;
                                 break;
-                            default:
-                                break;
+                            }
                         }
                     }
                 }
