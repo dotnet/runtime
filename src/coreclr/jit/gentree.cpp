@@ -25075,7 +25075,10 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             //        out of bounds).
 
             // high bit on index gives 0 already
-            if (elementSize == 1) canUseSignedComparisonHint = true;
+            if (elementSize == 1)
+            {
+                canUseSignedComparisonHint = true;
+            }
 
             // we want ShuffleUnsafe to be at least as good as Shuffle (at least in sensible cases), so for constant
             // indices vector we special case some cases to use normal Shuffle to ensure it gets the additional
@@ -25176,9 +25179,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
 
                 uint8_t control = 1;
-                cnsNode = gtNewIconNode(control, TYP_INT);
-                swap    = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128, simdBaseJitType,
-                                                   simdSize);
+                cnsNode         = gtNewIconNode(control, TYP_INT);
+                swap = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128, simdBaseJitType,
+                                                simdSize);
             }
             else
             {
