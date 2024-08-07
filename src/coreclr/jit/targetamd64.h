@@ -29,7 +29,6 @@
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #ifdef    UNIX_AMD64_ABI
   #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
@@ -382,14 +381,6 @@
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_EAX
-  #define RBM_PINVOKE_TCB          RBM_EAX
-  #define REG_PINVOKE_SCRATCH      REG_EAX
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX

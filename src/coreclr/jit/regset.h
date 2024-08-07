@@ -119,7 +119,7 @@ public:
     bool rsRegsModified(regMaskTP mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & mask) != 0;
+        return (rsModifiedRegsMask & mask).IsNonEmpty();
     }
 
     void verifyRegUsed(regNumber reg);

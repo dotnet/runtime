@@ -83,7 +83,7 @@ namespace System
                 if (_count == 0)
                     return Array.Empty<T>();
                 if (_count == 1)
-                    return new T[1] { _item };
+                    return [_item];
 
                 Array.Resize(ref _items, _count);
                 _capacity = _count;
@@ -2730,9 +2730,7 @@ namespace System
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
-
-            if (ifaceRtType == null)
+            RuntimeType ifaceRtType = interfaceType as RuntimeType ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
@@ -3312,7 +3310,7 @@ namespace System
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            if (!(other is RuntimeType otherRtType))
+            if (other is not RuntimeType otherRtType)
             {
                 return false;
             }
@@ -3569,7 +3567,7 @@ namespace System
                 }
                 catch (TypeLoadException e)
                 {
-                    ValidateGenericArguments(this, new[] { rt }, e);
+                    ValidateGenericArguments(this, [rt], e);
                     throw;
                 }
             }
@@ -3580,10 +3578,7 @@ namespace System
             bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
-                    throw new ArgumentNullException();
-
+                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -3924,7 +3919,7 @@ namespace System
             object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e) when (wrapExceptions)
             {
@@ -3934,7 +3929,7 @@ namespace System
             return obj;
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -3947,10 +3942,10 @@ namespace System
             }
 
             // We reuse ActivatorCache here to ensure that we aren't always creating two entries in the cache.
-            object? obj = GetOrCreateCacheEntry<ActivatorCache>().CreateUninitializedObject(this);
+            object? obj = cache.CreateUninitializedObject(this);
             try
             {
-                cache.CallConstructor(obj);
+                cache.CallRefConstructor(obj);
             }
             catch (Exception e)
             {
@@ -3958,6 +3953,30 @@ namespace System
             }
 
             return obj;
+        }
+
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte data)
+        {
+            Debug.Assert(IsValueType);
+
+            ActivatorCache cache = GetOrCreateCacheEntry<ActivatorCache>();
+
+            if (!cache.CtorIsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            try
+            {
+                cache.CallValueConstructor(ref data);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
         }
 
         internal void InvalidateCachedNestedType() => Cache.InvalidateCachedNestedType();
@@ -4012,7 +4031,7 @@ namespace System
                     paramMod[i] = aArgsIsByRef[i];
                 }
 
-                aParamMod = new ParameterModifier[] { paramMod };
+                aParamMod = [paramMod];
                 if (aArgsWrapperTypes != null)
                 {
                     WrapArgsForInvokeCall(aArgs, aArgsWrapperTypes);
@@ -4100,11 +4119,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(string)])!;
                     }
                     else
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(object)])!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4112,11 +4131,11 @@ namespace System
                     {
                         if (isString)
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([(string?)oldArray.GetValue(currElem)]);
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([oldArray.GetValue(currElem)]);
                         }
                     }
 
@@ -4303,7 +4322,7 @@ namespace System.Reflection
         private static int GetHashCodeHelper(K key)
         {
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (!(key is string sKey))
+            if (key is not string sKey)
             {
                 return key.GetHashCode();
             }

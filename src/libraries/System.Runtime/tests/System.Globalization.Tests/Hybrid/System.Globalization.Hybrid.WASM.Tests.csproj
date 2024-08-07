@@ -12,7 +12,6 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />

@@ -338,17 +338,58 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestFlowOutOfField ()
 			{
 				RequirePublicFields (unsupportedTypeInstance);
 			}
 
-			[ExpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
-			public static void Test () {
+			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+			static void TestUnsupportedType () {
 				var t = GetUnsupportedTypeInstance ();
 				unsupportedTypeInstance = t;
 				TestFlowOutOfField ();
+			}
+
+			ref struct StringRef
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public ref string stringRef;
+
+				[UnexpectedWarning ("IL2069", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				public StringRef (ref string s)
+				{
+					stringRef = ref s;
+				}
+
+				static string GetString () => null;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
+				void TestFlowOutOfField ()
+				{
+					RequirePublicFields (ref stringRef);
+				}
+
+				public static void Test ()
+				{
+					string s = GetString ();
+					var stringRef = new StringRef (ref s);
+					stringRef.TestFlowOutOfField ();
+				}
+			}
+
+			public static void Test ()
+			{
+				TestUnsupportedType ();
+				StringRef.Test ();
 			}
 		}
 

@@ -976,7 +976,7 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             cbFileSize = static_cast<SIZE_T>(dwFileSize);
         }
 
-        pParam->hMap = WszCreateFileMapping(pParam->hFile, 0, PAGE_READONLY, 0, 0, NULL);
+        pParam->hMap = CreateFileMapping(pParam->hFile, 0, PAGE_READONLY, 0, 0, NULL);
 
         if (pParam->hMap == NULL)
         {

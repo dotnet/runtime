@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
         /// and processor architecture of the currently executing process.
         /// Since this string is opaque, it is not recommended to parse the string into its constituent parts.
         ///
-        /// For more information, see https://docs.microsoft.com/dotnet/core/rid-catalog.
+        /// For more information, see https://learn.microsoft.com/dotnet/core/rid-catalog.
         /// </remarks>
         public static string RuntimeIdentifier =>
             s_runtimeIdentifier ??= AppContext.GetData("RUNTIME_IDENTIFIER") as string ?? "unknown";

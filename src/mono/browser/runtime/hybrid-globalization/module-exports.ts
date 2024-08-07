@@ -1,6 +1,6 @@
 import { GlobalizationHelpers, RuntimeHelpers } from "../types/internal";
 import { mono_wasm_get_calendar_info } from "./calendar";
-import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./change-case";
+import { mono_wasm_change_case } from "./change-case";
 import { mono_wasm_compare_string, mono_wasm_starts_with, mono_wasm_ends_with, mono_wasm_index_of } from "./collations";
 import { mono_wasm_get_culture_info } from "./culture-info";
 import { setSegmentationRulesFromJson } from "./grapheme-segmenter";
@@ -10,7 +10,6 @@ export let globalizationHelpers: GlobalizationHelpers;
 export let runtimeHelpers: RuntimeHelpers;
 
 export function initHybrid (gh: GlobalizationHelpers, rh: RuntimeHelpers) {
-    gh.mono_wasm_change_case_invariant = mono_wasm_change_case_invariant;
     gh.mono_wasm_change_case = mono_wasm_change_case;
     gh.mono_wasm_compare_string = mono_wasm_compare_string;
     gh.mono_wasm_starts_with = mono_wasm_starts_with;

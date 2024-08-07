@@ -254,7 +254,7 @@ namespace System.Collections.Frozen
     /// </remarks>
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    public abstract class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
+    public abstract partial class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         where TKey : notnull
     {
         /// <summary>Initialize the dictionary.</summary>
@@ -448,6 +448,32 @@ namespace System.Collections.Frozen
 
         /// <inheritdoc cref="GetValueRefOrNullRef" />
         private protected abstract ref readonly TValue GetValueRefOrNullRefCore(TKey key);
+
+        /// <inheritdoc cref="GetValueRefOrNullRef" />
+        /// <remarks>
+        /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
+        /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
+        /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
+        ///
+        /// This unfortunately needs to be a generic virtual method, but the only other known option involves having a dedicated
+        /// class instance such that the generic can be baked into that, where the methods on it are still virtual but don't have
+        /// extra generic methods. But for most implementations, either a) that class would need to be allocated as part of
+        /// TryGetAlternateLookup, which would be more expensive for use cases where someone needs a lookup for just a few operations,
+        /// or b) a dictionary of those instances would need to be maintained, which just replaces the runtime's dictionary for a GVM
+        /// with a custom one here.
+        /// </remarks>
+        private protected virtual ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key)
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+            => ref Unsafe.NullRef<TValue>();
 
         /// <summary>Gets a reference to the value associated with the specified key.</summary>
         /// <param name="key">The key of the value to get.</param>

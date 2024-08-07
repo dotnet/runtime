@@ -112,7 +112,7 @@ namespace System.IO.ManualTests
                 - Create an 8mb fixed size VHD.
                     - Open Computer Management -> Storage -> Disk Management
                     - Follow these instructions:
-                      https://docs.microsoft.com/en-us/windows-server/storage/disk-management/manage-virtual-hard-disks
+                      https://learn.microsoft.com/windows-server/storage/disk-management/manage-virtual-hard-disks
 
                 - Restrict the space available in the VHD.
                     - Create a 512 bytes quota in the VHD created above using cmd:

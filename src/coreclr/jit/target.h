@@ -121,8 +121,8 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -142,8 +142,8 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, xname, wname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)              SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -164,8 +164,8 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -186,8 +186,8 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -229,15 +229,63 @@ typedef uint64_t regMaskSmall;
 #define REG_MASK_ALL_FMT "%016llX"
 #endif
 
-typedef regMaskSmall SingleTypeRegSet;
+#ifdef TARGET_ARM64
+#define HAS_MORE_THAN_64_REGISTERS 1
+#endif // TARGET_ARM64
+
+// TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
+typedef regMaskSmall    SingleTypeRegSet;
+inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
 
 struct regMaskTP
 {
 private:
+    // Represents combined registers bitset including gpr/float and on some platforms
+    // mask or predicate registers
     regMaskSmall low;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    regMaskSmall high;
+#endif
+
 public:
+
+#ifdef TARGET_ARM
+    void AddRegNumInMask(regNumber reg, var_types type);
+    void RemoveRegNumFromMask(regNumber reg, var_types type);
+    bool IsRegNumInMask(regNumber reg, var_types type) const;
+#endif
+    void                       AddGprRegs(SingleTypeRegSet gprRegs);
+    void                       AddRegNum(regNumber reg, var_types type);
+    void                       AddRegNumInMask(regNumber reg);
+    void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
+    SingleTypeRegSet           GetRegSetForType(var_types type) const;
+    bool                       IsRegNumInMask(regNumber reg) const;
+    bool                       IsRegNumPresent(regNumber reg, var_types type) const;
+    void                       RemoveRegNum(regNumber reg, var_types type);
+    void                       RemoveRegNumFromMask(regNumber reg);
+    void                       RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
+    static constexpr regMaskTP CreateFromRegNum(regNumber reg, regMaskSmall mask)
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return (reg < 64) ? regMaskTP(mask, RBM_NONE) : regMaskTP(RBM_NONE, mask);
+#else
+        return regMaskTP(mask, RBM_NONE);
+#endif
+    }
+
+    constexpr regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
+        : low(lowMask)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        , high(highMask)
+#endif
+    {
+    }
+
     constexpr regMaskTP(regMaskSmall regMask)
         : low(regMask)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        , high(RBM_NONE)
+#endif
     {
     }
 
@@ -247,11 +295,18 @@ public:
 
     explicit operator bool() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return (low | high) != RBM_NONE;
+#else
         return low != RBM_NONE;
+#endif
     }
 
     explicit operator regMaskSmall() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        assert(high == RBM_NONE);
+#endif
         return (regMaskSmall)low;
     }
 
@@ -273,24 +328,30 @@ public:
     }
 #endif
 
-    regMaskSmall getLow() const
+    constexpr regMaskSmall getLow() const
     {
         return low;
     }
 
-    bool IsEmpty()
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    constexpr regMaskSmall getHigh() const
     {
+        return high;
+    }
+#endif
+
+    bool IsEmpty() const
+    {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return (low | high) == RBM_NONE;
+#else
         return low == RBM_NONE;
+#endif
     }
 
-    bool IsNonEmpty()
+    bool IsNonEmpty() const
     {
         return !IsEmpty();
-    }
-
-    SingleTypeRegSet GetRegSetForType(var_types type) const
-    {
-        return getLow();
     }
 
     SingleTypeRegSet GetIntRegSet() const
@@ -305,56 +366,111 @@ public:
 
     SingleTypeRegSet GetPredicateRegSet() const
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return getHigh();
+#else
         return getLow();
+#endif
     }
 
-    void RemoveRegNumFromMask(regNumber reg);
+    void operator|=(const regMaskTP& second)
+    {
+        low |= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high |= second.getHigh();
+#endif
+    }
 
-    bool IsRegNumInMask(regNumber reg);
+    void operator^=(const regMaskTP& second)
+    {
+        low ^= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high ^= second.getHigh();
+#endif
+    }
+
+    void operator&=(const regMaskTP& second)
+    {
+        low &= second.getLow();
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        high &= second.getHigh();
+#endif
+    }
 };
 
-static regMaskTP operator^(regMaskTP first, regMaskTP second)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+#define REGDEF(name, rnum, mask, sname)                                                                                \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+#include "register.h"
+
+#elif defined(TARGET_ARM64)
+
+#define REGDEF(name, rnum, mask, xname, wname)                                                                         \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+#include "register.h"
+
+#elif defined(TARGET_AMD64)
+
+#define REGDEF(name, rnum, mask, sname)                                                                                \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+#include "register.h"
+
+#elif defined(TARGET_X86)
+
+#define REGDEF(name, rnum, mask, sname)                                                                                \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+#include "register.h"
+
+#else
+#error Unsupported target architecture
+#endif
+
+static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() ^ second.getLow());
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() ^ second.getLow(), first.getHigh() ^ second.getHigh());
+#else
+    return regMaskTP(first.getLow() ^ second.getLow());
+#endif
 }
 
-static regMaskTP operator&(regMaskTP first, regMaskTP second)
+static constexpr regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() & second.getLow());
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
+#else
+    return regMaskTP(first.getLow() & second.getLow());
+#endif
 }
 
-static regMaskTP operator|(regMaskTP first, regMaskTP second)
+static constexpr regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() | second.getLow());
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() | second.getLow(), first.getHigh() | second.getHigh());
+#else
+    return regMaskTP(first.getLow() | second.getLow());
+#endif
 }
 
-static regMaskTP& operator|=(regMaskTP& first, regMaskTP second)
+static constexpr bool operator==(const regMaskTP& first, const regMaskTP& second)
 {
-    first = first | second;
-    return first;
+    return (first.getLow() == second.getLow())
+#ifdef HAS_MORE_THAN_64_REGISTERS
+           && (first.getHigh() == second.getHigh())
+#endif
+        ;
 }
 
-static regMaskTP& operator^=(regMaskTP& first, regMaskTP second)
-{
-    first = first ^ second;
-    return first;
-}
-
-static regMaskTP& operator&=(regMaskTP& first, regMaskTP second)
-{
-    first = first & second;
-    return first;
-}
-
-static bool operator==(regMaskTP first, regMaskTP second)
-{
-    return (first.getLow() == second.getLow());
-}
-
-static bool operator!=(regMaskTP first, regMaskTP second)
+static constexpr bool operator!=(const regMaskTP& first, const regMaskTP& second)
 {
     return !(first == second);
 }
@@ -384,10 +500,9 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 }
 #endif
 
-static regMaskTP operator>>(regMaskTP first, const int b)
+static constexpr regMaskTP operator>>(regMaskTP first, const int b)
 {
-    regMaskTP result(first.getLow() >> b);
-    return result;
+    return regMaskTP(first.getLow() >> b);
 }
 
 static regMaskTP& operator>>=(regMaskTP& first, const int b)
@@ -396,20 +511,48 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
     return first;
 }
 
-static regMaskTP operator~(regMaskTP first)
+static constexpr regMaskTP operator~(const regMaskTP first)
 {
-    regMaskTP result(~first.getLow());
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(~first.getLow(), ~first.getHigh());
+#else
+    return regMaskTP(~first.getLow());
+#endif
+}
+
+static uint32_t PopCount(SingleTypeRegSet value)
+{
+    return BitOperations::PopCount(value);
+}
+
+static uint32_t PopCount(const regMaskTP& value)
+{
+    uint32_t result = BitOperations::PopCount(value.getLow());
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    result += BitOperations::PopCount(value.getHigh());
+#endif
     return result;
 }
 
-static uint32_t PopCount(regMaskTP value)
+static uint32_t BitScanForward(SingleTypeRegSet value)
 {
-    return BitOperations::PopCount(value.getLow());
+    return BitOperations::BitScanForward(value);
 }
 
-static uint32_t BitScanForward(regMaskTP mask)
+static uint32_t BitScanForward(const regMaskTP& mask)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (mask.getLow() != RBM_NONE)
+    {
+        return BitOperations::BitScanForward(mask.getLow());
+    }
+    else
+    {
+        return 64 + BitOperations::BitScanForward(mask.getHigh());
+    }
+#else
     return BitOperations::BitScanForward(mask.getLow());
+#endif
 }
 
 /*****************************************************************************/
@@ -628,7 +771,7 @@ inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline SingleTypeRegSet theFixedRetBuffMask(CorInfoCallConvExtension callConv)
+inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
 {
     assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
 #if defined(TARGET_ARM64)
@@ -663,9 +806,9 @@ inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline SingleTypeRegSet fullIntArgRegMask(CorInfoCallConvExtension callConv)
+inline regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
 {
-    SingleTypeRegSet result = RBM_ARG_REGS;
+    regMaskTP result = RBM_ARG_REGS;
     if (hasFixedRetBuffReg(callConv))
     {
         result |= theFixedRetBuffMask(callConv);
@@ -694,7 +837,7 @@ inline SingleTypeRegSet fullIntArgRegMask(CorInfoCallConvExtension callConv)
 //
 inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    return (genRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
+    return (genSingleTypeRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -851,8 +994,9 @@ inline SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
 
 inline regMaskTP genRegMask(regNumber reg)
 {
-    // TODO: Populate regMaskTP based on reg
-    return genSingleTypeRegMask(reg);
+    regMaskTP result = RBM_NONE;
+    result.AddRegNumInMask(reg);
+    return result;
 }
 
 /*****************************************************************************
@@ -886,8 +1030,34 @@ inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_D
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-    // TODO: Populate regMaskTP based on regNum/type
-    return genSingleTypeRegMask(regNum ARM_ARG(type));
+    regMaskTP result = RBM_NONE;
+    result.AddRegNumInMask(regNum ARM_ARG(type));
+    return result;
+}
+
+inline regNumber getRegForType(regNumber reg, var_types regType)
+{
+#ifdef TARGET_ARM
+    if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+    {
+        reg = REG_PREV(reg);
+    }
+#endif // TARGET_ARM
+    return reg;
+}
+
+inline SingleTypeRegSet getSingleTypeRegMask(regNumber reg, var_types regType)
+{
+    reg                      = getRegForType(reg, regType);
+    SingleTypeRegSet regMask = genSingleTypeRegMask(reg);
+#ifdef TARGET_ARM
+    if (regType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(reg));
+        regMask |= (regMask << 1);
+    }
+#endif // TARGET_ARM
+    return regMask;
 }
 
 /*****************************************************************************
@@ -895,10 +1065,10 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regMaskSmall raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
+extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALL_GC_REGS];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
-regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);
+regMaskTP genRegMaskFromCalleeSavedMask(unsigned short);
 
 /*****************************************************************************
  *

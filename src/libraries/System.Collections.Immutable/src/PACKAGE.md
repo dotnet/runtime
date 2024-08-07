@@ -62,8 +62,8 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-- [Collections and Data Structures](https://docs.microsoft.com/dotnet/standard/collections/)
-- [API documentation](https://docs.microsoft.com/dotnet/api/system.collections.immutable)
+- [Collections and Data Structures](https://learn.microsoft.com/dotnet/standard/collections/)
+- [API documentation](https://learn.microsoft.com/dotnet/api/system.collections.immutable)
 
 ## Feedback & Contributing
 

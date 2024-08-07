@@ -441,6 +441,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
         internal static partial Task<int> invoke1_TaskOfInt([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> value, [JSMarshalAs<JSType.String>] string name);
+    
+        [JSImport("returnResolvedPromise", "JavaScriptTestHelper")]
+        internal static partial Task ReturnResolvedPromise();
+
+        [JSImport("invokeReturnCompletedTask", "JavaScriptTestHelper")]
+        internal static partial Task<string> InvokeReturnCompletedTask();
+
+        [JSExport]
+        internal static Task ReturnCompletedTask()
+        {
+            return Task.CompletedTask;
+        }
 
         [JSExport]
         [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
@@ -1019,6 +1031,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        
+        [JSImport("callJavaScriptLibrary", "JavaScriptTestHelper")]
+        public static partial Task<int> callJavaScriptLibrary(int a, int b);
 
         [JSImport("echopromise", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Object>>]

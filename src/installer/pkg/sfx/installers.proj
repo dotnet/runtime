@@ -11,7 +11,7 @@
 
   <ItemGroup Condition="'$(BuildRpmPackage)' == 'true'">
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.3.proj" />
-    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-centos.8.proj" />
+    <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-centos.9.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-cm.1.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-cm.2.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-fedora.27.proj" />

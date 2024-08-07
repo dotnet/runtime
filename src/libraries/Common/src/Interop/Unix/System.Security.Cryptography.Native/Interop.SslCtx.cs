@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -65,11 +67,16 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeSslContextHandle : SafeHandle
+    internal sealed class SafeSslContextHandle : SafeHandle, ISafeHandleCachable
     {
         // This is session cache keyed by SNI e.g. TargetHost
         private Dictionary<string, IntPtr>? _sslSessions;
         private GCHandle _gch;
+
+        // SSL_CTX handles are cached, so we need to keep track of the
+        // number of times a handle is being used. Once we decide to dispose the handle,
+        // we set the _rentCount to -1.
+        private volatile int _rentCount;
 
         public SafeSslContextHandle()
             : base(IntPtr.Zero, true)
@@ -84,6 +91,38 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid
         {
             get { return handle == IntPtr.Zero; }
+        }
+
+        public bool TryAddRentCount()
+        {
+            int oldCount;
+
+            do
+            {
+                oldCount = _rentCount;
+                if (oldCount < 0)
+                {
+                    // The handle is already disposed.
+                    return false;
+                }
+            } while (Interlocked.CompareExchange(ref _rentCount, oldCount + 1, oldCount) != oldCount);
+
+            return true;
+        }
+
+        public bool TryMarkForDispose()
+        {
+            return Interlocked.CompareExchange(ref _rentCount, -1, 0) == 0;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (Interlocked.Decrement(ref _rentCount) < 0)
+            {
+                // _rentCount is 0 if the handle was never rented (e.g. failure during creation),
+                // and is -1 when evicted from cache.
+                base.Dispose(disposing);
+            }
         }
 
         protected override bool ReleaseHandle()

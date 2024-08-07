@@ -78,7 +78,7 @@ namespace System.IO.Compression
             _outstandingWriteStream = null;
 
             _storedEntryNameBytes = cd.Filename;
-            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
+            _storedEntryName = DecodeEntryString(_storedEntryNameBytes);
             DetectEntryNameVersion();
 
             _lhUnknownExtraFields = null;
@@ -201,7 +201,7 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_fileComment);
+            get => DecodeEntryString(_fileComment);
             set
             {
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
@@ -353,6 +353,18 @@ namespace System.IO.Compression
             return FullName;
         }
 
+        private string DecodeEntryString(byte[] entryStringBytes)
+        {
+            Debug.Assert(entryStringBytes != null);
+
+            Encoding readEntryStringEncoding =
+                (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) == BitFlagValues.UnicodeFileNameAndComment
+                ? Encoding.UTF8
+                : _archive?.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+
+            return readEntryStringEncoding.GetString(entryStringBytes);
+        }
+
         // Only allow opening ZipArchives with large ZipArchiveEntries in update mode when running in a 64-bit process.
         // This is for compatibility with old behavior that threw an exception for all process bitnesses, because this
         // will not work in a 32-bit process.
@@ -468,7 +480,7 @@ namespace System.IO.Compression
 
             bool zip64Needed = false;
 
-            if (SizesTooLarge()
+            if (AreSizesTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -489,7 +501,7 @@ namespace System.IO.Compression
             }
 
 
-            if (_offsetOfLocalHeader > uint.MaxValue
+            if (IsOffsetTooLarge
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -843,7 +855,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
+        private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, CompressionMethodValues compressionMethod)
         {
@@ -885,6 +897,10 @@ namespace System.IO.Compression
             return (BitFlagValues)(((int)generalPurposeBitFlag & ~0x6) | deflateCompressionOptions);
         }
 
+        private bool IsOffsetTooLarge => _offsetOfLocalHeader > uint.MaxValue;
+
+        private bool ShouldUseZIP64 => AreSizesTooLarge || IsOffsetTooLarge;
+
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
         private bool WriteLocalFileHeader(bool isEmptyFile)
         {
@@ -899,6 +915,9 @@ namespace System.IO.Compression
             Zip64ExtraField zip64ExtraField = default;
             bool zip64Used = false;
             uint compressedSizeTruncated, uncompressedSizeTruncated;
+
+            // save offset
+            _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
@@ -927,7 +946,7 @@ namespace System.IO.Compression
                 {
                     // We are in seekable mode so we will not need to write a data descriptor
                     _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
-                    if (SizesTooLarge()
+                    if (ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
 #endif
@@ -1073,7 +1092,7 @@ namespace System.IO.Compression
             // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
             Span<byte> writeBuffer = stackalloc byte[20];
 
-            bool zip64Needed = SizesTooLarge()
+            bool zip64Needed = ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
                 || _archive._forceZip64
 #endif
@@ -1168,7 +1187,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor.Slice(currOffset), _crc32);
             currOffset += sizeof(uint);
 
-            if (SizesTooLarge())
+            if (AreSizesTooLarge)
             {
                 BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor.Slice(currOffset), _compressedSize);
                 currOffset += sizeof(long);

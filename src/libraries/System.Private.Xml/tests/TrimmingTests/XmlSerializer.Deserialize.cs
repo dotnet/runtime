@@ -16,6 +16,7 @@ namespace System.Xml.Serialization.TrimmingTests
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Response))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DataUpdates))]
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DataUpdatesDataUpdateInfo))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<DataUpdatesDataUpdateInfo>))]
         public static int Main()
         {
             using StringReader stringReader = new StringReader(@"<?xml version=""1.0"" encoding=""UTF-8""?>

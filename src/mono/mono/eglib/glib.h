@@ -47,10 +47,6 @@
 #include <unistd.h>
 #endif
 
-#ifndef offsetof
-#   define offsetof(s_name,n_name) (size_t)(char *)&(((s_name*)0)->m_name)
-#endif
-
 #ifdef  __cplusplus
 #define G_BEGIN_DECLS  extern "C" {
 #define G_END_DECLS    }
@@ -1067,6 +1063,7 @@ g_async_safe_printf (gchar const *format, ...)
  */
 extern const guchar g_utf8_jump_table[256];
 
+gboolean  g_utf8_validate_part (const unsigned char *inptr, size_t len);
 gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **end);
 glong     g_utf8_strlen        (const gchar *str, gssize max);
 

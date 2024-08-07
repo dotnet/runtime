@@ -12,7 +12,7 @@ namespace Mono.Linker
 	///  Adapted from Roslyn's DocumentationCommentIDVisitor:
 	///  https://github.com/dotnet/roslyn/blob/master/src/Compilers/CSharp/Portable/DocumentationComments/DocumentationCommentIDVisitor.cs
 	/// </summary>
-	public sealed partial class DocumentationSignatureGenerator
+	internal sealed partial class DocumentationSignatureGenerator
 	{
 		internal const string MethodPrefix = "M:";
 		internal const string FieldPrefix = "F:";

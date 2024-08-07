@@ -213,22 +213,13 @@ namespace System.Web
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes.AsSpan(0, bytes.Length));
+        public static byte[]? UrlDecodeToBytes(byte[]? bytes) => bytes == null ? null : HttpEncoder.UrlDecode(bytes);
 
         [return: NotNullIfNotNull(nameof(str))]
-        public static byte[]? UrlEncodeToBytes(string? str, Encoding e)
-        {
-            if (str == null)
-            {
-                return null;
-            }
-
-            byte[] bytes = e.GetBytes(str);
-            return HttpEncoder.UrlEncode(bytes, 0, bytes.Length, alwaysCreateNewReturnValue: false);
-        }
+        public static byte[]? UrlEncodeToBytes(string? str, Encoding e) => str == null ? null : HttpEncoder.UrlEncode(str, e);
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        public static byte[]? UrlEncodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count, alwaysCreateNewReturnValue: true);
+        public static byte[]? UrlEncodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlEncode(bytes, offset, count);
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String).")]
         [return: NotNullIfNotNull(nameof(str))]
@@ -246,12 +237,8 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(bytes))]
         public static byte[]? UrlDecodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
-        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value);
+        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value, false);
 
-        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
-        {
-            string encoded = HttpEncoder.JavaScriptStringEncode(value);
-            return addDoubleQuotes ? "\"" + encoded + "\"" : encoded;
-        }
+        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes) => HttpEncoder.JavaScriptStringEncode(value, addDoubleQuotes);
     }
 }

@@ -13,9 +13,6 @@ namespace System.Text.Json.Serialization.Metadata
 {
     public partial class DefaultJsonTypeInfoResolver
     {
-        private static readonly bool s_isNullabilityInfoContextSupported =
-            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
-
         internal static MemberAccessor MemberAccessor
         {
             [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -72,12 +69,9 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
-            if (typeInfo.Kind is JsonTypeInfoKind.Object)
+            if (typeInfo is { Kind: JsonTypeInfoKind.Object, IsNullable: false })
             {
-                // If the System.Reflection.NullabilityInfoContext.IsSupported feature switch has been disabled,
-                // we want to avoid resolving nullability information for properties and parameters unless the
-                // user has explicitly opted into nullability enforcement in which case an exception will be surfaced.
-                NullabilityInfoContext? nullabilityCtx = s_isNullabilityInfoContextSupported || options.RespectNullableAnnotations ? new() : null;
+                NullabilityInfoContext nullabilityCtx = new();
 
                 if (converter.ConstructorIsParameterized)
                 {
@@ -87,6 +81,8 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 PopulateProperties(typeInfo, nullabilityCtx);
+
+                typeInfo.ConstructorAttributeProvider = typeInfo.Converter.ConstructorInfo;
             }
 
             // Plug in any converter configuration -- should be run last.
@@ -97,7 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void PopulateProperties(JsonTypeInfo typeInfo, NullabilityInfoContext? nullabilityCtx)
+        private static void PopulateProperties(JsonTypeInfo typeInfo, NullabilityInfoContext nullabilityCtx)
         {
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
@@ -138,33 +134,13 @@ namespace System.Text.Json.Serialization.Metadata
             BindingFlags.NonPublic |
             BindingFlags.DeclaredOnly;
 
-        /// <summary>
-        /// Looks up the type for a member matching the given name and member type.
-        /// </summary>
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal static MemberInfo? LookupMemberInfo(Type type, MemberTypes memberType, string name)
-        {
-            Debug.Assert(memberType is MemberTypes.Field or MemberTypes.Property);
-
-            // Walk the type hierarchy starting from the current type up to the base type(s)
-            foreach (Type t in type.GetSortedTypeHierarchy())
-            {
-                MemberInfo[] members = t.GetMember(name, memberType, AllInstanceMembers);
-                if (members.Length > 0)
-                {
-                    return members[0];
-                }
-            }
-
-            return null;
-        }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void AddMembersDeclaredBySuperType(
             JsonTypeInfo typeInfo,
             Type currentType,
-            NullabilityInfoContext? nullabilityCtx,
+            NullabilityInfoContext nullabilityCtx,
             bool constructorHasSetsRequiredMembersAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
@@ -225,7 +201,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
-            NullabilityInfoContext? nullabilityCtx,
+            NullabilityInfoContext nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
@@ -247,7 +223,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
-            NullabilityInfoContext? nullabilityCtx,
+            NullabilityInfoContext nullabilityCtx,
             JsonSerializerOptions options,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute)
@@ -307,7 +283,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, NullabilityInfoContext? nullabilityCtx)
+        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, NullabilityInfoContext nullabilityCtx)
         {
             Debug.Assert(typeInfo.Converter.ConstructorInfo != null);
             ParameterInfo[] parameters = typeInfo.Converter.ConstructorInfo.GetParameters();
@@ -348,7 +324,7 @@ namespace System.Text.Json.Serialization.Metadata
             MemberInfo memberInfo,
             JsonConverter? customConverter,
             JsonIgnoreCondition? ignoreCondition,
-            NullabilityInfoContext? nullabilityCtx,
+            NullabilityInfoContext nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
             bool hasJsonIncludeAttribute)
         {
@@ -491,9 +467,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static void DeterminePropertyNullability(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx)
+        private static void DeterminePropertyNullability(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, NullabilityInfoContext nullabilityCtx)
         {
-            if (!propertyInfo.PropertyTypeCanBeNull || nullabilityCtx is null)
+            if (!propertyInfo.PropertyTypeCanBeNull)
             {
                 return;
             }
@@ -515,16 +491,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext? nullabilityCtx)
+        private static NullabilityState DetermineParameterNullability(ParameterInfo parameterInfo, NullabilityInfoContext nullabilityCtx)
         {
             if (!parameterInfo.ParameterType.IsNullableType())
             {
                 return NullabilityState.NotNull;
-            }
-
-            if (nullabilityCtx is null)
-            {
-                return NullabilityState.Unknown;
             }
 #if NET8_0
             // Workaround for https://github.com/dotnet/runtime/issues/92487

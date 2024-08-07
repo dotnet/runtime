@@ -109,13 +109,13 @@ For example, for Windows x64 machine, the project file is:
     <Project Sdk="Microsoft.NET.Sdk">
       <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       </PropertyGroup>
     </Project>
     ```
 
-   You can find a list of RIDs and their corresponding OSes [here](https://docs.microsoft.com/en-us/dotnet/articles/core/rid-catalog).
+   You can find a list of RIDs and their corresponding OSes [here](https://learn.microsoft.com/dotnet/articles/core/rid-catalog).
 
 * After you've finished editing the code, run `dotnet restore` and `dotnet publish -c Release`. This should drop all of the binaries needed to run your app in `bin/Release/<tfm>/<rid>/publish`.
 * Overwrite the CLR dlls with the ones you've built locally. If you're a fan of the command line, here are some shell commands for doing this:

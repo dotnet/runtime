@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         /// <summary>
-        /// <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes">RequiredAccess</a>.
+        /// <a href="https://learn.microsoft.com/windows-hardware/drivers/kernel/defining-i-o-control-codes">RequiredAccess</a>.
         /// Indicates the type of access that a caller must request when opening the file object that represents the device (see IRP_MJ_CREATE).
         /// </summary>
         [Flags]

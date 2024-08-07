@@ -13,11 +13,17 @@ struct Struct { }
 
 public static unsafe class UnsafeAccessorsTestsGenerics
 {
+    class ClassWithEnum<T>
+    {
+        public enum Enum { }
+    }
+
     class MyList<T>
     {
         public const string StaticGenericFieldName = nameof(_GF);
         public const string StaticFieldName = nameof(_F);
         public const string GenericFieldName = nameof(_list);
+        public const string GenericEnumFieldName = nameof(_enum);
 
         static MyList()
         {
@@ -29,6 +35,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         private static string _F;
 
         private List<T> _list;
+        private ClassWithEnum<T>.Enum _enum;
 
         public MyList() => _list = new();
 
@@ -62,6 +69,57 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         public int Capacity => _list.Capacity;
     }
 
+    static class Accessors<V>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        public extern static MyList<V> Create(int a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        public extern static MyList<V> CreateWithList(List<V> a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
+        public extern static void CallCtorAsMethod(MyList<V> l, List<V> a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddInt(MyList<V> l, int a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddString(MyList<V> l, string a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void AddStruct(MyList<V> l, Struct a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Clear")]
+        public extern static void Clear(MyList<V> l);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
+        public extern static void Add(MyList<V> l, V element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddWithIgnore")]
+        public extern static void AddWithIgnore<W>(MyList<V> l, V element, W ignore);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CanCastToElementType")]
+        public extern static bool CanCastToElementType<W>(MyList<V> l, W element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
+        public extern static string CreateMessage(GenericBase<V> b, V v);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
+        public extern static Type ElementType(MyList<V> l);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CanUseElementType")]
+        public extern static bool CanUseElementType<W>(MyList<V> l, W element);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=MyList<object>.GenericFieldName)]
+        public extern static ref List<V> GetPrivateField(MyList<V> a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=MyList<int>.GenericEnumFieldName)]
+        public extern static ref ClassWithEnum<V>.Enum GetPrivateEnumField(MyList<V> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
+        public extern static ref V GetPrivateStaticField(MyList<V> d);
+    }
+
     [Fact]
     public static void Verify_Generic_AccessStaticFieldClass()
     {
@@ -76,12 +134,12 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         {
             int expected = 10;
             MyList<int>.SetStaticGenericField(expected);
-            Assert.Equal(expected, GetPrivateStaticField((MyList<int>)null));
+            Assert.Equal(expected, Accessors<int>.GetPrivateStaticField((MyList<int>)null));
         }
         {
             string expected = "abc";
             MyList<string>.SetStaticGenericField(expected);
-            Assert.Equal(expected, GetPrivateStaticField((MyList<string>)null));
+            Assert.Equal(expected, Accessors<string>.GetPrivateStaticField((MyList<string>)null));
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticFieldName)]
@@ -92,9 +150,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<Struct>.StaticFieldName)]
         extern static ref string GetPrivateStaticFieldStruct(MyList<Struct> d);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
-        extern static ref V GetPrivateStaticField<V>(MyList<V> d);
     }
 
     [Fact]
@@ -103,19 +158,19 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Console.WriteLine($"Running {nameof(Verify_Generic_AccessFieldClass)}");
         {
             MyList<int> a = new();
-            Assert.NotNull(GetPrivateField(a));
+            Assert.NotNull(Accessors<int>.GetPrivateField(a));
+            Accessors<int>.GetPrivateEnumField(a) = default;
         }
         {
             MyList<string> a = new();
-            Assert.NotNull(GetPrivateField(a));
+            Assert.NotNull(Accessors<string>.GetPrivateField(a));
+            Accessors<string>.GetPrivateEnumField(a) = default;
         }
         {
             MyList<Struct> a = new();
-            Assert.NotNull(GetPrivateField(a));
+            Assert.NotNull(Accessors<Struct>.GetPrivateField(a));
+            Accessors<Struct>.GetPrivateEnumField(a) = default;
         }
-
-        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=MyList<object>.GenericFieldName)]
-        extern static ref List<V> GetPrivateField<V>(MyList<V> a);
     }
 
     class Base
@@ -184,48 +239,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
         extern static string CreateMessage<W>(Base b, W w);
-    }
-
-    sealed class Accessors<V>
-    {
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern static MyList<V> Create(int a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-        public extern static MyList<V> CreateWithList(List<V> a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = ".ctor")]
-        public extern static void CallCtorAsMethod(MyList<V> l, List<V> a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddInt(MyList<V> l, int a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddString(MyList<V> l, string a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void AddStruct(MyList<V> l, Struct a);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Clear")]
-        public extern static void Clear(MyList<V> l);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Add")]
-        public extern static void Add(MyList<V> l, V element);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddWithIgnore")]
-        public extern static void AddWithIgnore<W>(MyList<V> l, V element, W ignore);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CanCastToElementType")]
-        public extern static bool CanCastToElementType<W>(MyList<V> l, W element);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
-        public extern static string CreateMessage(GenericBase<V> b, V v);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
-        public extern static Type ElementType(MyList<V> l);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CanUseElementType")]
-        public extern static bool CanUseElementType<W>(MyList<V> l, W element);
     }
 
     [Fact]
@@ -393,7 +406,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89439", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
     public static void Verify_Generic_ConstraintEnforcement()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_ConstraintEnforcement)}");

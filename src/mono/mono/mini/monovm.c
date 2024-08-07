@@ -45,7 +45,7 @@ static gboolean
 parse_trusted_platform_assemblies (const char *assemblies_paths)
 {
 	// From
-	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
+	// https://learn.microsoft.com/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
 	// this is ';' separated on Windows and ':' separated elsewhere.
 	char **parts = g_strsplit (assemblies_paths, G_SEARCHPATH_SEPARATOR_S, 0);
 	int asm_count = 0;
@@ -187,7 +187,7 @@ static gboolean
 parse_properties (int propertyCount, const char **propertyKeys, const char **propertyValues)
 {
 	// A partial list of relevant properties is at:
-	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
+	// https://learn.microsoft.com/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
 
 	PInvokeOverrideFn override_fn = NULL;
 	for (int i = 0; i < propertyCount; ++i) {
