@@ -16,11 +16,9 @@ public static class WasiMainWrapper
         using HttpClient client = new();
         client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.Accept.Clear();
-        client.DefaultRequestHeaders.Accept.Add(
-            new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-        client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
+        client.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         
-        var query="https://api.github.com/orgs/dotnet/repos?per_page=1";
+        var query="https://corefx-net-http11.azurewebsites.net/Echo.ashx";
         var json = await client.GetStringAsync(query);
 
         Console.WriteLine();
