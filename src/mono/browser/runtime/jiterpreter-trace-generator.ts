@@ -2753,22 +2753,18 @@ function append_call_handler_store_ret_ip (
 }
 
 function getBranchImmediate (
-    ip: MintOpcodePtr, opcode: MintOpcode, unsigned: boolean
+    ip: MintOpcodePtr, opcode: MintOpcode
 ): number | undefined {
     const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
         payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
         payloadAddress = <any>ip + 2 + (payloadOffset * 2);
 
-    let result: number;
     switch (opArgType) {
         case MintOpArgType.MintOpShortAndBranch:
-            result = unsigned ? getU16(payloadAddress) : getI16(payloadAddress);
-            break;
+            return getI16(payloadAddress);
         default:
             return undefined;
     }
-
-    return result;
 }
 
 function getBranchDisplacement (
@@ -2970,7 +2966,7 @@ function emit_relop_branch (
 
     // Compare with immediate
     if (Array.isArray(relopBranchInfo) && relopBranchInfo[1]) {
-        const immediate = getBranchImmediate(ip, opcode, relopBranchInfo[3]);
+        const immediate = getBranchImmediate(ip, opcode);
         mono_assert(immediate !== undefined, `Failed to decode immediate for branch opcode ${getOpcodeName(opcode)}`);
         // For i8 immediates we need to generate an i64.const even though
         //  the immediate is 16 bits, so we store the relevant opcode
