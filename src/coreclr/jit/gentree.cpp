@@ -25080,55 +25080,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 canUseSignedComparisonHint = true;
             }
 
-            // we want ShuffleUnsafe to be at least as good as Shuffle (at least in sensible cases), so for constant
-            // indices vector we special case some cases to use normal Shuffle to ensure it gets the additional
-            // optimisations available there (to avoid double Avx2.Shuffle-ing when possible). all these here cases are
-            // equivalent to normal shuffle (we only take ones that are in range, or would trivially give 0 for both).
-            if (isUnsafe && op2->IsCnsVec())
-            {
-                // get the byte indices we will use for shuffling
-                bool   isValidForNormalShuffle = true;
-                simd_t indicesCns              = op2->AsVecCon()->gtSimdVal;
-                if (elementSize > 1)
-                {
-                    for (size_t i = 0; i < simdSize / 2; i++)
-                    {
-                        uint16_t index = indicesCns.u16[i];
-                        if (index >= 128)
-                        {
-                            // if the index is 128 or more, then we would have to synthesise a new op2, which we will
-                            // not do, since there is no reason to put in extra effort to support such out-of-bounds
-                            // cases for ShuffleUnsafe.
-                            isValidForNormalShuffle = false;
-                            break;
-                        }
-                        indicesCns.u8[i * 2]     = (uint8_t)(index << 1);
-                        indicesCns.u8[i * 2 + 1] = (uint8_t)((index << 1) | 1);
-                    }
-                }
-
-                if (isValidForNormalShuffle)
-                {
-                    // check they are all within valid range (or have high bit set since it also trivially behaves same)
-                    for (size_t i = 0; i < simdSize; i++)
-                    {
-                        if ((indicesCns.u8[i] & ~0x9F) != 0)
-                        {
-                            isValidForNormalShuffle = false;
-                            break;
-                        }
-                    }
-
-                    // if valid, call to gtNewSimdShuffleNode
-                    if (isValidForNormalShuffle)
-                    {
-                        // note: this does not cause an infinite loop, since we call with isUnsafe: false, which never
-                        // enters gtNewSimdShuffleNodeVariable.
-                        return gtNewSimdShuffleNode(type, op1, op2, simdBaseJitType, simdSize, false);
-                    }
-                }
-            }
-
             // if we have elementSize > 1, we need to convert op2 (short indices) to byte indices
             if (elementSize > 1)
             {
@@ -25487,11 +25438,32 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
+    size_t elementSize  = genTypeSize(simdBaseType);
+    size_t elementCount = simdSize / elementSize;
+
     if (isUnsafe)
     {
         // For ShuffleUnsafe, delegate to the variable implementation to get the same behaviour for
         // ShuffleUnsafe with constant vs variable indices for free.
-        return gtNewSimdShuffleNodeVariable(type, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+
+        // We want ShuffleUnsafe to be at least as good as Shuffle (at least in non out-of-range cases),
+        // so if we have all values in range, then just treat it like Shuffle.
+        bool gotInvalidIndex = false;
+        for (size_t index = 0; index < elementCount; index++)
+        {
+            uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+            if (value >= elementCount)
+            {
+                gotInvalidIndex = true;
+                break;
+            }
+        }
+
+        if (gotInvalidIndex)
+        {
+            // Call variable implementation.
+            return gtNewSimdShuffleNodeVariable(type, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+        }
     }
 
     if (op2->IsVectorAllBitsSet())
@@ -25509,9 +25481,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
     GenTree*             retNode = nullptr;
     GenTreeIntConCommon* cnsNode = nullptr;
-
-    size_t elementSize  = genTypeSize(simdBaseType);
-    size_t elementCount = simdSize / elementSize;
 
 #if defined(TARGET_XARCH)
     uint8_t  control   = 0;
