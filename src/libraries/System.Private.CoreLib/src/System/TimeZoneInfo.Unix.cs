@@ -220,6 +220,10 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private string NameLookupId =>
+                HasIanaId ? Id :
+                (_equivalentZones is not null && _equivalentZones.Count > 0 ? _equivalentZones[0].Id : (GetAlternativeId(Id, out _) ?? Id));
+
         private string? PopulateDisplayName()
         {
             if (IsUtcAlias(Id))
@@ -231,7 +235,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return displayName;
 
-            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+            GetFullValueForDisplayNameField(NameLookupId, BaseUtcOffset, ref displayName);
 
             return displayName;
         }
@@ -245,7 +249,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return standardDisplayName;
 
-            GetStandardDisplayName(Id, ref standardDisplayName);
+            GetStandardDisplayName(NameLookupId, ref standardDisplayName);
 
             return standardDisplayName;
         }
@@ -259,7 +263,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 return daylightDisplayName;
 
-            GetDaylightDisplayName(Id, ref daylightDisplayName);
+            GetDaylightDisplayName(NameLookupId, ref daylightDisplayName);
 
             return daylightDisplayName;
         }
