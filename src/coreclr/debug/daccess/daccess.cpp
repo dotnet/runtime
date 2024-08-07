@@ -5656,8 +5656,8 @@ ClrDataAccess::GetJitHelperName(
 
     // Check if its a dynamically generated JIT helper
     const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, sig) code,
-#define JITHELPER(code, fn,sig)
+#define DYNAMICJITHELPER(code, fn, binderId) code,
+#define JITHELPER(code, fn, binderId)
 #include <jithelpers.h>
     };
 

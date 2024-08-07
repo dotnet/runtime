@@ -368,6 +368,11 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 {
     switch (oper)
     {
+        case GT_NEG:
+        {
+            return static_cast<TBase>(0) - arg0;
+        }
+
         case GT_NOT:
         {
             return ~arg0;
@@ -399,6 +404,11 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 template <>
 inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 {
+    if (oper == GT_NEG)
+    {
+        return -arg0;
+    }
+
     uint32_t arg0Bits   = BitOperations::SingleToUInt32Bits(arg0);
     uint32_t resultBits = EvaluateUnaryScalarSpecialized<uint32_t>(oper, arg0Bits);
     return BitOperations::UInt32BitsToSingle(resultBits);
@@ -407,6 +417,11 @@ inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 template <>
 inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg0)
 {
+    if (oper == GT_NEG)
+    {
+        return -arg0;
+    }
+
     uint64_t arg0Bits   = BitOperations::DoubleToUInt64Bits(arg0);
     uint64_t resultBits = EvaluateUnaryScalarSpecialized<uint64_t>(oper, arg0Bits);
     return BitOperations::UInt64BitsToDouble(resultBits);
@@ -415,18 +430,7 @@ inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg
 template <typename TBase>
 TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 {
-    switch (oper)
-    {
-        case GT_NEG:
-        {
-            return static_cast<TBase>(0) - arg0;
-        }
-
-        default:
-        {
-            return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
-        }
-    }
+    return EvaluateUnaryScalarSpecialized<TBase>(oper, arg0);
 }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -664,10 +668,10 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 template <typename TBase>
 TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
     {
-        // For SIMD, xarch allows overshifting and treats
+        // For SIMD, xarch and ARM64 allow overshifting and treat
         // it as zeroing. So ensure we do the same here.
         //
         // The xplat APIs ensure the shiftAmount is masked
@@ -756,10 +760,10 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_LSH:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
             {
-                // For SIMD, xarch allows overshifting and treats
+                // For SIMD, xarch and ARM64 allow overshifting and treat
                 // it as zeroing. So ensure we do the same here.
                 //
                 // The xplat APIs ensure the shiftAmount is masked
@@ -813,10 +817,10 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_RSH:
         {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             if ((arg1 < 0) || (arg1 >= (sizeof(TBase) * 8)))
             {
-                // For SIMD, xarch allows overshifting and treats
+                // For SIMD, xarch and ARM64 allow overshifting and treat
                 // it as propagating the sign bit (returning Zero
                 // or AllBitsSet). So ensure we do the same here.
                 //

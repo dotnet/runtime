@@ -818,6 +818,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     s = s + s%16;
     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
+    pRD->pCurrentContext->A0 = m_Args->A0;
+
     pRD->pCurrentContext->S0 = m_Args->S0;
     pRD->pCurrentContext->S1 = m_Args->S1;
     pRD->pCurrentContext->S2 = m_Args->S2;
