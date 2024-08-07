@@ -44161,6 +44161,12 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
         global_region_allocator.delete_region (get_region_start (region));
     }
 
+    else
+    {
+        // If decommit failed or if we are using large pages, set this value to 0.
+        decommit_size = 0;
+    }
+
     return decommit_size;
 }
 #endif //USE_REGIONS
