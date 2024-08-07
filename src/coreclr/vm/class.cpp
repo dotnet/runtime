@@ -1896,6 +1896,29 @@ EEClass::CheckForHFA()
                     fieldHFAType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
 #endif
                 }
+
+                int requiredAlignment;
+                switch (fieldHFAType)
+                {
+                case CORINFO_HFA_ELEM_FLOAT:
+                    requiredAlignment = 4;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR64:
+                case CORINFO_HFA_ELEM_DOUBLE:
+                    requiredAlignment = 8;
+                    break;
+                case CORINFO_HFA_ELEM_VECTOR128:
+                    requiredAlignment = 16;
+                    break;
+                default:
+                    requiredAlignment = 0;
+                    break;
+                }
+
+                if (requiredAlignment && (pFD->GetOffset() % requiredAlignment != 0))
+                {
+                    return false;
+                }
             }
             break;
 
