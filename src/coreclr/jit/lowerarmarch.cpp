@@ -1931,7 +1931,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
     GenTree* op1    = node->Op(1);
     GenTree* castOp = nullptr;
 
-    // TODO-Casts: why don't we fold the casts? MinOpts?
+    // In MinOpts, casts won't be folded during importation
     if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
     {
         // We will sometimes get a cast around a constant value (such as for
@@ -1939,9 +1939,13 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         // So we will temporarily check what the cast is from instead so we
         // can catch those cases as well.
 
-        castOp = op1->AsCast()->CastOp();
+        GenTreeCast* const cast = op1->AsCast();
+        castOp                  = cast->CastOp();
 
-        if (varTypeIsIntegral(castOp))
+        // If we might need to truncate the immediate, don't try to remove the cast
+        // (we could handle the truncation like in constant-folding,
+        // but this shouldn't be important in MinOpts)
+        if (varTypeIsIntegral(castOp) && (emitTypeSize(cast->CastToType()) >= emitTypeSize(cast->CastFromType())))
         {
             op1 = castOp;
         }
