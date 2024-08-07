@@ -1307,8 +1307,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }));
 
             Assert.Equal(1, ex.InnerExceptions.Count);
-            Assert.Contains("ServiceType: Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+OtherService", ex.Message);
-            Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.InnerExceptions[0].Message);
+            Assert.StartsWith("Some services are not able to be constructed", ex.Message);
+            Assert.Contains("ServiceType: Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+OtherService", ex.ToString());
+            Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.ToString());
         }
 
         private async Task<bool> ResolveUniqueServicesConcurrently()
