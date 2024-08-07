@@ -180,10 +180,27 @@ struct ShuffleEntry
         FPREGMASK    = 0x4000, // Floating point register bit
         FPSINGLEMASK = 0x2000, // Single precising floating point register
         OFSMASK      = 0x7fff, // Mask to get stack offset
+#if defined(TARGET_RISCV64)
+        LOWERINGMASK = FPSINGLEMASK, // Repurpose FPsingle bit to mean whether field size and offset info is avalilable
+        OFSREGMASK   = 0xf, // Mask to get register index
+
+        // Note: field size and offset are encoded only if the FP struct is lowered or delowered
+        OFSFIELDSHIFTSIZEPOS = 4,
+        OFSFIELDSHIFTSIZEMASK = 0x3 << OFSFIELDSHIFTSIZEPOS, // Mask to get field log2(size) of FP struct
+        OFSFIELDOFFSETPOS = 6,
+        OFSFIELDOFFSETMASK = 0x7f << OFSFIELDOFFSETPOS, // Mask to get field offset of FP struct
+#else
         OFSREGMASK   = 0x1fff, // Mask to get register index
+#endif // TARGET_RISCV64
         SENTINEL     = 0xffff, // Indicates end of shuffle array
         HELPERREG    = 0xcfff, // Use a helper register as source or destination (used to handle cycles in the shuffling)
     };
+
+#if defined(TARGET_RISCV64)
+    static_assert((OFSREGMASK & OFSFIELDSHIFTSIZEMASK) == 0, "must not overlap");
+    static_assert((OFSFIELDSHIFTSIZEMASK & OFSFIELDOFFSETMASK) == 0, "must not overlap");
+    static_assert((OFSFIELDOFFSETMASK & (REGMASK | FPREGMASK | LOWERINGMASK)) == 0, "must not overlap");
+#endif
 
     UINT16    srcofs;
 

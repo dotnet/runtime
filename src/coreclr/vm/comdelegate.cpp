@@ -373,6 +373,59 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     return FALSE;
                 }
             }
+#if defined(TARGET_RISCV64)
+            else if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags)
+            {
+                if (sArgDst.m_structFields.flags != FpStruct::UseIntCallConv)
+                {
+                    // Transfer struct from integer to hardware floating-point calling convention, i.e. lowering.
+                    _ASSERTE(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv);
+                    _ASSERTE(sArgDst.m_structFields.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
+
+                    // Lowering can happen only if the struct is passed to delegate in the first stack slot(s)
+                    _ASSERTE(entry.srcofs == 0);
+                    if (iteratorSrc.HasNextOfs())
+                    {
+                        // Just sanity-check the second slot. We use the base (first) stack slot for both fields
+                        _ASSERTE(iteratorSrc.GetNextOfs() == 1);
+                        _ASSERTE(!iteratorSrc.HasNextOfs());
+                    }
+
+                    for (int i = 0;;)
+                    {
+                        _ASSERTE(entry.dstofs & ShuffleEntry::REGMASK);
+                        bool isFloatField = (bool(sArgDst.m_structFields.flags & FpStruct::FloatInt) == (i == 0));
+                        bool isFloatReg = entry.dstofs & ShuffleEntry::FPREGMASK;
+                        _ASSERTE(isFloatField == isFloatReg);
+
+                        unsigned sizeShift = (i == 0) ? sArgDst.m_structFields.SizeShift1st() : sArgDst.m_structFields.SizeShift2nd();
+                        unsigned offset = (i == 0) ? sArgDst.m_structFields.offset1st : sArgDst.m_structFields.offset2nd;
+                        _ASSERTE((1u << sizeShift) + offset <= ENREGISTERED_PARAMTYPE_MAXSIZE);
+
+                        sizeShift <<= ShuffleEntry::OFSFIELDSHIFTSIZEPOS;
+                        offset <<= ShuffleEntry::OFSFIELDOFFSETPOS;
+                        _ASSERTE((sizeShift & ShuffleEntry::OFSFIELDSHIFTSIZEMASK) == sizeShift);
+                        _ASSERTE((offset & ShuffleEntry::OFSFIELDOFFSETMASK) == offset);
+
+                        _ASSERTE((entry.dstofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
+                        entry.dstofs |= ShuffleEntry::LOWERINGMASK | sizeShift | offset;
+                        pShuffleEntryArray->Append(entry);
+
+                        if (++i >= 2) break;
+
+                        _ASSERTE(iteratorDst.HasNextOfs());
+                        entry.dstofs = iteratorDst.GetNextOfs();
+                    }
+
+                    break;
+                }
+                else // delowering
+                {
+                    _ASSERTE((entry.srcofs & (ShuffleEntry::OFSFIELDSHIFTSIZEMASK | ShuffleEntry::OFSFIELDOFFSETMASK)) == 0);
+                    _ASSERTE(!"todo");
+                }
+            }
+#endif
 
             pShuffleEntryArray->Append(entry);
         }
@@ -733,34 +786,51 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         for (COUNT_T i = 0; i < pShuffleEntryArray->GetCount(); ++i)
         {
             const ShuffleEntry& entry = (*pShuffleEntryArray)[i];
-            if (entry.srcofs != ShuffleEntry::SENTINEL)
-            {
-                struct ShuffleInfo { const char* type; int offset; };
-                auto getShuffleInfo = [](UINT16 offset) -> ShuffleInfo {
-                    using SE = ShuffleEntry;
-                    if (offset == SE::HELPERREG)
-                    {
-                        return { "helper register" };
-                    }
-                    else if (offset & SE::REGMASK)
-                    {
-                        const char* type = (offset & SE::FPREGMASK)
-                            ? ((offset & SE::FPSINGLEMASK) ? "single-FP register" : "FP register")
-                            : "integer register";
-                        return { type, offset & SE::OFSREGMASK };
-                    }
-                    else
-                    {
-                        return {"stack slot", offset & SE::OFSMASK };
-                    }
-                };
-                ShuffleInfo src = getShuffleInfo(entry.srcofs);
-                ShuffleInfo dst = getShuffleInfo(entry.dstofs);
-                LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
-            }
-            else
+            if (entry.srcofs == ShuffleEntry::SENTINEL)
             {
                 LOGALWAYS(("    [%u] sentinel, stack size delta %u\n", i, entry.stacksizedelta));
+                _ASSERTE(i == pShuffleEntryArray->GetCount() - 1);
+                break;
+            }
+
+            using SE = ShuffleEntry;
+            struct ShuffleInfo { const char* type; int offset; };
+            auto getShuffleInfo = [](UINT16 offset) -> ShuffleInfo {
+                if (offset == SE::HELPERREG)
+                {
+                    return { "helper register" };
+                }
+                else if (offset & SE::REGMASK)
+                {
+                    const char* type = (offset & SE::FPREGMASK)
+                        ? (NOT_RISCV64((offset & SE::FPSINGLEMASK) ? "single-FP register" :) "FP register")
+                        : "integer register";
+                    return { type, offset & SE::OFSREGMASK };
+                }
+                else
+                {
+                    return {"stack slot", offset & SE::OFSMASK };
+                }
+            };
+            ShuffleInfo src = getShuffleInfo(entry.srcofs);
+            ShuffleInfo dst = getShuffleInfo(entry.dstofs);
+#if defined(TARGET_RISCV64)
+            static const int REGLOWERINGMASK = SE::LOWERINGMASK | SE::REGMASK;
+            bool isDelowered = ((entry.srcofs & REGLOWERINGMASK) == REGLOWERINGMASK);
+            bool isLowered   = ((entry.dstofs & REGLOWERINGMASK) == REGLOWERINGMASK);
+            if (isDelowered || isLowered)
+            {
+                _ASSERTE(isDelowered != isLowered);
+                UINT16 ofs = isDelowered ? entry.srcofs : entry.dstofs;
+                int fieldSize = 1 << ((ofs & SE::OFSFIELDSHIFTSIZEMASK) >> SE::OFSFIELDSHIFTSIZEPOS);
+                int fieldOffset = (ofs & SE::OFSFIELDOFFSETMASK) >> SE::OFSFIELDOFFSETPOS;
+                LOGALWAYS(("    [%u] %s %i -> %s %i (%slowered field size: %i, offset: %i)\n",
+                    i, src.type, src.offset, dst.type, dst.offset, (isDelowered ? "de" : ""), fieldSize, fieldOffset));
+            }
+            else
+#endif // TARGET_RISCV64
+            {
+                LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
             }
         }
     }
