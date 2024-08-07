@@ -20,20 +20,23 @@ public class Runtime_105824
     [Fact]
     public static void TestEntryPoint()
     {
-        uint[][] vr6 = new uint[][]
+        if (Avx2.IsSupported)
         {
-            new uint[]
+            uint[][] vr6 = new uint[][]
             {
-                0
-            }
-        };
-        var vr7 = Vector256.Create<uint>(0);
-        var vr8 = vr6[0][0];
-        var vr9 = Vector256.Create<uint>(vr8);
-        var vr10 = Vector256.CreateScalar(0U);
-        var vr11 = Avx2.PermuteVar8x32(vr9, vr10);
-        var vr12 = Avx2.CompareEqual(vr7, vr11);
-        short vr13 = (short)Avx2.ConvertToUInt32(vr12);
-        Assert.Equal(-1, vr13);
+                new uint[]
+                {
+                    0
+                }
+            };
+            var vr7 = Vector256.Create<uint>(0);
+            var vr8 = vr6[0][0];
+            var vr9 = Vector256.Create<uint>(vr8);
+            var vr10 = Vector256.CreateScalar(0U);
+            var vr11 = Avx2.PermuteVar8x32(vr9, vr10);
+            var vr12 = Avx2.CompareEqual(vr7, vr11);
+            short vr13 = (short)Avx2.ConvertToUInt32(vr12);
+            Assert.Equal(-1, vr13);
+        }
     }
 }
