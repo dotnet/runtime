@@ -15,9 +15,10 @@ using Xunit;
 // Debug: Outputs -1
 // Release: Outputs 0
 
-public class Program
+public class Runtime_105824
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         uint[][] vr6 = new uint[][]
         {
