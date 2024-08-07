@@ -12,6 +12,9 @@ using Microsoft.VisualBasic;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Static class that contains methods for creating tensors.
+    /// </summary>
     public static partial class Tensor
     {
         /// <summary>
@@ -175,6 +178,14 @@ namespace System.Numerics.Tensors
             return new Tensor<T>(values, lengths, strides, pinned);
         }
 
+        /// <summary>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a gaussian normal distribution. <see cref="System.Random"/>
+        /// can optionally be provided for seeding.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
+        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <returns></returns>
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
             Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);
@@ -184,6 +195,14 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
+        /// <summary>
+        /// Fills the given <see cref="TensorSpan{T}"/> with random data in a uniform distribution. <see cref="System.Random"/>
+        /// can optionally be provided for seeding.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <param name="destination">The destination <see cref="TensorSpan{T}"/> where the data will be stored.</param>
+        /// <param name="random"><see cref="System.Random"/> to provide random seeding. Defaults to <see cref="Random.Shared"/> if not provided.</param>
+        /// <returns></returns>
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
             Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);

@@ -91,7 +91,16 @@ namespace System.Buffers
             return new NIndex(~value);
         }
 
+        /// <summary>
+        /// Convert the NIndex to an Index.
+        /// </summary>
+        /// <returns>The converted <see cref="Index"/></returns>
         public Index ToIndex() => checked((Index)this);
+
+        /// <summary>
+        /// Convert the NIndex to an Index without doing bounds checks.
+        /// </summary>
+        /// <returns>The converted <see cref="Index"/></returns>
         public Index ToIndexUnchecked() => (Index)this;
 
         /// <summary>Returns the NIndex value.</summary>

@@ -121,12 +121,34 @@ namespace System.Buffers
 
         private static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException("length");
 
+        /// <summary>
+        /// Implicitly converts a <see cref="Range"/> to an <see cref="NRange"/>.
+        /// </summary>
+        /// <param name="range"></param>
         public static implicit operator NRange(Range range) => new NRange(range.Start, range.End);
 
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <param name="value"></param>
         public static explicit operator Range(NRange value) => new Range((Index)value.Start, (Index)value.End);
+
+        /// <summary>
+        /// Explicitly converts an <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <param name="value"></param>
         public static explicit operator checked Range(NRange value) => new Range(checked((Index)value.Start), checked((Index)value.End));
 
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/>.
+        /// </summary>
+        /// <returns>The converted <see cref="Range"/></returns>
         public Range ToRange() => new Range(checked((Index)Start), checked((Index)End));
+
+        /// <summary>
+        /// Converts a <see cref="NRange"/> to a <see cref="Range"/> wihout doing bounds checks.
+        /// </summary>
+        /// <returns>The converted <see cref="Range"/></returns>
         public Range ToRangeUnchecked() => new Range((Index)Start, (Index)End);
     }
 }
