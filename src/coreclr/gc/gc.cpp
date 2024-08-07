@@ -13297,12 +13297,12 @@ void gc_heap::distribute_free_regions()
     size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS];
     size_t region_size[count_core_free_region_kinds] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
     region_free_list surplus_regions[count_core_free_region_kinds];
-    size_t to_decommit_start_distribute[count_core_free_region_kinds] = { 0, 0 };
+    size_t to_decommit_size_start_distribute[count_core_free_region_kinds] = { 0, 0 };
     for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
     {
         // we may still have regions left on the regions_to_decommit list -
         // use these to fill the budget as well
-        to_decommit_size_last_distribute[kind] = global_regions_to_decommit[kind].get_size_free_regions();
+        to_decommit_size_start_distribute[kind] = global_regions_to_decommit[kind].get_size_free_regions();
         surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
     }
 #ifdef MULTIPLE_HEAPS
@@ -13389,7 +13389,7 @@ void gc_heap::distribute_free_regions()
 
     dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
-    to_decommit_size_last_distribute[large_free_region] = global_regions_to_decommit[huge_free_region].get_size_free_regions();
+    to_decommit_size_start_distribute[large_free_region] = global_regions_to_decommit[huge_free_region].get_size_free_regions();
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
@@ -13438,9 +13438,9 @@ void gc_heap::distribute_free_regions()
                 balance = 0;
             }
 
-            if (to_decommit_start_distribute[kind] > 0)
+            if (to_decommit_size_start_distribute[kind] > 0)
             {
-                ptrdiff_t size_decommitted_since_last_distribute = to_decommit_size_last_distribute[kind] - to_decommit_start_distribute[kind];
+                ptrdiff_t size_decommitted_since_last_distribute = to_decommit_size_last_distribute[kind] - to_decommit_size_start_distribute[kind];
                 balance = min(balance, size_decommitted_since_last_distribute);
             }
         }
