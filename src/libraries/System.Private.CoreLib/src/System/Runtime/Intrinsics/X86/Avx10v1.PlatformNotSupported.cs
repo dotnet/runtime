@@ -8,12 +8,13 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 Avx10.1 hardware instructions via intrinsics</summary>
+    /// <summary>This class provides access to X86 Avx10.1 hardware instructions via intrinsics.</summary>
     [CLSCompliant(false)]
     public abstract class Avx10v1 : Avx2
     {
         internal Avx10v1() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
@@ -2656,10 +2657,12 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<ushort> TernaryLogic(Vector256<ushort> a, Vector256<ushort> b, Vector256<ushort> c, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>This class provides access to the x86 AVX10.1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Avx2.X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
@@ -2761,10 +2764,12 @@ namespace System.Runtime.Intrinsics.X86
             public static ulong ConvertToUInt64WithTruncation(Vector128<double> value) { throw new PlatformNotSupportedException(); }
         }
 
+        /// <summary>This class provides access to the x86 AVX10.1/512 hardware instructions via intrinsics.</summary>
         public abstract class V512 : Avx512BW
         {
             internal V512() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
@@ -3182,11 +3187,13 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             public static Vector512<sbyte> PermuteVar64x8x2(Vector512<sbyte> lower, Vector512<sbyte> indices, Vector512<sbyte> upper) { throw new PlatformNotSupportedException(); }
 
+            /// <summary>This class provides access to the x86 AVX10.1/512 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
             [Intrinsic]
             public new abstract class X64 : Avx512BW.X64
             {
                 internal X64() { }
 
+                /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
                 public static new bool IsSupported { [Intrinsic] get { return false; } }
             }
         }

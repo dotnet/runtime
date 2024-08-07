@@ -6,22 +6,23 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// This class provides access to Intel SSE4.1 hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>This class provides access to X86 SSE4.1 hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Sse41 : Ssse3
     {
         internal Sse41() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>This class provides access to the x86 SSE4.1 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class X64 : Ssse3.X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>

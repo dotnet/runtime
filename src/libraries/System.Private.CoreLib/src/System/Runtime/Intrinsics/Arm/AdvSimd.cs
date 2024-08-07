@@ -15,6 +15,7 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal AdvSimd() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { get => IsSupported; }
 
         // [Intrinsic]
@@ -147,11 +148,13 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) => MultiplySubtractScalar(minuend, left, right);
         // }
 
+        /// <summary>This class provides access to the ARM AdvSIMD hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>

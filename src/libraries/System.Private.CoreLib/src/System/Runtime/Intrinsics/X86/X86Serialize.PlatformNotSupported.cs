@@ -14,6 +14,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal X86Serialize() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { [Intrinsic] get => false; }
 
         [Intrinsic]
@@ -21,6 +22,7 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { [Intrinsic] get => false; }
         }
 

@@ -9,6 +9,7 @@ namespace System.Runtime.Intrinsics.Wasm
     [Intrinsic]
     internal abstract class WasmBase
     {
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static bool IsSupported { get => IsSupported; }
 
         /// <summary>

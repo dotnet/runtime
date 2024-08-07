@@ -150,6 +150,7 @@ namespace System.Runtime.Intrinsics.Arm
         //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> minuend, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
         // }
 
+        /// <summary>This class provides access to the ARM AdvSIMD hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }

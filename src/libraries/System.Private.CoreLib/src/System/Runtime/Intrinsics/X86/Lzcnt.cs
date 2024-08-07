@@ -5,22 +5,23 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// This class provides access to Intel LZCNT hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>This class provides access to X86 LZCNT hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Lzcnt : X86Base
     {
         internal Lzcnt() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>This class provides access to the x86 LZCNT hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class X64 : X86Base.X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>

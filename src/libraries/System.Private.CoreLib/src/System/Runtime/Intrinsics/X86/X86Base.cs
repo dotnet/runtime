@@ -8,22 +8,23 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>
-    /// This class provides access to the x86 base hardware instructions via intrinsics
-    /// </summary>
+    /// <summary>This class provides access to the x86 base hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract partial class X86Base
     {
         internal X86Base() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static bool IsSupported { get => IsSupported; }
 
+        /// <summary>This class provides access to the x86 base hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public abstract class X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static bool IsSupported { get => IsSupported; }
 
             /// <summary>
