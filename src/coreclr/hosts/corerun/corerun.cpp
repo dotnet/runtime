@@ -472,7 +472,7 @@ static void display_usage()
         W("  -p, --property - Property to pass to runtime during initialization.\n")
         W("                   If a property value contains spaces, quote the entire argument.\n")
         W("                   May be supplied multiple times. Format: <key>=<value>.\n")
-        W("  -l, --preload - path to dll/so to load before loading the CLR.\n")
+        W("  -l, --preload - path to shared library to load before loading the CLR.\n")
         W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
         W("  -e, --env - path to a .env file with environment variables that corerun should set.\n")
         W("  -?, -h, --help - show this help.\n")
@@ -575,7 +575,7 @@ static bool parse_args(
             i++;
             if (i >= argc)
             {
-                pal::fprintf(stderr, W("Option %s: missing dll\n"), arg);
+                pal::fprintf(stderr, W("Option %s: missing shared library path\n"), arg);
                 break;
             }
 
