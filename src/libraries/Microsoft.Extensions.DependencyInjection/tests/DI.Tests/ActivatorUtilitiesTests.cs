@@ -409,19 +409,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
             {
-                var factory = ActivatorUtilities.CreateFactory<ClassWithAValueTypedKeyedBCSZY>(Type.EmptyTypes);
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAValueTypedKeyedBCSYZ>(Type.EmptyTypes);
 
                 var services = new ServiceCollection();
                 services.AddSingleton(new A());
                 services.AddKeyedSingleton(uint.MaxValue, new B());
                 services.AddKeyedSingleton(int.MaxValue, new C());
                 services.AddKeyedSingleton(ulong.MaxValue, new S());
-                services.AddKeyedSingleton(long.MaxValue, new Z());
-                services.AddKeyedSingleton(TestEnum.A, new Y());
+                services.AddKeyedSingleton(long.MaxValue, new Y());
+                services.AddKeyedSingleton(TestEnum.A, new Z());
                 using var provider = services.BuildServiceProvider();
-                ClassWithAValueTypedKeyedBCSZY item = factory(provider, null);
+                ClassWithAValueTypedKeyedBCSYZ item = factory(provider, null);
 
-                Assert.IsType<ObjectFactory<ClassWithAValueTypedKeyedBCSZY>>(factory);
+                Assert.IsType<ObjectFactory<ClassWithAValueTypedKeyedBCSYZ>>(factory);
                 Assert.NotNull(item.A);
                 Assert.NotNull(item.B);
                 Assert.NotNull(item.C);
@@ -776,11 +776,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         { }
     }
 
-    internal class ClassWithAValueTypedKeyedBCSZY : ClassWithABCSZ
+    internal class ClassWithAValueTypedKeyedBCSYZ : ClassWithABCSZ
     {
         public Y Y { get; }
 
-        public ClassWithAValueTypedKeyedBCSZY(A a, [FromKeyedServices(uint.MaxValue)] B b, [FromKeyedServices(int.MaxValue)] C c, [FromKeyedServices(ulong.MaxValue)] S s, [FromKeyedServices(long.MaxValue)] Z z, [FromKeyedServices(TestEnum.A)] Y y)
+        public ClassWithAValueTypedKeyedBCSYZ(A a, [FromKeyedServices(uint.MaxValue)] B b, [FromKeyedServices(int.MaxValue)] C c, [FromKeyedServices(ulong.MaxValue)] S s, [FromKeyedServices(long.MaxValue)] Y y, [FromKeyedServices(TestEnum.A)] Z z)
             : base(a, b, c, s, z) { Y = y; }
     }
 
