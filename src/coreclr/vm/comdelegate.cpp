@@ -1954,6 +1954,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             pStub = Stub::NewStub(JitILStub(pStubMD));
 
             InterlockedCompareExchangeT<PTR_Stub>(&pClass->m_pSingleCastInvokeStub, pStub, NULL);
+            pStub = pClass->m_pSingleCastInvokeStub;
         }
 
         ret = pStub->GetEntryPoint();
