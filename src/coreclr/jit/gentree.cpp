@@ -24857,8 +24857,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     size_t elementCount = simdSize / elementSize;
 
 #if defined(TARGET_XARCH)
-    // on xarch, signed comparison is cheaper, so whenever we are able to use it in the result & (indices < elementCount)
-    // step for Shuffle, we do.
+    // on xarch, signed comparison is cheaper, so whenever we are able to use it in the
+    // result & (indices < elementCount) step for Shuffle, we do.
     bool canUseSignedComparisonHint = false;
 
     // duplicate operand 2 for non-isUnsafe implementation later
@@ -24905,7 +24905,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize);
 
-        canUseSignedComparisonHint = true; // high bit on index gives 0 already
+        // high bit on index gives 0 already
+        canUseSignedComparisonHint = true;
     }
     else if (elementSize == 1 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))
     {
@@ -25073,7 +25074,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             //        explicitly for Shuffle always anyway, and for ShuffleUnsafe, this behaviour is fine (since it's
             //        out of bounds).
 
-            if (elementSize == 1) canUseSignedComparisonHint = true; // high bit on index gives 0 already
+            // high bit on index gives 0 already
+            if (elementSize == 1) canUseSignedComparisonHint = true;
 
             // we want ShuffleUnsafe to be at least as good as Shuffle (at least in sensible cases), so for constant
             // indices vector we special case some cases to use normal Shuffle to ensure it gets the additional
@@ -25161,8 +25163,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             }
 
             // create required clones of op2
-            GenTree* op2Dup1     = fgMakeMultiUse(&op2);
-            GenTree* op2Dup2     = fgMakeMultiUse(&op2Dup1);
+            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+            GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup1);
 
             // swap the low and high 128-bit lanes
             // calculate swap before shuf1 so they can be computed in parallel
@@ -25174,9 +25176,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
 
                 uint8_t control = 1;
-                cnsNode         = gtNewIconNode(control, TYP_INT);
-                swap            = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128,
-                                                           simdBaseJitType, simdSize);
+                cnsNode = gtNewIconNode(control, TYP_INT);
+                swap    = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128, simdBaseJitType,
+                                                   simdSize);
             }
             else
             {
@@ -25184,13 +25186,13 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 GenTree* op1Dup1 = fgMakeMultiUse(&op1);
                 swap             = op1Dup1;
 
-                simd_t* cnsPtr = &op1Dup1->AsVecCon()->gtSimdVal;
-                uint64_t tmp = cnsPtr->u64[0];
-                cnsPtr->u64[0] = cnsPtr->u64[2];
-                cnsPtr->u64[2] = tmp;
-                tmp = cnsPtr->u64[1];
-                cnsPtr->u64[1] = cnsPtr->u64[3];
-                cnsPtr->u64[3] = tmp;
+                simd_t*  cnsPtr = &op1Dup1->AsVecCon()->gtSimdVal;
+                uint64_t tmp    = cnsPtr->u64[0];
+                cnsPtr->u64[0]  = cnsPtr->u64[2];
+                cnsPtr->u64[2]  = tmp;
+                tmp             = cnsPtr->u64[1];
+                cnsPtr->u64[1]  = cnsPtr->u64[3];
+                cnsPtr->u64[3]  = tmp;
             }
 
             // shuffle with both the normal and swapped values
@@ -25396,9 +25398,18 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         bool hardwareAcceleratedUnsignedComparison = simdSize == 64;
         if (simdSize == 32 || simdSize == 16)
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) hardwareAcceleratedUnsignedComparison = true;
-            if (elementSize < 4) hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL);
-            else hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL);
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                hardwareAcceleratedUnsignedComparison = true;
+            }
+            if (elementSize < 4)
+            {
+                hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL);
+            }
+            else
+            {
+                hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL);
+            }
         }
 
         // if the hardware doesn't support direct unsigned comparison, we attempt to use signed comparison
@@ -25422,7 +25433,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // doing this manually allows the comparand to still be a constant.
             if (!canUseSignedComparisonHint)
             {
-                subComparandNode = true;
+                subComparandNode          = true;
                 uint64_t subtractionValue = static_cast<uint64_t>(1) << (elementSize * 8 - 1);
                 GenTree* subtraction =
                     gtNewSimdCreateBroadcastNode(type, gtNewLconNode(subtractionValue), corType, simdSize);
