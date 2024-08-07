@@ -8,14 +8,16 @@ pr:
     - main
   paths:
     include:
-    - src/coreclr/jit/hwintrinsiccodegenarm64.cpp
-    - src/coreclr/jit/hwintrinsiclistarm64sve.h
-    - src/coreclr/jit/hwintrinsicarm64.cpp
-    - src/coreclr/jit/instrsarm64sve.h
+    - src/coreclr/jit/codegenarmarch.cpp
     - src/coreclr/jit/emitarm64sve.cpp
     - src/coreclr/jit/emitfmtsarm64sve.h
-    - src/coreclr/jit/lsraarm64.cpp
+    - src/coreclr/jit/hwintrinsicarm64.cpp
+    - src/coreclr/jit/hwintrinsiccodegenarm64.cpp
+    - src/coreclr/jit/hwintrinsiclistarm64sve.h
+    - src/coreclr/jit/instrsarm64sve.h
     - src/coreclr/jit/lowerarmarch.cpp
+    - src/coreclr/jit/lsraarmarch.cpp
+    - src/coreclr/jit/lsraarm64.cpp
 
 schedules:
 - cron: "30 19 * * 6"
