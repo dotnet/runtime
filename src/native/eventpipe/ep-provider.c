@@ -81,7 +81,7 @@ provider_prepare_callback_data (
 	ep_requires_lock_held ();
 
 	if (provider->callback_func != NULL)
-		provider->uninvoked_prepared_callbacks_counter++;
+		provider->callbacks_pending++;
 
 	return ep_provider_callback_data_init (
 		provider_callback_data,
@@ -209,7 +209,7 @@ ep_provider_alloc (
 	instance->config = config;
 	instance->delete_deferred = false;
 	instance->sessions = 0;
-	instance->uninvoked_prepared_callbacks_counter = 0;
+	instance->callbacks_pending = 0;
 
 ep_on_exit:
 	return instance;
@@ -444,8 +444,8 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	EP_LOCK_ENTER (section1)
 		if (callback_function != NULL) {
 			EventPipeProvider *provider = provider_callback_data->provider;
-			provider->uninvoked_prepared_callbacks_counter--;
-			if (provider->uninvoked_prepared_callbacks_counter == 0 && provider->callback_func == NULL) {
+			provider->callbacks_pending--;
+			if (provider->callbacks_pending == 0 && provider->callback_func == NULL) {
 				// ep_delete_provider deferred provider deletion and is waiting for all in-flight callbacks
 				// to complete. This is the last callback, so signal completion.
 				ep_rt_wait_event_set (&provider->callbacks_complete_event);
