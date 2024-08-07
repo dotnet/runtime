@@ -2805,6 +2805,7 @@ uint64_t gc_heap::total_uoh_a_last_bgc = 0;
 
 #ifdef USE_REGIONS
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
+size_t gc_heap::to_decommit_size_last_distribute[count_core_free_region_kinds] = {};
 region_free_list gc_heap::global_free_huge_regions;
 #else //USE_REGIONS
 size_t gc_heap::eph_gen_starts_size = 0;
@@ -13214,8 +13215,6 @@ void region_free_list::sort_by_committed_and_age()
 void gc_heap::distribute_free_regions()
 {
 #ifdef USE_REGIONS
-    const int kind_count = large_free_region + 1;
-
 #ifdef MULTIPLE_HEAPS
     BOOL joined_last_gc_before_oom = FALSE;
     for (int i = 0; i < n_heaps; i++)
@@ -13249,6 +13248,11 @@ void gc_heap::distribute_free_regions()
         while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
+        for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
+        {
+            to_decommit_size_last_distribute[kind] = 0;
+        }
+
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < n_heaps; i++)
         {
@@ -13284,19 +13288,21 @@ void gc_heap::distribute_free_regions()
 
     // first step: accumulate the number of free regions and the budget over all heaps
     // and move huge regions to global free list
-    size_t total_num_free_regions[kind_count] = { 0, 0 };
-    size_t total_budget_in_region_units[kind_count] = { 0,  0 };
+    size_t total_num_free_regions[count_core_free_region_kinds] = { 0, 0 };
+    size_t total_budget_in_region_units[count_core_free_region_kinds] = { 0,  0 };
 
     size_t num_decommit_regions_by_time = 0;
     size_t size_decommit_regions_by_time = 0;
-    size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
+    size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][count_core_free_region_kinds];
     size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS];
-    size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
-    region_free_list surplus_regions[kind_count];
-    for (int kind = basic_free_region; kind < kind_count; kind++)
+    size_t region_size[count_core_free_region_kinds] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
+    region_free_list surplus_regions[count_core_free_region_kinds];
+    size_t to_decommit_start_distribute[count_core_free_region_kinds] = { 0, 0 };
+    for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
     {
         // we may still have regions left on the regions_to_decommit list -
         // use these to fill the budget as well
+        to_decommit_size_last_distribute[kind] = global_regions_to_decommit[kind].get_size_free_regions();
         surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
     }
 #ifdef MULTIPLE_HEAPS
@@ -13311,7 +13317,7 @@ void gc_heap::distribute_free_regions()
         const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
-        for (int kind = basic_free_region; kind < kind_count; kind++)
+        for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
         {
             // If there are regions in free that haven't been used in AGE_IN_FREE_TO_DECOMMIT GCs we always decommit them.
             region_free_list& region_list = hp->free_regions[kind];
@@ -13383,13 +13389,14 @@ void gc_heap::distribute_free_regions()
 
     dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
 
+    to_decommit_size_last_distribute[large_free_region] = global_regions_to_decommit[huge_free_region].get_size_free_regions();
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
     size_t free_space_in_young_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE - 1);
 
-    ptrdiff_t num_regions_to_decommit[kind_count];
-    int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
+    ptrdiff_t num_regions_to_decommit[count_core_free_region_kinds];
+    int region_factor[count_core_free_region_kinds] = { 1, LARGE_REGION_FACTOR };
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
@@ -13399,10 +13406,10 @@ void gc_heap::distribute_free_regions()
     const int n_heaps = 1;
 #endif //!MULTIPLE_HEAPS
 
-    size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
-    size_t num_young_huge_region_units_to_consider[kind_count] = { 0, free_space_in_young_huge_regions / region_size[large_free_region] };
+    size_t num_huge_region_units_to_consider[count_core_free_region_kinds] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
+    size_t num_young_huge_region_units_to_consider[count_core_free_region_kinds] = { 0, free_space_in_young_huge_regions / region_size[large_free_region] };
 
-    for (int kind = basic_free_region; kind < kind_count; kind++)
+    for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
     {
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
 
@@ -13430,6 +13437,9 @@ void gc_heap::distribute_free_regions()
             {
                 balance = 0;
             }
+
+            ptrdiff_t size_decommitted_since_last_distribute = to_decommit_start_distribute[kind] - to_decommit_size_last_distribute[kind];
+            balance = min(balance, size_decommitted_since_last_distribute);
         }
 
         if (
@@ -13509,6 +13519,7 @@ void gc_heap::distribute_free_regions()
                                                                    kind == basic_free_region,
                                                                    global_regions_to_decommit);
 
+                to_decommit_size_last_distribute[kind] = global_regions_to_decommit[kind].get_size_free_regions();
                 dprintf (REGIONS_LOG, ("Moved %zd %s regions to decommit list",
                          global_regions_to_decommit[kind].get_num_free_regions(), kind_name[kind]));
 
@@ -13520,6 +13531,7 @@ void gc_heap::distribute_free_regions()
                 }
                 else
                 {
+                    to_decommit_size_last_distribute[kind] += global_regions_to_decommit[huge_free_region].get_size_free_regions();
                     dprintf (REGIONS_LOG, ("Moved %zd %s regions to decommit list",
                         global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
 
@@ -13529,7 +13541,7 @@ void gc_heap::distribute_free_regions()
         }
     }
 
-    for (int kind = basic_free_region; kind < kind_count; kind++)
+    for (int kind = basic_free_region; kind < count_core_free_region_kinds; kind++)
     {
 #ifdef MULTIPLE_HEAPS
         // now go through all the heaps and remove any free regions above the target count
