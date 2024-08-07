@@ -22,8 +22,9 @@ namespace ILCompiler
             if (owningType.IsIntrinsic && !owningType.HasInstantiation)
             {
                 var owningMdType = (MetadataType)owningType;
-                string ns = owningMdType.ContainingType?.ContainingType?.Namespace ??
-                            owningMdType.ContainingType?.Namespace ??
+                DefType containingType = owningMdType.ContainingType;
+                string ns = containingType?.ContainingType?.Namespace ??
+                            containingType?.Namespace ??
                             owningMdType.Namespace;
                 return method.Context.Target.Architecture switch
                 {
