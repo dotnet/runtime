@@ -219,24 +219,15 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
     return CORDbgGetInstruction(address) == CORDbg_BREAK_INSTRUCTION;
 }
 
-inline void SetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-}
+class Thread;
+// Enable single stepping.
+void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline void UnsetSSFlag(DT_CONTEXT *pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-}
+// Disable single stepping
+void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
 
-inline bool IsSSFlagEnabled(DT_CONTEXT * pContext)
-{
-    // TODO-LoongArch64: LoongArch64 doesn't support cpsr.
-    _ASSERTE(!"unimplemented on LOONGARCH64 yet");
-    return false;
-}
+// Check if single stepping is enabled.
+bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
 
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)

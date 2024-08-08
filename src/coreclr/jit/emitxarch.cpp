@@ -6602,6 +6602,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -7464,6 +7465,9 @@ void emitter::emitIns_R_C(
         else
 #endif // TARGET_X86
         {
+            SetEvexBroadcastIfNeeded(id, instOptions);
+            SetEvexEmbMaskIfNeeded(id, instOptions);
+
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
 
@@ -7477,9 +7481,6 @@ void emitter::emitIns_R_C(
             sz += 2; // Needs SIB byte as well.
         }
     }
-
-    SetEvexBroadcastIfNeeded(id, instOptions);
-    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     id->idCodeSize(sz);
 
@@ -9295,8 +9296,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
         return;
     }
 
-    instrDesc*     id = emitNewInstr(attr);
-    UNATIVE_OFFSET sz;
+    instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -9305,7 +9305,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;

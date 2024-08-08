@@ -4145,31 +4145,22 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos();
                     writer.WriteLine($"int {iterationLocal} = inputSpan.Length - pos;");
                 }
-                else if (TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
+                else if (maxIterations == int.MaxValue && TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                 {
-                    // We can use an IndexOf method to perform the search. If the number of iterations is unbounded, we can just search the whole span.
-                    // If, however, it's bounded, we need to slice the span to the min(remainingSpan.Length, maxIterations) so that we don't
-                    // search more than is necessary.
-
-                    // If maxIterations is 0, the node should have been optimized away. If it's 1 and min is 0, it should
-                    // have been handled as an optional loop above, and if it's 1 and min is 1, it should have been transformed
-                    // into a single char match. So, we should only be here if maxIterations is greater than 1. And that's relevant,
-                    // because we wouldn't want to invest in an IndexOf call if we're only going to iterate once.
-                    Debug.Assert(maxIterations > 1);
-
-                    TransferSliceStaticPosToPos();
+                    // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
+                    // purely for simplicity; it could be removed in the future with additional code to handle that case.
 
                     writer.Write($"int {iterationLocal} = {sliceSpan}");
-                    if (maxIterations != int.MaxValue)
+                    if (sliceStaticPos != 0)
                     {
-                        writer.Write($".Slice(0, Math.Min({sliceSpan}.Length, {maxIterations}))");
+                        writer.Write($".Slice({sliceStaticPos})");
                     }
                     writer.WriteLine($".{indexOfExpr};");
 
                     using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
-                        writer.WriteLine(maxIterations != int.MaxValue ?
-                            $"{iterationLocal} = Math.Min({sliceSpan}.Length, {maxIterations});" :
+                        writer.WriteLine(sliceStaticPos > 0 ?
+                            $"{iterationLocal} = {sliceSpan}.Length - {sliceStaticPos};" :
                             $"{iterationLocal} = {sliceSpan}.Length;");
                     }
                     writer.WriteLine();

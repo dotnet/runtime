@@ -20,6 +20,7 @@ class DeadCodeElimination
         TestUnusedDefaultInterfaceMethod.Run();
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
+        TestTypeIs.Run();
         TestTypeEquals.Run();
         TestTypeEqualityDeadBranchScanRemoval.Run();
         TestTypeIsEnum.Run();
@@ -333,6 +334,53 @@ class DeadCodeElimination
         }
     }
 
+
+    class TestTypeIs
+    {
+        class Never1 { }
+        class Canary1 { }
+
+        class Maybe1<T, U> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
+
+        public static void Run()
+        {
+#if !DEBUG
+            {
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object t)
+                {
+                    if (t is Never1)
+                    {
+                        s_sink = new Canary1();
+                    }
+                }
+
+                ThrowIfPresent(typeof(TestTypeIs), nameof(Canary1));
+            }
+
+            {
+                RunCheck<object>(new Maybe1<object, string>());
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(object t)
+                {
+                    if (t is Maybe1<T, string>)
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+#endif
+        }
+    }
+
     class TestTypeEquals
     {
         sealed class Gen<T> { }
@@ -382,7 +430,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary2));
             }
 
             {
@@ -397,7 +445,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary3));
             }
 
             {
@@ -412,7 +460,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary4));
+                ThrowIfPresent(typeof(TestTypeEquals), nameof(Canary4));
             }
 
             {

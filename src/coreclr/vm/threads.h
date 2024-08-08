@@ -184,6 +184,9 @@ struct TailCallArgBuffer
 #if (defined(TARGET_RISCV64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "riscv64singlestepper.h"
 #endif
+#if (defined(TARGET_LOONGARCH64) && defined(FEATURE_EMULATE_SINGLESTEP))
+#include "loongarch64singlestepper.h"
+#endif
 
 #if !defined(PLATFORM_SUPPORTS_SAFE_THREADSUSPEND)
 // DISABLE_THREADSUSPEND controls whether Thread::SuspendThread will be used at all.
@@ -2085,6 +2088,8 @@ private:
     ArmSingleStepper m_singleStepper;
 #elif defined(TARGET_RISCV64)
     RiscV64SingleStepper m_singleStepper;
+#elif defined(TARGET_LOONGARCH64)
+    LoongArch64SingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
 #endif
@@ -2100,7 +2105,7 @@ public:
         m_singleStepper.Enable();
     }
 
-    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode))
+    void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode) RISCV64_ARG(uint32_t opcode) LOONGARCH64_ARG(uint32_t opcode))
     {
 #if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);

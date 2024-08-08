@@ -13,7 +13,7 @@ namespace ILCompiler.Dataflow
 {
     public readonly struct TrimAnalysisPatternStore
     {
-        private readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+        private readonly Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisTokenAccessPattern> TokenAccessPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern> GenericInstantiations;
@@ -23,7 +23,7 @@ namespace ILCompiler.Dataflow
 
         public TrimAnalysisPatternStore(ValueSetLattice<SingleValue> lattice, Logger logger)
         {
-            AssignmentPatterns = new Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern>();
+            AssignmentPatterns = new Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern>();
             MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern>();
             TokenAccessPatterns = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisTokenAccessPattern>();
             GenericInstantiations = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern>();
@@ -34,19 +34,13 @@ namespace ILCompiler.Dataflow
 
         public void Add(TrimAnalysisAssignmentPattern pattern)
         {
-            // While trimming, each pattern should have a unique origin (which has ILOffset)
-            // but we don't track the correct ILOffset for return instructions.
-            // https://github.com/dotnet/linker/issues/2778
-            // For now, work around it with a separate bit.
-            bool isReturnValue = pattern.Target.AsSingleValue() is MethodReturnValue;
-
-            if (!AssignmentPatterns.TryGetValue((pattern.Origin, isReturnValue), out var existingPattern))
+            if (!AssignmentPatterns.TryGetValue(pattern.Origin, out var existingPattern))
             {
-                AssignmentPatterns.Add((pattern.Origin, isReturnValue), pattern);
+                AssignmentPatterns.Add(pattern.Origin, pattern);
                 return;
             }
 
-            AssignmentPatterns[(pattern.Origin, isReturnValue)] = pattern.Merge(Lattice, existingPattern);
+            AssignmentPatterns[pattern.Origin] = pattern.Merge(Lattice, existingPattern);
         }
 
         public void Add(TrimAnalysisMethodCallPattern pattern)

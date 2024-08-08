@@ -547,7 +547,7 @@ public:
     virtual PTR_Module LookupModule(mdToken kFile) { return NULL; }; //wrapper over GetModuleIfLoaded, takes modulerefs as well
     virtual Module *GetModuleIfLoaded(mdFile kFile) { return NULL; };
 #ifndef DACCESS_COMPILE
-    virtual DomainAssembly *LoadModule(mdFile kFile);
+    virtual Module *LoadModule(mdFile kFile);
 #endif
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
@@ -897,6 +897,7 @@ protected:
     void SetDomainAssembly(DomainAssembly *pDomainAssembly);
 
     OBJECTREF GetExposedObject();
+    OBJECTREF GetExposedObjectIfExists();
 
     ClassLoader *GetClassLoader();
 #ifdef FEATURE_CODE_VERSIONING
@@ -951,7 +952,6 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
@@ -1601,6 +1601,8 @@ private:
     // is not called for each fixup
 
     PTR_Assembly           *m_NativeMetadataAssemblyRefMap;
+
+    LOADERHANDLE m_hExposedObject;
 
     // Buffer of Metadata storage for dynamic modules. May be NULL. This provides a reasonable way for
     // the debugger to get metadata of dynamic modules from out of process.
