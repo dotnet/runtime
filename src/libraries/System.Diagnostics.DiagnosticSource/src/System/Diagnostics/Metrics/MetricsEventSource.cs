@@ -46,6 +46,11 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
+        // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
+        // consideration as a public API. See EventSource.InitializeDefaultEventSources() in System.Private.CoreLib source for more
+        // details. We have a unit test GetInstanceMethodIsReflectable that verifies this method isn't accidentally removed or renamed.
+        public static MetricsEventSource GetInstance() { return Log; }
+
         private const string SharedSessionId = "SHARED";
         private const string ClientIdKey = "ClientId";
         private const string MaxHistogramsKey = "MaxHistograms";
