@@ -748,9 +748,6 @@ namespace System
         {
             Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
 
-            const uint TenPowMaxPartial = PowersOf1e9.TenPowMaxPartial;
-            const int MaxPartialDigits = PowersOf1e9.MaxPartialDigits;
-
             int digits = 0;
             char fmt = ParseFormatSpecifier(formatSpan, out digits);
             if (fmt == 'x' || fmt == 'X')
@@ -783,44 +780,22 @@ namespace System
                 }
             }
 
-            // First convert to base 10^9.
-            int cuSrc = value._bits.Length;
-            // A quick conservative max length of base 10^9 representation
-            // A uint contributes to no more than 10/9 of 10^9 block, +1 for ceiling of division
-            int cuMax = cuSrc * (MaxPartialDigits + 1) / MaxPartialDigits + 1;
-            Debug.Assert((long)BigInteger.MaxLength * (MaxPartialDigits + 1) / MaxPartialDigits + 1 < (long)int.MaxValue); // won't overflow
+            // The Ratio is calculated as: log_{10^9}(2^32)
+            const double digitRatio = 1.0703288734719332;
+            Debug.Assert(BigInteger.MaxLength * digitRatio + 1 < Array.MaxLength); // won't overflow
 
-            uint[]? bufferToReturn = null;
-            Span<uint> base1E9Buffer = cuMax < BigIntegerCalculator.StackAllocThreshold ?
-                stackalloc uint[cuMax] :
-                (bufferToReturn = ArrayPool<uint>.Shared.Rent(cuMax));
+            int base1E9BufferLength = (int)(value._bits.Length * digitRatio) + 1;
+            uint[]? base1E9BufferFromPool = null;
+            Span<uint> base1E9Buffer = base1E9BufferLength < BigIntegerCalculator.StackAllocThreshold ?
+                stackalloc uint[base1E9BufferLength] :
+                (base1E9BufferFromPool = ArrayPool<uint>.Shared.Rent(base1E9BufferLength));
+            base1E9Buffer.Clear();
 
-            int cuDst = 0;
 
-            for (int iuSrc = cuSrc; --iuSrc >= 0;)
-            {
-                uint uCarry = value._bits[iuSrc];
-                for (int iuDst = 0; iuDst < cuDst; iuDst++)
-                {
-                    Debug.Assert(base1E9Buffer[iuDst] < TenPowMaxPartial);
+            BigIntegerToBase1E9(value._bits, base1E9Buffer, out int written);
+            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..written];
 
-                    // Use X86Base.DivRem when stable
-                    ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
-                    (ulong quo, ulong rem) = Math.DivRem(uuRes, TenPowMaxPartial);
-                    uCarry = (uint)quo;
-                    base1E9Buffer[iuDst] = (uint)rem;
-                }
-                if (uCarry != 0)
-                {
-                    (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, TenPowMaxPartial);
-                    if (uCarry != 0)
-                        base1E9Buffer[cuDst++] = uCarry;
-                }
-            }
-
-            ReadOnlySpan<uint> base1E9Value = base1E9Buffer[..cuDst];
-
-            int valueDigits = (base1E9Value.Length - 1) * MaxPartialDigits + FormattingHelpers.CountDigits(base1E9Value[^1]);
+            int valueDigits = (base1E9Value.Length - 1) * PowersOf1e9.MaxPartialDigits + FormattingHelpers.CountDigits(base1E9Value[^1]);
 
             string? strResult;
 
@@ -912,9 +887,9 @@ namespace System
                 }
             }
 
-            if (bufferToReturn != null)
+            if (base1E9BufferFromPool != null)
             {
-                ArrayPool<uint>.Shared.Return(bufferToReturn);
+                ArrayPool<uint>.Shared.Return(base1E9BufferFromPool);
             }
 
             return strResult;
@@ -933,6 +908,132 @@ namespace System
             }
 
             return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
+        }
+
+#if DEBUG
+        // Mutable for unit testing...
+        public static
+#else
+        public const
+#endif
+            // TODO: https://github.com/dotnet/runtime/pull/96895
+            // int ToStringNaiveThreshold = BigIntegerCalculator.DivideBurnikelZieglerThreshold;
+            int ToStringNaiveThreshold = 16;
+        private static void BigIntegerToBase1E9(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+        {
+            Debug.Assert(ToStringNaiveThreshold >= 2);
+
+            if (bits.Length <= ToStringNaiveThreshold)
+            {
+                Naive(bits, base1E9Buffer, out leadingWritten);
+                return;
+            }
+
+            PowersOf1e9.FloorBufferSize(bits.Length, out int powersOf1e9BufferLength, out int mi);
+            uint[]? powersOf1e9BufferFromPool = null;
+            Span<uint> powersOf1e9Buffer = (
+                powersOf1e9BufferLength <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : powersOf1e9BufferFromPool = ArrayPool<uint>.Shared.Rent(powersOf1e9BufferLength)).Slice(0, powersOf1e9BufferLength);
+            powersOf1e9Buffer.Clear();
+
+            PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
+
+            DivideAndConquer(powersOf1e9, mi, bits, base1E9Buffer, out leadingWritten);
+
+            if (powersOf1e9BufferFromPool != null)
+            {
+                ArrayPool<uint>.Shared.Return(powersOf1e9BufferFromPool);
+            }
+
+            static void DivideAndConquer(in PowersOf1e9 powersOf1e9, int powersIndex, ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+            {
+                Debug.Assert(bits.Length == 0 || bits[^1] != 0);
+                Debug.Assert(powersIndex >= 0);
+
+                if (bits.Length <= ToStringNaiveThreshold)
+                {
+                    Naive(bits, base1E9Buffer, out leadingWritten);
+                    return;
+                }
+
+                ReadOnlySpan<uint> powOfTen = powersOf1e9.GetSpan(powersIndex);
+                int omittedLength = PowersOf1e9.OmittedLength(powersIndex);
+
+                while (bits.Length < powOfTen.Length + omittedLength || BigIntegerCalculator.Compare(bits.Slice(omittedLength), powOfTen) < 0)
+                {
+                    --powersIndex;
+                    powOfTen = powersOf1e9.GetSpan(powersIndex);
+                    omittedLength = PowersOf1e9.OmittedLength(powersIndex);
+                }
+
+                int upperLength = bits.Length - powOfTen.Length - omittedLength + 1;
+                uint[]? upperFromPool = null;
+                Span<uint> upper = ((uint)upperLength <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : upperFromPool = ArrayPool<uint>.Shared.Rent(upperLength)).Slice(0, upperLength);
+
+                int lowerLength = bits.Length;
+                uint[]? lowerFromPool = null;
+                Span<uint> lower = ((uint)lowerLength <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : lowerFromPool = ArrayPool<uint>.Shared.Rent(lowerLength)).Slice(0, lowerLength);
+
+                bits.Slice(0, omittedLength).CopyTo(lower);
+                BigIntegerCalculator.Divide(bits.Slice(omittedLength), powOfTen, upper, lower.Slice(omittedLength));
+                Debug.Assert(!upper.Trim(0u).IsEmpty);
+
+                int lower1E9Length = 1 << powersIndex;
+                DivideAndConquer(
+                    powersOf1e9,
+                    powersIndex - 1,
+                    lower.Slice(0, BigIntegerCalculator.ActualLength(lower)),
+                    base1E9Buffer,
+                    out int lowerWritten);
+                if (lowerFromPool != null)
+                    ArrayPool<uint>.Shared.Return(lowerFromPool);
+                Debug.Assert(lower1E9Length >= lowerWritten);
+
+                DivideAndConquer(
+                    powersOf1e9,
+                    powersIndex - 1,
+                    upper.Slice(0, BigIntegerCalculator.ActualLength(upper)),
+                    base1E9Buffer.Slice(lower1E9Length),
+                    out leadingWritten);
+                if (upperFromPool != null)
+                    ArrayPool<uint>.Shared.Return(upperFromPool);
+
+                leadingWritten += lower1E9Length;
+            }
+
+            static void Naive(ReadOnlySpan<uint> bits, Span<uint> base1E9Buffer, out int leadingWritten)
+            {
+                // First convert to base 10^9.
+                int cuSrc = bits.Length;
+                int cuDst = 0;
+
+                for (int iuSrc = cuSrc; --iuSrc >= 0;)
+                {
+                    uint uCarry = bits[iuSrc];
+                    for (int iuDst = 0; iuDst < cuDst; iuDst++)
+                    {
+                        Debug.Assert(base1E9Buffer[iuDst] < PowersOf1e9.TenPowMaxPartial);
+
+                        // Use X86Base.DivRem when stable
+                        ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
+                        (ulong quo, ulong rem) = Math.DivRem(uuRes, PowersOf1e9.TenPowMaxPartial);
+                        uCarry = (uint)quo;
+                        base1E9Buffer[iuDst] = (uint)rem;
+                    }
+                    if (uCarry != 0)
+                    {
+                        (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, PowersOf1e9.TenPowMaxPartial);
+                        if (uCarry != 0)
+                            base1E9Buffer[cuDst++] = uCarry;
+                    }
+                }
+                leadingWritten = cuDst;
+            }
         }
 
         internal readonly ref struct PowersOf1e9
@@ -1107,6 +1208,26 @@ namespace System
             {
                 // Returns 9*(1<<index)/32
                 return (MaxPartialDigits * (1 << index)) >> 5;
+            }
+
+            public static void FloorBufferSize(int size, out int bufferSize, out int maxIndex)
+            {
+                Debug.Assert(size > 0);
+
+                // binary search
+                // size < Indexes[hi+1] - Indexes[hi]
+                // size >= Indexes[lo+1] - Indexes[lo]
+                int hi = Indexes.Length - 1;
+                maxIndex = 0;
+                while (maxIndex + 1 < hi)
+                {
+                    int i = (hi + maxIndex) >> 1;
+                    if (size < Indexes[i + 1] - Indexes[i])
+                        hi = i;
+                    else
+                        maxIndex = i;
+                }
+                bufferSize = Indexes[maxIndex + 1] + 1;
             }
 
             public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)

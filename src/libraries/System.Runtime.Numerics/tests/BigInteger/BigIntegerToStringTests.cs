@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -497,7 +496,7 @@ namespace System.Numerics.Tests
         {
             Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
         }
-        
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
@@ -537,6 +536,38 @@ namespace System.Numerics.Tests
             // Check ParseFormatSpecifier in Number.BigInteger.cs with `G` format
             b.ToString("G999999999"); // Should not throw
             b.ToString("G00000999999999"); // Should not throw
+        }
+
+        [Fact]
+        public static void RunPowerOf1E9ToStringTests()
+        {
+            foreach (var test in new[]
+            {
+                new string('9', 9* (1<<10))+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<10))+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<10)-1)+"1"+new string('9', 9* (1<<10)),
+                "1"+new string('0', 9* (1<<11)),
+                "1"+new string('0', 9* (1<<11)-1)+"1",
+            })
+            {
+                VerifyToString(test, test);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunRepeatedCharsToStringTests()
+        {
+            string test;
+
+            for (int length = 1; length < 1300; length++)
+            {
+                test = new string('1', length);
+                VerifyToString(test, test);
+
+                test = new string('9', length);
+                VerifyToString(test, test);
+            }
         }
 
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
@@ -2061,6 +2092,39 @@ namespace System.Numerics.Tests
             nfi.PositiveSign = ">>";
 
             return nfi;
+        }
+    }
+
+
+    [Collection(nameof(DisableParallelization))]
+    public class ToStringTestThreshold
+    {
+        [Fact]
+        public static void RunSimpleToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunSimpleToStringTests();
+            });
+        }
+
+        [Fact]
+        public void RunPowerOf1E9ToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunPowerOf1E9ToStringTests();
+            });
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunRepeatedCharsToStringTests()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(Number.ToStringNaiveThreshold, 4, () =>
+            {
+                ToStringTest.RunRepeatedCharsToStringTests();
+            });
         }
     }
 }
