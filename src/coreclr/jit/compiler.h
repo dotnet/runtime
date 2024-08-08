@@ -5703,12 +5703,17 @@ public:
     bool* m_specialCopyArgs;
     bool recordArgRequiresSpecialCopy(unsigned argNum)
     {
+        if (argNum >= info.compMethodInfo->args.numArgs)
+        {
+            return false;
+        }
+
         if (m_specialCopyArgs == nullptr)
         {
             m_specialCopyArgs = new (getAllocator()) bool[info.compMethodInfo->args.numArgs];
             memset(m_specialCopyArgs, 0, info.compMethodInfo->args.numArgs * sizeof(bool));
         }
-        assert(argNum < info.compMethodInfo->args.numArgs);
+
         m_specialCopyArgs[argNum] = true;
         return true;
     }
