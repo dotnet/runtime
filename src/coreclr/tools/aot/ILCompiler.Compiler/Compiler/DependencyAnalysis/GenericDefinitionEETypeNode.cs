@@ -40,7 +40,6 @@ namespace ILCompiler.DependencyAnalysis
 
             dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.AddSymbol(this);
-            EETypeRareFlags rareFlags = 0;
 
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
@@ -51,10 +50,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
 
             if (_type.IsByRefLike)
-                rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
-
-            if (rareFlags != 0)
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
+                flags |= (uint)EETypeFlagsEx.IsByRefLikeFlag;
 
             if (HasOptionalFields)
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;

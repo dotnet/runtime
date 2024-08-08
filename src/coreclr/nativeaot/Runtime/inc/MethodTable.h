@@ -162,6 +162,9 @@ private:
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
 
+        // This MethodTable is for a Byref-like class (TypedReference, Span<T>, ...)
+        IsByRefLikeFlag = 0x0010,
+
         // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         RequiresAlign8Flag = 0x1000
     };

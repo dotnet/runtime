@@ -1343,24 +1343,8 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            ComputeRareFlags();
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
-        }
-
-        private void ComputeRareFlags()
-        {
-            uint flags = 0;
-
-            if (_type.IsByRefLike)
-            {
-                flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-            }
-
-            if (flags != 0)
-            {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, flags);
-            }
         }
 
         /// <summary>

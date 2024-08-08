@@ -128,6 +128,11 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
             }
 
+            if (type.IsByRefLike)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IsByRefLikeFlag;
+            }
+
             if (type.RequiresAlign8())
             {
                 flagsEx |= (ushort)EETypeFlagsEx.RequiresAlign8Flag;
