@@ -154,7 +154,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
-        static virtual void CopyTo(TSelf vector, T[] destination) => TSelf.CopyTo(vector, destination.AsSpan());
+        static virtual void CopyTo(TSelf vector, T[] destination)
+        {
+            if (destination.Length < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            TSelf.StoreUnsafe(vector, ref MemoryMarshal.GetArrayDataReference(destination));
+        }
 
         /// <summary>Copies a vector to a given array starting at the specified index.</summary>
         /// <param name="vector">The vector to be copied.</param>
@@ -164,7 +171,18 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
-        static virtual void CopyTo(TSelf vector, T[] destination, int startIndex) => TSelf.CopyTo(vector, destination.AsSpan(startIndex));
+        static virtual void CopyTo(TSelf vector, T[] destination, int startIndex)
+        {
+            if ((uint)startIndex >= (uint)destination.Length)
+            {
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
+            }
+            if ((destination.Length - startIndex) < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            TSelf.StoreUnsafe(vector, ref MemoryMarshal.GetArrayDataReference(destination), (uint)startIndex);
+        }
 
         /// <summary>Copies a vector to a given span.</summary>
         /// <param name="vector">The vector to be copied.</param>
@@ -192,7 +210,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        static virtual TSelf Create(T[] values) => TSelf.Create(values.AsSpan());
+        static virtual TSelf Create(T[] values)
+        {
+            if (values.Length < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+            }
+            return TSelf.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(values));
+        }
 
         /// <summary>Creates a new vector from a given array.</summary>
         /// <param name="values">The array from which the vector is created.</param>
@@ -201,7 +226,14 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        static virtual TSelf Create(T[] values, int index) => TSelf.Create(values.AsSpan(index));
+        static virtual TSelf Create(T[] values, int index)
+        {
+            if ((index < 0) || ((values.Length - index) < TSelf.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+            }
+            return TSelf.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(values), (uint)index);
+        }
 
         /// <summary>Creates a new vector from a given readonly span.</summary>
         /// <param name="values">The readonly span from which the vector is created.</param>
