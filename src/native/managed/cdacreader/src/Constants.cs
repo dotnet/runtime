@@ -30,6 +30,9 @@ internal static class Constants
 
         internal const string MethodDescAlignment = nameof(MethodDescAlignment);
         internal const string ObjectHeaderSize = nameof(ObjectHeaderSize);
+        internal const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
+
+        internal const string SyncTableEntries = nameof(SyncTableEntries);
 
         internal const string ArrayBoundsZero = nameof(ArrayBoundsZero);
     }
