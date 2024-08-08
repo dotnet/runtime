@@ -52,6 +52,8 @@ internal class Metadata
         {
             var targetEcmaMetadata = _target.Contracts.Loader.GetReadWriteMetadata(module);
 
+            // From the multiple different target spans, we need to build a single
+            // contiguous ECMA-335 metadata blob.
             BlobBuilder builder = new BlobBuilder();
             builder.WriteUInt32(0x424A5342);
 
