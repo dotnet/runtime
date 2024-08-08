@@ -1290,6 +1290,28 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<Aa>>().Value.PropertyA, sp.GetRequiredService<A>());
         }
 
+        [Fact]
+        public void ResolveKeyedServiceWithKeyedParameter_MissingRegistrationButWithUnkeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // We are not registering "service1" and "service1" keyed IService services and OtherService requires them,
+            // but we are registering an unkeyed IService service which should not be injected into OtherService.
+            serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.IService, KeyedDependencyInjectionSpecificationTests.Service>();
+
+            serviceCollection.AddSingleton<KeyedDependencyInjectionSpecificationTests.OtherService>();
+
+            AggregateException ex = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true
+            }));
+
+            Assert.Equal(1, ex.InnerExceptions.Count);
+            Assert.StartsWith("Some services are not able to be constructed", ex.Message);
+            Assert.Contains("ServiceType: Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+OtherService", ex.ToString());
+            Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.ToString());
+        }
+
         private async Task<bool> ResolveUniqueServicesConcurrently()
         {
             var types = new Type[]

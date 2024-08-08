@@ -1798,10 +1798,10 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
-template<> struct cdac_offsets<EEClass>
+template<> struct cdac_data<EEClass>
 {
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
@@ -1997,10 +1997,10 @@ public:
                                       BOOL fForStubAsIL
     );
 
-    template<typename T> friend struct ::cdac_offsets;
+    template<typename T> friend struct ::cdac_data;
 };
 
-template<> struct cdac_offsets<ArrayClass>
+template<> struct cdac_data<ArrayClass>
 {
     static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };

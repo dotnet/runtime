@@ -489,11 +489,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToMethodTable()->IsDynamicType;
         }
 
-        public static bool HasCctor(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.ToMethodTable()->HasCctor;
-        }
-
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             MethodTable* genericContextPtr = default;

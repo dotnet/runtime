@@ -593,12 +593,12 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
 
-        internal string? GetSimpleName()
+        internal string GetSimpleName()
         {
             RuntimeAssembly runtimeAssembly = this;
             string? name = null;
             GetSimpleName(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref name));
-            return name;
+            return name!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetHashAlgorithm")]

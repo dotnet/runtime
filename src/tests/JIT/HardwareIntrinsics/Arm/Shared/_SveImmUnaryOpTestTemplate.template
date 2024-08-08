@@ -209,6 +209,11 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 succeeded = true;
             }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
         }
 
         public void RunBasicScenario_Load()

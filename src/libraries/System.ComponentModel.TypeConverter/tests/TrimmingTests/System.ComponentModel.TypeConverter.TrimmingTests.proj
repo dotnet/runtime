@@ -3,6 +3,9 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="ComObjectTypeTest.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeTests.cs">
+      <DisabledFeatureSwitches>System.ComponentModel.DefaultValueAttribute.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InterfaceTypeTest.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterIsReadOnly.cs" />
     <TestConsoleAppSourceFiles Include="TypeConverterTest.cs" />
