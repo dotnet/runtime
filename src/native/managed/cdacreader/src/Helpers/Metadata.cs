@@ -3,278 +3,29 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Numerics;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Helpers;
 
-internal enum MetadataTable
-{
-    Unused = -1,
-    Module = 0x0,
-    TypeRef = 0x01,
-    TypeDef = 0x02,
-    FieldPtr = 0x03,
-    Field = 0x04,
-    MethodPtr = 0x05,
-    MethodDef = 0x06,
-    ParamPtr = 0x07,
-    Param = 0x08,
-    InterfaceImpl = 0x09,
-    MemberRef = 0x0a,
-    Constant = 0x0b,
-    CustomAttribute = 0x0c,
-    FieldMarshal = 0x0d,
-    DeclSecurity = 0x0e,
-    ClassLayout = 0x0f,
-    FieldLayout = 0x10,
-    StandAloneSig = 0x11,
-    EventMap = 0x12,
-    EventPtr = 0x13,
-    Event = 0x14,
-    PropertyMap = 0x15,
-    PropertyPtr = 0x16,
-    Property = 0x17,
-    MethodSemantics = 0x18,
-    MethodImpl = 0x19,
-    ModuleRef = 0x1a,
-    TypeSpec = 0x1b,
-    ImplMap = 0x1c,
-    FieldRva = 0x1d,
-    ENCLog = 0x1e,
-    ENCMap = 0x1f,
-    Assembly = 0x20,
-    AssemblyProcessor = 0x21,
-    AssemblyOS = 0x22,
-    AssemblyRef = 0x23,
-    AssemblyRefProcessor = 0x24,
-    AssemblyRefOS = 0x25,
-    File = 0x26,
-    ExportedType = 0x27,
-    ManifestResource = 0x28,
-    NestedClass = 0x29,
-    GenericParam = 0x2a,
-    MethodSpec = 0x2b,
-    GenericParamConstraint = 0x2c,
-    Count = 0x2d
-}
-
-internal class EcmaMetadata
-{
-    public EcmaMetadata(EcmaMetadataSchema schema,
-                        ReadOnlyMemory<byte>[] tables,
-                        ReadOnlyMemory<byte> stringHeap,
-                        ReadOnlyMemory<byte> userStringHeap,
-                        ReadOnlyMemory<byte> blobHeap,
-                        ReadOnlyMemory<byte> guidHeap)
-    {
-        Schema = schema;
-        _tables = tables;
-        StringHeap = stringHeap;
-        UserStringHeap = userStringHeap;
-        BlobHeap = blobHeap;
-        GuidHeap = guidHeap;
-    }
-
-    public EcmaMetadataSchema Schema { get; init; }
-
-    private ReadOnlyMemory<byte>[] _tables;
-    public ReadOnlySpan<ReadOnlyMemory<byte>> Tables => _tables;
-    public ReadOnlyMemory<byte> StringHeap { get; init; }
-    public ReadOnlyMemory<byte> UserStringHeap { get; init; }
-    public ReadOnlyMemory<byte> BlobHeap { get; init; }
-    public ReadOnlyMemory<byte> GuidHeap { get; init; }
-
-    private Microsoft.Diagnostics.DataContractReader.Helpers.EcmaMetadataReader? _ecmaMetadataReader;
-    public Microsoft.Diagnostics.DataContractReader.Helpers.EcmaMetadataReader EcmaMetadataReader
-    {
-        get
-        {
-            _ecmaMetadataReader ??= new Helpers.EcmaMetadataReader(this);
-            return _ecmaMetadataReader;
-        }
-    }
-}
-
-internal enum MetadataColumnIndex
-{
-    Module_Generation,
-    Module_Name,
-    Module_Mvid,
-    Module_EncId,
-    Module_EncBaseId,
-
-    TypeRef_ResolutionScope,
-    TypeRef_TypeName,
-    TypeRef_TypeNamespace,
-
-    TypeDef_Flags,
-    TypeDef_TypeName,
-    TypeDef_TypeNamespace,
-    TypeDef_Extends,
-    TypeDef_FieldList,
-    TypeDef_MethodList,
-
-    FieldPtr_Field,
-
-    Field_Flags,
-    Field_Name,
-    Field_Signature,
-
-    MethodPtr_Method,
-
-    MethodDef_Rva,
-    MethodDef_ImplFlags,
-    MethodDef_Flags,
-    MethodDef_Name,
-    MethodDef_Signature,
-    MethodDef_ParamList,
-
-    ParamPtr_Param,
-
-    Param_Flags,
-    Param_Sequence,
-    Param_Name,
-
-    InterfaceImpl_Class,
-    InterfaceImpl_Interface,
-
-    MemberRef_Class,
-    MemberRef_Name,
-    MemberRef_Signature,
-
-    Constant_Type,
-    Constant_Parent,
-    Constant_Value,
-
-    CustomAttribute_Parent,
-    CustomAttribute_Type,
-    CustomAttribute_Value,
-
-    FieldMarshal_Parent,
-    FieldMarshal_NativeType,
-
-    DeclSecurity_Action,
-    DeclSecurity_Parent,
-    DeclSecurity_PermissionSet,
-
-    ClassLayout_PackingSize,
-    ClassLayout_ClassSize,
-    ClassLayout_Parent,
-
-    FieldLayout_Offset,
-    FieldLayout_Field,
-
-    StandAloneSig_Signature,
-
-    EventMap_Parent,
-    EventMap_EventList,
-
-    EventPtr_Event,
-
-    Event_EventFlags,
-    Event_Name,
-    Event_EventType,
-
-    PropertyMap_Parent,
-    PropertyMap_PropertyList,
-
-    PropertyPtr_Property,
-
-    Property_Flags,
-    Property_Name,
-    Property_Type,
-
-    MethodSemantics_Semantics,
-    MethodSemantics_Method,
-    MethodSemantics_Association,
-
-    MethodImpl_Class,
-    MethodImpl_MethodBody,
-    MethodImpl_MethodDeclaration,
-
-    ModuleRef_Name,
-
-    TypeSpec_Signature,
-
-    ImplMap_MappingFlags,
-    ImplMap_MemberForwarded,
-    ImplMap_ImportName,
-    ImplMap_ImportScope,
-
-    FieldRva_Rva,
-    FieldRva_Field,
-
-    ENCLog_Token,
-    ENCLog_Op,
-
-    ENCMap_Token,
-
-    Assembly_HashAlgId,
-    Assembly_MajorVersion,
-    Assembly_MinorVersion,
-    Assembly_BuildNumber,
-    Assembly_RevisionNumber,
-    Assembly_Flags,
-    Assembly_PublicKey,
-    Assembly_Name,
-    Assembly_Culture,
-
-    AssemblyRef_MajorVersion,
-    AssemblyRef_MinorVersion,
-    AssemblyRef_BuildNumber,
-    AssemblyRef_RevisionNumber,
-    AssemblyRef_Flags,
-    AssemblyRef_PublicKeyOrToken,
-    AssemblyRef_Name,
-    AssemblyRef_Culture,
-    AssemblyRef_HashValue,
-
-    File_Flags,
-    File_Name,
-    File_HashValue,
-
-    ExportedType_Flags,
-    ExportedType_TypeDefId,
-    ExportedType_TypeName,
-    ExportedType_TypeNamespace,
-    ExportedType_Implementation,
-
-    ManifestResource_Offset,
-    ManifestResource_Flags,
-    ManifestResource_Name,
-    ManifestResource_Implementation,
-
-    NestedClass_NestedClass,
-    NestedClass_EnclosingClass,
-
-    GenericParam_Number,
-    GenericParam_Flags,
-    GenericParam_Owner,
-    GenericParam_Name,
-
-    MethodSpec_Method,
-    MethodSpec_Instantiation,
-
-    GenericParamConstraint_Owner,
-    GenericParamConstraint_Constraint,
-
-    Count
-}
-
 internal class Metadata
 {
     private readonly Target _target;
-    private readonly Dictionary<ulong, EcmaMetadata> _metadata = [];
+    private readonly Dictionary<ulong, MetadataReaderProvider> _metadata = [];
 
     public Metadata(Target target)
     {
         _target = target;
     }
 
-    public virtual EcmaMetadata GetMetadata(Contracts.ModuleHandle module)
+    public virtual MetadataReader GetMetadata(Contracts.ModuleHandle module)
     {
-        if (_metadata.TryGetValue(module.Address, out EcmaMetadata? result))
-            return result;
+        if (_metadata.TryGetValue(module.Address, out MetadataReaderProvider? result))
+            return result.GetMetadataReader();
 
         AvailableMetadataType metadataType = _target.Contracts.Loader.GetAvailableMetadataType(module);
 
@@ -287,7 +38,7 @@ internal class Metadata
                 TargetPointer address = _target.Contracts.Loader.GetMetadataAddress(module, out ulong size);
                 byte[] data = new byte[size];
                 _target.ReadBuffer(address, data);
-                result = (new Helpers.EcmaMetadataReader(new ReadOnlyMemory<byte>(data))).UnderlyingMetadata;
+                result = MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
         }
         else if (metadataType == AvailableMetadataType.ReadWriteSavedCopy)
@@ -295,40 +46,161 @@ internal class Metadata
             TargetPointer address = _target.Contracts.Loader.GetReadWriteSavedMetadataAddress(module, out ulong size);
             byte[] data = new byte[size];
             _target.ReadBuffer(address, data);
-            result = (new Helpers.EcmaMetadataReader(new ReadOnlyMemory<byte>(data))).UnderlyingMetadata;
+            result = MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
         }
         else
         {
             var targetEcmaMetadata = _target.Contracts.Loader.GetReadWriteMetadata(module);
-            result = new EcmaMetadata(targetEcmaMetadata.Schema,
-                GetReadOnlyMemoryFromTargetSpans(targetEcmaMetadata.Tables),
-                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.StringHeap),
-                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.UserStringHeap),
-                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.BlobHeap),
-                GetReadOnlyMemoryFromTargetSpan(targetEcmaMetadata.GuidHeap));
 
-            ReadOnlyMemory<byte> GetReadOnlyMemoryFromTargetSpan(TargetSpan span)
+            BlobBuilder builder = new BlobBuilder();
+            builder.WriteUInt32(0x424A5342);
+
+            // major version
+            builder.WriteUInt16(1);
+
+            // minor version
+            builder.WriteUInt16(1);
+
+            // reserved
+            builder.WriteUInt32(0);
+
+            string version = targetEcmaMetadata.Schema.MetadataVersion;
+            builder.WriteInt32(AlignUp(version.Length, 4));
+            Write4ByteAlignedString(builder, version);
+
+            // reserved
+            builder.WriteUInt16(0);
+
+            // number of streams
+            ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
+            if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
             {
-                if (span.Size == 0)
-                    return default;
+                // We direct MetadataReader to use 4-byte encoding for all variable-sized columns
+                // by providing the marker stream for a "minimal delta" image.
+                numStreams++;
+            }
+            builder.WriteUInt16(numStreams);
+
+            // Write Stream headers
+            if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
+            {
+                // Write the #JTD stream to indicate that all variable-sized columns are 4 bytes long.
+                WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
+            }
+
+            BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul));
+            BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)targetEcmaMetadata.BlobHeap.Size);
+            BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)targetEcmaMetadata.GuidHeap.Size);
+            BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)targetEcmaMetadata.UserStringHeap.Size);
+
+            // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
+            // that are only present in the uncompressed tables stream.
+            BlobWriter tablesOffset = WriteStreamHeader(builder, "#-", 0);
+
+            // Write the heap-style Streams
+
+            stringsOffset.WriteInt32(builder.Count);
+            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.StringHeap));
+
+            blobOffset.WriteInt32(builder.Count);
+            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.BlobHeap));
+            guidOffset.WriteInt32(builder.Count);
+            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.GuidHeap));
+
+            userStringOffset.WriteInt32(builder.Count);
+            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.UserStringHeap));
+
+            // Write tables stream
+            tablesOffset.WriteInt32(builder.Count);
+
+            // Write tables stream header
+            builder.WriteInt32(0); // reserved
+            builder.WriteByte(2); // major version
+            builder.WriteByte(0); // minor version
+            uint heapSizes =
+                (targetEcmaMetadata.Schema.LargeStringHeap ? 1u << 0 : 0) |
+                (targetEcmaMetadata.Schema.LargeBlobHeap ? 1u << 1 : 0) |
+                (targetEcmaMetadata.Schema.LargeGuidHeap ? 1u << 2 : 0);
+
+            builder.WriteByte((byte)heapSizes);
+            builder.WriteByte(1); // reserved
+
+            ulong validTables = 0;
+            for (int i = 0; i < targetEcmaMetadata.Schema.RowCount.Length; i++)
+            {
+                if (targetEcmaMetadata.Schema.RowCount[i] != 0)
+                {
+                    validTables |= 1ul << i;
+                }
+            }
+
+            ulong sortedTables = 0;
+            for (int i = 0; i < targetEcmaMetadata.Schema.IsSorted.Length; i++)
+            {
+                if (targetEcmaMetadata.Schema.IsSorted[i])
+                {
+                    sortedTables |= 1ul << i;
+                }
+            }
+
+            builder.WriteUInt64(validTables);
+            builder.WriteUInt64(sortedTables);
+
+            foreach (int rowCount in targetEcmaMetadata.Schema.RowCount)
+            {
+                if (rowCount > 0)
+                {
+                    builder.WriteInt32(rowCount);
+                }
+            }
+
+            // Write the tables
+            foreach (TargetSpan span in targetEcmaMetadata.Tables)
+            {
+                builder.WriteBytes(ReadTargetSpan(span));
+            }
+
+            MemoryStream metadataStream = new MemoryStream();
+            builder.WriteContentTo(metadataStream);
+            result = MetadataReaderProvider.FromMetadataStream(metadataStream);
+
+            byte[] ReadTargetSpan(TargetSpan span)
+            {
                 byte[] data = new byte[span.Size];
                 _target.ReadBuffer(span.Address, data);
-                return new ReadOnlyMemory<byte>(data);
+                return data;
             }
-            ReadOnlyMemory<byte>[] GetReadOnlyMemoryFromTargetSpans(ReadOnlySpan<TargetSpan> spans)
+
+            static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
             {
-                ReadOnlyMemory<byte>[] memories = new ReadOnlyMemory<byte>[spans.Length];
-                for (int i = 0; i < spans.Length; i++)
+                BlobWriter offset = new(builder.ReserveBytes(4));
+                builder.WriteInt32(size);
+                Write4ByteAlignedString(builder, name);
+                return offset;
+            }
+
+            static void Write4ByteAlignedString(BlobBuilder builder, string value)
+            {
+                int bufferStart = builder.Count;
+                builder.WriteUTF8(value);
+                builder.WriteByte(0);
+                int stringEnd = builder.Count;
+                for (int i = stringEnd; i < bufferStart + AlignUp(value.Length, 4); i++)
                 {
-                    memories[i] = GetReadOnlyMemoryFromTargetSpan(spans[i]);
+                    builder.WriteByte(0);
                 }
-                return memories;
             }
         }
 
         _metadata.Add(module.Address, result);
-        return result;
+        return result.GetMetadataReader();
     }
 
-    public Func<Contracts.ModuleHandle, EcmaMetadata>? MetadataProvider;
+    public Func<Contracts.ModuleHandle, MetadataReaderProvider>? MetadataProvider;
+
+    private static T AlignUp<T>(T input, T alignment)
+        where T : IBinaryInteger<T>
+    {
+        return input + (alignment - T.One) & ~(alignment - T.One);
+    }
 }
