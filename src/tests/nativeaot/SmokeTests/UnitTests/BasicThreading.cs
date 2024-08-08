@@ -209,24 +209,26 @@ class ThreadStaticAlignmentTest
             if (((nint)ts2Addr) % 8 != 0)
                 return BasicThreading.Fail;
 
-            typeof(ThreadStaticAlignmentTest).GetMethod("RunGeneric").MakeGenericMethod(GetAtom()).Invoke(null, []);
+            return (int)typeof(ThreadStaticAlignmentTest).GetMethod("RunGeneric").MakeGenericMethod(GetAtom()).Invoke(null, []);
         }
 
         return BasicThreading.Pass;
     }
 
-    public static void RunGeneric<T>()
+    public static int RunGeneric<T>()
     {
-            // Assume that these are allocated sequentially, use a padding object of size 12 (mod 8 is not 0)
-            // to move the alignment of the second AddressOfReturnArea in case the first is coincidentally aligned 8.
-            var ts1Addr = ThreadStaticAlignCheck1<T>.returnArea.AddressOfReturnArea();
-            var p = new Padder();
-            var ts2Addr = ThreadStaticAlignCheck2<T>.returnArea.AddressOfReturnArea();
+        // Assume that these are allocated sequentially, use a padding object of size 12 (mod 8 is not 0)
+        // to move the alignment of the second AddressOfReturnArea in case the first is coincidentally aligned 8.
+        var ts1Addr = ThreadStaticAlignCheck1<T>.returnArea.AddressOfReturnArea();
+        var p = new Padder();
+        var ts2Addr = ThreadStaticAlignCheck2<T>.returnArea.AddressOfReturnArea();
 
-            if (((nint)ts1Addr) % 8 != 0)
-                throw new Exception();
-            if (((nint)ts2Addr) % 8 != 0)
-                throw new Exception();
+        if (((nint)ts1Addr) % 8 != 0)
+            return BasicThreading.Fail;
+        if (((nint)ts2Addr) % 8 != 0)
+            return BasicThreading.Fail;
+
+        return BasicThreading.Pass;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
