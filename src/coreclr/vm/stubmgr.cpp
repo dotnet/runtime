@@ -938,10 +938,15 @@ BOOL ThePreStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *tr
     // We cannot tell where the stub will end up
     // until after the prestub worker has been run.
     //
+    #if defined(TARGET_ARM64) && defined(__APPLE__)
+        // On ARM64 Mac, we cannot put a breakpoint inside of ThePreStubPatchLabel
+        LOG((LF_CORDB, LL_INFO10000, "TPSM::DoTraceStub: Skipping on M1\n"));
+        return FALSE;
+    #else
+        trace->InitForFramePush(GetEEFuncEntryPoint(ThePreStubPatchLabel));
 
-    trace->InitForFramePush(GetEEFuncEntryPoint(ThePreStubPatchLabel));
-
-    return TRUE;
+        return TRUE;
+    #endif
 }
 
 //-----------------------------------------------------------
@@ -1028,7 +1033,13 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         case PRECODE_NDIRECT_IMPORT:
 #ifndef DACCESS_COMPILE
+    #if defined(TARGET_ARM64) && defined(__APPLE__)
+        // On ARM64 Mac, we cannot put a breakpoint inside of NDirectImportThunk
+        LOG((LF_CORDB, LL_INFO10000, "PSM::DoTraceStub: Skipping on M1\n"));
+        return FALSE;
+    #else
             trace->InitForUnmanaged(GetEEFuncEntryPoint(NDirectImportThunk));
+    #endif
 #else
             trace->InitForOther((PCODE)NULL);
 #endif
@@ -1657,7 +1668,13 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
+    #if defined(TARGET_ARM64) && defined(__APPLE__)
+        // On ARM64 Mac, we cannot put a breakpoint inside of ExternalMethodFixupPatchLabel
+        LOG((LF_CORDB, LL_INFO10000, "RSM::DoTraceStub: Skipping on M1\n"));
+        return FALSE;
+    #else
         trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
+    #endif
 #endif
         return TRUE;
 
@@ -1801,7 +1818,13 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
-        traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
+        #if defined(TARGET_ARM64) && defined(__APPLE__)
+            //On ARM64 Mac, we cannot put a breakpoint inside of MulticastDebuggerTraceHelper
+            LOG((LF_CORDB, LL_INFO10000, "ILSM::DoTraceStub: skipping on M1\n"));
+            return FALSE;
+        #else
+            traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
+        #endif
     }
     else
     {
@@ -2104,18 +2127,30 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
 
     if (IsVarargPInvokeStub(GetIP(pContext)))
     {
-        NDirectMethodDesc *pNMD = (NDirectMethodDesc *)arg;
-        _ASSERTE(pNMD->IsNDirect());
-        PCODE target = (PCODE)pNMD->GetNDirectTarget();
+        #if defined(TARGET_ARM64) && defined(__APPLE__)
+            //On ARM64 Mac, we cannot put a breakpoint inside of VarargPInvokeStub
+            LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on M1\n"));
+            return FALSE;
+        #else
+            NDirectMethodDesc *pNMD = (NDirectMethodDesc *)arg;
+            _ASSERTE(pNMD->IsNDirect());
+            PCODE target = (PCODE)pNMD->GetNDirectTarget();
 
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case 0x%p\n", target));
-        trace->InitForUnmanaged(target);
+            LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case 0x%p\n", target));
+            trace->InitForUnmanaged(target);
+        #endif
     }
     else if (GetIP(pContext) == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
     {
-        PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case 0x%p\n", target));
-        trace->InitForUnmanaged(target);
+        #if defined(TARGET_ARM64) && defined(__APPLE__)
+            //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
+            LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on M1\n"));
+            return FALSE;
+        #else
+            PCODE target = (PCODE)arg;
+            LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case 0x%p\n", target));
+            trace->InitForUnmanaged(target);
+        #endif
     }
 #ifdef FEATURE_COMINTEROP
     else
@@ -2210,6 +2245,15 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
     WRAPPER_NO_CONTRACT;
     TADDR esp = GetSP(pContext);
     TADDR ebp = GetFP(pContext);
+
+    #if defined(TARGET_ARM64) && defined(__APPLE__)
+        //On ARM64 Mac, we cannot put a breakpoint inside of JIT_TailCallLeave
+        if (GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCallLeave) || GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCallVSDLeave))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "TCSM::TraceManager: Skipping on M1\n"));
+            return FALSE;
+        }
+    #endif
 
     // Check if we are stopped at the beginning of JIT_TailCall().
     if (GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCall))
