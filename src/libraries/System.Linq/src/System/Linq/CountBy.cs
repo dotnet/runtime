@@ -31,23 +31,25 @@ namespace System.Linq
 #pragma warning disable CA1859
         private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
-            return new LazyEnumerable<KeyValuePair<TKey, int>>(() =>
+            return new LazyEnumerable<(IEnumerable<TSource> Source, Func<TSource, TKey> KeySelector, IEqualityComparer<TKey>? KeyComparer), KeyValuePair<TKey, int>>(
+                (source, keySelector, keyComparer),
+                static aParams =>
                 {
-                    using IEnumerator<TSource> enumerator = source.GetEnumerator();
+                    using IEnumerator<TSource> enumerator = aParams.Source.GetEnumerator();
 
                     if (!enumerator.MoveNext())
                     {
                         return ((IEnumerable<KeyValuePair<TKey, int>>)[]).GetEnumerator();
                     }
 
-                    return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
+                    return BuildCountDictionary(enumerator, aParams.KeySelector, aParams.KeyComparer).GetEnumerator();
                 });
         }
 #pragma warning restore CA1859
 
-        private sealed class LazyEnumerable<T>(Func<IEnumerator<T>> getEnumerator) : IEnumerable<T>
+        private sealed class LazyEnumerable<TParams, TSource>(TParams aParams, Func<TParams, IEnumerator<TSource>> getEnumerator) : IEnumerable<TSource>
         {
-            public IEnumerator<T> GetEnumerator() => getEnumerator();
+            public IEnumerator<TSource> GetEnumerator() => getEnumerator(aParams);
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
