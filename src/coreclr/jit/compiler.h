@@ -9962,6 +9962,21 @@ public:
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 
+    //------------------------------------------------------------------------
+    // canUsePromotedEvexEncoding - Answer the question: Is promoted EVEX encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if promoted EVEX encoding is supported, `false` if not.
+    //
+    bool canUsePromotedEvexEncoding() const
+    {
+        if(JitConfig.JitBypassAPXCheck())
+        {
+            return true;
+        }
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -10008,6 +10023,24 @@ private:
     {
 #ifdef DEBUG
         if (JitConfig.JitStressRex2Encoding())
+        {
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressPromotedEvexEncoding- Answer the question: Do we force promoted EVEX encoding.
+    //
+    // Returns:
+    //    `true` if user requests promoted EVEX encoding.
+    //
+    bool DoJitStressPromotedEvexEncoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressPromotedEVEXEncoding())
         {
             return true;
         }

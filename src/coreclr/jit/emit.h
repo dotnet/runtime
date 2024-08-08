@@ -471,6 +471,7 @@ public:
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
         SetUseRex2Encoding(false);
+        SetUsePromotedEVEXEncoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;

@@ -221,6 +221,9 @@ enum insFlags : uint64_t
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
 
+    // APX: NDD form:
+    INS_Flags_Has_NDD  = 1ULL << 44,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };

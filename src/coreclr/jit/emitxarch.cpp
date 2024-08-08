@@ -236,6 +236,12 @@ bool emitter::HasRex2Encoding(instruction ins) const
     return (flags & Encoding_REX2) != 0;
 }
 
+bool emitter::HasApxNdd(instruction ins) const
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_Has_NDD) != 0;
+}
+
 bool emitter::IsVexEncodableInstruction(instruction ins) const
 {
     if (!UseVEXEncoding())
@@ -281,6 +287,24 @@ bool emitter::IsRex2EncodableInstruction(instruction ins) const
         return false;
     }
     return HasRex2Encoding(ins);
+}
+
+//------------------------------------------------------------------------
+// IsApxNDDEncodableInstruction: Answer the question- does this instruction have apx ndd form.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if ins has apx ndd form.
+//
+bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
+{
+    if(!UsePromotedEVEXEncoding())
+    {
+        return false;
+    }
+    return HasApxNdd(ins);
 }
 
 //------------------------------------------------------------------------
@@ -1309,6 +1333,11 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 {
     instruction ins = id->idIns();
 
+    // TODO-XArch-apx:
+    // Ruihan:
+    // we might need to consider isolating the legacy-promoted-EVEX case,
+    // VEX/EVEX-promoted-EVEX could be merged into this path.
+
     if (!IsEvexEncodableInstruction(ins))
     {
         // Never supports the EVEX encoding
@@ -1401,6 +1430,50 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
     return false;
 }
 
+//------------------------------------------------------------------------
+// TakesLegacyPromotedEvexPrefix: Checks if the instruction should be legacy-promoted-evex encoded.
+//
+// Arguments:
+//    instruction -- processor instruction to check
+//
+// Return Value:
+//    true if this instruction requires a legacy-promoted-evex prefix.
+//
+bool emitter::TakesLegacyPromotedEvexPrefix(const instrDesc* id) const
+{
+    // TODO-XArch-APX:
+    // Ruihan:
+    // I'm isolating legacy-promoted-evex case out from vex/evex-promoted-evex,
+    // as the latter ones are relatively simple, providing EGPRs functionality,
+    // (VEX has NF, this case needs to be investigated)
+    instruction ins = id->idIns();
+    if(!IsApxNDDEncodableInstruction(ins))
+    {
+        return false;
+    }
+
+    // TODO-apx:
+    // there are duplicated stress logics here and in HasExtendedGPReg()
+    // need to clean up later. 
+#if defined(DEBUG)
+    if (emitComp->DoJitStressPromotedEvexEncoding())
+    {
+        return true;
+    }
+#endif // DEBUG
+
+    // TODO-XArch-apx:
+    // extend the checks below when we have memeory operands,
+    // now we only take care of R_R_R form, so once we have the 3rd operands
+    // we confirm it needs NDD form.
+    if (id->idHasReg3())
+    {
+        return true;
+    }
+
+    return false;
+}
+
 // Intel AVX-512 encoding is defined in "Intel 64 and ia-32 architectures software developer's manual volume 2", Section
 // 2.6.
 // Add base EVEX prefix without setting W, R, X, or B bits
@@ -1435,6 +1508,8 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
 
+#define MAP4_IN_BYTE_EVEX_PREFIX 0x4000000000000ULL
+#define NDBIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
@@ -1449,14 +1524,24 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr)
 {
     // Only AVX512 instructions require EVEX prefix
-    assert(IsEvexEncodableInstruction(id->idIns()));
+    instruction ins = id->idIns();
+    assert(IsEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
     // Shouldn't have already added EVEX prefix
     assert(!hasEvexPrefix(code));
 
     assert((code & DEFAULT_BYTE_EVEX_PREFIX_MASK) == 0);
 
+
     code |= DEFAULT_BYTE_EVEX_PREFIX;
+
+    if (IsApxNDDEncodableInstruction(ins))
+    {
+        //Handle EVEX prefix for NDD first.
+        code |= MAP4_IN_BYTE_EVEX_PREFIX;
+        code |= NDBIT_IN_BYTE_EVEX_PREFIX;
+        return code;
+    }
 
     if (attr == EA_32BYTE)
     {
@@ -2011,6 +2096,17 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
     {
         return emitter::code_t(code | 0x000800000000ULL);
     }
+    else if (hasEvexPrefix(code))
+    {
+        // TODO-XArch-apx: 
+        // Ruihan: revisit this, might not be optimal solution here.
+
+        // If the instruction is not VEX/EVEX encodable, and has EVEX prefix,
+        // then it is legacy promoted EVEX.
+        assert(TakesLegacyPromotedEvexPrefix(id));
+        // W-bit is the only bit that is added in non bit-inverted form.
+        return emitter::code_t(code | 0x0000800000000000ULL);
+    }
     return emitter::code_t(code | 0x4800000000ULL);
 #else
     assert(!"UNREACHED");
@@ -2045,13 +2141,11 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
             return code & 0xFF7FFFFFFFFFFFULL;
         }
     }
-#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50400000000ULL; // REX2.B3
     }
-#endif // TARGET_AMD64
 
     return code | 0x4400000000ULL;
 }
@@ -2081,13 +2175,11 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
             return code & 0xFFBFFFFFFFFFFFULL;
         }
     }
-#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50200000000ULL; // REX2.B3
     }
-#endif // TARGET_AMD64
 
     return code | 0x4200000000ULL;
 }
@@ -2117,13 +2209,11 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
             return code & 0xFFDFFFFFFFFFFFULL;
         }
     }
-#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50100000000ULL; // REX2.B3
     }
-#endif // TARGET_AMD64
 
     return code | 0x4100000000ULL;
 }
@@ -2206,7 +2296,7 @@ bool isPrefix(BYTE b)
 //
 emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) const
 {
-    assert(IsEvexEncodableInstruction(ins));
+    assert(IsEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
     code_t evexPrefix = (code >> 32) & 0xFFFFFFFF;
     code &= 0x00000000FFFFFFFFLL;
@@ -2757,6 +2847,11 @@ unsigned emitter::emitGetRexPrefixSize(instrDesc* id, instruction ins)
         return 0;
     }
 
+    if (TakesLegacyPromotedEvexPrefix(id))
+    {
+        return 0;
+    }
+
     if (TakesRex2Prefix(id))
     {
         return 0;
@@ -2867,7 +2962,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         adjustedSize++;
     }
 #ifdef TARGET_AMD64
-    else if (IsRex2EncodableInstruction(ins))
+    else if (IsRex2EncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
         if (TakesRex2Prefix(id))
@@ -2879,6 +2974,13 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
             {
                 prefixAdjustedSize -= 1;
             }
+        }
+        else if(TakesLegacyPromotedEvexPrefix(id))
+        {
+            prefixAdjustedSize = 4;
+            // TODO-XArch-apx:
+            // At this point, we are only handling the R_R_R form, meaning only binary instrcution falls into this branch.
+            // Revisit this part, when we need to enable unary instruction NDD form.
         }
 
         adjustedSize = prefixAdjustedSize;
@@ -3653,7 +3755,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
     instruction ins = id->idIns();
 
     assert(reg < REG_STK);
-    assert(IsVexOrEvexEncodableInstruction(ins));
+    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
     assert(hasVexOrEvexPrefix(code));
 
     // Get 4-bit register encoding
@@ -3699,6 +3801,24 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
             regBits <<= 35;
             return code ^ regBits;
         }
+    }
+    else {
+        assert(TakesLegacyPromotedEvexPrefix(id));
+        assert(hasEvexPrefix(code));
+#if defined(TARGET_AMD64)
+        // TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
+        // Rather see these paths cleaned up.
+        regBits = HighAwareRegEncoding(reg);
+
+        if (false /*reg >= REG_R16 && reg <= REG_R31*/)
+        {
+            // Have to set the EVEX V' bit
+            code = AddEvexVPrimePrefix(code);
+        }
+#endif
+        // Shift count = 5-bytes of opcode + 0-2 bits for EVEX
+        regBits <<= 43;
+        return code ^ regBits;
     }
 
     return code ^ regBits;
@@ -7400,8 +7520,8 @@ void emitter::emitIns_R_R_C(instruction          ins,
 void emitter::emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
-    assert(IsAvx512OrPriorInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
+    assert(IsAvx512OrPriorInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
@@ -12342,8 +12462,8 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_RRD:
         case IF_RWR_RWR_RRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
-            assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
+            assert(IsVexOrEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+            assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxNDDEncodableInstruction(ins));
 
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
@@ -15851,8 +15971,8 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     code_t code;
 
     instruction ins = id->idIns();
-    assert(IsVexOrEvexEncodableInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins));
+    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins) || IsApxNDDEncodableInstruction(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -15860,6 +15980,50 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     code = insCodeRM(ins);
     code = AddX86PrefixIfNeeded(id, code, size);
+
+    if (IsApxNDDEncodableInstruction(ins))
+    {
+        // TODO-XArch-apx:
+        // For rm-like operand encoding instructions:
+        // legacy promoted EVEX encoding has introduced different semantic:
+        // op1 - vvvvv
+        // op2 - MODRM.REG
+        // op3 - MODRM.R/M
+        regNumber tmp = src1;
+        src1 = targetReg;
+        targetReg = tmp;
+
+        switch (size)
+        {
+            case EA_1BYTE:
+                // TODO-APX : verify  We should never end up here. Atleast for instructions I have looked into, we promote to int
+                // to do operation
+                noway_assert(RBM_BYTE_REGS & genRegMask(src1));
+                noway_assert(RBM_BYTE_REGS & genRegMask(src2));
+                noway_assert(RBM_BYTE_REGS & genRegMask(targetReg));
+                break;
+
+            case EA_2BYTE:
+            case EA_4BYTE:
+                // Set the 'w' bit to get the large version
+                code |= 0x1;
+                break;
+
+#ifdef TARGET_AMD64
+            case EA_8BYTE:
+                // TODO-AMD64-CQ: Better way to not emit REX.W when we don't need it
+                // Don't need to zero out the high bits explicitly
+                code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled differently? see emitOutputRR
+                // Set the 'w' bit to get the large version
+                code |= 0x1;
+                break;
+
+#endif // TARGET_AMD64
+
+            default:
+                assert(!"unexpected size");
+        }
+    }
 
     code = insEncodeRMreg(id, code);
 

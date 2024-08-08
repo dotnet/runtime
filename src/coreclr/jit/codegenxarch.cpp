@@ -1189,12 +1189,41 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        var_types op1Type = op1->TypeGet();
-        inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-        regSet.verifyRegUsed(targetReg);
-        gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
-        dst = treeNode;
-        src = op2;
+        if (emit->IsApxNDDEncodableInstruction(ins) && !varTypeIsFloating(treeNode))
+        {
+            // TODO-xarch-apx:
+            // APX can provide optimal code gen in this case using NDD feature:
+            // reg3 = op1 op op2 without extra mov
+            
+            // Ruihan: we will have the following cases: (might not have full coverage)
+            // reg3 = reg1 op reg2 -> emitIns_R_R_R
+            // reg3 = reg1 op (contained)op2 -> emitIns_R_R_? may depend on the contained operand types
+
+            // Handle emit_R_R_R first
+            if (!varTypeIsFloating(treeNode) && op1->isUsedFromReg() && op2->isUsedFromReg())
+            {
+                emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), targetReg, op1reg, op2reg);
+                genProduceReg(treeNode);
+                return;
+            } 
+            else {
+                // For the unhandled case use the original implementation
+                var_types op1Type = op1->TypeGet();
+                inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
+                regSet.verifyRegUsed(targetReg);
+                gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
+                dst = treeNode;
+                src = op2;
+            }
+        }
+        else {
+            var_types op1Type = op1->TypeGet();
+            inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
+            regSet.verifyRegUsed(targetReg);
+            gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
+            dst = treeNode;
+            src = op2;
+        }
     }
 
     // try to use an inc or dec

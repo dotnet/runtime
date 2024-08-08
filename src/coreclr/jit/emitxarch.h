@@ -131,14 +131,16 @@ static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool             HasVexEncoding(instruction ins) const;
-bool             HasEvexEncoding(instruction ins) const;
-bool             HasRex2Encoding(instruction ins) const;
-bool             IsVexEncodableInstruction(instruction ins) const;
-bool             IsEvexEncodableInstruction(instruction ins) const;
-bool             IsRex2EncodableInstruction(instruction ins) const;
-bool             IsLegacyMap1(code_t code) const;
-bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool HasVexEncoding(instruction ins) const;
+bool HasEvexEncoding(instruction ins) const;
+bool HasRex2Encoding(instruction ins) const;
+bool HasApxNdd(instruction ins) const;
+bool IsVexEncodableInstruction(instruction ins) const;
+bool IsEvexEncodableInstruction(instruction ins) const;
+bool IsRex2EncodableInstruction(instruction ins) const;
+bool IsApxNDDEncodableInstruction(instruction ins) const;
+bool IsLegacyMap1(code_t code) const;
+bool IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -332,6 +334,18 @@ void SetUseRex2Encoding(bool value)
     useRex2Encodings = value;
 }
 
+// Is Promoted EVEX encoding supported.
+bool usePromotedEVEXEncodings;
+bool UsePromotedEVEXEncoding() const
+{
+    return usePromotedEVEXEncodings;
+}
+
+void SetUsePromotedEVEXEncoding(bool value)
+{
+    usePromotedEVEXEncodings = value;
+}
+
 //------------------------------------------------------------------------
 // UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
 // contains Evex prefix.
@@ -349,6 +363,7 @@ bool UseSimdEncoding() const
 #define EVEX_PREFIX_CODE 0x6200000000000000ULL
 
 bool TakesEvexPrefix(const instrDesc* id) const;
+bool TakesLegacyPromotedEvexPrefix(const instrDesc* id) const;
 
 //------------------------------------------------------------------------
 // hasEvexPrefix: Returns true if the instruction encoding already
@@ -419,6 +434,11 @@ code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
     if (TakesVexPrefix(ins))
     {
         return AddVexPrefix(ins, code, size);
+    }
+
+    if (TakesLegacyPromotedEvexPrefix(id))
+    {
+        return AddEvexPrefix(id, code, size);
     }
 
     // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
