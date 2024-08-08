@@ -391,7 +391,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 CollectionInstantiationStrategy instantiationStrategy;
                 CollectionInstantiationConcreteType instantiationConcreteType;
                 CollectionPopulationCastType populationCastType;
-                bool shouldTestCast = false;
+                bool shouldTryCast = false;
 
                 if (HasPublicParameterLessCtor(type))
                 {
@@ -425,7 +425,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     instantiationConcreteType = CollectionInstantiationConcreteType.Dictionary;
                     // is IReadonlyDictionary<,>  -- test cast to IDictionary<,>
                     populationCastType = CollectionPopulationCastType.IDictionary;
-                    shouldTestCast = true;
+                    shouldTryCast = true;
                 }
                 else
                 {
@@ -435,7 +435,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 TypeRef keyTypeRef = EnqueueTransitiveType(typeParseInfo, keyTypeSymbol, DiagnosticDescriptors.DictionaryKeyNotSupported);
                 TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementTypeSymbol, DiagnosticDescriptors.ElementTypeNotSupported);
 
-                Debug.Assert(!shouldTestCast || !type.IsValueType, "Should not test cast for value types.");
+                Debug.Assert(!shouldTryCast || !type.IsValueType, "Should not test cast for value types.");
                 return new DictionarySpec(type)
                 {
                     KeyTypeRef = keyTypeRef,
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     InstantiationStrategy = instantiationStrategy,
                     InstantiationConcreteType = instantiationConcreteType,
                     PopulationCastType = populationCastType,
-                    ShouldTestCast = shouldTestCast
+                    ShouldTryCast = shouldTryCast
                 };
             }
 
@@ -464,7 +464,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 CollectionInstantiationStrategy instantiationStrategy;
                 CollectionInstantiationConcreteType instantiationConcreteType;
                 CollectionPopulationCastType populationCastType;
-                bool shouldTestCast = false;
+                bool shouldTryCast = false;
 
                 if (HasPublicParameterLessCtor(type))
                 {
@@ -497,7 +497,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     instantiationConcreteType = CollectionInstantiationConcreteType.List;
                     // is IEnumerable<> -- test cast to ICollection<>
                     populationCastType = CollectionPopulationCastType.ICollection;
-                    shouldTestCast = true;
+                    shouldTryCast = true;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.ISet_Unbound))
                 {
@@ -511,7 +511,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     instantiationConcreteType = CollectionInstantiationConcreteType.HashSet;
                     // is IReadOnlySet<> -- test cast to ISet<>
                     populationCastType = CollectionPopulationCastType.ISet;
-                    shouldTestCast = true;
+                    shouldTryCast = true;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList_Unbound) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection_Unbound))
                 {
@@ -519,7 +519,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     instantiationConcreteType = CollectionInstantiationConcreteType.List;
                     // is IReadOnlyList<> or IReadOnlyCollection<> -- test cast to ICollection<>
                     populationCastType = CollectionPopulationCastType.ICollection;
-                    shouldTestCast = true;
+                    shouldTryCast = true;
                 }
                 else
                 {
@@ -528,14 +528,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementType, DiagnosticDescriptors.ElementTypeNotSupported);
 
-                Debug.Assert(!shouldTestCast || !type.IsValueType, "Should not test cast for value types.");
+                Debug.Assert(!shouldTryCast || !type.IsValueType, "Should not test cast for value types.");
                 return new EnumerableSpec(type)
                 {
                     ElementTypeRef = elementTypeRef,
                     InstantiationStrategy = instantiationStrategy,
                     InstantiationConcreteType = instantiationConcreteType,
                     PopulationCastType = populationCastType,
-                    ShouldTestCast = shouldTestCast
+                    ShouldTryCast = shouldTryCast
                 };
             }
 

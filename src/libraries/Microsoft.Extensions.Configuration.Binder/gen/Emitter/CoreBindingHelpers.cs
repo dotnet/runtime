@@ -1233,7 +1233,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instanceIdentifier = Identifier.temp;
                 string castExpression = $"{TypeIndex.GetPopulationCastTypeDisplayString(type)} {instanceIdentifier}";
 
-                if (type.ShouldTestCast)
+                if (type.ShouldTryCast)
                 {
                     _writer.WriteLine($$"""
                             if ({{Identifier.instance}} is not {{castExpression}})
