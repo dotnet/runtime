@@ -100,15 +100,20 @@ internal class Metadata
             // Write the heap-style Streams
 
             stringsOffset.WriteInt32(builder.Count);
-            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.StringHeap));
+            WriteTargetSpan(builder, targetEcmaMetadata.StringHeap);
+            for (ulong i = targetEcmaMetadata.StringHeap.Size; i < AlignUp(targetEcmaMetadata.StringHeap.Size, 4ul); i++)
+            {
+                builder.WriteByte(0);
+            }
 
             blobOffset.WriteInt32(builder.Count);
-            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.BlobHeap));
+            WriteTargetSpan(builder, targetEcmaMetadata.BlobHeap);
+
             guidOffset.WriteInt32(builder.Count);
-            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.GuidHeap));
+            WriteTargetSpan(builder, targetEcmaMetadata.GuidHeap);
 
             userStringOffset.WriteInt32(builder.Count);
-            builder.WriteBytes(ReadTargetSpan(targetEcmaMetadata.UserStringHeap));
+            WriteTargetSpan(builder, targetEcmaMetadata.UserStringHeap);
 
             // Write tables stream
             tablesOffset.WriteInt32(builder.Count);
@@ -157,18 +162,17 @@ internal class Metadata
             // Write the tables
             foreach (TargetSpan span in targetEcmaMetadata.Tables)
             {
-                builder.WriteBytes(ReadTargetSpan(span));
+                WriteTargetSpan(builder, span);
             }
 
             MemoryStream metadataStream = new MemoryStream();
             builder.WriteContentTo(metadataStream);
             result = MetadataReaderProvider.FromMetadataStream(metadataStream);
 
-            byte[] ReadTargetSpan(TargetSpan span)
+            void WriteTargetSpan(BlobBuilder builder, TargetSpan span)
             {
-                byte[] data = new byte[span.Size];
-                _target.ReadBuffer(span.Address, data);
-                return data;
+                Blob blob = builder.ReserveBytes(checked((int)span.Size));
+                _target.ReadBuffer(span.Address, blob.GetBytes().AsSpan());
             }
 
             static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
