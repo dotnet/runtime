@@ -124,17 +124,12 @@
     <!-- To recreate the original project on helix, we need to set the apple properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
-      <!-- 
-      Note: these items are used to generate a props file that is used during the build on helix. Properties
-      like MonoEnableLLVM, HybridGlobalization, and InvariantGlobalization will override the defaults specified
-      in AppleBuild.props. That may make sense if we turn things on and off on CI as this will flow things through.
-      -->
-
       <!-- Configuration properties -->
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="IncludesTestRunner" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
+      <_ApplePropertyNames Include="ShouldILStrip" />
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
