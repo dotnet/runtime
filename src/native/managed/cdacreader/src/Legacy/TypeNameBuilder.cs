@@ -44,12 +44,15 @@ internal struct TypeNameBuilder
     private int InstNesting;
     private Stack<int>? GenericStartsStack;
 
-    private TypeNameBuilder(StringBuilder typeString, Target target, TypeNameFormat format)
+    private TypeNameBuilder(StringBuilder typeString, Target target, TypeNameFormat format, bool initialStateIsName = false)
     {
         TypeString = typeString;
         Target = target;
         UseAngleBracketsForGenerics = format.HasFlag(TypeNameFormat.FormatAngleBrackets);
-        State = ParseState.Start;
+        if (initialStateIsName)
+            State = ParseState.Name;
+        else
+            State = ParseState.Start;
     }
 
     public static void AppendMethodInternal(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
@@ -119,6 +122,12 @@ internal struct TypeNameBuilder
             EcmaMetadataReader reader = target.Metadata.GetMetadata(module).EcmaMetadataReader;
             var cursor = reader.GetCursor(runtimeTypeSystem.GetMethodToken(method));
             stringBuilder.Append(reader.GetColumnAsUtf8String(cursor, MetadataColumnIndex.MethodDef_Name));
+        }
+
+        ReadOnlySpan<TypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
+        if (genericMethodInstantiation.Length > 0 && !runtimeTypeSystem.IsGenericMethodDefinition(method))
+        {
+            AppendInst(target, stringBuilder, genericMethodInstantiation, format);
         }
 
         if (format.HasFlag(TypeNameFormat.FormatSignature))
@@ -301,6 +310,15 @@ internal struct TypeNameBuilder
                 tnb.AddAssemblySpec(assemblySimpleName);
             }
         }
+    }
+
+    // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
+    // and enclose each parameter in square brackets to disambiguate the commas
+    // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
+    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
+    {
+        TypeNameBuilder tnb = new (stringBuilder, target, format, initialStateIsName: true);
+        AppendInst(ref tnb, inst, format);
     }
 
     private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)

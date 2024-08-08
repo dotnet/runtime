@@ -278,7 +278,42 @@ internal partial class EcmaMetadataReader
 
     public System.ReadOnlySpan<byte> GetColumnAsBlob(EcmaMetadataCursor c, MetadataColumnIndex col_idx)
     {
-        throw new NotImplementedException();
+        if (columnTypes[(int)col_idx] != ColumnType.Blob)
+            throw new NotImplementedException();
+
+        uint rawResult = GetColumnRaw(c, col_idx);
+        if (rawResult == 0)
+            return default;
+
+        checked
+        {
+            ReadOnlySpan<byte> blobHeap = _ecmaMetadata.BlobHeap.Span;
+            int curOffset = (int)rawResult;
+
+            byte headerByte1 = blobHeap[curOffset];
+            int size;
+            if ((headerByte1 & 0x80) == 0)
+            {
+                size = headerByte1;
+            }
+            else if ((headerByte1 & 0xC) == 0x80)
+            {
+                byte headerByte2 = blobHeap[++curOffset];
+                size = headerByte1 & 0x3F << 8 + headerByte2;
+            }
+            else
+            {
+                byte headerByte2 = blobHeap[++curOffset];
+                byte headerByte3 = blobHeap[++curOffset];
+                byte headerByte4 = blobHeap[++curOffset];
+                size = (headerByte1 & 0x3F << 24) +
+                       (headerByte2 << 16) +
+                       (headerByte3 << 8) +
+                       headerByte4;
+            }
+            curOffset++;
+            return blobHeap.Slice(curOffset, size);
+        }
     }
 
     public uint GetColumnAsToken(EcmaMetadataCursor c, MetadataColumnIndex col_idx)
