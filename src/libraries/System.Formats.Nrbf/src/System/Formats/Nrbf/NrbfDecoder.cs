@@ -107,6 +107,12 @@ public static class NrbfDecoder
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="NotSupportedException">
+    /// Reading from <paramref name="payload"/> encounters not supported records.
+    /// For example, arrays with non-zero offset or not supported record types
+    /// (<see cref="SerializationRecordType.ClassWithMembers"/>, <see cref="SerializationRecordType.SystemClassWithMembers"/>,
+    /// <see cref="SerializationRecordType.MethodCall"/> or <see cref="SerializationRecordType.MethodReturn"/>).
+    /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
     /// encounters an invalid UTF8 sequence.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
