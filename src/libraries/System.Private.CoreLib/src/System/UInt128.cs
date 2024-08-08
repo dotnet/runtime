@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -1102,6 +1103,20 @@ namespace System
                 {
                     // left and right are both uint64
                     return left._lower / right._lower;
+                }
+                else if (X86Base.X64.IsSupported)
+                {
+                    ulong highRes = 0ul;
+                    ulong remainder = left._upper;
+
+#pragma warning disable CA2252 // This API requires opting into preview features
+                    if (remainder >= right._lower)
+                    {
+                        (highRes, remainder) = X86Base.X64.DivRem(left._upper, 0, right._lower);
+                    }
+
+                    return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
+#pragma warning restore CA2252 // This API requires opting into preview features
                 }
             }
 
