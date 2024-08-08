@@ -20,6 +20,7 @@
 #include "clrvarargs.h"
 #include "sigbuilder.h"
 #include "olevariant.h"
+#include "configuration.h"
 
 //
 // Retrieve structures from ID.
@@ -896,6 +897,58 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 }
 #endif // CHECK_FCALL_SIGNATURE
 
+namespace
+{
+    bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
+    {
+        // If we don't have a feature switch, treat the switch as enabled.
+        return featureSwitch != nullptr && 
+            Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
+    }
+
+    bool IsTrimmed(BinderClassID classId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_CLASS(i,n,s) if (classId == CLASS__ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+
+    bool IsTrimmed(BinderMethodID methodId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_METHOD(c,i,s,g) if (methodId == METHOD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+
+    extern bool IsTrimmed(BinderFieldID fieldId)
+    {
+        LPCWSTR featureSwitch = nullptr;
+        bool enabledValue = true;
+        bool defaultValue = true;
+        #define DEFINE_FIELD(c,i,s) if (fieldId == FIELD__ ## c ## __ ## i) \
+            return FeatureSwitchDisabled(featureSwitch, enabledValue, defaultValue);
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) featureSwitch = W(#s); enabledValue = e; defaultValue = d;
+        #define END_ILLINK_FEATURE_SWITCH() featureSwitch = nullptr;
+        #include "corelib.h"
+
+        return false;
+    }
+}
+
 //
 // extended check of consistency between CoreLib and VM:
 //  - verifies that all references from CoreLib to VM are present
@@ -924,7 +977,7 @@ void CoreLibBinder::CheckExtended()
             {
                 if (NULL == CoreLibBinder::GetClass(cID))
                 {
-                    fError = true;
+                    fError = !IsTrimmed(cID);
                 }
             }
         }
@@ -948,7 +1001,7 @@ void CoreLibBinder::CheckExtended()
         {
             if (NULL == CoreLibBinder::GetMethod(mID))
             {
-                fError = true;
+                fError = !IsTrimmed(mID);
             }
         }
         EX_CATCH
@@ -971,7 +1024,7 @@ void CoreLibBinder::CheckExtended()
         {
             if (NULL == CoreLibBinder::GetField(fID))
             {
-                fError = true;
+                fError = !IsTrimmed(fID);
             }
         }
         EX_CATCH
