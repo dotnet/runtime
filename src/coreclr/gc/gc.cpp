@@ -13427,7 +13427,7 @@ void gc_heap::distribute_free_regions()
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
 
         // Ignore young huge regions if they are contributing to a surplus.
-        if (balance > 0)
+        if ((balance > 0) && (!background_running_p() || (settings.condemned_generation == max_generation)))
         {
             if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
             {
@@ -13529,8 +13529,8 @@ void gc_heap::distribute_free_regions()
                 if (kind == basic_free_region)
                 {
                     // we should now have num_regions_to_decommit[kind] regions more on the decommit list
-                    //assert (global_regions_to_decommit[kind].get_num_free_regions() ==
-                    //        num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
+                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
