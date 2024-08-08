@@ -79,7 +79,10 @@ public partial class CancelKeyPressTests
             // Release CancelKeyPress, and give it time to return and tear down the app
             mre.Set();
             Thread.Sleep(WaitFailTestTimeoutSeconds * 1000);
-        }, new RemoteInvokeOptions() { ExpectedExitCode = 130 }).Dispose();
+        }, new RemoteInvokeOptions() {
+            ExpectedExitCode = 130,
+            TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
+        }).Dispose();
     }
 
     private void HandlerInvokedForSignal(int signalOuter, bool redirectStandardInput)
