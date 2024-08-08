@@ -1090,12 +1090,6 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
 
     assert(targetReg != REG_NA);
 
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
-    {
-        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
-    }
-
     if (ins == INS_insertps)
     {
         if (op1Reg == REG_NA)
@@ -1113,6 +1107,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
             GetEmitter()->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival, instOptions);
             return;
         }
+    }
+
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
+        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
     }
 
     assert(op1Reg != REG_NA);
