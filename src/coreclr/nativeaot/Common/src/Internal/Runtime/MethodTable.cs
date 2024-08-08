@@ -732,7 +732,14 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.RequiresAlign8Flag) != 0;
+                // NOTE: Does not work for types with HasComponentSize, ie. arrays and strings.
+                // Since this is called early through RhNewObject we cannot use regular Debug.Assert
+                // here to enforce the assumption.
+#if DEBUG
+                if (HasComponentSize)
+                    Debug.Fail("RequiresAlign8 called for array or string");
+#endif
+                return (_uFlags & (uint)EETypeFlagsEx.RequiresAlign8Flag) != 0;
             }
         }
 
@@ -788,14 +795,6 @@ namespace Internal.Runtime
                 }
             }
 #endif
-        }
-
-        internal bool IsHFA
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.IsHFAFlag) != 0;
-            }
         }
 
         internal bool IsTrackedReferenceWithFinalizer
@@ -1076,6 +1075,14 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal bool IsDynamicTypeWithCctor
+        {
+            get
+            {
+                return (RareFlags & EETypeRareFlags.IsDynamicTypeWithLazyCctor) != 0;
+            }
+        }
+
         internal IntPtr DynamicGcStaticsData
         {
             get
@@ -1230,14 +1237,6 @@ namespace Internal.Runtime
                 _uFlags = (_uFlags & ~(uint)EETypeFlags.ElementTypeMask) | ((uint)value << (byte)EETypeFlags.ElementTypeShift);
             }
 #endif
-        }
-
-        public bool HasCctor
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.HasCctorFlag) != 0;
-            }
         }
 
         // This method is always called with a known constant and there's a lot of benefit in inlining it.

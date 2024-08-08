@@ -85,6 +85,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
+        // Calling Unregister within a Callback will result in a deadlock
+        // as deleting the provider with an active tracing session will block
+        // until all of the provider's callbacks are completed.
         internal override void Unregister()
         {
             if (_provHandle != 0)
