@@ -2003,7 +2003,8 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
 {
     // We only need to use the special copy helper on P/Invoke IL stubs
     // for the unmanaged call.
-    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() && call->IsUnmanaged())
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
+        call->IsUnmanaged())
     {
         unsigned argIndex = 0;
         for (CallArg& arg : call->gtArgs.Args())
@@ -2018,7 +2019,8 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 break;
             }
 
-            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming that it is being passed 1:1 to the pinvoke
+            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
+            // that it is being passed 1:1 to the pinvoke
             unsigned paramIndex = comp->compMap2ILvarNum(argIndex);
             if ((paramIndex != ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex))
             {
@@ -2042,7 +2044,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
 #endif
 
-    GenTree* src;
+    GenTree*  src;
     var_types lclType = genActualType(comp->lvaGetDesc(lclNum));
     if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
     {
@@ -2058,9 +2060,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
 
     GenTreeCall* call =
-        comp->gtNewCallNode(CT_USER_FUNC,
-                            comp->info.compCompHnd->getSpecialCopyHelper(argType),
-                            TYP_VOID);
+        comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
 
     call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
     call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
