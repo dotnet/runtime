@@ -1981,7 +1981,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
 
-    addStubCellArg = call->gtCallType != CT_INDIRECT && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    addStubCellArg = comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 #endif
 
     // We are allowed to have a ret buffer argument combined
@@ -2123,6 +2123,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             {
                 // Struct passed according to hardware floating-point calling convention
                 assert(!arg.NewAbiInfo.HasAnyStackSegment());
+                assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
                 if (arg.NewAbiInfo.NumSegments == 2)
                 {
                     // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
@@ -2137,19 +2138,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     assert(arg.NewAbiInfo.NumSegments == 1);
                     structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
                 }
-
-                for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
-                {
-                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segment(i).GetRegisterType();
-                }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
             arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
-
-#ifdef UNIX_AMD64_ABI
-            comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(argSigClass, &arg.AbiInfo.StructDesc);
-#endif
         }
         else
         {
@@ -2626,7 +2618,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
-                    assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
+                    assert(structBaseType != TYP_STRUCT);
+
+                    // On RISC-V / LoongArch the passing size may be smaller than the original size if we pass a struct
+                    // according to hardware FP calling convention and it has empty fields
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                    assert(genTypeSize(structBaseType) >= originalSize);
+#endif
 
                     if (argObj->OperIsLoad())
                     {
@@ -2688,6 +2686,17 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                                // Single-field structs passed according to floating-point calling convention may have
+                                // padding in front of the field passed in a register
+                                assert(arg.NewAbiInfo.NumSegments == 1);
+                                // Single-slot structs passed according to integer calling convention also go through
+                                // here but since they always have zero offset nothing should change
+                                ABIPassingSegment seg = arg.NewAbiInfo.Segment(0);
+                                assert((seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister())) ||
+                                       (seg.Offset == 0));
+                                argObj->AsLclFld()->SetLclOffs(seg.Offset);
+#endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
                         }
@@ -7140,9 +7149,9 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     if (call->IsNoReturn())
     {
         //
-        // If we know that the call does not return then we can set fgRemoveRestOfBlock
-        // to remove all subsequent statements and change the call's basic block to BBJ_THROW.
-        // As a result the compiler won't need to preserve live registers across the call.
+        // If this call does not return then set fgHasNoReturnCall = true to
+        // indicate to fgMorphStmts that we can remove trees/statements after
+        // this call.
         //
         // This isn't need for tail calls as there shouldn't be any code after the call anyway.
         // Besides, the tail call code is part of the epilog and converting the block to
@@ -7152,7 +7161,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
         if (!call->IsTailCall())
         {
-            fgRemoveRestOfBlock = true;
+            fgHasNoReturnCall = true;
         }
     }
 
@@ -9907,16 +9916,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-#if defined(TARGET_XARCH)
-            if ((simdSize == 8) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
-            {
-                // When SSE4.1 isn't supported then Vector2 only needs a single horizontal add
-                // which means the result isn't broadcast across the entire vector and we can't
-                // optimize
-                break;
-            }
-#endif // TARGET_XARCH
-
             GenTree* op1      = node->Op(1);
             GenTree* sqrt     = nullptr;
             GenTree* toScalar = nullptr;
@@ -11516,6 +11515,11 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (opts.OptimizationEnabled())
     {
+        var_types   retType         = tree->TypeGet();
+        CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
+        var_types   simdBaseType    = tree->GetSimdBaseType();
+        unsigned    simdSize        = tree->GetSimdSize();
+
         if (tree->isCommutativeHWIntrinsic())
         {
             assert(tree->GetOperandCount() == 2);
@@ -11544,45 +11548,62 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     // Move constant vectors from op1 to op2 for comparison operations
 
-                    var_types simdBaseType = tree->GetSimdBaseType();
-                    unsigned  simdSize     = tree->GetSimdSize();
+                    genTreeOps newOper = GenTree::SwapRelop(oper);
+                    var_types  lookupType =
+                        GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, newOper, retType, simdBaseType, simdSize);
+                    NamedIntrinsic newId =
+                        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, retType, op2, op1, simdBaseType,
+                                                                     simdSize, false);
 
-                    genTreeOps     newOper = GenTree::SwapRelop(oper);
-                    NamedIntrinsic newId   = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, op2, op1,
-                                                                                          simdBaseType, simdSize, false);
+                    if (newId != NI_Illegal)
+                    {
+                        tree->ResetHWIntrinsicId(newId, op2, op1);
 
-                    tree->ResetHWIntrinsicId(newId, op2, op1);
+                        if (lookupType != retType)
+                        {
+                            assert(varTypeIsMask(lookupType));
+                            tree->gtType = lookupType;
+                        }
+                    }
                 }
             }
         }
 
         // Try to fold it, maybe we get lucky,
-        GenTree* foldedTree = gtFoldExpr(tree);
+        GenTree* morphedTree = gtFoldExpr(tree);
 
-        if (foldedTree != tree)
+        if (morphedTree != tree)
         {
-            assert(!fgIsCommaThrow(foldedTree));
-            INDEBUG(foldedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            return foldedTree;
+            assert(!fgIsCommaThrow(morphedTree));
+            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
-        else if (!foldedTree->OperIsHWIntrinsic())
+        else if (!morphedTree->OperIsHWIntrinsic())
         {
-            INDEBUG(foldedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            return foldedTree;
+            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
-
-        if (allArgsAreConst && tree->IsVectorCreate())
+        else
         {
-            // Avoid unexpected CSE for constant arguments for Vector_.Create
-            // but only if all arguments are constants.
-
-            for (GenTree* arg : tree->Operands())
+            if (allArgsAreConst && tree->IsVectorCreate())
             {
-                arg->SetDoNotCSE();
+                // Avoid unexpected CSE for constant arguments for Vector_.Create
+                // but only if all arguments are constants.
+
+                for (GenTree* arg : tree->Operands())
+                {
+                    arg->SetDoNotCSE();
+                }
             }
+
+            morphedTree = fgOptimizeHWIntrinsic(tree);
         }
 
-        return fgOptimizeHWIntrinsic(tree->AsHWIntrinsic());
+        if (retType != morphedTree->TypeGet())
+        {
+            assert(varTypeIsMask(morphedTree));
+            morphedTree = gtNewSimdCvtMaskToVectorNode(retType, morphedTree, simdBaseJitType, simdSize);
+            morphedTree = gtFoldExpr(morphedTree);
+        }
+        return morphedTree;
     }
 
     return tree;
@@ -13101,6 +13122,7 @@ void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
 void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
+    fgHasNoReturnCall   = false;
 
     for (Statement* const stmt : block->Statements())
     {
@@ -13212,6 +13234,17 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 
         stmt->SetRootNode(morphedTree);
+
+        if (fgHasNoReturnCall)
+        {
+            fgHasNoReturnCall = false;
+
+            if ((fgGetTopLevelQmark(stmt->GetRootNode()) == nullptr) && gtRemoveTreesAfterNoReturnCall(block, stmt))
+            {
+                fgRemoveRestOfBlock = true;
+                morphedTree         = stmt->GetRootNode();
+            }
+        }
 
         if (fgRemoveRestOfBlock)
         {
@@ -13582,6 +13615,117 @@ PhaseStatus Compiler::fgMorphBlocks()
 #endif
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// gtRemoveTreesAfterNoReturnCall:
+//   Given a statement that may contain a no-return call, try to find it and
+//   make it the root node of the statement. To do so extract all side effects
+//   of nodes executed before the no-return call into separate statements, and
+//   delete all nodes that would be executed after it.
+//
+// Returns:
+//   block - The block containing the statement
+//   stmt  - The statement that may contain a no-return call
+//
+// Returns:
+//   True if a no-return call was found and made into the root of "stmt", with
+//   new side effecting statements potentially created before it.
+//
+bool Compiler::gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+        BasicBlock* m_bb;
+        Statement*  m_stmt;
+
+        struct UseInfo
+        {
+            GenTree** Use;
+            GenTree*  User;
+        };
+        ArrayStack<UseInfo> m_useStack;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true
+        };
+
+        Visitor(Compiler* compiler, BasicBlock* bb, Statement* stmt)
+            : GenTreeVisitor(compiler)
+            , m_bb(bb)
+            , m_stmt(stmt)
+            , m_useStack(compiler->getAllocator(CMK_ArrayStack))
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            assert(!(*use)->OperIs(GT_QMARK));
+            m_useStack.Push(UseInfo{use, user});
+            return WALK_CONTINUE;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (!(*use)->IsCall() || !(*use)->AsCall()->IsNoReturn())
+            {
+                while (m_useStack.Top(0).Use != use)
+                {
+                    m_useStack.Pop();
+                }
+
+                return WALK_CONTINUE;
+            }
+
+            JITDUMP("Removing trees after no-return call [%06u]\n", Compiler::dspTreeID(*use));
+
+            // Extract side effects of all siblings and ancestor's siblings.
+            for (int i = 0; i < m_useStack.Height() - 1; i++)
+            {
+                const UseInfo& useInf = m_useStack.BottomRef(i);
+                if (useInf.Use == use)
+                {
+                    // Got to the no-return call, future uses are its operands.
+                    break;
+                }
+
+                // If this has the same user as the next node then it is a
+                // sibling of an ancestor, and is thus not on the path that
+                // contains the split node.
+                if (m_useStack.BottomRef(i + 1).User == useInf.User)
+                {
+                    JITDUMP("Extracting side effects of (ancestor) sibling [%06u]:", Compiler::dspTreeID(*useInf.Use));
+
+                    GenTree* sideEffects = nullptr;
+                    m_compiler->gtExtractSideEffList(*useInf.Use, &sideEffects);
+                    if (sideEffects != nullptr)
+                    {
+                        Statement* newStmt = m_compiler->fgNewStmtFromTree(sideEffects);
+                        m_compiler->fgInsertStmtBefore(m_bb, m_stmt, newStmt);
+                        JITDUMP("\n");
+                        DISPSTMT(newStmt);
+                    }
+                    else
+                    {
+                        JITDUMP(" none\n");
+                    }
+                }
+            }
+
+            m_stmt->SetRootNode(*use);
+            JITDUMP("New final statement:\n");
+            DISPSTMT(m_stmt);
+
+            return WALK_ABORT;
+        }
+    };
+
+    Visitor visitor(this, block, stmt);
+    return visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == WALK_ABORT;
 }
 
 //------------------------------------------------------------------------
