@@ -1319,22 +1319,15 @@ ep_delete_provider (EventPipeProvider *provider)
 	// where we hold a provider after tracing has been disabled.
 	bool wait_for_provider_callbacks_completion = false;
 	EP_LOCK_ENTER (section1)
-		if (enabled ()) {
-			// Save the provider until the end of the tracing session.
-			ep_provider_set_delete_deferred (provider, true);
+		// The callback func must be set to null,
+		// otherwise callbacks might never stop coming.
+		provider->callback_func = NULL;
 
-			// The callback func must be previously set to null,
-			// otherwise callbacks might never stop coming.
-			EP_ASSERT (provider->callback_func == NULL);
-
-			// Calling ep_delete_provider within a Callback will result in a deadlock
-			// as deleting the provider with an active tracing session will block
-			// until all of the provider's callbacks are completed.
-			if (provider->callbacks_pending > 0)
-				wait_for_provider_callbacks_completion = true;
-		} else {
-			config_delete_provider (ep_config_get (), provider);
-		}
+		// Calling ep_delete_provider within a Callback will result in a deadlock
+		// as deleting the provider with an active tracing session will block
+		// until all of the provider's callbacks are completed.
+		if (provider->callbacks_pending > 0)
+			wait_for_provider_callbacks_completion = true;
 	EP_LOCK_EXIT (section1)
 
 	// Block provider deletion until all pending callbacks are completed.
@@ -1343,6 +1336,15 @@ ep_delete_provider (EventPipeProvider *provider)
 	// callbacks using that handle have completed.
 	if (wait_for_provider_callbacks_completion)
 		ep_rt_wait_event_wait (&provider->callbacks_complete_event, EP_INFINITE_WAIT, false);
+
+	EP_LOCK_ENTER (section2)
+		if (enabled ()) {
+			// Save the provider until the end of the tracing session.
+			ep_provider_set_delete_deferred (provider, true);
+		} else {
+			config_delete_provider (ep_config_get (), provider);
+		}
+	EP_LOCK_EXIT (section2)
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
