@@ -594,6 +594,22 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ServiceInstanceAreNotDisposedWhenTheProviderIsDisposed()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            var externalService = new FakeService();
+            collection.AddSingleton(externalService);
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            ((IDisposable)provider).Dispose();
+
+            // Assert
+            Assert.False(externalService.Disposed);
+        }
+
+        [Fact]
         public void SingletonServicesComeFromRootProvider()
         {
             // Arrange
