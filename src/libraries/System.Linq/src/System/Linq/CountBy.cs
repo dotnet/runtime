@@ -25,31 +25,22 @@ namespace System.Linq
                 return [];
             }
 
-            return CountByIterator(source, keySelector, keyComparer);
+            return new CountByEnumerable<TSource, TKey>(source, keySelector, keyComparer);
         }
 
-#pragma warning disable CA1859
-        private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
+        private sealed class CountByEnumerable<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) : IEnumerable<KeyValuePair<TKey, int>> where TKey : notnull
         {
-            return new LazyEnumerable<(IEnumerable<TSource> Source, Func<TSource, TKey> KeySelector, IEqualityComparer<TKey>? KeyComparer), KeyValuePair<TKey, int>>(
-                (source, keySelector, keyComparer),
-                static aParams =>
+            public IEnumerator<KeyValuePair<TKey, int>> GetEnumerator()
+            {
+                using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+                if (!enumerator.MoveNext())
                 {
-                    using IEnumerator<TSource> enumerator = aParams.Source.GetEnumerator();
+                    return ((IEnumerable<KeyValuePair<TKey, int>>)[]).GetEnumerator();
+                }
 
-                    if (!enumerator.MoveNext())
-                    {
-                        return ((IEnumerable<KeyValuePair<TKey, int>>)[]).GetEnumerator();
-                    }
-
-                    return BuildCountDictionary(enumerator, aParams.KeySelector, aParams.KeyComparer).GetEnumerator();
-                });
-        }
-#pragma warning restore CA1859
-
-        private sealed class LazyEnumerable<TParams, TSource>(TParams aParams, Func<TParams, IEnumerator<TSource>> getEnumerator) : IEnumerable<TSource>
-        {
-            public IEnumerator<TSource> GetEnumerator() => getEnumerator(aParams);
+                return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
+            }
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
