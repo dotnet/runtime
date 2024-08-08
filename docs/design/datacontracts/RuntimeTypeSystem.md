@@ -88,19 +88,7 @@ struct MethodDescHandle
 {
     // no public properties or constructors
 
-    public TargetPointer Address { get; }
-    public bool IsNull => Address != 0;
-}
-
-struct TypeHandle
-{
-}
-
-internal enum CorElementType
-{
-    // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
-    // + 
-    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata separate from a live process.
+    internal TargetPointer Address { get; }
 }
 ```
 
