@@ -48,9 +48,16 @@
 #define ByteSwap64 __builtin_bswap64
 #endif // MSC_VER
 
+template<class T>
+class EventArray
+{
+public:
+    uint8_t Count;
+    T* Data;
+};
+
 namespace gc_event
 {
-
 /*
  * `EventSerializatonTraits` is a trait implemented by types that
  * can be serialized to the payload of a dynamic event.
@@ -164,6 +171,45 @@ struct EventSerializationTraits<float>
     static size_t SerializedSize(const float& value)
     {
         return sizeof(float);
+    }
+};
+
+template<class T>
+struct EventSerializationTraits<EventArray<T>>
+{
+    static void Serialize(const EventArray<T>& value, uint8_t** pBuffer)
+    {
+        uint8_t* buffer = *pBuffer;
+        buffer[0] = value.Count;
+        buffer += 1;
+        for (uint8_t i = 0; i < value.Count; i++)
+        {
+            EventSerializationTraits<T>::Serialize(value.Data[i], &buffer);
+        }
+        *pBuffer = buffer;
+    }
+
+    static size_t SerializedSize(const EventArray<T>& value)
+    {
+        if (value.Count == 0)
+        {
+            return sizeof(uint8_t);
+        }
+        else
+        {
+            size_t elementSize = EventSerializationTraits<T>::SerializedSize(value.Data[0]);
+#ifdef DEBUG
+            //
+            // To support fast deserialization, we explicitly do not support arrays with 
+            // unequal element size.
+            //
+            for (int i = 1; i < value.Count; i++)
+            {
+                assert (elementSize == EventSerializationTraits<T>::SerializedSize(value.Data[i]));
+            }
+#endif //DEBUG
+            return sizeof(uint8_t) + elementSize * value.Count;
+        }
     }
 };
 
