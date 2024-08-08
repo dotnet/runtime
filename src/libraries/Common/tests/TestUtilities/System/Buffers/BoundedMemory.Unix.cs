@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
+using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
+#if !NETFRAMEWORK
     public static unsafe partial class BoundedMemory
     {
         private static UnixImplementation<T> AllocateWithoutDataPopulationUnix<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
@@ -14,13 +17,13 @@ namespace System.Buffers
 
         private sealed class UnixImplementation<T> : BoundedMemory<T> where T : unmanaged
         {
-            private readonly AllocHGlobalHandle _handle;
+            private readonly MMapHandle _handle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
 
             public UnixImplementation(int elementCount, PoisonPagePlacement placement)
             {
-                _handle = AllocHGlobalHandle.Allocate(checked(elementCount * (nint)sizeof(T)), placement);
+                _handle = MMapHandle.Allocate(checked(elementCount * (nint)sizeof(T)), placement);
                 _elementCount = elementCount;
                 _memoryManager = new BoundedMemoryManager(this);
             }
@@ -113,31 +116,25 @@ namespace System.Buffers
             }
         }
 
-        private sealed class AllocHGlobalHandle : SafeHandle
+        private sealed class MMapHandle : SafeHandle
         {
             private IntPtr buffer;
             private ulong allocationSize;
 
             // Called by P/Invoke when returning SafeHandles
-            private AllocHGlobalHandle(IntPtr buffer, ulong allocationSize)
+            private MMapHandle(IntPtr buffer, ulong allocationSize)
                 : base(IntPtr.Zero, ownsHandle: true)
             {
                 this.buffer = buffer;
                 this.allocationSize = allocationSize;
             }
 
-            internal static AllocHGlobalHandle Allocate(nint byteLength, PoisonPagePlacement placement)
+            internal static MMapHandle Allocate(nint byteLength, PoisonPagePlacement placement)
             {
-
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
-                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-                if (buffer == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException($"Memory allocation failed with error {Marshal.GetLastPInvokeError()}.");
-                }
+                IntPtr buffer = MMap(0, (ulong)allocationSize, (int)(MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE), (int)(MemoryMappedFlags.MAP_PRIVATE | MemoryMappedFlags.MAP_ANONYMOUS), -1, 0);
 
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
                 // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
@@ -154,12 +151,12 @@ namespace System.Buffers
                 }
 
                 // Protect the page before/after based on the poison page placement.
-                if (mprotect(poisonPageAddress, (ulong) pageSize, PROT_NONE) == -1)
+                if (MProtect(poisonPageAddress, (ulong)pageSize, (int)MemoryMappedProtections.PROT_NONE) == -1)
                 {
                     throw new InvalidOperationException($"Failed to mark page as a poison page using mprotect with error :{Marshal.GetLastPInvokeError()}.");
                 }
 
-                AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, (ulong)allocationSize);
+                MMapHandle retVal = new MMapHandle(buffer, (ulong)allocationSize);
                 retVal.SetHandle(baseAddress); // this base address would be used as the start of Span that is used during unit testing.
                 return retVal;
             }
@@ -168,24 +165,39 @@ namespace System.Buffers
 
             protected override bool ReleaseHandle()
             {
-                return munmap(buffer, allocationSize) == 0;
+                MUnmap(buffer, allocationSize);
+                return true;
             }
 
-             // Defined in <sys/mman.h>
-            const int MAP_PRIVATE = 0x2;
-            const int MAP_ANONYMOUS = 0x20;
-            const int PROT_NONE = 0x0;
-            const int PROT_READ = 0x1;
-            const int PROT_WRITE = 0x2;
+            [Flags]
+            private enum MemoryMappedProtections
+            {
+                PROT_NONE = 0x0,
+                PROT_READ = 0x1,
+                PROT_WRITE = 0x2,
+                PROT_EXEC = 0x4
+            }
 
-            [DllImport("libc", SetLastError = true)]
-            static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
+            [Flags]
+            private enum MemoryMappedFlags
+            {
+                MAP_SHARED = 0x01,
+                MAP_PRIVATE = 0x02,
+                MAP_ANONYMOUS = 0x10,
+            }
 
-            [DllImport("libc", SetLastError = true)]
-            static extern IntPtr munmap(IntPtr address, ulong length);
+            private const string SystemNative = "libSystem.Native";
 
-            [DllImport("libc", SetLastError = true)]
-            static extern int mprotect(IntPtr address, ulong length, int prot);
+            // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
+            private static extern IntPtr MMap(IntPtr addr, ulong len, int prot, int flags, IntPtr fd, long offset);
+
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MProtect", SetLastError = true)]
+            private static extern int MProtect(IntPtr addr, ulong len, int prot);
+
+            [DllImport(SystemNative, EntryPoint = "SystemNative_MUnmap", SetLastError = true)]
+            internal static extern int MUnmap(IntPtr addr, ulong len);
         }
     }
+#endif
 }

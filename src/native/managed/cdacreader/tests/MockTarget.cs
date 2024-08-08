@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class MockTarget
 {
-    public struct Architecture
+    public record struct Architecture
     {
         public bool IsLittleEndian { get; init; }
         public bool Is64Bit { get; init; }

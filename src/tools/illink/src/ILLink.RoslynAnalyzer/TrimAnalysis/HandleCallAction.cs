@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -27,18 +28,19 @@ namespace ILLink.Shared.TrimAnalysis
 		ValueSetLattice<SingleValue> _multiValueLattice;
 
 		public HandleCallAction (
-			in DiagnosticContext diagnosticContext,
+			Location location,
 			ISymbol owningSymbol,
 			IOperation operation,
-			ValueSetLattice<SingleValue> multiValueLattice)
+			ValueSetLattice<SingleValue> multiValueLattice,
+			Action<Diagnostic>? reportDiagnostic)
 		{
 			_owningSymbol = owningSymbol;
 			_operation = operation;
 			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
-			_diagnosticContext = diagnosticContext;
+			_diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			_annotations = FlowAnnotations.Instance;
-			_reflectionAccessAnalyzer = default;
-			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, _reflectionAccessAnalyzer);
+			_reflectionAccessAnalyzer = new (reportDiagnostic);
+			_requireDynamicallyAccessedMembersAction = new (_diagnosticContext, _reflectionAccessAnalyzer);
 			_multiValueLattice = multiValueLattice;
 		}
 
@@ -113,6 +115,8 @@ namespace ILLink.Shared.TrimAnalysis
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
 							AddReturnValue (new SystemTypeValue (new (staticType)));
+						} else if (staticType.IsTypeOf ("System", "Enum")) {
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
 							var annotation = FlowAnnotations.GetTypeAnnotation (staticType);
 							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
@@ -199,25 +203,25 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial void MarkStaticConstructor (TypeProxy type)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, BindingFlags.Static, parameterCount: 0);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext.Location, type.Type, BindingFlags.Static, parameterCount: 0);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (_diagnosticContext.Location, type.Type, name, bindingFlags);
 
 		private partial void MarkFieldsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForFieldsOnTypeHierarchy (_diagnosticContext.Location, type.Type, name, bindingFlags);
 
 		private partial void MarkPropertiesOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPropertiesOnTypeHierarchy (_diagnosticContext.Location, type.Type, name, bindingFlags);
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPublicParameterlessConstructor (_diagnosticContext, type.Type);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPublicParameterlessConstructor (_diagnosticContext.Location, type.Type);
 
 		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, bindingFlags, parameterCount);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext.Location, type.Type, bindingFlags, parameterCount);
 
 		private partial void MarkMethod (MethodProxy method)
-			=> ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForMethod (_diagnosticContext, method.Method);
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForMethod (_diagnosticContext.Location, method.Method);
 
 		// TODO: Does the analyzer need to do something here?
 		private partial void MarkType (TypeProxy type) { }
@@ -227,7 +231,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (method.Method.MethodKind == MethodKind.PropertyGet || method.Method.MethodKind == MethodKind.PropertySet) {
 				var property = (IPropertySymbol) method.Method.AssociatedSymbol!;
 				Debug.Assert (property != null);
-				ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForProperty (_diagnosticContext, property!);
+				_reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForProperty (_diagnosticContext.Location, property!);
 				return true;
 			}
 

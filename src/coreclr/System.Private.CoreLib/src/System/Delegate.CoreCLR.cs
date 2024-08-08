@@ -482,10 +482,35 @@ namespace System
         private extern void DelegateConstruct(object target, IntPtr slot);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetMulticastInvoke();
+        private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
+        private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
+
+        internal unsafe IntPtr GetMulticastInvoke()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            void* ptr = GetMulticastInvoke(pMT);
+            if (ptr == null)
+            {
+                ptr = GetMulticastInvokeSlow(pMT);
+                Debug.Assert(ptr != null);
+                Debug.Assert(ptr == GetMulticastInvoke(pMT));
+            }
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
+            return (IntPtr)ptr;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern IntPtr GetInvokeMethod();
+        private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
+
+        internal unsafe IntPtr GetInvokeMethod()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            void* ptr = GetInvokeMethod(pMT);
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
+            return (IntPtr)ptr;
+        }
 
         internal IRuntimeMethodInfo FindMethodHandle()
         {

@@ -743,7 +743,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
-                // On LOONGARCH64 struct that is 1-16 bytes is passed by value in one/two register(s)
+                // On LOONGARCH64 and RISCV64 struct that is 1-16 bytes is passed by value in one/two register(s)
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
