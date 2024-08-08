@@ -520,7 +520,7 @@ public:
             MemberRefEntry& entry = m_memberRefs[i];
             hash = _rotl(hash, 1) + entry.Type;
             hash = _rotl(hash, 1) + entry.ClassSignatureToken;
-            hash = _rotl(hash, 1) + (int)entry.Entry.Method;
+            hash = _rotl(hash, 1) + (int)(size_t)entry.Entry.Method;
         }
 
         for (COUNT_T i = 0; i < m_methodSpecs.GetCount(); i++)
@@ -529,7 +529,7 @@ public:
             MethodSpecEntry& entry = m_methodSpecs[i];
             hash = _rotl(hash, 1) + entry.ClassSignatureToken;
             hash = _rotl(hash, 1) + entry.MethodSignatureToken;
-            hash = _rotl(hash, 1) + (int)entry.Method;
+            hash = _rotl(hash, 1) + (int)(size_t)entry.Method;
         }
 
         return hash;
