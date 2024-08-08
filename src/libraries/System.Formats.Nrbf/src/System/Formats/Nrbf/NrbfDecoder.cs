@@ -115,6 +115,7 @@ public static class NrbfDecoder
     /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
     /// encounters an invalid UTF8 sequence.</exception>
+    /// <exception cref="EndOfStreamException">The end of the stream is reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Decode(payload, out _, options, leaveOpen);
 
