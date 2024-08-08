@@ -25693,7 +25693,6 @@ void gc_heap::calculate_new_heap_count ()
 
     assert (new_n_heaps >= 1);
     assert (new_n_heaps <= actual_n_max_heaps);
-#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     if (process_eph_samples_p)
     {
@@ -25719,6 +25718,8 @@ void gc_heap::calculate_new_heap_count ()
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
     }
+
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     if (new_n_heaps != n_heaps)
     {
