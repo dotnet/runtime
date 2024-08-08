@@ -5700,20 +5700,23 @@ public:
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
-    jitstd::vector<unsigned>* m_specialCopyArgs;
+    bool* m_specialCopyArgs;
     bool recordArgRequiresSpecialCopy(unsigned argNum)
     {
         if (m_specialCopyArgs == nullptr)
         {
-            m_specialCopyArgs = new (getAllocator()) jitstd::vector<unsigned>(getAllocator());
+            m_specialCopyArgs = new (getAllocator()) bool[info.compMethodInfo->args.numArgs];
+            memset(m_specialCopyArgs, 0, info.compMethodInfo->args.numArgs * sizeof(bool));
         }
-        m_specialCopyArgs->push_back(argNum);
+        assert(argNum < info.compMethodInfo->args.numArgs);
+        m_specialCopyArgs[argNum] = true;
         return true;
     }
 
     bool argRequiresSpecialCopy(unsigned argNum)
     {
-        return m_specialCopyArgs != nullptr && std::find(m_specialCopyArgs->begin(), m_specialCopyArgs->end(), argNum) != m_specialCopyArgs->end();
+        assert(argNum < info.compMethodInfo->args.numArgs);
+        return m_specialCopyArgs != nullptr && m_specialCopyArgs[argNum];
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
