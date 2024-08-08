@@ -30,8 +30,8 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void GetInstanceMethodIsReflectable()
         {
-            // The startup code in S.P.C needs to be able to get the MetricsEventSource instance via reflection. See EventSource.InitializeDefaultEventSources() in
-            // the S.P.C source.
+            // The startup code in System.Private.CoreLib needs to be able to get the MetricsEventSource instance via reflection. See EventSource.InitializeDefaultEventSources() in
+            // the System.Private.CoreLib source.
             // Even though the the type isn't public this test ensures the GetInstance() API isn't removed or renamed.
             Type? metricsEventSourceType = Type.GetType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource", throwOnError: false);
             Assert.True(metricsEventSourceType != null, "Unable to get MetricsEventSource type via reflection");

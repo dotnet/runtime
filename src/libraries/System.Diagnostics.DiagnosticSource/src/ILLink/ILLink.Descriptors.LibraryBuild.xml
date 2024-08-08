@@ -1,7 +1,7 @@
 ﻿<linker>
   <assembly fullname="System.Diagnostics.DiagnosticSource">
     <type fullname="System.Diagnostics.Metrics.MetricsEventSource">
-      <!-- Used by S.P.C via reflection to init the EventSource -->
+      <!-- Used by System.Private.CoreLib via reflection to init the EventSource -->
       <method name="GetInstance" />
     </type>
   </assembly>

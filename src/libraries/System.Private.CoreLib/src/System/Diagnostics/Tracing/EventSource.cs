@@ -2407,19 +2407,19 @@ namespace System.Diagnostics.Tracing
             public OverrideEventProvider(Func<EventSource?> eventSourceFactory, EventProviderType providerType)
                 : base(providerType)
             {
-                this.m_eventSourceFactory = eventSourceFactory;
-                this.m_eventProviderType = providerType;
+                _eventSourceFactory = eventSourceFactory;
+                _eventProviderType = providerType;
             }
             internal override void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments,
                                                               int perEventSourceSessionId)
             {
                 // We use null to represent the ETW EventListener.
                 EventListener? listener = null;
-                m_eventSourceFactory()?.SendCommand(listener, m_eventProviderType, perEventSourceSessionId,
+                _eventSourceFactory()?.SendCommand(listener, _eventProviderType, perEventSourceSessionId,
                                           (EventCommand)command, IsEnabled(), Level, MatchAnyKeyword, arguments);
             }
-            private readonly Func<EventSource?> m_eventSourceFactory;
-            private readonly EventProviderType m_eventProviderType;
+            private readonly Func<EventSource?> _eventSourceFactory;
+            private readonly EventProviderType _eventProviderType;
         }
 
         /// <summary>
@@ -3833,7 +3833,7 @@ namespace System.Diagnostics.Tracing
             // pulling the System.Diagnostics.DiagnosticSource assembly into the process until it is needed.
             if (AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true)
             {
-                string name = "System.Diagnostics.Metrics";
+                const string name = "System.Diagnostics.Metrics";
                 Guid id = new Guid("20752bc4-c151-50f5-f27b-df92d8af5a61");
                 PreregisterEventProviders(id, name, GetMetricsEventSource);
             }
@@ -3869,6 +3869,10 @@ namespace System.Diagnostics.Tracing
             //    traits but the SetInformation() call we use below generates metadata from name only. If we want traits support
             //    in the future it could be added.
 
+            // NOTE: You might think this preregister logic could be simplified by using an Action to create the EventSource instead of
+            // Func<EventSource> and then allow the EventSource to initialize as normal. This doesn't work however because calling
+            // EtwEventProvider.Register() inside of an ETW callback deadlocks. Instead we have to bind the EventSource to the
+            // EtwEventProvider that was already registered and use the callback we got on that provider to invoke EventSource.SendCommand().
             try
             {
                 s_preregisteredEventSourceFactories.Add(eventSourceFactory);
@@ -3936,26 +3940,24 @@ namespace System.Diagnostics.Tracing
         {
             lock (s_preregisteredEtwProviders)
             {
-                s_preregisteredEtwProviders.TryGetValue(id, out OverrideEventProvider? provider);
-                s_preregisteredEtwProviders.Remove(id);
+                s_preregisteredEtwProviders.Remove(id, out OverrideEventProvider? provider);
                 return provider;
             }
         }
 
-        private static Dictionary<Guid, OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, OverrideEventProvider>();
+        private static readonly Dictionary<Guid, OverrideEventProvider> s_preregisteredEtwProviders = new Dictionary<Guid, OverrideEventProvider>();
 
 #if FEATURE_PERFTRACING
         private static OverrideEventProvider? TryGetPreregisteredEventPipeProvider(string name)
         {
             lock (s_preregisteredEventPipeProviders)
             {
-                s_preregisteredEventPipeProviders.TryGetValue(name, out OverrideEventProvider? provider);
-                s_preregisteredEventPipeProviders.Remove(name);
+                s_preregisteredEventPipeProviders.Remove(name, out OverrideEventProvider? provider);
                 return provider;
             }
         }
 
-        private static Dictionary<string, OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, OverrideEventProvider>();
+        private static readonly Dictionary<string, OverrideEventProvider> s_preregisteredEventPipeProviders = new Dictionary<string, OverrideEventProvider>();
 #endif
 
         // private instance state
