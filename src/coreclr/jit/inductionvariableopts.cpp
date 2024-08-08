@@ -359,6 +359,66 @@ void LoopLocalOccurrences::Invalidate(FlowGraphNaturalLoop* loop)
     }
 }
 
+class LoopOptimizationInfo
+{
+    Compiler*                 m_comp;
+    ArrayStack<Scev*>         m_backEdgeBounds;
+    SimplificationAssumptions m_simplAssumptions;
+
+public:
+    LoopOptimizationInfo(Compiler* comp)
+        : m_comp(comp)
+        , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
+    {
+    }
+
+    void Initialize(ScalarEvolutionContext& context, FlowGraphNaturalLoop* loop);
+
+    ArrayStack<Scev*>& GetBackEdgeBounds()
+    {
+        return m_backEdgeBounds;
+    }
+
+    const SimplificationAssumptions& GetSimplificationAssumptions()
+    {
+        return m_simplAssumptions;
+    }
+};
+
+void LoopOptimizationInfo::Initialize(ScalarEvolutionContext& context, FlowGraphNaturalLoop* loop)
+{
+    m_comp->optVisitBoundingExitingCondBlocks(loop, [=, &context](BasicBlock* exiting) {
+        Scev* exitNotTakenCount = context.ComputeExitNotTakenCount(exiting);
+        if (exitNotTakenCount != nullptr)
+        {
+            m_backEdgeBounds.Push(exitNotTakenCount);
+        }
+    });
+
+    m_simplAssumptions.BackEdgeTakenBound    = m_backEdgeBounds.Data();
+    m_simplAssumptions.NumBackEdgeTakenBound = static_cast<unsigned>(m_backEdgeBounds.Height());
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("  Bound on backedge taken count is ");
+        if (m_simplAssumptions.NumBackEdgeTakenBound == 0)
+        {
+            printf("<unknown>\n");
+        }
+
+        const char* pref = m_simplAssumptions.NumBackEdgeTakenBound > 1 ? "min(" : "";
+        for (unsigned i = 0; i < m_simplAssumptions.NumBackEdgeTakenBound; i++)
+        {
+            printf("%s", pref);
+            m_simplAssumptions.BackEdgeTakenBound[i]->Dump(m_comp);
+        }
+
+        printf("%s\n", m_simplAssumptions.NumBackEdgeTakenBound > 1 ? ")" : "");
+    }
+#endif
+}
+
 //------------------------------------------------------------------------
 // optCanSinkWidenedIV: Check to see if we are able to sink a store to the old
 // local into the exits of a loop if we decide to widen.
@@ -605,18 +665,32 @@ void Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNa
 // specified statement.
 //
 // Parameters:
-//   lclNum    - Narrow version of primary induction variable
-//   newLclNum - Wide version of primary induction variable
-//   stmt      - The statement to replace uses in.
+//   lclNum      - Narrow version of primary induction variable
+//   newLclNum   - Wide version of primary induction variable
+//   block       - Block containing the statement
+//   stmt        - The statement to replace uses in.
+//   scevContext - SCEV context. nullptr if replacements are not being made inside a loop.
+//   loopOptInfo - Information about the loop to use for optimizing. Used to
+//   widen operations on the IV being replaced. nullptr if replacements are not
+//   being made inside a loop.
 //
-void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt)
+void Compiler::optReplaceWidenedIV(unsigned                lclNum,
+                                   unsigned                ssaNum,
+                                   unsigned                newLclNum,
+                                   BasicBlock*             block,
+                                   Statement*              stmt,
+                                   ScalarEvolutionContext* scevContext,
+                                   LoopOptimizationInfo*   loopOptInfo)
 {
     struct ReplaceVisitor : GenTreeVisitor<ReplaceVisitor>
     {
     private:
-        unsigned m_lclNum;
-        unsigned m_ssaNum;
-        unsigned m_newLclNum;
+        unsigned                m_lclNum;
+        unsigned                m_ssaNum;
+        unsigned                m_newLclNum;
+        BasicBlock*             m_block;
+        ScalarEvolutionContext* m_scevContext;
+        LoopOptimizationInfo*   m_loopOptInfo;
 
         bool IsLocal(GenTreeLclVarCommon* tree)
         {
@@ -632,11 +706,20 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
             DoPreOrder = true,
         };
 
-        ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned ssaNum, unsigned newLclNum)
+        ReplaceVisitor(Compiler*               comp,
+                       unsigned                lclNum,
+                       unsigned                ssaNum,
+                       unsigned                newLclNum,
+                       BasicBlock*             block,
+                       ScalarEvolutionContext* scevContext,
+                       LoopOptimizationInfo*   loopOptInfo)
             : GenTreeVisitor(comp)
             , m_lclNum(lclNum)
             , m_ssaNum(ssaNum)
             , m_newLclNum(newLclNum)
+            , m_block(block)
+            , m_scevContext(scevContext)
+            , m_loopOptInfo(loopOptInfo)
         {
         }
 
@@ -668,10 +751,20 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
                         break;
                     case GT_STORE_LCL_VAR:
                     {
-                        node->AsLclVarCommon()->SetLclNum(m_newLclNum);
-                        node->gtType = TYP_LONG;
+                        GenTreeLclVarCommon* store = node->AsLclVarCommon();
+
+                        store->SetLclNum(m_newLclNum);
+                        store->gtType = TYP_LONG;
+
+                        if (WidenSourceOperation(store->Data()))
+                        {
+                            assert(store->Data()->TypeIs(TYP_LONG));
+                            return fgWalkResult::WALK_SKIP_SUBTREES;
+                        }
+
                         node->AsLclVarCommon()->Data() =
                             m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+
                         break;
                     }
                     case GT_LCL_FLD:
@@ -687,9 +780,86 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 
             return fgWalkResult::WALK_CONTINUE;
         }
+
+        //------------------------------------------------------------------------
+        // WidenSourceOperation: Try widening a node to be computed directly
+        // with TYP_LONG precision, if it can be proven to be safe.
+        //
+        // Parameters:
+        //   data - The node
+        //
+        // Remarks:
+        //   Generally the widening need to be done by doing the source
+        //   operation in 32-bit arithmetic and then zero extending it. This
+        //   guarantees that the top 32 bits are zeroes.
+        //
+        //   In many cases, however, for the self-update of the IV we can prove
+        //   that it can be done in 64-bit arithmetic directly.
+        //
+        bool WidenSourceOperation(GenTree* data)
+        {
+            if (m_scevContext == nullptr)
+            {
+                return false;
+            }
+
+            if (!data->OperIs(GT_ADD, GT_SUB) || data->gtOverflow())
+            {
+                return false;
+            }
+
+            GenTree* op1 = data->gtGetOp1();
+            if (!op1->OperIs(GT_LCL_VAR) || !IsLocal(op1->AsLclVarCommon()))
+            {
+                return false;
+            }
+
+            GenTree* op2 = data->gtGetOp2();
+            if (!op2->IsCnsIntOrI())
+            {
+                return false;
+            }
+
+            Scev* unwidenedScev = m_scevContext->Analyze(m_block, data);
+            if (unwidenedScev == nullptr)
+            {
+                return false;
+            }
+
+            // Simplify the SCEV, which at this point is usually Add(<L, start, step>, step).
+            // This should distribute the step.
+            unwidenedScev = m_scevContext->Simplify(unwidenedScev, m_loopOptInfo->GetSimplificationAssumptions());
+            if (!unwidenedScev->OperIs(ScevOper::AddRec))
+            {
+                return false;
+            }
+
+            // Now add an extension on top and see if the simplifier is able to
+            // convert zext(<L, start, step> into a 64-bit add recurrence.
+            assert(unwidenedScev->TypeIs(TYP_INT));
+            Scev* widenedScev = m_scevContext->NewExtension(ScevOper::ZeroExtend, TYP_LONG, unwidenedScev);
+            widenedScev       = m_scevContext->Simplify(widenedScev, m_loopOptInfo->GetSimplificationAssumptions());
+
+            assert(widenedScev->TypeIs(TYP_LONG));
+
+            if (!widenedScev->OperIs(ScevOper::AddRec))
+            {
+                return false;
+            }
+
+            // Success; make the update.
+            data->gtType             = TYP_LONG;
+            data->gtGetOp1()->gtType = TYP_LONG;
+            data->gtGetOp1()->AsLclVarCommon()->SetLclNum(m_newLclNum);
+            data->gtGetOp2()->gtType = TYP_LONG;
+            ssize_t iconVal          = data->gtGetOp2()->AsIntCon()->gtIconVal;
+            iconVal                  = static_cast<ssize_t>(static_cast<uint32_t>(iconVal));
+            data->gtGetOp2()->AsIntConCommon()->SetIconValue(iconVal);
+            return true;
+        }
     };
 
-    ReplaceVisitor visitor(this, lclNum, ssaNum, newLclNum);
+    ReplaceVisitor visitor(this, lclNum, ssaNum, newLclNum, block, scevContext, loopOptInfo);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     if (visitor.MadeChanges)
     {
@@ -738,7 +908,7 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
         DISPSTMT(stmt);
         JITDUMP("\n");
 
-        optReplaceWidenedIV(lclNum, ssaNum, newLclNum, stmt);
+        optReplaceWidenedIV(lclNum, ssaNum, newLclNum, block, stmt, nullptr, nullptr);
     }
 
     block->VisitRegularSuccs(this, [=](BasicBlock* succ) {
@@ -757,6 +927,7 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
 // Parameters:
 //   scevContext - Context for scalar evolution
 //   loop        - The loop
+//   loopOptInfo - Information to use when optimizing the loop
 //   loopLocals  - Data structure for locals occurrences
 //
 // Returns:
@@ -764,6 +935,7 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
 //
 bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
                            FlowGraphNaturalLoop*   loop,
+                           LoopOptimizationInfo&   loopOptInfo,
                            LoopLocalOccurrences*   loopLocals)
 {
     JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
@@ -812,7 +984,7 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
             continue;
         }
 
-        if (optWidenPrimaryIV(loop, lclNum, addRec, loopLocals))
+        if (optWidenPrimaryIV(scevContext, loop, lclNum, addRec, loopOptInfo, loopLocals))
         {
             numWidened++;
         }
@@ -826,15 +998,22 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
 // optWidenPrimaryIV: Attempt to widen a primary IV.
 //
 // Parameters:
-//   loop       - The loop
-//   lclNum     - The primary IV
-//   addRec     - The add recurrence for the primary IV
-//   loopLocals - Data structure for locals occurrences
+//   scevContext - Scalar evolution analysis context
+//   loop        - The loop
+//   lclNum      - The primary IV
+//   addRec      - The add recurrence for the primary IV
+//   loopOptInfo - Information to use when optimizing the loop
+//   loopLocals  - Data structure for locals occurrences
 //
-bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                                 unsigned              lclNum,
-                                 ScevAddRec*           addRec,
-                                 LoopLocalOccurrences* loopLocals)
+// Returns:
+//   True if the primary IV was widened; otherwise false.
+//
+bool Compiler::optWidenPrimaryIV(ScalarEvolutionContext& scevContext,
+                                 FlowGraphNaturalLoop*   loop,
+                                 unsigned                lclNum,
+                                 ScevAddRec*             addRec,
+                                 LoopOptimizationInfo&   loopOptInfo,
+                                 LoopLocalOccurrences*   loopLocals)
 {
     LclVarDsc* lclDsc = lvaGetDesc(lclNum);
     if (lclDsc->TypeGet() != TYP_INT)
@@ -963,11 +1142,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
 
     JITDUMP("    Replacing inside the loop\n");
 
-    auto replace = [this, lclNum, newLclNum](BasicBlock* block, Statement* stmt) {
+    auto replace = [=, &scevContext, &loopOptInfo](BasicBlock* block, Statement* stmt) {
         JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum, dspTreeID(stmt->GetRootNode()));
         DISPSTMT(stmt);
         JITDUMP("\n");
-        optReplaceWidenedIV(lclNum, SsaConfig::RESERVED_SSA_NUM, newLclNum, stmt);
+        optReplaceWidenedIV(lclNum, SsaConfig::RESERVED_SSA_NUM, newLclNum, block, stmt, &scevContext, &loopOptInfo);
         return true;
     };
 
@@ -1327,14 +1506,12 @@ class StrengthReductionContext
     Compiler*               m_comp;
     ScalarEvolutionContext& m_scevContext;
     FlowGraphNaturalLoop*   m_loop;
+    LoopOptimizationInfo&   m_loopOptInfo;
     LoopLocalOccurrences&   m_loopLocals;
 
-    ArrayStack<Scev*>         m_backEdgeBounds;
-    SimplificationAssumptions m_simplAssumptions;
-    ArrayStack<CursorInfo>    m_cursors1;
-    ArrayStack<CursorInfo>    m_cursors2;
+    ArrayStack<CursorInfo> m_cursors1;
+    ArrayStack<CursorInfo> m_cursors2;
 
-    void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
@@ -1356,12 +1533,13 @@ public:
     StrengthReductionContext(Compiler*               comp,
                              ScalarEvolutionContext& scevContext,
                              FlowGraphNaturalLoop*   loop,
+                             LoopOptimizationInfo&   loopOptInfo,
                              LoopLocalOccurrences&   loopLocals)
         : m_comp(comp)
         , m_scevContext(scevContext)
         , m_loop(loop)
+        , m_loopOptInfo(loopOptInfo)
         , m_loopLocals(loopLocals)
-        , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors1(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors2(comp->getAllocator(CMK_LoopIVOpts))
     {
@@ -1387,9 +1565,6 @@ bool StrengthReductionContext::TryStrengthReduce()
         JITDUMP("  Disabled: no stress mode\n");
         return false;
     }
-
-    // Compute information about the loop used to simplify SCEVs.
-    InitializeSimplificationAssumptions();
 
     JITDUMP("  Considering primary IVs\n");
 
@@ -1424,7 +1599,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             continue;
         }
 
-        candidate = m_scevContext.Simplify(candidate, m_simplAssumptions);
+        candidate = m_scevContext.Simplify(candidate, m_loopOptInfo.GetSimplificationAssumptions());
 
         JITDUMP("  => ");
         DBEXEC(m_comp->verbose, candidate->Dump(m_comp));
@@ -1526,44 +1701,6 @@ bool StrengthReductionContext::TryStrengthReduce()
 }
 
 //------------------------------------------------------------------------
-// InitializeSimplificationAssumptions: Compute assumptions that can be used
-// when simplifying SCEVs.
-//
-void StrengthReductionContext::InitializeSimplificationAssumptions()
-{
-    m_comp->optVisitBoundingExitingCondBlocks(m_loop, [=](BasicBlock* exiting) {
-        Scev* exitNotTakenCount = m_scevContext.ComputeExitNotTakenCount(exiting);
-        if (exitNotTakenCount != nullptr)
-        {
-            m_backEdgeBounds.Push(exitNotTakenCount);
-        }
-    });
-
-    m_simplAssumptions.BackEdgeTakenBound    = m_backEdgeBounds.Data();
-    m_simplAssumptions.NumBackEdgeTakenBound = static_cast<unsigned>(m_backEdgeBounds.Height());
-
-#ifdef DEBUG
-    if (m_comp->verbose)
-    {
-        printf("  Bound on backedge taken count is ");
-        if (m_simplAssumptions.NumBackEdgeTakenBound == 0)
-        {
-            printf("<unknown>\n");
-        }
-
-        const char* pref = m_simplAssumptions.NumBackEdgeTakenBound > 1 ? "min(" : "";
-        for (unsigned i = 0; i < m_simplAssumptions.NumBackEdgeTakenBound; i++)
-        {
-            printf("%s", pref);
-            m_simplAssumptions.BackEdgeTakenBound[i]->Dump(m_comp);
-        }
-
-        printf("%s\n", m_simplAssumptions.NumBackEdgeTakenBound > 1 ? ")" : "");
-    }
-#endif
-}
-
-//------------------------------------------------------------------------
 // InitializeCursors: Reset and initialize both cursor lists with information about all
 // uses of the specified primary IV.
 //
@@ -1623,7 +1760,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 
         // If we _did_ manage to analyze it then we expect it to be the same IV
         // as the primary IV.
-        assert(Scev::Equals(m_scevContext.Simplify(iv, m_simplAssumptions), primaryIV));
+        assert(Scev::Equals(m_scevContext.Simplify(iv, m_loopOptInfo.GetSimplificationAssumptions()), primaryIV));
 
         m_cursors1.Emplace(block, stmt, tree, primaryIV);
         m_cursors2.Emplace(block, stmt, tree, primaryIV);
@@ -1765,7 +1902,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
                 break;
             }
 
-            parentIV = m_scevContext.Simplify(parentIV, m_simplAssumptions);
+            parentIV = m_scevContext.Simplify(parentIV, m_loopOptInfo.GetSimplificationAssumptions());
             assert(parentIV != nullptr);
             if (!parentIV->OperIs(ScevOper::AddRec))
             {
@@ -1928,9 +2065,9 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     // than the array/string's length.
     ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
-    for (int i = 0; i < m_backEdgeBounds.Height(); i++)
+    for (int i = 0; i < m_loopOptInfo.GetBackEdgeBounds().Height(); i++)
     {
-        Scev* bound = m_backEdgeBounds.Bottom(i);
+        Scev* bound = m_loopOptInfo.GetBackEdgeBounds().Bottom(i);
         if (!bound->TypeIs(TYP_INT))
         {
             // Currently cannot handle bounds that aren't 32 bit.
@@ -2432,7 +2569,10 @@ PhaseStatus Compiler::optInductionVariables()
             continue;
         }
 
-        StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopLocals);
+        LoopOptimizationInfo loopOptInfo(this);
+        loopOptInfo.Initialize(scevContext, loop);
+
+        StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopOptInfo, loopLocals);
         if (strengthReductionContext.TryStrengthReduce())
         {
             Metrics.LoopsStrengthReduced++;
@@ -2449,7 +2589,7 @@ PhaseStatus Compiler::optInductionVariables()
         // addressing modes can include the zero/sign-extension of the index
         // for free.
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
-        if (optWidenIVs(scevContext, loop, &loopLocals))
+        if (optWidenIVs(scevContext, loop, loopOptInfo, &loopLocals))
         {
             Metrics.LoopsIVWidened++;
             changed = true;

@@ -1701,8 +1701,9 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     // We need to verify this condition for all i < bound where a = start, b =
     // step + i.
     //
-    // For now, we only handle the super duper simple case of unsigned bounds
-    // with addRec = <L, 0, 1> and a TYP_INT bound.
+    // For now, we only handle the simple cases of unsigned bounds with
+    // addRec = <L, 0, 1> and a TYP_INT bound, or where we can easily see that
+    // the bound is small enough to not overflow the starting value.
     //
     if (signedBound)
     {
@@ -1710,7 +1711,7 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     }
 
     int64_t startCns;
-    if (addRec->Start->GetConstantValue(m_comp, &startCns) && (startCns != 0))
+    if (!addRec->Start->GetConstantValue(m_comp, &startCns))
     {
         return true;
     }
@@ -1724,7 +1725,30 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     for (unsigned i = 0; i < assumptions.NumBackEdgeTakenBound; i++)
     {
         Scev* bound = assumptions.BackEdgeTakenBound[i];
-        if (bound->TypeIs(TYP_INT))
+        if (!bound->TypeIs(TYP_INT))
+        {
+            continue;
+        }
+
+        // We need to show start + bound <= uint32 max <-> start <= uint32 max - bound.
+        // We most often have a bound of the form x - c, so it suffices to show
+        // start <= c -> start <= (uint32 max - x) + c -> -> start <= uint32 max - (x - c)
+        // (since we know x <= uint32 max from typing).
+
+        if (startCns == 0)
+        {
+            // The bound as a whole is always <= uint32 max given the TYP_INT
+            // type, so starting at 0 we will never overflow.
+            return false;
+        }
+
+        // Otherwise we need to prove that the bound is sufficiently smaller
+        // than the max value. Look for the x - c shape described above.
+        int64_t boundOffset;
+        Scev*   boundBase = bound->PeelAdditions(&boundOffset);
+        boundOffset       = static_cast<int32_t>(boundOffset);
+
+        if (startCns <= -boundOffset)
         {
             return false;
         }

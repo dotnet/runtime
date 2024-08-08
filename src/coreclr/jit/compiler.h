@@ -88,6 +88,7 @@ class OptBoolsDsc;          // defined in optimizer.cpp
 struct JumpThreadInfo;      // defined in redundantbranchopts.cpp
 class ProfileSynthesis;     // defined in profilesynthesis.h
 class LoopLocalOccurrences; // defined in inductionvariableopts.cpp
+class LoopOptimizationInfo; // defined in inductionvariableopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -7652,11 +7653,16 @@ public:
     bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
     bool optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
 
-    bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
-    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                           unsigned              lclNum,
-                           ScevAddRec*           addRec,
-                           LoopLocalOccurrences* loopLocals);
+    bool optWidenIVs(ScalarEvolutionContext& scevContext,
+                     FlowGraphNaturalLoop*   loop,
+                     LoopOptimizationInfo&   loopOptInfo,
+                     LoopLocalOccurrences*   loopLocals);
+    bool optWidenPrimaryIV(ScalarEvolutionContext& scevContext,
+                           FlowGraphNaturalLoop*   loop,
+                           unsigned                lclNum,
+                           ScevAddRec*             addRec,
+                           LoopOptimizationInfo&   loopOptInfo,
+                           LoopLocalOccurrences*   loopLocals);
 
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optIsIVWideningProfitable(unsigned              lclNum,
@@ -7666,7 +7672,13 @@ public:
                                    LoopLocalOccurrences* loopLocals);
     void optBestEffortReplaceNarrowIVUses(
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
-    void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
+    void optReplaceWidenedIV(unsigned                lclNum,
+                             unsigned                ssaNum,
+                             unsigned                newLclNum,
+                             BasicBlock*             block,
+                             Statement*              stmt,
+                             ScalarEvolutionContext* scevContext,
+                             LoopOptimizationInfo*   loopOptInfo);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
     bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
