@@ -291,10 +291,7 @@ namespace System
             object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return GetGeneration(obj);
         }
