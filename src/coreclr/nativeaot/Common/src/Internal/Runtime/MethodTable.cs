@@ -618,7 +618,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsByRefLikeFlag) != 0;
+                return IsValueType && (_uFlags & (uint)EETypeFlagsEx.IsByRefLikeFlag) != 0;
             }
         }
 

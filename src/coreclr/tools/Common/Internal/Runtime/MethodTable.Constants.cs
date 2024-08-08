@@ -86,6 +86,11 @@ namespace Internal.Runtime
         IDynamicInterfaceCastableFlag = 0x0008,
 
         /// <summary>
+        /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        /// </summary>
+        IsByRefLikeFlag = 0x0010,
+
+        /// <summary>
         /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         /// </summary>
         RequiresAlign8Flag = 0x1000
@@ -163,10 +168,7 @@ namespace Internal.Runtime
 
         // UNUSED = 0x00004000,
 
-        /// <summary>
-        /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
-        /// </summary>
-        IsByRefLikeFlag = 0x00008000,
+        // UNUSED = 0x00008000,
     }
 
     internal enum EETypeField
