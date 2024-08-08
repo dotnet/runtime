@@ -49,6 +49,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;
+class TokenLookupMap;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -125,8 +126,8 @@ public:
     //=========================================================================
 
 
-        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
-        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier = TRUE);
+        void ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenMap = nullptr);
+        void ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenMap = nullptr);
 
 
     //=========================================================================

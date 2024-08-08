@@ -180,6 +180,6 @@ DEF_CLR_API(recordRelocation)
 DEF_CLR_API(getRelocTypeHint)
 DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(getJitFlags)
-DEF_CLR_API(GetSpecialCopyHelper)
+DEF_CLR_API(getSpecialCopyHelper)
 
 #undef DEF_CLR_API

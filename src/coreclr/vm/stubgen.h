@@ -283,7 +283,7 @@ protected:
 
 //---------------------------------------------------------------------------------------
 //
-class TokenLookupMap
+class TokenLookupMap final
 {
 public:
     TokenLookupMap()
@@ -490,7 +490,52 @@ public:
         return token;
     }
 
-protected:
+    // Generate a hash value of the token lookup map
+    int GetHashValue()
+    {
+        int hash = 0;
+
+        for (size_t i = 0; i < m_nextAvailableRid; i++)
+        {
+            // Hash in the pointer values
+            // for the simple token map
+            hash = _rotl(hash, 1) + ((size_t*)m_qbEntries.Ptr())[i];
+        }
+
+        for (COUNT_T i = 0; i < m_signatures.GetCount(); i++)
+        {
+            // Hash the signatures for the signature tokens
+            CQuickBytesSpecifySize<16>& sigData = m_signatures[i];
+            PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)sigData.Ptr();
+            DWORD cbSig = static_cast<DWORD>(sigData.Size());
+            for (DWORD j = 0; j < cbSig; j++)
+            {
+                hash = _rotl(hash, 1) + pSig[j];
+            }
+        }
+
+        for (COUNT_T i = 0; i < m_memberRefs.GetCount(); i++)
+        {
+            // Hash the member ref entries
+            MemberRefEntry& entry = m_memberRefs[i];
+            hash = _rotl(hash, 1) + entry.Type;
+            hash = _rotl(hash, 1) + entry.ClassSignatureToken;
+            hash = _rotl(hash, 1) + (size_t)entry.Entry.Method;
+        }
+
+        for (COUNT_T i = 0; i < m_methodSpecs.GetCount(); i++)
+        {
+            // Hash the method spec entries
+            MethodSpecEntry& entry = m_methodSpecs[i];
+            hash = _rotl(hash, 1) + entry.ClassSignatureToken;
+            hash = _rotl(hash, 1) + entry.MethodSignatureToken;
+            hash = _rotl(hash, 1) + (size_t)entry.Method;
+        }
+
+        return hash;
+    }
+
+private:
     mdToken GetMemberRefWorker(MemberRefEntry** entry)
     {
         CONTRACTL

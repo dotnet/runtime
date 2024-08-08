@@ -3323,7 +3323,7 @@ public:
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 
-    virtual CORINFO_METHOD_HANDLE GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
+    virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
 
 /**********************************************************************************/

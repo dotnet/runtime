@@ -1989,7 +1989,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_fpStructLoweringCache = nullptr;
 #endif
 
-    m_specialCopyLocalsMap = nullptr;
+    m_specialCopyArgs = nullptr;
 
     // check that HelperCallProperties are initialized
 

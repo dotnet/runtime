@@ -1741,12 +1741,12 @@ uint32_t WrapICorJitInfo::getJitFlags(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::GetSpecialCopyHelper(
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type)
 {
-    API_ENTER(GetSpecialCopyHelper);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->GetSpecialCopyHelper(type);
-    API_LEAVE(GetSpecialCopyHelper);
+    API_ENTER(getSpecialCopyHelper);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getSpecialCopyHelper(type);
+    API_LEAVE(getSpecialCopyHelper);
     return temp;
 }
 

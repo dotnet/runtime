@@ -3693,7 +3693,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
-           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
+           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64
            ", threadVarsSection - %016" PRIX64
            ", offsetOfThreadLocalStoragePointer-%u"
            ", offsetOfMaxThreadStaticBlocks-%u"
@@ -7187,30 +7187,30 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-void MethodContext::recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
+void MethodContext::recgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
 {
-    if (GetSpecialCopyHelper == nullptr)
-        GetSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
+    if (getSpecialCopyHelper == nullptr)
+        getSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key = CastHandle(type);
 
     DWORDLONG value = CastHandle(helper);
-    GetSpecialCopyHelper->Add(key, value);
-    DEBUG_REC(dmpGetSpecialCopyHelper(key, value));
+    getSpecialCopyHelper->Add(key, value);
+    DEBUG_REC(dmpgetSpecialCopyHelper(key, value));
 }
 
-void MethodContext::dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpgetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
 {
-    printf("GetSpecialCopyHelper key %016" PRIX64 ", value %016" PRIX64 "", key, value);
+    printf("getSpecialCopyHelper key %016" PRIX64 ", value %016" PRIX64 "", key, value);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+CORINFO_METHOD_HANDLE MethodContext::repgetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     DWORDLONG key = CastHandle(type);
-    DWORDLONG value = LookupByKeyOrMiss(GetSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
+    DWORDLONG value = LookupByKeyOrMiss(getSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpgetSpecialCopyHelper(key, value));
     return (CORINFO_METHOD_HANDLE)value;
 }
 

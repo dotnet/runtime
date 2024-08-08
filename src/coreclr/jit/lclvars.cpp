@@ -326,19 +326,6 @@ void Compiler::lvaInitTypeRef()
             }
         }
 
-        if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
-        {
-            if (corInfoType == CORINFO_TYPE_VALUECLASS || corInfoType == CORINFO_TYPE_BYREF)
-            {
-                JITDUMP("Setting lvRequiresSpecialCopy for V%02u\n", varNum);
-                varDsc->lvRequiresSpecialCopy = 1;
-            }
-            else
-            {
-                JITDUMP("Ignoring special copy for non-struct, non-byref V%02u\n", varNum);
-            }
-        }
-
         varDsc->lvOnFrame = true; // The final home for this local variable might be our local stack frame
 
         if (corInfoType == CORINFO_TYPE_CLASS)
@@ -668,14 +655,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
         if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
         {
-            if (strip(corInfoType) == CORINFO_TYPE_VALUECLASS)
+            CorInfoType typeWithoutMod = strip(corInfoType);
+            if (typeWithoutMod == CORINFO_TYPE_VALUECLASS || typeWithoutMod == CORINFO_TYPE_PTR)
             {
-                JITDUMP("Setting lvRequiresSpecialCopy for user arg%02u\n", i);
-                varDsc->lvRequiresSpecialCopy = 1;
-            }
-            else
-            {
-                JITDUMP("Ignoring special copy for non-struct user arg%02u\n", i);
+                JITDUMP("Marking user arg%02u as requiring special copy semantics\n", i);
+                recordArgRequiresSpecialCopy(i);
             }
         }
 
@@ -7617,10 +7601,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvPinned)
     {
         printf(" pinned");
-    }
-    if (varDsc->lvRequiresSpecialCopy)
-    {
-        printf(" special-copy");
     }
     if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
     {

@@ -1523,77 +1523,6 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
     BlockRange().InsertAfter(arg, putArgOrBitcast);
 }
 
-void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, GenTreeLclVar* lclVar)
-{
-    assert(putArgStk != nullptr);
-    assert(lclVar != nullptr);
-
-    GenTree* dest;
-
-#if FEATURE_FIXED_OUT_ARGS
-    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL),
-                               comp->gtNewIconNode(putArgStk->getArgOffset()));
-#else
-    dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
-#endif
-
-    unsigned lclNum = lclVar->GetLclNum();
-
-    // Use the special copy locals map to map back to the original source local we need to copy-construct
-    // from. This is necessary because srcLclNum might have a bitwise copy of the source,
-    // which we can't pass to user code.
-    GenTree* src;
-    unsigned srcLclNum;
-    if (comp->GetSpecialCopyLocalsMap()->Lookup(lclNum, &srcLclNum))
-    {
-        assert(genActualType(comp->lvaGetDesc(srcLclNum)) == TYP_BYREF);
-        src = comp->gtNewLclVarNode(srcLclNum, TYP_I_IMPL);
-    }
-    else
-    {
-        src = comp->gtNewLclAddrNode(lclNum, lclVar->GetLclOffs(), TYP_I_IMPL);
-    }
-
-    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
-
-    GenTreeCall* call =
-        comp->gtNewCallNode(CT_USER_FUNC,
-                            comp->info.compCompHnd->GetSpecialCopyHelper(lclVar->GetLayout(comp)->GetClassHandle()),
-                            TYP_VOID);
-
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
-
-    comp->fgMorphArgs(call);
-
-    LIR::Range callRange      = LIR::SeqTree(comp, call);
-    GenTree*   callRangeStart = callRange.FirstNode();
-    GenTree*   callRangeEnd   = callRange.LastNode();
-
-    BlockRange().InsertAfter(putArgStk, std::move(callRange));
-    BlockRange().InsertAfter(putArgStk, dest);
-    BlockRange().InsertAfter(putArgStk, src);
-
-    LIR::Use destUse;
-    LIR::Use srcUse;
-    BlockRange().TryGetUse(destPlaceholder, &destUse);
-    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
-    destUse.ReplaceWith(dest);
-    srcUse.ReplaceWith(src);
-    destPlaceholder->SetUnusedValue();
-    srcPlaceholder->SetUnusedValue();
-
-    LowerRange(callRangeStart, callRangeEnd);
-
-    // Finally move all GT_PUTARG_* nodes
-    // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
-
-    BlockRange().Remove(destPlaceholder);
-    BlockRange().Remove(srcPlaceholder);
-}
-
 //------------------------------------------------------------------------
 // NewPutArg: rewrites the tree to put an arg in a register or on the stack.
 //
@@ -1950,12 +1879,6 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         {
             ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
-
-        if (putArg->OperIsPutArgStk() && arg->OperIs(GT_LCL_VAR) &&
-            comp->lvaRequiresSpecialCopy(arg->AsLclVar()->GetLclNum()))
-        {
-            InsertSpecialCopyArg(putArg->AsPutArgStk(), arg->AsLclVar());
-        }
     }
 
     arg = *ppArg;
@@ -2071,7 +1994,104 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
         LowerArg(call, &arg, true);
     }
 
+    LowerSpecialCopyArgs(call);
+
     LegalizeArgPlacement(call);
+}
+
+void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
+{
+    // We only need to use the special copy helper on P/Invoke IL stubs
+    // for the unmanaged call.
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() && call->IsUnmanaged())
+    {
+        unsigned argIndex = 0;
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            if (!arg.IsUserArg())
+            {
+                continue;
+            }
+
+            if (argIndex >= comp->info.compArgsCount)
+            {
+                break;
+            }
+
+            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming that it is being passed 1:1 to the pinvoke
+            unsigned paramIndex = comp->compMap2ILvarNum(argIndex);
+            if ((paramIndex != ICorDebugInfo::UNKNOWN_ILNUM) && comp->argRequiresSpecialCopy(paramIndex))
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
+                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramIndex);
+            }
+            argIndex++;
+        }
+    }
+}
+
+void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
+{
+    assert(putArgStk != nullptr);
+    GenTree* dest;
+
+#if FEATURE_FIXED_OUT_ARGS
+    dest = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL),
+                               comp->gtNewIconNode(putArgStk->getArgOffset()));
+#else
+    dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+#endif
+
+    GenTree* src;
+    var_types lclType = genActualType(comp->lvaGetDesc(lclNum));
+    if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
+    {
+        src = comp->gtNewLclVarNode(lclNum, TYP_I_IMPL);
+    }
+    else
+    {
+        assert(lclType == TYP_STRUCT);
+        src = comp->gtNewLclAddrNode(lclNum, 0, TYP_I_IMPL);
+    }
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(genActualType(src));
+
+    GenTreeCall* call =
+        comp->gtNewCallNode(CT_USER_FUNC,
+                            comp->info.compCompHnd->getSpecialCopyHelper(argType),
+                            TYP_VOID);
+
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
+
+    comp->fgMorphArgs(call);
+
+    LIR::Range callRange      = LIR::SeqTree(comp, call);
+    GenTree*   callRangeStart = callRange.FirstNode();
+    GenTree*   callRangeEnd   = callRange.LastNode();
+
+    BlockRange().InsertAfter(putArgStk, std::move(callRange));
+    BlockRange().InsertAfter(putArgStk, dest);
+    BlockRange().InsertAfter(putArgStk, src);
+
+    LIR::Use destUse;
+    LIR::Use srcUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+    destUse.ReplaceWith(dest);
+    srcUse.ReplaceWith(src);
+    destPlaceholder->SetUnusedValue();
+    srcPlaceholder->SetUnusedValue();
+
+    LowerRange(callRangeStart, callRangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(srcPlaceholder);
 }
 
 //------------------------------------------------------------------------

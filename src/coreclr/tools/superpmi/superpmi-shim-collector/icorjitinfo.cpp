@@ -2028,10 +2028,10 @@ bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instruct
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
-    mc->cr->AddCall("GetSpecialCopyHelper");
-    CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->GetSpecialCopyHelper(type);
-    mc->recGetSpecialCopyHelper(type, temp);
+    mc->cr->AddCall("getSpecialCopyHelper");
+    CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->getSpecialCopyHelper(type);
+    mc->recgetSpecialCopyHelper(type, temp);
     return temp;
 }

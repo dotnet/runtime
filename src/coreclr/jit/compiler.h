@@ -532,8 +532,6 @@ public:
 #endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
-    unsigned char lvRequiresSpecialCopy : 1; // Local requires copy helper for stack copies.
-
     unsigned char lvMustInit : 1; // must be initialized
 
 private:
@@ -5702,30 +5700,20 @@ public:
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
-    // This map maps local var ids to the originally-passed-in local var that we need to use a non-bitwise copy
-    // from when passing out to user code.
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> SpecialCopyLocalsMap;
-    SpecialCopyLocalsMap* m_specialCopyLocalsMap;
-    SpecialCopyLocalsMap* GetSpecialCopyLocalsMap()
+    jitstd::vector<unsigned>* m_specialCopyArgs;
+    bool recordArgRequiresSpecialCopy(unsigned argNum)
     {
-        if (m_specialCopyLocalsMap == nullptr)
+        if (m_specialCopyArgs == nullptr)
         {
-            m_specialCopyLocalsMap = new (getAllocator()) SpecialCopyLocalsMap(getAllocator());
+            m_specialCopyArgs = new (getAllocator()) jitstd::vector<unsigned>(getAllocator());
         }
-        return m_specialCopyLocalsMap;
+        m_specialCopyArgs->push_back(argNum);
+        return true;
     }
 
-    bool lvaRequiresSpecialCopy(unsigned lclNum)
+    bool argRequiresSpecialCopy(unsigned argNum)
     {
-        if (lvaTable[lclNum].lvRequiresSpecialCopy)
-        {
-            return true;
-        }
-        else if (m_specialCopyLocalsMap != nullptr)
-        {
-            return m_specialCopyLocalsMap->Lookup(lclNum);
-        }
-        return false;
+        return m_specialCopyArgs != nullptr && std::find(m_specialCopyArgs->begin(), m_specialCopyArgs->end(), argNum) != m_specialCopyArgs->end();
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);

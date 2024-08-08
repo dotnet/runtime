@@ -16605,17 +16605,6 @@ GenTree* Compiler::gtNewTempStore(
         val->gtType = valTyp;
     }
 
-    if (val->OperGet() == GT_BLK && val->AsBlk()->Addr()->OperGet() == GT_LCL_VAR)
-    {
-        GenTreeLclVarCommon* lclVar = val->AsBlk()->Addr()->AsLclVarCommon();
-        LclVarDsc* srcVarDsc = &lvaTable[lclVar->GetLclNum()];
-        if (srcVarDsc->lvRequiresSpecialCopy)
-        {
-            JITDUMP("Recording V%02u as an alias of the special-copy local V%02u\n", tmp, lclVar->GetLclNum());
-            GetSpecialCopyLocalsMap()->Emplace(tmp, lclVar->GetLclNum());
-        }
-    }
-
     var_types dstTyp = varDsc->TypeGet();
 
     /* If the variable's lvType is not yet set then set it here */

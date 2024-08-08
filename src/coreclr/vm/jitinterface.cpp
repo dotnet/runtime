@@ -7630,7 +7630,7 @@ static void getMethodInfoHelper(
 
         _ASSERTE(inst.GetNumArgs() == 1);
         TypeHandle type = inst[0];
-        
+
         if (!GenerateCopyConstructorHelper(ftn, type, &cxt.TransientResolver, &cxt.Header, methInfo))
         {
             ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -9427,6 +9427,32 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
 /*********************************************************************/
 
+namespace
+{
+    bool HasCopyConstructorModifier(SigPointer sig, CORINFO_MODULE_HANDLE scope)
+    {
+        if (IsDynamicScope(scope))
+        {
+            DynamicResolver* pResolver = GetDynamicResolver(scope);
+            if (sig.HasCustomModifier(pResolver, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                sig.HasCustomModifier(pResolver, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            Module* pModule = GetModule(scope);
+            if (sig.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                sig.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 CorInfoTypeWithMod CEEInfo::getArgType (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
@@ -9459,24 +9485,9 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 
     Module* pModule = GetModule(sig->scope);
 
-    if (!IsDynamicScope(sig->scope))
+    if (HasCopyConstructorModifier(ptr, sig->scope))
     {
-        SigPointer sigtmp = ptr;
-        if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-            sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
-        {
-            result = (CorInfoTypeWithMod)((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
-        }
-    }
-    else
-    {
-        SigPointer sigtmp = ptr;
-        DynamicResolver* pResolver = GetDynamicResolver(sig->scope);
-        if (sigtmp.HasCustomModifier(pResolver, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
-            sigtmp.HasCustomModifier(pResolver, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))
-        {
-            result = (CorInfoTypeWithMod)((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
-        }
+        result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
     }
 
     // Now read off the "real" element type after taking any instantiations into consideration
@@ -9519,6 +9530,14 @@ CorInfoTypeWithMod CEEInfo::getArgType (
             {
                 classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
             }
+        }
+        FALLTHROUGH;
+
+    case ELEMENT_TYPE_BYREF:
+        IfFailThrow(ptr.GetElemType(NULL));
+        if (HasCopyConstructorModifier(ptr, sig->scope))
+        {
+            result = CorInfoTypeWithMod((int)result | CORINFO_TYPE_MOD_COPY_WITH_HELPER);
         }
         break;
 
@@ -9972,7 +9991,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     EE_TO_JIT_TRANSITION();
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     CONTRACTL {
         THROWS;
@@ -9997,7 +10016,7 @@ CORINFO_METHOD_HANDLE CEEInfo::GetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
         Instantiation(&th, 1),
         FALSE,
         FALSE);
-    
+
     pHelperMD->CheckRestore();
     result = (CORINFO_METHOD_HANDLE)pHelperMD;
 

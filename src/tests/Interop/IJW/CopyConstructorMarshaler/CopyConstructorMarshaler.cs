@@ -11,7 +11,7 @@ namespace CopyConstructorMarshaler
 {
     public class CopyConstructorMarshaler
     {
-        //[Fact]
+        [Fact]
         public static int TestEntryPoint()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
@@ -32,7 +32,7 @@ namespace CopyConstructorMarshaler
                 {
                     platformExtra = 1;
                 }
-    
+
                 // PInvoke will copy once. Once from the managed to native parameter.
                 Assert.Equal(1 + platformExtra, (int)testMethod.Invoke(testInstance, null));
 
@@ -61,7 +61,7 @@ namespace CopyConstructorMarshaler
             return 100;
         }
 
-        //[Fact]
+        [Fact]
         public static void CopyConstructorsInArgumentStackSlots()
         {
             Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");

@@ -741,7 +741,7 @@ uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
 
-CORINFO_METHOD_HANDLE GetSpecialCopyHelper(
+CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;
 
 /**********************************************************************************/

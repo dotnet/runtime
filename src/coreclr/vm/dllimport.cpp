@@ -408,7 +408,7 @@ public:
 
         {
             SigPointer sigPtr(pStubMD->GetSig());
-            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder);
+            sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
         }
 
         //
@@ -462,6 +462,25 @@ public:
         // Finish it
         SetStubTargetMethodSig(pTempModuleIndependentSig,
                                cbTempModuleIndependentSigLength);
+    }
+
+    void ConvertMethodDescSigToModuleIndependentSig(MethodDesc* pStubMD)
+    {
+        SigBuilder sigBuilder;
+        SigPointer sigPtr(pStubMD->GetSig());
+        sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, GetTokenLookupMap());
+
+        //
+        // make a domain-local copy of the sig so that this state can outlive the
+        // compile time state.
+        //
+        DWORD cbNewSig = sigBuilder.GetSignatureLength();
+        PVOID pNewSigBuffer = sigBuilder.GetSignature(&cbNewSig);
+        PCCOR_SIGNATURE pNewSig  = (PCCOR_SIGNATURE)(void *)pStubMD->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbNewSig));
+
+        memcpyNoGCRefs((void *)pNewSig, pNewSigBuffer, cbNewSig);
+
+        pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
     }
 
     void EmitInvokeTarget(MethodDesc *pStubMD)
@@ -799,7 +818,16 @@ public:
 
         if (SF_IsReverseStub(m_dwStubFlags))
         {
+            // If we're in a Reverse stub, the target signature we've built
+            // is the signature of the stub, and the current signature of the stub
+            // is the target signature. We need to swap them.
             SwapStubSignatures(pStubMD);
+        }
+        else
+        {
+            // If we're not in a Reverse stub, the signatures are correct,
+            // but we need to convert the signature into a module-independent form.
+            ConvertMethodDescSigToModuleIndependentSig(pStubMD);
         }
 
         ILCodeLabel* pTryBeginLabel = nullptr;
@@ -3968,6 +3996,7 @@ namespace
         DWORD       m_StubFlags;
 
         INT32       m_iLCIDArg;
+        INT32       m_tokenMapHash;
         INT32       m_nParams;
         BYTE        m_rgbSigAndParamData[1];
         // (dwParamAttr, cbNativeType)          // length: number of parameters
@@ -4023,8 +4052,11 @@ namespace
 
         // note that ConvertToInternalSignature also resolves generics so different instantiations will get different
         // hash blobs for methods that have generic parameters in their signature
+        // The signature may have custom modifiers, so provide a token lookup map to resolve them.
+        // We'll include a hash of the token lookup map in the hash blob.
+        TokenLookupMap tokenLookupMap;
         SigBuilder sigBuilder;
-        sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, /* bSkipCustomModifier = */ FALSE);
+        sigPtr.ConvertToInternalSignature(pParams->m_pModule, pParams->m_pTypeContext, &sigBuilder, &tokenLookupMap);
 
         DWORD cbSig;
         PVOID pSig = sigBuilder.GetSignature(&cbSig);
@@ -4059,6 +4091,7 @@ namespace
         pBlob->m_nlFlags                = static_cast<BYTE>(pParams->m_nlFlags & ~nlfNoMangle); // this flag does not affect the stub
         pBlob->m_iLCIDArg               = pParams->m_iLCIDArg;
 
+        pBlob->m_tokenMapHash           = tokenLookupMap.GetHashValue();
         pBlob->m_StubFlags              = pParams->m_dwStubFlags;
         pBlob->m_nParams                = pParams->m_nParamTokens;
 
@@ -6400,7 +6433,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicReso
 {
     if (!type.IsValueType())
         return false;
-    
+
     MethodTable * pMT = type.AsMethodTable();
 
     MethodDesc* pCopyCtor = nullptr;
@@ -6421,7 +6454,7 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicReso
         &genericContext,
         ftn,
         ILSTUB_LINKER_FLAG_NONE);
-    
+
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
     pCode->EmitLDARG(0);
