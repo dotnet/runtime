@@ -1825,7 +1825,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             StoreFFRValue(node);
             break;
         }
+        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
+        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
         {
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
@@ -4140,7 +4146,13 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
     switch (node->GetHWIntrinsicId())
     {
         case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
+        case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
         case NI_Sve_SetFfr:
 
             break;
