@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "cpufeatures.h"
 #include "cpuid.h"
@@ -426,4 +428,37 @@ int minipal_getcpufeatures(void)
 #endif // HOST_ARM64
 
     return result;
+}
+
+// Detect if the current process is running under the Apple Rosetta x64 emulator
+bool minipal_detect_rosetta(void)
+{
+#if defined(HOST_AMD64) || defined(HOST_X86)
+    // Check for CPU brand indicating emulation
+    int regs[4];
+    char brand[49];
+
+    // Get the maximum value for extended function CPUID info
+    __cpuid(regs, (int)0x80000000);
+    if ((unsigned int)regs[0] < 0x80000004)
+    {
+        return false; // Extended CPUID not supported
+    }
+
+    // Retrieve the CPU brand string
+    for (unsigned int i = 0x80000002; i <= 0x80000004; ++i)
+    {
+        __cpuid(regs, (int)i);
+        memcpy(brand + (i - 0x80000002) * sizeof(regs), regs, sizeof(regs));
+    }
+    brand[sizeof(brand) - 1] = '\0';
+
+    // Check if CPU brand indicates emulation
+    if (strstr(brand, "VirtualApple") != NULL)
+    {
+        return true;
+    }
+#endif // HOST_AMD64 || HOST_X86
+
+    return false;
 }
