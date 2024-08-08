@@ -21838,57 +21838,27 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    bool needsConvertMaskToVector = false;
-
-#if defined(TARGET_XARCH)
-    switch (op)
-    {
-        case GT_EQ:
-        {
-            needsConvertMaskToVector = (simdSize == 64);
-            break;
-        }
-
-        case GT_GE:
-        case GT_LE:
-        case GT_NE:
-        {
-            needsConvertMaskToVector = (simdSize == 64) || (varTypeIsIntegral(simdBaseType) && canUseEvexEncoding());
-            break;
-        }
-
-        case GT_GT:
-        case GT_LT:
-        {
-            needsConvertMaskToVector = (simdSize == 64) || (varTypeIsUnsigned(simdBaseType) && canUseEvexEncoding());
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-#endif // TARGET_XARCH
+    var_types lookupType = GenTreeHWIntrinsic::GetLookupTypeForCmpOp(this, op, type, simdBaseType, simdSize);
 
     NamedIntrinsic intrinsic =
-        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op, op1, op2, simdBaseType, simdSize, false);
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, op, lookupType, op1, op2, simdBaseType, simdSize, false);
 
     if (intrinsic != NI_Illegal)
     {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-        if (needsConvertMaskToVector)
+        if (lookupType != type)
         {
-            GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            assert(varTypeIsMask(lookupType));
+            GenTree* retNode = gtNewSimdHWIntrinsicNode(lookupType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             return gtNewSimdCvtMaskToVectorNode(type, retNode, simdBaseJitType, simdSize);
         }
 #else
-        assert(!needsConvertMaskToVector);
+        assert(lookupType == type);
 #endif // !FEATURE_MASKED_HW_INTRINSICS
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
-    assert(!needsConvertMaskToVector);
+    assert(lookupType == type);
 
     switch (op)
     {
@@ -26743,42 +26713,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 addr = Op(3);
                 break;
 
-            case NI_Sve_GatherVectorWithByteOffsets:
-            case NI_Sve_LoadVector:
-            case NI_Sve_LoadVectorNonTemporal:
-            case NI_Sve_LoadVector128AndReplicateToVector:
-            case NI_Sve_LoadVectorByteZeroExtendToInt16:
-            case NI_Sve_LoadVectorByteZeroExtendToInt32:
-            case NI_Sve_LoadVectorByteZeroExtendToInt64:
-            case NI_Sve_LoadVectorByteZeroExtendToUInt16:
-            case NI_Sve_LoadVectorByteZeroExtendToUInt32:
-            case NI_Sve_LoadVectorByteZeroExtendToUInt64:
-            case NI_Sve_LoadVectorInt16SignExtendToInt32:
-            case NI_Sve_LoadVectorInt16SignExtendToInt64:
-            case NI_Sve_LoadVectorInt16SignExtendToUInt32:
-            case NI_Sve_LoadVectorInt16SignExtendToUInt64:
-            case NI_Sve_LoadVectorInt32SignExtendToInt64:
-            case NI_Sve_LoadVectorInt32SignExtendToUInt64:
-            case NI_Sve_LoadVectorSByteSignExtendToInt16:
-            case NI_Sve_LoadVectorSByteSignExtendToInt32:
-            case NI_Sve_LoadVectorSByteSignExtendToInt64:
-            case NI_Sve_LoadVectorSByteSignExtendToUInt16:
-            case NI_Sve_LoadVectorSByteSignExtendToUInt32:
-            case NI_Sve_LoadVectorSByteSignExtendToUInt64:
-            case NI_Sve_LoadVectorUInt16ZeroExtendToInt32:
-            case NI_Sve_LoadVectorUInt16ZeroExtendToInt64:
-            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt32:
-            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
-            case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
-            case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
-            case NI_Sve_Load2xVectorAndUnzip:
-            case NI_Sve_Load3xVectorAndUnzip:
-            case NI_Sve_Load4xVectorAndUnzip:
-                addr = Op(2);
-                break;
-
             case NI_Sve_GatherVector:
             case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorFirstFaulting:
             case NI_Sve_GatherVectorInt16SignExtend:
             case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
             case NI_Sve_GatherVectorInt32SignExtend:
@@ -26788,6 +26725,44 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt16ZeroExtend:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorWithByteOffsets:
+            case NI_Sve_LoadVector:
+            case NI_Sve_LoadVectorNonTemporal:
+            case NI_Sve_LoadVector128AndReplicateToVector:
+            case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorByteZeroExtendToInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToInt64:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt16:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt32:
+            case NI_Sve_LoadVectorByteZeroExtendToUInt64:
+            case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorInt16SignExtendToInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToInt64:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt32:
+            case NI_Sve_LoadVectorInt16SignExtendToUInt64:
+            case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorInt32SignExtendToInt64:
+            case NI_Sve_LoadVectorInt32SignExtendToUInt64:
+            case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+            case NI_Sve_LoadVectorSByteSignExtendToInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToInt64:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt16:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt32:
+            case NI_Sve_LoadVectorSByteSignExtendToUInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt32:
+            case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
+            case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
                 addr = Op(2);
                 break;
 
@@ -26870,11 +26845,12 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
     {
 #ifdef TARGET_ARM64
         static_assert_no_msg(
-            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorInt16SignExtend,
-                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend, NI_Sve_GatherVectorInt32SignExtend,
-                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend, NI_Sve_GatherVectorSByteSignExtend,
-                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtend,
-                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtend));
+            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorFirstFaulting,
+                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
+                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
+                          NI_Sve_GatherVectorUInt32ZeroExtend));
         assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
                                                             (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
 #else
@@ -27292,6 +27268,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_SetFfr:
             {
                 return true;
             }
@@ -27474,14 +27451,15 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
+            case NI_Sve_PrefetchBytes:
+            case NI_Sve_PrefetchInt16:
+            case NI_Sve_PrefetchInt32:
+            case NI_Sve_PrefetchInt64:
+            case NI_Sve_SetFfr:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);
@@ -28951,6 +28929,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 // Arguments:
 //    comp         - The compiler instance
 //    oper         - The oper for which to get the intrinsic ID
+//    type         - The return type of the comparison
 //    op1          - The first operand on which oper is executed
 //    op2          - The second operand on which oper is executed
 //    simdBaseType - The base type on which oper is executed
@@ -28962,6 +28941,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
 //
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                             genTreeOps oper,
+                                                            var_types  type,
                                                             GenTree*   op1,
                                                             GenTree*   op2,
                                                             var_types  simdBaseType,
@@ -28969,6 +28949,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                             bool       isScalar)
 {
     var_types simdType = comp->getSIMDTypeForSize(simdSize);
+    assert(varTypeIsMask(type) || (type == simdType));
 
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsSIMD(simdType));
@@ -28977,10 +28958,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     assert(op1->TypeIs(simdType));
     assert(op2 != nullptr);
 
-    if (simdSize == 64)
+    if (varTypeIsMask(type))
     {
         assert(!isScalar);
-        assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
+        assert(comp->canUseEvexEncodingDebugOnly());
     }
     else if (simdSize == 32)
     {
@@ -28989,6 +28970,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     }
     else
     {
+        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+
 #if defined(TARGET_ARM64)
         assert(!isScalar || (simdSize == 8));
 #endif // TARGET_ARM64
@@ -29006,7 +28989,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareEqualMask;
             }
@@ -29056,16 +29039,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (varTypeIsIntegral(simdBaseType))
-            {
-                if (comp->canUseEvexEncoding())
-                {
-                    id = NI_EVEX_CompareGreaterThanOrEqualMask;
-                }
-            }
-            else if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareGreaterThanOrEqualMask;
+            }
+            else if (varTypeIsIntegral(simdBaseType))
+            {
+                // This should have been handled by the caller setting type = TYP_MASK
+                assert(!comp->canUseEvexEncodingDebugOnly());
             }
             else if (simdSize == 32)
             {
@@ -29099,7 +29080,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareGreaterThanMask;
             }
@@ -29125,9 +29106,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                         id = NI_SSE2_CompareGreaterThan;
                     }
                 }
-                else if (comp->canUseEvexEncoding())
+                else
                 {
-                    id = NI_EVEX_CompareGreaterThanMask;
+                    // This should have been handled by the caller setting type = TYP_MASK
+                    assert(!comp->canUseEvexEncodingDebugOnly());
                 }
             }
             else if (simdSize == 32)
@@ -29161,16 +29143,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (varTypeIsIntegral(simdBaseType))
-            {
-                if (comp->canUseEvexEncoding())
-                {
-                    id = NI_EVEX_CompareLessThanOrEqualMask;
-                }
-            }
-            else if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareLessThanOrEqualMask;
+            }
+            else if (varTypeIsIntegral(simdBaseType))
+            {
+                // This should have been handled by the caller setting type = TYP_MASK
+                assert(!comp->canUseEvexEncodingDebugOnly());
             }
             else if (simdSize == 32)
             {
@@ -29204,7 +29184,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareLessThanMask;
             }
@@ -29230,9 +29210,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                         id = NI_SSE2_CompareLessThan;
                     }
                 }
-                else if (comp->canUseEvexEncoding())
+                else
                 {
-                    id = NI_EVEX_CompareLessThanMask;
+                    // This should have been handled by the caller setting type = TYP_MASK
+                    assert(!comp->canUseEvexEncodingDebugOnly());
                 }
             }
             else if (simdSize == 32)
@@ -29266,16 +29247,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
             assert(op2->TypeIs(simdType));
 
 #if defined(TARGET_XARCH)
-            if (varTypeIsIntegral(simdBaseType))
-            {
-                if (comp->canUseEvexEncoding())
-                {
-                    id = NI_EVEX_CompareNotEqualMask;
-                }
-            }
-            else if (simdSize == 64)
+            if (varTypeIsMask(type))
             {
                 id = NI_EVEX_CompareNotEqualMask;
+            }
+            else if (varTypeIsIntegral(simdBaseType))
+            {
+                // This should have been handled by the caller setting type = TYP_MASK
+                assert(!comp->canUseEvexEncodingDebugOnly());
             }
             else if (simdSize == 32)
             {
@@ -29301,6 +29280,77 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     }
 
     return id;
+}
+
+//------------------------------------------------------------------------------
+// GetLookupTypeForCmpOp: Returns the lookup type for a SIMD comparison operation
+//
+// Arguments:
+//    oper         - The comparison operation
+//    type         - The expected IR type of the comparison
+//    simdBaseType - The base type on which oper is executed
+//    simdSize     - The simd size on which oper is executed
+//
+// Returns:
+//    The lookup type for the given operation given the expected IR type, base type, and simd size
+//
+// Remarks:
+//    This API is namely meant to assist in handling cases where the underlying instruction return
+//    type doesn't match with the type IR wants us to be producing. For example, the consuming node
+//    may expect a TYP_SIMD16 but the underlying instruction may produce a TYP_MASK.
+//
+var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
+    Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize)
+{
+    var_types simdType = comp->getSIMDTypeForSize(simdSize);
+    assert(varTypeIsMask(type) || (type == simdType));
+
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(varTypeIsSIMD(simdType));
+
+    var_types lookupType = type;
+
+#if defined(TARGET_XARCH)
+    switch (oper)
+    {
+        case GT_EQ:
+        {
+            if (simdSize == 64)
+            {
+                lookupType = TYP_MASK;
+            }
+            break;
+        }
+
+        case GT_GE:
+        case GT_LE:
+        case GT_NE:
+        {
+            if ((simdSize == 64) || (varTypeIsIntegral(simdBaseType) && comp->canUseEvexEncoding()))
+            {
+                lookupType = TYP_MASK;
+            }
+            break;
+        }
+
+        case GT_GT:
+        case GT_LT:
+        {
+            if ((simdSize == 64) || (varTypeIsUnsigned(simdBaseType) && comp->canUseEvexEncoding()))
+            {
+                lookupType = TYP_MASK;
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+#endif // TARGET_XARCH
+
+    return lookupType;
 }
 
 //---------------------------------------------------------------------------------------
@@ -29489,6 +29539,15 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(returnType != TYP_UNKNOWN);
             assert(returnType != TYP_STRUCT);
             m_regType[0] = returnType;
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
+            {
+                assert(lowering->numLoweredElements == 1);
+                m_fieldOffset[0] = lowering->offsets[0];
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
         }
 
@@ -29554,7 +29613,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             }
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+            assert(structSize > sizeof(float));
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
             const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
@@ -29562,22 +29622,18 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             {
                 comp->compFloatingPointUsed = true;
                 assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
-                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering->loweredElements[0]),
-                                                      JITtype2varType(lowering->loweredElements[1])};
-                assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
-                assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
+                static_assert(MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS, "");
                 for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
                 {
-                    if (varTypeIsFloating(types[i]))
+                    m_regType[i]     = JITtype2varType(lowering->loweredElements[i]);
+                    m_fieldOffset[i] = lowering->offsets[i];
+                    if (m_regType[i] == TYP_LONG && ((m_fieldOffset[i] % TARGET_POINTER_SIZE) == 0))
                     {
-                        m_regType[i] = types[i];
-                    }
-                    else
-                    {
-                        assert(varTypeIsIntegralOrI(types[i]));
-                        m_regType[i] = (genTypeSize(types[i]) == 8) ? comp->getJitGCType(gcPtrs[i]) : TYP_INT;
+                        unsigned slot = m_fieldOffset[i] / TARGET_POINTER_SIZE;
+                        m_regType[i]  = comp->getJitGCType(gcPtrs[slot]);
                     }
                 }
+                assert(varTypeIsFloating(m_regType[0]) || varTypeIsFloating(m_regType[1]));
             }
             else
             {
@@ -29585,6 +29641,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 {
                     m_regType[i] = comp->getJitGCType(gcPtrs[i]);
                 }
+                m_fieldOffset[0] = 0;
+                m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
 #elif defined(TARGET_X86)
@@ -31683,6 +31741,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         // op3 has side effects, this would require us to append a new statement
                         // to ensure that it isn't lost, which isn't safe to do from the general
                         // purpose handler here. We'll recognize this and mark it in VN instead
+                        break;
                     }
 
                     // op3 has no side effects, so we can return op2 directly

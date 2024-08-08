@@ -5330,6 +5330,7 @@ public:
     bool fgHasSwitch; // any BBJ_SWITCH jumps?
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
+    bool fgHasNoReturnCall;   // true if statement we morphed had a no-return call
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
 
     enum FlowGraphOrder
@@ -5463,6 +5464,8 @@ public:
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
+    bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
+
     //------------------------------------------------------------------------------------------------------------
     // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
     // the number of locals allocated when doing early multi-dimensional array operation expansion. Two types of
@@ -5591,7 +5594,7 @@ public:
 
     void fgLiveVarAnalysis();
 
-    void fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
+    GenTreeLclVarCommon* fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
@@ -6238,6 +6241,7 @@ public:
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
+    bool fgRemoveBlocksOutsideDfsTree();
 
     PhaseStatus fgFindOperOrder();
 
@@ -9529,10 +9533,6 @@ public:
         return false;
 #endif // FEATURE_SIMD
     }
-
-#ifdef FEATURE_HW_INTRINSICS
-    static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
-#endif // FEATURE_HW_INTRINSICS
 
 private:
     // Returns true if the TYP_SIMD locals on stack are aligned at their

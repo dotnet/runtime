@@ -343,10 +343,7 @@ namespace Internal.Cryptography
             byte[] arg,
             [CallerArgumentExpression(nameof(arg))] string? paramName = null)
         {
-            if (arg is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(arg, paramName);
 
             return arg;
         }

@@ -33,7 +33,6 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
     m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
     m_loading(TRUE),
-    m_hExposedModuleObject{},
     m_hExposedAssemblyObject{},
     m_pError(NULL),
     m_bDisableActivationCheck(FALSE),
@@ -309,71 +308,6 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 }
 
 #ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------------------------------
-//
-// Returns managed representation of the module (Module or ModuleBuilder).
-// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-//
-OBJECTREF DomainAssembly::GetExposedModuleObject()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
-
-    if (m_hExposedModuleObject == (LOADERHANDLE)NULL)
-    {
-        // Atomically create a handle
-        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
-
-        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(0));
-    }
-
-    if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
-    {
-        REFLECTMODULEBASEREF refClass = NULL;
-
-        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
-        // return NULL
-        bool fIsLoaderAllocatorCollected = false;
-
-        GCPROTECT_BEGIN(refClass);
-
-        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(GetModule());
-
-        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
-        // alive as long as a reference to the module is kept alive.
-        if (GetModule()->GetAssembly() != NULL)
-        {
-            OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
-            if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
-            {
-                fIsLoaderAllocatorCollected = true;
-            }
-            refClass->SetAssembly(refAssembly);
-        }
-
-        pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedModuleObject, (OBJECTREF)refClass, NULL);
-        GCPROTECT_END();
-
-        if (fIsLoaderAllocatorCollected)
-        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
-            // Note: We did not publish the allocated Module/ModuleBuilder object, it will get collected
-            // by GC
-            return NULL;
-        }
-    }
-
-    return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
-}
 
 BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
 {
