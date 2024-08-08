@@ -1913,8 +1913,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //  Returns:
 //     true if the node can be replaced by a mov/fmov immediate instruction; otherwise, false
 //
-//  IMPORTANT:
-//     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
     assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
@@ -1928,55 +1926,16 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
            (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector128));
     assert(node->GetOperandCount() == 1);
 
-    GenTree* op1    = node->Op(1);
-    GenTree* castOp = nullptr;
-
-    // In MinOpts, casts won't be folded during importation
-    if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
-    {
-        // We will sometimes get a cast around a constant value (such as for
-        // certain long constants) which would block the below containment.
-        // So we will temporarily check what the cast is from instead so we
-        // can catch those cases as well.
-
-        GenTreeCast* const cast = op1->AsCast();
-        castOp                  = cast->CastOp();
-
-        // If we might need to truncate the immediate, don't try to remove the cast
-        // (we could handle the truncation like in constant-folding,
-        // but this shouldn't be important in MinOpts)
-        if (varTypeIsIntegral(castOp) && (emitTypeSize(cast->CastToType()) >= emitTypeSize(cast->CastFromType())))
-        {
-            op1 = castOp;
-        }
-        else
-        {
-            castOp = nullptr;
-        }
-    }
+    GenTree* const op1 = node->Op(1);
 
     if (op1->IsCnsIntOrI())
     {
         const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
-
-        if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType())))
-        {
-            if (castOp != nullptr)
-            {
-                // We found a containable immediate under
-                // a cast, so remove the cast from the LIR.
-
-                BlockRange().Remove(node->Op(1));
-                node->Op(1) = op1;
-            }
-            return true;
-        }
+        return comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType()));
     }
     else if (op1->IsCnsFltOrDbl())
     {
         assert(varTypeIsFloating(node->GetSimdBaseType()));
-        assert(castOp == nullptr);
-
         const double dataValue = op1->AsDblCon()->DconValue();
         return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
     }
