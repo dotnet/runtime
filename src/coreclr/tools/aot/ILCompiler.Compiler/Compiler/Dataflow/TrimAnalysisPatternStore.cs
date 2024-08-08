@@ -13,7 +13,7 @@ namespace ILCompiler.Dataflow
 {
     public readonly struct TrimAnalysisPatternStore
     {
-        private readonly Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern> AssignmentPatterns;
+        private readonly Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisTokenAccessPattern> TokenAccessPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern> GenericInstantiations;
@@ -23,7 +23,7 @@ namespace ILCompiler.Dataflow
 
         public TrimAnalysisPatternStore(ValueSetLattice<SingleValue> lattice, Logger logger)
         {
-            AssignmentPatterns = new Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern>();
+            AssignmentPatterns = new Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern>();
             MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern>();
             TokenAccessPatterns = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisTokenAccessPattern>();
             GenericInstantiations = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern>();
@@ -34,13 +34,14 @@ namespace ILCompiler.Dataflow
 
         public void Add(TrimAnalysisAssignmentPattern pattern)
         {
-            if (!AssignmentPatterns.TryGetValue(pattern.Origin, out var existingPattern))
+            var key = (pattern.Origin, pattern.ParameterIndex);
+            if (!AssignmentPatterns.TryGetValue(key, out var existingPattern))
             {
-                AssignmentPatterns.Add(pattern.Origin, pattern);
+                AssignmentPatterns.Add(key, pattern);
                 return;
             }
 
-            AssignmentPatterns[pattern.Origin] = pattern.Merge(Lattice, existingPattern);
+            AssignmentPatterns[key] = pattern.Merge(Lattice, existingPattern);
         }
 
         public void Add(TrimAnalysisMethodCallPattern pattern)
