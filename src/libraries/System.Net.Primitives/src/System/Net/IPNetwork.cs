@@ -21,7 +21,7 @@ namespace System.Net
     /// In other words, <see cref="BaseAddress"/> is always the first usable address of the network.
     /// The constructor and the parsing methods will throw in case there are non-zero bits after the prefix.
     /// </remarks>
-    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>, IUtf8SpanFormattable
+    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>, IUtf8SpanFormattable, IUtf8SpanParsable<IPNetwork>
     {
         private readonly IPAddress? _baseAddress;
 
@@ -155,6 +155,22 @@ namespace System.Net
         }
 
         /// <summary>
+        /// Converts a UTF-8 CIDR character span to an <see cref="IPNetwork"/> instance.
+        /// </summary>
+        /// <param name="utf8Text">A UTF-8 character span that defines an IP network in CIDR notation.</param>
+        /// <returns>An <see cref="IPNetwork"/> instance.</returns>
+        /// <exception cref="FormatException"><paramref name="utf8Text"/> is not a valid UTF-8 CIDR network string, or the address contains non-zero bits after the network prefix.</exception>
+        public static IPNetwork Parse(ReadOnlySpan<byte> utf8Text)
+        {
+            if (!TryParse(utf8Text, out IPNetwork result))
+            {
+                throw new FormatException(SR.net_bad_ip_network);
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Converts the specified CIDR string to an <see cref="IPNetwork"/> instance and returns a value indicating whether the conversion succeeded.
         /// </summary>
         /// <param name="s">A <see cref="string"/> that defines an IP network in CIDR notation.</param>
@@ -176,7 +192,7 @@ namespace System.Net
         /// </summary>
         /// <param name="s">A <see cref="string"/> that defines an IP network in CIDR notation.</param>
         /// <param name="result">When the method returns, contains an <see cref="IPNetwork"/> instance if the conversion succeeds.</param>
-        /// <returns><see langword="true"/> if the conversion was succesful; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out IPNetwork result)
         {
             int separatorIndex = s.LastIndexOf('/');
@@ -184,6 +200,35 @@ namespace System.Net
             {
                 ReadOnlySpan<char> ipAddressSpan = s.Slice(0, separatorIndex);
                 ReadOnlySpan<char> prefixLengthSpan = s.Slice(separatorIndex + 1);
+
+                if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
+                    int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
+                    prefixLength <= GetMaxPrefixLength(address) &&
+                    !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
+                {
+                    Debug.Assert(prefixLength >= 0); // Parsing with NumberStyles.None should ensure that prefixLength is always non-negative.
+                    result = new IPNetwork(address, prefixLength, false);
+                    return true;
+                }
+            }
+
+            result = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Converts the specified UTF-8 CIDR character span to an <see cref="IPNetwork"/> instance and returns a value indicating whether the conversion succeeded.
+        /// </summary>
+        /// <param name="utf8Text">A UTF-8 character span that defines an IP network in CIDR notation.</param>
+        /// <param name="result">When the method returns, contains an <see cref="IPNetwork"/> instance if the conversion succeeds.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out IPNetwork result)
+        {
+            int separatorIndex = utf8Text.LastIndexOf((byte)'/');
+            if (separatorIndex >= 0)
+            {
+                ReadOnlySpan<byte> ipAddressSpan = utf8Text.Slice(0, separatorIndex);
+                ReadOnlySpan<byte> prefixLengthSpan = utf8Text.Slice(separatorIndex + 1);
 
                 if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
@@ -325,6 +370,12 @@ namespace System.Net
         static IPNetwork ISpanParsable<IPNetwork>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
         /// <inheritdoc />
+        static IPNetwork IUtf8SpanParsable<IPNetwork>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text);
+
+        /// <inheritdoc />
         static bool ISpanParsable<IPNetwork>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IPNetwork result) => TryParse(s, out result);
+
+        /// <inheritdoc />
+        static bool IUtf8SpanParsable<IPNetwork>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out IPNetwork result) => TryParse(utf8Text, out result);
     }
 }
