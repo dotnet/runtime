@@ -32,9 +32,9 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
 
-            var enumerator = source.CountBy(x => x).GetEnumerator();
+            var countBy = source.CountBy(x => x);   
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => countBy.GetEnumerator().MoveNext());
         }
 
         [Fact]
@@ -42,9 +42,9 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnMoveNext();
 
-            var enumerator = source.CountBy(x => x).GetEnumerator();
+            var countBy = source.CountBy(x => x);
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => countBy.GetEnumerator().MoveNext());
         }
 
         [Fact]
@@ -52,9 +52,9 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
 
-            var enumerator = source.CountBy(x => x).GetEnumerator();
+            var countBy = source.CountBy(x => x);
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => countBy.GetEnumerator().MoveNext());
         }
 
         [Fact]

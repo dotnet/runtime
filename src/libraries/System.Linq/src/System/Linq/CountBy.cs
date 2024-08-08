@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -27,19 +28,27 @@ namespace System.Linq
             return CountByIterator(source, keySelector, keyComparer);
         }
 
+#pragma warning disable CA1859
         private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
-            using IEnumerator<TSource> enumerator = source.GetEnumerator();
+            return new LazyEnumerable<KeyValuePair<TKey, int>>(() =>
+                {
+                    using IEnumerator<TSource> enumerator = source.GetEnumerator();
 
-            if (!enumerator.MoveNext())
-            {
-                yield break;
-            }
+                    if (!enumerator.MoveNext())
+                    {
+                        return ((IEnumerable<KeyValuePair<TKey, int>>)[]).GetEnumerator();
+                    }
 
-            foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
-            {
-                yield return countBy;
-            }
+                    return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
+                });
+        }
+#pragma warning restore CA1859
+
+        private sealed class LazyEnumerable<T>(Func<IEnumerator<T>> getEnumerator) : IEnumerable<T>
+        {
+            public IEnumerator<T> GetEnumerator() => getEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private static Dictionary<TKey, int> BuildCountDictionary<TSource, TKey>(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
