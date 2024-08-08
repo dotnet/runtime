@@ -4409,7 +4409,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
     }
     // If the assertion involves "op2" and "op1" is also a local var, then just morph the tree.
-    else if (op2->gtOper == GT_LCL_VAR)
+    else if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
 #ifdef DEBUG
         if (verbose)
