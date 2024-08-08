@@ -1262,8 +1262,6 @@ The C and C++ standard headers are available for usage in the CoreCLR code-base.
 
 Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
 
-To ensure we're using a supported and easily updatable standard library implementation, we use a specially built libc++ implementation, in our Linux Docker containers, in our shipping products. This enables us to use a modern C++ standard library implementation while still targeting older rootfs targets with outdated C++ library implementations.
-
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
 The `wchar_t` type is implementation-defined, with Windows and Unix-based platforms using different definitions (2 byte vs 4 byte). Use the `WCHAR` alias instead, which is always 2 bytes. The CoreCLR PAL provides implementations of a variety of the C standard `wchar_t` APIs with the `WCHAR` type instead. These methods, as well as the methods in the [CoreCLR minipal](https://github.com/dotnet/runtime/tree/main/src/coreclr/minipal) and in the [repo minipal](https://github.com/dotnet/runtime/tree/main/src/native/minipal) should be used. In these minipals, the APIs may use `char16_t` or a locally-defined `CHAR16_T` type. In both cases, these types are compatible with the `WCHAR` alias in CoreCLR. If a minipal API exists, it should be used instead of the PAL API.
@@ -1277,6 +1275,14 @@ For example, `std::vector<T>::at()` should not be used as it may throw an `std::
 ### <a name="2.11.3"></a> 2.11.3 Do not use getenv on Unix platforms
 
 The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
+
+### <a name="2.11.4"></a> 2.11.4 Limit usage of standard template types in shipping executables
+
+For Linux x64 and amd64 platforms, we build against a very old libstdc++, the version that shipped with Ubuntu 16.04. As a result, we strive to reduce our usage of template types (where code from the headers will be inserted into our binaries) in shipping executables and libraries.
+
+This rule applies to both `coreclr` as well as shipping external executables like `createdump`.
+
+For non-shipping native code, like the `superpmi` tools suite, standard headers can be used without limitation.
 
 ## <a name="2.12"></a>2.12 Is your code DAC compliant?
 
