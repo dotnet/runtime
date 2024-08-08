@@ -273,15 +273,16 @@ namespace System.IO.Compression.Tests
             Assert.Equal(expectedDisposeCalls, disposeCallCountingStream.NumberOfDisposeCalls);
         }
 
-        [Theory]
-        // A 19-character filename will result in a 65-byte central directory header. 64 of these will make the central directory
-        // read process stretch into two 4KB buffers.
-        [InlineData(64, "example/file-{0:00}.dat")]
-        public static void CanReadLargeCentralDirectoryHeader(int count, string entryNameFormat)
+        [Fact]
+        public static void CanReadLargeCentralDirectoryHeader()
         {
+            // A 19-character filename will result in a 65-byte central directory header. 64 of these will make the central directory
+            // read process stretch into two 4KB buffers.
+            int count = 64;
+            string entryNameFormat = "example/file-{0:00}.dat";
+
             using (MemoryStream archiveStream = new MemoryStream())
             {
-
                 using (ZipArchive creationArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
                 {
                     for (int i = 0; i < count; i++)
