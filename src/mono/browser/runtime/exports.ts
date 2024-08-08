@@ -18,7 +18,7 @@ import { export_internal } from "./exports-internal";
 import { export_api } from "./export-api";
 import { initializeReplacements } from "./polyfills";
 
-import { mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { mono_log_info, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
@@ -57,6 +57,8 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         rh.localHeapViewU16 = localHeapViewU16;
         rh.setU16_local = setU16_local;
         rh.setI32 = setI32;
+        // tmp:
+        rh.mono_log_info = mono_log_info;
     }
 
     Object.assign(runtimeHelpers, rh);
