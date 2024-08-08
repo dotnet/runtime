@@ -72,13 +72,6 @@ namespace Mono.Linker.Dataflow
 		{
 			_origin = new MessageOrigin (methodIL.Method);
 			base.Scan (methodIL, ref interproceduralState);
-
-			if (!methodIL.Method.ReturnsVoid ()) {
-				var method = methodIL.Method;
-				var methodReturnValue = _annotations.GetMethodReturnValue (method, isNewObj: false);
-				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
-					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);
-			}
 		}
 
 		protected override void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
@@ -100,11 +93,13 @@ namespace Mono.Linker.Dataflow
 
 		protected override MultiValue GetFieldValue (FieldDefinition field) => _annotations.GetFieldValue (field);
 
+		protected override MethodReturnValue GetReturnValue (MethodDefinition method) => _annotations.GetMethodReturnValue (method, isNewObj: false);
+
 		private void HandleStoreValueWithDynamicallyAccessedMembers (ValueWithDynamicallyAccessedMembers targetValue, Instruction operation, MultiValue sourceValue)
 		{
 			if (targetValue.DynamicallyAccessedMemberTypes != 0) {
 				_origin = _origin.WithInstructionOffset (operation.Offset);
-				HandleAssignmentPattern (_origin, sourceValue, targetValue);
+				TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (sourceValue, targetValue, _origin));
 			}
 		}
 
@@ -114,7 +109,7 @@ namespace Mono.Linker.Dataflow
 		protected override void HandleStoreParameter (MethodDefinition method, MethodParameterValue parameter, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (parameter, operation, valueToStore);
 
-		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
+		protected override void HandleReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
 
 		public override MultiValue HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
@@ -246,14 +241,6 @@ namespace Mono.Linker.Dataflow
 			}
 
 			return false;
-		}
-
-		void HandleAssignmentPattern (
-			in MessageOrigin origin,
-			in MultiValue value,
-			ValueWithDynamicallyAccessedMembers targetValue)
-		{
-			TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (value, targetValue, origin));
 		}
 
 		internal static bool IsPInvokeDangerous (MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)
