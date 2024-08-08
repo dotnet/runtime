@@ -571,7 +571,7 @@ mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
 /**
  * mono_class_set_deferred_failure:
  * \param klass class in which the failure was detected
- 
+
  * This method marks the class with a deferred failure, indicating that a failure was detected but it will be processed during AOT runtime..
  * Note that only the first failure is kept.
  *
@@ -684,6 +684,31 @@ mono_class_has_metadata_update_info (MonoClass *klass)
 	}
 }
 
+int
+mono_class_get_kind (MonoClass *klass)
+{
+	return m_class_get_class_kind (klass);
+}
+
+int
+mono_class_get_generic_params (MonoClass *klass, MonoClass **result, int result_capacity)
+{
+	if (m_class_get_class_kind (klass) != MONO_CLASS_GINST)
+		return 0;
+
+	MonoGenericClass *gclass = mono_class_get_generic_class (klass);
+	MonoGenericInst *inst = gclass->context.class_inst;
+	for (int i = 0; i < (int)inst->type_argc; i++) {
+		MonoType *t = inst->type_argv [i];
+		if (i < result_capacity) {
+			if (t)
+				result[i] = mono_class_from_mono_type_internal (t);
+			else
+				result[i] = NULL;
+		}
+	}
+	return MIN((int)inst->type_argc, result_capacity);
+}
 
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }

@@ -29,8 +29,6 @@ struct _MonoClass {
 
 	int        instance_size; /* object instance size */
 
-	guint inited          : 1;
-
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence
 	 * the instance size of the class. To avoid cyclic calls to
@@ -41,6 +39,8 @@ struct _MonoClass {
 	 */
 
 	/* ALL BITFIELDS SHOULD BE WRITTEN WHILE HOLDING THE LOADER LOCK */
+	/* first bit */
+	guint inited          : 1;
 	guint size_inited     : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
@@ -48,28 +48,23 @@ struct _MonoClass {
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
+	/* next byte */
 	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
-	guint is_inlinearray    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
-
-	/* next byte */
-	guint8 min_align;
-
-	/* next byte */
+	guint is_inlinearray  : 1; /* class is a valuetype and has System.Runtime.CompilerServices.InlineArrayAttribute */
 	guint packing_size    : 4;
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */
 	guint has_finalize    : 1; /* class has its own Finalize impl */
-	guint delegate        : 1; /* class is a Delegate */
 	/* next byte */
+	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
 	guint has_ref_fields  : 1; /* it has byref fields */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
-
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
+	/* next byte */
 	guint interfaces_inited : 1; /* interfaces is initialized */
-	/* next byte*/
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
 	guint fields_inited : 1; /* setup_fields () has finished */
@@ -77,10 +72,16 @@ struct _MonoClass {
 	guint has_weak_fields : 1; /* class has weak reference fields */
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
+	/* next byte */
 	guint has_deferred_failure : 1;
-	/* next byte*/
 	guint is_exception_class : 1; /* is System.Exception or derived from it */
 	guint variant_search_table_inited : 1;
+
+	/* next byte */
+	guint8 min_align;
+#ifdef HOST_BROWSER
+	char heapshot_scratch_byte;
+#endif
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;

@@ -83,6 +83,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)diagnostics-panel.html" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
@@ -334,6 +335,8 @@
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)pinvoke.c"
                                Dependencies="$(_WasmPInvokeHPath);$(_WasmPInvokeTablePath)" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)driver.c"
+                               Dependencies="" />
+      <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)heapshot.c"
                                Dependencies="" />
       <_WasmRuntimePackSrcFile Include="$(_WasmRuntimePackSrcDir)runtime.c"
                                Dependencies="@(_RuntimeCDependencies)" />

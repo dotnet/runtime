@@ -23,6 +23,22 @@ export const enum JiterpCounter {
     ElapsedCompilationMs,
 }
 
+export const JiterpCounterNames = [
+    "TraceCandidates",
+    "TracesCompiled",
+    "EntryWrappersCompiled",
+    "JitCallsCompiled",
+    "DirectJitCallsCompiled",
+    "Failures",
+    "BytesGenerated",
+    "NullChecksEliminated",
+    "NullChecksFused",
+    "BackBranchesEmitted",
+    "BackBranchesNotEmitted",
+    "ElapsedGenerationMs",
+    "ElapsedCompilationMs",
+];
+
 // keep in sync with jiterpreter.c, see mono_jiterp_get_member_offset
 export const enum JiterpMember {
     VtableInitialized = 0,

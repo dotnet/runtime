@@ -95,6 +95,14 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #include <stdatomic.h>
 
+static inline char
+mono_atomic_cas_char (volatile char *dest, char exch, char comp)
+{
+	g_static_assert (sizeof (atomic_char) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	(void)atomic_compare_exchange_strong ((volatile atomic_char *)dest, &comp, exch);
+	return comp;
+}
+
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -169,6 +177,13 @@ static inline gint64
 mono_atomic_dec_i64 (volatile gint64 *dest)
 {
 	return mono_atomic_add_i64 (dest, -1);
+}
+
+static inline char
+mono_atomic_xchg_char (volatile char *dest, char exch)
+{
+	g_static_assert (sizeof (atomic_char) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	return atomic_exchange ((volatile atomic_char *)dest, exch);
 }
 
 static inline gint32

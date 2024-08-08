@@ -408,6 +408,10 @@ int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root
 void sgen_deregister_root (char* addr)
 	MONO_PERMIT (need (sgen_lock_gc));
 
+typedef void (*SgenRootIterateCallback) (gpointer start, gpointer end, MonoGCRootSource source, int root_type, const char *msg, gpointer user);
+
+void sgen_registered_root_iterate (SgenRootIterateCallback callback, gpointer user_data, int root_type);
+
 typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);
 typedef gboolean (*IterateObjectResultCallbackFunc) (GCObject*, size_t, void*);
 
@@ -887,6 +891,8 @@ void sgen_gc_unlock (void) MONO_PERMIT (use (sgen_gc_locked), revoke (sgen_gc_lo
 
 void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
+
+gpointer sgen_try_reveal_pointer (gpointer hidden, GCHandleType handle_type);
 
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 	MONO_PERMIT (need (sgen_gc_locked));

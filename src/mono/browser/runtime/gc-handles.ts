@@ -205,6 +205,15 @@ export function assertNoProxies (): void {
 
 let force_dispose_proxies_in_progress = false;
 
+export function enumerateProxies (csObject: Function, jsObject: Function): void {
+    for (const tup of _js_owned_object_table)
+        csObject(tup[0], tup[1] ? tup[1].deref() : null);
+    for (let js_handle = 0; js_handle < _cs_owned_objects_by_js_handle.length; js_handle++)
+        jsObject(js_handle, _cs_owned_objects_by_js_handle[js_handle]);
+    for (let jsv_handle = 0; jsv_handle < _cs_owned_objects_by_jsv_handle.length; jsv_handle++)
+        jsObject(jsv_handle, _cs_owned_objects_by_jsv_handle[jsv_handle]);
+}
+
 // when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
 // when called from elsewhere, C# side could be unbalanced!!
 export function forceDisposeProxies (disposeMethods: boolean, verbose: boolean): void {

@@ -180,6 +180,9 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+void
+mono_wasm_heapshot_initialize (void);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
@@ -225,6 +228,8 @@ mono_wasm_load_runtime (int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+
+    mono_wasm_heapshot_initialize();
 }
 
 EMSCRIPTEN_KEEPALIVE void

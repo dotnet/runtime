@@ -13,6 +13,11 @@ import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
+
+if (process.versions.node.split(".")[0] < 18) {
+    throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
+}
+
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
