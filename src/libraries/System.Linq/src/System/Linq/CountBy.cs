@@ -41,6 +41,7 @@ namespace System.Linq
 
                 return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
             }
+
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
