@@ -116,6 +116,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         [InlineData(false)]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials and HttpListener is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task DefaultHandler_FakeServer_Success(bool useNtlm)
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -142,6 +143,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Windows, "DefaultCredentials are unsupported for NTLM on Unix / Managed implementation")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "TODO WASI")]
         public async Task DefaultHandler_FakeServer_DefaultCredentials()
         {
             await LoopbackServer.CreateClientAndServerAsync(
