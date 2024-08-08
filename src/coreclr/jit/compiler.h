@@ -5703,15 +5703,15 @@ public:
     bool* m_specialCopyArgs;
     bool recordArgRequiresSpecialCopy(unsigned argNum)
     {
-        if (argNum >= info.compMethodInfo->args.numArgs)
+        if (argNum >= info.compArgsCount)
         {
             return false;
         }
 
         if (m_specialCopyArgs == nullptr)
         {
-            m_specialCopyArgs = new (getAllocator()) bool[info.compMethodInfo->args.numArgs];
-            memset(m_specialCopyArgs, 0, info.compMethodInfo->args.numArgs * sizeof(bool));
+            m_specialCopyArgs = new (getAllocator()) bool[info.compArgsCount];
+            memset(m_specialCopyArgs, 0, info.compArgsCount * sizeof(bool));
         }
 
         m_specialCopyArgs[argNum] = true;
@@ -5720,8 +5720,7 @@ public:
 
     bool argRequiresSpecialCopy(unsigned argNum)
     {
-        assert(argNum < info.compMethodInfo->args.numArgs);
-        return m_specialCopyArgs != nullptr && m_specialCopyArgs[argNum];
+        return argNum < info.compArgsCount && m_specialCopyArgs != nullptr && m_specialCopyArgs[argNum];
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
