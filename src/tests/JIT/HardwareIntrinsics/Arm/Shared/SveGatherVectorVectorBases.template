@@ -56,17 +56,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates using inside ConditionalSelect with value falseValue
-                // Currently, using this operation in ConditionalSelect() gives incorrect result
-                // when falseReg == targetReg because this instruction uses Pg/Z to update the targetReg
-                // instead of Pg/M to merge it. As such, the value of falseReg is lost. Ideally, such
-                // instructions should be marked similar to RMW (a different flag name) to make sure that
-                // we do not assign falseReg/targetReg same. Then, we would do something like this:
-                //
-                // ldnf1sh target, pg/z, [x0]
-                // sel mask, target, target, falseReg
-                //
-                // This needs more careful thinking, so disabling it for now.
-                // test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates using inside ConditionalSelect with zero falseValue
                 test.ConditionalSelect_ZeroOp();
