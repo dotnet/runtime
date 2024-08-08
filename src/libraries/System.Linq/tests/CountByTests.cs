@@ -32,7 +32,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
 
-            var countBy = source.CountBy(x => x);   
+            var countBy = source.CountBy(x => x);
 
             Assert.Throws<InvalidOperationException>(() => countBy.GetEnumerator().MoveNext());
         }
