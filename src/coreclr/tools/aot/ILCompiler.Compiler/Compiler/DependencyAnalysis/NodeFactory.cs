@@ -814,11 +814,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
-            // Ignore requiredAlign8 flag for anything but ARM32 and WASM
-            if (Target.Architecture is not TargetArchitecture.ARM and not TargetArchitecture.Wasm32)
-            {
-                requiredAlign8 = false;
-            }
+            requiredAlign8 &= Target.SupportsAlign8;
             return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
         }
 
