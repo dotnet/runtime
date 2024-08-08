@@ -228,10 +228,23 @@ namespace System.Numerics.Tests
             // BasicTests
             VerifyFailParseToString(null, typeof(ArgumentNullException));
             VerifyFailParseToString(string.Empty, typeof(FormatException));
-            VerifyParseToString("0");
-            VerifyParseToString("000");
-            VerifyParseToString("1");
-            VerifyParseToString("001");
+
+            foreach (var value in new string[]
+            {
+                "0",
+                "000",
+                "1",
+                "001",
+                int.MaxValue.ToString(),
+                int.MinValue.ToString(),
+                long.MaxValue.ToString(),
+                long.MinValue.ToString(),
+                Int128.MaxValue.ToString(),
+                Int128.MinValue.ToString(),
+            })
+            {
+                VerifyParseToString(value);
+            }
 
             // SimpleNumbers - Small
             for (int i = 0; i < s_samples; i++)
