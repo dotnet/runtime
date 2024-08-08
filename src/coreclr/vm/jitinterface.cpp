@@ -1579,7 +1579,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
                 // Optimization is disabled for linux musl arm64
-#elif defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
                 // Optimization is enabled for linux/arm64 only for static resolver.
                 // For static resolver, the TP offset is same for all threads.
                 // For dynamic resolver, TP offset returned is for the current thread and
