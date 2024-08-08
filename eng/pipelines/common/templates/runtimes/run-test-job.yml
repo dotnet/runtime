@@ -331,9 +331,7 @@ jobs:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if or(eq(parameters.runtimeFlavor, 'mono'),
-                    and(eq(parameters.testGroup, 'outerloop'),
-                        eq(parameters.readyToRun, true))) }}:
+          ${{ if or(eq(parameters.runtimeFlavor, 'mono'), and(eq(parameters.testGroup, 'outerloop'), eq(parameters.readyToRun, true))) }}:
             # tiered compilation isn't done on mono yet
             scenarios:
             - normal
