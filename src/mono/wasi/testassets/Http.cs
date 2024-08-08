@@ -8,11 +8,15 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
-// keep in sync with src\mono\wasi\testassets\Http.cs
+// keep in sync with src\mono\sample\wasi\http-p2\Program.cs
 public static class WasiMainWrapper
 {
     public static async Task<int> MainAsync(string[] args)
     {
+        Console.WriteLine("Hello, Wasi Console!");
+        for (int i = 0; i < args.Length; i ++)
+            Console.WriteLine($"args[{i}] = {args[i]}");
+
         using HttpClient client = new();
         client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.Accept.Clear();
@@ -26,7 +30,7 @@ public static class WasiMainWrapper
         Console.WriteLine();
         Console.WriteLine(json);
 
-        return 0;
+        return 42;
     }
 
     public static int Main(string[] args)
@@ -36,5 +40,4 @@ public static class WasiMainWrapper
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
         static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }
-
 }
