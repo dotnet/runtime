@@ -36,7 +36,7 @@ namespace System.Linq
 
                 if (!enumerator.MoveNext())
                 {
-                    return ((IEnumerable<KeyValuePair<TKey, int>>)[]).GetEnumerator();
+                    return Empty<KeyValuePair<TKey, int>>().GetEnumerator();
                 }
 
                 return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
