@@ -104,7 +104,7 @@ public:
     static void Startup();
 
     ~PEImage();
-    PEImage(const WCHAR* path);
+    explicit PEImage(const WCHAR* path);
 
     BOOL Equals(PEImage* pImage);
 
