@@ -731,7 +731,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 if (targetReg != embMaskOp1Reg)
                                 {
                                     GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
+                                                              /* canSkip */ true);
                                 }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
