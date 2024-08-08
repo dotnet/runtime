@@ -462,5 +462,50 @@ namespace Microsoft.Extensions
 
             bool IDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
         }
+
+        public class OptionsWithUnsupportedStructs
+        {
+            public ReadOnlyCollectionStructExplicit ReadOnlyCollectionStructExplicit { get; set; } = new();
+
+            public ReadOnlyDictionaryStructExplicit ReadOnlyDictionaryStructExplicit { get; set; } = new();
+        }
+
+        public struct ReadOnlyCollectionStructExplicit : IReadOnlyCollection<string>
+        {
+            public ReadOnlyCollectionStructExplicit()
+            {
+                _collection = new List<string>();
+            }
+
+            private readonly IReadOnlyCollection<string> _collection;
+            int IReadOnlyCollection<string>.Count => _collection.Count;
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => _collection.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_collection).GetEnumerator();
+        }
+
+        public struct ReadOnlyDictionaryStructExplicit : IReadOnlyDictionary<string, string>
+        {
+            public ReadOnlyDictionaryStructExplicit()
+            {
+                _dictionary = new Dictionary<string, string>();
+            }
+
+            private readonly IReadOnlyDictionary<string, string> _dictionary;
+            string IReadOnlyDictionary<string, string>.this[string key] => _dictionary[key];
+
+            IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => _dictionary.Keys;
+
+            IEnumerable<string> IReadOnlyDictionary<string, string>.Values => _dictionary.Values;
+
+            int IReadOnlyCollection<KeyValuePair<string, string>>.Count => _dictionary.Count;
+
+            bool IReadOnlyDictionary<string, string>.ContainsKey(string key) => _dictionary.ContainsKey(key);
+
+            IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator() => _dictionary.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_dictionary).GetEnumerator();
+
+            bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
+        }
     }
 }
