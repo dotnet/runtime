@@ -591,6 +591,10 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataEmit3 *)this;
         fIsInterfaceRW = true;
     }
+    else if (riid == IID_IILAsmPortablePdbWriter)
+    {
+        *ppUnk = static_cast<IILAsmPortablePdbWriter *>(this);
+    }
 #endif
     else if (riid == IID_IMetaDataAssemblyEmit)
     {

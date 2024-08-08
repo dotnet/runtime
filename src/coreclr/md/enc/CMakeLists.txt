@@ -4,6 +4,7 @@ set(MDRUNTIMERW_SOURCES
   metamodelrw.cpp
   peparse.cpp
   rwutil.cpp
+  sha256.cpp
   stgio.cpp
   stgtiggerstorage.cpp
   stgtiggerstream.cpp
@@ -33,6 +34,7 @@ set(MDRUNTIMERW_HEADERS
   ../inc/portablepdbmdds.h
   ../inc/portablepdbmdi.h
   ../inc/rwutil.h
+  ../inc/sha256.h
   ../inc/stgio.h
   ../inc/stgtiggerstorage.h
   ../inc/stgtiggerstream.h

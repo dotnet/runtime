@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "pdbheap.h"
+#include "sha256.h"
 
 PdbHeap::PdbHeap() : m_data(NULL), m_size(0)
 {
@@ -64,6 +65,25 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
     _ASSERTE(offset == m_size);
 
     return S_OK;
+}
+
+
+__checkReturn
+HRESULT PdbHeap::SetDataGuid(REFGUID newGuid)
+{
+    _ASSERTE(m_size >= sizeof(PDB_ID));
+
+    if (memcpy_s(m_data, m_size, &newGuid, sizeof(GUID)))
+        return E_FAIL;
+
+    return S_OK;
+}
+
+__checkReturn
+HRESULT PdbHeap::ComputeSha256Checksum(BYTE (&checksum)[32])
+{
+    _ASSERTE(m_size >= sizeof(PDB_ID));
+    return Sha256Hash(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
 }
 
 __checkReturn
