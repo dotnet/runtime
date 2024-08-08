@@ -317,9 +317,9 @@ CDAC_TYPE_END(InstantiatedMethodDesc)
 
 CDAC_TYPE_BEGIN(StoredSigMethodDesc)
 CDAC_TYPE_INDETERMINATE(StoredSigMethodDesc)
-CDAC_TYPE_FIELD(StoredSigMethodDesc, /*pointer*/, Sig, cdac_data<DynamicMethodDesc>::Sig)
-CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, cSig, cdac_data<DynamicMethodDesc>::cSig)
-CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<DynamicMethodDesc>::ExtendedFlags)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*pointer*/, Sig, cdac_data<StoredSigMethodDesc>::Sig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, cSig, cdac_data<StoredSigMethodDesc>::cSig)
+CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<StoredSigMethodDesc>::ExtendedFlags)
 CDAC_TYPE_END(StoredSigMethodDesc)
 
 CDAC_TYPE_BEGIN(DynamicMethodDesc)
