@@ -1096,7 +1096,6 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
         {
             // insertps is special and can contain op1 when it is zero
             assert(op1->IsVectorZero());
-            assert(op1Reg == REG_NA);
             op1Reg = targetReg;
         }
 
