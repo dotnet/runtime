@@ -36,12 +36,6 @@ typedef struct
     uint32_t UserFlags; // user defined flags
 } FileStatus;
 
-typedef struct
-{
-    size_t ResidentSetSize;
-    // add more fields when needed.
-} ProcessStatus;
-
 // NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
 //       assertions in pal_networking.c that validate this.
 typedef struct
@@ -794,13 +788,6 @@ PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
  * Returns true (non-zero) if supported, false (zero) if not.
  */
 PALEXPORT int32_t SystemNative_CanGetHiddenFlag(void);
-
-/**
- * Reads the psinfo_t struct and converts into ProcessStatus.
- *
- * Returns 1 if the process status was read; otherwise, 0.
- */
-PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor at specified offset.

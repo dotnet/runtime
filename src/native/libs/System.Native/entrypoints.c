@@ -119,7 +119,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
     DllImportEntry(SystemNative_FChflags)
     DllImportEntry(SystemNative_CanGetHiddenFlag)
-    DllImportEntry(SystemNative_ReadProcessStatusInfo)
     DllImportEntry(SystemNative_Log)
     DllImportEntry(SystemNative_LogError)
     DllImportEntry(SystemNative_AlignedAlloc)
