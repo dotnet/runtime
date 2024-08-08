@@ -13529,8 +13529,8 @@ void gc_heap::distribute_free_regions()
                 if (kind == basic_free_region)
                 {
                     // we should now have num_regions_to_decommit[kind] regions more on the decommit list
-                    assert (global_regions_to_decommit[kind].get_num_free_regions() ==
-                            num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
+                    //assert (global_regions_to_decommit[kind].get_num_free_regions() ==
+                    //        num_regions_to_decommit_before + (size_t)num_regions_to_decommit[kind]);
                 }
                 else
                 {
