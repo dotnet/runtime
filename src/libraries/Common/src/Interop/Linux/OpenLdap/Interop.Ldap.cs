@@ -221,9 +221,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference")]
         public static partial IntPtr ldap_first_reference(ConnectionHandle ldapHandle, IntPtr result);
 
-        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control")]
-        public static partial int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
-
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free")]
         public static partial int ldap_control_free(IntPtr control);
 
