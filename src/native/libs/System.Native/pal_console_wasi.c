@@ -32,13 +32,6 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
     return -1;
 }
 
-int32_t SystemNative_SetWindowSize(WinSize* windowSize)
-{
-    assert(windowSize != NULL);
-    errno = ENOTSUP;
-    return -1;
-}
-
 int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
