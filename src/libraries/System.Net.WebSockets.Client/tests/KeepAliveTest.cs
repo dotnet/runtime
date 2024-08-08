@@ -37,7 +37,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
-        [OuterLoop("Uses Task.Delay")]
+        //[OuterLoop("Uses Task.Delay")]
         [InlineData(1, 0)] // unsolicited pong
         [InlineData(1, 2)] // ping/pong
         public async Task KeepAlive_LongDelayBetweenReceiveSends_Succeeds(int keepAliveIntervalSec, int keepAliveTimeoutSec)

@@ -237,7 +237,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [OuterLoop("Uses Task.Delay")]
+        //[OuterLoop("Uses Task.Delay")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
