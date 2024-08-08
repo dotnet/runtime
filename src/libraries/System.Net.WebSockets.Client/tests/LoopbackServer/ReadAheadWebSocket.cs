@@ -26,13 +26,13 @@ internal class ReadAheadWebSocket : WebSocket
     private SemaphoreSlim receiveMutex = new SemaphoreSlim(1, 1);
     private readonly WebSocket _innerWebSocket;
 
-    public ReadAheadWebSocket(WebSocket innerWebSocket, Action<FormattableString>? debugLog = null)
+    public ReadAheadWebSocket(WebSocket innerWebSocket)
     {
         _innerWebSocket = innerWebSocket;
-        _ = ProcessIncomingFrames(debugLog);
+        _ = ProcessIncomingFrames();
     }
 
-    private async Task ProcessIncomingFrames(Action<FormattableString>? debugLog)
+    private async Task ProcessIncomingFrames()
     {
         var buffer = new byte[ReadAheadBufferSize];
         while (true)
@@ -56,7 +56,6 @@ internal class ReadAheadWebSocket : WebSocket
             catch (Exception e)
             {
                 _incomingFrames.Writer.Complete(e);
-                debugLog?.Invoke($"Exception during {nameof(ProcessIncomingFrames)}: {e}");
                 break;
             }
         }

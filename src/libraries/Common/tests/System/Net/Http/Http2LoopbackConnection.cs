@@ -28,7 +28,6 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
-        private readonly Action<string>? _debugLog;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -36,13 +35,12 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse, Action<string>? debugLog = null)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
             _transparentPingResponse = transparentPingResponse;
-            _debugLog = debugLog;
         }
 
         public override string ToString()
@@ -85,7 +83,7 @@ namespace System.Net.Test.Common
                 stream = sslStream;
             }
 
-            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse, httpOptions.DebugLog);
+            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse);
             await con.ReadPrefixAsync().ConfigureAwait(false);
 
             return con;
@@ -370,7 +368,6 @@ namespace System.Net.Test.Common
         // and will ignore any errors if client has already shutdown
         public async Task ShutdownIgnoringErrorsAsync(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
-            _debugLog?.Invoke($"Http2LoopbackConnection.ShutdownIgnoringErrorsAsync() with lastStreamId={lastStreamId}, errorCode={errorCode}");
             try
             {
                 await SendGoAway(lastStreamId, errorCode).ConfigureAwait(false);

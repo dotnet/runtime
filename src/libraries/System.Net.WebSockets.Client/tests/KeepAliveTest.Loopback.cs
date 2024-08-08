@@ -41,8 +41,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     clientOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
                     clientOptions.KeepAliveTimeout = TimeSpan.FromSeconds(1);
-                },
-                DebugLog = Trace
+                }
             };
 
             return LoopbackWebSocketServer.RunAsync(

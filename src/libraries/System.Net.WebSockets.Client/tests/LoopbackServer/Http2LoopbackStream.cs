@@ -15,7 +15,6 @@ namespace System.Net.Test.Common
         private readonly int _streamId;
         private bool _readEnded;
         private ReadOnlyMemory<byte> _leftoverReadData;
-        private readonly Action<string>? _debugLog;
         private bool _sendResetOnDispose;
 
         public override bool CanRead => true;
@@ -25,11 +24,10 @@ namespace System.Net.Test.Common
         public Http2LoopbackConnection Connection => _connection;
         public int StreamId => _streamId;
 
-        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId, bool sendResetOnDispose = true, Action<string>? debugLog = null)
+        public Http2LoopbackStream(Http2LoopbackConnection connection, int streamId, bool sendResetOnDispose = true)
         {
             _connection = connection;
             _streamId = streamId;
-            _debugLog = debugLog;
             _sendResetOnDispose = sendResetOnDispose;
         }
 
@@ -71,7 +69,6 @@ namespace System.Net.Test.Common
 
         public override async ValueTask DisposeAsync()
         {
-            _debugLog?.Invoke($"Http2LoopbackStream.DisposeAsync() for stream {_streamId}; readEnded={_readEnded}; sendResetOnDispose={_sendResetOnDispose}");
             try
             {
                 await _connection.SendResponseDataAsync(_streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);

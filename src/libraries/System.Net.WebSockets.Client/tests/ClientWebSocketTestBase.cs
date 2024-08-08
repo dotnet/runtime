@@ -15,7 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketTestBase : IDisposable
+    public class ClientWebSocketTestBase
     {
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoServers();
         public static readonly object[][] EchoHeadersServers = System.Net.Test.Common.Configuration.WebSockets.GetEchoHeadersServers();
@@ -41,24 +41,10 @@ namespace System.Net.WebSockets.Client.Tests
         public const int TimeOutMilliseconds = 30000;
         public const int CloseDescriptionMaxLength = 123;
         public readonly ITestOutputHelper _output;
-        public readonly TracingTestCollection? _collection;
 
-        public ClientWebSocketTestBase(ITestOutputHelper output, TracingTestCollection? collection = null)
+        public ClientWebSocketTestBase(ITestOutputHelper output)
         {
             _output = output;
-            _collection = collection;
-
-            if (_collection != null)
-            {
-                _collection._tracePrefix = $"{GetType().Name}#{GetHashCode()}";
-            }
-
-            Trace($"{Environment.NewLine}===== Starting {GetType().Name}#{GetHashCode()} ====={Environment.NewLine}");
-        }
-
-        public void Dispose()
-        {
-            Trace($"{Environment.NewLine}===== Disposing {GetType().Name}#{GetHashCode()} ====={Environment.NewLine}");
         }
 
         public static IEnumerable<object[]> UnavailableWebSocketServers
@@ -175,76 +161,5 @@ namespace System.Net.WebSockets.Client.Tests
             WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
-
-        public void Trace(FormattableString message) => _collection?.Trace(message);
-
-        public void Trace(string message) => _collection?.Trace(message);
-    }
-
-    [CollectionDefinition(nameof(TracingTestCollection), DisableParallelization = true)]
-    public class TracingTestCollection : ICollectionFixture<TracingTestCollection>, IDisposable
-    {
-        private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
-
-        internal string _tracePrefix = "(null)";
-
-        private readonly TestEventListener _listener;
-
-        private static readonly EventHandler<UnobservedTaskExceptionEventArgs> s_eventHandler = static (_, e) =>
-            {
-                lock (s_unobservedExceptions)
-                {
-                    string text = e.Exception.ToString();
-                    s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
-                }
-            };
-
-        private static readonly FieldInfo s_ClientWebSocket_innerWebSocketField =
-            typeof(ClientWebSocket).GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new Exception("Could not find ClientWebSocket._innerWebSocket field");
-        private static readonly PropertyInfo s_WebSocketHandle_WebSocketProperty =
-            typeof(ClientWebSocket).Assembly.GetType("System.Net.WebSockets.WebSocketHandle", throwOnError: true)!
-                .GetProperty("WebSocket", BindingFlags.Instance | BindingFlags.Public)
-            ?? throw new Exception("Could not find WebSocketHandle.WebSocket property");
-
-        private static WebSocket GetUnderlyingWebSocket(ClientWebSocket clientWebSocket)
-        {
-            object? innerWebSocket = s_ClientWebSocket_innerWebSocketField.GetValue(clientWebSocket);
-            if (innerWebSocket == null)
-            {
-                throw new Exception("ClientWebSocket._innerWebSocket is null");
-            }
-
-            return (WebSocket)s_WebSocketHandle_WebSocketProperty.GetValue(innerWebSocket);
-        }
-
-        public TracingTestCollection()
-        {
-            Console.WriteLine(Environment.NewLine + "===== Running TracingTestCollection =====" + Environment.NewLine);
-
-            TaskScheduler.UnobservedTaskException += s_eventHandler;
-
-            _listener = new TestEventListener(Trace, enableActivityId: true,  "System.Net.Http", "Private.InternalDiagnostics.System.Net.Http", "Private.InternalDiagnostics.System.Net.WebSockets");
-        }
-
-        public void Dispose()
-        {
-            Console.WriteLine(Environment.NewLine + "===== Disposing TracingTestCollection =====" + Environment.NewLine);
-            _listener.Dispose();
-
-            TaskScheduler.UnobservedTaskException -= s_eventHandler;
-            Console.WriteLine($"Unobserved exceptions of {s_unobservedExceptions.Count} different types: {Environment.NewLine}{string.Join(Environment.NewLine + new string('=', 120) + Environment.NewLine, s_unobservedExceptions.Select(pair => $"Count {pair.Value}: {pair.Key}"))}");
-        }
-
-        public void Trace(string message) => Trace((FormattableString)$"{message}");
-
-        public void Trace(FormattableString message)
-        {
-            var str = $"{DateTime.UtcNow:HH:mm:ss.fff} {_tracePrefix} | {message}";
-            lock (Console.Out)
-            {
-                Console.WriteLine(str);
-            }
-        }
     }
 }

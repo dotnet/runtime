@@ -207,135 +207,19 @@ namespace System.Net.WebSockets.Client.Tests
 
     // --- HTTP/2 WebSocket loopback tests ---
 
-    public abstract class AbortTest_Loopback_Http2 : AbortTest_Loopback
+    public class AbortTest_Invoker_Http2 : AbortTest_Invoker_Loopback
     {
-        public AbortTest_Loopback_Http2(ITestOutputHelper output) : base(output) { }
+        public AbortTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version HttpVersion => Net.HttpVersion.Version20;
         protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
             => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
-
-        public static object[][] ServerResetsAfterCloseHandshake_MemberData = ToMemberData(Bool_Values, UseSsl_Values);
-
-        [ActiveIssue("TODO")] // flaky test; unrelated existing issue
-        [OuterLoop("Uses Task.Delay")]
-        [Theory]
-        [MemberData(nameof(ServerResetsAfterCloseHandshake_MemberData))]
-        public Task ServerResetsAfterCloseHandshake_NoExceptionOnClient(bool sendGoAway, bool useSsl)
-        {
-            Assert.True(HttpVersion == Net.HttpVersion.Version20);
-
-            var clientMsg = new byte[] { 1, 2, 3, 4, 5, 6 };
-            var serverMsg = new byte[] { 42 };
-            var serverFinalMsg = new byte[] { 123 };
-            var clientAckTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var serverAckTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
-
-            var globalOptions = new LoopbackWebSocketServer.Options(HttpVersion, useSsl, HttpInvoker: null)
-            {
-                DisposeServerWebSocket = false
-            };
-
-            var serverSentResetTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var clientReceivedEosTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            return LoopbackWebSocketServer.RunAsync(
-                async uri =>
-                {
-                    var token = timeoutCts.Token;
-                    var clientOptions = globalOptions with { HttpInvoker = GetInvoker() };
-                    var clientWebSocket = await LoopbackWebSocketServer.GetConnectedClientAsync(uri, clientOptions, token).ConfigureAwait(false);
-
-                    await VerifySendReceiveAsync(clientWebSocket, clientMsg, serverMsg, clientAckTcs, serverAckTcs.Task, token).ConfigureAwait(false);
-
-                    await clientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
-
-                    await serverSentResetTcs.Task.WaitAsync(token).ConfigureAwait(false);
-
-                    // even though the server sent a reset, the client should receive all the data sent before the reset
-
-                    // receive final message
-                    var readBuffer = new byte[1];
-                    var result = await clientWebSocket.ReceiveAsync(readBuffer, token).ConfigureAwait(false);
-                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
-                    Assert.Equal(1, result.Count);
-                    Assert.True(result.EndOfMessage);
-                    Assert.Equal(serverFinalMsg, readBuffer);
-
-                    // receive close frame
-                    result = await clientWebSocket.ReceiveAsync(readBuffer, token).ConfigureAwait(false);
-                    Assert.Equal(WebSocketMessageType.Close, result.MessageType);
-
-                    // we've already closed our side, so we should be fully closed now
-                    Assert.Equal(WebSocketState.Closed, clientWebSocket.State);
-                    clientWebSocket.Dispose();
-                    clientReceivedEosTcs.SetResult();
-                },
-                async (requestData, token) =>
-                {
-                    var connection = requestData.Http2Connection!;
-                    var streamId = requestData.Http2StreamId!.Value;
-
-                    var wsOptions = new WebSocketCreationOptions { IsServer = true };
-                    var serverWebSocket = WebSocket.CreateFromStream(requestData.WebSocketStream, wsOptions);
-
-                    await VerifySendReceiveAsync(serverWebSocket, serverMsg, clientMsg, serverAckTcs, clientAckTcs.Task, token).ConfigureAwait(false);
-
-                    // wait for client to send close frame
-                    var result = await serverWebSocket.ReceiveAsync(new byte[1], token).ConfigureAwait(false);
-                    Assert.Equal(WebSocketMessageType.Close, result.MessageType);
-
-                    // send final message
-                    await serverWebSocket.SendAsync(serverFinalMsg, WebSocketMessageType.Binary, endOfMessage: true, token).ConfigureAwait(false);
-
-                    await serverWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", token).ConfigureAwait(false);
-                    // we've already closed our side, so we should be fully closed now
-                    Assert.Equal(WebSocketState.Closed, serverWebSocket.State);
-
-                    try
-                    {
-                        await connection.SendResponseDataAsync(streamId, Memory<byte>.Empty, endStream: true).ConfigureAwait(false);
-
-                        if (sendGoAway)
-                        {
-                            await connection.SendGoAway(streamId).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            var rstFrame = new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, streamId);
-                            await connection.WriteFrameAsync(rstFrame).ConfigureAwait(false);
-                        }
-                    }
-                    catch (IOException)
-                    {
-                        // Ignore connection errors
-                    }
-                    catch (SocketException)
-                    {
-                        // Ignore connection errors
-                    }
-
-                    await Task.Delay(1000); // give the client some time to process the reset
-
-                    serverSentResetTcs.SetResult();
-                    await clientReceivedEosTcs.Task.WaitAsync(token).ConfigureAwait(false);
-                    serverWebSocket.Dispose();
-                },
-                globalOptions,
-                timeoutCts.Token);
-        }
     }
 
-    public class AbortTest_Invoker_Http2 : AbortTest_Loopback_Http2
-    {
-        public AbortTest_Invoker_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseCustomInvoker => true;
-    }
-
-    public class AbortTest_HttpClient_Http2 : AbortTest_Loopback_Http2
+    public class AbortTest_HttpClient_Http2 : AbortTest_HttpClient_Loopback
     {
         public AbortTest_HttpClient_Http2(ITestOutputHelper output) : base(output) { }
-        protected override bool UseHttpClient => true;
+        protected override Version HttpVersion => Net.HttpVersion.Version20;
+        protected override Task SendServerResponseAndEosAsync(WebSocketRequestData rd, ServerEosType eos, Func<WebSocketRequestData, CancellationToken, Task> callback, CancellationToken ct)
+            => WebSocketHandshakeHelper.SendHttp2ServerResponseAndEosAsync(rd, eosInHeadersFrame: eos == ServerEosType.WithHeaders, callback, ct);
     }
 }

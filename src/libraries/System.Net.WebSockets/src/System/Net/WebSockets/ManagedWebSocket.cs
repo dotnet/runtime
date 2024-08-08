@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.WebSockets.Compression;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -179,11 +180,7 @@ namespace System.Net.WebSockets
                 long heartBeatIntervalMs = (long)keepAliveInterval.TotalMilliseconds;
                 if (keepAliveTimeout > TimeSpan.Zero)
                 {
-                    _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout);
-#if DEBUG
-                    _keepAlivePingState.Debug_WebSocket_StateUpdateLock = StateUpdateLock;
-#endif
-
+                    _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout, this);
                     heartBeatIntervalMs = _keepAlivePingState.HeartBeatIntervalMs;
 
                     if (NetEventSource.Log.IsEnabled())
@@ -468,16 +465,23 @@ namespace System.Net.WebSockets
 
             lock (StateUpdateLock)
             {
-                WebSocketState state = _state;
-                if (state != WebSocketState.Closed && state != WebSocketState.Aborted)
-                {
-                    _state = state != WebSocketState.None && state != WebSocketState.Connecting ?
-                        WebSocketState.Aborted :
-                        WebSocketState.Closed;
-                }
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"State transition from {state} to {_state}");
+                OnAbortedCore();
             }
+        }
+
+        private void OnAbortedCore()
+        {
+            Debug.Assert(Monitor.IsEntered(StateUpdateLock), $"Expected {nameof(StateUpdateLock)} to be held");
+
+            WebSocketState state = _state;
+            if (state is not WebSocketState.Closed and not WebSocketState.Aborted)
+            {
+                _state = state is not WebSocketState.None and not WebSocketState.Connecting ?
+                    WebSocketState.Aborted :
+                    WebSocketState.Closed;
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"State transition from {state} to {_state}");
         }
 
         /// <summary>Sends a websocket frame to the network.</summary>
@@ -948,11 +952,14 @@ namespace System.Net.WebSockets
 
                                 int numBytesRead = await _stream.ReadAtLeastAsync(
                                     readBuffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numBytesRead}");
+
                                 if (numBytesRead < bytesToRead)
                                 {
                                     ThrowEOFUnexpected();
                                 }
-                                OnDataReceived(numBytesRead);
+                                _keepAlivePingState?.OnDataReceived();
                                 totalBytesReceived += numBytesRead;
                             }
 
@@ -1019,14 +1026,16 @@ namespace System.Net.WebSockets
 
                 if (_state == WebSocketState.Aborted)
                 {
+                    Exception inner = exc;
                     if (_keepAlivePingState?.Exception is not null)
                     {
-                        // it should have already been wrapped in an OperationCanceledException and thrown above,
-                        // but just in case it wasn't due to some race, let's surface both exceptions
-                        throw new OperationCanceledException(nameof(WebSocketState.Aborted), new AggregateException(exc, _keepAlivePingState.Exception));
+                        // exception was most likely caused by us aborting the connection due to
+                        // keep-alive timeout; but let's surface both just in case
+                        inner = ExceptionDispatchInfo.SetCurrentStackTrace(
+                            new AggregateException(_keepAlivePingState.Exception, exc));
                     }
 
-                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
+                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), inner);
                 }
                 OnAborted();
 
@@ -1600,11 +1609,13 @@ namespace System.Net.WebSockets
                         _receiveBuffer.Slice(_receiveBufferCount), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
                     _receiveBufferCount += numRead;
 
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"bytesRead={numRead}");
+
                     if (numRead < bytesToRead)
                     {
                         ThrowEOFUnexpected();
                     }
-                    OnDataReceived(numRead);
+                    _keepAlivePingState?.OnDataReceived();
                 }
             }
         }
@@ -1726,26 +1737,28 @@ namespace System.Net.WebSockets
                 cancellationToken);
         }
 
-        private void ThrowIfDisposed()
+        private void ThrowIfDisposed() => ThrowIfInvalidState();
+
+        private void ThrowIfInvalidState(WebSocketState[]? validStates = null)
         {
+            bool disposed = _disposed;
+            WebSocketState state = _state;
+            Exception? keepAliveException = null;
+
             if (_keepAlivePingState is not null)
             {
-                ThrowIfDisposedOrKeepAliveFaulted();
-                return;
+                // we need to take a lock to maintain consistency
+                lock (StateUpdateLock)
+                {
+                    disposed = _disposed;
+                    state = _state;
+                    keepAliveException = _keepAlivePingState.Exception;
+                }
             }
 
-            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
-        }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_state={state}, _disposed={disposed}, _keepAlivePingState.Exception={keepAliveException}");
 
-        private void ThrowIfInvalidState(WebSocketState[] validStates)
-        {
-            if (_keepAlivePingState is not null)
-            {
-                ThrowIfInvalidStateOrKeepAliveFaulted(validStates);
-                return;
-            }
-
-            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, validStates);
+            WebSocketValidate.ThrowIfInvalidState(state, disposed, keepAliveException, validStates);
         }
 
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75

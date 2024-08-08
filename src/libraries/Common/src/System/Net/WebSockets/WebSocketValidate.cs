@@ -38,40 +38,26 @@ namespace System.Net.WebSockets
             SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
-        {
-            // Exception order:
-            //    1. WebSocketException(InvalidState) -- if invalid state
-            //    2. ObjectDisposedException
+            => ThrowIfInvalidState(currentState, isDisposed, innerException: null, validStates ?? []);
 
-            string? invalidStateMessage = GetInvalidStateMessage(currentState, validStates);
-            if (invalidStateMessage is null) // state is valid
+        internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, Exception? innerException, WebSocketState[]? validStates = null)
+        {
+            if (validStates is not null && Array.IndexOf(validStates, currentState) == -1)
             {
-                // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
-                return;
+                string invalidStateMessage = SR.Format(
+                    SR.net_WebSockets_InvalidState, currentState, string.Join(", ", validStates));
+
+                throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage, innerException);
             }
 
-            throw new WebSocketException(WebSocketError.InvalidState, invalidStateMessage);
-        }
-
-        internal static string? GetInvalidStateMessage(WebSocketState currentState, WebSocketState[] validStates)
-        {
-            string validStatesText = string.Empty;
-
-            if (validStates != null && validStates.Length > 0)
+            if (innerException is not null)
             {
-                foreach (WebSocketState validState in validStates)
-                {
-                    if (currentState == validState)
-                    {
-                        return null;
-                    }
-                }
-
-                validStatesText = string.Join(", ", validStates);
+                Debug.Assert(currentState == WebSocketState.Aborted);
+                throw new OperationCanceledException(nameof(WebSocketState.Aborted), innerException);
             }
 
-            return SR.Format(SR.net_WebSockets_InvalidState, currentState, validStatesText);
+            // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
+            ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
         }
 
         internal static void ValidateSubprotocol(string subProtocol)
