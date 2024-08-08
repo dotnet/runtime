@@ -285,7 +285,7 @@ namespace System.Net.WebSockets
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"WebSocket is already aborted, skipping...");
                     // Something else already aborted the websocket, but didn't dispose it (yet?)?
-                    // This han happen either
+                    // This can happen either
                     //  (1) in the Abort() method, e.g. on cancellation, if we interjected between the state
                     //      change and the Dispose() call; or
                     //  (2) in the catch block of ReceiveAsyncPrivate (which doesn't do the dispose after??).
