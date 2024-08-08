@@ -119,9 +119,9 @@ namespace Tracing.Tests
                     listener.TPIODequeue >= listener.TPIODequeueGoal))
                 {
                     Console.WriteLine("Test Failed: Did not see all of the expected events.");
-                    Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}");
-                    Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}");
-                    Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}");
+                    Console.WriteLine($"ThreadPoolIOPack: {listener.TPIOPack}, expected: {listener.TPIOPackGoal}");
+                    Console.WriteLine($"ThreadPoolIOEnqueue: {listener.TPIOEnqueue}, expected: {listener.TPIOEnqueueGoal}");
+                    Console.WriteLine($"ThreadPoolIODequeue: {listener.TPIODequeue}, expected: {listener.TPIODequeueGoal}");
                     return -1;
                 }
 
