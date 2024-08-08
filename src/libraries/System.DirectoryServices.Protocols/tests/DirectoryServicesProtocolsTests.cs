@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -704,6 +705,59 @@ namespace System.DirectoryServices.Protocols.Tests
             connection.Bind();
 
             connection.Timeout = new TimeSpan(0, 3, 0);
+        }
+
+        [ConditionalFact(nameof(LdapConfigurationExists))]
+        public async Task TestAsyncSearchWithThreadRestart()
+        {
+            using LdapConnection connection = GetConnection();
+
+            string ouName = "ProtocolsGroup9";
+            string dn = "ou=" + ouName;
+
+            try
+            {
+                DeleteEntry(connection, dn);
+
+                AddOrganizationalUnit(connection, dn);
+                SearchResultEntry sre = SearchOrganizationalUnit(connection, LdapConfiguration.Configuration.SearchDn, ouName);
+                Assert.NotNull(sre);
+
+                string filter = "(objectClass=organizationalUnit)";
+                SearchRequest searchRequest = new SearchRequest(
+                                                        dn + "," + LdapConfiguration.Configuration.SearchDn,
+                                                        filter,
+                                                        SearchScope.OneLevel,
+                                                        null);
+
+                ASyncOperationState state = new ASyncOperationState(connection);
+                IAsyncResult asyncResult = connection.BeginSendRequest(
+                                                searchRequest,
+                                                PartialResultProcessing.ReturnPartialResultsAndNotifyCallback,
+                                                RunAsyncSearch,
+                                                state);
+
+                asyncResult.AsyncWaitHandle.WaitOne();
+                Assert.True(state.Exception == null, state.Exception == null ? "" : state.Exception.ToString());
+
+                // Wait for 35 seconds, so that the worker thread in PartialResultsRetriever
+                // gets terminated. Running a new async LDAP operation has to restart the worker thread.
+                await Task.Delay(35_000).ConfigureAwait(true);
+
+                ASyncOperationState state2 = new ASyncOperationState(connection);
+                IAsyncResult asyncResult2 = connection.BeginSendRequest(
+                                                searchRequest,
+                                                PartialResultProcessing.ReturnPartialResultsAndNotifyCallback,
+                                                RunAsyncSearch,
+                                                state2);
+
+                asyncResult2.AsyncWaitHandle.WaitOne();
+                Assert.True(state2.Exception == null, state2.Exception == null ? "" : state2.Exception.ToString());
+            }
+            finally
+            {
+                DeleteEntry(connection, dn);
+            }
         }
 
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)

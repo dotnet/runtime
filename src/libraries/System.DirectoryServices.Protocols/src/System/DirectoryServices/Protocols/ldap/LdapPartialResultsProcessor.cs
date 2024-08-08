@@ -11,21 +11,26 @@ namespace System.DirectoryServices.Protocols
 {
     internal sealed class LdapPartialResultsProcessor
     {
+        private readonly object _lockObject = new();
         private readonly ArrayList _resultList = new ArrayList();
         private readonly ManualResetEvent _workThreadWaitHandle;
+        private readonly PartialResultsRetriever _retriever;
         private bool _workToDo;
         private int _currentIndex;
 
         internal LdapPartialResultsProcessor(ManualResetEvent eventHandle)
         {
             _workThreadWaitHandle = eventHandle;
-            _ = new PartialResultsRetriever(eventHandle, this);
+            _retriever = new PartialResultsRetriever(eventHandle, this);
         }
+
+        public object LockObject => _lockObject;
 
         public void Add(LdapPartialAsyncResult asyncResult)
         {
-            lock (this)
+            lock (_lockObject)
             {
+                _retriever.StartIfNotRunning();
                 _resultList.Add(asyncResult);
 
                 if (!_workToDo)
@@ -40,7 +45,7 @@ namespace System.DirectoryServices.Protocols
         public void Remove(LdapPartialAsyncResult asyncResult)
         {
             // Called by Abort operation.
-            lock (this)
+            lock (_lockObject)
             {
                 if (!_resultList.Contains(asyncResult))
                 {
@@ -57,7 +62,7 @@ namespace System.DirectoryServices.Protocols
             LdapPartialAsyncResult asyncResult = null;
             AsyncCallback tmpCallback = null;
 
-            lock (this)
+            lock (_lockObject)
             {
                 int count = _resultList.Count;
 
@@ -223,7 +228,7 @@ namespace System.DirectoryServices.Protocols
 
         public void NeedCompleteResult(LdapPartialAsyncResult asyncResult)
         {
-            lock (this)
+            lock (_lockObject)
             {
                 if (_resultList.Contains(asyncResult))
                 {
@@ -240,7 +245,7 @@ namespace System.DirectoryServices.Protocols
 
         public PartialResultsCollection GetPartialResults(LdapPartialAsyncResult asyncResult)
         {
-            lock (this)
+            lock (_lockObject)
             {
                 if (!_resultList.Contains(asyncResult))
                 {
@@ -286,7 +291,7 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryResponse GetCompleteResult(LdapPartialAsyncResult asyncResult)
         {
-            lock (this)
+            lock (_lockObject)
             {
                 if (!_resultList.Contains(asyncResult))
                 {
@@ -335,21 +340,33 @@ namespace System.DirectoryServices.Protocols
 
     internal sealed class PartialResultsRetriever
     {
+        private static readonly TimeSpan s_maxThreadIdleTime = TimeSpan.FromSeconds(30);
         private readonly ManualResetEvent _workThreadWaitHandle;
         private readonly LdapPartialResultsProcessor _processor;
+        private bool _running;
 
         internal PartialResultsRetriever(ManualResetEvent eventHandle, LdapPartialResultsProcessor processor)
         {
             _workThreadWaitHandle = eventHandle;
             _processor = processor;
+        }
 
-            // Start the thread.
-            var thread = new Thread(new ThreadStart(ThreadRoutine))
+        public void StartIfNotRunning()
+        {
+            lock (_processor.LockObject)
             {
-                IsBackground = true,
-                Name = ".NET LDAP Results Retriever"
-            };
-            thread.Start();
+                if (!_running)
+                {
+                    // Start the thread.
+                    _running = true;
+                    var thread = new Thread(new ThreadStart(ThreadRoutine))
+                    {
+                        IsBackground = true,
+                        Name = ".NET LDAP Results Retriever"
+                    };
+                    thread.Start();
+                }
+            }
         }
 
         private void ThreadRoutine()
@@ -357,7 +374,18 @@ namespace System.DirectoryServices.Protocols
             while (true)
             {
                 // Make sure there is work to do.
-                _workThreadWaitHandle.WaitOne();
+                if (!_workThreadWaitHandle.WaitOne(s_maxThreadIdleTime))
+                {
+                    lock (_processor.LockObject)
+                    {
+                        if (!_workThreadWaitHandle.WaitOne(0))
+                        {
+                            // No work to do, allow thread to exit
+                            _running = false;
+                            return;
+                        }
+                    }
+                }
 
                 // Do the real work.
                 try
