@@ -357,17 +357,16 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         NSUInteger transformedStringBytes = [transformedString lengthOfBytesUsingEncoding: NSUTF16StringEncoding];
         if (sortKey == NULL)
             return (int32_t)transformedStringBytes;
-        NSRange range = NSMakeRange(0, [transformedString length]);
-        NSUInteger usedLength = 0;
+
         // If the buffer is too small, return the required buffer size
         // and throw exception in managed code
         if (cbSortKeyLength < (int32_t)transformedStringBytes)
             return (int32_t)transformedStringBytes;
+        NSRange range = NSMakeRange(0, [transformedString length]);
+        NSUInteger usedLength = 0;
         BOOL result = [transformedString getBytes:sortKey maxLength:transformedStringBytes usedLength:&usedLength encoding:NSUTF16StringEncoding options:0 range:range remainingRange:NULL];
         if (result)
             return (int32_t)usedLength;
-
-        (void)cbSortKeyLength; // ignore unused parameter
         return 0;
     }
 }
