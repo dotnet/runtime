@@ -23,6 +23,21 @@ internal interface INativeCodePointers : IContract
 
     public virtual TargetPointer MethodDescFromStubAddress(TargetCodePointer codeAddress) => throw new NotImplementedException();
     public virtual TargetPointer ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress) => throw new NotImplementedException();
+
+    public virtual NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip) => throw new NotImplementedException();
+    public virtual NativeCodeVersionHandle GetActiveNativeCodeVersion(TargetPointer methodDesc) => throw new NotImplementedException();
+}
+
+internal struct NativeCodeVersionHandle
+{
+    // no public constructors
+    internal readonly TargetPointer _methodDescAddress;
+    internal readonly TargetPointer _codeVersionNodeAddress;
+    internal NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
+    {
+        _methodDescAddress = methodDescAddress;
+        _codeVersionNodeAddress = codeVersionNodeAddress;
+    }
 }
 
 internal readonly struct NativeCodePointers : INativeCodePointers

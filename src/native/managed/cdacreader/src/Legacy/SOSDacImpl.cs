@@ -101,10 +101,15 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             // elements we return
             return HResults.E_INVALIDARG;
         }
+        if (cRevertedRejitVersions != 0)
+        {
+            return HResults.E_NOTIMPL; // TODO[cdac]: rejit
+        }
         try
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+            Contracts.INativeCodePointers nativeCodeContract = _target.Contracts.NativeCodePointers;
 
             if (rgRevertedRejitData != null)
             {
@@ -115,15 +120,16 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                 *pcNeededRevertedRejitData = 0;
             }
 
-            NativeCodeVersionHandle requestedCodeVersion, activeCodeVersion; ;
-            if (ip != null)
+            NativeCodeVersionHandle requestedCodeVersion;
+            NativeCodeVersionHandle? activeCodeVersion = null;
+            if (ip != 0)
             {
-                throw new NotImplementedException(); // TODO[cdac]: ExecutionManager::GetNativeCodeVersion
+                requestedCodeVersion = nativeCodeContract.GetSpecificNativeCodeVersion(new TargetCodePointer(ip));
             }
             else
             {
-                activeCodeVersion = rtsContract.GetActiveNativeCodeVersion(methodDescHandle); // TODO[cdac]: pMD->GetCodeVersionManager()->GetActiveILCodeVersion(pMD).GetActiveNativeCodeVersion(pMD)
-                requestedCodeVersion = activeCodeVersion;
+                requestedCodeVersion = nativeCodeContract.GetActiveNativeCodeVersion(new TargetPointer(methodDesc)); // TODO[cdac]: pMD->GetCodeVersionManager()->GetActiveILCodeVersion(pMD).GetActiveNativeCodeVersion(pMD)
+                activeCodeVersion = requestedCodeVersion;
             }
 
             data->requestedIP = ip;
