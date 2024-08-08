@@ -432,7 +432,7 @@ namespace System.Buffers
 
                         if (Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
                         {
-                            if (Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                            if (Unsafe.AreSame(in cur, in searchSpaceEnd))
                             {
                                 break;
                             }
@@ -518,7 +518,7 @@ namespace System.Buffers
 
                     if (Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
                     {
-                        if (Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                        if (Unsafe.AreSame(in cur, in searchSpaceEnd))
                         {
                             return -1;
                         }
@@ -558,7 +558,7 @@ namespace System.Buffers
 
                 if (Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
                 {
-                    if (Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                    if (Unsafe.AreSame(in cur, in searchSpaceEnd))
                     {
                         break;
                     }
@@ -608,7 +608,7 @@ namespace System.Buffers
 
                         if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
                         {
-                            if (Unsafe.AreSame(ref cur, ref searchSpace))
+                            if (Unsafe.AreSame(in cur, in searchSpace))
                             {
                                 break;
                             }
@@ -697,7 +697,7 @@ namespace System.Buffers
 
                     if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVectorAvx2))
                     {
-                        if (Unsafe.AreSame(ref cur, ref searchSpace))
+                        if (Unsafe.AreSame(in cur, in searchSpace))
                         {
                             return -1;
                         }
@@ -739,7 +739,7 @@ namespace System.Buffers
 
                 if (!Unsafe.IsAddressGreaterThan(ref cur, ref lastStartVector))
                 {
-                    if (Unsafe.AreSame(ref cur, ref searchSpace))
+                    if (Unsafe.AreSame(in cur, in searchSpace))
                     {
                         break;
                     }
@@ -960,10 +960,10 @@ namespace System.Buffers
         internal static int IndexOfAnySimpleLoop<TNegator>(ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref readonly char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
 
-            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            while (!Unsafe.AreSame(in cur, in searchSpaceEnd))
             {
                 char c = cur;
                 if (TNegator.NegateIfNeeded(Contains(values, c)))

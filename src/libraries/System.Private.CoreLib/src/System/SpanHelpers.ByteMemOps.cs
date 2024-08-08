@@ -230,7 +230,7 @@ namespace System
         BuffersOverlap:
             Debug.Assert(len > 0);
             // If the buffers overlap perfectly, there's no point to copying the data.
-            if (Unsafe.AreSame(ref dest, ref src))
+            if (Unsafe.AreSame(in dest, in src))
             {
                 // Both could be null with a non-zero length, perform an implicit null check.
                 _ = Unsafe.ReadUnaligned<byte>(ref dest);

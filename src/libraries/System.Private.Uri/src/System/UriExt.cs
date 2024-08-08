@@ -626,7 +626,7 @@ namespace System
             // If the input and destination buffers overlap, we must take care not to overwrite parts of the input before we've processed it.
             // If the buffers start at the same location, we can still use the destination as the output length is strictly <= input length.
             bool overlapped = charsToUnescape.Overlaps(destination) &&
-                !Unsafe.AreSame(ref MemoryMarshal.GetReference(charsToUnescape), ref MemoryMarshal.GetReference(destination));
+                !Unsafe.AreSame(in MemoryMarshal.GetReference(charsToUnescape), in MemoryMarshal.GetReference(destination));
 
             if (overlapped)
             {

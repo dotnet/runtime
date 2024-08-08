@@ -1112,7 +1112,7 @@ namespace System
 
             var vlb = new ValueListBuilder<TChar>(destination);
             FormatCustomized(dateTime, format, dtfi, offset, ref vlb);
-            bool success = Unsafe.AreSame(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(vlb.AsSpan()));
+            bool success = Unsafe.AreSame(in MemoryMarshal.GetReference(destination), in MemoryMarshal.GetReference(vlb.AsSpan()));
             if (success)
             {
                 // The reference inside of the builder is still the destination.  That means the builder didn't need to grow to beyond

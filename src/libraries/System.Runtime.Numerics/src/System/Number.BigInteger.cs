@@ -1173,7 +1173,7 @@ namespace System
                     }
                 }
 
-                Debug.Assert(Unsafe.AreSame(ref bits[0], ref powersOfTen2[0]));
+                Debug.Assert(Unsafe.AreSame(in bits[0], in powersOfTen2[0]));
 
                 powersOfTen = powersOfTen.Slice(0, curLength);
                 Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);

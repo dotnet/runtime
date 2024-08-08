@@ -398,7 +398,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Swap(ref T i, ref T j)
         {
-            Debug.Assert(!Unsafe.AreSame(ref i, ref j));
+            Debug.Assert(!Unsafe.AreSame(in i, in j));
 
             T t = i;
             i = j;
@@ -496,7 +496,7 @@ namespace System.Collections.Generic
             }
 
             // Put the pivot in the correct location.
-            if (!Unsafe.AreSame(ref leftRef, ref nextToLastRef))
+            if (!Unsafe.AreSame(in leftRef, in nextToLastRef))
             {
                 Swap(ref leftRef, ref nextToLastRef);
             }
