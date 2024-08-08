@@ -19,7 +19,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected virtual Version HttpVersion => Net.HttpVersion.Version11;
 
-        //[OuterLoop("Uses Task.Delay")]
+        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(UseSsl_MemberData))]
         public Task KeepAlive_LongDelayBetweenSendReceives_Succeeds(bool useSsl)
