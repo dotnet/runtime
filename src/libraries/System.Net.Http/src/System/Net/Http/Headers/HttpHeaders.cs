@@ -496,7 +496,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal bool ContainsParsedValue(HeaderDescriptor descriptor, object value)
+        internal bool ContainsParsedValue(HeaderDescriptor descriptor, object value, bool lastValueOnly = false)
         {
             Debug.Assert(value != null);
 
@@ -516,6 +516,13 @@ namespace System.Net.Http.Headers
                 }
 
                 List<object>? parsedValues = parsedValue as List<object>;
+                if (lastValueOnly && parsedValues?.Count > 1)
+                {
+                    // This can be useful for specific header value pair like for example "TransferEncoding: gzip, chunked" where chunked must be last.
+                    // Relevant RFC: https://www.rfc-editor.org/rfc/rfc7230.html#section-3.3.1
+                    parsedValue = parsedValues[^1];
+                    parsedValues = null;
+                }
 
                 IEqualityComparer? comparer = descriptor.Parser.Comparer;
 
