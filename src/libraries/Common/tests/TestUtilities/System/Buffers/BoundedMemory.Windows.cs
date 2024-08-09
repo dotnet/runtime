@@ -295,7 +295,7 @@ namespace System.Buffers
                 UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE) != 0;
         }
 
-        private static class UnsafeNativeMethods
+        private static partial class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";
 
