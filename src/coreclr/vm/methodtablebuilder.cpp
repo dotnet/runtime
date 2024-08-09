@@ -1794,6 +1794,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+    if (IsValueClass())
+    {
+        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+    }
+
     if (CheckIfSIMDAndUpdateSize())
     {
         totalDeclaredFieldSize = bmtFP->NumInstanceFieldBytes;
