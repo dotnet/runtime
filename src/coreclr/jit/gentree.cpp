@@ -16880,8 +16880,8 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
             // The GTF_CALL may be contributed by an operand, so check for
             // that.
             bool hasCallInOperand = false;
-            tree->VisitOperands([&hasCallInOperand](GenTree* op) {
-                if ((op->gtFlags & GTF_CALL) != 0)
+            tree->VisitOperands([=, &hasCallInOperand](GenTree* op) {
+                if (gtTreeHasSideEffects(op, GTF_CALL, ignoreCctors))
                 {
                     hasCallInOperand = true;
                     return GenTree::VisitResult::Abort;
