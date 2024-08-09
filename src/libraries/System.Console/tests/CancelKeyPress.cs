@@ -10,8 +10,6 @@ using Xunit;
 
 public partial class CancelKeyPressTests
 {
-    private readonly int WaitFailTestTimeoutSeconds = 30 * PlatformDetection.SlowRuntimeTimeoutModifier;
-
     [Fact]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void CanAddAndRemoveHandler()

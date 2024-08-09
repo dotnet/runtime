@@ -42,6 +42,8 @@ public partial class CancelKeyPressTests
         HandlerInvokedForSignal(SIGQUIT, redirectStandardInput);
     }
 
+    private static readonly int WaitFailTestTimeoutSeconds = 30 * PlatformDetection.SlowRuntimeTimeoutModifier;
+
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     public void ExitDetectionNotBlockedByHandler()
     {
