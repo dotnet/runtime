@@ -168,6 +168,8 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
     public virtual bool InEnCEnabledModule(MethodDescHandle methodDesc) => throw new NotImplementedException();
     public virtual bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

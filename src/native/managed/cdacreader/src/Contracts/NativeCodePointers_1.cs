@@ -18,7 +18,11 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         _target = target;
         _precodeContract = new PrecodeContract(target, precodeMachineDescriptor);
         _executionManagerContract = new ExecutionManagerContract(target, topRangeSectionMap, profControlBlock);
-        _nativeCodeVersionContract = new NativeCodeVersionContract(target);
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomainAddress = _target.ReadPointer(appDomainPointer);
+        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomainAddress);
+        TargetPointer codeVersionManagerAddress = appDomain.CodeVersionManager;
+        _nativeCodeVersionContract = new NativeCodeVersionContract(target, codeVersionManagerAddress);
     }
 
     TargetPointer INativeCodePointers.MethodDescFromStubAddress(TargetCodePointer entryPoint)
@@ -27,6 +31,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
         return precode.GetMethodDesc(_target, _precodeContract.MachineDescriptor);
     }
+
 
     TargetPointer INativeCodePointers.ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress)
     {
@@ -40,6 +45,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 
     NativeCodeVersionHandle INativeCodePointers.GetSpecificNativeCodeVersion(TargetCodePointer ip)
     {
+        // ExecutionManager::GetNativeCodeVersion(PCODE ip))
+        // and EECodeInfo::GetNativeCodeVersion
         EECodeInfo? info = _executionManagerContract.GetEECodeInfo(ip);
         if (info == null || !info.Valid)
         {
@@ -50,8 +57,16 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         {
             return NativeCodeVersionHandle.Invalid;
         }
-
-        return _nativeCodeVersionContract.GetSpecificNativeCodeVersion(ip);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
+        if (!rts.IsVersionable(md))
+        {
+            return new NativeCodeVersionHandle(methodDescAddress, codeVersionNodeAddress: TargetPointer.Null);
+        }
+        else
+        {
+            return _nativeCodeVersionContract.GetSpecificNativeCodeVersion(rts, md, info.StartAddress);
+        }
     }
 
     bool INativeCodePointers.IsReJITEnabled()

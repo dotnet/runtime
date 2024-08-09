@@ -190,6 +190,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public bool IsUnboxingStub => HasFlags(MethodDescFlags3.IsUnboxingStub);
 
+        public TargetPointer CodeData => _desc.CodeData;
     }
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
@@ -910,6 +911,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return _target.Contracts.NativeCodePointers.CodeVersionManagerSupportsMethod(methodDesc.Address);
         }
         return false;
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        TargetPointer codeDataAddress = md.CodeData;
+        Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
+        return codeData.VersioningState;
     }
 
 }

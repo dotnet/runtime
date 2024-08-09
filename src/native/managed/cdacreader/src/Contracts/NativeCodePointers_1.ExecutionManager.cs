@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -9,15 +11,25 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 {
     internal class EECodeInfo
     {
-        public TargetCodePointer CodeAddress { get; }
-        public TargetPointer MethodDescAddress { get; }
-        public EECodeInfo(TargetCodePointer jittedCodeAdderss, TargetPointer methodDescAddress)
+        private readonly int _codeHeaderOffset;
+        public TargetCodePointer StartAddress { get; }
+        // note: this is the address of the pointer to the "real code header", you need to
+        // dereference it to get the address of _codeHeaderData
+        public TargetPointer CodeHeaderAddress => StartAddress.Value - (ulong)_codeHeaderOffset;
+        private Data.RealCodeHeader _codeHeaderData;
+        public TargetPointer JitManagerAddress { get; }
+        public TargetNUInt RelativeOffset { get; }
+        public EECodeInfo(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
         {
-            CodeAddress = jittedCodeAdderss;
-            MethodDescAddress = methodDescAddress;
+            _codeHeaderOffset = codeHeaderOffset;
+            StartAddress = startAddress;
+            _codeHeaderData = codeHeaderData;
+            RelativeOffset = relativeOffset;
+            JitManagerAddress = jitManagerAddress;
         }
 
-        public bool Valid => CodeAddress != default && MethodDescAddress != default;
+        public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
+        public bool Valid => JitManagerAddress != TargetPointer.Null;
     }
 
     // RangeFragment and RangeSection pointers have a collectible flag on the lowest bit
@@ -128,50 +140,52 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             private bool IsRangeList => HasFlags(RangeSectionFlags.RangeList);
             private bool IsCodeHeap => HasFlags(RangeSectionFlags.CodeHeap);
 
-            public bool JitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            public bool JitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
             {
+                info = null;
                 if (_rangeSection == null)
                 {
-                    methodDescAddress = TargetPointer.Null;
                     return false;
                 }
+                TargetPointer jitManagerAddress = _rangeSection.JitManager;
                 // FIXME(cdac): prototype uses R2RModule to determine if the RangeSection belongs to the JIT or to R2R,
                 // we don't need an extra JitManagerKind field.
                 Data.IJitManager jitManager = target.ProcessedData.GetOrAdd<Data.IJitManager>(_rangeSection.JitManager);
                 switch ((JitManagerKind)jitManager.JitManagerKind)
                 {
                     case JitManagerKind.EEJitManager:
-                        return EEJitCodeToMethodInfo(target, jittedCodeAddress, out methodDescAddress);
+                        return EEJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
                     case JitManagerKind.ReadyToRunJitManager:
-                        return ReadyToRunJitCodeToMethodInfo(target, jittedCodeAddress, out methodDescAddress);
+                        return ReadyToRunJitCodeToMethodInfo(target, jitManagerAddress, jittedCodeAddress, out info);
                     default:
                         throw new InvalidOperationException($"Invalid JitManagerKind {jitManager.JitManagerKind}");
                 }
             }
 
-            private bool EEJitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            private bool EEJitCodeToMethodInfo(Target target, TargetPointer jitManagerAddress, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
             {
+                info = null;
                 // EEJitManager::JitCodeToMethodInfo
                 if (IsRangeList)
                 {
-                    methodDescAddress = TargetPointer.Null;
                     return false;
                 }
                 TargetPointer start = EEFindMethodCode(target, jittedCodeAddress);
                 if (start == TargetPointer.Null)
                 {
-                    methodDescAddress = TargetPointer.Null;
                     return false;
                 }
-                TargetPointer codeHeaderIndirect = new TargetPointer(start - (ulong)target.PointerSize);
+                Debug.Assert(start.Value <= jittedCodeAddress.Value);
+                TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - start.Value);
+                int codeHeaderOffset = target.PointerSize;
+                TargetPointer codeHeaderIndirect = new TargetPointer(start - (ulong)codeHeaderOffset);
                 if (IsStubCodeBlock(target, codeHeaderIndirect))
                 {
-                    methodDescAddress = TargetPointer.Null;
                     return false;
                 }
                 TargetPointer codeHeaderAddress = target.ReadPointer(codeHeaderIndirect);
                 Data.RealCodeHeader realCodeHeader = target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-                methodDescAddress = realCodeHeader.MethodDesc;
+                info = new EECodeInfo(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, jitManagerAddress);
                 return true;
             }
 
@@ -204,7 +218,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 return nibbleMap.FindMethodCode(mapBase, mapStart, jittedCodeAddress);
 
             }
-            private bool ReadyToRunJitCodeToMethodInfo(Target target, TargetCodePointer jittedCodeAddress, out TargetPointer methodDescAddress)
+            private bool ReadyToRunJitCodeToMethodInfo(Target target, TargetPointer jitManagerAddress, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out EECodeInfo? info)
             {
                 throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
             }
@@ -224,11 +238,8 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         internal EECodeInfo? GetEECodeInfo(TargetCodePointer jittedCodeAddress)
         {
             RangeSection range = LookupRangeSection(jittedCodeAddress);
-            if (!range.JitCodeToMethodInfo(_target, jittedCodeAddress, out TargetPointer methodDescAddress))
-            {
-                return null;
-            }
-            return new EECodeInfo(jittedCodeAddress, methodDescAddress);
+            range.JitCodeToMethodInfo(_target, jittedCodeAddress, out EECodeInfo? info);
+            return info;
         }
 
         private static bool InRange(Data.RangeSectionFragment fragment, TargetCodePointer address)
@@ -292,6 +303,5 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             bool clrConfigEnabledReJIT = true;
             return profEnabledReJIT || clrConfigEnabledReJIT;
         }
-
     }
 }

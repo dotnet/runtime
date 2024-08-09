@@ -11,15 +11,43 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     internal struct NativeCodeVersionContract
     {
         private readonly Target _target;
+        private readonly TargetPointer _codeVersionManagerAddress;
 
-        public NativeCodeVersionContract(Target target)
+        public NativeCodeVersionContract(Target target, TargetPointer codeVersionManagerAddress)
         {
             _target = target;
+            _codeVersionManagerAddress = codeVersionManagerAddress;
         }
 
-        public NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip)
+        public NativeCodeVersionHandle GetSpecificNativeCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, TargetCodePointer startAddress)
         {
-            throw new NotImplementedException();
+            TargetPointer methodDescVersioningStateAddress = rts.GetMethodDescVersioningState(md);
+            if (methodDescVersioningStateAddress == TargetPointer.Null)
+            {
+                return NativeCodeVersionHandle.Invalid;
+            }
+            Data.MethodDescVersioningState methodDescVersioningStateData = _target.ProcessedData.GetOrAdd<Data.MethodDescVersioningState>(methodDescVersioningStateAddress);
+            // CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc, PCODE startAddress)
+            return FindFirstCodeVersion(methodDescVersioningStateData, (codeVersion) =>
+            {
+                return codeVersion.MethodDesc == md.Address && codeVersion.NativeCode == startAddress;
+            });
+        }
+
+        private NativeCodeVersionHandle FindFirstCodeVersion(Data.MethodDescVersioningState versioningState, Func<Data.NativeCodeVersionNode, bool> predicate)
+        {
+            // NativeCodeVersion::Next, heavily inlined
+            TargetPointer currentAddress = versioningState.NativeCodeVersionNode;
+            while (currentAddress != TargetPointer.Null)
+            {
+                Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
+                if (predicate(current))
+                {
+                    return new NativeCodeVersionHandle(methodDescAddress: TargetPointer.Null, currentAddress);
+                }
+                currentAddress = current.Next;
+            }
+            return NativeCodeVersionHandle.Invalid;
         }
 
     }

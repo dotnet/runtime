@@ -27,6 +27,7 @@ public enum DataType
     Exception,
     ExceptionInfo,
     RuntimeThreadLocals,
+    AppDomain,
     Module,
     ModuleLookupMap,
     LoaderAllocator,
@@ -61,5 +62,8 @@ public enum DataType
     IJitManager,
     RealCodeHeader,
     HeapList,
+    MethodDescVersioningState,
+    NativeCodeVersionNode,
     ProfControlBlock,
+
 }

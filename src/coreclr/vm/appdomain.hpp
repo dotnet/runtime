@@ -35,6 +35,8 @@
 
 #include "codeversion.h"
 
+#include "cdacdata.h"
+
 class BaseDomain;
 class SystemDomain;
 class AppDomain;
@@ -1817,7 +1819,17 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
+
+    template<typename T> friend struct ::cdac_data;
 };  // class AppDomain
+
+template<>
+struct cdac_data<AppDomain>
+{
+#ifdef FEATURE_CODE_VERSIONING
+    static constexpr size_t CodeVersionManager = offsetof(AppDomain, m_CodeVersionManager);
+#endif
+};
 
 // Just a ref holder
 typedef ReleaseHolder<AppDomain> AppDomainRefHolder;

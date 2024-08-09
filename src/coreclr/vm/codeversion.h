@@ -316,6 +316,16 @@ private:
         IsActiveChildFlag = 1
     };
     DWORD m_flags;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<NativeCodeVersionNode>
+{
+    static constexpr size_t Next = offsetof(NativeCodeVersionNode, m_pNextMethodDescSibling);
+    static constexpr size_t MethodDesc = offsetof(NativeCodeVersionNode, m_pMethodDesc);
+    static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
 };
 
 class NativeCodeVersionCollection
@@ -473,6 +483,14 @@ private:
     BYTE m_flags;
     NativeCodeVersionId m_nextId;
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
+
+    template<typename T> friend struct ::cdac_data;
+};
+
+template<>
+struct cdac_data<MethodDescVersioningState>
+{
+    static constexpr size_t NativeCodeVersionNode = offsetof(MethodDescVersioningState, m_pFirstVersionNode);
 };
 
 class ILCodeVersioningState

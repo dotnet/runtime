@@ -212,6 +212,13 @@ CDAC_TYPE_END(SyncTableEntry)
 
 // Loader
 
+CDAC_TYPE_BEGIN(AppDomain)
+CDAC_TYPE_INDETERMINATE(AppDomain)
+#ifdef FEATURE_CODE_VERSIONING
+CDAC_TYPE_FIELD(AppDomain, /*pointer*/, CodeVersionManager, cdac_data<AppDomain>::CodeVersionManager)
+#endif
+CDAC_TYPE_END(AppDomain)
+
 CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
@@ -348,7 +355,13 @@ CDAC_TYPE_END(CodePointer)
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
 CDAC_TYPE_END(MethodDescCodeData)
+
+CDAC_TYPE_BEGIN(MethodDescVersioningState)
+CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
+CDAC_TYPE_END(MethodDescVersioningState)
 
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
@@ -416,6 +429,13 @@ CDAC_TYPE_FIELD(HeapList, /*pointer*/, EndAddress, offsetof(HeapList, endAddress
 CDAC_TYPE_FIELD(HeapList, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(HeapList, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(HeapList)
+
+CDAC_TYPE_BEGIN(NativeCodeVersionNode)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersionNode)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVersionNode>::Next)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<NativeCodeVersionNode>::MethodDesc)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
+CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
