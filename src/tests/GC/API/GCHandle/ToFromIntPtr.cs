@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Dummy
 {
@@ -114,7 +115,8 @@ public class ToFromIntPtrTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ToFromIntPtrTest t = new ToFromIntPtrTest();
 

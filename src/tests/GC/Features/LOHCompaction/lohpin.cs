@@ -8,10 +8,11 @@ using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime;
+using Xunit;
 
 namespace LOHPin
 {
-    class LOHPin
+    public class LOHPin
     {
         //Pin an object on the Large Object Heap and verify it does not move during a LOH compaction
         //Also verify that most of the large objects not pinned have moved
@@ -22,7 +23,8 @@ namespace LOHPin
          *   - compact LOH then check the address of the objects
          * */
  
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             List<GCHandle> GCHandleList = new List<GCHandle>();
             int ListSize = 300;
@@ -102,12 +104,6 @@ namespace LOHPin
 
             Console.WriteLine("Test passed");
             return 100;
-         
         }
-
-      
-      
     }
-
-   
 }
