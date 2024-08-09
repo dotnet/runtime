@@ -1173,8 +1173,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (memberType.IsRefLikeType)
                 {
-                    // Skip all ref-like members and emit a diagnostic
-                    // unless the property is being explicitly ignored.
+                    // Skip all ref-like members and emit a diagnostic unless the property is being explicitly ignored.
                     if (ignoreCondition is not JsonIgnoreCondition.Always)
                     {
                         ReportDiagnostic(DiagnosticDescriptors.TypeContainsRefLikeMember, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
