@@ -55,11 +55,8 @@ namespace ILCompiler.DependencyAnalysis
             if (HasOptionalFields)
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
 
-            flags |= (uint)EETypeFlags.HasComponentSizeFlag;
-            flags |= (ushort)_type.Instantiation.Length;
-
             dataBuilder.EmitUInt(flags);
-            dataBuilder.EmitInt(0);         // Base size is always 0
+            dataBuilder.EmitInt(checked((ushort)_type.Instantiation.Length)); // Base size (we put instantiation length)
             dataBuilder.EmitZeroPointer();  // No related type
             dataBuilder.EmitShort(0);       // No VTable
             dataBuilder.EmitShort(0);       // No interface map

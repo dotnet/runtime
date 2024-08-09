@@ -255,13 +255,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGenericTypeDefinition);
-                return ComponentSize;
+                return (ushort)_uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsGenericTypeDefinition);
-                ComponentSize = value;
+                _uBaseSize = value;
             }
 #endif
         }
