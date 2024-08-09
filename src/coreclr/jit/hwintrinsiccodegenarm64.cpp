@@ -2050,7 +2050,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
             {
                 if (node->GetAuxiliaryType() == TYP_UNKNOWN)
                 {
@@ -2075,6 +2085,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op4Reg, opt);
                     }
                 }
+
                 FALLTHROUGH;
             }
             case NI_Sve_GatherVector:
