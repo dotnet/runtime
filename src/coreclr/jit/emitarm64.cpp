@@ -1028,8 +1028,8 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
             assert(secondId->idReg1() != secondId->idReg3());
             break;
 
-        case IF_SVE_BY_2A: // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
-        case IF_SVE_EF_3A: // <Zda>.S, <Zn>.H, <Zm>.H
+        case IF_SVE_BY_2A:   // <Zdn>.B, <Zdn>.B, <Zm>.B, #<imm>
+        case IF_SVE_EF_3A:   // <Zda>.S, <Zn>.H, <Zm>.H
         case IF_SVE_EG_3A:   // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
         case IF_SVE_EH_3A:   // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
         case IF_SVE_EI_3A:   // <Zda>.S, <Zn>.B, <Zm>.B
