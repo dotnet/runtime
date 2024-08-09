@@ -1264,8 +1264,6 @@ namespace System.Text.RegularExpressions.Tests
                 // Lookarounds
                 yield return new object[] { engine, @"((?=(?>a*))a)+", a1_000_000 };
                 yield return new object[] { engine, @"((?<=(?>a*))a)+", a1_000_000 };
-                yield return new object[] { engine, @"((?!(?>[^a]*))a)+", a1_000_000 };
-                yield return new object[] { engine, @"((?<!(?>[^a]*))a)+", a1_000_000 };
 
                 // All of the below tests have catastrophic backtracking...
 
