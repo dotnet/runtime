@@ -5594,7 +5594,7 @@ public:
 
     void fgLiveVarAnalysis();
 
-    GenTreeLclVarCommon* fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
+    bool fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call, GenTreeLclVarCommon** pDefinedLcl);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
@@ -5622,12 +5622,9 @@ public:
 
     bool fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
-    bool fgRemoveDeadStore(GenTree**        pTree,
-                           LclVarDsc*       varDsc,
-                           VARSET_VALARG_TP life,
+    bool fgRemoveDeadNode(GenTree**        pTree,
                            bool*            doAgain,
-                           bool*            pStmtInfoDirty,
-                           bool* pStoreRemoved DEBUGARG(bool* treeModf));
+                           bool*            pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgInterBlockLocalVarLiveness();
 
