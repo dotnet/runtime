@@ -60,4 +60,51 @@ public abstract class ReadTests
         writer.Write(objectId);
         writer.Write(libraryName);
     }
+
+    protected static void WriteValidRecord(BinaryWriter writer, SerializationRecordType recordType, ref int objectId)
+    {
+        const int LibraryId = 12345;
+        if (recordType == SerializationRecordType.ClassWithMembersAndTypes)
+        {
+            WriteBinaryLibrary(writer, LibraryId, "libName");
+        }
+
+        writer.Write((byte)recordType);
+        writer.Write(objectId++);
+
+        if (recordType == SerializationRecordType.BinaryObjectString)
+        {
+            writer.Write("aString");
+        }
+        else if (recordType == SerializationRecordType.ArraySingleString)
+        {
+            writer.Write(2); // array length
+            WriteValidRecord(writer, SerializationRecordType.BinaryObjectString, ref objectId);
+            WriteValidRecord(writer, SerializationRecordType.BinaryObjectString, ref objectId);
+        }
+        else if (recordType == SerializationRecordType.MemberPrimitiveTyped)
+        {
+            writer.Write((byte)PrimitiveType.Boolean);
+            writer.Write(true);
+        }
+        else if (recordType == SerializationRecordType.ArraySinglePrimitive)
+        {
+            writer.Write(3); // array length
+            writer.Write((byte)PrimitiveType.Int32);
+            writer.Write(1);
+            writer.Write(2);
+            writer.Write(3);
+        }
+        else if (recordType == SerializationRecordType.SystemClassWithMembersAndTypes)
+        {
+            writer.Write("TypeName");
+            writer.Write(0); // member count
+        }
+        else if (recordType == SerializationRecordType.ClassWithMembersAndTypes)
+        {
+            writer.Write("TypeName");
+            writer.Write(0); // member count
+            writer.Write(LibraryId);
+        }
+    }
 }

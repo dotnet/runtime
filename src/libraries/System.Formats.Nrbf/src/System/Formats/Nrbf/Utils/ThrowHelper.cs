@@ -14,6 +14,9 @@ internal static class ThrowHelper
     internal static void ThrowInvalidReference()
         => throw new SerializationException(SR.Serialization_InvalidReference);
 
+    internal static void ThrowDuplicateSerializationRecordId(SerializationRecordId id)
+        => throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, id._id));
+
     internal static void ThrowUnexpectedNullRecordCount()
         => throw new SerializationException(SR.Serialization_UnexpectedNullRecordCount);
 
