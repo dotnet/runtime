@@ -197,21 +197,18 @@ namespace Microsoft.Extensions.Logging
         {
             object? arg0String = null, arg1String = null;
             return
-                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) ?
-                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1) :
-                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1);
+                TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) | TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1) :
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1);
         }
 
         internal string Format<TArg0, TArg1, TArg2>(TArg0 arg0, TArg1 arg1, TArg2 arg2)
         {
             object? arg0String = null, arg1String = null, arg2String = null;
             return
-                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) &&
-                !TryFormatArgumentIfNullOrEnumerable(arg2, ref arg2String) ?
-                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1, arg2) :
-                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1, arg2String ?? arg2);
+                TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) | TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) | TryFormatArgumentIfNullOrEnumerable(arg2, ref arg2String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1, arg2String ?? arg2):
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1, arg2);
         }
 #else
         internal string Format(object? arg0) =>
