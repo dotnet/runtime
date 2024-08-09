@@ -9,6 +9,12 @@ using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
+    /// <summary>
+    /// These methods are used to throw exceptions from generated code.
+    /// For NativeAOT, the type and methods used need to be public
+    ///     as they constitute a public contract.
+    /// For CoreCLR, the type and methods are used as JIT helpers.
+    /// </summary>
 #if NATIVEAOT
     public
 #else
@@ -18,37 +24,72 @@ namespace Internal.Runtime.CompilerHelpers
     {
         [DoesNotReturn]
         [DebuggerHidden]
-        internal static void ThrowArgumentException()
+        public static void ThrowNullReferenceException()
+        {
+            throw new NullReferenceException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowArgumentException()
         {
             throw new ArgumentException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        internal static void ThrowIndexOutOfRangeException()
-        {
-            throw new IndexOutOfRangeException();
-        }
-
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static void ThrowArgumentOutOfRangeException()
+        public static void ThrowArgumentOutOfRangeException()
         {
             throw new ArgumentOutOfRangeException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        internal static void ThrowNotImplementedException()
+        public static void ThrowDivideByZeroException()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowIndexOutOfRangeException()
+        {
+            throw new IndexOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowOverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowPlatformNotSupportedException()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowNotImplementedException()
         {
             throw new NotImplementedException();
         }
 
         [DoesNotReturn]
         [DebuggerHidden]
-        internal static void ThrowPlatformNotSupportedException()
+        public static void ThrowArrayTypeMismatchException()
         {
-            throw new PlatformNotSupportedException();
+            throw new ArrayTypeMismatchException();
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
+        public static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
         }
 
         [DoesNotReturn]
@@ -63,27 +104,6 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void ThrowVerificationException(int ilOffset)
         {
             throw new System.Security.VerificationException();
-        }
-
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static void ThrowOverflowException()
-        {
-            throw new OverflowException();
-        }
-
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static void ThrowDivideByZeroException()
-        {
-            throw new DivideByZeroException();
-        }
-
-        [DoesNotReturn]
-        [DebuggerHidden]
-        internal static void ThrowNullReferenceException()
-        {
-            throw new NullReferenceException();
         }
     }
 }

@@ -33,16 +33,6 @@ namespace Internal.Runtime.CompilerHelpers
             throw new TypeLoadException(SR.Arg_UnavailableTypeLoadException);
         }
 
-        public static void ThrowArrayTypeMismatchException()
-        {
-            throw new ArrayTypeMismatchException();
-        }
-
-        public static void ThrowNotSupportedException()
-        {
-            throw new NotSupportedException();
-        }
-
         public static void ThrowBadImageFormatException(ExceptionStringID id)
         {
             throw TypeLoaderExceptionHelper.CreateBadImageFormatException(id);
