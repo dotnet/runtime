@@ -91,8 +91,10 @@ namespace System.Buffers
             return new NIndex(~value);
         }
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public Index ToIndex() => checked((Index)this);
         public Index ToIndexUnchecked() => (Index)this;
+#pragma warning restore 1591
 
         /// <summary>Returns the NIndex value.</summary>
         public nint Value

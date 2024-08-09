@@ -645,6 +645,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105974
         public static IHttpClientBuilder AddAsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime = ServiceLifetime.Scoped)
         {
             ThrowHelper.ThrowIfNull(builder);
@@ -703,6 +704,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder;
         }
+#pragma warning restore 1591
 
         // workaround for https://github.com/dotnet/runtime/issues/102654
         private static void UpdateEmptyNameHttpClient(IServiceCollection services, HttpClientMappingRegistry registry)
