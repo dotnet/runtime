@@ -130,12 +130,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 2
         ;; We can skip the card table write if the reference is to
         ;; an object not on the epehemeral segment.
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x17
         cmp     $refReg, x12
-        blo     %ft0
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x12
-        cmp     $refReg, x12
+        ccmp    $refReg, x17, #0x2, hs
         bhs     %ft0
 
         ;; Set this object's card, if it hasn't already been set.
@@ -179,14 +177,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 
         ;; The "check" of this checked write barrier - is $destReg
         ;; within the heap? if no, early out.
-        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     $destReg, x12
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
-
-        ;; If $destReg >= g_lowest_address, compare $destReg to g_highest_address.
-        ;; Otherwise, set the C flag (0x2) to take the next branch.
-        ccmp    $destReg, x12, #0x2, hs
+        ccmp    $destReg, x17, #0x2, hs
         bhs     %ft0
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg
@@ -237,11 +231,10 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
     LEAF_ENTRY RhpCheckedAssignRefArm64
 
         ;; is destReg within the heap?
-        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     x14, x12
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
-        ccmp    x14, x12, #0x2, hs
+        ccmp    x14, x17, #0x2, hs
         blo     RhpAssignRefArm64
 
 NotInHeap
