@@ -8,23 +8,23 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm._Sve
+public class Runtime_106124
 {
-    public static partial class Program
+    [Fact]
+    public static void TestEntryPoint()
     {
-        [Fact]
-        public static void TestEntryPoint()
+         if (Sve.IsSupported)
         {
             var vr19 = Vector128.CreateScalar(0L).AsVector();
             var vr25 = Sve.CreateBreakPropagateMask(vr19, vr19);
             Consume(vr25);
         }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void Consume(Vector<long> v)
-        {
-            ;
-        }
-
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Consume(Vector<long> v)
+    {
+        ;
+    }
+
 }
