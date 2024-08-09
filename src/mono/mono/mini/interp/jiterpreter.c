@@ -636,7 +636,9 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		//  operations please put them in the values table header
 		// Please keep this in sync with jiterpreter.ts:generate_wasm_body
 		case MINT_BR:
+		case MINT_BR_S:
 		case MINT_CALL_HANDLER:
+		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
