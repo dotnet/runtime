@@ -934,17 +934,8 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsNullable);
-
-                // Grab optional fields. If there aren't any then the offset was the default of 1 (immediately after the
-                // Nullable's boolean flag).
-                byte* optionalFields = OptionalFieldsPtr;
-                if (optionalFields == null)
-                    return 1;
-
-                // The offset is never zero (Nullable has a boolean there indicating whether the value is valid). So the
-                // offset is encoded - 1 to save space. The zero below is the default value if the field wasn't encoded at
-                // all.
-                return (byte)(OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.NullableValueOffset, 0) + 1);
+                int log2valueoffset = (int)(_uFlags & (ushort)EETypeFlagsEx.NullableValueOffsetMask) >> NullableValueOffsetConsts.Shift;
+                return (byte)(1 << log2valueoffset);
             }
         }
 

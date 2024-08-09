@@ -96,6 +96,11 @@ namespace Internal.Runtime
         ValueTypeFieldPaddingMask = 0x00E0,
 
         /// <summary>
+        /// For nullable types, stores the log2 of offset of the value field.
+        /// </summary>
+        NullableValueOffsetMask = 0x0700,
+
+        /// <summary>
         /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         /// </summary>
         RequiresAlign8Flag = 0x1000
@@ -104,6 +109,11 @@ namespace Internal.Runtime
     internal static class ValueTypeFieldPaddingConsts
     {
         public const int Shift = 5;
+    }
+
+    internal static class NullableValueOffsetConsts
+    {
+        public const int Shift = 8;
     }
 
     internal enum EETypeKind : uint
@@ -216,11 +226,6 @@ namespace Internal.Runtime
 
     internal enum EETypeOptionalFieldTag : byte
     {
-        /// <summary>
-        /// Offset in Nullable&lt;T&gt; of the value field
-        /// </summary>
-        NullableValueOffset,
-
         // Number of field types we support
         Count
     }

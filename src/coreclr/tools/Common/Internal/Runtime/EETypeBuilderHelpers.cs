@@ -242,6 +242,25 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)(valueTypeFieldPadding << ValueTypeFieldPaddingConsts.Shift);
             }
 
+            if (type.IsNullable)
+            {
+                FieldDesc field = type.GetField("value");
+
+                int nullableValueOffset = field.Offset.AsInt;
+
+                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
+                Debug.Assert(nullableValueOffset > 0);
+
+                // The field is offset due to alignment. This should be a power of two.
+                Debug.Assert((nullableValueOffset & (nullableValueOffset - 1)) == 0);
+
+                int log2nullableOffset = int.TrailingZeroCount(nullableValueOffset);
+
+                Debug.Assert(int.TrailingZeroCount((int)EETypeFlagsEx.NullableValueOffsetMask) == NullableValueOffsetConsts.Shift);
+                Debug.Assert((log2nullableOffset & ((int)EETypeFlagsEx.NullableValueOffsetMask >> NullableValueOffsetConsts.Shift)) == log2nullableOffset);
+                flagsEx |= (ushort)(log2nullableOffset << NullableValueOffsetConsts.Shift);
+            }
+
             return flagsEx;
         }
 

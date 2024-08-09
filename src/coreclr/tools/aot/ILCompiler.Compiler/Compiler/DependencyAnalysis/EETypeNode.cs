@@ -1269,29 +1269,6 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            ComputeNullableValueOffset();
-        }
-
-        /// <summary>
-        /// To support boxing / unboxing, the offset of the value field of a Nullable type is recorded on the MethodTable.
-        /// This is variable according to the alignment requirements of the Nullable&lt;T&gt; type parameter.
-        /// </summary>
-        private void ComputeNullableValueOffset()
-        {
-            if (!_type.IsNullable)
-                return;
-
-            if (!_type.Instantiation[0].IsCanonicalSubtype(CanonicalFormKind.Universal))
-            {
-                var field = _type.GetKnownField("value");
-
-                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
-                Debug.Assert(field.Offset.AsInt > 0);
-
-                // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
-                // to get a small encoding size win.
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
-            }
         }
 
         protected override void OnMarked(NodeFactory context)
