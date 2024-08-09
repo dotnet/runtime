@@ -2601,76 +2601,99 @@ CorCallingConvention ILStubLinker::GetStubTargetCallingConv()
     return m_nativeFnSigBuilder.GetCallingConv();
 }
 
+namespace
+{
+    void TransformArgSignatureForJIT(BYTE sig[], size_t* cbSig, TypeHandle internalToken)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(*cbSig > 0);
+        // Turn everything into blittable primitives. The reason this method is needed are
+        // byrefs which are OK only when they ref stack data or are pinned. This condition
+        // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+        // of them here.
+        switch (sig[0])
+        {
+            // primitives
+            case ELEMENT_TYPE_VOID:
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_R4:
+            case ELEMENT_TYPE_R8:
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
+            {
+                // no transformation needed
+                break;
+            }
+
+            case ELEMENT_TYPE_VALUETYPE:
+            {
+                _ASSERTE(!"Should have been replaced by a native value type!");
+                break;
+            }
+
+            case ELEMENT_TYPE_PTR:
+            {
+                // Don't transform pointer types to ELEMENT_TYPE_I. The JIT can handle the correct type information,
+                // and it's required for some cases (such as SwiftError*).
+                break;
+            }
+
+            case ELEMENT_TYPE_BYREF:
+            {
+                // Transform ELEMENT_TYPE_BYREF to ELEMENT_TYPE_PTR to retain the pointed-to type information
+                // while making the type blittable.
+                sig[0] = ELEMENT_TYPE_PTR;
+                break;
+            }
+
+            case ELEMENT_TYPE_CMOD_OPT:
+            case ELEMENT_TYPE_CMOD_REQD:
+            {
+                // Keep the custom modifier,
+                // but scan the rest of the signature after the modifier token.
+
+                size_t cbModOpt = CorSigUncompressedDataSize(&sig[1]);
+                size_t cbRemainingSig = *cbSig - 1 - cbModOpt;
+                TransformArgSignatureForJIT(&sig[1 + cbModOpt], &cbRemainingSig, internalToken);
+                *cbSig = 1 + cbModOpt + cbRemainingSig;
+                break;
+            }
+
+            case ELEMENT_TYPE_INTERNAL:
+            {
+                // JIT will handle structures
+                if (internalToken.IsValueType())
+                {
+                    _ASSERTE(internalToken.IsNativeValueType() || !internalToken.GetMethodTable()->ContainsGCPointers());
+                    break;
+                }
+                FALLTHROUGH;
+            }
+
+            // ref types -> ELEMENT_TYPE_I
+            default:
+            {
+                sig[0] = ELEMENT_TYPE_I;
+                *cbSig = 1;
+                break;
+            }
+        }
+    }
+}
+
 void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
 {
     STANDARD_VM_CONTRACT;
-    // Turn everything into blittable primitives. The reason this method is needed are
-    // byrefs which are OK only when they ref stack data or are pinned. This condition
-    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
-    // of them here.
-    switch (pLoc->ElementType[0])
-    {
-        // primitives
-        case ELEMENT_TYPE_VOID:
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-        {
-            // no transformation needed
-            break;
-        }
-
-        case ELEMENT_TYPE_VALUETYPE:
-        {
-            _ASSERTE(!"Should have been replaced by a native value type!");
-            break;
-        }
-
-        case ELEMENT_TYPE_PTR:
-        {
-            // Don't transform pointer types to ELEMENT_TYPE_I. The JIT can handle the correct type information,
-            // and it's required for some cases (such as SwiftError*).
-            break;
-        }
-
-        case ELEMENT_TYPE_BYREF:
-        {
-            // Transform ELEMENT_TYPE_BYREF to ELEMENT_TYPE_PTR to retain the pointed-to type information
-            // while making the type blittable.
-            pLoc->ElementType[0] = ELEMENT_TYPE_PTR;
-            break;
-        }
-
-        case ELEMENT_TYPE_INTERNAL:
-        {
-            // JIT will handle structures
-            if (pLoc->InternalToken.IsValueType())
-            {
-                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsGCPointers());
-                break;
-            }
-            FALLTHROUGH;
-        }
-
-        // ref types -> ELEMENT_TYPE_I
-        default:
-        {
-            pLoc->ElementType[0] = ELEMENT_TYPE_I;
-            pLoc->cbType = 1;
-            break;
-        }
-    }
+    return TransformArgSignatureForJIT(pLoc->ElementType, &pLoc->cbType, pLoc->InternalToken);
 }
 
 Module *ILStubLinker::GetStubSigModule()

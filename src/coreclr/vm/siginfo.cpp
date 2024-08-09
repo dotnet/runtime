@@ -137,7 +137,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenLookupMap)
 {
     CONTRACTL
     {
@@ -152,9 +152,10 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
 
     CorElementType typ = ELEMENT_TYPE_END;
 
-    // Check whether we need to skip custom modifier
-    // Only preserve custom modifier when calculating IL stub hash blob
-    if (bSkipCustomModifier)
+    // If we don't have a token lookup map, skip custom modifiers.
+    // We can't accurately represent them in the internal signature unless we can
+    // resolve tokens through a token lookup map.
+    if (pTokenLookupMap == nullptr)
     {
         // GetElemType eats sentinel and custom modifiers
         IfFailThrowBF(GetElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
@@ -230,16 +231,16 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
             case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
-                ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
                 break;
 
             case ELEMENT_TYPE_FNPTR:
-                ConvertToInternalSignature(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                ConvertToInternalSignature(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
                 break;
 
             case ELEMENT_TYPE_ARRAY:
                 {
-                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
 
                     uint32_t rank = 0; // Get rank
                     IfFailThrowBF(GetData(&rank), BFA_BAD_COMPLUS_SIG, pSigModule);
@@ -302,7 +303,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
 
                     while (argCnt--)
                     {
-                        ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                        ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
                     }
                 }
                 break;
@@ -311,20 +312,20 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
                 {
+                    _ASSERTE_MSG(pTokenLookupMap != nullptr, "A token lookup map must be provided for custom modifiers");
                     mdToken tk;
                     IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
                     TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
-                    pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
-                    pSigBuilder->AppendPointer(th.AsPtr());
+                    pSigBuilder->AppendToken(pTokenLookupMap->GetToken(th));
 
-                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
                 }
                 break;
         }
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, TokenLookupMap* pTokenLookupMap)
 {
     CONTRACTL
     {
@@ -361,7 +362,7 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
     // Skip args.
     while (cArgs)
     {
-        ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+        ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, pTokenLookupMap);
         cArgs--;
     }
 }
@@ -936,6 +937,25 @@ IsTypeRefOrDef(
         return(false);
     return(true);
 } // IsTypeRefOrDef
+
+BOOL IsTypeRefOrDef(
+    LPCSTR   szClassName,
+    DynamicResolver * pResolver,
+    mdToken  token)
+{
+    STANDARD_VM_CONTRACT;
+
+    ResolvedToken resolved;
+    pResolver->ResolveToken(token, &resolved);
+
+    if (resolved.TypeHandle.IsNull())
+        return false;
+
+    DefineFullyQualifiedNameForClassOnStack();
+    LPCUTF8 fullyQualifiedName = GetFullyQualifiedNameForClass(resolved.TypeHandle.GetMethodTable());
+
+    return (strcmp(szClassName, fullyQualifiedName) == 0);
+}
 
 TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
                                        const SigTypeContext *pTypeContext) const
@@ -2282,7 +2302,7 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
 //------------------------------------------------------------------------
 // Tests for the existence of a custom modifier
 //------------------------------------------------------------------------
-BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const
+BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType) const
 {
     CONTRACTL
     {
@@ -2318,6 +2338,54 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
 
         if (etyp == cmodtype && IsTypeRefOrDef(szModName, pModule, tk))
         {
+            if (pModifierType != nullptr)
+            {
+                *pModifierType = tk;
+            }
+            return(TRUE);
+        }
+
+        if (FAILED(sp.GetByte(&data)))
+            return FALSE;
+
+        etyp = (CorElementType)data;
+
+
+    }
+    return(FALSE);
+}
+
+BOOL SigPointer::HasCustomModifier(DynamicResolver *pResolver, LPCSTR szModName, CorElementType cmodtype, mdToken* pModifierType) const
+{
+    STANDARD_VM_CONTRACT;
+
+    BAD_FORMAT_NOTHROW_ASSERT(cmodtype == ELEMENT_TYPE_CMOD_OPT || cmodtype == ELEMENT_TYPE_CMOD_REQD);
+
+    SigPointer sp = *this;
+    CorElementType etyp;
+    if (sp.AtSentinel())
+        sp.m_ptr++;
+
+    BYTE data;
+
+    if (FAILED(sp.GetByte(&data)))
+        return FALSE;
+
+    etyp = (CorElementType)data;
+
+
+    while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD) {
+
+        mdToken tk;
+        if (FAILED(sp.GetToken(&tk)))
+            return FALSE;
+
+        if (etyp == cmodtype && IsTypeRefOrDef(szModName, pResolver, tk))
+        {
+            if (pModifierType != nullptr)
+            {
+                *pModifierType = tk;
+            }
             return(TRUE);
         }
 

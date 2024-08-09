@@ -5703,6 +5703,29 @@ public:
     const CORINFO_SWIFT_LOWERING* GetSwiftLowering(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
+    bool* m_specialCopyArgs;
+    bool recordArgRequiresSpecialCopy(unsigned argNum)
+    {
+        if (argNum >= info.compArgsCount)
+        {
+            return false;
+        }
+
+        if (m_specialCopyArgs == nullptr)
+        {
+            m_specialCopyArgs = new (getAllocator()) bool[info.compArgsCount];
+            memset(m_specialCopyArgs, 0, info.compArgsCount * sizeof(bool));
+        }
+
+        m_specialCopyArgs[argNum] = true;
+        return true;
+    }
+
+    bool argRequiresSpecialCopy(unsigned argNum)
+    {
+        return argNum < info.compArgsCount && m_specialCopyArgs != nullptr && m_specialCopyArgs[argNum];
+    }
+
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 

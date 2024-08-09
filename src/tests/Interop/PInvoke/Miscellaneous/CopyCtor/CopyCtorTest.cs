@@ -25,10 +25,10 @@ public static unsafe class CopyCtor
             return 2;
         }
 
-        int expectedCallCount = 2;
+        int expectedCallCount = 0;
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
         {
-            expectedCallCount = 4;
+            expectedCallCount = 1;
         }
 
         if (StructWithCtor.CopyCtorCallCount != expectedCallCount)
