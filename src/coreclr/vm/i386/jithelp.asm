@@ -36,7 +36,6 @@ JIT_LLsh                        TEXTEQU <_JIT_LLsh@0>
 JIT_LRsh                        TEXTEQU <_JIT_LRsh@0>
 JIT_LRsz                        TEXTEQU <_JIT_LRsz@0>
 JIT_LMul                        TEXTEQU <@JIT_LMul@16>
-JIT_InternalThrowFromHelper     TEXTEQU <@JIT_InternalThrowFromHelper@4>
 JIT_WriteBarrierReg_PreGrow     TEXTEQU <_JIT_WriteBarrierReg_PreGrow@0>
 JIT_WriteBarrierReg_PostGrow    TEXTEQU <_JIT_WriteBarrierReg_PostGrow@0>
 JIT_TailCall                    TEXTEQU <_JIT_TailCall@0>
@@ -53,7 +52,6 @@ EXTERN  g_card_table:DWORD
 ifdef _DEBUG
 EXTERN  WriteBarrierAssert:PROC
 endif ; _DEBUG
-EXTERN  JIT_InternalThrowFromHelper:PROC
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif

@@ -59,8 +59,6 @@ ifdef FEATURE_READYTORUN
 EXTERN _DynamicHelperWorker@20:PROC
 endif
 
-EXTERN @JIT_InternalThrow@4:PROC
-
 EXTERN @ProfileEnter@8:PROC
 EXTERN @ProfileLeave@8:PROC
 EXTERN @ProfileTailcall@8:PROC
@@ -417,13 +415,6 @@ _StubRareDisableTHROW proc public
         retn
 _StubRareDisableTHROW endp
 
-
-InternalExceptionWorker proc public
-        pop     edx             ; recover RETADDR
-        add     esp, eax        ; release caller's args
-        push    edx             ; restore RETADDR
-        jmp     @JIT_InternalThrow@4
-InternalExceptionWorker endp
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the

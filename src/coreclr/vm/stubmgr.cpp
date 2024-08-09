@@ -1358,31 +1358,16 @@ static BOOL TraceManagedThunk(
     // the discussion at https://github.com/dotnet/runtime/pull/104731/files#r1693796408
     // for details.
     DELEGATEREF orDelegate;
-    if (GetEEFuncEntryPoint(SinglecastDelegateInvokeStub) == pc)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "TraceManagedThunk: isSingle\n"));
 
-        orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
-        destAddr = orDelegate->GetMethodPtr();
-        if (StubManager::TraceStub(destAddr, trace))
-        {
-            LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
-            LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: res: 1, result type: %d\n", trace->GetTraceType()));
-            return TRUE;
-        }
-    }
-    else
-    {
-        // We get here if we are stopped at the beginning of a shuffle thunk.
-        // The next address we are going to is _methodPtrAux.
-        Stub* pStub = Stub::RecoverStub(pc);
+    // We get here if we are stopped at the beginning of a shuffle thunk.
+    // The next address we are going to is _methodPtrAux.
+    Stub* pStub = Stub::RecoverStub(pc);
 
-        // We use the patch offset field to indicate whether the stub has a hidden return buffer argument.
-        // This field is set in SetupShuffleThunk().
-        orDelegate = (pStub->GetPatchOffset() != 0)
-            ? (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext)) // This stub has a hidden return buffer argument.
-            : (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
-    }
+    // We use the patch offset field to indicate whether the stub has a hidden return buffer argument.
+    // This field is set in SetupShuffleThunk().
+    orDelegate = (pStub->GetPatchOffset() != 0)
+        ? (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext)) // This stub has a hidden return buffer argument.
+        : (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
 
     destAddr = orDelegate->GetMethodPtrAux();
 
@@ -1392,9 +1377,7 @@ static BOOL TraceManagedThunk(
 
     // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
     // shuffle thunk (destination in _methodPtrAux).
-    int offsetOfNextDest = (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
-        ? DelegateObject::GetOffsetOfMethodPtr()
-        : DelegateObject::GetOffsetOfMethodPtrAux();
+    int offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
     destAddr = *(PCODE*)(pThis + offsetOfNextDest);
 
 #elif defined(TARGET_ARM64)
@@ -1403,9 +1386,7 @@ static BOOL TraceManagedThunk(
 
     // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
     // shuffle thunk (destination in _methodPtrAux).
-    int offsetOfNextDest = (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
-        ? DelegateObject::GetOffsetOfMethodPtr()
-        : DelegateObject::GetOffsetOfMethodPtrAux();
+    int offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
     destAddr = *(PCODE*)(pThis + offsetOfNextDest);
 
 #else

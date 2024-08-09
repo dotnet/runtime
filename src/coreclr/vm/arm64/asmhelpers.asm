@@ -9,7 +9,6 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -316,22 +315,6 @@ EphemeralCheckEnabled
         EPILOG_RETURN
 
     LEAF_END JIT_UpdateWriteBarrierState
-
-; void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub
-        cmp     x0, #0
-        beq     LNullThis
-
-        ldr     x16, [x0, #DelegateObject___methodPtr]
-        ldr     x0, [x0, #DelegateObject___target]
-
-        br      x16
-
-LNullThis
-        mov     x0, #CORINFO_NullReferenceException_ASM
-        b       JIT_InternalThrow
-
-    LEAF_END
 
 #ifdef FEATURE_COMINTEROP
 

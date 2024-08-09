@@ -1563,6 +1563,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         _ASSERTE(md->IsDynamicMethod());
         DynamicMethodDesc* dMD = md->AsDynamicMethodDesc();
         use |= dMD->IsMulticastStub();
+        use |= dMD->IsSinglecastStub();
         use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)

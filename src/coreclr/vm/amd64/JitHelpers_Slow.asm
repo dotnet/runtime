@@ -55,8 +55,6 @@ extern g_pStringClass:QWORD
 extern FramedAllocateString:proc
 extern JIT_NewArr1:proc
 
-extern JIT_InternalThrow:proc
-
 ifdef _DEBUG
 ; Version for when we're sure to be in the GC, checks whether or not the card
 ; needs to be updated

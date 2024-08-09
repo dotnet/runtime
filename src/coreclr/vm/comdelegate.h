@@ -79,9 +79,6 @@ public:
     // Get the cpu stub for a delegate invoke.
     static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    // get the one single delegate invoke stub
-    static PCODE TheDelegateInvokeStub();
-
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
 
