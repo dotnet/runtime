@@ -104,7 +104,7 @@ public:
     static void Startup();
 
     ~PEImage();
-    PEImage();
+    explicit PEImage(const WCHAR* path);
 
     BOOL Equals(PEImage* pImage);
 
@@ -121,7 +121,7 @@ public:
         MDInternalImportFlags flags = MDInternalImport_Default,
         BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle);
     void AddToHashMap();
 #endif
 
@@ -206,7 +206,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
+    void Init(BundleFileLocation bundleFileLocation);
 
     struct PEImageLocator
     {
@@ -285,7 +285,7 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString   m_path;
+    const SString   m_path;
     ULONG     m_pathHash;
     LONG      m_refCount;
 
