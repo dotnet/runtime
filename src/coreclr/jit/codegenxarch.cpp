@@ -1873,6 +1873,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_START_NONGC:
             GetEmitter()->emitDisableGC();
             break;
+
+        case GT_STOP_NONGC:
+            GetEmitter()->emitEnableGC();
+            break;
 #endif // !defined(JIT32_GCENCODER)
 
         case GT_START_PREEMPTGC:
