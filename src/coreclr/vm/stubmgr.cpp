@@ -2246,15 +2246,6 @@ BOOL TailCallStubManager::TraceManager(Thread * pThread,
     TADDR esp = GetSP(pContext);
     TADDR ebp = GetFP(pContext);
 
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of JIT_TailCallLeave
-        if (GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCall))
-        {
-            LOG((LF_CORDB, LL_INFO10000, "TCSM::TraceManager: Skipping on arm64-macOS\n"));
-            return FALSE;
-        }
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
-
     // Check if we are stopped at the beginning of JIT_TailCall().
     if (GetIP(pContext) == GetEEFuncEntryPoint(JIT_TailCall))
     {
