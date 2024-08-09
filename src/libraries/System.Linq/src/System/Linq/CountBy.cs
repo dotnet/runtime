@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -24,22 +25,24 @@ namespace System.Linq
                 return [];
             }
 
-            return CountByIterator(source, keySelector, keyComparer);
+            return new CountByEnumerable<TSource, TKey>(source, keySelector, keyComparer);
         }
 
-        private static IEnumerable<KeyValuePair<TKey, int>> CountByIterator<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
+        private sealed class CountByEnumerable<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) : IEnumerable<KeyValuePair<TKey, int>> where TKey : notnull
         {
-            using IEnumerator<TSource> enumerator = source.GetEnumerator();
-
-            if (!enumerator.MoveNext())
+            public IEnumerator<KeyValuePair<TKey, int>> GetEnumerator()
             {
-                yield break;
+                using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+                if (!enumerator.MoveNext())
+                {
+                    return Empty<KeyValuePair<TKey, int>>().GetEnumerator();
+                }
+
+                return BuildCountDictionary(enumerator, keySelector, keyComparer).GetEnumerator();
             }
 
-            foreach (KeyValuePair<TKey, int> countBy in BuildCountDictionary(enumerator, keySelector, keyComparer))
-            {
-                yield return countBy;
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         private static Dictionary<TKey, int> BuildCountDictionary<TSource, TKey>(IEnumerator<TSource> enumerator, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
