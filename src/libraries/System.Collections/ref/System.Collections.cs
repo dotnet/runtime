@@ -580,6 +580,8 @@ namespace System.Collections.Generic
         }
     }
 }
+#endif // !BUILDING_CORELIB_REFERENCE
+
 namespace System.Collections.ObjectModel
 {
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
@@ -612,7 +614,6 @@ namespace System.Collections.ObjectModel
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
 }
-#endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
     public static partial class CollectionExtensions
@@ -625,6 +626,7 @@ namespace System.Collections.Generic
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer

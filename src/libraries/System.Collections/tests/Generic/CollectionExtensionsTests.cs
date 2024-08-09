@@ -117,6 +117,15 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void AsReadOnly_TurnsISetIntoReadOnlySet()
+        {
+            ISet<string> set = new HashSet<string> { "A", "B" };
+            ReadOnlySet<string> readOnlySet = set.AsReadOnly();
+            Assert.NotNull(readOnlySet);
+            CollectionAsserts.Equal(set, readOnlySet);
+        }
+
+        [Fact]
         public void AsReadOnly_TurnsIDictionaryIntoReadOnlyDictionary()
         {
             IDictionary<string, string> dictionary = new Dictionary<string, string> { ["key1"] = "value1", ["key2"] = "value2" };
@@ -132,6 +141,13 @@ namespace System.Collections.Tests
         {
             IList<string> list = null;
             Assert.Throws<ArgumentNullException>("list", () => list.AsReadOnly());
+        }
+
+        [Fact]
+        public void AsReadOnly_NullISet_ThrowsArgumentNullException()
+        {
+            ISet<string> set = null;
+            Assert.Throws<ArgumentNullException>("set", () => set.AsReadOnly());
         }
 
         [Fact]
