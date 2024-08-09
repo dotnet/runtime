@@ -729,9 +729,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
-                                assert(targetReg != embMaskOp1Reg);
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                              /* canSkip */ true);
+                                }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
