@@ -296,6 +296,7 @@
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
+      <_EmccCommonFlags Include="-fsanitize=address"                       Condition="'$(WasmEnableAsan)' == 'true'" />
       <_EmccCommonFlags Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" Condition="'$(EmccMaximumHeapSize)' != ''" />
 
       <_EmccIncludePaths Include="$(_WasmIntermediateOutputPath.TrimEnd('\/'))" />

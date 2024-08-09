@@ -620,7 +620,7 @@
     </PropertyGroup>
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
-           Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
+           Text="AOT is not supported without IL trimming (EnableAggressiveTrimming=true or PublishTrimmed=true required)." />
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug'"
            Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />

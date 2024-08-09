@@ -84,7 +84,9 @@ DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", TRUE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
-DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", TRUE, "JIT specialized WASM do_jit_call trampolines")
+
+//disable because of ActiveIssue https://github.com/dotnet/runtime/issues/106200
+DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", FALSE, "JIT specialized WASM do_jit_call trampolines")
 
 DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #else

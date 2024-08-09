@@ -371,6 +371,9 @@ async function run() {
                 console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
+                if (App.runtime && App.runtime.Module && App.runtime.Module.HEAPU8) {
+                    console.log(`test-main.js exception while linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
+                }
                 if (error.name != "ExitStatus") {
                     mono_exit(1, error);
                 }
