@@ -43,11 +43,7 @@ namespace Internal.IL.Stubs
                 return null;
 
             bool result;
-            if (methodName == "IsReference")
-            {
-                result = elementType.IsGCPointer;
-            }
-            else if (methodName == "IsBitwiseEquatable")
+            if (methodName == "IsBitwiseEquatable")
             {
                 // Ideally we could detect automatically whether a type is trivially equatable
                 // (i.e., its operator == could be implemented via memcmp). But for now we'll
