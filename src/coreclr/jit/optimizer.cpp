@@ -1920,6 +1920,38 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 //          jtrue top
 //   join:
 //
+//   We can do the same for top-tested, top-entry loops like the following:
+//
+//   test:
+//          ..stmts..
+//          cond
+//          false join
+//    top:
+//          ...
+//          ...
+//  block:
+//          ...
+//          jmp test
+//   join:
+//
+//   This can be transformed into the following:
+//
+//   test:
+//          ..stmts..
+//          cond
+//          false join
+//    top:
+//          ...
+//          ...
+//  block:
+//          ...
+//  bNewCond:
+//          ..stmts..               // duplicated cond block statements
+//          cond                    // duplicated cond
+//          jtrue top
+//          // else fall-through
+//   join:
+//
 //  Makes no changes if the flow pattern match fails.
 //
 //  May not modify a loop if profile is unfavorable, if the cost of duplicating
@@ -1979,15 +2011,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // The duplicated condition block will branch to bTest->GetFalseTarget(), so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
     if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
-    {
-        return false;
-    }
-
-    // It has to be a forward jump. Defer this check until after all the cheap checks
-    // are done, since it iterates forward in the block list looking for block's target.
-    //  TODO-CQ: Check if we can also optimize the backwards jump as well.
-    //
-    if (!fgIsForwardBranch(block, block->GetTarget()))
     {
         return false;
     }
@@ -2255,49 +2278,56 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     fgRedirectTargetEdge(block, bNewCond);
     assert(block->JumpsToNext());
 
-    // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
-    // block, not the existing condition block. The idea is that if we only move `block` to point to
-    // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
-    // recognize loops, the loop will appear to have multiple entries, which will prevent optimization.
-    // We don't have loops yet, but blocks should be in increasing lexical numbered order, so use that
-    // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
-    // is maintained no matter which condition block we point to, but we'll lose optimization potential
-    // (and create spaghetti code) if we get it wrong.
+    // If block jumps backward to bTest, this is a top-tested loop.
+    // Thus, bTest controls loop entry, and bNewCond controls iteration.
+    // We don't need to rewire any of bTest's predecessors, as they aren't loop entries in this case.
     //
-    unsigned const loopFirstNum  = bTop->bbNum;
-    unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
+    if (block->bbNum < bTest->bbNum)
     {
-        unsigned const bNum = predBlock->bbNum;
-        if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
+        // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
+        // block, not the existing condition block. The idea is that if we only move `block` to point to
+        // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
+        // recognize loops, the loop will appear to have multiple entries, which will prevent optimization.
+        // We don't have loops yet, but blocks should be in increasing lexical numbered order, so use that
+        // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
+        // is maintained no matter which condition block we point to, but we'll lose optimization potential
+        // (and create spaghetti code) if we get it wrong.
+        //
+        unsigned const loopFirstNum  = bTop->bbNum;
+        unsigned const loopBottomNum = bTest->bbNum;
+        for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
         {
-            // Looks like the predecessor is from within the potential loop; skip it.
-            continue;
-        }
+            unsigned const bNum = predBlock->bbNum;
+            if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
+            {
+                // Looks like the predecessor is from within the potential loop; skip it.
+                continue;
+            }
 
-        // Redirect the predecessor to the new block.
-        JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
-                bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
+            // Redirect the predecessor to the new block.
+            JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
+                    bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
 
-        switch (predBlock->GetKind())
-        {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-            case BBJ_COND:
-            case BBJ_SWITCH:
-            case BBJ_EHFINALLYRET:
-                fgReplaceJumpTarget(predBlock, bTest, bNewCond);
-                break;
+            switch (predBlock->GetKind())
+            {
+                case BBJ_ALWAYS:
+                case BBJ_CALLFINALLY:
+                case BBJ_CALLFINALLYRET:
+                case BBJ_COND:
+                case BBJ_SWITCH:
+                case BBJ_EHFINALLYRET:
+                    fgReplaceJumpTarget(predBlock, bTest, bNewCond);
+                    break;
 
-            case BBJ_EHCATCHRET:
-            case BBJ_EHFILTERRET:
-                // These block types should not need redirecting
-                break;
+                case BBJ_EHCATCHRET:
+                case BBJ_EHFILTERRET:
+                    // These block types should not need redirecting
+                    break;
 
-            default:
-                assert(!"Unexpected bbKind for predecessor block");
-                break;
+                default:
+                    assert(!"Unexpected bbKind for predecessor block");
+                    break;
+            }
         }
     }
 
