@@ -164,8 +164,6 @@ namespace System.Numerics.Tensors
                 Vector<float> beg = transformOp.Invoke(AsVector(ref xRef));
                 Vector<float> end = transformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)));
 
-                nuint misalignment = 0;
-
                 if (remainder > (uint)(Vector<float>.Count * 8))
                 {
                     // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
@@ -175,28 +173,9 @@ namespace System.Numerics.Tensors
                     {
                         float* xPtr = px;
 
-                        // We need to the ensure the underlying data can be aligned and only align
-                        // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
-
-                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
-
-                        if (canAlign)
-                        {
-                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
-                            //
-                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
-                            // are more expensive than unaligned loads and aligning both is significantly more
-                            // complex.
-
-                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
-
-                            xPtr += misalignment;
-
-                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
-
-                            remainder -= misalignment;
-                        }
+                        // Unlike many other vectorization algorithms, we cannot align for aggregation
+                        // because that changes how results compound together and can cause a significant
+                        // difference in the output.
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -248,7 +227,6 @@ namespace System.Numerics.Tensors
                 // Store the first block. Handling this separately simplifies the latter code as we know
                 // they come after and so we can relegate it to full blocks or the trailing elements
 
-                beg = Vector.ConditionalSelect(CreateAlignmentMaskSingleVector((int)(misalignment)), beg, new Vector<float>(aggregationOp.IdentityValue));
                 vresult = aggregationOp.Invoke(vresult, beg);
 
                 // Process the remaining [0, Count * 7] elements via a jump table
@@ -259,7 +237,7 @@ namespace System.Numerics.Tensors
 
                 nuint blocks = remainder / (nuint)(Vector<float>.Count);
                 nuint trailing = remainder - (blocks * (nuint)(Vector<float>.Count));
-                blocks -= (misalignment == 0) ? 1u : 0u;
+                blocks -= 1u;
                 remainder -= trailing;
 
                 switch (blocks)
