@@ -141,9 +141,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -310,9 +313,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -479,9 +485,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1227,9 +1236,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1418,9 +1430,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
@@ -1609,9 +1624,12 @@ namespace System.Numerics.Tensors
 
                         // We need to the ensure the underlying data can be aligned and only align
                         // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // can never achieve the required SIMD alignment. This cannot be done for
+                        // float or double since that changes how results compound together.
 
-                        bool canAlign = ((nuint)xPtr % (nuint)sizeof(T)) == 0;
+                        bool canAlign = (typeof(T) != typeof(float)) &&
+                                        (typeof(T) != typeof(double)) &&
+                                        ((nuint)xPtr % (nuint)sizeof(T)) == 0;
 
                         if (canAlign)
                         {
