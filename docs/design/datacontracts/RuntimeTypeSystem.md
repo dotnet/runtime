@@ -633,15 +633,15 @@ And the following enumeration definitions
 ```csharp
     internal enum MethodDescClassification
     {
-        mcIL = 0, // IL
-        mcFCall = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
-        mcNDirect = 2, // N/Direct
-        mcEEImpl = 3, // special method; implementation provided by EE (like Delegate Invoke)
-        mcArray = 4, // Array ECall
-        mcInstantiated = 5, // Instantiated generic methods, including descriptors
+        IL = 0, // IL
+        FCall = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
+        PInvoke = 2, // PInvoke method
+        EEImpl = 3, // special method; implementation provided by EE (like Delegate Invoke)
+        Array = 4, // Array ECall
+        Instantiated = 5, // Instantiated generic methods, including descriptors
                             // for both shared and unshared code (see InstantiatedMethodDesc)
-        mcComInterop = 6,
-        mcDynamic = 7, // for method desc with no metadata behind
+        ComInterop = 6,
+        Dynamic = 7, // for method desc with no metadata behind
     }
 
     [Flags]
@@ -676,7 +676,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcInstantiated)
+        if (methodDesc.Classification != MethodDescClassification.Instantiated)
             return false;
 
         ushort Flags2 = // Read Flags2 field from InstantiatedMethodDesc contract using address methodDescHandle.Address
@@ -688,7 +688,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcInstantiated)
+        if (methodDesc.Classification != MethodDescClassification.Instantiated)
             return default;
 
         TargetPointer dictionaryPointer = // Read PerInstInfo field from InstantiatedMethodDesc contract using address methodDescHandle.Address
@@ -729,7 +729,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcArray)
+        if (methodDesc.Classification != MethodDescClassification.Array)
         {
             functionType = default;
             return false;
@@ -753,7 +753,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
         {
             methodName = default;
             return false;
@@ -771,9 +771,9 @@ And the various apis are implemented with the following algorithms
 
         switch (methodDesc.Classification)
         {
-            case MethodDescClassification.mcDynamic:
-            case MethodDescClassification.mcEEImpl:
-            case MethodDescClassification.mcArray:
+            case MethodDescClassification.Dynamic:
+            case MethodDescClassification.EEImpl:
+            case MethodDescClassification.Array:
                 break; // These have stored sigs
 
             default:
@@ -793,7 +793,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
         {
             return false;
         }
@@ -807,7 +807,7 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        if (methodDesc.Classification != MethodDescClassification.Dynamic)
         {
             return false;
         }
