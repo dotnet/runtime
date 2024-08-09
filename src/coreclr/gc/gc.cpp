@@ -7309,7 +7309,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
     assert(bucket != recorded_committed_free_bucket);
 #endif //USE_REGIONS
 
-    dprintf(3, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
     bool should_count =
 #ifdef USE_REGIONS
         true;
@@ -7407,7 +7407,7 @@ void gc_heap::reduce_committed_bytes (void* address, size_t size, int bucket, in
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
 
-    dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
 #ifndef USE_REGIONS
     if (bucket != recorded_committed_ignored_bucket)
@@ -11813,7 +11813,7 @@ void gc_heap::clear_region_info (heap_segment* region)
 void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
-    dprintf(3, ("commit-accounting:  from %d to free [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  from %d to free [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
     {
         size_t committed = heap_segment_committed (region) - get_region_start (region);
         if (committed > 0)
@@ -11907,7 +11907,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
                            gen_number, true);
 
         gc_oh_num oh = gen_to_oh (gen_number);
-        dprintf(3, ("commit-accounting:  from free to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
+        STRESS_LOG_VA (1, ("commit-accounting:  from free to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
         {
             size_t committed = heap_segment_committed (region) - get_region_start (region);
             if (committed > 0)
@@ -24573,7 +24573,7 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
     int oh = heap_segment_oh (region);
-    dprintf(3, ("commit-accounting:  from %d to temp [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  from %d to temp [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
 #ifdef _DEBUG
     size_t committed = heap_segment_committed (region) - get_region_start (region);
     if (committed > 0)
@@ -24610,7 +24610,7 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
     int oh = heap_segment_oh (region);
-    dprintf(3, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
+    STRESS_LOG_VA (1, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), this->heap_number));
 #ifdef _DEBUG
     size_t committed = heap_segment_committed (region) - get_region_start (region);
     assert (heap_segment_heap (region) == nullptr);
@@ -24752,7 +24752,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                 assert (heap_segment_heap (start_region) == nullptr && hp != nullptr);
                 int oh = heap_segment_oh (start_region);
                 size_t committed = heap_segment_committed (start_region) - get_region_start (start_region);
-                dprintf(3, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (start_region), heap_segment_committed (start_region), hp->heap_number));
+                STRESS_LOG_VA (1, ("commit-accounting:  from temp to %d [%p, %p) for heap %d", oh, get_region_start (start_region), heap_segment_committed (start_region), hp->heap_number));
 #ifdef _DEBUG
                 g_heaps[hp->heap_number]->committed_by_oh_per_heap[oh] += committed;
 #endif //_DEBUG
@@ -26070,7 +26070,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                         size_t committed = heap_segment_committed (region) - get_region_start (region);
                         if (committed > 0)
                         {
-                            dprintf(3, ("commit-accounting:  from %d to %d [%p, %p) for heap %d to heap %d", oh, oh, get_region_start (region), heap_segment_committed (region), i, dest_heap_number));
+                            STRESS_LOG_VA (1, ("commit-accounting:  from %d to %d [%p, %p) for heap %d to heap %d", oh, oh, get_region_start (region), heap_segment_committed (region), i, dest_heap_number));
 #ifdef _DEBUG
                             assert (hp->committed_by_oh_per_heap[oh] >= committed);
                             hp->committed_by_oh_per_heap[oh] -= committed;
@@ -47495,10 +47495,6 @@ void gc_heap::verify_committed_bytes_per_heap()
 
 void gc_heap::verify_committed_bytes()
 {
-#ifndef USE_REGIONS
-    // TODO, https://github.com/dotnet/runtime/issues/102706, re-enable the testing after fixing this bug
-    return;
-#endif //!USE_REGIONS
     size_t total_committed = 0;
     size_t committed_decommit; // unused
     size_t committed_free; // unused
