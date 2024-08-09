@@ -574,6 +574,8 @@ namespace
                 return isInDisabledFeatureSwitch;
 
         #include "corelib.h"
+
+        return false;
     }
 }
 
