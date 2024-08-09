@@ -585,9 +585,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    insOpts embOpt = emitter::optGetSveInsOpt(emitTypeSize(intrinEmbMask.baseType));
                     // Special handling for ConvertTo* APIs
                     // Just need to change the opt here.
-                    insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
                     {
                         case NI_Sve_ConvertToInt32:
@@ -607,6 +607,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                                                       : INS_OPTS_SCALABLE_D;
                             break;
                         }
+
                         default:
                             break;
                     }
