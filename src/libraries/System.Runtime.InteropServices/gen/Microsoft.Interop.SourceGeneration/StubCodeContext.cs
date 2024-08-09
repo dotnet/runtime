@@ -42,7 +42,7 @@ namespace Microsoft.Interop
             /// Call the generated P/Invoke
             /// </summary>
             /// <remarks>
-            /// <see cref="IMarshallingGenerator.AsArgument(TypePositionInfo)"/> should provide the
+            /// <see cref="IUnboundMarshallingGenerator.AsArgument(TypePositionInfo)"/> should provide the
             /// argument to pass to the P/Invoke
             /// </remarks>
             Invoke,

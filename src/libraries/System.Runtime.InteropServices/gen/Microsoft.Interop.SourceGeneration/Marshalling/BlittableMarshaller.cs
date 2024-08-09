@@ -9,7 +9,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public sealed class BlittableMarshaller : IMarshallingGenerator
+    public sealed class BlittableMarshaller : IUnboundMarshallingGenerator
     {
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {

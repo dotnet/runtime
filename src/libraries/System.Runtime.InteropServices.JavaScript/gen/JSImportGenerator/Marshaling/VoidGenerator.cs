@@ -5,11 +5,9 @@ using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed class VoidGenerator : BaseJSGenerator
+    internal sealed class VoidGenerator(TypePositionInfo info, MarshalerType marshalerType) : BaseJSGenerator(marshalerType, new Forwarder().Bind(info))
     {
-        public VoidGenerator(MarshalerType marshalerType)
-            : base(marshalerType, new Forwarder())
-        {
-        }
+        public override IBoundMarshallingGenerator Rebind(TypePositionInfo info)
+            => new VoidGenerator(info, Type);
     }
 }

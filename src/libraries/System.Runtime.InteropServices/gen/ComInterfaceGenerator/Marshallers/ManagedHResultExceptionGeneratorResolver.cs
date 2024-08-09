@@ -32,8 +32,8 @@ namespace Microsoft.Interop
             {
                 return ResolvedGenerator.Resolved(_direction switch
                 {
-                    MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller(),
-                    MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller(),
+                    MarshalDirection.UnmanagedToManaged => new UnmanagedToManagedMarshaller().Bind(info),
+                    MarshalDirection.ManagedToUnmanaged => new ManagedToUnmanagedMarshaller().Bind(info),
                     _ => throw new UnreachableException()
                 });
             }
@@ -43,7 +43,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private sealed class ManagedToUnmanagedMarshaller : IMarshallingGenerator
+        private sealed class ManagedToUnmanagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -71,7 +71,7 @@ namespace Microsoft.Interop
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
         }
 
-        private sealed class UnmanagedToManagedMarshaller : IMarshallingGenerator
+        private sealed class UnmanagedToManagedMarshaller : IUnboundMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => info.ManagedType;
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)

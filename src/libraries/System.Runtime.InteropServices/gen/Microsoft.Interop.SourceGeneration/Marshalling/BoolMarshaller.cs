@@ -11,7 +11,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public abstract class BoolMarshallerBase : IMarshallingGenerator
+    public abstract class BoolMarshallerBase : IUnboundMarshallingGenerator
     {
         private readonly ManagedTypeInfo _nativeType;
         private readonly int _trueValue;
