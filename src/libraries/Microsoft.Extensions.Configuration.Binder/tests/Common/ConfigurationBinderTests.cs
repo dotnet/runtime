@@ -2118,28 +2118,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("MyString", obj2.Value);
         }
 
-        [Fact]
-        public void ObjWith_TypeConverter()
-        {
-            var configuration = TestHelpers.GetConfigurationFromJsonString("""
-                {
-                    "Location":
-                    {
-                        "Latitude": 3,
-                        "Longitude": 4,
-                    }
-                }
-                """);
+        //[Fact(Skip = "TypeConverter are no longer ignored")]
+        //public void ObjWith_TypeConverter()
+        //{
+        //    var configuration = TestHelpers.GetConfigurationFromJsonString("""
+        //        {
+        //            "Location":
+        //            {
+        //                "Latitude": 3,
+        //                "Longitude": 4,
+        //            }
+        //        }
+        //        """);
 
-            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
+        //    // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
 
-            GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
-            ValidateGeolocation(obj.Location);
+        //    GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
+        //    ValidateGeolocation(obj.Location);
 
-            configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
-            obj = configuration.Get<GeolocationWrapper>();
-            Assert.Equal(Geolocation.Zero, obj.Location);
-        }
+        //    configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
+        //    obj = configuration.Get<GeolocationWrapper>();
+        //    Assert.Equal(Geolocation.Zero, obj.Location);
+        //}
 
         [Fact]
         public void ComplexObj_As_Dictionary_Element()
@@ -2601,6 +2601,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
+        }
+
+        [Fact]
+        public void CanBindToClassWithTypeConverter()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>()
+                {
+                    { "Test:0", "Hello"},
+                    { "Test:1", "world"},
+                })
+                .Build();
+
+            try
+            {
+                var item = configuration.GetSection("Test").Get<ConvertingItem>();
+                Assert.Equal("Hello", item.Zero);
+                Assert.Equal("world", item.One);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
         }
     }
 }
