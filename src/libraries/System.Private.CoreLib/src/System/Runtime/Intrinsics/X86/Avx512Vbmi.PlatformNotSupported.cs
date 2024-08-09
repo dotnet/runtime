@@ -12,12 +12,15 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx512Vbmi() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        /// <summary>This class provides access to the x86 AVX512VBMI+VL hardware instructions via intrinsics.</summary>
         public new abstract class VL : Avx512BW.VL
         {
             internal VL() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
@@ -91,10 +94,12 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<sbyte> PermuteVar32x8x2(Vector256<sbyte> lower, Vector256<sbyte> indices, Vector256<sbyte> upper) { throw new PlatformNotSupportedException(); }
         }
 
+        /// <summary>This class provides access to the x86 AVX512VBMI hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         public new abstract class X64 : Avx512BW.X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
 

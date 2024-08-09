@@ -18,13 +18,16 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal Sve() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>This class provides access to the ARM SVE hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class Arm64 : AdvSimd.Arm64
         {
             internal Arm64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
         }
 

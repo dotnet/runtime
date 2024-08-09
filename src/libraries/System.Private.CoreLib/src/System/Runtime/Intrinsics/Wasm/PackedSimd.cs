@@ -14,6 +14,7 @@ namespace System.Runtime.Intrinsics.Wasm
     [CLSCompliant(false)]
     public abstract class PackedSimd
     {
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static bool IsSupported { [Intrinsic] get { return IsSupported; } }
 
         // Constructing SIMD Values

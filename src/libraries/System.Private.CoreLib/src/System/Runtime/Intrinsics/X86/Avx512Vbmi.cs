@@ -8,20 +8,23 @@ using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>This class provides access to X86 AVX512VBMI hardware instructions via intrinsics</summary>
+    /// <summary>This class provides access to X86 AVX512VBMI hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Avx512Vbmi : Avx512BW
     {
         internal Avx512Vbmi() { }
 
+        /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
         public static new bool IsSupported { get => IsSupported; }
 
+        /// <summary>This class provides access to the x86 AVX512VBMI+VL hardware instructions via intrinsics.</summary>
         [Intrinsic]
         public new abstract class VL : Avx512BW.VL
         {
             internal VL() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
 
             /// <summary>
@@ -95,11 +98,13 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<sbyte> PermuteVar32x8x2(Vector256<sbyte> lower, Vector256<sbyte> indices, Vector256<sbyte> upper) => PermuteVar32x8x2(lower, indices, upper);
         }
 
+        /// <summary>This class provides access to the x86 AVX512VBMI hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>
         [Intrinsic]
         public new abstract class X64 : Avx512BW.X64
         {
             internal X64() { }
 
+            /// <summary>Gets <c>true</c> if the APIs in this class are supported; otherwise, <c>false</c> which indicates they will throw <see cref="PlatformNotSupportedException" />.</summary>
             public static new bool IsSupported { get => IsSupported; }
         }
 
