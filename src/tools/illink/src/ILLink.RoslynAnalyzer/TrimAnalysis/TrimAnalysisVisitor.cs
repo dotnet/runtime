@@ -291,8 +291,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
 			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-			if (OwningSymbol.ToString().Contains("TestDataFlowType"))
-				Debug.WriteLine("H");
 			HandleCall (Compilation, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
 			// This will copy the values if necessary

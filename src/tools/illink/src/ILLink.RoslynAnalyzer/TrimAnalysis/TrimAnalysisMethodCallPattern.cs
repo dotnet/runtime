@@ -71,8 +71,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			if (OwningSymbol.ToString().Contains("TestDataFlowType"))
-				Debug.WriteLine("H");
 			var location = Operation.Syntax.GetLocation ();
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
