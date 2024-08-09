@@ -71,16 +71,9 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     ldr  x12,  LOCAL_LABEL(wbs_lowest_address)
+    ldr  x17,  LOCAL_LABEL(wbs_highest_address)
     cmp  x14,  x12
-
-    ldr  x12, LOCAL_LABEL(wbs_highest_address)
-
-    // Compare against the upper bound if the previous comparison indicated
-    // that the destination address is greater than or equal to the lower
-    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
-    // branch below is not taken.
-    ccmp x14, x12, #0x2, hs
-
+    ccmp x14,  x17, #0x2, hs
     bhs  LOCAL_LABEL(NotInHeap)
 
     b C_FUNC(JIT_WriteBarrier)
@@ -165,7 +158,6 @@ LOCAL_LABEL(CheckCardTable):
     ccmp x15, x17, #0x2, hs
     bhs  LOCAL_LABEL(Exit)
 
-LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
@@ -173,7 +165,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
 
-LOCAL_LABEL(UpdateCardTable):
+    // Update the card table
     mov  x12, 0xFF
     strb w12, [x15]
 
@@ -185,7 +177,7 @@ LOCAL_LABEL(UpdateCardTable):
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
 
-LOCAL_LABEL(UpdateCardBundle):
+    // Update the card bundle
     mov  x12, 0xFF
     strb w12, [x15]
 #endif
