@@ -151,7 +151,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider)
+		public static TypeReference InflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider)
 		{
 			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
 				return InflateGenericType (genericInstanceProvider, typeToInflate);
@@ -166,18 +166,15 @@ namespace Mono.Linker
 				yield break;
 
 			if (typeRef is GenericInstanceType genericInstance) {
-				foreach (var interfaceImpl in typeDef.Interfaces) {
-					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
-					// Here we are not inflating a generic parameter but an interface type reference.
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType), interfaceImpl)!;
-				}
+				foreach (var interfaceImpl in typeDef.Interfaces)
+					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType), interfaceImpl);
 			} else {
 				foreach (var interfaceImpl in typeDef.Interfaces)
 					yield return (interfaceImpl.InterfaceType, interfaceImpl);
 			}
 		}
 
-		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
+		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
 		{
 			if (typeToInflate is ArrayType arrayType) {
 				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);

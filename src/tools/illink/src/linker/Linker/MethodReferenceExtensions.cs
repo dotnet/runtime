@@ -71,7 +71,7 @@ namespace Mono.Linker
 			return sb.ToString ();
 		}
 
-		public static TypeReference? GetReturnType (this MethodReference method)
+		public static TypeReference GetReturnType (this MethodReference method)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
 				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.ReturnType);
@@ -84,7 +84,7 @@ namespace Mono.Linker
 			return method.ReturnType.WithoutModifiers ().MetadataType == MetadataType.Void;
 		}
 
-		public static TypeReference? GetInflatedParameterType (this MethodReference method, int parameterIndex)
+		public static TypeReference GetInflatedParameterType (this MethodReference method, int parameterIndex)
 		{
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- it's best to leave this as is for now
 			if (method.DeclaringType is GenericInstanceType genericInstance)
