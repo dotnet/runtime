@@ -158,9 +158,17 @@ namespace System.Buffers.Text
             // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
             return zeroIsAscii != Vector512<ushort>.Zero;
         }
+#endif
 
+#if NET
+        // same as ShuffleUnsafe, except that we guarantee that if the high bit is set, it gives 0
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+#if NET9_0_OR_GREATER
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+#endif
+        internal static Vector128<byte> ShuffleUnsafeModified(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
             {
