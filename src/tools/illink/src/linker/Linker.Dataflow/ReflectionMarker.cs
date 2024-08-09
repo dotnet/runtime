@@ -58,32 +58,39 @@ namespace Mono.Linker.Dataflow
 
 		// Resolve a (potentially assembly qualified) type name based on the current context (taken from DiagnosticContext) and mark the type for reflection.
 		// This method will probe the current context assembly and if that fails CoreLib for the specified type. Emulates behavior of Type.GetType.
-		internal bool TryResolveTypeNameAndMark (string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out TypeReference? type)
+		internal bool TryResolveTypeNameAndMark (string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, [NotNullWhen (true)] out TypeDefinition? type)
 		{
-			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out type, out var typeResolutionRecords, needsAssemblyName)) {
+			if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeRef, out var typeResolutionRecords, needsAssemblyName)
+				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
 				type = default;
 				return false;
 			}
 
-			MarkType (diagnosticContext, type, typeResolutionRecords);
+			MarkResolvedType (diagnosticContext, typeRef, foundType, typeResolutionRecords);
+
+			type = foundType;
 			return true;
 		}
 
 		// Resolve a type from the specified assembly and mark it for reflection.
-		internal bool TryResolveTypeNameAndMark (AssemblyDefinition assembly, string typeName, in DiagnosticContext diagnosticContext, [NotNullWhen (true)] out TypeReference? type)
+		internal bool TryResolveTypeNameAndMark (AssemblyDefinition assembly, string typeName, in DiagnosticContext diagnosticContext, [NotNullWhen (true)] out TypeDefinition? type)
 		{
-			if (!_context.TypeNameResolver.TryResolveTypeName (assembly, typeName, out type, out var typeResolutionRecords)) {
+			if (!_context.TypeNameResolver.TryResolveTypeName (assembly, typeName, out TypeReference? typeRef, out var typeResolutionRecords)
+				|| typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition foundType) {
 				type = default;
 				return false;
 			}
 
-			MarkType (diagnosticContext, type, typeResolutionRecords);
+			MarkResolvedType (diagnosticContext, typeRef, foundType, typeResolutionRecords);
+
+			type = foundType;
 			return true;
 		}
 
-		void MarkType (
+		void MarkResolvedType (
 			in DiagnosticContext diagnosticContext,
 			TypeReference typeReference,
+			TypeDefinition typeDefinition,
 			List<TypeNameResolver.TypeResolutionRecord> typeResolutionRecords)
 		{
 			if (_enabled) {
@@ -93,9 +100,9 @@ namespace Mono.Linker.Dataflow
 				// This is necessary because if the app's code contains the input string as literal (which is pretty much always the case)
 				// that string has to work at runtime, and if it relies on type forwarders we need to preserve those as well.
 				var origin = diagnosticContext.Origin;
-				_markStep.MarkTypeVisibleToReflection (typeReference, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);
+				_markStep.MarkTypeVisibleToReflection (typeReference, typeDefinition, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);
 				foreach (var typeResolutionRecord in typeResolutionRecords) {
-					_context.MarkingHelpers.MarkMatchingExportedType (typeResolutionRecord.ResolvedType, typeResolutionRecord.ReferringAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, typeReference), origin);
+					_context.MarkingHelpers.MarkMatchingExportedType (typeResolutionRecord.ResolvedType, typeResolutionRecord.ReferringAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, typeDefinition), origin);
 				}
 			}
 		}
@@ -108,7 +115,7 @@ namespace Mono.Linker.Dataflow
 			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
-			_markStep.MarkTypeVisibleToReflection (type, new DependencyInfo (dependencyKind, origin.Provider), origin);
+			_markStep.MarkTypeVisibleToReflection (type, type, new DependencyInfo (dependencyKind, origin.Provider), origin);
 		}
 
 		internal void MarkMethod (in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)

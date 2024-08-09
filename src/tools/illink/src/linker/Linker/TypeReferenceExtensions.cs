@@ -435,9 +435,7 @@ namespace Mono.Linker
 		public static TypeDefinition? ResolveToTypeDefinition (this TypeReference typeReference, LinkContext context)
 			=> typeReference is ArrayType
 				? BCL.FindPredefinedType (WellKnownType.System_Array, context)
-				: typeReference.IsNamedType ()
-					? context.TryResolve (typeReference)
-					: null;
+				: context.TryResolve (typeReference);
 
 		public static bool IsByRefOrPointer (this TypeReference typeReference)
 		{

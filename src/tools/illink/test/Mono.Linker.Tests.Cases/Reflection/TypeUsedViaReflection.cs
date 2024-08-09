@@ -213,12 +213,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Pointer))]
 		public class Pointer { }
 
 		[Kept]
-		// Applying DynamicallyAccessedMembers annotations to a pointer type doesn't keep members of the underlying type.
+		[ExpectedWarning ("IL2026", nameof (Pointer), Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't treat members of pointer element type as reflected")]
 		public static void TestPointer ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Pointer*";
@@ -227,12 +228,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode (nameof (Reference))]
 		public class Reference { }
 
 		[Kept]
-		// Applying DynamicallyAccessedMembers annotations to a byref type doesn't keep members of the underlying type.
+		[ExpectedWarning ("IL2026", nameof (Reference), Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't treat members of reference element type as reflected")]
 		public static void TestReference ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+Reference&";
