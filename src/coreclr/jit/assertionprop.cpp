@@ -6254,13 +6254,7 @@ GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
         // Do a sanity check to ensure persistent side effects aren't discarded and
         // tell gtExtractSideEffList to ignore the root of the tree.
         // We are relying here on an invariant that VN will only fold non-throwing expressions.
-        const bool ignoreExceptions = true;
-        const bool ignoreCctors     = false;
-        // We have to check "AsCall()->HasSideEffects()" here separately because "gtNodeHasSideEffects"
-        // also checks for side effects that arguments introduce (incosistently so, it otherwise only
-        // checks for the side effects the node itself has). TODO-Cleanup: change it to not do that?
-        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS) ||
-               (tree->IsCall() && !tree->AsCall()->HasSideEffects(this, ignoreExceptions, ignoreCctors)));
+        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS));
 
         // Exception side effects may be ignored because the root is known to be a constant
         // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
