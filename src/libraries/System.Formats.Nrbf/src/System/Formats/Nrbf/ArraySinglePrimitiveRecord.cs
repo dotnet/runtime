@@ -240,7 +240,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(DateTime))
             {
-                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64()));
+                values.Add((T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64()));
             }
             else
             {
