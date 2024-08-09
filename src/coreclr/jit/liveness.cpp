@@ -771,14 +771,14 @@ void Compiler::fgLiveVarAnalysis()
 //    life          - The live set that is being computed.
 //    keepAliveVars - Tracked locals that must be kept alive everywhere in the block
 //    call          - The call node in question.
+//    pDefinedLcl   - [out] Local defined by the call, if any (eg retbuf)
 //
 // Returns:
-//    local defined by the call, if any (eg retbuf)
+//    True if the call's result is unused and the call can be removed
 //
-GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
+bool Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call, GenTreeLclVarCommon** pDefinedLcl)
 {
     assert(call != nullptr);
-    GenTreeLclVarCommon* definedLcl = nullptr;
 
     // If this is a tail-call via helper, and we have any unmanaged p/invoke calls in
     // the method, then we're going to run the p/invoke epilog
@@ -838,13 +838,58 @@ GenTreeLclVarCommon* Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_
         }
     }
 
-    definedLcl = gtCallGetDefinedRetBufLclAddr(call);
+    GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
     if (definedLcl != nullptr)
     {
         fgComputeLifeLocal(life, keepAliveVars, definedLcl);
     }
 
-    return definedLcl;
+    if (pDefinedLcl != nullptr)
+    {
+        *pDefinedLcl = definedLcl;
+    }
+
+    if (compRationalIRForm)
+    {
+        return (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this);
+    }
+    else
+    {
+        assert(fgNodeThreading == NodeThreading::AllTrees);
+
+        if (!call->HasSideEffects(this))
+        {
+            // See if the value of this call is used for anything.
+            GenTree* cur = call;
+            while (true)
+            {
+                if (cur->TypeIs(TYP_VOID))
+                {
+                    return true;
+                }
+
+                GenTree* user = cur->gtGetParent(nullptr);
+                if (user == nullptr)
+                {
+                    return true;
+                }
+
+                if (!user->OperIs(GT_COMMA))
+                {
+                    return false;
+                }
+
+                if (user->gtGetOp1() == cur)
+                {
+                    return true;
+                }
+
+                cur = user;
+            }
+        }
+
+        return false;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1179,12 +1224,23 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
 
         bool       isUse        = false;
         bool       doAgain      = false;
-        bool       storeRemoved = false;
         LclVarDsc* varDsc       = nullptr;
 
         if (tree->IsCall())
         {
-            GenTreeLclVarCommon* const definedLcl = fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
+            GenTreeLclVarCommon* definedLcl;
+            bool isDeadCall = fgComputeLifeCall(life, keepAliveVars, tree->AsCall(), &definedLcl);
+            if (isDeadCall)
+            {
+                if (fgRemoveDeadNode(&tree, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
+                {
+                    assert(!doAgain);
+                    break;
+                }
+
+                definedLcl = nullptr;
+            }
+
             if (definedLcl != nullptr)
             {
                 isUse  = (definedLcl->gtFlags & GTF_VAR_USEASG) != 0;
@@ -1199,7 +1255,7 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
             {
                 varDsc = lvaGetDesc(tree->AsLclVarCommon());
 
-                if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
+                if (fgRemoveDeadNode(&tree, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
                 {
                     assert(!doAgain);
                     break;
@@ -1211,7 +1267,7 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
         // front-end liveness pass we must add them to the live set in case
         // we failed to remove the dead store.
         //
-        if ((varDsc != nullptr) && isUse && !storeRemoved)
+        if ((varDsc != nullptr) && isUse)
         {
             if (varDsc->lvTracked)
             {
@@ -1266,7 +1322,8 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if (((call->TypeGet() == TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(this))
+                bool isDeadCall = fgComputeLifeCall(life, keepAliveVars, call, nullptr);
+                if (isDeadCall)
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -1300,10 +1357,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         fgStmtRemoved = true;
                     }
                 }
-                else
-                {
-                    fgComputeLifeCall(life, keepAliveVars, call);
-                }
+
                 break;
             }
 
@@ -1668,77 +1722,40 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
 // Return Value:
 //   true if we should skip the rest of the statement, false if we should continue
 //
-bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
-                                 LclVarDsc*          varDsc,
-                                 VARSET_VALARG_TP    life,
+bool Compiler::fgRemoveDeadNode(GenTree**           pTree,
                                  bool*               doAgain,
-                                 bool*               pStmtInfoDirty,
-                                 bool* pStoreRemoved DEBUGARG(bool* treeModf))
+                                 bool*               pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
 
-    // Vars should have already been checked for address exposure by this point.
-    assert(!varDsc->IsAddressExposed());
+    GenTree* tree = *pTree;
 
-    GenTree* const tree = *pTree;
-
-    // We can have two types of stores: STORE_LCL_VAR/STORE_LCL_FLD, ...) or a call,
-    // in which case we bail (we most likely cannot remove the call anyway).
-    if (!tree->OperIsLocalStore())
-    {
-        *pStoreRemoved = false;
-        return false;
-    }
-
-    // We are now committed to removing the store.
-    *pStoreRemoved = true;
-
-    GenTreeLclVarCommon* store = tree->AsLclVarCommon();
-    GenTree*             value = store->Data();
+    JITDUMP("Removing dead node\n");
+    DISPTREE(tree);
 
     // Check for side effects.
     GenTree* sideEffList = nullptr;
-    if ((value->gtFlags & GTF_SIDE_EFFECT) != 0)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf(FMT_BB " - Dead store has side effects...\n", compCurBB->bbNum);
-            gtDispTree(store);
-            printf("\n");
-        }
-#endif // DEBUG
-
-        gtExtractSideEffList(value, &sideEffList);
-    }
+    gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
 
     // Test for interior statement
-    if (store->gtNext == nullptr)
+    if (tree->gtNext == nullptr)
     {
         // This is a "NORMAL" statement with the store node hanging from the statement.
 
-        noway_assert(compCurStmt->GetRootNode() == store);
-        JITDUMP("top level store\n");
+        assert(compCurStmt->GetRootNode() == tree);
+        JITDUMP("  Top level node\n");
 
         if (sideEffList != nullptr)
         {
-            noway_assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Extracted side effects list...\n");
-                gtDispTree(sideEffList);
-                printf("\n");
-            }
-#endif // DEBUG
-
-            // Replace the store statement with the list of side effects
+            JITDUMP("  Changing statement to side effects\n");
+            // Replace the node with the list of side effects
             *pTree = sideEffList;
             compCurStmt->SetRootNode(sideEffList);
-#ifdef DEBUG
-            *treeModf = true;
-#endif // DEBUG
-       // Update ordering, costs, FP levels, etc.
+            INDEBUG(*treeModf = true);
+
+            DISPSTMT(compCurStmt);
+
+           // Update ordering, costs, FP levels, etc.
             gtSetStmtInfo(compCurStmt);
 
             // Re-link the nodes for this statement
@@ -1754,7 +1771,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
         }
         else
         {
-            JITDUMP("removing stmt with no side effects\n");
+            JITDUMP("  Removing stmt with no side effects\n");
 
             // No side effects - remove the whole statement from the block->bbStmtList.
             fgRemoveStmt(compCurBB, compCurStmt);
@@ -1768,75 +1785,36 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
     else
     {
         // This is an INTERIOR STATEMENT with a dead store - remove it.
-        // TODO-Cleanup: I'm not sure this assert is valuable; we've already determined this when
-        // we computed that it was dead.
-        if (varDsc->lvTracked)
-        {
-            noway_assert(!VarSetOps::IsMember(this, life, varDsc->lvVarIndex));
-        }
-        else
-        {
-            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
-            {
-                unsigned fieldVarNum = varDsc->lvFieldLclStart + i;
-                {
-                    LclVarDsc* fieldVarDsc = lvaGetDesc(fieldVarNum);
-                    noway_assert(fieldVarDsc->lvTracked && !VarSetOps::IsMember(this, life, fieldVarDsc->lvVarIndex));
-                }
-            }
-        }
-
+        JITDUMP("  Interior node\n");
         if (sideEffList != nullptr)
         {
-            noway_assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Extracted side effects list from condition...\n");
-                gtDispTree(sideEffList);
-                printf("\n");
-            }
-#endif // DEBUG
-
-#ifdef DEBUG
-            *treeModf = true;
-#endif // DEBUG
+            INDEBUG(*treeModf = true);
 
             // Change the node to a GT_COMMA holding the side effect list.
-            store->ChangeType(TYP_VOID);
-            store->ChangeOper(GT_COMMA);
-            store->SetAllEffectsFlags(sideEffList);
+            tree->ChangeType(TYP_VOID);
+            tree->ChangeOper(GT_COMMA);
+            tree->SetAllEffectsFlags(sideEffList);
 
             if (sideEffList->OperIs(GT_COMMA))
             {
-                store->AsOp()->gtOp1 = sideEffList->AsOp()->gtOp1;
-                store->AsOp()->gtOp2 = sideEffList->AsOp()->gtOp2;
+                tree->AsOp()->gtOp1 = sideEffList->AsOp()->gtOp1;
+                tree->AsOp()->gtOp2 = sideEffList->AsOp()->gtOp2;
             }
             else
             {
-                store->AsOp()->gtOp1 = sideEffList;
-                store->AsOp()->gtOp2 = gtNewNothingNode();
+                tree->AsOp()->gtOp1 = sideEffList;
+                tree->AsOp()->gtOp2 = gtNewNothingNode();
             }
         }
         else
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nRemoving tree ");
-                printTreeID(store);
-                printf(" in " FMT_BB " as useless\n", compCurBB->bbNum);
-                gtDispTree(store);
-                printf("\n");
-            }
-#endif // DEBUG
-       // No side effects - Change the store to a GT_NOP node
-            store->gtBashToNOP();
+           // No side effects - Change the store to a GT_NOP node
+            tree->gtBashToNOP();
 
-#ifdef DEBUG
-            *treeModf = true;
-#endif // DEBUG
+            INDEBUG(*treeModf = true);
         }
+
+        DISPTREE(tree);
 
         // Re-link the nodes for this statement - Do not update ordering!
 
@@ -1848,14 +1826,8 @@ bool Compiler::fgRemoveDeadStore(GenTree**           pTree,
         *pStmtInfoDirty = true;
 
         fgSetStmtSeq(compCurStmt);
-
-        // Continue analysis from this node
-        *pTree = store;
-
         return false;
     }
-
-    return false;
 }
 
 /*****************************************************************************
