@@ -240,6 +240,20 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public void GetService_DoesNotThrow_WhenGetServiceForNonScopedImplementationWithPrimaryConstructorUsingInParameter()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBar, Bar>();
+            serviceCollection.AddSingleton<IFoo, FooWithInDependency>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+            // Act + Assert
+            var foo = serviceProvider.GetService(typeof(IFoo));
+            Assert.NotNull(foo);
+        }
+
+        [Fact]
         public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton()
         {
             // Arrange
@@ -410,6 +424,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public Foo2(IBar bar)
             {
             }
+        }
+
+        private class FooWithInDependency(in IBar bar) : IFoo
+        {
+            private readonly IBar bar = bar;
         }
 
         private interface IBar

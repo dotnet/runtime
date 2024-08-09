@@ -78,6 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [InlineData(typeof(TypeWithParameterizedAndNullaryConstructor))]
         [InlineData(typeof(TypeWithMultipleParameterizedConstructors))]
         [InlineData(typeof(TypeWithSupersetConstructors))]
+        [InlineData(typeof(TypeWithPrimaryConstructorWithInDependency))]
         public void CreateCallSite_CreatesConstructorCallSite_IfTypeHasConstructorWithInjectableParameters(Type type)
         {
             // Arrange
@@ -1008,7 +1009,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             constructorCallSite
                 .ConstructorInfo
                 .GetParameters()
-                .Select(p => p.ParameterType);
+                .Select(p => {
+                    var type = p.ParameterType;
+                    if (type.IsByRef)
+                    {
+                        var refType = type.GetElementType();
+                        return refType ?? type;
+                    }
+                    return type;
+                });
 
         private static ConstructorInfo GetConstructor(Type type, Type[] parameterTypes) =>
             type.GetTypeInfo().DeclaredConstructors.First(

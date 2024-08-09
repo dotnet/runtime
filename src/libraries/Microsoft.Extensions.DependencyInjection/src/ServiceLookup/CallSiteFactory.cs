@@ -576,6 +576,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ServiceCallSite? callSite = null;
                 bool isKeyedParameter = false;
                 Type parameterType = parameters[index].ParameterType;
+
+                // reference types cannot be resolved directly, but can be resolved via their underlying type
+                if (parameterType.IsByRef)
+                {
+                    Type? elementType = parameterType.GetElementType();
+                    if (elementType != null)
+                    {
+                        parameterType = elementType;
+                    }
+                }
+
                 foreach (var attribute in parameters[index].GetCustomAttributes(true))
                 {
                     if (serviceIdentifier.ServiceKey != null && attribute is ServiceKeyAttribute)
