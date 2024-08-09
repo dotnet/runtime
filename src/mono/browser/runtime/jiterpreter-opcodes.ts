@@ -36,6 +36,7 @@ export const enum MintOpArgType {
 	MintOpFloat,
 	MintOpDouble,
 	MintOpBranch,
+	MintOpShortBranch,
 	MintOpSwitch,
 	MintOpMethodToken,
 	MintOpFieldToken,
