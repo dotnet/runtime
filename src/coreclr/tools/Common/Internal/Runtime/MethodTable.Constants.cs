@@ -91,9 +91,19 @@ namespace Internal.Runtime
         IsByRefLikeFlag = 0x0010,
 
         /// <summary>
+        /// For valuetypes, stores the padding by which the type size is padded on the GC heap.
+        /// </summary>
+        ValueTypeFieldPaddingMask = 0x00E0,
+
+        /// <summary>
         /// This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         /// </summary>
         RequiresAlign8Flag = 0x1000
+    }
+
+    internal static class ValueTypeFieldPaddingConsts
+    {
+        public const int Shift = 5;
     }
 
     internal enum EETypeKind : uint
@@ -206,11 +216,6 @@ namespace Internal.Runtime
 
     internal enum EETypeOptionalFieldTag : byte
     {
-        /// <summary>
-        /// Padding added to a value type when allocated on the GC heap
-        /// </summary>
-        ValueTypeFieldPadding,
-
         /// <summary>
         /// Offset in Nullable&lt;T&gt; of the value field
         /// </summary>

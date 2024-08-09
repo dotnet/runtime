@@ -228,10 +228,7 @@ namespace ILCompiler.DependencyAnalysis
                 return ObjectNodeSection.DataSection;
         }
 
-        public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
-
-        public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
-            => typeSystemContext.Target.PointerSize * 3;
+        public int MinimumObjectSize => EETypeBuilderHelpers.GetMinimumObjectSize(_type.Context);
 
         protected virtual bool EmitVirtualSlots => false;
 
@@ -863,78 +860,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                int pointerSize = _type.Context.Target.PointerSize;
-                int objectSize;
-
-                if (_type.IsInterface)
-                {
-                    // Interfaces don't live on the GC heap. Don't bother computing a number.
-                    // Zero compresses better than any useless number we would come up with.
-                    return 0;
-                }
-                else if (_type.IsDefType)
-                {
-                    LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
-
-                    if (instanceByteCount.IsIndeterminate)
-                    {
-                        // Some value must be put in, but the specific value doesn't matter as it
-                        // isn't used for specific instantiations, and the universal canon MethodTable
-                        // is never associated with an allocated object.
-                        objectSize = pointerSize;
-                    }
-                    else
-                    {
-                        objectSize = pointerSize +
-                            ((DefType)_type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
-                    }
-
-                    if (_type.IsValueType)
-                        objectSize += pointerSize; // + EETypePtr field inherited from System.Object
-                }
-                else if (_type.IsArray)
-                {
-                    objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                    if (_type.IsMdArray)
-                        objectSize +=
-                            2 * sizeof(int) * ((ArrayType)_type).Rank;
-                }
-                else if (_type.IsPointer)
-                {
-                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                    return ParameterizedTypeShapeConstants.Pointer;
-                }
-                else if (_type.IsByRef)
-                {
-                    // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
-                    return ParameterizedTypeShapeConstants.ByRef;
-                }
-                else if (_type.IsFunctionPointer)
-                {
-                    // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
-                    MethodSignature sig = ((FunctionPointerType)_type).Signature;
-                    return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
-                    {
-                        0 => sig.Length,
-                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
-                    };
-                }
-                else
-                    throw new NotImplementedException();
-
-                objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
-                objectSize = Math.Max(MinimumObjectSize, objectSize);
-
-                if (_type.IsString)
-                {
-                    // If this is a string, throw away objectSize we computed so far. Strings are special.
-                    // SyncBlock + EETypePtr + length + firstChar
-                    objectSize = 2 * pointerSize +
-                        sizeof(int) +
-                        StringComponentSize.Value;
-                }
-
-                return objectSize;
+                return EETypeBuilderHelpers.ComputeBaseSize(_type);
             }
         }
 
@@ -1344,7 +1270,6 @@ namespace ILCompiler.DependencyAnalysis
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
             ComputeNullableValueOffset();
-            ComputeValueTypeFieldPadding();
         }
 
         /// <summary>
@@ -1366,50 +1291,6 @@ namespace ILCompiler.DependencyAnalysis
                 // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
                 // to get a small encoding size win.
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
-            }
-        }
-
-        protected virtual void ComputeValueTypeFieldPadding()
-        {
-            // Only valuetypes need to compute the padding.
-            if (!_type.IsValueType)
-                return;
-
-            DefType defType = _type as DefType;
-            Debug.Assert(defType != null);
-
-            uint valueTypeFieldPaddingEncoded;
-
-            if (defType.InstanceByteCount.IsIndeterminate)
-            {
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(0, 1, _type.Context.Target.PointerSize);
-            }
-            else
-            {
-                int numInstanceFieldBytes = defType.InstanceByteCountUnaligned.AsInt;
-
-                // Value types should have at least 1 byte of size
-                Debug.Assert(numInstanceFieldBytes >= 1);
-
-                // The size of value types doesn't include the MethodTable pointer.  We need to add this so that
-                // the number of instance field bytes consistently represents the boxed size.
-                numInstanceFieldBytes += _type.Context.Target.PointerSize;
-
-                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
-                // to record the actual size of the fields of a type without any padding for GC heap allocation (since
-                // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
-                // types is effected by the unaligned base size). We don't want to store this information for all EETypes
-                // since it's only relevant for value types, so it's added as an optional field. It's
-                // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes
-                // for 64-bit) which cuts down our storage requirements.
-
-                uint valueTypeFieldPadding = checked((uint)((BaseSize - _type.Context.Target.PointerSize) - numInstanceFieldBytes));
-                valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment.AsInt, _type.Context.Target.PointerSize);
-            }
-
-            if (valueTypeFieldPaddingEncoded != 0)
-            {
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
 

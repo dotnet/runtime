@@ -200,17 +200,6 @@ namespace Internal.Runtime
 
         // vtable follows
 
-        // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
-        // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
-        // the rest of the padding data.
-        // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
-        private const uint ValueTypePaddingLowMask = 0x7;
-        private const uint ValueTypePaddingHighMask = 0xFFFFFF00;
-        private const uint ValueTypePaddingMax = 0x07FFFFFF;
-        private const int ValueTypePaddingHighShift = 8;
-        private const uint ValueTypePaddingAlignmentMask = 0xF8;
-        private const int ValueTypePaddingAlignmentShift = 3;
-
         internal bool HasComponentSize
         {
             get
@@ -809,19 +798,8 @@ namespace Internal.Runtime
         {
             get
             {
-                byte* optionalFields = OptionalFieldsPtr;
-
-                // If there are no optional fields then the padding must have been the default, 0.
-                if (optionalFields == null)
-                    return 0;
-
-                // Get the value from the optional fields. The default is zero if that particular field was not included.
-                // The low bits of this field is the ValueType field padding, the rest of the byte is the alignment if present
-                uint ValueTypeFieldPaddingData = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ValueTypeFieldPadding, 0);
-                uint padding = ValueTypeFieldPaddingData & ValueTypePaddingLowMask;
-                // If there is additional padding, the other bits have that data
-                padding |= (ValueTypeFieldPaddingData & ValueTypePaddingHighMask) >> (ValueTypePaddingHighShift - ValueTypePaddingAlignmentShift);
-                return padding;
+                Debug.Assert(IsValueType);
+                return (_uFlags & (uint)EETypeFlagsEx.ValueTypeFieldPaddingMask) >> ValueTypeFieldPaddingConsts.Shift;
             }
         }
 
@@ -1205,29 +1183,6 @@ namespace Internal.Runtime
                 GetField<nint>(EETypeField.ETF_DynamicTypeFlags) = (nint)value;
             }
 #endif
-        }
-
-        internal int FieldAlignmentRequirement
-        {
-            get
-            {
-                byte* optionalFields = OptionalFieldsPtr;
-
-                // If there are no optional fields then the alignment must have been the default, IntPtr.Size.
-                // (This happens for all reference types, and for valuetypes with default alignment and no padding)
-                if (optionalFields == null)
-                    return IntPtr.Size;
-
-                // Get the value from the optional fields. The default is zero if that particular field was not included.
-                // The low bits of this field is the ValueType field padding, the rest of the value is the alignment if present
-                uint alignmentValue = (OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.ValueTypeFieldPadding, 0) & ValueTypePaddingAlignmentMask) >> ValueTypePaddingAlignmentShift;
-
-                // Alignment is stored as 1 + the log base 2 of the alignment, except a 0 indicates standard pointer alignment.
-                if (alignmentValue == 0)
-                    return IntPtr.Size;
-                else
-                    return 1 << ((int)alignmentValue - 1);
-            }
         }
 
         internal EETypeElementType ElementType
