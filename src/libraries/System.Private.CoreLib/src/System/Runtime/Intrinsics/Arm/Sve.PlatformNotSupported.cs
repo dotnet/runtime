@@ -3694,12 +3694,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVectorByteZeroExtendFirstFaulting(Vector<uint> mask, byte* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svuint32_t svldff1ub_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1B Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        /// Removed as per #103297
-        /// public static unsafe Vector<uint> GatherVectorByteZeroExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // <summary>
+        // svuint32_t svldff1ub_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDFF1B Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorByteZeroExtendFirstFaulting(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svldff1ub_gather_[u32]offset_u32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
