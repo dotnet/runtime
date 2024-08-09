@@ -1057,6 +1057,12 @@ namespace System.Globalization
         {
             Debug.Assert(matchLengthPtr != null);
             *matchLengthPtr = 0;
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
+            }
+#endif
 
             int retVal = 0;
 
