@@ -353,8 +353,10 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
+    <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs"
+             Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
-                 Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs"
@@ -387,6 +389,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\SslKeyLogger.cs"
+             Link="Common\System\Net\Security\SslKeyLogger.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
@@ -452,6 +456,7 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />

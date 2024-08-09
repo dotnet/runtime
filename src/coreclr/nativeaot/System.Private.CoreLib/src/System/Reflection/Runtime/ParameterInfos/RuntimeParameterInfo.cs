@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.ParameterInfos
 
         public sealed override string ToString()
         {
-            return this.ParameterType.FormatTypeNameForReflection() + " " + this.Name;
+            return this.ParameterType.FormatTypeName() + " " + this.Name;
         }
 
         private readonly MemberInfo _member;

@@ -29,7 +29,7 @@ void NativeWalker::Decode()
     m_skipIP = NULL;
     m_nextIP = NULL;
 
-    BYTE rex = NULL;
+    BYTE rex = 0;
 
     LOG((LF_CORDB, LL_INFO100000, "NW:Decode: m_ip 0x%p\n", m_ip));
 
@@ -117,7 +117,7 @@ void NativeWalker::Decode()
     BYTE rex_x = 0;
     BYTE rex_r = 0;
 
-    if (rex != NULL)
+    if (rex != 0)
     {
         rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field or OPCODE reg field    -- Hmm, when which?
         rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
@@ -165,7 +165,7 @@ void NativeWalker::Decode()
                     //
                     BYTE sib   = *ip;
 
-                    _ASSERT(sib != NULL);
+                    _ASSERT(sib != 0);
 
                     BYTE ss    = (sib & 0xC0) >> 6;
                     BYTE index = (sib & 0x38) >> 3;
@@ -275,7 +275,7 @@ void NativeWalker::Decode()
 
             // the instruction uses r8-r15, add in the extra byte to the displacement
             // for the REX prefix which was used to specify the extended register
-            if (rex != NULL)
+            if (rex != 0)
             {
                 displace++;
             }

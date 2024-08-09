@@ -3060,7 +3060,7 @@ namespace System.Tests
             // Note we cannot test the DisplayName, as it will contain the ID.
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires")]
         [InlineData("America/Catamarca")]
@@ -3220,6 +3220,33 @@ namespace System.Tests
             Assert.Equal(string.Empty, custom.StandardName);
             Assert.Equal(string.Empty, custom.DaylightName);
             Assert.Equal(string.Empty, custom.DisplayName);
+        }
+
+        [InlineData("Eastern Standard Time", "America/New_York")]
+        [InlineData("Central Standard Time", "America/Chicago")]
+        [InlineData("Mountain Standard Time", "America/Denver")]
+        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
+        [ConditionalTheory(nameof(SupportICUAndRemoteExecution))]
+        public static void TestTimeZoneNames(string windowsId, string ianaId)
+        {
+            RemoteExecutor.Invoke(static (wId, iId) =>
+            {
+                TimeZoneInfo info1, info2;
+                if (PlatformDetection.IsWindows)
+                {
+                    info1 = TimeZoneInfo.FindSystemTimeZoneById(iId);
+                    info2 = TimeZoneInfo.FindSystemTimeZoneById(wId);
+                }
+                else
+                {
+                    info1 = TimeZoneInfo.FindSystemTimeZoneById(wId);
+                    info2 = TimeZoneInfo.FindSystemTimeZoneById(iId);
+                }
+
+                Assert.Equal(info1.StandardName, info2.StandardName);
+                Assert.Equal(info1.DaylightName, info2.DaylightName);
+                Assert.Equal(info1.DisplayName, info2.DisplayName);
+            }, windowsId, ianaId).Dispose();
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

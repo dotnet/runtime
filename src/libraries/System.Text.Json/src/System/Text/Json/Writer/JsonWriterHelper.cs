@@ -37,6 +37,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateNewLine(string value)
+        {
+            if (value is null)
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+
+            if (value is not JsonConstants.NewLineLineFeed and not JsonConstants.NewLineCarriageReturnLineFeed)
+                ThrowHelper.ThrowArgumentOutOfRangeException_NewLine(nameof(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateIndentCharacter(char value)
         {
             if (value is not JsonConstants.DefaultIndentCharacter and not JsonConstants.TabIndentCharacter)
@@ -254,7 +264,7 @@ namespace System.Text.Json
 #else
             try
             {
-#if NETCOREAPP
+#if NET
                 s_utf8Encoding.GetCharCount(bytes);
 #else
                 if (!bytes.IsEmpty)
@@ -276,7 +286,7 @@ namespace System.Text.Json
 
         internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
         {
-#if NETCOREAPP
+#if NET
             OperationStatus status = Utf8.FromUtf16(source, destination, out int charsRead, out written, replaceInvalidSequences: false, isFinalBlock: true);
             Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall or OperationStatus.InvalidData);
             Debug.Assert(charsRead == source.Length || status is not OperationStatus.Done);

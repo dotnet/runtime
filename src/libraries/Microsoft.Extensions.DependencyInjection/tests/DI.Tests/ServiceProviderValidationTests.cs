@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async void GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
+        public async Task GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();

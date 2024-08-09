@@ -95,7 +95,7 @@ namespace System.Text.Json
             return TryCreateDateTimeOffsetInterpretingDataAsLocalTime(parseData, out value);
         }
 
-#if NETCOREAPP
+#if NET
         public static bool TryParseAsIso(ReadOnlySpan<byte> source, out DateOnly value)
         {
             if (TryParseDateTimeOffset(source, out DateTimeParseData parseData) &&

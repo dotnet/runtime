@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MainThreadingMode, type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode, JSThreadInteropMode } from "../types/internal";
+import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
@@ -12,7 +12,6 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
-import { mono_log_warn } from "./logging";
 
 export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -72,6 +71,9 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
     }
+    if (providedResources.jsModuleGlobalization !== undefined) {
+        providedResources.jsModuleGlobalization = { ...(target.jsModuleGlobalization || {}), ...(providedResources.jsModuleGlobalization || {}) };
+    }
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
@@ -122,6 +124,7 @@ export function normalizeConfig () {
     config.resources = config.resources || {
         assembly: {},
         jsModuleNative: {},
+        jsModuleGlobalization: {},
         jsModuleWorker: {},
         jsModuleRuntime: {},
         wasmNative: {},
@@ -162,6 +165,9 @@ export function normalizeConfig () {
                 case "js-module-threads":
                     toMerge.jsModuleWorker = resource;
                     break;
+                case "js-module-globalization":
+                    toMerge.jsModuleGlobalization = resource;
+                    break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = resource;
                     break;
@@ -190,46 +196,13 @@ export function normalizeConfig () {
     if (WasmEnableThreads) {
 
         if (!Number.isInteger(config.pthreadPoolInitialSize)) {
-            config.pthreadPoolInitialSize = 7;
+            config.pthreadPoolInitialSize = 5;
         }
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
-            config.pthreadPoolUnusedSize = 3;
-        }
-        if (!Number.isInteger(config.finalizerThreadStartDelayMs)) {
-            config.finalizerThreadStartDelayMs = 200;
-        }
-        if (config.mainThreadingMode == undefined) {
-            config.mainThreadingMode = MainThreadingMode.DeputyAndIOThreads;
+            config.pthreadPoolUnusedSize = 1;
         }
         if (config.jsThreadBlockingMode == undefined) {
-            config.jsThreadBlockingMode = JSThreadBlockingMode.AllowBlockingWaitInAsyncCode;
-        }
-        if (config.jsThreadInteropMode == undefined) {
-            config.jsThreadInteropMode = JSThreadInteropMode.SimpleSynchronousJSInterop;
-        }
-        let validModes = false;
-        if (config.mainThreadingMode == MainThreadingMode.DeputyThread
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.NoBlockingWait
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        } else if (config.mainThreadingMode == MainThreadingMode.DeputyAndIOThreads
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWaitInAsyncCode
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        } else if (config.mainThreadingMode == MainThreadingMode.DeputyThread
-            && config.jsThreadBlockingMode == JSThreadBlockingMode.AllowBlockingWait
-            && config.jsThreadInteropMode == JSThreadInteropMode.SimpleSynchronousJSInterop
-        ) {
-            validModes = true;
-        }
-        if (!validModes) {
-            mono_log_warn("Unsupported threading configuration", {
-                mainThreadingMode: config.mainThreadingMode,
-                jsThreadBlockingMode: config.jsThreadBlockingMode,
-                jsThreadInteropMode: config.jsThreadInteropMode
-            });
+            config.jsThreadBlockingMode = JSThreadBlockingMode.PreventSynchronousJSExport;
         }
     }
 
@@ -260,12 +233,19 @@ export function normalizeConfig () {
 
 let configLoaded = false;
 export async function mono_wasm_load_config (module: DotnetModuleInternal): Promise<void> {
-    const configFilePath = module.configSrc;
     if (configLoaded) {
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
+    let configFilePath;
     try {
+        if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
+            // if config file location nor assets are provided
+            module.configSrc = "./blazor.boot.json";
+        }
+
+        configFilePath = module.configSrc;
+
         configLoaded = true;
         if (configFilePath) {
             mono_log_debug("mono_wasm_load_config");
@@ -289,6 +269,7 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         }
 
         normalizeConfig();
+        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });

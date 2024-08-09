@@ -109,7 +109,7 @@ jobs:
               eq(variables['isRollingBuild'], true))
 
 #
-# Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+# Mono CoreCLR runtime test executions using live libraries and mini Full AOT
 # Only when Mono is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -120,7 +120,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
       - linux_x64
-      - linux_arm64
+      # Tracking issue: https://github.com/dotnet/runtime/issues/90427
+      # linux_arm64
     variables:
       - name: timeoutPerTestInMinutes
         value: 60
@@ -128,12 +129,11 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
-      runtimeVariant: llvmfullaot
-      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+      nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
+      runtimeVariant: minifullaot
+      buildArgs: -s mono+libs+clr.hosts -c Release
       timeoutInMinutes: 300
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-
       condition: >-
         or(
           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -143,7 +143,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            llvmAotStepContainer: linux_x64_llvmaot
+            llvmAotStepContainer: linux_x64
             testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

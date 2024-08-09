@@ -227,10 +227,14 @@ extern "C"
     CallStackFrame* GetEbp()
     {
         CallStackFrame *frame=NULL;
+#ifdef TARGET_WINDOWS
         __asm
         {
             mov frame, ebp
         }
+#else
+        frame = (CallStackFrame*)__builtin_frame_address(0);
+#endif
         return frame;
     }
 }
@@ -263,11 +267,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // The stack walk performed below can cause allocations (thus entering the host). But
-    // this is acceptable, since we're not supporting the use of SQL/F1 profiling and
-    // full-blown ETW CLR stacks (which would be redundant).
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonUnsupportedForSQLF1Profiling);
 
     m_FrameCount = 0;
     ETW::SamplingLog::EtwStackWalkStatus stackwalkStatus = SaveCurrentStack();
@@ -582,7 +581,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -595,7 +594,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -648,7 +647,7 @@ public:
     static bool IsNull(const element_t &e)
     {
         LIMITED_METHOD_CONTRACT;
-        return (e.th.AsTAddr() == NULL);
+        return (e.th.AsTAddr() == 0);
     }
 
     static const element_t Null()
@@ -3254,7 +3253,7 @@ HRESULT ETW::CodeSymbolLog::GetInMemorySymbolsLength(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3340,7 +3339,7 @@ HRESULT ETW::CodeSymbolLog::ReadInMemorySymbols(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3868,7 +3867,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagNgenMethodSet && bTraceFlagStartRundownSet)
                     enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad;
 
-                if(pModule->IsManifest() && bTraceFlagLoaderSet)
+                if(bTraceFlagLoaderSet)
                     ETW::LoaderLog::SendAssemblyEvent(pModule->GetAssembly(), enumerationOptions);
 
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
@@ -4216,7 +4215,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
         // Some compilers set PointerToRawData but not AddressOfRawData as they put the
         // data at the end of the file in an unmapped part of the file
-        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != NULL) ?
+        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != 0) ?
             rgDebugEntries[i].AddressOfRawData :
             pLayout->OffsetToRva(rgDebugEntries[i].PointerToRawData);
 
@@ -4322,7 +4321,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bIsManifestModule = pModule->IsManifest();
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4334,7 +4332,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
     ULONG ulReservedFlags = 0;
     ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
-                     (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
+                     // Always the manifest module - multi-module assemblies are no longer supported
+                     ETW::LoaderLog::LoaderStructs::ManifestModule |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
                      (bIsPartialReadyToRun ? ETW::LoaderLog::LoaderStructs::PartialReadyToRunModule : 0));
@@ -5518,7 +5517,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+            Module* pModule = pAssembly->GetModule();
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 
@@ -5805,6 +5804,30 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 
     return false;
 }
+
+#ifdef TARGET_LINUX
+#include "user_events.h"
+bool UserEventsHelper::Enabled()
+{
+    return IsUserEventsEnabled();
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
+}
+#else // TARGET_LINUX
+bool UserEventsHelper::Enabled()
+{
+    return false;
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return false;
+}
+#endif // TARGET_LINUX
+
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)

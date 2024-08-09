@@ -22,6 +22,28 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
+        public void Wasm_CannotAOT_InDebug(BuildArgs buildArgs, RunHost _, string id)
+        {
+            string projectName = GetTestProjectPath(prefix: "no_aot_in_debug", config: buildArgs.Config);
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
+            (string projectDir, string buildOutput) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                        DotnetWasmFromRuntimePack: true,
+                        CreateProject: true,
+                        Publish: true,
+                        ExpectSuccess: false
+                        ));
+
+            Console.WriteLine($"buildOutput={buildOutput}");
+
+            Assert.Contains("AOT is not supported in debug configuration", buildOutput);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
@@ -71,7 +93,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             bool testUnicode = true;
@@ -158,7 +179,7 @@ namespace Wasm.Build.Tests
         {
             if (testUnicode)
             {
-                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
                 TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
             }

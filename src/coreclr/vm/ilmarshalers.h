@@ -2923,7 +2923,7 @@ protected:
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 };
 
-#if defined(TARGET_WINDOWS)
+#if defined(FEATURE_IJW)
 class ILBlittableValueClassWithCopyCtorMarshaler : public ILMarshaler
 {
 public:

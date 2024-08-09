@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility;
 using Xunit;
@@ -850,6 +851,55 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             fileSystemInfos = directoryInfo.EnumerateFileSystemInfos();
 
             Assert.Equal(1, fileSystemInfos.Count());
+        }
+
+        [Theory]
+        [InlineData("./sdk/9.0.100-preview.4.24207.1/.version")]
+        [InlineData("././sdk/9.0.100-preview.4.24207.1/.version")]
+        public void VerifyFiles_RedundantSegment_HasMatches(string file)
+        {
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match(file).HasMatches);
+                Assert.True(matcher.Match([file]).HasMatches);
+                Assert.True(matcher.Match("X:/foo", file).HasMatches);
+                Assert.True(matcher.Match("X:/foo", [file]).HasMatches);
+            }
+        }
+
+        [ConditionalFact]
+        public void VerifyFiles_ParentRedundantSegment_HasMatches()
+        {
+            string file = "sdk/9.0.100-preview.4.24207.1/.version";
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match("X:/foo", $"../foo/{file}").HasMatches);
+                Assert.True(matcher.Match("X:/foo", [$"../foo/{file}"]).HasMatches);
+            }
+        }
+
+        [ConditionalFact]
+        public void VerifyFiles_ParentRedundantSegment_CurrentDirectory_HasMatches()
+        {
+            string cwd = Environment.CurrentDirectory;
+            string cwdFolderName = new DirectoryInfo(cwd).Name;
+            if (cwd == cwdFolderName) // cwd is root, we can't do ../C:/
+            {
+                throw new SkipTestException($"CurrentDirectory {cwd} is the root directory.");
+            }
+
+            string file = "sdk/9.0.100-preview.4.24207.1/.version";
+            foreach (string pattern in new[] { "**/*", "./", file })
+            {
+                var matcher = new Matcher();
+                matcher.AddInclude(pattern);
+                Assert.True(matcher.Match($"../{cwdFolderName}/{file}").HasMatches);
+                Assert.True(matcher.Match([$"../{cwdFolderName}/{file}"]).HasMatches);
+            }
         }
     }
 }

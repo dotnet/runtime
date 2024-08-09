@@ -24,14 +24,44 @@ namespace System.Buffers.Text.Tests
             52, 53, 54, 55, 56, 57, 43, 47          //4..9, +, /
         };
 
+        public static readonly byte[] s_urlEncodingMap = {
+            65, 66, 67, 68, 69, 70, 71, 72,         //A..H
+            73, 74, 75, 76, 77, 78, 79, 80,         //I..P
+            81, 82, 83, 84, 85, 86, 87, 88,         //Q..X
+            89, 90, 97, 98, 99, 100, 101, 102,      //Y..Z, a..f
+            103, 104, 105, 106, 107, 108, 109, 110, //g..n
+            111, 112, 113, 114, 115, 116, 117, 118, //o..v
+            119, 120, 121, 122, 48, 49, 50, 51,     //w..z, 0..3
+            52, 53, 54, 55, 56, 57, 45, 95          //4..9, -, _
+        };
+
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
         public static readonly sbyte[] s_decodingMap = {
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
-            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9), 64 at index 61 (for =)
+            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9)
             -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
             15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,         //0-25 are placed at index 65-90 (for A-Z)
+            -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+            41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,         //26-51 are placed at index 97-122 (for a-z)
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Bytes over 122 ('z') are invalid and cannot be decoded
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Hence, padding the map with 255, which indicates invalid input
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        };
+
+        public static readonly sbyte[] s_urlDecodingMap = {
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1,         //62 is placed at index 45 (for -), 63 at index 95 (for _)
+            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9)
+            -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 63,         //0-25 are placed at index 65-90 (for A-Z)
             -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
             41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,         //26-51 are placed at index 97-122 (for a-z)
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         // Bytes over 122 ('z') are invalid and cannot be decoded
@@ -47,6 +77,7 @@ namespace System.Buffers.Text.Tests
         public static bool IsByteToBeIgnored(byte charByte) => charByte is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n';
 
         public const byte EncodingPad = (byte)'=';      // '=', for padding
+        public const byte UrlEncodingPad = (byte)'%';   // '%', for url padding
         public const sbyte InvalidByte = -1;            // Designating -1 for invalid bytes in the decoding map
 
         public static byte[] InvalidBytes
@@ -54,6 +85,17 @@ namespace System.Buffers.Text.Tests
             get
             {
                 int[] indices = s_decodingMap.FindAllIndexOf(InvalidByte);
+                // Workaround for indices.Cast<byte>().ToArray() since it throws
+                // InvalidCastException: Unable to cast object of type 'System.Int32' to type 'System.Byte'
+                return indices.Select(i => (byte)i).ToArray();
+            }
+        }
+
+        public static byte[] UrlInvalidBytes
+        {
+            get
+            {
+                int[] indices = s_urlDecodingMap.FindAllIndexOf(InvalidByte);
                 // Workaround for indices.Cast<byte>().ToArray() since it throws
                 // InvalidCastException: Unable to cast object of type 'System.Int32' to type 'System.Byte'
                 return indices.Select(i => (byte)i).ToArray();
@@ -76,6 +118,26 @@ namespace System.Buffers.Text.Tests
             {
                 int index = (byte)rnd.Next(0, s_encodingMap.Length);
                 bytes[i] = s_encodingMap[index];
+            }
+        }
+
+        internal static void InitializeUrlDecodableChars(Span<char> bytes, int seed = 100)
+        {
+            var rnd = new Random(seed);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                int index = (byte)rnd.Next(0, s_urlEncodingMap.Length);
+                bytes[i] = (char)s_urlEncodingMap[index];
+            }
+        }
+
+        internal static void InitializeUrlDecodableBytes(Span<byte> bytes, int seed = 100)
+        {
+            var rnd = new Random(seed);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                int index = (byte)rnd.Next(0, s_urlEncodingMap.Length);
+                bytes[i] = s_urlEncodingMap[index];
             }
         }
 
@@ -117,10 +179,28 @@ namespace System.Buffers.Text.Tests
             return expectedText.Equals(encodedText);
         }
 
+        public static bool VerifyUrlEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
+        {
+            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray())
+                .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
+            return expectedText.Equals(encodedText);
+        }
+
         public static bool VerifyDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
         {
             string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
             byte[] expectedBytes = Convert.FromBase64String(sourceString);
+            return expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, expectedWritten));
+        }
+
+        public static bool VerifyUrlDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
+        {
+            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
+            string padded = sourceString.Length % 4 == 0 ? sourceString :
+                sourceString.PadRight(sourceString.Length + (4 - sourceString.Length % 4), '=');
+            string base64 = padded.Replace('_', '/').Replace('-', '+').Replace('%', '=');
+            byte[] expectedBytes = Convert.FromBase64String(base64);
             return expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, expectedWritten));
         }
     }

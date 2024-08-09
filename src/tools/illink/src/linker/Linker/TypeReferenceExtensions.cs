@@ -11,7 +11,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public static class TypeReferenceExtensions
+	internal static class TypeReferenceExtensions
 	{
 		public static string GetDisplayName (this TypeReference type)
 		{
@@ -149,6 +149,13 @@ namespace Mono.Linker
 
 			Debug.Assert (false);
 			return null;
+		}
+
+		public static TypeReference? TryInflateFrom (this TypeReference typeToInflate, TypeReference maybeGenericInstanceProvider, ITryResolveMetadata resolver)
+		{
+			if (maybeGenericInstanceProvider is GenericInstanceType genericInstanceProvider)
+				return InflateGenericType (genericInstanceProvider, typeToInflate, resolver);
+			return typeToInflate;
 		}
 
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
@@ -399,6 +406,27 @@ namespace Mono.Linker
 				type = ((IModifierType) type).ElementType;
 			}
 			return type;
+		}
+
+		// Check whether this type represents a "named type" (i.e. a type that has a name and can be resolved to a TypeDefinition),
+		// not an array, pointer, byref, or generic parameter. Conceptually this is supposed to represent the same idea as Roslyn's
+		// INamedTypeSymbol, or ILC's DefType/MetadataType.
+		public static bool IsNamedType (this TypeReference typeReference) {
+			if (typeReference.IsDefinition || typeReference.IsGenericInstance)
+				return true;
+
+			if (typeReference.IsArray || typeReference.IsByReference || typeReference.IsPointer || typeReference.IsGenericParameter)
+				return false;
+
+			// Shouldn't get called for these cases
+			Debug.Assert (!typeReference.IsFunctionPointer);
+			Debug.Assert (!typeReference.IsRequiredModifier);
+			Debug.Assert (!typeReference.IsOptionalModifier);
+			Debug.Assert (!typeReference.IsPinned);
+			Debug.Assert (!typeReference.IsSentinel);
+
+			Debug.Assert (typeReference.GetType () == typeof (TypeReference));
+			return true;
 		}
 
 		// Array types that are dynamically accessed should resolve to System.Array instead of its element type - which is what Cecil resolves to.

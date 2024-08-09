@@ -229,7 +229,7 @@ namespace System.Net.Http
             private sealed class ZLibOrDeflateStream : HttpBaseStream
             {
                 // As described in RFC 2616, the deflate content-coding is the "zlib" format (RFC 1950) in combination with
-                // the "deflate" compression algrithm (RFC 1951). Thus, the right stream to use here is ZLibStream.  However,
+                // the "deflate" compression algorithm (RFC 1951). Thus, the right stream to use here is ZLibStream.  However,
                 // some servers incorrectly interpret "deflate" to mean the raw, unwrapped deflate protocol.  To account for
                 // that, this switches between using ZLibStream (correct) and DeflateStream (incorrect) in order to maximize
                 // compatibility with servers.

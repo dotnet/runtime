@@ -55,6 +55,20 @@ namespace Microsoft.Interop.Analyzers
             return optionsBuilder.ToImmutable();
         }
 
+        protected override ImmutableDictionary<string, Option> CombineOptions(ImmutableDictionary<string, Option> fixAllOptions, ImmutableDictionary<string, Option> diagnosticOptions)
+        {
+            ImmutableDictionary<string, Option> combinedOptions = fixAllOptions;
+            if (fixAllOptions.TryGetValue(AddStringMarshallingOption, out Option fixAllAddStringMarshallingOption)
+                && fixAllAddStringMarshallingOption is Option.Bool(true)
+                && (!diagnosticOptions.TryGetValue(AddStringMarshallingOption, out Option addStringMarshallingOption)
+                    || addStringMarshallingOption is Option.Bool(false)))
+            {
+                combinedOptions = combinedOptions.Remove(AddStringMarshallingOption);
+            }
+
+            return combinedOptions;
+        }
+
         private static async Task ConvertComImportToGeneratedComInterfaceAsync(DocumentEditor editor, SyntaxNode node, bool mayRequireAdditionalWork, bool addStringMarshalling, CancellationToken ct)
         {
             var gen = editor.Generator;
@@ -125,6 +139,5 @@ namespace Microsoft.Interop.Analyzers
 
             MakeNodeParentsPartial(editor, node);
         }
-
     }
 }

@@ -132,6 +132,7 @@ namespace System.Runtime.Tests
         [Theory]
         [InlineData("mscorlib")]
         [InlineData("System.Threading.Overlapped")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99592", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public static void ShimsHaveOnlyTypeForwards(string assemblyName)
         {
             Assembly assembly = Assembly.Load(assemblyName);

@@ -88,7 +88,7 @@ class BranchInstructionFormat : public InstructionFormat
             }
         }
 
-        virtual VOID EmitInstruction(UINT refSize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refSize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -96,7 +96,7 @@ class BranchInstructionFormat : public InstructionFormat
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -119,13 +119,13 @@ class BranchInstructionFormat : public InstructionFormat
                     *(DWORD*)(pOutBufferRW + 12) = 0x00030067 ;// jalr  x0, t1,0
                 }
 
-                *((__int64*)pDataBuffer) = fixedUpReference + (__int64)pOutBufferRX;
+                *((int64_t*)pDataBuffer) = fixedUpReference + (int64_t)pOutBufferRX;
             }
             else
             {
                 _ASSERTE(((UINT_PTR)pDataBuffer & 7) == 0);
 
-                __int64 dataOffset = pDataBuffer - pOutBufferRW;
+                int64_t dataOffset = pDataBuffer - pOutBufferRW;
 
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
@@ -146,9 +146,9 @@ class BranchInstructionFormat : public InstructionFormat
                     *(DWORD*)(pOutBufferRW + 8) = 0x00030067 ;// jalr  x0, t1,0
                 }
 
-                if (!ClrSafeInt<__int64>::addition(fixedUpReference, (__int64)pOutBufferRX, fixedUpReference))
+                if (!ClrSafeInt<int64_t>::addition(fixedUpReference, (int64_t)pOutBufferRX, fixedUpReference))
                     COMPlusThrowArithmetic();
-                *((__int64*)pDataBuffer) = fixedUpReference;
+                *((int64_t*)pDataBuffer) = fixedUpReference;
             }
         }
 };
@@ -180,8 +180,7 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
-                                    int funCallDepth,
-                                    HostCallPreference hostCallPreference)
+                                    int funCallDepth)
 {
     T_CONTEXT context;
     T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
@@ -202,7 +201,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.S11 = unwoundstate->captureCalleeSavedRegisters[11] = baseState->captureCalleeSavedRegisters[11];
     context.Gp = unwoundstate->captureCalleeSavedRegisters[12] = baseState->captureCalleeSavedRegisters[12];
     context.Tp = unwoundstate->captureCalleeSavedRegisters[13] = baseState->captureCalleeSavedRegisters[13];
-    context.Ra = NULL; // Filled by the unwinder
+    context.Ra = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -226,7 +225,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.S11 = &unwoundstate->captureCalleeSavedRegisters[11];
     nonVolContextPtrs.Gp = &unwoundstate->captureCalleeSavedRegisters[12];
     nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[13];
-    nonVolContextPtrs.Ra = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Ra = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -266,20 +265,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         {
             // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
             // Use it now to see if we've unwound to managed code yet.
-            BOOL fFailedReaderLock = FALSE;
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc, hostCallPreference, &fFailedReaderLock);
-            if (fFailedReaderLock)
-            {
-                // We don't know if we would have been able to find a JIT
-                // manager, because we couldn't enter the reader lock without
-                // yielding (and our caller doesn't want us to yield).  So abort
-                // now.
-
-                // Invalidate the lazyState we're returning, so the caller knows
-                // we aborted before we could fully unwind
-                unwoundstate->_isValid = false;
-                return;
-            }
+            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
 
             if (fIsManagedCode)
                 break;
@@ -380,7 +366,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -398,7 +384,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->S11 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[11]);
         pRD->pCurrentContext->Gp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[12]);
         pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[13]);
-        pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->Fp = pUnwoundState->ptrCalleeSavedRegisters[0];
         pRD->pCurrentContextPointers->S1 = pUnwoundState->ptrCalleeSavedRegisters[1];
@@ -442,7 +428,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S11 = m_MachState.ptrCalleeSavedRegisters[11] ? *m_MachState.ptrCalleeSavedRegisters[11] : m_MachState.captureCalleeSavedRegisters[11];
     pRD->pCurrentContext->Gp = m_MachState.ptrCalleeSavedRegisters[12] ? *m_MachState.ptrCalleeSavedRegisters[12] : m_MachState.captureCalleeSavedRegisters[12];
     pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[13] ? *m_MachState.ptrCalleeSavedRegisters[13] : m_MachState.captureCalleeSavedRegisters[13];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #else // TARGET_UNIX
     pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[0];
     pRD->pCurrentContext->S1 = *m_MachState.ptrCalleeSavedRegisters[1];
@@ -458,7 +444,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S11 = *m_MachState.ptrCalleeSavedRegisters[11];
     pRD->pCurrentContext->Gp = *m_MachState.ptrCalleeSavedRegisters[12];
     pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[13];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #endif
 
 #if !defined(DACCESS_COMPILE)
@@ -618,7 +604,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
 #endif
-        HOST_NOCALLS;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -753,6 +738,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     s = s + s%16;
     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
+    pRD->pCurrentContext->A0 = m_Args->A0;
+
     pRD->pCurrentContext->S1 = m_Args->S1;
     pRD->pCurrentContext->S2 = m_Args->S2;
     pRD->pCurrentContext->S3 = m_Args->S3;
@@ -842,6 +829,7 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
@@ -1085,7 +1073,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
     if (high31 & 0x800)
     {
         // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
-        EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
+        EmitSubImm(reg, reg, (~high31 + 1) & 0xFFF);
     }
     else
     {
@@ -1525,6 +1513,8 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
+    STANDARD_VM_CONTRACT;
+
     BranchInstructionFormat::VariationCodes variationCode = BranchInstructionFormat::VariationCodes::BIF_VAR_JUMP;
     if (!fTailCall)
         variationCode = static_cast<BranchInstructionFormat::VariationCodes>(variationCode | BranchInstructionFormat::VariationCodes::BIF_VAR_CALL);
@@ -1536,10 +1526,14 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
+
     // Use direct call if possible.
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetStableEntryPoint()), fTailCall, FALSE);
+        EmitCallLabel(NewExternalCodeLabel((LPVOID)multiCallableAddr), fTailCall, FALSE);
     }
     else
     {

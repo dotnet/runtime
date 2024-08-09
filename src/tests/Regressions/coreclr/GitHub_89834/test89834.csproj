@@ -6,6 +6,8 @@
     
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- Relies on StackFrame.GetMethod that is not trim-compatible -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test89834.cs" />

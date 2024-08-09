@@ -336,12 +336,15 @@ public sealed class OutOfProcessTest : ITestInfo
     private CodeBuilder _executionStatement { get; }
     private string RelativeAssemblyPath { get; }
 
-    public OutOfProcessTest(string displayName, string relativeAssemblyPath)
+    public OutOfProcessTest(string displayName, string relativeAssemblyPath, string? testBuildMode)
     {
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
         RelativeAssemblyPath = relativeAssemblyPath;
+
+        // Native AOT tests get generated into a 'native' directory, so we need to get out of that one first to find the test
+        string testPathPrefix = string.Equals(testBuildMode, "nativeaot", StringComparison.OrdinalIgnoreCase) ? "\"..\"" : "null";
 
         _executionStatement = new CodeBuilder();
         _executionStatement.AppendLine();
@@ -350,7 +353,7 @@ public sealed class OutOfProcessTest : ITestInfo
         using (_executionStatement.NewBracesScope())
         {
             _executionStatement.AppendLine($@"TestLibrary.OutOfProcessTest"
-                                        + $@".RunOutOfProcessTest(@""{relativeAssemblyPath}"");");
+                                        + $@".RunOutOfProcessTest(@""{relativeAssemblyPath}"", {testPathPrefix});");
         }
     }
 

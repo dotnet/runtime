@@ -1155,7 +1155,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 {
     HRESULT hr = E_FAIL;
 
-    _ASSERTE(pManagedAssemblyLoadContextToBindWithin != NULL);
+    _ASSERTE(pManagedAssemblyLoadContextToBindWithin != (INT_PTR)NULL);
 
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
@@ -1297,7 +1297,7 @@ HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefa
             hr = pApplicationContext->Init();
             if (SUCCEEDED(hr))
             {
-                pBinder->SetManagedAssemblyLoadContext(NULL);
+                pBinder->SetManagedAssemblyLoadContext((INT_PTR)NULL);
                 *ppDefaultBinder = pBinder.Extract();
             }
         }

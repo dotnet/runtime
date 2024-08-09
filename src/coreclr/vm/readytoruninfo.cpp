@@ -1019,7 +1019,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1092,7 +1092,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     bool printedStart = false;
 #endif
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1396,7 +1396,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     STANDARD_VM_CONTRACT;
 
     PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
-    _ASSERTE(ret != NULL);
+    _ASSERTE(ret != (PCODE)NULL);
     return ret;
 }
 
@@ -1693,7 +1693,7 @@ public:
         RETURN module;
     }
 
-    DomainAssembly *LoadModule(mdFile kFile) final
+    Module *LoadModule(mdFile kFile) final
     {
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -1702,7 +1702,7 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            return module->GetDomainAssembly();
+            return module;
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
@@ -1751,8 +1751,8 @@ public:
         m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
 
-        return module->GetDomainAssembly();
-    }
+       return module;
+   }
 
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
                                                   mdToken token,
@@ -1929,20 +1929,17 @@ bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundR
 
 bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
 {
-#ifdef DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+    uint32_t rid = RidFromToken(input);
+    if ((rid <= MethodCount) && (rid != 0))
+    {
+        uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
+        chunk >>= 7 - ((rid - 1) % 8);
+        *foundResult = true;
+        return !!(chunk & 1);
+    }
+#endif // !DACCESS_COMPILE
     *foundResult = false;
     return false;
-#else
-    uint32_t rid = RidFromToken(input);
-    if ((rid > MethodCount) || (rid == 0))
-    {
-        *foundResult = false;
-        return false;
-    }
-
-    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
-    chunk >>= 7 - ((rid - 1) % 8);
-    return !!(chunk & 1);
-#endif
 }
 

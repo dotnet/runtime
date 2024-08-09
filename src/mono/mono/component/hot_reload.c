@@ -2776,14 +2776,6 @@ add_param_info_for_method (BaselineInfo *base_info, uint32_t param_token, uint32
 	}
 }
 
-/* HACK - keep in sync with locator_t in metadata/metadata.c */
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} upd_locator_t;
-
 void*
 hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
 {
@@ -2804,11 +2796,10 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	g_assert (success);
 	uint32_t rows = table_info_get_rows (latest_mod_table);
 
-	upd_locator_t *loc = (upd_locator_t*)key;
+	mono_locator_t *loc = (mono_locator_t*)key;
 	g_assert (loc);
-	loc->result = 0;
 	/* HACK: this is so that the locator can compute the row index of the given row. but passing the mutant table to other metadata functions could backfire. */
-	loc->t = (MonoTableInfo*)latest_mod_table;
+	*loc = mono_locator_init ((MonoTableInfo*)latest_mod_table, loc->idx, loc->col_idx);
 	for (uint32_t idx = 0; idx < rows; ++idx) {
 		const char *row = latest_mod_table->base + idx * latest_mod_table->row_size;
 		if (!comparer (loc, row))

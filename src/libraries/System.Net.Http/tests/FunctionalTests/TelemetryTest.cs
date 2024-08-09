@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -48,10 +49,23 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "InvokerSend" };
         }
 
+        public static IEnumerable<object[]> Redaction_MemberData()
+        {
+            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
+            foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
+            {
+                foreach (string fragment in new[] { "", "#frag" })
+                {
+                    yield return new object[] { uriTail + fragment, true };
+                    yield return new object[] { uriTail + fragment, false };
+                }
+            }
+        }
+
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
-        public void EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
+        public async Task EventSource_SuccessfulRequest_LogsStartStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -59,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 const int ResponseContentLength = 42;
 
@@ -188,13 +202,13 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
-        public void EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
+        public async Task EventSource_UnsuccessfulRequest_LogsStartFailedStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -202,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -293,7 +307,7 @@ namespace System.Net.Http.Functional.Tests
                 ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: true, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
         [OuterLoop]
@@ -304,7 +318,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("SendChunkedAsync")]
         [InlineData("InvokerSend")]
         [InlineData("InvokerSendAsync")]
-        public void EventSource_SendingRequestContent_LogsRequestContentStartStop(string testMethod)
+        public async Task EventSource_SendingRequestContent_LogsRequestContentStartStop(string testMethod)
         {
             if (UseVersion.Major != 1 && !testMethod.EndsWith("Async"))
             {
@@ -312,7 +326,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
+            await RemoteExecutor.Invoke(static async (useVersionString, testMethod) =>
             {
                 const int RequestContentLength = 42;
                 const int ResponseContentLength = 43;
@@ -396,10 +410,77 @@ namespace System.Net.Http.Functional.Tests
                     count: 1);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
-            }, UseVersion.ToString(), testMethod).Dispose();
+            }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
-        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1)
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_SendingRequest_PathAndQueryRedaction_LogsStartStop(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedPathAndQuery = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedPathAndQuery.IndexOf('?');
+                expectedPathAndQuery = expectedPathAndQuery.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedPathAndQuery.Length);
+                expectedPathAndQuery = queryIndex >= 0 ? expectedPathAndQuery + '*' : expectedPathAndQuery;
+            }
+            expectedPathAndQuery = expectedPathAndQuery.StartsWith('/') ? expectedPathAndQuery : '/' + expectedPathAndQuery;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedPathAndQuery) =>
+            {
+                Version version = Version.Parse(useVersionString);
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            expectedUri = uri;
+                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+                            client.BaseAddress = uri;
+                            using var invoker = new HttpMessageInvoker(handler);
+
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
+                            await client.GetAsync(uriTail);
+                        },
+                        async server =>
+                        {
+                            await server.AcceptConnectionAsync(async connection =>
+                            {
+                                await connection.ReadRequestDataAsync();
+                                await WaitForEventCountersAsync(events);
+                                await connection.SendResponseAsync();
+                            });
+                        });
+
+                    await WaitForEventCountersAsync(events);
+                });
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
+
+                ValidateStartFailedStopEvents(events, version, pathAndQuery: expectedPathAndQuery);
+
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
+
+                ValidateRequestResponseStartStopEvents(events, null, 0, count: 1);
+
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
+            }, UseVersion.ToString(), uriTail, expectedPathAndQuery, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1, string? pathAndQuery = null)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "RequestStart").ToArray();
             foreach (EventWrittenEventArgs startEvent in starts.Select(e => e.Event))
@@ -409,6 +490,10 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotEmpty((string)startEvent.Payload[1]); // host
                 Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
                 Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
+                if (pathAndQuery is not null)
+                {
+                    Assert.Equal(pathAndQuery, (string)startEvent.Payload[3]); // pathAndQuery
+                }
                 byte versionMajor = Assert.IsType<byte>(startEvent.Payload[4]);
                 Assert.Equal(version.Major, versionMajor);
                 byte versionMinor = Assert.IsType<byte>(startEvent.Payload[5]);
@@ -455,7 +540,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The validation asssumes that the connection id's are in range 0..(connectionCount-1)
+        // The validation assumes that the connection id's are in range 0..(connectionCount-1)
         protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, int connectionCount = 1)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
@@ -665,9 +750,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
+        public async Task EventSource_ConnectionPoolAtMaxConnections_LogsRequestLeftQueue()
         {
-            RemoteExecutor.Invoke(static async (useVersionString) =>
+            await RemoteExecutor.Invoke(static async (useVersionString) =>
             {
                 Version version = Version.Parse(useVersionString);
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -774,14 +859,14 @@ namespace System.Net.Http.Functional.Tests
                 ValidateRequestResponseStartStopEvents(events, requestContentLength: null, responseContentLength: 0, count: 3);
 
                 ValidateEventCounters(events, requestCount: 3, shouldHaveFailures: false, versionMajor: version.Major, requestLeftQueue: true);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_Redirect_LogsRedirect()
+        public async Task EventSource_Redirect_LogsRedirect()
         {
-            RemoteExecutor.Invoke(static async (string useVersionString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString) =>
             {
                 Version version = Version.Parse(useVersionString);
 
@@ -821,7 +906,67 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(1, redirectEvent.Payload.Count);
                 Assert.Equal(expectedUri.ToString(), (string)redirectEvent.Payload[0]);
                 Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
-            }, UseVersion.ToString()).Dispose();
+            }, UseVersion.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_Redirect_PathAndQueryRedaction_LogsRedirect(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedUriTail.IndexOf('?');
+                expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
+                expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
+            }
+            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
+            {
+                Version version = Version.Parse(useVersionString);
+
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateServerAsync((originalServer, originalUri) =>
+                    {
+                        return GetFactoryForVersion(version).CreateServerAsync(async (redirectServer, redirectUri) =>
+                        {
+                            expectedUri = redirectUri;
+                            using HttpClient client = CreateHttpClient(useVersionString);
+
+                            using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = version };
+
+                            Task clientTask = client.SendAsync(request);
+                            Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri + uriTail) });
+
+                            await Task.WhenAny(clientTask, serverTask);
+                            Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
+                            await serverTask;
+
+                            serverTask = redirectServer.HandleRequestAsync();
+                            await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                            await clientTask;
+                        });
+                    });
+
+                    await WaitForEventCountersAsync(events);
+                });
+
+                EventWrittenEventArgs redirectEvent = events.Where(e => e.Event.EventName == "Redirect").Single().Event;
+                Assert.Equal(1, redirectEvent.Payload.Count);
+                Assert.Equal(expectedUri.ToString() + expectedUriTail, (string)redirectEvent.Payload[0]);
+                Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
+            }, UseVersion.ToString(), uriTail, expectedUriTail, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
 
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
@@ -903,9 +1048,9 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
+        public async Task EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const int NumParallelRequests = 4;
 
@@ -970,7 +1115,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(connectionIds.Remove(connectionId), $"RequestHeadersStart has logged an unexpected connectionId={connectionId}.");
                 }
                 Assert.Empty(connectionIds);
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 

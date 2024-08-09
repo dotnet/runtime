@@ -32,36 +32,36 @@ private:
     }
 
     // The operations on the "long" (pointer-to-array-of-size_t) versions of the representation.
-    static void AssignLong(Env env, BitSetShortLongRep& lhs, BitSetShortLongRep rhs);
+    static void               AssignLong(Env env, BitSetShortLongRep& lhs, BitSetShortLongRep rhs);
     static BitSetShortLongRep MakeSingletonLong(Env env, unsigned bitNum);
     static BitSetShortLongRep MakeCopyLong(Env env, BitSetShortLongRep bs);
-    static bool IsEmptyLong(Env env, BitSetShortLongRep bs);
-    static unsigned CountLong(Env env, BitSetShortLongRep bs);
-    static bool IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
-    static void UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
-    static bool UnionDLongChanged(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
-    static void DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
-    static void AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
-    static bool TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
-    static void RemoveElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
-    static void ClearDLong(Env env, BitSetShortLongRep& bs);
+    static bool               IsEmptyLong(Env env, BitSetShortLongRep bs);
+    static unsigned           CountLong(Env env, BitSetShortLongRep bs);
+    static bool               IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
+    static void               UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static bool               UnionDLongChanged(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static void               DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static void               AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
+    static bool               TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
+    static void               RemoveElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
+    static void               ClearDLong(Env env, BitSetShortLongRep& bs);
     static BitSetShortLongRep MakeUninitArrayBits(Env env);
     static BitSetShortLongRep MakeEmptyArrayBits(Env env);
     static BitSetShortLongRep MakeFullArrayBits(Env env);
-    static bool IsMemberLong(Env env, BitSetShortLongRep bs, unsigned i);
-    static bool EqualLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
-    static bool IsSubsetLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
-    static bool IsEmptyIntersectionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
-    static void IntersectionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
-    static void DataFlowDLong(Env                      env,
-                              BitSetShortLongRep&      out,
-                              const BitSetShortLongRep gen,
-                              const BitSetShortLongRep in);
-    static void LivenessDLong(Env                      env,
-                              BitSetShortLongRep&      in,
-                              const BitSetShortLongRep def,
-                              const BitSetShortLongRep use,
-                              const BitSetShortLongRep out);
+    static bool               IsMemberLong(Env env, BitSetShortLongRep bs, unsigned i);
+    static bool               EqualLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
+    static bool               IsSubsetLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
+    static bool               IsEmptyIntersectionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
+    static void               IntersectionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static void               DataFlowDLong(Env                      env,
+                                            BitSetShortLongRep&      out,
+                                            const BitSetShortLongRep gen,
+                                            const BitSetShortLongRep in);
+    static void               LivenessDLong(Env                      env,
+                                            BitSetShortLongRep&      in,
+                                            const BitSetShortLongRep def,
+                                            const BitSetShortLongRep use,
+                                            const BitSetShortLongRep out);
 #ifdef DEBUG
     static const char* ToStringLong(Env env, BitSetShortLongRep bs);
 #endif
@@ -500,7 +500,9 @@ public:
         unsigned m_bitNum;
 
     public:
-        Iter(Env env, const BitSetShortLongRep& bs) : m_bs(bs), m_bitNum(0)
+        Iter(Env env, const BitSetShortLongRep& bs)
+            : m_bs(bs)
+            , m_bitNum(0)
         {
             if (BitSetOps::IsShort(env))
             {

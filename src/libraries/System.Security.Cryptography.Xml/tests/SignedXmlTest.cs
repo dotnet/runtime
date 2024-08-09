@@ -1673,7 +1673,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
                     try
                     {
-#if NETCOREAPP
+#if NET
                         socket = await listener.AcceptSocketAsync(cancellationToken);
 #else
                         socket = await listener.AcceptSocketAsync();

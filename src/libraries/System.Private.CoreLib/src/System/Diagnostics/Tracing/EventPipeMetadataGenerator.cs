@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
             ParameterPayload = 2
         }
 
-        public static EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
+        public static readonly EventPipeMetadataGenerator Instance = new EventPipeMetadataGenerator();
 
         private EventPipeMetadataGenerator() { }
 
@@ -263,7 +263,7 @@ namespace System.Diagnostics.Tracing
                 //     Nested struct property name  : NULL-terminated string.
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)TypeCode.Object);
 
-                if (!(TypeInfo is InvokeTypeInfo invokeTypeInfo))
+                if (TypeInfo is not InvokeTypeInfo invokeTypeInfo)
                 {
                     return false;
                 }
@@ -571,7 +571,7 @@ namespace System.Diagnostics.Tracing
             TypeCode typeCode = GetTypeCodeExtended(ParameterType);
             if (typeCode == TypeCode.Object)
             {
-                if (!(TypeInfo is InvokeTypeInfo typeInfo))
+                if (TypeInfo is not InvokeTypeInfo typeInfo)
                 {
                     return false;
                 }

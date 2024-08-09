@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <Import Project="NetCoreAppLibrary.props" />
-  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsTrimmingTestProject)' == 'true'" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->

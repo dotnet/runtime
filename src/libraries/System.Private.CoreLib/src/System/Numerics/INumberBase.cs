@@ -258,6 +258,17 @@ namespace System.Numerics
         /// <remarks>For <see cref="IFloatingPointIeee754{TSelf}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
 
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The value to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The value to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The value to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        static virtual TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend) => (left * right) + addend;
+
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
@@ -295,7 +306,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -303,7 +314,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -429,7 +440,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -437,7 +448,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -475,7 +486,7 @@ namespace System.Numerics
             scoped Span<char> utf16Destination;
             int destinationMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Destination.Length);
 
-            if (destinationMaxCharCount < 256)
+            if (destinationMaxCharCount <= 256)
             {
                 utf16DestinationArray = null;
                 utf16Destination = stackalloc char[256];
@@ -483,7 +494,7 @@ namespace System.Numerics
             else
             {
                 utf16DestinationArray = ArrayPool<char>.Shared.Rent(destinationMaxCharCount);
-                utf16Destination = utf16DestinationArray.AsSpan(0, destinationMaxCharCount);
+                utf16Destination = utf16DestinationArray;
             }
 
             if (!TryFormat(utf16Destination, out int charsWritten, format, provider))
@@ -531,7 +542,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -539,7 +550,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
@@ -578,7 +589,7 @@ namespace System.Numerics
             scoped Span<char> utf16Text;
             int textMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Text.Length);
 
-            if (textMaxCharCount < 256)
+            if (textMaxCharCount <= 256)
             {
                 utf16TextArray = null;
                 utf16Text = stackalloc char[256];
@@ -586,7 +597,7 @@ namespace System.Numerics
             else
             {
                 utf16TextArray = ArrayPool<char>.Shared.Rent(textMaxCharCount);
-                utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
+                utf16Text = utf16TextArray;
             }
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);

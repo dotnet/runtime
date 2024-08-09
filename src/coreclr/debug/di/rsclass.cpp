@@ -34,8 +34,7 @@ CordbClass::CordbClass(CordbModule *m, mdTypeDef classMetadataToken)
     m_fIsValueClassKnown(false),
     m_fIsValueClass(false),
     m_fHasTypeParams(false),
-    m_continueCounterLastSync(0),
-    m_fCustomNotificationsEnabled(false)
+    m_continueCounterLastSync(0)
 {
     m_classInfo.Clear();
 }
@@ -237,7 +236,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
         return CORDBG_E_FIELD_NOT_STATIC;
     }
 
-    CORDB_ADDRESS pRmtStaticValue = NULL;
+    CORDB_ADDRESS pRmtStaticValue = (CORDB_ADDRESS)NULL;
     CordbProcess * pProcess = pModule->GetProcess();
 
     if (!pFieldData->m_fFldIsTLS)
@@ -300,7 +299,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
         }
     }
 
-    if (pRmtStaticValue == NULL)
+    if (pRmtStaticValue == (CORDB_ADDRESS)NULL)
     {
         // type probably wasn't loaded yet.
         // The debugger may chose to func-eval the creation of an instance of this type and try again.
@@ -812,7 +811,7 @@ BOOL CordbClass::GotUnallocatedStatic(DacDbiArrayList<FieldData> * pFieldList)
     while ((count < pFieldList->Count()) && !fGotUnallocatedStatic )
     {
         if ((*pFieldList)[count].OkToGetOrSetStaticAddress() &&
-            (*pFieldList)[count].GetStaticAddress() == NULL )
+            (*pFieldList)[count].GetStaticAddress() == (CORDB_ADDRESS)NULL )
         {
             // The address for a regular static field isn't available yet
             // How can this happen?  Statics appear to get allocated during domain load.
@@ -938,7 +937,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
     {
         // the field is static, we don't need any additional data
         pEncField->Init(VMPTR_Object::NullPtr(),      /* vmObject */
-                        NULL,                         /* offsetToVars */
+                        0,                            /* offsetToVars */
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,

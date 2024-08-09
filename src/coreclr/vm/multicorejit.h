@@ -92,7 +92,7 @@ private:
     TADDR m_entryPointAndTierInfo;
 
 public:
-    MulticoreJitCodeInfo() : m_entryPointAndTierInfo(NULL)
+    MulticoreJitCodeInfo() : m_entryPointAndTierInfo{}
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -109,13 +109,13 @@ public:
     bool IsNull() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_entryPointAndTierInfo == NULL;
+        return m_entryPointAndTierInfo == 0;
     }
 
     PCODE GetEntryPoint() const
     {
         WRAPPER_NO_CONTRACT;
-        return IsNull() ? NULL : PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
+        return IsNull() ? (PCODE)0 : PINSTRToPCODE(m_entryPointAndTierInfo & ~(TADDR)TierInfo::Mask);
     }
 
     bool WasTier0() const

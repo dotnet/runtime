@@ -29,9 +29,8 @@ namespace System
             public bool IsNegative;
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
-            public byte* DigitsPtr;
-            public int DigitsLength;
-            public readonly Span<byte> Digits => new Span<byte>(DigitsPtr, DigitsLength);
+            public Span<byte> Digits;
+            public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
             {
@@ -50,8 +49,7 @@ namespace System
                 IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                DigitsPtr = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(digits)); // Safe since memory must be fixed
-                DigitsLength = digits.Length;
+                Digits = digits;
 #if DEBUG
                 Digits.Fill(0xCC);
 #endif

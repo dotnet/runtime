@@ -298,9 +298,6 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
-
             // if thread ID is uninitialized or too big, we do "uncommon" part.
             if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
             {
@@ -440,9 +437,6 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
-
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
             // transform uninitialized ID into -1, so it will not match any possible lock owner
             currentThreadID |= (currentThreadID - 1) >> 31;
@@ -492,9 +486,6 @@ namespace System.Threading
         public static unsafe bool IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-
-            Debug.Assert(!(obj is Lock),
-                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
             // transform uninitialized ID into -1, so it will not match any possible lock owner

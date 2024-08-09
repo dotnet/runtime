@@ -18,7 +18,6 @@ namespace System.IO.Tests
 
         public const int COR_E_FILELOAD = unchecked((int)0x80131621);
         public const int FUSION_E_INVALID_NAME = unchecked((int)0x80131047);
-        public const int FUSION_E_PRIVATE_ASM_DISALLOWED = unchecked((int)0x80131044);
         public const int FUSION_E_REF_DEF_MISMATCH = unchecked((int)0x80131040);
         public const int ERROR_TOO_MANY_OPEN_FILES = unchecked((int)0x80070004);
         public const int ERROR_SHARING_VIOLATION = unchecked((int)0x80070020);

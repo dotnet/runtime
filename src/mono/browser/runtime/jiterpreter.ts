@@ -285,7 +285,7 @@ function getTraceImports () {
         importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
-        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
+        ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
     ];
@@ -649,7 +649,7 @@ function initialize_builder (builder: WasmBuilder) {
         WasmValtype.void, true
     );
     builder.defineType(
-        "stelem_ref",
+        "stelemr",
         {
             "o": WasmValtype.i32,
             "aindex": WasmValtype.i32,

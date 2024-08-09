@@ -97,6 +97,10 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
             else if (architecture == TargetArchitecture.RiscV64)
             {
                 return "";
@@ -197,7 +201,7 @@ namespace ILCompiler
             var support = new Dictionary<string, InstructionSet>();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
                     support.Add(instructionSet.Name, instructionSet.InstructionSet);
             }
@@ -210,7 +214,7 @@ namespace ILCompiler
             var support = new InstructionSetFlags();
             foreach (var instructionSet in InstructionSetFlags.ArchitectureToValidInstructionSets(architecture))
             {
-                // Only instruction sets with associated R2R enum values are are specifiable
+                // Only instruction sets with associated R2R enum values are specifiable
                 if (!instructionSet.Specifiable)
                     support.AddInstructionSet(instructionSet.InstructionSet);
             }

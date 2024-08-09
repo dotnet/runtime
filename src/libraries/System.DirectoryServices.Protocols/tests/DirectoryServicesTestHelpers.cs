@@ -22,7 +22,7 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             get
             {
-#if NETCOREAPP
+#if NET
                 if (!_isLibLdapInstalled.HasValue)
                 {
                     if (PlatformDetection.IsApplePlatform)

@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Schema.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95981", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void RountTripTest()
         {
             // AppContext SetSwitch seems to be unreliable in the unit test case. So let's not rely on it

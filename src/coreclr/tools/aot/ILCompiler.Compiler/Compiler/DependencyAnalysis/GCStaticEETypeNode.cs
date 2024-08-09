@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
+            sb.Append("__GCStaticEEType_"u8).Append(_gcMap.ToString());
         }
 
         int ISymbolDefinitionNode.Offset
@@ -64,7 +64,6 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
 
             // +1 for SyncBlock (static size already includes MethodTable)
-            Debug.Assert(factory.Target.Abi == TargetAbi.NativeAot || factory.Target.Abi == TargetAbi.CppCodegen);
             int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
 
             // We only need to check for containsPointers because ThreadStatics are always allocated

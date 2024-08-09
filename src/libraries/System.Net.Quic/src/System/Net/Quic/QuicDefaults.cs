@@ -41,10 +41,10 @@ internal static partial class QuicDefaults
     /// <summary>
     /// Default initial_max_data value.
     /// </summary>
-    public static int DefaultConnectionMaxData = 16 * 1024 * 1024;
+    public const int DefaultConnectionMaxData = 16 * 1024 * 1024;
 
     /// <summary>
     /// Default initial_max_stream_data_* value.
     /// </summary>
-    public static int DefaultStreamMaxData = 64 * 1024;
+    public const int DefaultStreamMaxData = 64 * 1024;
 }

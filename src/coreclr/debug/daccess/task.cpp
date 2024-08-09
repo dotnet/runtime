@@ -121,16 +121,8 @@ ClrDataTask::GetCurrentAppDomain(
 
     EX_TRY
     {
-        if (m_thread->GetDomain())
-        {
-            *appDomain = new (nothrow)
-                ClrDataAppDomain(m_dac, m_thread->GetDomain());
-            status = *appDomain ? S_OK : E_OUTOFMEMORY;
-        }
-        else
-        {
-            status = E_INVALIDARG;
-        }
+        *appDomain = new (nothrow) ClrDataAppDomain(m_dac, AppDomain::GetCurrentDomain());
+        status = *appDomain ? S_OK : E_OUTOFMEMORY;
     }
     EX_CATCH
     {
@@ -549,7 +541,7 @@ ClrDataTask::GetLastExceptionState(
         {
             *exception = new (nothrow)
                 ClrDataExceptionState(m_dac,
-                                      m_thread->GetDomain(),
+                                      AppDomain::GetCurrentDomain(),
                                       m_thread,
                                       CLRDATA_EXCEPTION_PARTIAL,
                                       NULL,
@@ -2491,7 +2483,7 @@ ClrDataModule::GetFlags(
     {
         *flags = 0;
 
-        if (m_module->IsReflection())
+        if (m_module->IsReflectionEmit())
         {
             (*flags) |= CLRDATA_MODULE_IS_DYNAMIC;
         }
@@ -2713,8 +2705,8 @@ ClrDataModule::RequestGetModuleData(
     Module* pModule = GetModule();
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pPEAssembly));
-    outGMD->IsDynamic = pModule->IsReflection();
+    outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pModule));
+    outGMD->IsDynamic = pModule->IsReflectionEmit();
 
     if (pPEAssembly != NULL)
     {
@@ -4962,7 +4954,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
-                              thread->GetDomain(),
+                              AppDomain::GetCurrentDomain(),
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,
@@ -5122,7 +5114,7 @@ EnumMethodDefinitions::CdStart(Module* mod,
 {
     HRESULT status;
 
-    *handle = NULL;
+    *handle = 0;
 
     if (!mod)
     {

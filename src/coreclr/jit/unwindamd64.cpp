@@ -199,7 +199,7 @@ void Compiler::unwindPushWindows(regNumber reg)
         // since it is pushed as a frame register.
         || (reg == REG_FPBASE)
 #endif // ETW_EBP_FRAMED
-            )
+    )
     {
         code->UnwindOp = UWOP_PUSH_NONVOL;
         code->OpInfo   = (BYTE)reg;

@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
             Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
-            Debug.Assert(!type.IsMdArray || factory.Target.Abi == TargetAbi.CppCodegen);
+            Debug.Assert(!type.IsMdArray);
         }
 
         public override bool StaticDependenciesAreComputed => true;

@@ -1,75 +1,65 @@
 parameters:
-  dependsOn: []
   PublishRidAgnosticPackagesFromPlatform: ''
   isOfficialBuild: false
   logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
 
 jobs:
-- job: PrepareSignedArtifacts
-  displayName: Prepare Signed Artifacts
-  dependsOn: ${{ parameters.dependsOn }}
-  pool:
-    name: $(DncEngInternalBuildPool)
-    demands: ImageOverride -equals 1es-windows-2022
-  # Double the default timeout.
-  timeoutInMinutes: 240
-  workspace:
-    clean: all
+- template: /eng/common/templates-official/job/job.yml
+  parameters:
+    name: 'PrepareSignedArtifacts'
+    displayName: 'Prepare Signed Artifacts'
 
-  variables:
-  - name: SignType
-    value: $[ coalesce(variables.OfficialSignType, 'real') ]
+    pool:
+      name: $(DncEngInternalBuildPool)
+      demands: ImageOverride -equals 1es-windows-2022
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 20
+    # Double the default timeout.
+    timeoutInMinutes: 240
 
-  - ${{ if eq(parameters.isOfficialBuild, true) }}:
-    - task: NuGetAuthenticate@1
+    workspace:
+      clean: all
 
-  - task: MicroBuildSigningPlugin@2
-    displayName: Install MicroBuild plugin for Signing
-    inputs:
-      signType: $(SignType)
-      zipSources: false
-      feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-    continueOnError: false
-    condition: and(succeeded(),
-                in(variables['SignType'], 'real', 'test'))
+    enableMicrobuild: true
 
-  - task: DownloadBuildArtifacts@0
-    displayName: Download IntermediateArtifacts
-    inputs:
-      artifactName: IntermediateArtifacts
-      downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
-      checkDownloadedFiles: true
-
-  - script: >-
-      build.cmd -ci
-      -subset publish
-      -configuration Release
-      /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
-      /p:OfficialBuildId=$(Build.BuildNumber)
-      /p:SignType=$(SignType)
-      /p:DotNetSignType=$(SignType)
-      /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
-    displayName: Prepare artifacts and upload to build
-
-  - task: CopyFiles@2
-    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
-    inputs:
-      SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: |
-        **/*.log
-        **/*.binlog
-      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-    continueOnError: true
-    condition: succeededOrFailed()
-
-  - task: PublishPipelineArtifact@1
-    displayName: Publish BuildLogs
-    inputs:
-      targetPath: '$(Build.StagingDirectory)\BuildLogs'
-      artifactName: ${{ parameters.logArtifactName }}
-    condition: succeededOrFailed()
+    variables:
+      - name: '_SignType'
+        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+      
+    templateContext:
+      inputs:
+      - input: checkout
+        repository: self
+        clean: true
+        fetchDepth: 20
+      - input: pipelineArtifact
+        artifactName: IntermediateArtifacts
+        targetPath: $(Build.SourcesDirectory)\artifacts\PackageDownload\IntermediateArtifacts
+      outputs:
+      - output: pipelineArtifact
+        displayName: 'Publish BuildLogs'
+        condition: succeededOrFailed()
+        targetPath: '$(Build.StagingDirectory)\BuildLogs'
+        artifactName: ${{ parameters.logArtifactName }}
+    
+    steps:
+    - script: >-
+        build.cmd -ci
+        -subset publish
+        -configuration Release
+        /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+        /p:OfficialBuildId=$(Build.BuildNumber)
+        /p:SignType=$(_SignType)
+        /p:DotNetSignType=$(_SignType)
+        /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
+      displayName: Prepare artifacts and upload to build
+    
+    - task: CopyFiles@2
+      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          **/*.log
+          **/*.binlog
+        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+      continueOnError: true
+      condition: succeededOrFailed()

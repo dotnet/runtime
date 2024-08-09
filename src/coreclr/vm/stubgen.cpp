@@ -2044,7 +2044,7 @@ LocalSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2239,7 +2239,7 @@ FunctionSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2657,7 +2657,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
             // JIT will handle structures
             if (pLoc->InternalToken.IsValueType())
             {
-                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsPointers());
+                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsGCPointers());
                 break;
             }
             FALLTHROUGH;

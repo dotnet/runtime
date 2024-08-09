@@ -48,7 +48,8 @@ class LegalPolicy : public InlinePolicy
 
 public:
     // Constructor
-    LegalPolicy(bool isPrejitRoot) : InlinePolicy(isPrejitRoot)
+    LegalPolicy(bool isPrejitRoot)
+        : InlinePolicy(isPrejitRoot)
     {
         // empty
     }
@@ -157,7 +158,7 @@ protected:
     // Helper methods
     virtual double DetermineMultiplier();
     int            DetermineNativeSizeEstimate();
-    int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
+    int            DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
     // Data members
     Compiler*               m_RootCompiler; // root compiler instance
@@ -174,20 +175,20 @@ protected:
     unsigned                m_ConstantArgFeedsConstantTest;
     int                     m_CalleeNativeSizeEstimate;
     int                     m_CallsiteNativeSizeEstimate;
-    bool                    m_IsForceInline : 1;
-    bool                    m_IsForceInlineKnown : 1;
-    bool                    m_IsInstanceCtor : 1;
+    bool                    m_IsForceInline              : 1;
+    bool                    m_IsForceInlineKnown         : 1;
+    bool                    m_IsInstanceCtor             : 1;
     bool                    m_IsFromPromotableValueClass : 1;
-    bool                    m_HasSimd : 1;
-    bool                    m_LooksLikeWrapperMethod : 1;
-    bool                    m_MethodIsMostlyLoadStore : 1;
-    bool                    m_CallsiteIsInTryRegion : 1;
-    bool                    m_CallsiteIsInLoop : 1;
-    bool                    m_IsNoReturn : 1;
-    bool                    m_IsNoReturnKnown : 1;
-    bool                    m_ConstArgFeedsIsKnownConst : 1;
-    bool                    m_ArgFeedsIsKnownConst : 1;
-    bool                    m_InsideThrowBlock : 1;
+    bool                    m_HasSimd                    : 1;
+    bool                    m_LooksLikeWrapperMethod     : 1;
+    bool                    m_MethodIsMostlyLoadStore    : 1;
+    bool                    m_CallsiteIsInTryRegion      : 1;
+    bool                    m_CallsiteIsInLoop           : 1;
+    bool                    m_IsNoReturn                 : 1;
+    bool                    m_IsNoReturnKnown            : 1;
+    bool                    m_ConstArgFeedsIsKnownConst  : 1;
+    bool                    m_ArgFeedsIsKnownConst       : 1;
+    bool                    m_InsideThrowBlock           : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -271,11 +272,11 @@ protected:
     unsigned m_UnrollableMemop;
     unsigned m_Switch;
     unsigned m_DivByCns;
-    bool     m_ReturnsStructByValue : 1;
-    bool     m_IsFromValueClass : 1;
-    bool     m_NonGenericCallsGeneric : 1;
+    bool     m_ReturnsStructByValue       : 1;
+    bool     m_IsFromValueClass           : 1;
+    bool     m_NonGenericCallsGeneric     : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
-    bool     m_HasProfileWeights : 1;
+    bool     m_HasProfileWeights          : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It

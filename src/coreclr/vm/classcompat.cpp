@@ -869,7 +869,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
         bmtMethod->ppMethodDescList[i] = pNewMD;
 
         // Make sure that fcalls have a 0 rva.  This is assumed by the prejit fixup logic
-        _ASSERTE(((Classification & ~mdcMethodImpl) != mcFCall) || dwDescrOffset == 0);
+        _ASSERTE(((Classification & ~mdfMethodImpl) != mcFCall) || dwDescrOffset == 0);
 
         // Non-virtual method
         if (IsMdStatic(dwMemberAttrs) ||
@@ -938,7 +938,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
             }
         }
 
-        if (Classification & mdcMethodImpl)
+        if (Classification & mdfMethodImpl)
         {   // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -2797,7 +2797,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Generic methods should always be mcInstantiated
-        if (!((numGenericMethodArgs == 0) || ((Classification & mdcClassification) == mcInstantiated)))
+        if (!((numGenericMethodArgs == 0) || ((Classification & mdfClassification) == mcInstantiated)))
         {
             BuildMethodTableThrowException(BFA_GENERIC_METHODS_INST);
         }
@@ -2806,7 +2806,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         // from the overrides.
         for(DWORD impls = 0; impls < bmtMethodImpl->dwNumberMethodImpls; impls++) {
             if ((bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) && !IsMdStatic(dwMemberAttrs)) {
-                Classification |= mdcMethodImpl;
+                Classification |= mdfMethodImpl;
                 break;
             }
         }
@@ -2830,7 +2830,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
 
         // Set the index into the storage locations
         BYTE impl;
-        if (Classification & mdcMethodImpl)
+        if (Classification & mdfMethodImpl)
         {
             impl = METHOD_IMPL;
         }
@@ -2840,25 +2840,25 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         BYTE type;
-        if ((Classification & mdcClassification)  == mcNDirect)
+        if ((Classification & mdfClassification)  == mcNDirect)
         {
             type = METHOD_TYPE_NDIRECT;
         }
-        else if ((Classification & mdcClassification) == mcFCall)
+        else if ((Classification & mdfClassification) == mcFCall)
         {
             type = METHOD_TYPE_FCALL;
         }
-        else if ((Classification & mdcClassification) == mcEEImpl)
+        else if ((Classification & mdfClassification) == mcEEImpl)
         {
             type = METHOD_TYPE_EEIMPL;
         }
 #ifdef FEATURE_COMINTEROP
-        else if ((Classification & mdcClassification) == mcComInterop)
+        else if ((Classification & mdfClassification) == mcComInterop)
         {
             type = METHOD_TYPE_INTEROP;
         }
 #endif // FEATURE_COMINTEROP
-        else if ((Classification & mdcClassification) == mcInstantiated)
+        else if ((Classification & mdfClassification) == mcInstantiated)
         {
             type = METHOD_TYPE_INSTANTIATED;
         }

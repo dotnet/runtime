@@ -8,6 +8,7 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
         internal override Type? ElementType => typeof(T);
+        internal override JsonConverter? NullableElementConverter => _elementConverter;
         public override bool HandleNull => true;
         internal override bool CanPopulate => _elementConverter.CanPopulate;
         internal override bool ConstructorIsParameterized => _elementConverter.ConstructorIsParameterized;
@@ -19,9 +20,9 @@ namespace System.Text.Json.Serialization.Converters
         public NullableConverter(JsonConverter<T> elementConverter)
         {
             _elementConverter = elementConverter;
+            IsInternalConverter = elementConverter.IsInternalConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
             ConverterStrategy = elementConverter.ConverterStrategy;
-            ConstructorInfo = elementConverter.ConstructorInfo;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)

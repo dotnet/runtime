@@ -61,6 +61,22 @@ namespace System.Tests
         public void CreateInstanceT_StructWithDefaultConstructorThatThrows_ThrowsTargetInvocationException() =>
             Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<StructWithDefaultConstructorThatThrows>());
 
+        [Fact]
+        public void CreateInstanceT_GenericTypes()
+        {
+            TestGenericClassWithDefaultConstructor<string>();
+            TestGenericClassWithDefaultConstructor<int>();
+
+            TestGenericStructWithDefaultConstructor<string>();
+            TestGenericStructWithDefaultConstructor<int>();
+
+            void TestGenericClassWithDefaultConstructor<T>()
+                => Assert.Equal(typeof(T), Activator.CreateInstance<GenericClassWithDefaultConstructor<T>>().TypeOfT);
+
+            void TestGenericStructWithDefaultConstructor<T>()
+                => Assert.Equal(typeof(T), Activator.CreateInstance<GenericStructWithDefaultConstructor<T>>().TypeOfT);
+        }
+
         private interface IInterface
         {
         }
@@ -95,6 +111,28 @@ namespace System.Tests
         {
             public ClassWithDefaultConstructorThatThrows() =>
                 throw new Exception();
+        }
+
+        public class GenericClassWithDefaultConstructor<T>
+        {
+            public GenericClassWithDefaultConstructor() =>
+                TypeOfT = typeof(T);
+
+            public Type TypeOfT { get; }
+        }
+
+        public struct StructWithDefaultConstructorThatThrows
+        {
+            public StructWithDefaultConstructorThatThrows() =>
+                throw new Exception();
+        }
+
+        public struct GenericStructWithDefaultConstructor<T>
+        {
+            public GenericStructWithDefaultConstructor() =>
+                TypeOfT = typeof(T);
+
+            public Type TypeOfT { get; }
         }
     }
 }

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-console */
-import { INTERNAL, runtimeHelpers, mono_assert } from "./globals";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
+import { threads_c_functions as tcwraps } from "./cwraps";
+import { INTERNAL, runtimeHelpers, mono_assert, loaderHelpers, ENVIRONMENT_IS_WORKER, Module } from "./globals";
 import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
@@ -12,9 +14,14 @@ export function set_thread_prefix (threadPrefix: string) {
     prefix = `[${threadPrefix}] MONO_WASM: `;
 }
 
-export function mono_log_debug (msg: string, ...data: any) {
+/* eslint-disable no-console */
+
+export function mono_log_debug (messageFactory: string | (() => string)) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug(prefix + msg, ...data);
+        const message = (typeof messageFactory === "function"
+            ? messageFactory()
+            : messageFactory);
+        console.debug(prefix + message);
     }
 }
 
@@ -27,9 +34,15 @@ export function mono_log_warn (msg: string, ...data: any) {
 }
 
 export function mono_log_error (msg: string, ...data: any) {
-    if (data && data.length > 0 && data[0] && typeof data[0] === "object" && data[0].silent) {
+    if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
         // don't log silent errors
-        return;
+        if (data[0].silent) {
+            return;
+        }
+        if (data[0].toString) {
+            console.error(prefix + msg, data[0].toString());
+            return;
+        }
     }
     console.error(prefix + msg, ...data);
 }
@@ -37,21 +50,6 @@ export function mono_log_error (msg: string, ...data: any) {
 export const wasm_func_map = new Map<number, string>();
 let wasm_pending_symbol_table: string | undefined;
 const regexes: any[] = [];
-
-// V8
-//   at <anonymous>:wasm-function[1900]:0x83f63
-//   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
-regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
-
-//# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
-regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
-
-//# chrome
-//# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
-regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
-
-//# <?>.wasm-function[8962]
-regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
 export function mono_wasm_symbolicate_string (message: string): string {
     try {
@@ -123,7 +121,27 @@ export function mono_wasm_trace_logger (log_domain_ptr: CharPtr, log_level_ptr: 
     switch (log_level) {
         case "critical":
         case "error":
-            console.error(mono_wasm_stringify_as_error_with_stack(message));
+            {
+                const messageWithStack = message + "\n" + (new Error().stack);
+                if (!loaderHelpers.exitReason) {
+                    loaderHelpers.exitReason = messageWithStack;
+                }
+                console.error(mono_wasm_stringify_as_error_with_stack(messageWithStack));
+                if (WasmEnableThreads) {
+                    try {
+                        tcwraps.mono_wasm_print_thread_dump();
+                    } catch (e) {
+                        console.error("Failed to print thread dump", e);
+                    }
+                }
+                if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
+                    setTimeout(() => {
+                        mono_log_error("forcing abort 3000ms after last error log message", messageWithStack);
+                        // _emscripten_force_exit is proxied to UI thread and should also arrive in spin wait loop
+                        Module._emscripten_force_exit(1);
+                    }, 3000);
+                }
+            }
             break;
         case "warning":
             console.warn(message);
@@ -150,12 +168,27 @@ export function parseSymbolMapFile (text: string) {
     //  may be never
     mono_assert(!wasm_pending_symbol_table, "Another symbol map was already loaded");
     wasm_pending_symbol_table = text;
-    mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
+    mono_log_debug(() => `Deferred loading of ${text.length}ch symbol map`);
 }
 
 function performDeferredSymbolMapParsing () {
     if (!wasm_pending_symbol_table)
         return;
+
+    // V8
+    //   at <anonymous>:wasm-function[1900]:0x83f63
+    //   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
+    regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
+
+    //# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
+    regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
+
+    //# chrome
+    //# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
+    regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+
+    //# <?>.wasm-function[8962]
+    regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
     const text = wasm_pending_symbol_table!;
     wasm_pending_symbol_table = undefined;
@@ -168,7 +201,7 @@ function performDeferredSymbolMapParsing () {
             parts[1] = parts.splice(1).join(":");
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
-        mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+        mono_log_debug(() => `Loaded ${wasm_func_map.size} symbols`);
     } catch (exc) {
         mono_log_warn(`Failed to load symbol map: ${exc}`);
     }

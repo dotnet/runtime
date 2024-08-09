@@ -23,7 +23,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         private static EndPoint CreateEndPoint(string endPoint)
         {
-#if NETCOREAPP
+#if NET
             return new UnixDomainSocketEndPoint(endPoint);
 #elif NETSTANDARD2_0
             // UnixDomainSocketEndPoint is not part of .NET Standard 2.0

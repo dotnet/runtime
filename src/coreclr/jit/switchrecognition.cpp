@@ -9,7 +9,7 @@
 // We mainly rely on TryLowerSwitchToBitTest in these heuristics, but jump tables can be useful
 // even without conversion to a bitmap test.
 #define SWITCH_MAX_DISTANCE ((TARGET_POINTER_SIZE * BITS_PER_BYTE) - 1)
-#define SWITCH_MIN_TESTS 3
+#define SWITCH_MIN_TESTS    3
 
 //-----------------------------------------------------------------------------
 //  optSwitchRecognition: Optimize range check for `x == cns1 || x == cns2 || x == cns3 ...`
@@ -86,7 +86,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
             }
 
             // We're looking for "X EQ/NE CNS" or "CNS EQ/NE X" pattern
-            if (op1->IsCnsIntOrI() ^ op2->IsCnsIntOrI())
+            if ((op1->IsCnsIntOrI() && !op1->IsIconHandle()) ^ (op2->IsCnsIntOrI() && !op2->IsIconHandle()))
             {
                 // TODO: relax this to support any side-effect free expression
                 if (!op1->OperIs(GT_LCL_VAR) && !op2->OperIs(GT_LCL_VAR))

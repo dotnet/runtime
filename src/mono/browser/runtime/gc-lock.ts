@@ -7,6 +7,9 @@ import cwraps from "./cwraps";
 
 export let gc_locked = false;
 
+// TODO https://github.com/dotnet/runtime/issues/100411
+// after Blazor stops using mono_wasm_gc_lock, mono_wasm_gc_unlock
+
 export function mono_wasm_gc_lock (): void {
     if (gc_locked) {
         throw new Error("GC is already locked");

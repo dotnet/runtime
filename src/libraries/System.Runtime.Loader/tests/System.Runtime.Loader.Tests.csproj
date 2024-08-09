@@ -70,7 +70,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
-
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
@@ -87,7 +88,7 @@
       <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
         <TrimMode>copy</TrimMode>
       </ManagedAssemblyToLink>
-    </ItemGroup> 
+    </ItemGroup>
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">

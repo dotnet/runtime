@@ -30,9 +30,8 @@ namespace System.Linq.Parallel
         // Whether to preserve order by default, when neither AsOrdered nor AsUnordered is used.
         internal const bool DefaultPreserveOrder = false;
 
-        // The default degree of parallelism, or -1 if unspecified. Dev unit tests set this value
-        // to change the default DOP.
-        internal static int DefaultDegreeOfParallelism = Math.Min(Environment.ProcessorCount, MAX_SUPPORTED_DOP);
+        // The default degree of parallelism.
+        internal static readonly int DefaultDegreeOfParallelism = Math.Min(Environment.ProcessorCount, MAX_SUPPORTED_DOP);
 
         // The size to use for bounded buffers.
         internal const int DEFAULT_BOUNDED_BUFFER_CAPACITY = 512;

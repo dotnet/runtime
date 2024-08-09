@@ -321,7 +321,7 @@ PERFInitialize(LPWSTR command_line, LPWSTR exe_path)
 
     if( ret == TRUE )
     {
-        pal_function_map = (char*)PAL_malloc(PAL_API_NUMBER);
+        pal_function_map = (char*)malloc(PAL_API_NUMBER);
         if(pal_function_map != NULL)
         {
             bRead = PERFReadSetting( );  // we don't quit even we failed to read the file.
@@ -355,7 +355,7 @@ void PERFTerminate(  )
 
     PERFlushAllLogs();
     pthread_key_delete(PERF_tlsTableKey );
-    PAL_free(pal_function_map);
+    free(pal_function_map);
 }
 
 
@@ -376,21 +376,21 @@ BOOL PERFAllocThreadInfo(  )
         memory resources could be exhausted. If this ever becomes a problem, the memory allocated
         per thread should be freed when a thread exits. */
 
-    node = ( pal_thread_list_node * )PAL_malloc(sizeof(pal_thread_list_node));
+    node = ( pal_thread_list_node * )malloc(sizeof(pal_thread_list_node));
     if(node == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    local_info = (pal_perf_thread_info *)PAL_malloc(sizeof(pal_perf_thread_info));
+    local_info = (pal_perf_thread_info *)malloc(sizeof(pal_perf_thread_info));
     if (local_info == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    apiTable = (pal_perf_api_info *)PAL_malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
+    apiTable = (pal_perf_api_info *)malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
     if (apiTable == NULL)
     {
         ret = FALSE;
@@ -411,7 +411,7 @@ BOOL PERFAllocThreadInfo(  )
         apiTable[i].sum_of_square_duration = 0.0;
         if (pal_perf_histogram_size > 0)
         {
-            apiTable[i].histograms = (DWORD *)PAL_malloc(pal_perf_histogram_size*sizeof(DWORD));
+            apiTable[i].histograms = (DWORD *)malloc(pal_perf_histogram_size*sizeof(DWORD));
             if (apiTable[i].histograms == NULL)
             {
                 ret = FALSE;
@@ -425,7 +425,7 @@ BOOL PERFAllocThreadInfo(  )
         }
     }
 
-    log_buf = (char * )PAL_malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
+    log_buf = (char * )malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
 
     if(log_buf == NULL)
     {
@@ -454,11 +454,11 @@ PERFAllocThreadInfoExit:
     {
         if (node != NULL)
         {
-            PAL_free(node);
+            free(node);
         }
         if (local_info != NULL)
         {
-            PAL_free(local_info);
+            free(local_info);
         }
         if (apiTable != NULL)
         {
@@ -466,14 +466,14 @@ PERFAllocThreadInfoExit:
             {
                 if (apiTable[i].histograms != NULL)
                 {
-                    PAL_free(apiTable[i].histograms);
+                    free(apiTable[i].histograms);
                 }
             }
-            PAL_free(apiTable);
+            free(apiTable);
         }
         if (log_buf != NULL)
         {
-            PAL_free(log_buf);
+            free(log_buf);
         }
     }
     return ret;
@@ -554,26 +554,26 @@ PERFlushAllLogs( )
                 PERFUpdateProgramInfo(current->thread_info);
                 if (table1->histograms != NULL)
                 {
-                    PAL_free(table1->histograms);
+                    free(table1->histograms);
                 }
-                PAL_free(table1);
+                free(table1);
             }
             PERFFlushLog(current->thread_info, FALSE);
-            PAL_free(current->thread_info->pal_write_buf);
-            PAL_free(current->thread_info);
+            free(current->thread_info->pal_write_buf);
+            free(current->thread_info);
         }
-        PAL_free(current);
+        free(current);
     }
     PERFWriteCounters(table0);
     if (table0->histograms != NULL)
     {
-        PAL_free(table0->histograms);
+        free(table0->histograms);
     }
-    PAL_free(table0);
+    free(table0);
     PERFFlushLog(node->thread_info, FALSE);
-    PAL_free(node->thread_info->pal_write_buf);
-    PAL_free(node->thread_info);
-    PAL_free(node);
+    free(node->thread_info->pal_write_buf);
+    free(node->thread_info);
+    free(node);
 }
 
 static
@@ -1021,7 +1021,7 @@ PERFLogFunctionEntry(unsigned int pal_api_id, ULONGLONG *pal_perf_start_tick )
     pal_perf_thread_info * local_info=NULL;
     pal_perf_api_info * table;
     char * write_buf;
-    __int32  buf_off;
+    int32_t  buf_off;
     short bufused = 0;
 
 

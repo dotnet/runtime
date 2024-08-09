@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFrameworkForBlazor = "net9.0";
         public const string TargetFrameworkForTasks = "net9.0";
         private const string DefaultEnvironmentLocale = "en-US";
-        protected static readonly char s_unicodeChar = '\u7149';
+        protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected readonly ITestOutputHelper _testOutput;
@@ -239,10 +239,10 @@ namespace Wasm.Build.Tests
 
             TestUtils.AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
 
-            if (s_isWindows && buildArgs.ProjectName.Contains(s_unicodeChar))
+            if (s_isWindows && buildArgs.ProjectName.Contains(s_unicodeChars))
             {
                 // unicode chars in output on Windows are decoded in unknown way, so finding utf8 string is more complicated
-                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
                 TestUtils.AssertMatches(@$"AOT: image '{projectNameCore}\S+' found.", output, contains: buildArgs.AOT);
             }
             else
@@ -517,7 +517,7 @@ namespace Wasm.Build.Tests
 
                 // this will ensure that all the async event handling has completed
                 // and should be called after process.WaitForExit(int)
-                // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
 
                 process.ErrorDataReceived -= logStdErr;
@@ -607,7 +607,7 @@ namespace Wasm.Build.Tests
         protected static string GetSkiaSharpReferenceItems()
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.34\st\*.a"" />";
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
             public class TestClass {

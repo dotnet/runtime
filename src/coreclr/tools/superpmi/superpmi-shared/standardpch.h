@@ -9,6 +9,12 @@
 // itself are probably inappropriate, because if you change them, the entire
 // project will require a recompile. Generally just put SDK style stuff here...
 
+#ifdef _MSC_VER
+#define DEBUG_BREAK __debugbreak()
+#else
+#define DEBUG_BREAK DebugBreak()
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
@@ -50,7 +56,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
 #include <specstrings.h>
@@ -59,21 +64,11 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-// Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
-#ifdef TARGET_UNIX
-#include "clr_std/utility"
-#include "clr_std/string"
-#include "clr_std/algorithm"
-#include "clr_std/vector"
-#else // !TARGET_UNIX
-#ifndef USE_STL
-#define USE_STL
-#endif // USE_STL
 #include <utility>
 #include <string>
 #include <algorithm>
 #include <vector>
-#endif // !TARGET_UNIX
+
 
 #ifdef USE_MSVCDIS
 #define DISLIB
@@ -121,12 +116,8 @@
 #define DEFAULT_REAL_JIT_NAME_A MAKEDLLNAME_A("clrjit2")
 #define DEFAULT_REAL_JIT_NAME_W MAKEDLLNAME_W("clrjit2")
 
-#if !defined(_MSC_VER) && !defined(__llvm__)
-static inline void __debugbreak()
-{
-  DebugBreak();
-}
-#endif
+using std::min;
+using std::max;
 
 #include <minipal/utils.h>
 

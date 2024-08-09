@@ -201,7 +201,6 @@ typedef struct _DISPATCHER_CONTEXT {
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "win64unwind.h"
 #include "daccess.h"
 
@@ -235,7 +234,6 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_X86
-#endif // FEATURE_EH_FUNCLETS
 
 #endif // TARGET_X86
 
@@ -395,8 +393,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        memcpy(&FunctionLength, (void*)(ImageBase + FunctionLength), sizeof(UINT32));
-        FunctionLength &= 0x3ffff;
+        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;

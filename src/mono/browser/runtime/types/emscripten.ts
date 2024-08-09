@@ -26,6 +26,7 @@ export declare interface EmscriptenModule {
     // this should match emcc -s EXPORTED_FUNCTIONS
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
+    _sbrk(size: number): VoidPtr;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
     out(message: string): void;
@@ -39,6 +40,7 @@ export declare interface EmscriptenModule {
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
+    lengthBytesUTF8(str: string): number;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;

@@ -175,7 +175,7 @@ TADDR CrawlFrame::GetAmbientSPFromCrawlFrame()
 #elif defined(TARGET_ARM)
     return GetRegisterSet()->pCurrentContext->Sp;
 #else
-    return NULL;
+    return 0;
 #endif
 }
 
@@ -524,6 +524,12 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
     }
 
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    if (pRD->SSP != 0)
+    {
+        pRD->SSP += 8;
+    }
+#endif // TARGET_AMD64 && TARGET_WINDOWS
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -552,6 +558,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #if !defined(DACCESS_COMPILE)
     UINT_PTR            uImageBase;
     PT_RUNTIME_FUNCTION pFunctionEntry;
+
+#if !defined(TARGET_UNIX) && defined(TARGET_ARM64)
+    // We don't adjust the control PC when we have a code info, as the code info is always created from an unadjusted one
+    // and the debug sanity check below would fail in case when a managed method was represented by multiple
+    // RUNTIME_FUNCTION entries and the control PC and adjusted control PC happened to be represented by different
+    // RUNTIME_FUNCTION entries.
+    if ((pCodeInfo == NULL) && ((pContext->ContextFlags & CONTEXT_UNWOUND_TO_CALL) != 0))
+    {
+        uControlPc -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+    }
+#endif // !TARGET_UNIX && TARGET_ARM64
 
     if (pCodeInfo == NULL)
     {
@@ -592,7 +609,23 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pFunctionEntry)
     {
-        uControlPc = VirtualUnwindNonLeafCallFrame(pContext, pContextPointers, pFunctionEntry, uImageBase);
+    #ifdef HOST_64BIT
+        UINT64              EstablisherFrame;
+    #else  // HOST_64BIT
+        DWORD               EstablisherFrame;
+    #endif // HOST_64BIT
+        PVOID               HandlerData;
+
+        RtlVirtualUnwind(0,
+                         uImageBase,
+                         uControlPc,
+                         pFunctionEntry,
+                         pContext,
+                         &HandlerData,
+                         &EstablisherFrame,
+                         pContextPointers);
+
+        uControlPc = GetIP(pContext);
     }
     else
     {
@@ -658,54 +691,6 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
     SetIP(pContext, uControlPc);
 
 
-    return uControlPc;
-}
-
-// static
-PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CONTEXT_POINTERS* pContextPointers,
-    PT_RUNTIME_FUNCTION pFunctionEntry, UINT_PTR uImageBase)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pContext, NULL_NOT_OK));
-        PRECONDITION(CheckPointer(pContextPointers, NULL_OK));
-        PRECONDITION(CheckPointer(pFunctionEntry, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    PCODE           uControlPc = GetIP(pContext);
-#ifdef HOST_64BIT
-    UINT64              EstablisherFrame;
-#else  // HOST_64BIT
-    DWORD               EstablisherFrame;
-#endif // HOST_64BIT
-    PVOID               HandlerData;
-
-    if (NULL == pFunctionEntry)
-    {
-#ifndef TARGET_UNIX
-        pFunctionEntry  = RtlLookupFunctionEntry(uControlPc,
-                                                 ARM_ONLY((DWORD*))(&uImageBase),
-                                                 NULL);
-#endif
-        if (NULL == pFunctionEntry)
-        {
-            return NULL;
-        }
-    }
-
-    RtlVirtualUnwind(NULL,
-                     uImageBase,
-                     uControlPc,
-                     pFunctionEntry,
-                     pContext,
-                     &HandlerData,
-                     &EstablisherFrame,
-                     pContextPointers);
-
-    uControlPc = GetIP(pContext);
     return uControlPc;
 }
 
@@ -820,7 +805,7 @@ void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32
             DBG_ADDR(GetControlPC(pCF->pRD)),
             DBG_ADDR(GetRegdisplaySP(pCF->pRD)),
             DBG_ADDR(pCF->pFrame),
-            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : NULL)));
+            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : (TADDR)NULL)));
     }
 }
 #endif // _DEBUG
@@ -1158,9 +1143,8 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
 #endif // FEATURE_HIJACK
 
-    // FRAME_TOP and NULL must be distinct values. This assert
-    // will fire if someone changes this.
-    static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+    // FRAME_TOP must not be 0/NULL.
+    static_assert_no_msg(FRAME_TOP_VALUE != 0);
 
     m_frameState = SFITER_UNINITIALIZED;
 
@@ -1454,7 +1438,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isProfilerDoStackSnapshot = !!(this->m_flags & PROFILER_DO_STACK_SNAPSHOT);
     m_crawl.isNoFrameTransition = false;
 
-    m_crawl.taNoFrameTransitionMarker = NULL;
+    m_crawl.taNoFrameTransitionMarker = (TADDR)NULL;
 
 #if defined(FEATURE_EH_FUNCLETS)
     m_crawl.isFilterFunclet       = false;
@@ -1545,6 +1529,69 @@ BOOL StackFrameIterator::IsValid(void)
 
     return TRUE;
 } // StackFrameIterator::IsValid()
+
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+//---------------------------------------------------------------------------------------
+//
+// Advance to the position that the other iterator is currently at.
+//
+void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
+{
+    // We copy the other stack frame iterator over the current one, but we need to
+    // keep a couple of members untouched. So we save them here and restore them
+    // after the copy.
+    ExInfo* pPrevExInfo = GetNextExInfo();
+    REGDISPLAY *pRD = m_crawl.GetRegisterSet();
+    Frame *pStartFrame = m_pStartFrame;
+#ifdef _DEBUG
+    Frame *pRealStartFrame = m_pRealStartFrame;
+#endif
+
+    *this = *pOtherStackFrameIterator;
+
+    m_pNextExInfo = pPrevExInfo;
+    m_crawl.pRD = pRD;
+    m_pStartFrame = pStartFrame;
+#ifdef _DEBUG
+    m_pRealStartFrame = pRealStartFrame;
+#endif
+
+    REGDISPLAY *pOtherRD = pOtherStackFrameIterator->m_crawl.GetRegisterSet();
+    *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
+    SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
+    SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pRD->SSP = pOtherRD->SSP;
+#endif
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
+    if (pRD->IsCallerContextValid)
+    {
+        *pRD->pCallerContextPointers = *pOtherRD->pCallerContextPointers;
+        SetIP(pRD->pCallerContext, GetIP(pOtherRD->pCallerContext));
+        SetSP(pRD->pCallerContext, GetSP(pOtherRD->pCallerContext));
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
+        ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+    }
+    SyncRegDisplayToCurrentContext(pRD);
+}
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //

@@ -22,13 +22,20 @@ namespace Microsoft.NET.Sdk.WebAssembly;
 
 public class GenerateWasmBootJson : Task
 {
-    private static readonly string[] jiterpreterOptions = new[] { "jiterpreter-traces-enabled", "jiterpreter-interp-entry-enabled", "jiterpreter-jit-call-enabled" };
+    private static readonly string[] jiterpreterOptions = [
+        "jiterpreter-traces-enabled",
+        "jiterpreter-interp-entry-enabled",
+        "jiterpreter-jit-call-enabled"
+    ];
 
     [Required]
     public string AssemblyPath { get; set; }
 
     [Required]
     public ITaskItem[] Resources { get; set; }
+
+    [Required]
+    public ITaskItem[] Endpoints { get; set; }
 
     [Required]
     public bool DebugBuild { get; set; }
@@ -73,6 +80,12 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
+    public bool IsAot { get; set; }
+
+    public bool IsMultiThreaded { get; set; }
+
+    public bool FingerprintAssets { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -93,12 +106,12 @@ public class GenerateWasmBootJson : Task
     // Internal for tests
     public void WriteBootJson(Stream output, string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
+            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
         };
 
         if (IsTargeting80OrLater())
@@ -128,7 +141,7 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions;
         }
 
-        bool? jiterpreter = ParseOptionalBool(Jiterpreter);
+        bool? jiterpreter = helper.ParseOptionalBool(Jiterpreter);
         if (jiterpreter != null)
         {
             var runtimeOptions = result.runtimeOptions?.ToHashSet() ?? new HashSet<string>(3);
@@ -161,8 +174,23 @@ public class GenerateWasmBootJson : Task
         //     - ContentHash (e.g., "3448f339acf512448")
         if (Resources != null)
         {
+            var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
+
+            var lazyLoadAssembliesWithoutExtension = (LazyLoadedAssemblies ?? Array.Empty<ITaskItem>()).ToDictionary(l =>
+            {
+                var extension = Path.GetExtension(l.ItemSpec);
+                if (extension == ".dll" || extension == Utils.WebcilInWasmExtension)
+                    return Path.GetFileNameWithoutExtension(l.ItemSpec);
+
+                return l.ItemSpec;
+            });
+
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
             var resourceData = result.resources;
+
+            if (FingerprintAssets)
+                resourceData.fingerprinting = new();
+
             foreach (var resource in Resources)
             {
                 ResourceHashesByNameDictionary resourceList = null;
@@ -172,10 +200,12 @@ public class GenerateWasmBootJson : Task
                 var fileExtension = resource.GetMetadata("Extension");
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
-                var resourceName = Path.GetFileName(resource.GetMetadata("RelativePath"));
+                var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
+                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
 
-                if (TryGetLazyLoadedAssembly(resourceName, out var lazyLoad))
+                if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded assembly.", resource.ItemSpec);
                     remainingLazyLoadAssemblies.Remove(lazyLoad);
                     resourceData.lazyAssembly ??= new ResourceHashesByNameDictionary();
@@ -183,11 +213,12 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as satellite assembly with culture '{1}'.", resource.ItemSpec, assetTraitValue);
                     resourceData.satelliteResources ??= new Dictionary<string, ResourceHashesByNameDictionary>(StringComparer.OrdinalIgnoreCase);
 
                     if (!IsTargeting80OrLater())
-                        resourceName = assetTraitValue + "/" + resourceName;
+                        resourceRoute = assetTraitValue + "/" + resourceRoute;
 
                     if (!resourceData.satelliteResources.TryGetValue(assetTraitValue, out resourceList))
                     {
@@ -197,7 +228,8 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("symbol", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _) || TryGetLazyLoadedAssembly($"{fileName}{Utils.WebcilInWasmExtension}", out _))
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, fileName, out _))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded symbols file.", resource.ItemSpec);
                         resourceData.lazyAssembly ??= new ResourceHashesByNameDictionary();
@@ -205,19 +237,38 @@ public class GenerateWasmBootJson : Task
                     }
                     else
                     {
-                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
-                        resourceData.pdb ??= new ResourceHashesByNameDictionary();
-                        resourceList = resourceData.pdb;
+                        if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core symbols file.", resource.ItemSpec);
+                            resourceData.corePdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.corePdb;
+                        }
+                        else
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
+                            resourceData.pdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.pdb;
+                        }
                     }
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as an app assembly.", resource.ItemSpec);
-                    resourceList = resourceData.assembly;
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
+                    {
+                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core assembly.", resource.ItemSpec);
+                        resourceList = resourceData.coreAssembly;
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as an app assembly.", resource.ItemSpec);
+                        resourceList = resourceData.assembly;
+                    }
                 }
                 else if (string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
 
                     if (IsTargeting80OrLater())
@@ -239,7 +290,7 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
 
-                    var targetPath = resource.GetMetadata("TargetPath");
+                    var targetPath = endpointByAsset[resource.ItemSpec].ItemSpec;
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
 
                     resourceList = resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
@@ -285,7 +336,7 @@ public class GenerateWasmBootJson : Task
                         resourceList = new();
                         resourceData.extensions[extensionName] = resourceList;
                     }
-                    var targetPath = resource.GetMetadata("TargetPath");
+                    var targetPath = endpointByAsset[resource.ItemSpec].ItemSpec;
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
@@ -299,13 +350,13 @@ public class GenerateWasmBootJson : Task
 
                 if (resourceList != null)
                 {
-                    AddResourceToList(resource, resourceList, resourceName);
+                    AddResourceToList(resource, resourceList, resourceRoute);
                 }
 
                 if (!string.IsNullOrEmpty(behavior))
                 {
                     resourceData.runtimeAssets ??= new Dictionary<string, AdditionalAsset>();
-                    AddToAdditionalResources(resource, resourceData.runtimeAssets, resourceName, behavior);
+                    AddToAdditionalResources(resource, resourceData.runtimeAssets, resourceRoute, behavior);
                 }
             }
 
@@ -332,16 +383,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            int? debugLevel = ParseOptionalInt(DebugLevel);
-
-            // If user didn't give us a value, check if we have any PDB.
-            if (debugLevel == null && result.resources?.pdb?.Count > 0)
-                debugLevel = -1;
-
-            // Fallback to -1 for build, or 0 for publish
-            debugLevel ??= IsPublish ? 0 : -1;
-
-            result.debugLevel = debugLevel.Value;
+            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -389,10 +431,18 @@ public class GenerateWasmBootJson : Task
         {
             if (!resourceList.ContainsKey(resourceKey))
             {
-                Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the manifest.", resource.ItemSpec);
-                resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
+                Log.LogMessage(MessageImportance.Low, "Added resource '{0}' with key '{1}' to the manifest.", resource.ItemSpec, resourceKey);
+                resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("Integrity")}");
             }
         }
+    }
+
+    private void MapFingerprintedAsset(ResourcesData resources, string resourceRoute, string resourceName)
+    {
+        if (!FingerprintAssets || !IsTargeting90OrLater())
+            return;
+
+        resources.fingerprinting[resourceRoute] = resourceName;
     }
 
     private GlobalizationMode GetGlobalizationMode()
@@ -409,22 +459,6 @@ public class GenerateWasmBootJson : Task
         return GlobalizationMode.Sharded;
     }
 
-    private static bool? ParseOptionalBool(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
-            return null;
-
-        return boolValue;
-    }
-
-    private static int? ParseOptionalInt(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
-            return null;
-
-        return intValue;
-    }
-
     private void AddToAdditionalResources(ITaskItem resource, Dictionary<string, AdditionalAsset> additionalResources, string resourceName, string behavior)
     {
         if (!additionalResources.ContainsKey(resourceName))
@@ -438,15 +472,26 @@ public class GenerateWasmBootJson : Task
         }
     }
 
-    private bool TryGetLazyLoadedAssembly(string fileName, out ITaskItem lazyLoadedAssembly)
+    private static bool TryGetLazyLoadedAssembly(Dictionary<string, ITaskItem> lazyLoadAssembliesNoExtension, string fileName, out ITaskItem lazyLoadedAssembly)
     {
-        return (lazyLoadedAssembly = LazyLoadedAssemblies?.SingleOrDefault(a => a.ItemSpec == fileName)) != null;
+        var extension = Path.GetExtension(fileName);
+        if (extension == ".dll" || extension == Utils.WebcilInWasmExtension)
+            fileName = Path.GetFileNameWithoutExtension(fileName);
+
+        return lazyLoadAssembliesNoExtension.TryGetValue(fileName, out lazyLoadedAssembly);
     }
 
     private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
+    private static readonly Version version90 = new Version(9, 0);
 
     private bool IsTargeting80OrLater()
+        => IsTargetingVersionOrLater(version80);
+
+    private bool IsTargeting90OrLater()
+        => IsTargetingVersionOrLater(version90);
+
+    private bool IsTargetingVersionOrLater(Version version)
     {
         if (parsedTargetFrameworkVersion == null)
         {
@@ -457,6 +502,6 @@ public class GenerateWasmBootJson : Task
             parsedTargetFrameworkVersion = Version.Parse(tfv);
         }
 
-        return parsedTargetFrameworkVersion >= version80;
+        return parsedTargetFrameworkVersion >= version;
     }
 }

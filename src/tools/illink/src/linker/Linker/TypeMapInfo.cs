@@ -66,7 +66,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
-		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
+		public List<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
 			override_methods.TryGetValue (method, out List<OverrideInformation>? overrides);
@@ -116,16 +116,63 @@ namespace Mono.Linker
 			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, interfaceImplementor));
 		}
 
+		Dictionary<TypeDefinition, List<(TypeReference, List<InterfaceImplementation>)>> interfaces = new ();
 		protected virtual void MapType (TypeDefinition type)
 		{
 			MapVirtualMethods (type);
 			MapInterfaceMethodsInTypeHierarchy (type);
+			interfaces[type] = GetRecursiveInterfaceImplementations (type);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (var nested in type.NestedTypes)
 				MapType (nested);
+		}
+
+		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
+		{
+			EnsureProcessed(type.Module.Assembly);
+			if (interfaces.TryGetValue (type, out var value))
+				return value;
+			return null;
+		}
+
+		List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)> GetRecursiveInterfaceImplementations (TypeDefinition type)
+		{
+			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
+
+			AddRecursiveInterfaces (type, [], firstImplementationChain, context);
+			Debug.Assert (firstImplementationChain.All (kvp => context.Resolve (kvp.Item1) == context.Resolve (kvp.Item2.Last ().InterfaceType)));
+
+			return firstImplementationChain;
+
+			static void AddRecursiveInterfaces (TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
+			{
+				var type = Context.TryResolve (typeRef);
+				if (type is null)
+					return;
+				// Get all explicit interfaces of this type
+				foreach (var iface in type.Interfaces) {
+					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (interfaceType is null) {
+						continue;
+					}
+					if (!firstImplementationChain.Any (i => TypeReferenceEqualityComparer.AreEqual (i.Item1, interfaceType, Context))) {
+						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
+					}
+				}
+
+				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
+				foreach (var iface in type.Interfaces) {
+					// If we can't resolve the interface type we can't find recursive interfaces
+					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					if (ifaceDirectlyOnType is null) {
+						continue;
+					}
+					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
+				}
+			}
 		}
 
 		void MapInterfaceMethodsInTypeHierarchy (TypeDefinition type)

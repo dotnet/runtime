@@ -6,6 +6,8 @@
          the same way as eng/native/functions.cmake strip_symbols
     -->
     <StripSymbols>false</StripSymbols>
+    <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
   </PropertyGroup>
 
   <!-- set the shared library name.  this helps the native linker correctly reference this shared
@@ -31,5 +33,10 @@
   <ItemGroup>
     <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
     <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler" Version="$(MicrosoftDotNetILCompilerVersion)" />
   </ItemGroup>
 </Project>

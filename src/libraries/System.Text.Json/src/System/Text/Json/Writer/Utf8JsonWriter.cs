@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if !NETCOREAPP
+#if !NET
 using System.Runtime.InteropServices;
 #endif
 
@@ -34,9 +34,6 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public sealed partial class Utf8JsonWriter : IDisposable, IAsyncDisposable
     {
-        // Depending on OS, either '\r\n' OR '\n'
-        private static readonly int s_newLineLength = Environment.NewLine.Length;
-
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
 
@@ -61,6 +58,9 @@ namespace System.Text.Json
         // Cache indentation settings from JsonWriterOptions to avoid recomputing them in the hot path.
         private byte _indentByte;
         private int _indentLength;
+
+        // A length of 1 will emit LF for indented writes, a length of 2 will emit CRLF. Other values are invalid.
+        private int _newLineLength;
 
         /// <summary>
         /// Returns the amount of bytes written by the <see cref="Utf8JsonWriter"/> so far
@@ -150,6 +150,9 @@ namespace System.Text.Json
             _options = options;
             _indentByte = (byte)_options.IndentCharacter;
             _indentLength = options.IndentSize;
+
+            Debug.Assert(options.NewLine is "\n" or "\r\n", "Invalid NewLine string.");
+            _newLineLength = options.NewLine.Length;
 
             if (_options.MaxDepth == 0)
             {
@@ -306,7 +309,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if NETCOREAPP
+#if NET
                     _stream.Write(_arrayBufferWriter.WrittenSpan);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
@@ -420,7 +423,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if NETCOREAPP
+#if NET
                     await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
@@ -1023,8 +1026,9 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteNewLine(Span<byte> output)
         {
-            // Write '\r\n' OR '\n', depending on OS
-            if (s_newLineLength == 2)
+            // Write '\r\n' OR '\n', depending on the configured new line string
+            Debug.Assert(_newLineLength is 1 or 2, "Invalid new line length.");
+            if (_newLineLength == 2)
             {
                 output[BytesPending++] = JsonConstants.CarriageReturn;
             }

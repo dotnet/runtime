@@ -554,9 +554,9 @@ enum DispatchCallSimpleFlags
         DWORD   __dwDispatchCallSimpleFlags = 0;            \
 
 #define PREPARE_NONVIRTUAL_CALLSITE(id) \
-        static PCODE s_pAddr##id = NULL;                    \
+        static PCODE s_pAddr##id = 0;                       \
         PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
-        if ( __pSlot == NULL )                              \
+        if ( __pSlot == 0 )                                 \
         {                                                   \
             MethodDesc *pMeth = CoreLibBinder::GetMethod(id);   \
             _ASSERTE(pMeth);                                \

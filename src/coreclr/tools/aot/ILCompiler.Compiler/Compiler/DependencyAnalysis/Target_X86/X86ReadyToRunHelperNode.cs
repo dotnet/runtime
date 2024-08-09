@@ -19,30 +19,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.VirtualCall:
-                    {
-                        MethodDesc targetMethod = (MethodDesc)Target;
-
-                        Debug.Assert(!targetMethod.OwningType.IsInterface);
-                        Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
-
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int32);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
-                        int pointerSize = factory.Target.PointerSize;
-
-                        int slot = 0;
-                        if (!relocsOnly)
-                        {
-                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                            Debug.Assert(slot != -1);
-                        }
-
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int32);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;

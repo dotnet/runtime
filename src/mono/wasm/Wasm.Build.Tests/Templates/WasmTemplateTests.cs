@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -20,7 +22,25 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private void UpdateProgramCS()
+        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue)
+        {
+            string newContent = oldContent.Replace(oldValue, newValue);
+            if (oldValue != newValue && oldContent == newContent)
+                throw new XunitException($"Replacing '{oldValue}' with '{newValue}' did not change the content '{oldContent}'");
+
+            return newContent;
+        }
+
+        private void UpdateBrowserProgramCs()
+        {
+            var path = Path.Combine(_projectDir!, "Program.cs");
+            string text = File.ReadAllText(path);
+            text = StringReplaceWithAssert(text, "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)");
+            text = StringReplaceWithAssert(text, "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample");
+            File.WriteAllText(path, text);
+        }
+
+        private void UpdateConsoleProgramCs()
         {
             string programText = """
             Console.WriteLine("Hello, Console!");
@@ -30,25 +50,36 @@ namespace Wasm.Build.Tests
             """;
             var path = Path.Combine(_projectDir!, "Program.cs");
             string text = File.ReadAllText(path);
-            text = text.Replace(@"Console.WriteLine(""Hello, Console!"");", programText);
-            text = text.Replace("return 0;", "return 42;");
+            text = StringReplaceWithAssert(text, @"Console.WriteLine(""Hello, Console!"");", programText);
+            text = StringReplaceWithAssert(text, "return 0;", "return 42;");
             File.WriteAllText(path, text);
         }
 
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            base.UpdateBrowserMainJs((mainJsContent) => {
-                // .withExitOnUnhandledError() is available only only >net7.0
-                mainJsContent = mainJsContent.Replace(".create()",
+            base.UpdateBrowserMainJs(
+                (mainJsContent) =>
+                {
+                    // .withExitOnUnhandledError() is available only only >net7.0
+                    mainJsContent = StringReplaceWithAssert(
+                        mainJsContent,
+                        ".create()",
                         (targetFramework == "net8.0" || targetFramework == "net9.0")
                             ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    );
 
-                mainJsContent = mainJsContent.Replace("runMain()", "dotnet.run()");
-                mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+                    // dotnet.run() is already used in <= net8.0
+                    if (targetFramework != "net8.0")
+                        mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
 
-                return mainJsContent;
-            }, targetFramework, runtimeAssetsRelativePath);
+                    mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
+
+                    return mainJsContent;
+                },
+                targetFramework,
+                runtimeAssetsRelativePath
+            );
         }
 
         private void UpdateConsoleMainJs()
@@ -56,8 +87,7 @@ namespace Wasm.Build.Tests
             string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent
-                .Replace(".create()", ".withConsoleForwarding().create()");
+            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", ".withConsoleForwarding().create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
@@ -73,13 +103,12 @@ namespace Wasm.Build.Tests
                 js.Append($".withEnvironmentVariable(\"{variable.key}\", \"{variable.value}\")");
             }
 
-            mainJsContent = mainJsContent
-                .Replace(".create()", js.ToString() + ".create()");
+            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", js.ToString() + ".create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
@@ -88,18 +117,19 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
+            UpdateBrowserProgramCs();
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
 
-            AddItemsPropertiesToProject(projectFile, 
+            AddItemsPropertiesToProject(projectFile,
                 atTheEnd:
                     """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
-                    <ItemGroup>
-                        <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
-                    </ItemGroup>
-                    <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
+                        <ItemGroup>
+                            <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
+                        </ItemGroup>
+                        <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
                     </Target>
                     """
             );
@@ -212,7 +242,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
@@ -265,7 +295,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
@@ -277,6 +307,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
 
+            UpdateBrowserProgramCs();
             UpdateBrowserMainJs(DefaultTargetFramework);
 
             if (!string.IsNullOrEmpty(extraProperties))
@@ -310,7 +341,7 @@ namespace Wasm.Build.Tests
             string id = $"console_{config}_{GetRandomId()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             if (!string.IsNullOrEmpty(extraProperties))
@@ -355,13 +386,7 @@ namespace Wasm.Build.Tests
             data.Add("Debug", false, false);
             data.Add("Debug", false, true);
             data.Add("Release", false, false); // Release relinks by default
-
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
-            if (!OperatingSystem.IsWindows())
-            {
-                data.Add("Debug", true, false);
-                data.Add("Release", true, false);
-            }
+            data.Add("Release", true, false);
 
             return data;
         }
@@ -374,7 +399,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             if (aot)
@@ -423,18 +448,29 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
+        public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
+        {
+            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+
+            if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+
+            // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
+            // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
+            // yield return new object?[] { "-f net8.0", "net8.0", "./" };
+        }
+
         [Theory]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
-        // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
-        // [InlineData("-f net8.0", "net8.0", "./")]
+        [MemberData(nameof(BrowserBuildAndRunTestData))]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
+
+            if (targetFramework != "net8.0")
+                UpdateBrowserProgramCs();
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
@@ -518,7 +554,7 @@ namespace Wasm.Build.Tests
             string projectDirectory = Path.GetDirectoryName(projectFile)!;
             bool aot = true;
 
-            UpdateProgramCS();
+            UpdateConsoleProgramCs();
             UpdateConsoleMainJs();
 
             string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
@@ -563,11 +599,12 @@ namespace Wasm.Build.Tests
                 Assert.False(Directory.Exists(strippedAssemblyDir), $"Expected {strippedAssemblyDir} to not exist");
 
             string assemblyToExamine = "System.Private.CoreLib.dll";
+            string assemblyToExamineWithoutExtension = Path.GetFileNameWithoutExtension(assemblyToExamine);
             string originalAssembly = Path.Combine(objBuildDir, origAssemblyDir, assemblyToExamine);
             string strippedAssembly = Path.Combine(objBuildDir, strippedAssemblyDir, assemblyToExamine);
-            string bundledAssembly = Path.Combine(frameworkDir, Path.ChangeExtension(assemblyToExamine, ProjectProviderBase.WasmAssemblyExtension));
+            string? bundledAssembly = Directory.EnumerateFiles(frameworkDir, $"*{ProjectProviderBase.WasmAssemblyExtension}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(assemblyToExamineWithoutExtension));
             Assert.True(File.Exists(originalAssembly), $"Expected {nameof(originalAssembly)} {originalAssembly} to exist");
-            Assert.True(File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
+            Assert.True(bundledAssembly != null && File.Exists(bundledAssembly), $"Expected {nameof(bundledAssembly)} {bundledAssembly} to exist");
             if (expectILStripping)
                 Assert.True(File.Exists(strippedAssembly), $"Expected {nameof(strippedAssembly)} {strippedAssembly} to exist");
             else
@@ -623,8 +660,8 @@ namespace Wasm.Build.Tests
 
             void AssertFile(string suffix)
             {
-                var fileName = $"{id}{suffix}";
-                Assert.True(copyOutputSymbolsToPublishDirectory == File.Exists(Path.Combine(publishFrameworkPath, fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
+                var fileName = Directory.EnumerateFiles(publishFrameworkPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(id));
+                Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
     }

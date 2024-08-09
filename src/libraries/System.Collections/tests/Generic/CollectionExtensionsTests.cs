@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -138,6 +139,68 @@ namespace System.Collections.Tests
         {
             IDictionary<string, string> dictionary = null;
             Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.AsReadOnly());
+        }
+
+        [Fact]
+        public void Dictionary_NotCorruptedByThrowingComparer()
+        {
+            Dictionary<string, string> dict = new(new CreateThrowsComparer());
+
+            Assert.Equal(0, dict.Count);
+
+            Assert.Throws<FormatException>(() => dict.GetAlternateLookup<ReadOnlySpan<char>>().TryAdd("123".AsSpan(), "123"));
+            Assert.Equal(0, dict.Count);
+
+            dict.Add("123", "123");
+            Assert.Equal(1, dict.Count);
+        }
+
+        [Fact]
+        public void Dictionary_NotCorruptedByNullReturningComparer()
+        {
+            Dictionary<string, string> dict = new(new NullReturningComparer());
+
+            Assert.Equal(0, dict.Count);
+
+            Assert.ThrowsAny<ArgumentException>(() => dict.GetAlternateLookup<ReadOnlySpan<char>>().TryAdd("123".AsSpan(), "123"));
+            Assert.Equal(0, dict.Count);
+
+            dict.Add("123", "123");
+            Assert.Equal(1, dict.Count);
+        }
+
+        [Fact]
+        public void HashSet_NotCorruptedByThrowingComparer()
+        {
+            HashSet<string> set = new(new CreateThrowsComparer());
+
+            Assert.Equal(0, set.Count);
+
+            Assert.Throws<FormatException>(() => set.GetAlternateLookup<ReadOnlySpan<char>>().Add("123".AsSpan()));
+            Assert.Equal(0, set.Count);
+
+            set.Add("123");
+            Assert.Equal(1, set.Count);
+        }
+
+        private sealed class CreateThrowsComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+        {
+            public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);
+            public int GetHashCode(string obj) => EqualityComparer<string>.Default.GetHashCode(obj);
+
+            public bool Equals(ReadOnlySpan<char> span, string target) => span.SequenceEqual(target);
+            public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+            public string Create(ReadOnlySpan<char> span) => throw new FormatException();
+        }
+
+        private sealed class NullReturningComparer : IEqualityComparer<string>, IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+        {
+            public bool Equals(string? x, string? y) => EqualityComparer<string>.Default.Equals(x, y);
+            public int GetHashCode(string obj) => EqualityComparer<string>.Default.GetHashCode(obj);
+
+            public bool Equals(ReadOnlySpan<char> span, string target) => span.SequenceEqual(target);
+            public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+            public string Create(ReadOnlySpan<char> span) => null!;
         }
     }
 }

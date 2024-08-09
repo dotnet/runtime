@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var message = "Request received";
             var expectedMessage = AnsiParser.GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
                 + message
-                + "\x1B[39m\x1B[22m"; //resets foreground color
+                + "\e[39m\e[22m"; //resets foreground color
             var textWriter = new StringWriter();
 
             // Act
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var message = "Request received";
             var expectedMessage = AnsiParser.GetBackgroundColorEscapeCode(ConsoleColor.Red)
                 + message
-                + "\x1B[49m"; //resets background color
+                + "\e[49m"; //resets background color
             var textWriter = new StringWriter();
 
             // Act
@@ -51,8 +51,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var expectedMessage = AnsiParser.GetBackgroundColorEscapeCode(ConsoleColor.Red)
                 + AnsiParser.GetForegroundColorEscapeCode(ConsoleColor.DarkGreen)
                 + "Request received"
-                + "\x1B[39m\x1B[22m" //resets foreground color
-                + "\x1B[49m"; //resets background color
+                + "\e[39m\e[22m" //resets foreground color
+                + "\e[49m"; //resets background color
             var textWriter = new StringWriter();
 
             // Act

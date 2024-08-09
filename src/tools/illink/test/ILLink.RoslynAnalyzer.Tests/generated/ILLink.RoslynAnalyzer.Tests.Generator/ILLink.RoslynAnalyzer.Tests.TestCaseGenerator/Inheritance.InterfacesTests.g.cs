@@ -34,6 +34,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 		}
 
 		[Fact]
+		public Task InterfaceVariantsGeneric ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task InterfaceWithoutNewSlot ()
 		{
 			return RunTest (allowMissingWarnings: true);

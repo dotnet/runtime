@@ -1,9 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -78,5 +78,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(formattedSuccessfully && charsWritten == FormatLength);
             writer.WritePropertyName(buffer);
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String, Format = "date" };
     }
 }

@@ -22,7 +22,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output = output;
         }
 
-        private Random _rand = new Random(unchecked((int)DateTime.Now.Ticks));
+        private Random _rand = new Random(12345678);
 
         #region private const string xmlDocTemplate = ...
 

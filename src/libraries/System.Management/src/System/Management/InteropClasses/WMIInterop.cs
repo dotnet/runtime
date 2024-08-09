@@ -366,7 +366,7 @@ namespace System.Management
     internal sealed class IWbemQualifierSetFreeThreaded : IDisposable
     {
         private static readonly string name = typeof(IWbemQualifierSetFreeThreaded).FullName;
-        public static Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
+        public static readonly Guid IID_IWbemClassObject = new Guid("DC12A681-737F-11CF-884D-00AA004B2E24");
 
         private IntPtr pWbemQualifierSet = IntPtr.Zero;
         public IWbemQualifierSetFreeThreaded(IntPtr pWbemQualifierSet)

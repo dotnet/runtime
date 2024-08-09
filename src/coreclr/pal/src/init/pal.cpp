@@ -76,15 +76,10 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(__sun)
+#include <procfs.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -1170,7 +1165,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         length+=3;
         length+=strlen(argv[i])*2;
     }
-    command_line = reinterpret_cast<LPSTR>(InternalMalloc(length));
+    command_line = reinterpret_cast<LPSTR>(malloc(length != 0 ? length : 1));
 
     if(!command_line)
     {
@@ -1222,7 +1217,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         return nullptr;
     }
 
-    retval = reinterpret_cast<LPWSTR>(InternalMalloc((sizeof(WCHAR)*i)));
+    retval = reinterpret_cast<LPWSTR>(malloc((sizeof(WCHAR)*i)));
     if(retval == nullptr)
     {
         ERROR("can't allocate memory for Unicode command line!\n");
@@ -1278,7 +1273,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
         return nullptr;
     }
 
-    return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
+    return_value = reinterpret_cast<LPWSTR>(malloc((return_size*sizeof(WCHAR))));
     if (nullptr == return_value)
     {
         ERROR("Not enough memory to create full path\n");

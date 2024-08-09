@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- The test has a static field of unresolvable type on the class that defines Main() and native AOT makes Main() uncallable -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

@@ -71,7 +71,7 @@ public:
     }
 
     // Return the file position offset of the current method context.
-    __int64 CurrentPos()
+    int64_t CurrentPos()
     {
         return m_pos.QuadPart;
     }

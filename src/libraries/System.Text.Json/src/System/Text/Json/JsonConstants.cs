@@ -28,6 +28,9 @@ namespace System.Text.Json
         public const byte UtcOffsetToken = (byte)'Z';
         public const byte TimePrefix = (byte)'T';
 
+        public const string NewLineLineFeed = "\n";
+        public const string NewLineCarriageReturnLineFeed = "\r\n";
+
         // \u2028 and \u2029 are considered respectively line and paragraph separators
         // UTF-8 representation for them is E2, 80, A8/A9
         public const byte StartingByteOfNonStandardSeparator = 0xE2;
@@ -62,7 +65,7 @@ namespace System.Text.Json
 
         // When transcoding from UTF8 -> UTF16, the byte count threshold where we rent from the array pool before performing a normal alloc.
         public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc =
-#if NET6_0_OR_GREATER
+#if NET
             1024 * 1024 * 1024; // ArrayPool limit increased in .NET 6
 #else
             1024 * 1024;

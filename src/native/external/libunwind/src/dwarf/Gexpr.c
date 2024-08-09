@@ -122,7 +122,7 @@ sword (unw_addr_space_t as UNUSED, unw_word_t val)
     }
 }
 
-static inline unw_word_t
+static inline int
 read_operand (unw_addr_space_t as, unw_accessors_t *a,
               unw_word_t *addr, int operand_type, unw_word_t *val, void *arg)
 {
@@ -169,7 +169,7 @@ read_operand (unw_addr_space_t as, unw_accessors_t *a,
       ret = dwarf_readu64 (as, a, addr, &u64, arg);
       if (ret < 0)
         return ret;
-      *val = u64;
+      *val = (unw_word_t) u64;
       break;
 
     case ULEB128:
@@ -366,7 +366,7 @@ if (stackerror)                                 \
           Debug (15, "OP_bregx(r%d,0x%lx)\n",
                  (int) operand1, (unsigned long) operand2);
           if ((ret = unw_get_reg (dwarf_to_cursor (c),
-                                  dwarf_to_unw_regnum (operand1), &tmp1)) < 0)
+                                  dwarf_to_unw_regnum ((int) operand1), &tmp1)) < 0)
             return ret;
           push (tmp1 + operand2);
           break;
@@ -475,7 +475,7 @@ if (stackerror)                                 \
             case 8:
               if ((ret = dwarf_readu64 (as, a, &tmp1, &u64, arg)) < 0)
                 return ret;
-              tmp2 = u64;
+              tmp2 = (unw_word_t) u64;
               if (operand1 != 8)
                 {
                   if (dwarf_is_big_endian (as))

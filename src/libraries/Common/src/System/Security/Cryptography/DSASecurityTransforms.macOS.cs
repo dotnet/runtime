@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
+            internal static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
             {
                 AsnWriter keyWriter;
                 bool hasPrivateKey;

@@ -22,4 +22,9 @@ namespace System.Text.Json.Serialization.Tests
     {
         public JsonCreationHandlingTests_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
+
+    public sealed class JsonCreationHandlingTests_Pipe : JsonCreationHandlingTests
+    {
+        public JsonCreationHandlingTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
 }

@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
@@ -2278,28 +2276,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> CreateAlignmentMaskVector128<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2314,28 +2312,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> CreateAlignmentMaskVector256<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2350,28 +2348,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> CreateAlignmentMaskVector512<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(AlignmentByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(AlignmentUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(AlignmentUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
@@ -2386,28 +2384,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> CreateRemainderMaskVector128<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64) + 48); // last 16 bytes in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32) + 24); // last 8 shorts in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16) + 12); // last 4 ints in the row
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
@@ -2422,28 +2420,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<T> CreateRemainderMaskVector256<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64) + 32); // last 32 bytes in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32) + 16); // last 16 shorts in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16) + 8); // last 8 ints in the row
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
@@ -2458,28 +2456,28 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<T> CreateRemainderMaskVector512<T>(int count)
         {
-            if (Unsafe.SizeOf<T>() == 1)
+            if (sizeof(T) == 1)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(RemainderByteMask_64x65)),
                     (uint)(count * 64));
             }
 
-            if (Unsafe.SizeOf<T>() == 2)
+            if (sizeof(T) == 2)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ushort, T>(ref MemoryMarshal.GetReference(RemainderUInt16Mask_32x33)),
                     (uint)(count * 32));
             }
 
-            if (Unsafe.SizeOf<T>() == 4)
+            if (sizeof(T) == 4)
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<uint, T>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x17)),
                     (uint)(count * 16));
             }
 
-            Debug.Assert(Unsafe.SizeOf<T>() == 8);
+            Debug.Assert(sizeof(T) == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),

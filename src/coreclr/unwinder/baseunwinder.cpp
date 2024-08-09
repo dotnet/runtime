@@ -28,7 +28,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
                                           _Out_ PDWORD64 pdwBase)
 {
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
-    return ((*pdwBase == NULL) ? E_FAIL : S_OK);
+    return ((*pdwBase == 0) ? E_FAIL : S_OK);
 }
 
 //---------------------------------------------------------------------------------------

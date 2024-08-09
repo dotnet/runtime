@@ -51,7 +51,7 @@ using System.Threading;
 namespace System
 {
     [StackTraceHidden]
-    internal static class ThrowHelper
+    internal static partial class ThrowHelper
     {
         [DoesNotReturn]
         internal static void ThrowArithmeticException(string message)
@@ -72,15 +72,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArrayTypeMismatchException_CantAssignType()
+        internal static void ThrowArgumentException()
         {
-            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidCastException_DownCastArrayElement()
-        {
-            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+            throw new ArgumentException();
         }
 
         [DoesNotReturn]
@@ -99,6 +93,30 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException()
         {
             throw new ArgumentOutOfRangeException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNotImplementedException()
+        {
+            throw new NotImplementedException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowPlatformNotSupportedException()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowTypeNotSupportedException()
+        {
+            throw new NotSupportedException(SR.Arg_TypeNotSupported);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowVerificationException(int ilOffset)
+        {
+            throw new System.Security.VerificationException();
         }
 
         [DoesNotReturn]
@@ -780,8 +798,6 @@ namespace System
                 ThrowArgumentNullException(argName);
         }
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()
             where TVector : ISimdVector<TVector, T>
@@ -1064,6 +1080,8 @@ namespace System
                     return "divisor";
                 case ExceptionArgument.factor:
                     return "factor";
+                case ExceptionArgument.set:
+                    return "set";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1244,6 +1262,8 @@ namespace System
                     return SR.Format_ExpectedAsciiDigit;
                 case ExceptionResource.Argument_HasToBeArrayClass:
                     return SR.Argument_HasToBeArrayClass;
+                case ExceptionResource.InvalidOperation_IncompatibleComparer:
+                    return SR.InvalidOperation_IncompatibleComparer;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1354,6 +1374,7 @@ namespace System
         arrayType,
         divisor,
         factor,
+        set,
     }
 
     //
@@ -1440,5 +1461,6 @@ namespace System
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
+        InvalidOperation_IncompatibleComparer,
     }
 }

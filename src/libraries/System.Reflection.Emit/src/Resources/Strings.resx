@@ -297,4 +297,10 @@
   <data name="NotSupported_SymbolMethod" xml:space="preserve">
     <value>Not supported in an array method of a type definition that is not complete.</value>
   </data>
+  <data name="InvalidOperation_InvalidDocument" xml:space="preserve">
+    <value>Invalid source document.</value>
+  </data>
+  <data name="InvalidOperation_UnmatchingSymScope" xml:space="preserve">
+    <value>Unmatching symbol scope.</value>
+  </data>
 </root>

@@ -72,7 +72,6 @@ typedef int T_CONTEXT;
 #include <dirent.h>
 #include <fcntl.h>
 #include <dlfcn.h>
-#include <cxxabi.h>
 #ifdef __APPLE__
 #include <ELF.h>
 #else
@@ -150,6 +149,9 @@ extern MINIDUMP_TYPE GetMiniDumpType(DumpType dumpType);
 
 #ifdef HOST_WINDOWS
 extern std::string GetLastErrorString();
+extern DWORD GetTempPathWrapper(IN DWORD nBufferLength, OUT LPSTR lpBuffer);
+#else
+#define GetTempPathWrapper GetTempPathA
 #endif
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);

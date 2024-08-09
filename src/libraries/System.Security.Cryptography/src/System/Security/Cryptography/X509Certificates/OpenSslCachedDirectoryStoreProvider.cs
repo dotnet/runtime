@@ -46,6 +46,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     _storeDirectoryInfo.Refresh();
                     DirectoryInfo info = _storeDirectoryInfo;
+                    ret = _nativeCollection;
+                    elapsed = _recheckStopwatch.Elapsed;
 
                     if (ret == null ||
                         _forceRefresh ||

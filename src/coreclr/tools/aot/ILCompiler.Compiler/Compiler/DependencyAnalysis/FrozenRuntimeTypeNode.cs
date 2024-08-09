@@ -16,13 +16,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public FrozenRuntimeTypeNode(TypeDesc type, bool constructed)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
             _type = type;
             _constructed = constructed;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_"u8).Append(nameMangler.GetMangledTypeName(_type));
         }
 
         protected override int ContentSize => ObjectType.InstanceByteCount.AsInt;

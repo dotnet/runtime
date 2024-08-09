@@ -1,7 +1,9 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <ItemGroup>
+  <!-- These tests need to be rewritten to use source generator: https://github.com/dotnet/runtime/issues/53437,
+       so conditioning on RunNativeAotTestApps -->
+  <ItemGroup Condition="'$(RunNativeAotTestApps)' != 'true'">
     <TestConsoleAppSourceFiles Include="Collections\Array.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>

@@ -6,6 +6,12 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
+    <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
+    <XunitShowProgress>true</XunitShowProgress>
+    <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="BinaryReader\BinaryReaderTests.cs" />

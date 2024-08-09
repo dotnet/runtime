@@ -220,6 +220,12 @@ endfunction(convert_to_absolute_path)
 function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
+  get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
+
+  foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
+    list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
+  endforeach()
+
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
@@ -372,7 +378,11 @@ endfunction()
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_TARGET_APPLE)
-      set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      if (CLR_CMAKE_APPLE_DSYM)
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dSYM)
+      else ()
+        set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
+      endif ()
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
     endif ()
@@ -419,7 +429,9 @@ function(strip_symbols targetName outputFilename)
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
-      set(DSYMUTIL_OPTS "--flat")
+      if (NOT CLR_CMAKE_APPLE_DSYM)
+        set(DSYMUTIL_OPTS "--flat")
+      endif ()
       if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
         list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
@@ -496,7 +508,7 @@ function(install_static_library targetName destination component)
   if (WIN32)
     set_target_properties(${targetName} PROPERTIES
         COMPILE_PDB_NAME "${targetName}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${targetName}>"
     )
     install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()

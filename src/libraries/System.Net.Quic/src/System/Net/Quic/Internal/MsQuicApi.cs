@@ -54,7 +54,7 @@ internal sealed unsafe partial class MsQuicApi
     private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
     internal static MsQuicApi Api => _api.Value;
 
-    internal static Version? Version { get; private set; }
+    internal static Version? Version { get; }
 
     internal static bool IsQuicSupported { get; }
 
@@ -62,7 +62,7 @@ internal sealed unsafe partial class MsQuicApi
     internal static string? NotSupportedReason { get; }
 
     // workaround for https://github.com/microsoft/msquic/issues/4132
-    internal static bool SupportsAsyncCertValidation => Version >= new Version(2, 4, 0);
+    internal static bool SupportsAsyncCertValidation => Version >= new Version(2, 3, 5);
 
     internal static bool UsesSChannelBackend { get; }
 

@@ -392,7 +392,7 @@ void CrstBase::PreEnter()
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     // Are we in the shutdown sequence and in phase 2 of it?
-    if (g_fProcessDetach && (g_fEEShutDown & ShutDown_Phase2))
+    if (IsAtProcessExit() && (g_fEEShutDown & ShutDown_Phase2))
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to take a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");
@@ -569,7 +569,7 @@ void CrstBase::PreLeave()
     }
 
     // Are we in the shutdown sequence and in phase 2 of it?
-    if (g_fProcessDetach && (g_fEEShutDown & ShutDown_Phase2))
+    if (IsAtProcessExit() && (g_fEEShutDown & ShutDown_Phase2))
     {
         // Ensure that this lock has been flagged to be taken during shutdown
         _ASSERTE_MSG(CanBeTakenDuringShutdown(), "Attempting to leave a lock at shutdown that is not CRST_TAKEN_DURING_SHUTDOWN");

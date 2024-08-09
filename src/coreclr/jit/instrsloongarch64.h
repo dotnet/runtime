@@ -11,7 +11,7 @@
  *   mask        -- instruction's mask
  *   fmt         -- disasmbly format
  *
-******************************************************************************/
+ ******************************************************************************/
 
 #if !defined(TARGET_LOONGARCH64)
 #error Unexpected target type

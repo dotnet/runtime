@@ -234,7 +234,8 @@ namespace System.IO.Tests
             output.Write(" {0} ", "Friday");
             output.Write(" {0}{1} ", "Saturday", "Sunday");
             output.Write(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
-            output.Write(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            output.Write(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+            output.Write(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
             output.WriteLine();
             output.WriteLine(true);
             output.WriteLine('a');
@@ -256,7 +257,8 @@ namespace System.IO.Tests
             output.WriteLine(" {0} ", "Friday");
             output.WriteLine(" {0}{1} ", "Saturday", "Sunday");
             output.WriteLine(" {0} {1}  {2}", TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(2), TimeSpan.FromDays(3));
-            output.WriteLine(" {0} {1}  {2}    {3}", (Int128)4, (UInt128)5, (nint)6, (nuint)7);
+            output.WriteLine(" {0} {1}  {2}    {3}", new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7 });
+            output.WriteLine(" {0} {1}  {2}    {3}        {4}", (ReadOnlySpan<object>)new object[] { (Int128)4, (UInt128)5, (nint)6, (nuint)7, "8" });
             Assert.True(output.WriteAsync('a').IsCompletedSuccessfully);
             Assert.True(output.WriteAsync((char[])null).IsCompletedSuccessfully);
             Assert.True(output.WriteAsync(new char[] { 'b', 'c' }).IsCompletedSuccessfully);

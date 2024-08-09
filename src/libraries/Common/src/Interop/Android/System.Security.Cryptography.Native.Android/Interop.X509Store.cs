@@ -57,6 +57,12 @@ internal static partial class Interop
             SafeX509StoreHandle store,
             SafeX509Handle cert,
             string hashString);
+
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreGetPrivateKeyEntry", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial IntPtr X509StoreGetPrivateKeyEntry(IntPtr store, string hashString);
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreDeleteEntry", StringMarshalling = StringMarshalling.Utf8)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool X509StoreDeleteEntry(IntPtr store, string hashString);
     }
 }
 

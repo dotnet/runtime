@@ -29,7 +29,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
-        private volatile bool _stopCalled;
         private bool _hostStopped;
 
         public Host(IServiceProvider services,
@@ -190,7 +189,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 // When the host is being stopped, it cancels the background services.
                 // This isn't an error condition, so don't log it as an error.
-                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                if (_applicationLifetime.ApplicationStopping.IsCancellationRequested && backgroundTask.IsCanceled && ex is OperationCanceledException)
                 {
                     return;
                 }
@@ -217,7 +216,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            _stopCalled = true;
             _logger.Stopping();
 
             CancellationTokenSource? cts = null;

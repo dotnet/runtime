@@ -5,7 +5,7 @@
     <OutputType>Exe</OutputType>
 
     <TestRuntime>true</TestRuntime>
-    <Scenario>WasmTestOnBrowser</Scenario>
+    <Scenario>WasmTestOnChrome</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>

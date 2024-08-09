@@ -847,9 +847,9 @@ void mono_threads_join_unlock (void);
 typedef void (*background_job_cb)(void);
 #ifdef DISABLE_THREADS
 void mono_main_thread_schedule_background_job (background_job_cb cb);
+#else
+void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
-void mono_current_thread_schedule_background_job (background_job_cb cb);
-void mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb);
 #endif
 
 #ifdef USE_WINDOWS_BACKEND

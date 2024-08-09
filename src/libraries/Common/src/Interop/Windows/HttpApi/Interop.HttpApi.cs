@@ -16,8 +16,8 @@ internal static partial class Interop
     {
         internal static readonly HTTPAPI_VERSION s_version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
         internal static readonly bool s_supported = InitHttpApi(s_version);
-        internal static IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
-        internal static IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
+        internal static readonly IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
+        internal static readonly IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
         internal const int IPv4AddressSize = 16;
         internal const int IPv6AddressSize = 28;
 

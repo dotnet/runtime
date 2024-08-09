@@ -9,7 +9,6 @@ import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 import { localHeapViewU8, localHeapViewU32 } from "./memory";
-import { utf8ToString } from "./strings";
 import {
     JiterpNumberMode, BailoutReason, JiterpreterTable,
     JiterpCounter, JiterpMember, OpcodeInfoType
@@ -186,7 +185,7 @@ export class WasmBuilder {
     }
 
     getExceptionTag (): any {
-        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        const exceptionTag = (<any>Module)["wasmExports"]["__cpp_exception"];
         if (typeof (exceptionTag) !== "undefined")
             mono_assert(exceptionTag instanceof (<any>WebAssembly).Tag, () => `expected __cpp_exception export from dotnet.wasm to be WebAssembly.Tag but was ${exceptionTag}`);
         return exceptionTag;
@@ -1833,7 +1832,7 @@ export function getMemberOffset (member: JiterpMember) {
 }
 
 export function getRawCwrap (name: string): Function {
-    const result = (<any>Module)["asm"][name];
+    const result = (<any>Module)["wasmExports"][name];
     if (typeof (result) !== "function")
         throw new Error(`raw cwrap ${name} not found`);
     return result;
@@ -2015,15 +2014,13 @@ export function getOptions () {
 }
 
 function updateOptions () {
-    const pJson = cwraps.mono_jiterp_get_options_as_json();
-    const json = utf8ToString(<any>pJson);
-    Module._free(<any>pJson);
-    const blob = JSON.parse(json);
-
     optionTable = <any>{};
     for (const k in optionNames) {
-        const info = optionNames[k];
-        (<any>optionTable)[k] = blob[info];
+        const value = cwraps.mono_jiterp_get_option_as_int(optionNames[k]);
+        if (value > -2147483647)
+            (<any>optionTable)[k] = value;
+        else
+            mono_log_info(`Failed to retrieve value of option ${optionNames[k]}`);
     }
 }
 

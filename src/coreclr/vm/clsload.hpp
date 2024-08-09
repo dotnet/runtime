@@ -134,7 +134,7 @@ public:
     NameHandle()
     {
         LIMITED_METHOD_CONTRACT;
-        memset((void*) this, NULL, sizeof(*this));
+        memset((void*) this, 0, sizeof(*this));
     }
 
     NameHandle(LPCUTF8 nameSpace, LPCUTF8 name) :
@@ -573,7 +573,6 @@ public:
     void Init(AllocMemTracker *pamTracker);
 
     PTR_Assembly GetAssembly();
-    DomainAssembly* GetDomainAssembly();
 
     void    FreeModules();
 

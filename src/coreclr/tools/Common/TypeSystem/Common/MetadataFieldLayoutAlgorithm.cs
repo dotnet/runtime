@@ -61,17 +61,12 @@ namespace Internal.TypeSystem
             // A type has layout if it is marked SequentialLayout or ExplicitLayout.  If any type within an inheritance chain has layout,
             // then so shall all its base classes, up to the one that descends immediately from System.ValueType (if it exists in the type's
             // hierarchy); otherwise, from System.Object
-            // Note: While the CLI isn't clearly worded, the layout needs to be the same for the entire chain.
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
-            // ValueType or System.Object then the layout type attributes need to match
-            if ((!type.IsValueType && !type.IsObject) &&
-                (type.IsSequentialLayout || type.IsExplicitLayout) &&
-                (!type.BaseType.IsValueType && !type.BaseType.IsObject))
+            // ValueType or System.Object then both need to have layout.
+            if (!type.IsValueType && type.HasLayout())
             {
                 MetadataType baseType = type.MetadataBaseType;
-
-                if (type.IsSequentialLayout != baseType.IsSequentialLayout ||
-                    type.IsExplicitLayout != baseType.IsExplicitLayout)
+                if (!baseType.IsObject && !baseType.HasLayout())
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
                 }
@@ -965,7 +960,7 @@ namespace Internal.TypeSystem
         {
             SizeAndAlignment result;
 
-            // Pad the length of structs to be 1 if they are empty so we have no zero-length structures
+            // Pad the length of structs to be 1 if they are empty, so we have no zero-length structures
             if (type.IsValueType && instanceSize == LayoutInt.Zero)
             {
                 instanceSize = LayoutInt.One;
@@ -973,24 +968,28 @@ namespace Internal.TypeSystem
 
             TargetDetails target = type.Context.Target;
 
-            if (classLayoutSize != 0)
+            if (type.IsValueType)
             {
-                LayoutInt parentSize;
-                if (type.IsValueType)
-                    parentSize = new LayoutInt(0);
+                if (classLayoutSize != 0)
+                {
+                    instanceSize = LayoutInt.Max(new LayoutInt(classLayoutSize), instanceSize);
+
+                    // Size of a struct with gc references is always expected to be aligned to pointer size
+                    if (type.ContainsGCPointers)
+                    {
+                        instanceSize = LayoutInt.AlignUp(instanceSize, new LayoutInt(target.PointerSize), target);
+                    }
+                }
                 else
-                    parentSize = type.BaseType.InstanceByteCountUnaligned;
-
-                LayoutInt specifiedInstanceSize = parentSize + new LayoutInt(classLayoutSize);
-
-                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
-            }
-            else
-            {
-                if (type.IsValueType)
                 {
                     instanceSize = LayoutInt.AlignUp(instanceSize, alignment, target);
                 }
+            }
+            else if (classLayoutSize != 0 && type.IsSequentialLayout && !type.ContainsGCPointers)
+            {
+                // For classes, we respect classLayoutSize only for SequentialLayout + no gc fields
+                LayoutInt specifiedInstanceSize = type.BaseType.InstanceByteCountUnaligned + new LayoutInt(classLayoutSize);
+                instanceSize = LayoutInt.Max(specifiedInstanceSize, instanceSize);
             }
 
             if (type.IsValueType)

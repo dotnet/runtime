@@ -1,5 +1,6 @@
 if(WIN32)
   add_definitions(-DUNICODE=1)
+  add_compile_definitions(NOMINMAX)
 endif (WIN32)
 
 if(MSVC)

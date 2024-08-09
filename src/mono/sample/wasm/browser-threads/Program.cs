@@ -16,11 +16,13 @@ public partial class Test
     private static int _animationCounter = 0;
     private static int _callCounter = 0;
     private static bool _isRunning = false;
+    private static Task later;
     private static readonly IReadOnlyList<string> _animations = new string[] { "\u2680", "\u2681", "\u2682", "\u2683", "\u2684", "\u2685" };
 
     public static async Task<int> Main(string[] args)
     {
         Console.WriteLine("Hello, World!");
+        later = Task.Delay(200); // this will create Timer thread
         await updateProgress2();
         return 0;
     }
@@ -38,9 +40,16 @@ public partial class Test
     public static void Progress2()
     {
         // both calls here are sync POSIX calls dispatched to UI thread, which is already blocked because this is synchronous method on deputy thread
-        // in should not deadlock anyway, see also invoke_later_when_on_ui_thread_sync and emscripten_yield
+        // it should not deadlock anyway, see also invoke_later_when_on_ui_thread_sync and emscripten_yield
         var cwd = Directory.GetCurrentDirectory();
-        Console.WriteLine("Progress! "+ cwd); 
+        Console.WriteLine("Progress2 A " + cwd); 
+
+        // below is blocking call, which means that UI will spin-lock little longer
+        // it will warn about blocking wait because of jsThreadBlockingMode: "WarnWhenBlockingWait"
+        // but it will not deadlock because underlying task chain is not JS promise
+        later.Wait();
+
+        Console.WriteLine("Progress2 B"); 
     }
 
     [JSExport]

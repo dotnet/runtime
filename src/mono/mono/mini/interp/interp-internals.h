@@ -145,6 +145,7 @@ struct InterpMethod {
 	MonoFtnDesc *ftndesc_unbox;
 	MonoDelegateTrampInfo *del_info;
 
+	/* locals_size is equal to the offset of the param_area */
 	guint32 locals_size;
 	guint32 alloca_size;
 	int num_clauses; // clauses
@@ -153,6 +154,9 @@ struct InterpMethod {
 	unsigned int hasthis; // boolean
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	InterpMethodCodeType code_type;
+	int ref_slot_offset; // GC visible pointer slot
+	int swift_error_offset; // swift error struct
+	MonoBitSet *ref_slots;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
@@ -268,6 +272,8 @@ typedef struct {
 	guchar *stack_pointer;
 	/* Used for allocation of localloc regions */
 	FrameDataAllocator data_stack;
+	/* If bit n is set, it means that the n-th stack slot (pointer sized) from stack_start doesn't contain any refs */
+	guint8 *no_ref_slots;
 } ThreadContext;
 
 typedef struct {

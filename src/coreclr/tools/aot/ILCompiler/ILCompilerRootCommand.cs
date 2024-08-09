@@ -148,7 +148,7 @@ namespace ILCompiler
         public CliOption<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation", HelpName = "arg" };
+            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = "Target architecture for cross compilation", HelpName = "arg" };
         public CliOption<TargetOS> TargetOS { get; } =
             new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
@@ -170,6 +170,7 @@ namespace ILCompiler
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
+        public static bool IsArmel { get; private set; }
 
         public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
         {
@@ -285,7 +286,7 @@ namespace ILCompiler
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
                             inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
-                            outputOptions : new[] { "-o", "--out", "--exportsfile" });
+                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
@@ -371,6 +372,18 @@ namespace ILCompiler
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
                 return true;
             };
+        }
+
+        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
+        {
+            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
+            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
+            {
+                IsArmel = true;
+                return Internal.TypeSystem.TargetArchitecture.ARM;
+            }
+
+            return Helpers.GetTargetArchitecture(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)

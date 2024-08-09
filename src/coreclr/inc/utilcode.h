@@ -10,14 +10,19 @@
 #ifndef __UtilCode_h__
 #define __UtilCode_h__
 
+#include <type_traits>
+#include <algorithm>
+#include <stdio.h>
+#include <limits.h>
+#include <new>
+
+using std::nothrow;
+
 #include "crtwrap.h"
 #include "winwrap.h"
 #include <wchar.h>
-#include <stdio.h>
-#include <malloc.h>
 #include <ole2.h>
 #include <oleauto.h>
-#include <limits.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
@@ -27,13 +32,6 @@
 #include "corhlprpriv.h"
 #include "check.h"
 #include "safemath.h"
-#include "new.hpp"
-
-#ifdef PAL_STDCPP_COMPAT
-#include <type_traits>
-#else
-#include "clr_std/type_traits"
-#endif
 
 #include "contract.h"
 
@@ -58,6 +56,8 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
+
+bool ValidateModuleName(LPCWSTR pwzModuleName);
 
 class StringArrayList;
 
@@ -166,6 +166,12 @@ typedef LPSTR   LPUTF8;
 #define DEBUGARG(x)
 #endif
 
+#if defined(FEATURE_READYTORUN)
+#define R2RARG(x)           , x
+#else
+#define R2RARG(x)
+#endif
+
 #ifndef sizeofmember
 // Returns the size of a class or struct member.
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
@@ -213,7 +219,7 @@ typedef LPSTR   LPUTF8;
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
     CQuickBytes __CQuickBytes##ptrname; \
     __CQuickBytes##ptrname.AllocThrows(__l##ptrname); \
-    DWORD __cBytes##ptrname = WszWideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
+    DWORD __cBytes##ptrname = WideCharToMultiByte(codepage, 0, widestr, -1, (LPSTR)__CQuickBytes##ptrname.Ptr(), __l##ptrname, NULL, NULL); \
     if (__cBytes##ptrname == 0 && __l##ptrname != 0) { \
         MAKE_TRANSLATIONFAILED; \
     } \
@@ -224,28 +230,28 @@ typedef LPSTR   LPUTF8;
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname = (int)u16_strlen(widestr); \
-    LPUTF8 ptrname = 0; \
+    LPUTF8 ptrname = NULL; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
         ptrname = (LPUTF8) __qb##ptrname.AllocNoThrow(__l##ptrname); \
     } \
     if (ptrname) { \
-        INT32 __lresult##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
+        INT32 __lresult##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __l##ptrname-1, NULL, NULL); \
         DWORD __dwCaptureLastError##ptrname = ::GetLastError(); \
         if ((__lresult##ptrname==0) && (((LPCWSTR)widestr)[0] != W('\0'))) { \
             if (__dwCaptureLastError##ptrname==ERROR_INSUFFICIENT_BUFFER) { \
-                INT32 __lsize##ptrname=WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
+                INT32 __lsize##ptrname=WideCharToMultiByte(CP_UTF8, 0, widestr, -1, NULL, 0, NULL, NULL); \
                 ptrname = (LPSTR) __qb##ptrname .AllocNoThrow(__lsize##ptrname); \
                 if (ptrname) { \
-                    if (WszWideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
+                    if (WideCharToMultiByte(CP_UTF8, 0, widestr, -1, ptrname, __lsize##ptrname, NULL, NULL) != 0) { \
                         ptrname[__l##ptrname] = 0; \
                     } else { \
-                        ptrname = 0; \
+                        ptrname = NULL; \
                     } \
                 } \
             } \
             else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     } \
@@ -255,15 +261,15 @@ typedef LPSTR   LPUTF8;
 #define MAKE_WIDEPTR_FROMUTF8N_NOTHROW(ptrname, utf8str, n8chrs) \
     CQuickBytes __qb##ptrname; \
     int __l##ptrname; \
-    LPWSTR ptrname = 0; \
-    __l##ptrname = WszMultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
+    LPWSTR ptrname = NULL; \
+    __l##ptrname = MultiByteToWideChar(CP_UTF8, 0, utf8str, n8chrs, 0, 0); \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         ptrname = (LPWSTR) __qb##ptrname.AllocNoThrow((__l##ptrname+1)*sizeof(WCHAR));  \
         if (ptrname) { \
-            if (WszMultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
+            if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8str, n8chrs, ptrname, __l##ptrname) != 0) { \
                 ptrname[__l##ptrname] = 0; \
             } else { \
-                ptrname = 0; \
+                ptrname = NULL; \
             } \
         } \
     }
@@ -302,28 +308,6 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-//*****************************************************************************
-// Placement new is used to new and object at an exact location.  The pointer
-// is simply returned to the caller without actually using the heap.  The
-// advantage here is that you cause the ctor() code for the object to be run.
-// This is ideal for heaps of C++ objects that need to get init'd multiple times.
-// Example:
-//      void        *pMem = GetMemFromSomePlace();
-//      Foo *p = new (pMem) Foo;
-//      DoSomething(p);
-//      p->~Foo();
-//*****************************************************************************
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-
-
 /********************************************************************************/
 /* portability helpers */
 
@@ -342,10 +326,10 @@ _Ret_bytecap_(n) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl
-operator delete(void *p) NOEXCEPT;
+operator delete(void *p) noexcept;
 
 void __cdecl
-operator delete[](void *p) NOEXCEPT;
+operator delete[](void *p) noexcept;
 
 #ifdef _DEBUG_IMPL
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine);
@@ -869,7 +853,7 @@ template<typename T>
 class SimpleListNode
 {
 public:
-    SimpleListNode<T>(const T& _t)
+    SimpleListNode(const T& _t)
     {
         data = _t;
         next = 0;
@@ -885,7 +869,7 @@ class SimpleList
 public:
     typedef SimpleListNode<T> NodeType;
 
-    SimpleList<T>()
+    SimpleList()
     {
         head = NULL;
     }
@@ -1768,7 +1752,7 @@ public:
         HASHFIND    *psSrch)            // Search object.
     {
         WRAPPER_NO_CONTRACT;
-        if (m_piBuckets == 0)
+        if (m_piBuckets == nullptr)
             return (0);
         psSrch->iBucket = 1;
         psSrch->iNext = m_piBuckets[0];
@@ -1920,7 +1904,7 @@ public:
     ~CHashTableAndData()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pcEntries != NULL)
+        if (m_pcEntries != (TADDR)NULL)
             MemMgr::Free((BYTE*)m_pcEntries, MemMgr::RoundSize(m_iEntries * m_iEntrySize));
     }
 
@@ -2100,7 +2084,7 @@ int CHashTableAndData<MemMgr>::Grow()   // 1 if successful, 0 if not.
     int         iCurSize;               // Current size in bytes.
     int         iEntries;               // New # of entries.
 
-    _ASSERTE(m_pcEntries != NULL);
+    _ASSERTE(m_pcEntries != (TADDR)NULL);
     _ASSERTE(m_iFree == UINT32_MAX);
 
     // Compute the current size and new # of entries.
@@ -3328,6 +3312,26 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
+//  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
+//*****************************************************************************
+INT64 GetLoongArch64PC12(UINT32 * pCode);
+
+//*****************************************************************************
+//  Extract the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+INT64 GetLoongArch64JIR(UINT32 * pCode);
+
+//*****************************************************************************
+//  Deposit the PC-Relative page address and page offset into pcalau12i+add/ld
+//*****************************************************************************
+void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
+//  Deposit the jump offset into pcaddu18i+jirl instructions
+//*****************************************************************************
+void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
+
+//*****************************************************************************
 // Returns whether the offset fits into bl instruction
 //*****************************************************************************
 inline bool FitsInThumb2BlRel24(INT32 imm24)
@@ -3447,16 +3451,6 @@ inline BOOL IsGCSpecialThread ()
     return !!(t_ThreadType & ThreadType_GC);
 }
 
-// check if current thread is a Gate thread
-inline BOOL IsGateSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Gate);
-}
-
 // check if current thread is a debugger helper thread
 inline BOOL IsDbgHelperSpecialThread ()
 {
@@ -3497,33 +3491,6 @@ inline BOOL IsShutdownSpecialThread ()
     return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
-inline BOOL IsThreadPoolIOCompletionSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
-}
-
-inline BOOL IsThreadPoolWorkerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
-}
-
-inline BOOL IsWaitSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Wait);
-}
-
 // check if current thread is a thread which is performing shutdown
 inline BOOL IsSuspendEEThread ()
 {
@@ -3541,15 +3508,6 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Finalizer);
-}
-
-inline BOOL IsShutdownHelperThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()
@@ -3742,40 +3700,7 @@ namespace util
     }
 }
 
-
-/* ------------------------------------------------------------------------ *
- * Overloaded operators for the executable heap
- * ------------------------------------------------------------------------ */
-
-#ifdef HOST_WINDOWS
-
-struct CExecutable { int x; };
-extern const CExecutable executable;
-
-void * __cdecl operator new(size_t n, const CExecutable&);
-void * __cdecl operator new[](size_t n, const CExecutable&);
-void * __cdecl operator new(size_t n, const CExecutable&, const NoThrow&);
-void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&);
-
-
-//
-// Executable heap delete to match the executable heap new above.
-//
-template<class T> void DeleteExecutable(T *p)
-{
-    if (p != NULL)
-    {
-        p->T::~T();
-
-        HeapFree(ClrGetProcessExecutableHeap(), 0, p);
-    }
-}
-
-#endif // HOST_WINDOWS
-
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }
@@ -3932,37 +3857,6 @@ inline T* InterlockedCompareExchangeT(
 {
     //STATIC_ASSERT(comparand == 0);
     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
-}
-
-// NULL pointer variants of the above to avoid having to cast NULL
-// to the appropriate pointer type.
-template <typename T>
-inline T* InterlockedExchangeT(
-    T* volatile *   target,
-    int             value) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, nullptr);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    int             exchange,  // When NULL is provided as argument.
-    T*              comparand)
-{
-    //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, nullptr, comparand);
-}
-
-template <typename T>
-inline T* InterlockedCompareExchangeT(
-    T* volatile *   destination,
-    T*              exchange,
-    int             comparand) // When NULL is provided as argument.
-{
-    //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, nullptr);
 }
 
 #undef InterlockedExchangePointer

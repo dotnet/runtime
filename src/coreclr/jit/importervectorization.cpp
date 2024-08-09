@@ -160,20 +160,8 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         GenTreeVecCon* toLowerVec1 = gtNewVconNode(simdType, toLowerMask);
         GenTreeVecCon* toLowerVec2 = gtNewVconNode(simdType, (BYTE*)toLowerMask + byteLen - simdSize);
 
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-        {
-            GenTree* control;
-
-            control = gtNewIconNode(static_cast<uint8_t>((0xF0 | 0xCC) ^ 0xAA)); // (A | B)) ^ C
-            xor1    = gtNewSimdTernaryLogicNode(simdType, vec1, toLowerVec1, cnsVec1, control, baseType, simdSize);
-        }
-        else
-#endif // TARGET_XARCH
-        {
-            vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
-            xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
-        }
+        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
+        xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
 
         vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
     }
@@ -182,24 +170,12 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
     }
 
-// ((v1 ^ cns1) | (v2 ^ cns2)) == zero
+    // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
 
-#if defined(TARGET_XARCH)
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-    {
-        GenTree* control;
+    GenTree* xor2;
 
-        control = gtNewIconNode(static_cast<uint8_t>(0xF0 | (0xCC ^ 0xAA))); // A | (B ^ C)
-        orr     = gtNewSimdTernaryLogicNode(simdType, xor1, vec2, cnsVec2, control, baseType, simdSize);
-    }
-    else
-#endif // TARGET_XARCH
-    {
-        GenTree* xor2;
-
-        xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
-        orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
-    }
+    xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
+    orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
 
     // Optimization: use a single load when byteLen equals simdSize.
     // For code simplicity we always create nodes for two vectors case.
@@ -317,7 +293,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     assert(len >= 1 && len <= 8);
 
 // Compose Int32 or Int64 values from ushort components
-#define MAKEINT32(c1, c2) ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
+#define MAKEINT32(c1, c2)         ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 #define MAKEINT64(c1, c2, c3, c4) ((UINT64)c4 << 48) | ((UINT64)c3 << 32) | ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
 
     if (len == 1)
@@ -516,10 +492,10 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
             GenTree*   castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
             GenTree*   byteLen   = gtNewOperNode(GT_MUL, TYP_I_IMPL, castedLen, gtNewIconNode(2, TYP_I_IMPL));
             GenTreeOp* cmpStart  = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data),
-                                                gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen,
-                                                              gtNewIconNode((ssize_t)(len * 2), TYP_I_IMPL)));
-            GenTree* storeTmp = gtNewTempStore(dataAddr->GetLclNum(), cmpStart);
-            indirCmp          = gtNewOperNode(GT_COMMA, indirCmp->TypeGet(), storeTmp, indirCmp);
+                                                 gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen,
+                                                               gtNewIconNode((ssize_t)(len * 2), TYP_I_IMPL)));
+            GenTree*   storeTmp  = gtNewTempStore(dataAddr->GetLclNum(), cmpStart);
+            indirCmp             = gtNewOperNode(GT_COMMA, indirCmp->TypeGet(), storeTmp, indirCmp);
         }
 
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
@@ -724,12 +700,12 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impStoreTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -885,14 +861,14 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     {
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impStoreTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 

@@ -167,6 +167,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public static T? GetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, string key, T defaultValue)
         {
             return (T?)GetValue(configuration, typeof(T), key, defaultValue);
@@ -198,6 +199,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="defaultValue">The default value to use if no value is found.</param>
         /// <returns>The converted value.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        [return: NotNullIfNotNull(nameof(defaultValue))]
         public static object? GetValue(
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -541,7 +543,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (p.IsOut || p.IsIn || p.ParameterType.IsByRef)
                 {
-                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://docs.microsoft.com/en-us/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
+                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://learn.microsoft.com/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
                     return false;
                 }
             }
@@ -950,7 +952,7 @@ namespace Microsoft.Extensions.Configuration
 
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(ISet<>)
-#if NETCOREAPP
+#if NET
                    || genericTypeDefinition == typeof(IReadOnlySet<>)
 #endif
                    ;

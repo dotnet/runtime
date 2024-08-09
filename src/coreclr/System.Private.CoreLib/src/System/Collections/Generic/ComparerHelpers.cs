@@ -68,7 +68,7 @@ namespace System.Collections.Generic
 
             if (type == typeof(string))
             {
-                return new GenericEqualityComparer<string>();
+                return new StringEqualityComparer();
             }
             else if (type.IsAssignableTo(typeof(IEquatable<>).MakeGenericType(type)))
             {

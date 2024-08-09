@@ -52,6 +52,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			return new FeatureContext (ValueSet<string>.Union (EnabledFeatures, other.EnabledFeatures));
 		}
+
+		public override string ToString ()
+		{
+			if (EnabledFeatures.IsUnknown ())
+				return "All";
+			if (EnabledFeatures.IsEmpty ())
+				return "None";
+			return string.Join (", ", EnabledFeatures.GetKnownValues ());
+		}
 	}
 
 	public readonly struct FeatureContextLattice : ILattice<FeatureContext>

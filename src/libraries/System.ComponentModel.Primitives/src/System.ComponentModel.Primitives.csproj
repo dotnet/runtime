@@ -47,6 +47,7 @@
   <ItemGroup>
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />

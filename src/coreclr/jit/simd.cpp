@@ -130,6 +130,29 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
     return lvaSIMDInitTempVarNum;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getFFRegisterVarNum()
+{
+    if (lvaFfrRegister == BAD_VAR_NUM)
+    {
+        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
+        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+    }
+    return lvaFfrRegister;
+}
+#endif
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //
@@ -738,9 +761,9 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
 }
 
 //-------------------------------------------------------------------------------
-// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous
-// assignments from SIMD field to memory. If there are, then mark the related
-// lclvar so that it won't be promoted.
+// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous stores
+// from SIMD field to memory. If there are, then mark the related lclvar so that it
+// won't be promoted.
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.

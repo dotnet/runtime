@@ -4,7 +4,7 @@ parameters:
   timeoutInMinutes: ''
 
 steps:
-- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'))) }}:
+- ${{ if and(eq(parameters.isOfficialBuild, true), ne(variables['Build.Reason'], 'PullRequest'), or(startswith(variables['Build.SourceBranch'], 'refs/heads/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/internal/release/'), startswith(variables['Build.SourceBranch'], 'refs/heads/reltest/'))) }}:
   - task: UseDotNet@2
     displayName: Install .NET 6 SDK for signing.
     inputs:
@@ -12,10 +12,15 @@ steps:
       version: '6.0.x'
       installationPath: '$(Agent.TempDirectory)/dotnet'
 
-  - task: EsrpCodeSigning@4
+  - task: EsrpCodeSigning@5
     displayName: Sign Diagnostic Binaries
     inputs:
-      ConnectedServiceName: 'dotnetesrp-diagnostics-dnceng'
+      ConnectedServiceName: 'diagnostics-esrp-kvcertuser'
+      AppRegistrationClientId: '2234cdec-a13f-4bb2-aa63-04c57fd7a1f9'
+      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
+      AuthAKVName: 'clrdiag-esrp-id'
+      AuthCertName: 'dotnetesrp-diagnostics-aad-ssl-cert'
+      AuthSignCertName: 'dotnet-diagnostics-esrp-pki-onecert'
       FolderPath: ${{ parameters.basePath }}
       Pattern: |
         **/mscordaccore*.dll

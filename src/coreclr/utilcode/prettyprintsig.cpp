@@ -179,7 +179,7 @@ static PCCOR_SIGNATURE PrettyPrintType(
     const WCHAR *       str;
     WCHAR               rcname[MAX_CLASS_NAME];
     HRESULT             hr;
-    unsigned __int8     elt = *typePtr++;
+    uint8_t     elt = *typePtr++;
     PCCOR_SIGNATURE     typeEnd = typePtr + typeLen;
 
     switch(elt)
@@ -583,7 +583,7 @@ static HRESULT PrettyPrintTypeA(
     HRESULT     hr;                     // A result.
 
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;    // End of the signature.
-    unsigned __int8     elt = *typePtr++;
+    uint8_t     elt = *typePtr++;
 
     switch(elt)  {
     case ELEMENT_TYPE_VOID:

@@ -8,9 +8,8 @@ class LclVarDsc;
 
 struct InitVarDscInfo
 {
-    LclVarDsc*             varDsc;
-    unsigned               varNum;
-    ABIPassingInformation* abiInfo;
+    LclVarDsc* varDsc;
+    unsigned   varNum;
 
     unsigned intRegArgNum;
     unsigned floatRegArgNum;
@@ -35,16 +34,11 @@ struct InitVarDscInfo
 
 public:
     // set to initial values
-    void Init(LclVarDsc*             lvaTable,
-              ABIPassingInformation* abiInfoTable,
-              bool                   _hasRetBufArg,
-              unsigned               _maxIntRegArgNum,
-              unsigned               _maxFloatRegArgNum)
+    void Init(LclVarDsc* lvaTable, bool _hasRetBufArg, unsigned _maxIntRegArgNum, unsigned _maxFloatRegArgNum)
     {
         hasRetBufArg      = _hasRetBufArg;
         varDsc            = lvaTable; // the first argument LclVar 0
         varNum            = 0;        // the first argument varNum 0
-        this->abiInfo     = abiInfoTable;
         intRegArgNum      = 0;
         floatRegArgNum    = 0;
         maxIntRegArgNum   = _maxIntRegArgNum;
@@ -117,7 +111,6 @@ public:
     {
         varDsc++;
         varNum++;
-        abiInfo++;
     }
 
 private:

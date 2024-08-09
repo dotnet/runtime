@@ -24,10 +24,11 @@
 #include "compilerbitsettraits.h"
 #include "bitsetasshortlong.h"
 
-class BlockSetOps : public BitSetOps</*BitSetType*/ BitSetShortLongRep,
-                                     /*Brand*/ BSShortLong,
-                                     /*Env*/ Compiler*,
-                                     /*BitSetTraits*/ BasicBlockBitSetTraits>
+class BlockSetOps
+    : public BitSetOps</*BitSetType*/ BitSetShortLongRep,
+                       /*Brand*/ BSShortLong,
+                       /*Env*/ Compiler*,
+                       /*BitSetTraits*/ BasicBlockBitSetTraits>
 {
 public:
     // Specialize BlockSetOps::MakeFull(). Since we number basic blocks from one, we remove bit zero from

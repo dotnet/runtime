@@ -32,7 +32,9 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 int
 interp_alloc_global_var_offset (TransformData *td, int var)
 {
-	return alloc_var_offset (td, var, &td->total_locals_size);
+	int offset = alloc_var_offset (td, var, &td->total_locals_size);
+	interp_mark_ref_slots_for_var (td, var);
+	return offset;
 }
 
 static void
@@ -464,6 +466,8 @@ interp_alloc_offsets (TransformData *td)
 					add_active_call (td, &ac, td->vars [var].call);
 				} else if (!td->vars [var].global && td->vars [var].offset == -1) {
 					alloc_var_offset (td, var, &current_offset);
+					interp_mark_ref_slots_for_var (td, var);
+
 					if (current_offset > final_total_locals_size)
 						final_total_locals_size = current_offset;
 
@@ -492,6 +496,7 @@ interp_alloc_offsets (TransformData *td)
 		// These are allocated separately at the end of the stack
 		if (td->vars [i].call_args) {
 			td->vars [i].offset += td->param_area_offset;
+			interp_mark_ref_slots_for_var (td, i);
 			final_total_locals_size = MAX (td->vars [i].offset + td->vars [i].size, final_total_locals_size);
 		}
 	}
@@ -2236,6 +2241,7 @@ interp_fold_unop (TransformData *td, InterpInst *ins)
 	td->var_values [sreg].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -2473,6 +2479,7 @@ fold_ok:
 	td->var_values [sreg2].ref_count--;
 	result.def = ins;
 	result.ref_count = td->var_values [dreg].ref_count; // preserve ref count
+	result.liveness = td->var_values [dreg].liveness;
 	td->var_values [dreg] = result;
 
 	return ins;
@@ -3380,15 +3387,12 @@ can_propagate_var_def (TransformData *td, int var, InterpLivenessPosition cur_li
 static void
 interp_super_instructions (TransformData *td)
 {
-	interp_compute_native_offset_estimates (td);
-
 	// Add some actual super instructions
 	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {
 		InterpBasicBlock *bb = td->bblocks [bb_dfs_index];
 
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
-		int noe = bb->native_offset_estimate;
 		InterpLivenessPosition current_liveness;
 		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
@@ -3713,7 +3717,7 @@ interp_super_instructions (TransformData *td)
 					interp_clear_ins (def);
 					td->var_values [obj_sreg].ref_count--;
 				}
-			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
+			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				gint32 imm;
 				int imm_mt;
 				int sreg_imm = ins->sregs [1];
@@ -3750,7 +3754,7 @@ interp_super_instructions (TransformData *td)
 						}
 					}
 				}
-			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
+			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
@@ -3860,7 +3864,6 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			}
-			noe += interp_get_ins_length (ins);
 		}
 	}
 }

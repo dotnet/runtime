@@ -8,7 +8,6 @@
 #include <poll.h>
 #include <pal_error_common.h>
 #include <pal_utilities.h>
-#include <minipal/utils.h>
 
 /**
  * Our intermediate pollfd struct to normalize the data types

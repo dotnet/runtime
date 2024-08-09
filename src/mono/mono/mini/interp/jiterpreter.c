@@ -636,9 +636,7 @@ jiterp_get_opcode_value (InterpInst *ins, gboolean *inside_branch_block)
 		//  operations please put them in the values table header
 		// Please keep this in sync with jiterpreter.ts:generate_wasm_body
 		case MINT_BR:
-		case MINT_BR_S:
 		case MINT_CALL_HANDLER:
-		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
@@ -1021,8 +1019,28 @@ mono_jiterp_get_options_as_json ()
 	return mono_options_get_as_json ();
 }
 
+EMSCRIPTEN_KEEPALIVE gint32
+mono_jiterp_get_option_as_int (const char *name)
+{
+	MonoOptionType type;
+	void *value_address;
+
+	if (!mono_options_get (name, &type, &value_address))
+		return INT32_MIN;
+
+	switch (type) {
+		case MONO_OPTION_BOOL:
+		case MONO_OPTION_BOOL_READONLY:
+			return (*(guint8 *)value_address) != 0;
+		case MONO_OPTION_INT:
+			return *(gint32 *)value_address;
+		default:
+			return INT32_MIN;
+	}
+}
+
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+mono_jiterp_object_has_component_size (MonoObject **ppObj)
 {
 	MonoObject *obj = *ppObj;
 	if (!obj)

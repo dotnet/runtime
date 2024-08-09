@@ -128,6 +128,11 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
             }
 
+            if (type.RequiresAlign8())
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.RequiresAlign8Flag;
+            }
+
             return flagsEx;
         }
 
@@ -193,15 +198,7 @@ namespace Internal.Runtime
             if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
-            uint alignmentLog2 = 0;
-            Debug.Assert(alignment != 0);
-
-            while ((alignment & 1) == 0)
-            {
-                alignmentLog2++;
-                alignment >>= 1;
-            }
-            Debug.Assert(alignment == 1);
+            uint alignmentLog2 = uint.TrailingZeroCount(alignment);
 
             Debug.Assert(ValueTypePaddingMax >= padding);
 

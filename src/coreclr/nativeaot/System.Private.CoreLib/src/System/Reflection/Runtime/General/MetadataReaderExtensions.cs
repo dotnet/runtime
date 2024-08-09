@@ -55,7 +55,7 @@ namespace System.Reflection.Runtime.General
         // Useful for namespace Name string which can be a null handle.
         public static string GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
         {
-            if (reader.IsNull(handle))
+            if (handle.IsNil)
                 return null;
             return reader.GetConstantStringValue(handle).Value;
         }
@@ -120,13 +120,10 @@ namespace System.Reflection.Runtime.General
             ByteCollection publicKeyOrToken,
             global::Internal.Metadata.NativeFormat.AssemblyFlags assemblyFlags)
         {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & global::Internal.Metadata.NativeFormat.AssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
+            AssemblyNameFlags assemblyNameFlags = (AssemblyNameFlags)(assemblyFlags & (
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.PublicKey |
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.Retargetable |
+                global::Internal.Metadata.NativeFormat.AssemblyFlags.ContentTypeMask));
 
             ArrayBuilder<byte> keyOrTokenArrayBuilder = default;
             foreach (byte b in publicKeyOrToken)

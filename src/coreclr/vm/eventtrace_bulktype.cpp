@@ -425,12 +425,12 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     _ASSERTE(m_domain != NULL);
 
     unsigned short instance = GetClrInstanceId();
-    unsigned __int64 appDomain = (unsigned __int64)m_domain;
+    uint64_t appDomain = (uint64_t)m_domain;
 
 #if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
-    EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
+    EventDataDescCreate(&eventData[1], &appDomain, sizeof(uint64_t)  );
     EventDataDescCreate(&eventData[2], &instance, sizeof(const unsigned short)  );
     EventDataDescCreate(&eventData[3], m_buffer, m_used);
 
@@ -509,6 +509,7 @@ void BulkStaticsLogger::LogAllStatics()
     CONTRACTL_END;
 
     {
+        // TODO: This code does not appear to find all generic instantiations of types, and thus does not log ALL statics
         AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
@@ -531,10 +532,6 @@ void BulkStaticsLogger::LogAllStatics()
 
             // Ensure the module has fully loaded.
             if (!domainAssembly->IsActive())
-                continue;
-
-            DomainLocalModule *domainModule = module->GetDomainLocalModule();
-            if (domainModule == NULL)
                 continue;
 
             // Now iterate all types with
@@ -566,7 +563,7 @@ void BulkStaticsLogger::LogAllStatics()
                     if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
                         continue;
 
-                    BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
+                    BYTE *base = field->GetBase();
                     if (base == NULL)
                         continue;
 

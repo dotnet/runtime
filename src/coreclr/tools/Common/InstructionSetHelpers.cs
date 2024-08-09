@@ -122,7 +122,7 @@ namespace System.CommandLine
                 string[] instructionSetParamsInput = instructionSet.Split(',');
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
                 {
-                    instructionSet = instructionSetParamsInput[i];
+                    instructionSet = instructionSetParamsInput[i].Trim();
 
                     if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException(string.Format(mustNotBeMessage, ""));

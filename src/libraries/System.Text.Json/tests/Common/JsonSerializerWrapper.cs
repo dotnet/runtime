@@ -46,15 +46,15 @@ namespace System.Text.Json.Serialization.Tests
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
 
 
-        public JsonTypeInfo GetTypeInfo(Type type, bool mutable = false)
+        public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false)
         {
-            JsonSerializerOptions defaultOptions = DefaultOptions;
-            // return a fresh mutable instance or the cached readonly metadata
-            return mutable ? defaultOptions.TypeInfoResolver.GetTypeInfo(type, defaultOptions) : defaultOptions.GetTypeInfo(type);
+            options ??= DefaultOptions;
+            options.MakeReadOnly(populateMissingResolver: true);
+            return mutable ? options.TypeInfoResolver.GetTypeInfo(type, options) : options.GetTypeInfo(type);
         }
 
-        public JsonTypeInfo<T> GetTypeInfo<T>(bool mutable = false)
-            => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), mutable);
+        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null,bool mutable = false)
+            => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), options, mutable);
 
         public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)
         {

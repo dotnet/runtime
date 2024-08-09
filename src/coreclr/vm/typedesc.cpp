@@ -509,7 +509,7 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-OBJECTREF ParamTypeDesc::GetManagedClassObject()
+OBJECTREF TypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
         THROWS;
@@ -517,39 +517,10 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         MODE_COOPERATIVE;
 
         INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_ARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_BYREF ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_PTR);
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-
-OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == 0)
     {
         TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
@@ -1614,26 +1585,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         }
     }
     return TRUE;
-}
-
-OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(IsGenericVariable());
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
 }
 
 #endif //!DACCESS_COMPILE

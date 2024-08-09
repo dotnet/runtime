@@ -65,6 +65,9 @@
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
@@ -75,11 +78,23 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
 
-      <!-- Pass locations for assets and packages -->
+      <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltShippingPackagesDir=$(SourceBuiltShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltNonShippingPackagesDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltNonShippingPackagesDir=$(SourceBuiltNonShippingPackagesDir)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuiltAssetManifestsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetManifestsDir=$(SourceBuiltAssetManifestsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuiltSymbolsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltSymbolsDir=$(SourceBuiltSymbolsDir)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(GitHubRepositoryName)' != ''">$(InnerBuildArgs) /p:GitHubRepositoryName=$(GitHubRepositoryName)</InnerBuildArgs>
+
+      <!-- Handle system libraries -->
+      <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)+</UseSystemLibs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
+      <!-- TODO: llvm-libunwind -->
+      <!-- TODO: LinuxTracepoints -->
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+rapidjson+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_RAPIDJSON=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+zlib+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_ZLIB=true</InnerBuildArgs>
+
     </PropertyGroup>
   </Target>
 

@@ -13,6 +13,31 @@
 #define __has_builtin(x) 0
 #endif
 
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
+#ifdef __cplusplus
+#  ifndef __has_cpp_attribute
+#    define __has_cpp_attribute(x) 0
+#  endif
+#  if __has_cpp_attribute(fallthrough)
+#    define FALLTHROUGH [[fallthrough]]
+#  else
+#    define FALLTHROUGH
+#  endif
+#elif __has_attribute(fallthrough)
+#  define FALLTHROUGH __attribute__((fallthrough))
+#else
+#  define FALLTHROUGH
+#endif
+
+#if defined(_MSC_VER)
+#define LIBC_CALLBACK __cdecl
+#else
+#define LIBC_CALLBACK
+#endif
+
 #if defined(_MSC_VER)
 #  if defined(__SANITIZE_ADDRESS__)
 #    define HAS_ADDRESS_SANITIZER

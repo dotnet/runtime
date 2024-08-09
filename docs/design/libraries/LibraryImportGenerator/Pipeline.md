@@ -8,11 +8,11 @@ The P/Invoke source generator is responsible for finding all methods marked with
 1. [Generate the corresponding P/Invoke](#pinvoke)
 1. Add the generated source to the compilation.
 
-The pipeline uses the Roslyn [Syntax APIs](https://docs.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
+The pipeline uses the Roslyn [Syntax APIs](https://learn.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
 
 ## Symbol and metadata processing
 
-The generator processes the method's `LibraryImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
+The generator processes the method's `LibraryImportAttribute` data, the method's parameter and return types, and the metadata on them (e.g. [`LCIDConversionAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute), [`MarshalAsAttribute`][MarshalAsAttribute], [struct marshalling attributes](StructMarshalling.md)). This information is used to determine the corresponding native type for each managed parameter/return type and how they will be marshalled.
 
 A [`TypePositionInfo`][src-TypePositionInfo] is created for each type that needs to be marshalled. For each parameter and return type, this captures the managed type, managed and native positions (return or index in parameter list), and marshalling information.
 
@@ -154,7 +154,7 @@ To help enable developers to use the full model described in the [Struct Marshal
 
 ### `SetLastError=true`
 
-The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://docs.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be stored after the native invocation, such that it can be retrieved using [`Marshal.GetLastWin32Error`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastwin32error).
+The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://learn.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be stored after the native invocation, such that it can be retrieved using [`Marshal.GetLastWin32Error`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastwin32error).
 
 This means that, rather than simply invoke the native method, the generated stub will:
 
@@ -229,16 +229,16 @@ static partial byte Method__PInvoke__(ushort* s);
 [src-StubCodeContext]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/StubCodeContext.cs
 [src-TypePositionInfo]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/TypePositionInfo.cs
 
-[DllImportAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
-[MarshalAsAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
-[InAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.inattribute
-[OutAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.outattribute
+[DllImportAttribute]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
+[MarshalAsAttribute]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
+[InAttribute]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.inattribute
+[OutAttribute]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.outattribute
 
-[BestFitMapping]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping
-[CallingConvention]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention
-[CharSet]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset
-[EntryPoint]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.entrypoint
-[ExactSpelling]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling
-[PreserveSig]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
-[SetLastError]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
-[ThrowOnUnmappableChar]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar
+[BestFitMapping]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping
+[CallingConvention]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention
+[CharSet]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset
+[EntryPoint]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.entrypoint
+[ExactSpelling]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling
+[PreserveSig]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.preservesig
+[SetLastError]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.setlasterror
+[ThrowOnUnmappableChar]: https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar

@@ -66,26 +66,39 @@ PhaseStatus StackLevelSetter::DoPhase()
 
     if (comp->opts.OptimizationEnabled())
     {
+        comp->compUsesThrowHelper = false;
         for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
         {
             if (add->acdUsed)
             {
-                continue;
+                // Create the helper call
+                //
+                comp->fgCreateThrowHelperBlockCode(add);
+                comp->compUsesThrowHelper = true;
+            }
+            else
+            {
+                // Remove the helper call block
+                //
+                BasicBlock* const block = add->acdDstBlk;
+                assert(block->isEmpty());
+                JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
+                block->RemoveFlags(BBF_DONT_REMOVE);
+                comp->fgRemoveBlock(block, /* unreachable */ true);
             }
 
-            BasicBlock* const block = add->acdDstBlk;
-            JITDUMP("Throw help block " FMT_BB " is unused\n", block->bbNum);
-            block->RemoveFlags(BBF_DONT_REMOVE);
-            comp->fgRemoveBlock(block, /* unreachable */ true);
             madeChanges = true;
         }
     }
     else
     {
-        // Mark all the throw helpers as used to avoid asserts later.
+        // Assume all helpers used. Fill in all helper block code.
+        //
         for (Compiler::AddCodeDsc* add = comp->fgGetAdditionalCodeDescriptors(); add != nullptr; add = add->acdNext)
         {
             add->acdUsed = true;
+            comp->fgCreateThrowHelperBlockCode(add);
+            madeChanges = true;
         }
     }
 
@@ -287,7 +300,6 @@ void StackLevelSetter::SetThrowHelperBlock(SpecialCodeKind kind, BasicBlock* blo
         // or generate all required helpers after all stack alignment
         // has been added, and the stack level at each call to fgAddCodeRef()
         // is known, or can be recalculated.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(UNIX_X86_ABI)
         framePointerRequired = true;
 #else  // !defined(UNIX_X86_ABI)

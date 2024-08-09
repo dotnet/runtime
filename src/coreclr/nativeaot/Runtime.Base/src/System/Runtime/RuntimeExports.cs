@@ -61,7 +61,8 @@ namespace System.Runtime
             Debug.Assert(pEEType->IsArray || pEEType->IsString);
 
 #if FEATURE_64BIT_ALIGNMENT
-            if (pEEType->RequiresAlign8)
+            MethodTable* pEEElementType = pEEType->RelatedParameterType;
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
                 return InternalCalls.RhpNewArrayAlign8(pEEType, length);
             }
@@ -75,6 +76,9 @@ namespace System.Runtime
         [RuntimeExport("RhBox")]
         public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
         {
+            // A null can be passed for boxing of a null ref.
+            _ = Unsafe.ReadUnaligned<byte>(ref data);
+
             ref byte dataAdjustedForNullable = ref data;
 
             // Can box non-ByRefLike value types only (which also implies no finalizers).
@@ -224,6 +228,17 @@ namespace System.Runtime
             RhUnbox(obj, ref data, pUnboxToEEType);
         }
 
+        [RuntimeExport("RhUnboxTypeTest")]
+        public static unsafe void RhUnboxTypeTest(MethodTable* pType, MethodTable* pBoxType)
+        {
+            Debug.Assert(pType->IsValueType);
+
+            if (!UnboxAnyTypeCompare(pType, pBoxType))
+            {
+                throw pType->GetClasslibException(ExceptionIDs.InvalidCast);
+            }
+        }
+
         [RuntimeExport("RhUnbox")]
         public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
         {
@@ -367,14 +382,15 @@ namespace System.Runtime
 
                 case RuntimeHelperKind.AllocateArray:
 #if FEATURE_64BIT_ALIGNMENT
-                    if (pEEType->RequiresAlign8)
+                    MethodTable* pEEElementType = pEEType->RelatedParameterType;
+                    if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
                         return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 
                     return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArray;
 
                 default:
-                    Debug.Assert(false, "Unknown RuntimeHelperKind");
+                    Debug.Fail("Unknown RuntimeHelperKind");
                     return IntPtr.Zero;
             }
         }

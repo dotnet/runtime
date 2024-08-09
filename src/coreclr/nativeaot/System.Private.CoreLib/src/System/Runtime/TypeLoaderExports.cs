@@ -10,6 +10,7 @@ using System.Threading;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
@@ -162,8 +163,20 @@ namespace System.Runtime
     internal static unsafe class RawCalliHelper
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, ref byte data)
-            => ((delegate*<ref byte, void>)pfn)(ref data);
+        public static void CallDefaultStructConstructor(System.IntPtr pfn, ref byte data)
+        {
+            // Manually expand call of the instance method fat pointer. We cannot use a regular static C# function
+            // pointer call since it would not work for shared generic instance method.
+            if (FunctionPointerOps.IsGenericMethodPointer(pfn))
+            {
+                GenericMethodDescriptor* gmd = FunctionPointerOps.ConvertToGenericDescriptor(pfn);
+                ((delegate*<ref byte, IntPtr, void>)gmd->MethodFunctionPointer)(ref data, gmd->InstantiationArgument);
+            }
+            else
+            {
+                ((delegate*<ref byte, void>)pfn)(ref data);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, IntPtr arg)

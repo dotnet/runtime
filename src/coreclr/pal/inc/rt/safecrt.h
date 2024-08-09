@@ -86,15 +86,6 @@
 #endif
 #endif
 
-/* NULL */
-#if !defined(NULL)
-#if !defined(__cplusplus)
-#define NULL 0
-#else
-#define NULL ((void *)0)
-#endif
-#endif
-
 /* _W64 */
 #if !defined(_W64)
 #if !defined(__midl) && (defined(HOST_X86) || defined(_M_IX86)) && _MSC_VER >= 1300
@@ -102,16 +93,6 @@
 #else
 #define _W64
 #endif
-#endif
-
-/* uintptr_t */
-#if !defined(_UINTPTR_T_DEFINED)
-#if defined(HOST_64BIT)
-typedef unsigned __int64    uintptr_t;
-#else
-typedef _W64 unsigned int   uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
 #endif
 
 #ifdef __GNUC__
@@ -1115,32 +1096,6 @@ errno_t __cdecl _wcsnset_s(WCHAR *_Dst, size_t _SizeInWords, WCHAR _Value, size_
 }
 
 #endif
-
-#ifndef PAL_STDCPP_COMPAT
-
-/* wcsnlen */
-_SAFECRT__EXTERN_C
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize);
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize)
-{
-    size_t n;
-
-    /* Note that we do not check if s == nullptr, because we do not
-     * return errno_t...
-     */
-
-    for (n = 0; n < inMaxSize && *inString; n++, inString++)
-        ;
-
-    return n;
-}
-
-#endif
-#endif // PAL_STDCPP_COMPAT
 
 /* _wmakepath_s */
 _SAFECRT__EXTERN_C
