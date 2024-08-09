@@ -169,12 +169,14 @@ public:
                                       char*                 methodname,
                                       const char**          moduleName,
                                       const char**          namespaceName,
-                                      const char**          enclosingClassName);
+                                      const char**          enclosingClassNames,
+                                      size_t                maxEnclosingClassNames);
     void dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value);
     const char* repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                              const char**          className,
                                              const char**          namespaceName,
-                                             const char**          enclosingClassName);
+                                             const char**          enclosingClassNames,
+                                             size_t                maxEnclosingClassNames);
 
     void recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DWORD result);
     void dmpGetJitFlags(DWORD key, DD value);

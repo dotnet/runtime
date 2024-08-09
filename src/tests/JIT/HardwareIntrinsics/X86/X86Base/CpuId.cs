@@ -295,6 +295,11 @@ namespace XarchHardwareIntrinsicTest._CpuId
             }
 #pragma warning restore CA2252
 
+            if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
 
             uint maxFunctionIdEx = (uint)eax;

@@ -1391,12 +1391,13 @@ size_t interceptor_ICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer
 const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                  /* IN */
                                                         const char**          className,            /* OUT */
                                                         const char**          namespaceName,        /* OUT */
-                                                        const char**          enclosingClassName   /* OUT */
+                                                        const char**          enclosingClassNames,  /* OUT */
+                                                        size_t                maxEnclosingClassNames
                                                         )
 {
     mc->cr->AddCall("getMethodNameFromMetadata");
-    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
-    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassName);
+    const char* temp = original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
+    mc->recGetMethodNameFromMetadata(ftn, (char*)temp, className, namespaceName, enclosingClassNames, maxEnclosingClassNames);
     return temp;
 }
 
