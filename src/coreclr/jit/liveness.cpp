@@ -776,7 +776,10 @@ void Compiler::fgLiveVarAnalysis()
 // Returns:
 //    True if the call's result is unused and the call can be removed
 //
-bool Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call, GenTreeLclVarCommon** pDefinedLcl)
+bool Compiler::fgComputeLifeCall(VARSET_TP&            life,
+                                 VARSET_VALARG_TP      keepAliveVars,
+                                 GenTreeCall*          call,
+                                 GenTreeLclVarCommon** pDefinedLcl)
 {
     assert(call != nullptr);
 
@@ -1222,14 +1225,14 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     AGAIN:
         assert(tree->OperGet() != GT_QMARK);
 
-        bool       isUse        = false;
-        bool       doAgain      = false;
-        LclVarDsc* varDsc       = nullptr;
+        bool       isUse   = false;
+        bool       doAgain = false;
+        LclVarDsc* varDsc  = nullptr;
 
         if (tree->IsCall())
         {
             GenTreeLclVarCommon* definedLcl;
-            bool isDeadCall = fgComputeLifeCall(life, keepAliveVars, tree->AsCall(), &definedLcl);
+            bool                 isDeadCall = fgComputeLifeCall(life, keepAliveVars, tree->AsCall(), &definedLcl);
             if (isDeadCall)
             {
                 if (fgRemoveDeadNode(&tree, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
@@ -1321,8 +1324,8 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
         {
             case GT_CALL:
             {
-                GenTreeCall* const call = node->AsCall();
-                bool isDeadCall = fgComputeLifeCall(life, keepAliveVars, call, nullptr);
+                GenTreeCall* const call       = node->AsCall();
+                bool               isDeadCall = fgComputeLifeCall(life, keepAliveVars, call, nullptr);
                 if (isDeadCall)
                 {
                     JITDUMP("Removing dead call:\n");
@@ -1722,9 +1725,7 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
 // Return Value:
 //   true if we should skip the rest of the statement, false if we should continue
 //
-bool Compiler::fgRemoveDeadNode(GenTree**           pTree,
-                                 bool*               doAgain,
-                                 bool*               pStmtInfoDirty DEBUGARG(bool* treeModf))
+bool Compiler::fgRemoveDeadNode(GenTree** pTree, bool* doAgain, bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     assert(!compRationalIRForm);
 
@@ -1755,7 +1756,7 @@ bool Compiler::fgRemoveDeadNode(GenTree**           pTree,
 
             DISPSTMT(compCurStmt);
 
-           // Update ordering, costs, FP levels, etc.
+            // Update ordering, costs, FP levels, etc.
             gtSetStmtInfo(compCurStmt);
 
             // Re-link the nodes for this statement
@@ -1808,7 +1809,7 @@ bool Compiler::fgRemoveDeadNode(GenTree**           pTree,
         }
         else
         {
-           // No side effects - Change the store to a GT_NOP node
+            // No side effects - Change the store to a GT_NOP node
             tree->gtBashToNOP();
 
             INDEBUG(*treeModf = true);
