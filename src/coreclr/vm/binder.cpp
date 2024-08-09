@@ -998,9 +998,9 @@ void CoreLibBinder::CheckExtended()
         {
             if (CoreLibBinder::GetClassName(cID) != NULL) // Allow for CorSigElement entries with no classes
             {
-                if (NULL == CoreLibBinder::GetClass(cID))
+                if (!IsTrimmed(cID) && NULL == CoreLibBinder::GetClass(cID))
                 {
-                    fError = !IsTrimmed(cID);
+                    fError = true;
                 }
             }
         }
@@ -1022,9 +1022,9 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_methodDescriptions[mID-1].classID;
         EX_TRY
         {
-            if (NULL == CoreLibBinder::GetMethod(mID))
+            if (!IsTrimmed(mID) &&  NULL == CoreLibBinder::GetMethod(mID))
             {
-                fError = !IsTrimmed(mID);
+                fError = true;
             }
         }
         EX_CATCH
@@ -1045,9 +1045,9 @@ void CoreLibBinder::CheckExtended()
         BinderClassID cID = m_fieldDescriptions[fID-1].classID;
         EX_TRY
         {
-            if (NULL == CoreLibBinder::GetField(fID))
+            if (!IsTrimmed(fID) && NULL == CoreLibBinder::GetField(fID))
             {
-                fError = !IsTrimmed(fID);
+                fError = true;
             }
         }
         EX_CATCH
