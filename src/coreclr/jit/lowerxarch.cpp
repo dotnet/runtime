@@ -11124,6 +11124,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     uint32_t maskSize = genTypeSize(simdBaseType);
                                     uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
 
+                                    // Avx512F.Insert/ExtractVector256 accepts inputs with base type smaller that 64 bits.
+                                    // it makes operSize wrong in those case.
+                                    if (op2->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_InsertVector256 ||
+                                        op2->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_ExtractVector256)
+                                    {
+                                        operSize = 8;
+                                    }
+
                                     if ((maskSize == operSize) && IsInvariantInRange(op2, node))
                                     {
                                         MakeSrcContained(node, op2);
