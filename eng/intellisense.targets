@@ -56,7 +56,7 @@
   <Target Name="ChangeDocumentationFileForPackaging"
           DependsOnTargets="PrepareIntellisensePackageXmlFile"
           BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
-          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != ''">   
+          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != ''">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
       <DocFileItem Include="$(IntermediateDocFileItemFromIntellisensePackage)" />
