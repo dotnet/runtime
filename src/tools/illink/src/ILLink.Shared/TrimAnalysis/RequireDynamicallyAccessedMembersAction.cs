@@ -70,7 +70,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		public partial bool TryResolveTypeNameAndMark (string typeNameString, bool needsAssemblyName, out TypeProxy type);
+		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type);
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 	}
