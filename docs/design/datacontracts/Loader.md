@@ -102,6 +102,7 @@ internal enum AvailableMetadataType
 ModuleHandle GetModuleHandle(TargetPointer);
 TargetPointer GetAssembly(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+string GetPath(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
@@ -122,6 +123,7 @@ Data descriptors used:
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `ThunkHeap` | Pointer to the thunk heap |
+| `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `Module` | `ManifestModuleReferencesMap` | Mapping table |
@@ -147,6 +149,13 @@ TargetPointer GetAssembly(ModuleHandle handle)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return target.Read<uint>(handle.Address + /* Module::Flags offset */);
+}
+
+string GetPath(ModuleHandle handle)
+{
+    TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
+    char[] path = // Read<char> from target starting at pathStart until null terminator
+    return new string(path);
 }
 
 TargetPointer GetLoaderAllocator(ModuleHandle handle)

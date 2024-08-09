@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -33,6 +34,25 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return (ModuleFlags)module.Flags;
+    }
+
+    string ILoader.GetPath(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        TargetPointer addr = module.Path;
+        List<char> name = [];
+        while (true)
+        {
+            // Read characters until we find the null terminator
+            char nameChar = _target.Read<char>(addr);
+            if (nameChar == 0)
+                break;
+
+            name.Add(nameChar);
+            addr += sizeof(char);
+        }
+
+        return new string(CollectionsMarshal.AsSpan(name));
     }
 
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
