@@ -30,6 +30,7 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret  lr
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
+//-----------------------------------------------------------------------------
 // void JIT_ByRefWriteBarrier
 // On entry:
 //   x13  : the source address (points to object reference to write)
@@ -40,7 +41,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //   x13  : incremented by 8
 //   x14  : incremented by 8
 //   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+//   x17  : trashed (ip1)
 //
 //   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
 //         if you add more trashed registers.
@@ -63,7 +64,10 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   x12  : trashed
 //   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+//   x17  : trashed (ip1)
+//
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     ldr  x12,  LOCAL_LABEL(wbs_lowest_address)
@@ -86,6 +90,7 @@ LOCAL_LABEL(NotInHeap):
     ret  lr
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
+//-----------------------------------------------------------------------------
 // void JIT_WriteBarrier(Object** dst, Object* src)
 // On entry:
 //   x14  : the destination address (LHS of the assignment)
@@ -95,7 +100,10 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   x12  : trashed
 //   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+//   x17  : trashed (ip1)
+//
+//   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//         if you add more trashed registers.
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     stlr  x15, [x14]
@@ -105,20 +113,17 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     // Do not perform the work if g_GCShadow is 0
     ldr  x12, LOCAL_LABEL(wbs_GCShadow)
-    cbz  x12, LOCAL_LABEL(ShadowUpdateDisabled)
-
-    // need temporary register. Save before using.
-    str  x13, [sp, #-16]!
+    cbz  x12, LOCAL_LABEL(ShadowUpdateEnd)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + (x14 - g_lowest_address)
-    ldr  x13, LOCAL_LABEL(wbs_lowest_address)
-    sub  x13, x14, x13
-    add  x12, x13, x12
+    ldr  x17, LOCAL_LABEL(wbs_lowest_address)
+    sub  x17, x14, x17
+    add  x12, x17, x12
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    ldr  x13, LOCAL_LABEL(wbs_GCShadowEnd)
-    cmp  x12, x13
+    ldr  x17, LOCAL_LABEL(wbs_GCShadowEnd)
+    cmp  x12, x17
     bhs  LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = x15
@@ -129,18 +134,16 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     dmb  ish
 
     // if ([x14] == x15) goto end
-    ldr  x13, [x14]
-    cmp  x13, x15
+    ldr  x17, [x14]
+    cmp  x17, x15
     beq LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    movz x13, #0xcccd
-    movk x13, #0xcccc, LSL #16
-    str  x13, [x12]
+    movz x17, #0xcccd
+    movk x17, #0xcccc, LSL #16
+    str  x17, [x12]
 
 LOCAL_LABEL(ShadowUpdateEnd):
-    ldr  x13, [sp], #16
-LOCAL_LABEL(ShadowUpdateDisabled):
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -156,19 +159,11 @@ LOCAL_LABEL(ShadowUpdateDisabled):
 
 LOCAL_LABEL(CheckCardTable):
     // Branch to Exit if the reference is not in the Gen0 heap
-    //
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
+    ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
     cbz  x12, LOCAL_LABEL(SkipEphemeralCheck)
-    cmp  x15,  x12
-
-    ldr  x12, LOCAL_LABEL(wbs_ephemeral_high)
-
-    // Compare against the upper bound if the previous comparison indicated
-    // that the destination address is greater than or equal to the lower
-    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
-    // branch to exit is taken.
-    ccmp x15, x12, #0x2, hs
-
+    cmp  x15, x12
+    ccmp x15, x17, #0x2, hs
     bhs  LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
@@ -197,6 +192,9 @@ LOCAL_LABEL(UpdateCardBundle):
 #endif
 
 LOCAL_LABEL(Exit):
+    // Increment by 8 to implement JIT_ByRefWriteBarrier contract.
+    // TODO: Consider duplicating the logic to get rid of this redundant 'add'
+    // for JIT_WriteBarrier/JIT_CheckedWriteBarrier
     add  x14, x14, 8
     ret  lr
 WRITE_BARRIER_END JIT_WriteBarrier
