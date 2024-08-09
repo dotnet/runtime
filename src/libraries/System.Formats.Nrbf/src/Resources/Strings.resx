@@ -159,4 +159,7 @@
   <data name="NotSupported_NonZeroOffsets" xml:space="preserve">
     <value>Only arrays with zero offsets are supported.</value>
   </data>
+  <data name="Serialization_InvalidAssemblyName" xml:space="preserve">
+    <value>Invalid assembly name: `{0}`.</value>
+  </data>
 </root>

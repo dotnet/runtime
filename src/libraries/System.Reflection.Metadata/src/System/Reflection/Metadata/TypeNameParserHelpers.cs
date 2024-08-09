@@ -388,5 +388,13 @@ namespace System.Reflection.Metadata
             throw new InvalidOperationException();
 #endif
         }
+
+#if SYSTEM_REFLECTION_METADATA
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NotSimpleName(string fullName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Arg_NotSimpleTypeName, fullName));
+        }
+#endif
     }
 }
