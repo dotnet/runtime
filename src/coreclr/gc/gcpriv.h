@@ -1373,6 +1373,10 @@ enum free_region_kind
     large_free_region,
     huge_free_region,
     count_free_region_kinds,
+
+    // Many calculations consider huge regions to be a number of large region units.
+    // This count excludes huge regions for those cases.
+    count_core_free_region_kinds = large_free_region + 1,
 };
 
 static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
@@ -4238,6 +4242,9 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint8_t*** g_mark_list_piece;
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_regions_to_decommit[count_free_region_kinds];
+    // At the end of each distribute_free_regions call, we record the size of global_regions_to_decommit so that
+    // we can see the decommit progress during the next call.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t to_decommit_size_last_distribute[count_core_free_region_kinds];
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_free_huge_regions;
 #else //USE_REGIONS
