@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Numerics;
-
-using MapUnit = uint;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 
-#pragma warning disable SA1121 // Use built in alias
 internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
 {
     internal struct NativeCodeVersionContract
@@ -20,5 +16,11 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         {
             _target = target;
         }
+
+        public NativeCodeVersionHandle GetSpecificNativeCodeVersion(TargetCodePointer ip)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

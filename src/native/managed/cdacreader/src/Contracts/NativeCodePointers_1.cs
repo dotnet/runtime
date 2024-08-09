@@ -10,13 +10,15 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     private readonly Target _target;
     private readonly PrecodeContract _precodeContract;
     private readonly ExecutionManagerContract _executionManagerContract;
+    private readonly NativeCodeVersionContract _nativeCodeVersionContract;
 
 
-    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, Data.RangeSectionMap topRangeSectionMap)
+    public NativeCodePointers_1(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor, Data.RangeSectionMap topRangeSectionMap, Data.ProfControlBlock profControlBlock)
     {
         _target = target;
         _precodeContract = new PrecodeContract(target, precodeMachineDescriptor);
-        _executionManagerContract = new ExecutionManagerContract(target, topRangeSectionMap);
+        _executionManagerContract = new ExecutionManagerContract(target, topRangeSectionMap, profControlBlock);
+        _nativeCodeVersionContract = new NativeCodeVersionContract(target);
     }
 
     TargetPointer INativeCodePointers.MethodDescFromStubAddress(TargetCodePointer entryPoint)
@@ -36,4 +38,43 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         return info.MethodDescAddress;
     }
 
+    NativeCodeVersionHandle INativeCodePointers.GetSpecificNativeCodeVersion(TargetCodePointer ip)
+    {
+        EECodeInfo? info = _executionManagerContract.GetEECodeInfo(ip);
+        if (info == null || !info.Valid)
+        {
+            return NativeCodeVersionHandle.Invalid;
+        }
+        TargetPointer methodDescAddress = info.MethodDescAddress;
+        if (methodDescAddress == TargetPointer.Null)
+        {
+            return NativeCodeVersionHandle.Invalid;
+        }
+
+        return _nativeCodeVersionContract.GetSpecificNativeCodeVersion(ip);
+    }
+
+    bool INativeCodePointers.IsReJITEnabled()
+    {
+        return _executionManagerContract.IsReJITEnabled();
+    }
+
+    bool INativeCodePointers.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddress)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
+        if (rts.IsDynamicMethod(md))
+            return false;
+        if (rts.IsCollectibleMethod(md))
+            return false;
+        TargetPointer mtAddr = rts.GetMethodTable(md);
+        TypeHandle mt = rts.GetTypeHandle(mtAddr);
+        TargetPointer modAddr = rts.GetModule(mt);
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mod = loader.GetModuleHandle(modAddr);
+        ModuleFlags modFlags = loader.GetFlags(mod);
+        if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
+            return false;
+        return true;
+    }
 }

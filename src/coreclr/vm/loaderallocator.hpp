@@ -47,7 +47,7 @@ public:
     VPTR_VTABLE_CLASS(CodeRangeMapRangeList, RangeList)
 
 #if defined(DACCESS_COMPILE) || !defined(TARGET_WINDOWS)
-    CodeRangeMapRangeList() : 
+    CodeRangeMapRangeList() :
         _RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT),
         _rangeListType(STUB_CODE_BLOCK_UNKNOWN),
         _id(NULL),
@@ -55,7 +55,7 @@ public:
     {}
 #endif
 
-    CodeRangeMapRangeList(StubCodeBlockKind rangeListType, bool collectible) : 
+    CodeRangeMapRangeList(StubCodeBlockKind rangeListType, bool collectible) :
         _RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT),
         _rangeListType(rangeListType),
         _id(NULL),
@@ -84,7 +84,7 @@ private:
 
         _ASSERTE(id == _id || _id == NULL);
         _id = id;
-        // Grow the array first, so that a failure cannot break the 
+        // Grow the array first, so that a failure cannot break the
 
         RangeSection::RangeSectionFlags flags = RangeSection::RANGE_SECTION_RANGELIST;
         if (_collectible)
@@ -92,7 +92,7 @@ private:
             _starts.Preallocate(_starts.GetCount() + 1);
             flags = (RangeSection::RangeSectionFlags)(flags | RangeSection::RANGE_SECTION_COLLECTIBLE);
         }
-        
+
         ExecutionManager::AddCodeRange(start, end, ExecutionManager::GetEEJitManager(), flags, this);
 
         if (_collectible)
@@ -145,7 +145,7 @@ protected:
         // This implementation only works for the case where the RangeList is used in a single LoaderHeap
         _ASSERTE(start == NULL);
         _ASSERTE(end == NULL);
-        
+
         SimpleWriteLockHolder lh(&_RangeListRWLock);
         _ASSERTE(id == _id || (_id == NULL && _starts.IsEmpty()));
 
@@ -171,7 +171,7 @@ protected:
             return FALSE;
         if ((pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST) == 0)
             return FALSE;
-        
+
         return (pRS->_pRangeList == this);
     }
 
@@ -332,7 +332,7 @@ protected:
     bool                m_fTerminated;
     bool                m_fMarked;
     int                 m_nGCCount;
-    bool                m_IsCollectible;
+    BYTE                m_IsCollectible;
 
     // Pre-allocated blocks of heap for collectible assemblies. Will be set to NULL as soon as it is
     // used. See code in GetVSDHeapInitialBlock and GetCodeHeapInitialBlock
@@ -570,7 +570,7 @@ public:
     DispatchToken GetDispatchToken(UINT32 typeId, UINT32 slotNumber);
 
     virtual LoaderAllocatorID* Id() =0;
-    BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible; }
+    BOOL IsCollectible() { WRAPPER_NO_CONTRACT; return m_IsCollectible != 0; }
 
     // This function may only be called while the runtime is suspended
     // As it does not lock around access to a RangeList
@@ -865,7 +865,15 @@ public:
     virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
     virtual void CleanupDependentHandlesToNativeObjects() {};
 #endif
+
+    template<typename T> friend struct ::cdac_data;
 };  // class LoaderAllocator
+
+template<>
+struct cdac_data<LoaderAllocator>
+{
+    static constexpr size_t IsCollectible = offsetof(LoaderAllocator, m_IsCollectible);
+};
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 

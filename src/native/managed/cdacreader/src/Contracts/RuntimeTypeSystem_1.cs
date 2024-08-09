@@ -106,6 +106,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // HasPrecode implies that HasStableEntryPoint is set.
         HasStableEntryPoint = 0x1000, // The method entrypoint is stable (either precode or actual code)
         HasPrecode = 0x2000, // Precode has been allocated for this method
+        IsUnboxingStub = 0x4000,
+        IsEligibleForTieredCompilation = 0x8000,
     }
 
     internal enum MethodClassification
@@ -180,6 +182,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags.ClassificationMask);
+
+        internal bool HasFlags(MethodDescFlags3 flags) => (_desc.Flags3AndTokenRemainder & (ushort)flags) != 0;
+
+        public bool IsEligibleForTieredCompilation => HasFlags(MethodDescFlags3.IsEligibleForTieredCompilation);
+
+
+        public bool IsUnboxingStub => HasFlags(MethodDescFlags3.IsUnboxingStub);
+
     }
 
     private class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
@@ -832,6 +842,74 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             throw new NotImplementedException(); // TODO(cdac):
         }
 
+    }
+
+    private bool IsWrapperStub(MethodDesc md)
+    {
+        return md.IsUnboxingStub || IsInstantiatingStub(md);
+    }
+
+    private bool IsInstantiatingStub(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && !md.IsUnboxingStub && AsInstantiatedMethodDesc(md).IsWrapperStubWithInstantiations;
+    }
+
+    private bool HasMethodInstantiation(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).HasMethodInstantiation;
+    }
+
+    private TargetPointer GetLoaderModule(TypeHandle typeHandle)
+    {
+        throw new NotImplementedException();
+    }
+
+    private bool IsGenericMethodDefinition(MethodDesc md)
+    {
+        return md.Classification == MethodClassification.Instantiated && AsInstantiatedMethodDesc(md).IsGenericMethodDefinition;
+    }
+
+    private TargetPointer GetLoaderModule(MethodDesc md)
+    {
+
+        if (HasMethodInstantiation(md) && !IsGenericMethodDefinition(md))
+        {
+            // TODO[cdac]: don't reimplement ComputeLoaderModuleWorker,
+            // but try caching the LoaderModule (or just the LoaderAllocator?) on the
+            // MethodDescChunk (and maybe MethodTable?).
+            throw new NotImplementedException();
+        }
+        else
+        {
+            TargetPointer mtAddr = GetMethodTable(new MethodDescHandle(md.Address));
+            TypeHandle mt = GetTypeHandle(mtAddr);
+            return GetLoaderModule(mt);
+        }
+    }
+
+    bool IRuntimeTypeSystem.IsCollectibleMethod(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        TargetPointer loaderModuleAddr = GetLoaderModule(md);
+        ModuleHandle mod = _target.Contracts.Loader.GetModuleHandle(loaderModuleAddr);
+        return _target.Contracts.Loader.IsCollectibleLoaderAllocator(mod); // TODO[cdac]: return pMethodDesc->GetLoaderAllocator()->IsCollectible()
+    }
+
+    bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        if (md.IsEligibleForTieredCompilation)
+            return true;
+        // MethodDesc::IsEligibleForReJIT
+        if (_target.Contracts.NativeCodePointers.IsReJITEnabled())
+        {
+            if (!md.IsIL)
+                return false;
+            if (IsWrapperStub(md))
+                return false;
+            return _target.Contracts.NativeCodePointers.CodeVersionManagerSupportsMethod(methodDesc.Address);
+        }
+        return false;
     }
 
 }

@@ -85,6 +85,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     internal struct ExecutionManagerContract
     {
         internal readonly Target _target;
+        private readonly Data.ProfControlBlock _profControlBlock;
         private readonly Data.RangeSectionMap _topRangeSectionMap;
         private readonly TargetCodeManagerDescriptor _targetCodeManagerDescriptor;
 
@@ -95,11 +96,12 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
             ReadyToRunJitManager = 1,
         }
 
-        public ExecutionManagerContract(Target target, Data.RangeSectionMap topRangeSectionMap)
+        public ExecutionManagerContract(Target target, Data.RangeSectionMap topRangeSectionMap, Data.ProfControlBlock profControlBlock)
         {
             _target = target;
             _topRangeSectionMap = topRangeSectionMap;
             _targetCodeManagerDescriptor = TargetCodeManagerDescriptor.Create(target);
+            _profControlBlock = profControlBlock;
         }
 
         [Flags]
@@ -279,6 +281,16 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
                 nextLevelAddress = rangeSectionL.Offset(_target.PointerSize, EffectiveBitsForLevel(_targetCodeManagerDescriptor, jittedCodeAddress, level));
             }
             return nextLevelAddress;
+        }
+
+        internal bool IsReJITEnabled()
+        {
+            bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)Legacy.COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
+            // FIXME: it is very likely this is always true in the DAC
+            // Most people don't set DOTNET_ProfAPI_RejitOnAttach = 0
+            // See https://github.com/dotnet/runtime/issues/106148
+            bool clrConfigEnabledReJIT = true;
+            return profEnabledReJIT || clrConfigEnabledReJIT;
         }
 
     }

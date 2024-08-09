@@ -235,6 +235,11 @@ CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, TableData, offsetof(LookupMapBase, pTable))
 CDAC_TYPE_END(ModuleLookupMap)
 
+CDAC_TYPE_BEGIN(LoaderAllocator)
+CDAC_TYPE_INDETERMINATE(LoaderAllocator)
+CDAC_TYPE_FIELD(LoaderAllocator, /*uint8*/, IsCollectible, cdac_data<LoaderAllocator>::IsCollectible)
+CDAC_TYPE_END(LoaderAllocator)
+
 // RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
@@ -412,6 +417,10 @@ CDAC_TYPE_FIELD(HeapList, /*pointer*/, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(HeapList, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(HeapList)
 
+CDAC_TYPE_BEGIN(ProfControlBlock)
+CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_END(ProfControlBlock)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -453,6 +462,7 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(PrecodeMachineDescriptor, &::g_PrecodeMachineDescriptor)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

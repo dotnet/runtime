@@ -29,6 +29,7 @@ public enum DataType
     RuntimeThreadLocals,
     Module,
     ModuleLookupMap,
+    LoaderAllocator,
     MethodTable,
     EEClass,
     ArrayClass,
@@ -60,4 +61,5 @@ public enum DataType
     IJitManager,
     RealCodeHeader,
     HeapList,
+    ProfControlBlock,
 }
