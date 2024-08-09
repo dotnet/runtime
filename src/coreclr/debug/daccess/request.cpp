@@ -2542,6 +2542,41 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
         return E_INVALIDARG;
 
     SOSDacEnter();
+
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetPEFileName(moduleAddr, count, fileName, pNeeded);
+        if (FAILED(hr))
+        {
+            hr = GetPEFileNameImpl(moduleAddr, count, fileName, pNeeded);
+        }
+#ifdef _DEBUG
+        else
+        {
+            NewArrayHolder<WCHAR> fileNameLocal(new WCHAR[count]);
+            unsigned int neededLocal = 0;
+            HRESULT hrLocal = GetPEFileNameImpl(moduleAddr, count, fileNameLocal, &neededLocal);
+
+            DacAssertsEnabledHolder assertsEnabled;
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(pNeeded == NULL || *pNeeded == neededLocal);
+            _ASSERTE(fileName == NULL || u16_strncmp(fileName, fileNameLocal, count) == 0);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetPEFileNameImpl(moduleAddr, count, fileName, pNeeded);;
+    }
+
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetPEFileNameImpl(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
+{
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
     PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
@@ -2549,11 +2584,11 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
     if (!pPEAssembly->GetPath().IsEmpty())
     {
         if (!pPEAssembly->GetPath().DacGetUnicode(count, fileName, pNeeded))
-            hr = E_FAIL;
+            return E_FAIL;
     }
     else if (!pPEAssembly->IsReflectionEmit())
     {
-        hr = E_NOTIMPL;
+        return E_NOTIMPL;
     }
     else
     {
@@ -2564,8 +2599,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
             *pNeeded = 1;
     }
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
