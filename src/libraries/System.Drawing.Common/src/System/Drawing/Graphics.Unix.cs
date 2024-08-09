@@ -78,6 +78,7 @@ namespace System.Drawing
                     Graphics g = Graphics.FromImage(bmp);
                     defDpiX = g.DpiX;
                     defDpiY = g.DpiY;
+                    bmp.Dispose();
                 }
                 return defDpiX;
             }
@@ -93,6 +94,7 @@ namespace System.Drawing
                     Graphics g = Graphics.FromImage(bmp);
                     defDpiX = g.DpiX;
                     defDpiY = g.DpiY;
+                    bmp.Dispose();
                 }
                 return defDpiY;
             }
