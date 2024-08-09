@@ -401,6 +401,8 @@ public sealed unsafe class Target
     public bool IsAlignedToPointerSize(TargetPointer pointer)
         => IsAligned(pointer.Value, _config.PointerSize);
 
+    public char DirectorySeparator => (char)ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
+
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
         => ReadGlobal<T>(name, out _);
 

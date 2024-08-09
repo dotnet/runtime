@@ -158,8 +158,14 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
                         TargetPointer modulePtr = rtsContract.GetModule(rtsContract.GetTypeHandle(rtsContract.GetMethodTable(methodDescHandle)));
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
                         string modulePath = _target.Contracts.Loader.GetPath(module);
+                        ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
+                        int pathNameSpanIndex = moduleSpan.LastIndexOf(_target.DirectorySeparator);
+                        if (pathNameSpanIndex != -1)
+                        {
+                            moduleSpan = moduleSpan.Slice(pathNameSpanIndex + 1);
+                        }
                         stringBuilder.Clear();
-                        stringBuilder.Append(modulePath);
+                        stringBuilder.Append(moduleSpan);
                         stringBuilder.Append("!Unknown");
                         hr = HResults.S_OK;
                     }
