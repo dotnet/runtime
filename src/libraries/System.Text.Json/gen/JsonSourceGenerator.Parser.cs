@@ -1167,7 +1167,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     // Skip the member if either of the two conditions hold
                     // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
-                    // 2. The member type is not accessible within the generated context OR
+                    // 2. The member type is not accessible within the generated context.
                     return null;
                 }
 
