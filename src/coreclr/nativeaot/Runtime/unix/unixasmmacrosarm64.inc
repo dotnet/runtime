@@ -3,6 +3,13 @@
 
 #include "AsmOffsets.inc"
 
+// Apple Clang 16 incorrectly check constraints for .alt_entry and .cfi_adjust_cfa_offset.
+// This was reported and fixed upstream: https://github.com/llvm/llvm-project/issues/97116
+// Until a fixed version of Xcode Clang is available we avoid emiting epilog CFI codes.
+#if __clang_major__ >= 16 && __clang_major__ < 17 && defined(__apple_build_version__)
+#define NO_CFI_EPILOG 1
+#endif
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -24,9 +31,11 @@ C_FUNC(\Name):
 .endm
 
 .macro ALTERNATE_ENTRY Name
-        .global C_FUNC(\Name)
 #if !defined(__APPLE__)
+        .global C_FUNC(\Name)
         .hidden C_FUNC(\Name)
+#else
+        .alt_entry C_FUNC(\Name)
 #endif
 C_FUNC(\Name):
 .endm
@@ -98,12 +107,16 @@ C_FUNC(\Name):
 
 .macro EPILOG_STACK_FREE Size
         add sp, sp, \Size
+#ifndef NO_CFI_EPILOG
         .cfi_adjust_cfa_offset -\Size
+#endif
 .endm
 
 .macro EPILOG_STACK_RESTORE
         mov sp, fp
+#ifndef NO_CFI_EPILOG
         .cfi_restore sp
+#endif
 .endm
 
 .macro PROLOG_SAVE_REG reg, ofs
@@ -142,20 +155,26 @@ C_FUNC(\Name):
 
 .macro EPILOG_RESTORE_REG reg, ofs
         ldr \reg, [sp, \ofs]
+#ifndef NO_CFI_EPILOG
         .cfi_restore \reg
+#endif
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
         ldp \reg1, \reg2, [sp, \ofs]
+#ifndef NO_CFI_EPILOG
         .cfi_restore \reg1
         .cfi_restore \reg2
+#endif
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ofs
         ldp \reg1, \reg2, [sp], \ofs
+#ifndef NO_CFI_EPILOG
         .cfi_restore \reg1
         .cfi_restore \reg2
         .cfi_adjust_cfa_offset -\ofs
+#endif
 .endm
 
 .macro EPILOG_RETURN
