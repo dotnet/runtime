@@ -7,6 +7,8 @@ using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
 using System.Diagnostics;
+using System.Text;
+using System.Reflection;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -71,19 +73,52 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ValidMask = 2,
     }
 
+    internal enum MethodDescClassification
+    {
+        mcIL = 0, // IL
+        mcFCall = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
+        mcNDirect = 2, // N/Direct
+        mcEEImpl = 3, // special method; implementation provided by EE (like Delegate Invoke)
+        mcArray = 4, // Array ECall
+        mcInstantiated = 5, // Instantiated generic methods, including descriptors
+                            // for both shared and unshared code (see InstantiatedMethodDesc)
+        mcComInterop = 6,
+        mcDynamic = 7, // for method desc with no metadata behind
+    }
+
     [Flags]
     internal enum MethodDescFlags : ushort
     {
+        ClassificationMask = 0x7,
         HasNonVtableSlot = 0x0008,
+    }
+
+    internal enum InstantiatedMethodDescFlags2 : ushort
+    {
+        KindMask = 0x07,
+        GenericMethodDefinition = 0x01,
+        UnsharedMethodInstantiation = 0x02,
+        SharedMethodInstantiation = 0x03,
+        WrapperStubWithInstantiations = 0x04,
+    }
+
+    [Flags]
+    internal enum DynamicMethodDescExtendedFlags : uint
+    {
+        IsLCGMethod = 0x00004000,
+        IsILStub = 0x00008000,
     }
 
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;
         private readonly Data.MethodDescChunk _chunk;
+        private readonly Target _target;
+
         internal TargetPointer Address { get; init; }
-        internal MethodDesc(TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+        internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
+            _target = target;
             _desc = desc;
             _chunk = chunk;
             Address = methodDescPointer;
@@ -91,6 +126,24 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public TargetPointer MethodTable => _chunk.MethodTable;
         public ushort Slot => _desc.Slot;
+        public uint Token
+        {
+            get
+            {
+                int tokenRemainderBitCount = _target.ReadGlobal<byte>(Constants.Globals.MethodDescTokenRemainderBitCount);
+                int tokenRangeBitCount = 24 - tokenRemainderBitCount;
+                uint allRidBitsSet = 0xFFFFFF;
+                uint tokenRemainderMask = allRidBitsSet >> tokenRangeBitCount;
+                uint tokenRangeMask = allRidBitsSet >> tokenRemainderBitCount;
+
+                uint tokenRemainder = (uint)(_desc.Flags3AndTokenRemainder & tokenRemainderMask);
+                uint tokenRange = ((uint)(_chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
+
+                return 0x06000000 | tokenRange | tokenRemainder;
+            }
+        }
+
+        public MethodDescClassification Classification => (MethodDescClassification)((int)_desc.Flags & (int)MethodDescFlags.ClassificationMask);
     }
 
     internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
@@ -473,7 +526,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 throw new InvalidOperationException("cached MethodDesc data but not its containing MethodDescChunk");
             }
-            MethodDesc validatedMethodDesc = new MethodDesc(methodDescPointer, methodDescData, methodDescChunkData);
+            MethodDesc validatedMethodDesc = new MethodDesc(_target, methodDescPointer, methodDescData, methodDescChunkData);
             _ = _methodDescs.TryAdd(methodDescPointer, validatedMethodDesc);
             return new MethodDescHandle(methodDescPointer);
         }
@@ -487,10 +540,194 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
         Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
 
-        MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
+        MethodDesc trustedMethodDescF = new MethodDesc(_target, methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
         _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
         return new MethodDescHandle(methodDescPointer);
     }
 
     public TargetPointer GetMethodTable(MethodDescHandle methodDescHandle) => _methodDescs[methodDescHandle.Address].MethodTable;
+
+    public bool IsGenericMethodDefinition(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcInstantiated)
+            return false;
+
+        Data.InstantiatedMethodDesc instantiatedMethodDesc = _target.ProcessedData.GetOrAdd<Data.InstantiatedMethodDesc>(methodDescHandle.Address);
+        return ((int)instantiatedMethodDesc.Flags2 & (int)InstantiatedMethodDescFlags2.KindMask) == (int)InstantiatedMethodDescFlags2.GenericMethodDefinition;
+    }
+
+    public ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcInstantiated)
+            return default;
+
+        return _target.ProcessedData.GetOrAdd<MethodInstantiation> (methodDescHandle.Address).TypeHandles;
+    }
+
+    private class MethodInstantiation : IData<MethodInstantiation>
+    {
+        public static MethodInstantiation Create(Target target, TargetPointer address) => new MethodInstantiation(target, address);
+
+        public TypeHandle[] TypeHandles { get; }
+        private MethodInstantiation(Target target, TargetPointer methodDescPointer)
+        {
+            RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
+            Data.InstantiatedMethodDesc instantiatedMethodDesc = target.ProcessedData.GetOrAdd<Data.InstantiatedMethodDesc>(methodDescPointer);
+
+            int numGenericArgs = instantiatedMethodDesc.NumGenericArgs;
+            TargetPointer perInstInfo = instantiatedMethodDesc.PerInstInfo;
+            if (perInstInfo == TargetPointer.Null)
+            {
+                numGenericArgs = 0;
+            }
+
+            TypeHandles = new TypeHandle[numGenericArgs];
+            for (int i = 0; i < numGenericArgs; i++)
+            {
+                TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(perInstInfo + (ulong)target.PointerSize * (ulong)i));
+            }
+        }
+    }
+
+    public uint GetMethodToken(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.Token;
+    }
+
+    public bool IsArrayMethod(MethodDescHandle methodDescHandle, out ArrayFunctionType functionType)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcArray)
+        {
+            functionType = default;
+            return false;
+        }
+
+        int arrayMethodIndex = methodDesc.Slot - GetNumVtableSlots(GetTypeHandle(methodDesc.MethodTable));
+
+        functionType = arrayMethodIndex switch
+        {
+            0 => ArrayFunctionType.Get,
+            1 => ArrayFunctionType.Set,
+            2 => ArrayFunctionType.Address,
+            > 3 => ArrayFunctionType.Constructor,
+            _ => throw new InvalidOperationException()
+        };
+
+        return true;
+    }
+
+    public bool IsDynamicMethod(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> methodName)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        {
+            methodName = default;
+            return false;
+        }
+
+        methodName = _target.ProcessedData.GetOrAdd<DynamicMethodDesc>(methodDescHandle.Address).MethodName;
+        return true;
+    }
+
+    private class DynamicMethodDesc : IData<DynamicMethodDesc>
+    {
+        public static DynamicMethodDesc Create(Target target, TargetPointer address) => new DynamicMethodDesc(target, address);
+
+        public byte[] MethodName { get; }
+        public DynamicMethodDescExtendedFlags ExtendedFlags { get; }
+        private DynamicMethodDesc(Target target, TargetPointer methodDescPointer)
+        {
+            List<byte> nameBytes = new();
+            Data.DynamicMethodDesc dynamicMethodDesc = target.ProcessedData.GetOrAdd<Data.DynamicMethodDesc>(methodDescPointer);
+
+            if (dynamicMethodDesc.MethodName != TargetPointer.Null)
+            {
+                TargetPointer currentNameAddress = dynamicMethodDesc.MethodName;
+                do
+                {
+                    byte nameByte = target.Read<byte>(currentNameAddress);
+
+                    if (nameByte == 0)
+                        break;
+
+                    nameBytes.Add(nameByte);
+                    currentNameAddress++;
+                } while (true);
+
+                MethodName = nameBytes.ToArray();
+            }
+            else
+            {
+                MethodName = System.Array.Empty<byte>();
+            }
+
+            Data.StoredSigMethodDesc storedSigMethodDesc = target.ProcessedData.GetOrAdd<Data.StoredSigMethodDesc>(methodDescPointer);
+            ExtendedFlags = (DynamicMethodDescExtendedFlags)storedSigMethodDesc.ExtendedFlags;
+        }
+    }
+
+    public bool IsStoredSigMethodDesc(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        switch (methodDesc.Classification)
+        {
+            case MethodDescClassification.mcDynamic:
+            case MethodDescClassification.mcEEImpl:
+            case MethodDescClassification.mcArray:
+                break; // These have stored sigs
+
+            default:
+                signature = default;
+                return false;
+        }
+
+        signature = _target.ProcessedData.GetOrAdd<StoredSigMethodDesc>(methodDescHandle.Address).Signature;
+        return true;
+    }
+
+    private class StoredSigMethodDesc: IData<StoredSigMethodDesc>
+    {
+        public static StoredSigMethodDesc Create(Target target, TargetPointer address) => new StoredSigMethodDesc(target, address);
+
+        public byte[] Signature { get; }
+        private StoredSigMethodDesc(Target target, TargetPointer methodDescPointer)
+        {
+            Data.StoredSigMethodDesc storedSigMethodDesc = target.ProcessedData.GetOrAdd<Data.StoredSigMethodDesc>(methodDescPointer);
+            Signature = new byte[storedSigMethodDesc.cSig];
+            target.ReadBuffer(storedSigMethodDesc.Sig, Signature.AsSpan());
+        }
+    }
+
+    public bool IsLCGMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        {
+            return false;
+        }
+
+        return _target.ProcessedData.GetOrAdd<DynamicMethodDesc>(methodDescHandle.Address).ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
+    }
+
+    public bool IsILStub(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodDescClassification.mcDynamic)
+        {
+            return false;
+        }
+
+        return _target.ProcessedData.GetOrAdd<DynamicMethodDesc>(methodDescHandle.Address).ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
 }

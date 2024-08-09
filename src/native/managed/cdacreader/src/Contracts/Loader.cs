@@ -130,6 +130,8 @@ internal interface ILoader : IContract
     public virtual TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
+
+    public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 internal readonly struct Loader : ILoader
