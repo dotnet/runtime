@@ -1,5 +1,9 @@
 <Project>
 
+  <PropertyGroup>
+    <UseCompilerGeneratedDocXmlFile Condition="'$(UseCompilerGeneratedDocXmlFile)' == ''">true</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
