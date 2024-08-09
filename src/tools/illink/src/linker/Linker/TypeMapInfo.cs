@@ -154,7 +154,7 @@ namespace Mono.Linker
 					return;
 				// Get all explicit interfaces of this type
 				foreach (var iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef);
 					if (interfaceType is null) {
 						continue;
 					}
@@ -166,7 +166,7 @@ namespace Mono.Linker
 				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
 				foreach (var iface in type.Interfaces) {
 					// If we can't resolve the interface type we can't find recursive interfaces
-					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
+					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef);
 					if (ifaceDirectlyOnType is null) {
 						continue;
 					}
@@ -310,7 +310,7 @@ namespace Mono.Linker
 				var baseType = context.TryResolve (type)?.BaseType;
 
 				if (baseType is GenericInstanceType)
-					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType, context);
+					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType);
 
 				return baseType;
 			}
@@ -389,7 +389,7 @@ namespace Mono.Linker
 		}
 
 		[SuppressMessage ("ApiDesign", "RS0030:Do not used banned APIs", Justification = "It's best to leave working code alone.")]
-		bool MethodMatch (MethodReference candidate, MethodReference method)
+		static bool MethodMatch (MethodReference candidate, MethodReference method)
 		{
 			if (candidate.HasParameters != method.HasMetadataParameters ())
 				return false;
@@ -402,8 +402,8 @@ namespace Mono.Linker
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (candidate.GetReturnType (context) is not TypeReference candidateReturnType ||
-				method.GetReturnType (context) is not TypeReference methodReturnType ||
+			if (candidate.GetReturnType () is not TypeReference candidateReturnType ||
+				method.GetReturnType () is not TypeReference methodReturnType ||
 				!TypeMatch (candidateReturnType, methodReturnType))
 				return false;
 
@@ -419,8 +419,8 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (candidate.GetInflatedParameterType (i, context) is not TypeReference candidateParameterType ||
-					method.GetInflatedParameterType (i, context) is not TypeReference methodParameterType ||
+				if (candidate.GetInflatedParameterType (i) is not TypeReference candidateParameterType ||
+					method.GetInflatedParameterType (i) is not TypeReference methodParameterType ||
 					!TypeMatch (candidateParameterType, methodParameterType))
 					return false;
 			}
