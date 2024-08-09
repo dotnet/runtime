@@ -11,7 +11,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// These methods are used to throw exceptions from generated code. The type and methods
     /// need to be public as they constitute a public contract with the NativeAOT toolchain.
     /// </summary>
-    public static class ThrowHelpers
+    public static partial class ThrowHelpers
     {
         internal static void ThrowBodyRemoved()
         {
@@ -33,39 +33,9 @@ namespace Internal.Runtime.CompilerHelpers
             throw new TypeLoadException(SR.Arg_UnavailableTypeLoadException);
         }
 
-        public static void ThrowOverflowException()
-        {
-            throw new OverflowException();
-        }
-
-        public static void ThrowIndexOutOfRangeException()
-        {
-            throw new IndexOutOfRangeException();
-        }
-
-        public static void ThrowNullReferenceException()
-        {
-            throw new NullReferenceException();
-        }
-
-        public static void ThrowDivideByZeroException()
-        {
-            throw new DivideByZeroException();
-        }
-
         public static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
-        }
-
-        public static void ThrowPlatformNotSupportedException()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public static void ThrowNotImplementedException()
-        {
-            throw NotImplemented.ByDesign;
         }
 
         public static void ThrowNotSupportedException()
@@ -121,16 +91,6 @@ namespace Internal.Runtime.CompilerHelpers
         public static void ThrowAmbiguousMatchException(ExceptionStringID id)
         {
             throw TypeLoaderExceptionHelper.CreateAmbiguousMatchException(id);
-        }
-
-        public static void ThrowArgumentException()
-        {
-            throw new ArgumentException();
-        }
-
-        public static void ThrowArgumentOutOfRangeException()
-        {
-            throw new ArgumentOutOfRangeException();
         }
 
         public static void ThrowNotSupportedInlineArrayEqualsGetHashCode()
