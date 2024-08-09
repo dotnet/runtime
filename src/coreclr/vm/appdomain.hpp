@@ -1820,16 +1820,7 @@ private:
 
 #endif
 
-    template<typename T> friend struct ::cdac_data;
 };  // class AppDomain
-
-template<>
-struct cdac_data<AppDomain>
-{
-#ifdef FEATURE_CODE_VERSIONING
-    static constexpr size_t CodeVersionManager = offsetof(AppDomain, m_CodeVersionManager);
-#endif
-};
 
 // Just a ref holder
 typedef ReleaseHolder<AppDomain> AppDomainRefHolder;

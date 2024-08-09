@@ -18,11 +18,7 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
         _target = target;
         _precodeContract = new PrecodeContract(target, precodeMachineDescriptor);
         _executionManagerContract = new ExecutionManagerContract(target, topRangeSectionMap, profControlBlock);
-        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        TargetPointer appDomainAddress = _target.ReadPointer(appDomainPointer);
-        Data.AppDomain appDomain = _target.ProcessedData.GetOrAdd<Data.AppDomain>(appDomainAddress);
-        TargetPointer codeVersionManagerAddress = appDomain.CodeVersionManager;
-        _nativeCodeVersionContract = new NativeCodeVersionContract(target, codeVersionManagerAddress);
+        _nativeCodeVersionContract = new NativeCodeVersionContract(target);
     }
 
     TargetPointer INativeCodePointers.MethodDescFromStubAddress(TargetCodePointer entryPoint)

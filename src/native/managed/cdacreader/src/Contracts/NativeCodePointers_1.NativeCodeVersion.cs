@@ -11,12 +11,10 @@ internal readonly partial struct NativeCodePointers_1 : INativeCodePointers
     internal struct NativeCodeVersionContract
     {
         private readonly Target _target;
-        private readonly TargetPointer _codeVersionManagerAddress;
 
-        public NativeCodeVersionContract(Target target, TargetPointer codeVersionManagerAddress)
+        public NativeCodeVersionContract(Target target)
         {
             _target = target;
-            _codeVersionManagerAddress = codeVersionManagerAddress;
         }
 
         public NativeCodeVersionHandle GetSpecificNativeCodeVersion(IRuntimeTypeSystem rts, MethodDescHandle md, TargetCodePointer startAddress)

@@ -212,13 +212,6 @@ CDAC_TYPE_END(SyncTableEntry)
 
 // Loader
 
-CDAC_TYPE_BEGIN(AppDomain)
-CDAC_TYPE_INDETERMINATE(AppDomain)
-#ifdef FEATURE_CODE_VERSIONING
-CDAC_TYPE_FIELD(AppDomain, /*pointer*/, CodeVersionManager, cdac_data<AppDomain>::CodeVersionManager)
-#endif
-CDAC_TYPE_END(AppDomain)
-
 CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
