@@ -928,7 +928,7 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
-#if defined(TARGET_RISCV64) || defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     // Cached offsets of struct fields returned according to hardware floating-point calling convention
     // (FpStruct::Flags are packed in m_dwFlags)
     unsigned m_returnedFpFieldOffsets[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(ARG_SLOT)];

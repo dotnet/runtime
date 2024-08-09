@@ -90,11 +90,11 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
     // The second returned register is integer (FpStruct::FloatInt | FpStruct::IntFloat)
     // Note: it will also go in here for FpStruct::OnlyOne but storing a register of trash doesn't hurt
     st.d $a0, $s0, CallDescrData__returnValue + 8
-    j  LOCAL_LABEL(ReturnDone)
+    b  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(SecondFieldFloatReturn):
     fst.d $fa1, $s0, CallDescrData__returnValue + 8
-    j  LOCAL_LABEL(ReturnDone)
+    b  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntReturn):
     // Save struct returned according to integer calling convention
