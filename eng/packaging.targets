@@ -202,6 +202,17 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="WarnOnProjectReferenceToFrameworkAssemblies"
+          BeforeTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' AND
+                     '@(ProjectReference)' != ''">
+    <Warning Text="Project reference '%(ProjectReference.Filename)' is a reference to a framework assembly and is not required."
+             Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) AND
+                        '%(ProjectReference.ReferenceOutputAssembly)' != 'false' AND
+                        '%(ProjectReference.PrivateAssets)' != 'all' AND
+                        '%(ProjectReference.AllowFrameworkPackageReference)' != 'true'" />
+  </Target>
+
   <Target Name="GenerateMultiTargetRoslynComponentTargetsFile"
           Inputs="$(MSBuildProjectFullPath);$(_MultiTargetRoslynComponentTargetsTemplate)"
           Outputs="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)">
