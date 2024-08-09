@@ -8352,10 +8352,20 @@ DONE_MORPHING_CHILDREN:
             return tree;
         }
 
+#ifdef DEBUG
+        if ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
+        {
+            return tree;
+        }
+#endif
+
         /* If we created a comma-throw tree then we need to morph op1 */
         if (fgIsCommaThrow(tree))
         {
-            tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
+            INDEBUG(if ((tree->AsOp()->gtOp1->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0))
+            {
+                tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
+            }
             fgMorphTreeDone(tree);
             return tree;
         }

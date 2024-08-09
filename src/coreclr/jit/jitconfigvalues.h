@@ -650,6 +650,7 @@ CONFIG_STRING(JitObjectStackAllocationRange, W("JitObjectStackAllocationRange"))
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, W("JitObjectStackAllocationRefClass"), 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, W("JitObjectStackAllocationBoxedValueClass"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, W("JitObjectStackAllocationArray"), 1)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
