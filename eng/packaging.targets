@@ -207,6 +207,7 @@
           Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' AND
                      '@(ProjectReference)' != ''">
     <Warning Text="Project reference '%(ProjectReference.Filename)' is a reference to a framework assembly and is not required."
+             Code="NETPKG0001"
              Condition="$(NetCoreAppLibrary.Contains('%(ProjectReference.Filename);')) AND
                         '%(ProjectReference.ReferenceOutputAssembly)' != 'false' AND
                         '%(ProjectReference.PrivateAssets)' != 'all' AND
