@@ -522,7 +522,7 @@ namespace System.Text.Json.SourceGeneration
                     out TypeRef? customConverterType,
                     out bool isPolymorphic);
 
-                if (type is INamedTypeSymbol { IsUnboundGenericType: true } or IErrorTypeSymbol)
+                if (type is { IsRefLikeType: true } or INamedTypeSymbol { IsUnboundGenericType: true } or IErrorTypeSymbol)
                 {
                     classType = ClassType.TypeUnsupportedBySourceGen;
                 }
@@ -571,6 +571,12 @@ namespace System.Text.Json.SourceGeneration
                         (keyType != null && !IsSymbolAccessibleWithin(keyType, within: contextType)))
                     {
                         classType = ClassType.UnsupportedType;
+                        immutableCollectionFactoryTypeFullName = null;
+                        collectionType = default;
+                    }
+                    else if (valueType.IsRefLikeType || keyType?.IsRefLikeType is true)
+                    {
+                        classType = ClassType.TypeUnsupportedBySourceGen;
                         immutableCollectionFactoryTypeFullName = null;
                         collectionType = default;
                     }
@@ -1157,13 +1163,23 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 if ((!canUseGetter && !canUseSetter && !hasJsonIncludeButIsInaccessible) ||
-                    !IsSymbolAccessibleWithin(memberType, within: contextType) ||
-                    (memberType.IsRefLikeType && ignoreCondition is JsonIgnoreCondition.Always))
+                    !IsSymbolAccessibleWithin(memberType, within: contextType))
                 {
                     // Skip the member if either of the two conditions hold
                     // 1. Member has no accessible getters or setters (but is not marked with JsonIncludeAttribute since we need to throw a runtime exception) OR
                     // 2. The member type is not accessible within the generated context OR
-                    // 3. The member is of a ref-like type that is also ignored (we keep all other ignored members for backward compat)
+                    return null;
+                }
+
+                if (memberType.IsRefLikeType)
+                {
+                    // Skip all ref-like members and emit a diagnostic
+                    // unless the property is being explicitly ignored.
+                    if (ignoreCondition is not JsonIgnoreCondition.Always)
+                    {
+                        ReportDiagnostic(DiagnosticDescriptors.TypeContainsRefLikeMember, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
+                    }
+
                     return null;
                 }
 
@@ -1433,7 +1449,7 @@ namespace System.Text.Json.SourceGeneration
                 if (paramCount == 0)
                 {
                     constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
-                    constructorParameters = Array.Empty<ParameterGenerationSpec>();
+                    constructorParameters = [];
                 }
                 else
                 {
@@ -1445,6 +1461,14 @@ namespace System.Text.Json.SourceGeneration
                     for (int i = 0; i < paramCount; i++)
                     {
                         IParameterSymbol parameterInfo = constructor.Parameters[i];
+
+                        if (parameterInfo.Type.IsRefLikeType)
+                        {
+                            ReportDiagnostic(DiagnosticDescriptors.TypeContainsRefLikeMember, parameterInfo.GetLocation(), type.Name, parameterInfo.Name);
+                            constructionStrategy = ObjectConstructionStrategy.NotApplicable;
+                            continue;
+                        }
+
                         TypeRef parameterTypeRef = EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
 
                         constructorParameters[i] = new ParameterGenerationSpec
@@ -1459,7 +1483,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                return constructorParameters;
+                return constructionStrategy is ObjectConstructionStrategy.NotApplicable ? null : constructorParameters;
             }
 
             private List<PropertyInitializerGenerationSpec>? ParsePropertyInitializers(
