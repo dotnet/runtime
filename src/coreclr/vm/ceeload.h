@@ -1384,7 +1384,8 @@ public:
     const SString &GetPath()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(SString{m_path}.Equals(m_pPEAssembly->GetPath()));
+        // Validate the pointers are the same to ensure the lifetime of m_path is handled.
+        _ASSERTE(m_path == m_pPEAssembly->GetPath().GetUnicode());
         return m_pPEAssembly->GetPath();
     }
 
