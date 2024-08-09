@@ -3,42 +3,73 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 using Xunit;
 
-#nullable disable
-
-public class Runtime_105474_A
+public class Runtime_105474
 {
-    private void Method0()
-    {
-        Vector128<ulong> vr0 = Vector128.CreateScalar(1698800584428641629UL);
-        AdvSimd.ShiftLeftLogicalSaturate(vr0, 229);
-    }
-
-    private void Method1()
-    {
-        Vector128<float> vr1 = default;
-        Avx.Compare(vr1, vr1, (FloatComparisonMode)255);
-    }
-
-    [Fact]
-    public static void TestEntryPointArm()
-    {
-        if (AdvSimd.IsSupported)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105474_A().Method0());
-        }
-    }
+    private static Vector<double> s_3;
 
     [Fact]
     public static void TestEntryPoint()
     {
-        if (Avx.IsSupported)
+        if (Sve.IsSupported)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105474_A().Method1());
+            TestMethod1();
+            TestMethod2(Vector<double>.Zero);
+            TestMethod3(Vector<double>.Zero);
+            TestMethod4(Vector<double>.Zero);
+            TestMethod5(Vector<double>.Zero);
+            TestMethod6(Vector<double>.Zero);
         }
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod1()
+    {
+        // Expected codegen: fmad z17.d, p0/m, z17.d, z16.d
+        var vr1 = Vector128.CreateScalar((double)10).AsVector();
+        s_3 = Sve.FusedMultiplyAdd(vr1, s_3, s_3);
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod2(Vector<double> mask)
+    {
+        // Expected codegen: fmla z16.d, p0/m, z17.d, z17.d
+        var vr1 = Vector128.CreateScalar((double)10).AsVector();
+        s_3 = Sve.ConditionalSelect(mask, Sve.FusedMultiplyAdd(vr1, s_3, s_3), s_3);
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod3(Vector<double> mask)
+    {
+        // Expected codegen: fmad z16.d, p0/m, z16.d, z16.d
+        s_3 = Sve.ConditionalSelect(mask, Sve.FusedMultiplyAdd(s_3, s_3, s_3), s_3);
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod4(Vector<double> mask)
+    {
+        // Expected codegen: fmad z16.d, p0/m, z17.d, z16.d
+        var vr1 = Vector128.CreateScalar((double)10).AsVector();
+        s_3 = Sve.ConditionalSelect(mask, Sve.FusedMultiplyAdd(s_3, vr1, s_3), s_3);
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod5(Vector<double> mask)
+    {
+        // Expected codegen: fmad z16.d, p0/m, z16.d, z17.d
+        var vr1 = Vector128.CreateScalar((double)10).AsVector();
+        s_3 = Sve.ConditionalSelect(mask, Sve.FusedMultiplyAdd(s_3, vr1, vr1), s_3);
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TestMethod6(Vector<double> mask)
+    {
+        // Expected codegen: fmad z16.d, p0/m, z16.d, z16.d
+        var vr1 = Vector128.CreateScalar((double)10).AsVector();
+        s_3 = Sve.ConditionalSelect(mask, Sve.FusedMultiplyAdd(vr1, vr1, vr1), s_3);
     }
 }
