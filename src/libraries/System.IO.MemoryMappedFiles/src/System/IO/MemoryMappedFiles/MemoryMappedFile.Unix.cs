@@ -162,11 +162,13 @@ namespace System.IO.MemoryMappedFiles
 
         private static SafeFileHandle CreateSharedBackingObject(Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            return CreateSharedBackingObjectUsingMemory(protections, capacity, inheritability)
-                ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
+            return Interop.Sys.IsMemfdSupported ?
+                CreateSharedBackingObjectUsingMemoryMemfdCreate(protections, capacity, inheritability) :
+                CreateSharedBackingObjectUsingMemoryShmOpen(protections, capacity, inheritability)
+                    ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
 
-        private static SafeFileHandle? CreateSharedBackingObjectUsingMemory(
+        private static SafeFileHandle? CreateSharedBackingObjectUsingMemoryShmOpen(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
             // Determine the flags to use when creating the shared memory object
@@ -244,27 +246,66 @@ namespace System.IO.MemoryMappedFiles
                 fd.Dispose();
                 throw;
             }
+        }
 
-            static string GenerateMapName()
+        private static string GenerateMapName()
+        {
+            // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
+            // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).
+            // It was reported in 2008 (https://lists.apple.com/archives/xcode-users/2008/Apr/msg00523.html),
+            // but considered to be by design (http://web.archive.org/web/20140109200632/http://lists.apple.com/archives/darwin-development/2003/Mar/msg00244.html).
+            // According to https://github.com/qt/qtbase/blob/1ed449e168af133184633d174fd7339a13d1d595/src/corelib/kernel/qsharedmemory.cpp#L53-L56 the actual value is 30.
+            // Some other OSS libs use 32 (we did as well, but it was not enough) or 31, but we prefer 30 just to be extra safe.
+            const int MaxNameLength = 30;
+            // The POSIX shared memory object name must begin with '/'.  After that we just want something short (30) and unique.
+            const string NamePrefix = "/dotnet_";
+            return string.Create(MaxNameLength, 0, (span, state) =>
             {
-                // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
-                // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).
-                // It was reported in 2008 (https://lists.apple.com/archives/xcode-users/2008/Apr/msg00523.html),
-                // but considered to be by design (http://web.archive.org/web/20140109200632/http://lists.apple.com/archives/darwin-development/2003/Mar/msg00244.html).
-                // According to https://github.com/qt/qtbase/blob/1ed449e168af133184633d174fd7339a13d1d595/src/corelib/kernel/qsharedmemory.cpp#L53-L56 the actual value is 30.
-                // Some other OSS libs use 32 (we did as well, but it was not enough) or 31, but we prefer 30 just to be extra safe.
-                const int MaxNameLength = 30;
-                // The POSIX shared memory object name must begin with '/'.  After that we just want something short (30) and unique.
-                const string NamePrefix = "/dotnet_";
-                return string.Create(MaxNameLength, 0, (span, state) =>
+                Span<char> guid = stackalloc char[32];
+                Guid.NewGuid().TryFormat(guid, out int charsWritten, "N");
+                Debug.Assert(charsWritten == 32);
+                NamePrefix.CopyTo(span);
+                guid.Slice(0, MaxNameLength - NamePrefix.Length).CopyTo(span.Slice(NamePrefix.Length));
+                Debug.Assert(Encoding.UTF8.GetByteCount(span) <= MaxNameLength); // the standard uses Utf8
+            });
+        }
+
+        private static SafeFileHandle CreateSharedBackingObjectUsingMemoryMemfdCreate(
+           Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
+        {
+            int isReadonly = ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0 &&
+                    (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0) ? 1 : 0;
+
+            SafeFileHandle fd = Interop.Sys.MemfdCreate(GenerateMapName(), isReadonly);
+            if (fd.IsInvalid)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                fd.Dispose();
+
+                throw Interop.GetExceptionForIoErrno(errorInfo);
+            }
+
+            try
+            {
+                // Give it the right capacity.  We do this directly with ftruncate rather
+                // than via FileStream.SetLength after the FileStream is created because, on some systems,
+                // lseek fails on shared memory objects, causing the FileStream to think it's unseekable,
+                // causing it to preemptively throw from SetLength.
+                Interop.CheckIo(Interop.Sys.FTruncate(fd, capacity));
+
+                // SystemNative_MemfdCreate sets CLOEXEC implicitly.  If the inheritability requested is Inheritable, remove CLOEXEC.
+                if (inheritability == HandleInheritability.Inheritable &&
+                    Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
                 {
-                    Span<char> guid = stackalloc char[32];
-                    Guid.NewGuid().TryFormat(guid, out int charsWritten, "N");
-                    Debug.Assert(charsWritten == 32);
-                    NamePrefix.CopyTo(span);
-                    guid.Slice(0, MaxNameLength - NamePrefix.Length).CopyTo(span.Slice(NamePrefix.Length));
-                    Debug.Assert(Encoding.UTF8.GetByteCount(span) <= MaxNameLength); // the standard uses Utf8
-                });
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                }
+
+                return fd;
+            }
+            catch
+            {
+                fd.Dispose();
+                throw;
             }
         }
 
