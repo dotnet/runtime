@@ -16,6 +16,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.NotNull(val);
             Assert.Equal(val, store.GetAggregator());
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1 = store1.GetAggregator();
+
+            Assert.NotNull(val1);
+            Assert.Equal(val1, store1.GetAggregator());
         }
 
         [Fact]
@@ -28,12 +34,20 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotNull(val);
             Assert.Equal(val, store.GetAggregator(span));
             Assert.Equal(val, store.GetAggregator());
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1 = store1.GetAggregator(span);
+
+            Assert.NotNull(val1);
+            Assert.Equal(val1, store1.GetAggregator(span));
+            Assert.Equal(val1, store1.GetAggregator());
         }
 
         [Fact]
         public void GetOneLabel()
         {
             AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => new LastValue());
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
             KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("color", "red") };
             KeyValuePair<string, object?>[] labels2 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("color", "blue") };
             KeyValuePair<string, object?>[] labels3 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("size", 1) };
@@ -46,16 +60,35 @@ namespace System.Diagnostics.Metrics.Tests
             LastValue val1 = store.GetAggregator(span1);
             Assert.NotNull(val1);
             Assert.Equal(val1, store.GetAggregator(span1));
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+
             LastValue val2 = store.GetAggregator(span2);
             Assert.NotNull(val2);
             Assert.NotEqual(val1, val2);
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val1, store.GetAggregator(span1));
+
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+
             LastValue val3 = store.GetAggregator(span3);
             Assert.NotNull(val3);
             Assert.NotEqual(val1, val3);
             Assert.NotEqual(val2, val3);
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
             LastValue val4 = store.GetAggregator(span4);
             Assert.NotNull(val4);
             Assert.NotEqual(val1, val4);
@@ -70,12 +103,28 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val3, store.GetAggregator(span3));
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
         }
 
         [Fact]
         public void GetTwoLabel()
         {
             AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => new LastValue());
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
             KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[]
             { new KeyValuePair<string, object?>("color", "red"), new KeyValuePair<string, object?>("name", "ned") };
             KeyValuePair<string, object?>[] labels2 = new KeyValuePair<string, object?>[]
@@ -92,16 +141,35 @@ namespace System.Diagnostics.Metrics.Tests
             LastValue val1 = store.GetAggregator(span1);
             Assert.NotNull(val1);
             Assert.Equal(val1, store.GetAggregator(span1));
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+
             LastValue val2 = store.GetAggregator(span2);
             Assert.NotNull(val2);
             Assert.NotEqual(val1, val2);
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val1, store.GetAggregator(span1));
+
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+
             LastValue val3 = store.GetAggregator(span3);
             Assert.NotNull(val3);
             Assert.NotEqual(val1, val3);
             Assert.NotEqual(val2, val3);
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
             LastValue val4 = store.GetAggregator(span4);
             Assert.NotNull(val4);
             Assert.NotEqual(val1, val4);
@@ -116,12 +184,28 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val3, store.GetAggregator(span3));
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
         }
 
         [Fact]
         public void GetTwoLabelUnordered()
         {
             AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => new LastValue());
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
             KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[]
             { new KeyValuePair<string, object?>("color", "red"), new KeyValuePair<string, object?>("name", "ned") };
             KeyValuePair<string, object?>[] labels2 = new KeyValuePair<string, object?>[]
@@ -136,6 +220,14 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotNull(val2);
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val1, val2);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, val2s);
         }
 
         [Fact]
@@ -198,6 +290,36 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val3, store.GetAggregator(span3));
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
         }
 
         [Fact]
@@ -259,6 +381,20 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val1, val5);
             LastValue val6 = store.GetAggregator(span6);
             Assert.Equal(val1, val6);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.Equal(val1s, val2s);
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.Equal(val1s, val3s);
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.Equal(val1s, val4s);
+            SynchronousLastValue val5s = store1.GetAggregator(span5);
+            Assert.Equal(val1s, val5s);
+            SynchronousLastValue val6s = store1.GetAggregator(span6);
+            Assert.Equal(val1s, val6s);
         }
 
         [Fact]
@@ -325,6 +461,35 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val2, store.GetAggregator(span2));
             Assert.Equal(val3, store.GetAggregator(span3));
             Assert.Equal(val3, store.GetAggregator(span3));
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
         }
 
 
@@ -393,6 +558,20 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(val1, val5);
             LastValue val6 = store.GetAggregator(span6);
             Assert.Equal(val1, val6);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.Equal(val1s, val2s);
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.Equal(val1s, val3s);
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.Equal(val1s, val4s);
+            SynchronousLastValue val5s = store1.GetAggregator(span5);
+            Assert.Equal(val1s, val5s);
+            SynchronousLastValue val6s = store1.GetAggregator(span6);
+            Assert.Equal(val1s, val6s);
         }
 
         [Fact]
@@ -448,6 +627,43 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val2);
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.NotEqual(vals, val1s);
+            Assert.NotEqual(vals, val2s);
+            Assert.NotEqual(vals, val3s);
+            Assert.NotEqual(vals, val4s);
         }
 
         [Fact]
@@ -505,6 +721,43 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val2);
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.NotEqual(vals, val1s);
+            Assert.NotEqual(vals, val2s);
+            Assert.NotEqual(vals, val3s);
+            Assert.NotEqual(vals, val4s);
         }
 
         [Fact]
@@ -558,6 +811,43 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val2);
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.NotEqual(vals, val1s);
+            Assert.NotEqual(vals, val2s);
+            Assert.NotEqual(vals, val3s);
+            Assert.NotEqual(vals, val4s);
         }
 
         [Fact]
@@ -615,6 +905,43 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val2);
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.NotEqual(vals, val1s);
+            Assert.NotEqual(vals, val2s);
+            Assert.NotEqual(vals, val3s);
+            Assert.NotEqual(vals, val4s);
         }
 
         [Fact]
@@ -673,6 +1000,43 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val2);
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => new SynchronousLastValue());
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val2s = store1.GetAggregator(span2);
+            Assert.NotNull(val2s);
+            Assert.NotEqual(val1s, val2s);
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val3s = store1.GetAggregator(span3);
+            Assert.NotNull(val3s);
+            Assert.NotEqual(val1s, val3s);
+            Assert.NotEqual(val2s, val3s);
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            SynchronousLastValue val4s = store1.GetAggregator(span4);
+            Assert.NotNull(val4s);
+            Assert.NotEqual(val1s, val4s);
+            Assert.NotEqual(val2s, val4s);
+            Assert.NotEqual(val3s, val4s);
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val4s, store1.GetAggregator(span4));
+            Assert.Equal(val2s, store1.GetAggregator(span2));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+            Assert.Equal(val3s, store1.GetAggregator(span3));
+
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.NotEqual(vals, val1s);
+            Assert.NotEqual(vals, val2s);
+            Assert.NotEqual(vals, val3s);
+            Assert.NotEqual(vals, val4s);
         }
 
         [Fact]
@@ -685,6 +1049,13 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Null(val);
             Assert.Equal(val, store.GetAggregator(span));
             Assert.Equal(val, store.GetAggregator());
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => null);
+            SynchronousLastValue vals = store1.GetAggregator(span);
+
+            Assert.Null(vals);
+            Assert.Equal(vals, store1.GetAggregator(span));
+            Assert.Equal(vals, store1.GetAggregator());
         }
 
         [Fact]
@@ -697,6 +1068,12 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.Null(val);
             Assert.Equal(val, store.GetAggregator(span1));
+
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() => null);
+            SynchronousLastValue vals = store1.GetAggregator(span1);
+
+            Assert.Null(vals);
+            Assert.Equal(vals, store1.GetAggregator(span1));
         }
 
         [Fact]
@@ -722,6 +1099,24 @@ namespace System.Diagnostics.Metrics.Tests
             LastValue val0 = store.GetAggregator(span);
             Assert.Null(val0);
             Assert.Equal(val0, store.GetAggregator(span));
+
+            count = 1;
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() =>
+            {
+                if (count > 0)
+                {
+                    count--;
+                    return new SynchronousLastValue();
+                }
+                return null;
+            });
+
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.NotNull(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
+            SynchronousLastValue val0s = store1.GetAggregator(span);
+            Assert.Null(val0s);
+            Assert.Equal(val0s, store1.GetAggregator(span));
         }
 
         [Fact]
@@ -747,7 +1142,24 @@ namespace System.Diagnostics.Metrics.Tests
             LastValue val1 = store.GetAggregator(span1);
             Assert.Null(val1);
             Assert.Equal(val1, store.GetAggregator(span1));
-            
+
+            count = 1;
+            AggregatorStore<SynchronousLastValue> store1 = new AggregatorStore<SynchronousLastValue>(() =>
+            {
+                if (count > 0)
+                {
+                    count--;
+                    return new SynchronousLastValue();
+                }
+                return null;
+            });
+
+            SynchronousLastValue val0s = store1.GetAggregator(span);
+            Assert.NotNull(val0s);
+            Assert.Equal(val0s, store1.GetAggregator(span));
+            SynchronousLastValue val1s = store1.GetAggregator(span1);
+            Assert.Null(val1s);
+            Assert.Equal(val1s, store1.GetAggregator(span1));
         }
     }
 }
