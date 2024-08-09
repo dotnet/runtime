@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
-    // Aggregator that keeps the last value it received.
+    // Aggregator that keeps the last value it received until Collect().
     // This class is used with the observable gauge that always called from a single thread during the collection.
     // It is safe to use it without synchronization.
     internal sealed class LastValue : Aggregator

@@ -249,7 +249,7 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c3 = meter3.CreateCounter<int>("counter3");
 
             EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "*"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, ""))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -753,10 +753,10 @@ namespace System.Diagnostics.Metrics.Tests
             ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
             EventWrittenEventArgs[] events, events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, "*"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
             {
                 listener.WaitForEnumerationComplete(s_waitForEventTimeout);
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, "*"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, isShared: true, null, ""))
                 {
                     listener2.WaitForEnumerationComplete(s_waitForEventTimeout);
                     events = listener.Events.ToArray();
@@ -1317,7 +1317,7 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
                 EventWrittenEventArgs[] events;
-                using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.InstrumentPublishing, null, "*"))
+                using (MetricsEventListener listener = new MetricsEventListener(NullTestOutputHelper.Instance, MetricsEventListener.InstrumentPublishing, null, ""))
                 {
                     listener.WaitForEnumerationComplete(s_waitForEventTimeout);
                     events = listener.Events.ToArray();
