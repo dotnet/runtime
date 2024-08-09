@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -304,6 +305,61 @@ namespace System.Text.Json.Serialization.Tests
             });
         }
 
+        [Fact]
+        public async Task ClassWithRefStructProperty_Serialization()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // The source generator warns but otherwise skips ref struct properties.
+                ClassWithRefStructProperty value = new();
+                string json = await Serializer.SerializeWrapper(value);
+                Assert.Equal("{}", json);
+
+                ClassWithRefStructProperty deserialized = await Serializer.DeserializeWrapper<ClassWithRefStructProperty>("""{"Value":"abc"}""");
+                Assert.True(deserialized.Value.IsEmpty);
+            }
+            else
+            {
+                // The reflection-based serializer throws.
+                Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo<ClassWithRefStructProperty>());
+            }
+        }
+
+        [Fact]
+        public async Task ClassWithRefStructConstructorParameter_Serialization()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                // The source generator warns but otherwise skips constructors with ref struct parameters.
+                ClassWithRefStructConstructorParameter value = new();
+                string json = await Serializer.SerializeWrapper(value);
+                Assert.Equal("""{"Value":"default"}""", json);
+
+                await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<ClassWithRefStructConstructorParameter>("{}"));
+            }
+            else
+            {
+                // The reflection-based serializer throws.
+                Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo<ClassWithRefStructConstructorParameter>());
+            }
+        }
+
+#if NET9_0_OR_GREATER
+        [Fact]
+        public void CollectionWithRefStructElement_Serialization()
+        {
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                Assert.Throws<NotSupportedException>(() => Serializer.GetTypeInfo<CollectionWithRefStructElement>());
+            }
+            else
+            {
+                // The reflection-based serializer throws.
+                Assert.Throws<InvalidOperationException>(() => Serializer.GetTypeInfo<CollectionWithRefStructElement>());
+            }
+        }
+#endif
+
         private static object? GetDefaultValue(ParameterInfo parameterInfo)
         {
             Type parameterType = parameterInfo.ParameterType;
@@ -551,6 +607,52 @@ namespace System.Text.Json.Serialization.Tests
             public string? X { get; }
             public string? Y { get; }
         }
+
+        public class ClassWithRefStructProperty
+        {
+            public ReadOnlySpan<char> Value
+            {
+                get => _value.AsSpan();
+                set => _value = value.ToString();
+            }
+
+            private string? _value;
+        }
+
+        public class ClassWithRefStructConstructorParameter
+        {
+            public ClassWithRefStructConstructorParameter()
+            {
+                Value = "default";
+            }
+
+            [JsonConstructor]
+            public ClassWithRefStructConstructorParameter(ReadOnlySpan<char> value)
+            {
+                Value = value.ToString();
+            }
+
+            public string Value { get; }
+        }
+
+#if NET9_0_OR_GREATER
+        public class CollectionWithRefStructElement : IEnumerable<ReadOnlySpan<char>>
+        {
+            private List<string> _values = new();
+            public void Add(ReadOnlySpan<char> value) => _values.Add(value.ToString());
+            IEnumerator<ReadOnlySpan<char>> IEnumerable<ReadOnlySpan<char>>.GetEnumerator() => new SpanEnumerator(_values.GetEnumerator());
+            IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+
+            private sealed class SpanEnumerator(IEnumerator<string> inner) : IEnumerator<ReadOnlySpan<char>>
+            {
+                public ReadOnlySpan<char> Current => inner.Current.AsSpan();
+                object IEnumerator.Current => throw new NotSupportedException();
+                public void Dispose() => inner.Dispose();
+                public bool MoveNext() => inner.MoveNext();
+                public void Reset() => inner.Reset();
+            }
+        }
+#endif
     }
 
     internal class WeatherForecastWithPOCOs

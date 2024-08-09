@@ -7,6 +7,7 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <!-- SYSLIB0049: JsonSerializerOptions.AddContext is obsolete -->
+    <!-- SYSLIB1030: Suppress warnings from unsupported types -->
     <!-- SYSLIB1034: Suppress JsonStringEnumConverter use warnings -->
     <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
@@ -14,7 +15,8 @@
     <!-- SYSLIB1220: Suppress invalid JsonConverterAttribute argument warnings -->
     <!-- SYSLIB1222: Suppress inacessible JsonConstructorAttribute annotations -->
     <!-- SYSLIB1223: Suppress derived JsonConverterAttribute warnings -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223</NoWarn>
+    <!-- SYSLIB1030: Suppress warnings from skipped ref struct members -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1030;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223;SYSLIB1225</NoWarn>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 

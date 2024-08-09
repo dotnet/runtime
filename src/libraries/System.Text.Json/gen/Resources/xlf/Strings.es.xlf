@@ -142,6 +142,16 @@
         <target state="translated">El tipo tiene varios miembros anotados con JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberFormat">
+        <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
+        <target state="new">The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeContainsRefLikeMemberTitle">
+        <source>Type includes ref like property, field or constructor parameter.</source>
+        <target state="new">Type includes ref like property, field or constructor parameter.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
         <target state="translated">No generó metadatos de serialización para el tipo '{0}".</target>
