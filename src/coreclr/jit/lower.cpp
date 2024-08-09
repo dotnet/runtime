@@ -1295,6 +1295,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     switchBBRange.Remove(node->AsOp()->gtOp1);
     switchBBRange.Remove(node);
 
+    comp->fgInvalidateDfsTree();
+
     return next;
 }
 
@@ -4840,12 +4842,14 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // x86 uses it only for long return type, not for structs.
             assert(slotCount == 1);
             assert(lclRegType != TYP_UNDEF);
-#else  // !TARGET_XARCH || UNIX_AMD64_ABI
+#else // !TARGET_XARCH || UNIX_AMD64_ABI
             if (!comp->IsHfa(layout->GetClassHandle()))
             {
                 if (slotCount > 1)
                 {
+#if !defined(TARGET_RISCV64) && !defined(TARGET_LOONGARCH64)
                     assert(call->HasMultiRegRetVal());
+#endif
                 }
                 else
                 {
@@ -5151,6 +5155,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             // Otherwise we don't mind that we leave the upper bits undefined.
             lclVar->ChangeType(ret->TypeGet());
         }
+        lclVar->AsLclFld()->SetLclOffs(comp->compRetTypeDesc.GetSingleReturnFieldOffset());
     }
     else
     {
@@ -5339,7 +5344,8 @@ GenTreeLclVar* Lowering::SpillStructCallResult(GenTreeCall* call) const
     comp->lvaSetVarDoNotEnregister(spillNum DEBUGARG(DoNotEnregisterReason::LocalField));
     CORINFO_CLASS_HANDLE retClsHnd = call->gtRetClsHnd;
     comp->lvaSetStruct(spillNum, retClsHnd, false);
-    GenTreeLclFld* spill = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), 0, call);
+    unsigned       offset = call->GetReturnTypeDesc()->GetSingleReturnFieldOffset();
+    GenTreeLclFld* spill  = comp->gtNewStoreLclFldNode(spillNum, call->TypeGet(), offset, call);
 
     BlockRange().InsertAfter(call, spill);
     ContainCheckStoreLoc(spill);
@@ -7695,9 +7701,17 @@ PhaseStatus Lowering::DoPhase()
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    // Remove dead blocks and compute DFS (we want to remove unreachable blocks
-    // even in MinOpts).
-    comp->fgDfsBlocksAndRemove();
+    if (comp->m_dfsTree == nullptr)
+    {
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere. The dead blocks are removed below, however, some of
+        // lowering may use the DFS tree, so we compute that here.
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    // Remove dead blocks. We want to remove unreachable blocks even in
+    // MinOpts.
+    comp->fgRemoveBlocksOutsideDfsTree();
 
     if (comp->backendRequiresLocalVarLifetimes())
     {
@@ -9291,6 +9305,9 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     GenTree* cur = prevIndir;
     for (int i = 0; i < LDP_STP_REORDERING_MAX_DISTANCE; i++)
     {
+        // No nodes should be marked yet
+        assert((cur->gtLIRFlags & LIR::Flags::Mark) == 0);
+
         cur = cur->gtNext;
         if (cur == indir)
             break;
@@ -9341,6 +9358,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
 #endif
 
+    // Unmark tree when we exit the current scope
+    auto code = [this, indir] {
+        UnmarkTree(indir);
+    };
+    jitstd::utility::scoped_code<decltype(code)> finally(code);
+
     MarkTree(indir);
 
     INDEBUG(dumpWithMarks());
@@ -9349,7 +9372,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     if ((prevIndir->gtLIRFlags & LIR::Flags::Mark) != 0)
     {
         JITDUMP("Previous indir is part of the data flow of current indir\n");
-        UnmarkTree(indir);
         return false;
     }
 
@@ -9365,7 +9387,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
 
@@ -9387,7 +9408,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         if (!indir->OperIsLoad())
         {
             JITDUMP("Have conservative interference with last store. Giving up.\n");
-            UnmarkTree(indir);
             return false;
         }
 
@@ -9481,7 +9501,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
             if (interferes(cur))
             {
                 JITDUMP("Indir [%06u] interferes with [%06u]\n", Compiler::dspTreeID(indir), Compiler::dspTreeID(cur));
-                UnmarkTree(indir);
                 return false;
             }
         }
@@ -9507,7 +9526,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 {
                     JITDUMP("Cannot move prev indir [%06u] up past [%06u] to get it past the data computation\n",
                             Compiler::dspTreeID(prevIndir), Compiler::dspTreeID(cur));
-                    UnmarkTree(indir);
                     return false;
                 }
             }
@@ -9517,6 +9535,17 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 break;
             }
         }
+    }
+
+    // For some hardware the ldr -> ldp transformation can result in missed
+    // store-to-load forwarding opportunities, which can seriously harm
+    // performance. Here we do a best effort check to see if one of the loads
+    // we are combining may be loading from a store that reaches the load
+    // without redefining the address.
+    if (prevIndir->OperIsLoad() && indir->OperIsLoad() && IsStoreToLoadForwardingCandidateInLoop(prevIndir, indir))
+    {
+        JITDUMP("Avoiding making indirs adjacent; this may be the target of a store-to-load forwarding candidate\n");
+        return false;
     }
 
     JITDUMP("Moving nodes that are not part of data flow of [%06u]\n\n", Compiler::dspTreeID(indir));
@@ -9561,8 +9590,184 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     JITDUMP("Result:\n\n");
     INDEBUG(dumpWithMarks());
     JITDUMP("\n");
-    UnmarkTree(indir);
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsStoreToLoadForwardingCandidateInLoop: Check if one of the specified
+// indirections may be the target of store-to-load forwarding from an indirect
+// store that reaches one of the loads and that happens within the same loop.
+// In those cases the transformation to 'ldp' can break this hardware
+// optimization for some hardware.
+//
+// Arguments:
+//   prevIndir - First indirection
+//   indir     - Second indirection
+//
+// Returns:
+//   True if so.
+//
+bool Lowering::IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir)
+{
+    if (comp->m_dfsTree == nullptr)
+    {
+        comp->m_dfsTree = comp->fgComputeDfs();
+    }
+
+    if (!comp->m_dfsTree->HasCycle())
+    {
+        return false;
+    }
+
+    if (comp->m_loops == nullptr)
+    {
+        comp->m_loops       = FlowGraphNaturalLoops::Find(comp->m_dfsTree);
+        comp->m_blockToLoop = BlockToNaturalLoopMap::Build(comp->m_loops);
+    }
+
+    FlowGraphNaturalLoop* loop = comp->m_blockToLoop->GetLoop(m_block);
+    if (loop == nullptr)
+    {
+        return false;
+    }
+
+    GenTree*       addr1 = prevIndir->Addr();
+    target_ssize_t offs1;
+    comp->gtPeelOffsets(&addr1, &offs1);
+    unsigned lcl1 = addr1->OperIs(GT_LCL_VAR) ? addr1->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
+
+    GenTree*       addr2 = indir->Addr();
+    target_ssize_t offs2;
+    comp->gtPeelOffsets(&addr2, &offs2);
+    unsigned lcl2 = addr1->OperIs(GT_LCL_VAR) ? addr2->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
+
+    unsigned budget = 100;
+
+    // Starting at an end node, go backwards until the specified first node and look for
+    // 1) Definitions of the base address local, which invalidates future store-to-load forwarding
+    // 2) Stores to the same address as is being loaded later, which allows store-to-load forwarding
+    auto checkNodes = [=, &budget](GenTree* lastNode, GenTree* firstNode, bool* hasStore, bool* hasDef) {
+        *hasStore = false;
+        *hasDef   = false;
+
+        for (GenTree* curNode = lastNode;; curNode = curNode->gtPrev)
+        {
+            if (curNode->OperIs(GT_STORE_LCL_VAR))
+            {
+                unsigned lclNum = curNode->AsLclVarCommon()->GetLclNum();
+                if ((lclNum == lcl1) || (lclNum == lcl2))
+                {
+                    *hasDef = true;
+                    return true;
+                }
+            }
+            else if (curNode->OperIs(GT_STOREIND))
+            {
+                GenTreeIndir*  storeInd       = curNode->AsIndir();
+                GenTree*       storeIndirAddr = storeInd->Addr();
+                target_ssize_t storeIndirOffs;
+                comp->gtPeelOffsets(&storeIndirAddr, &storeIndirOffs);
+
+                if (storeIndirAddr->OperIs(GT_LCL_VAR) && ((storeIndirOffs == offs1) || (storeIndirOffs == offs2)))
+                {
+                    unsigned storeIndirAddrLcl = storeIndirAddr->AsLclVarCommon()->GetLclNum();
+                    if ((storeIndirAddrLcl == lcl1) || (storeIndirAddrLcl == lcl2))
+                    {
+                        JITDUMP("Store at [%06u] may allow store-to-load forwarding of indir [%06u]\n",
+                                Compiler::dspTreeID(curNode),
+                                Compiler::dspTreeID(storeIndirAddrLcl == lcl1 ? prevIndir : indir));
+
+                        *hasStore = true;
+                        return true;
+                    }
+                }
+            }
+
+            if (curNode == firstNode)
+            {
+                break;
+            }
+
+            if (--budget == 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    bool hasStore;
+    bool hasDef;
+    if (!checkNodes(prevIndir, LIR::AsRange(m_block).FirstNode(), &hasStore, &hasDef))
+    {
+        // Out of budget
+        return false;
+    }
+
+    if (hasStore)
+    {
+        // Have a store before the indir; it could be store-to-load forwarded.
+        return true;
+    }
+
+    if (hasDef)
+    {
+        // Have a def before the indir; it would break store-to-load
+        // forwarding. No preds to push then, so we are done.
+        return false;
+    }
+
+    // Now we've checked range before the indirs; continue with its preds
+    // inside the loop. We will check the range after the indirs once we get to
+    // it.
+    BitVecTraits traits = comp->m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_ArrayStack));
+
+    auto pushPreds = [=, &traits, &visited, &stack](BasicBlock* block) {
+        for (BasicBlock* pred : block->PredBlocks())
+        {
+            if (loop->ContainsBlock(pred) && BitVecOps::TryAddElemD(&traits, visited, pred->bbPostorderNum))
+            {
+                stack.Push(pred);
+            }
+        }
+    };
+
+    pushPreds(m_block);
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+
+        LIR::Range& range = LIR::AsRange(block);
+
+        GenTree* firstNode = block == m_block ? prevIndir : range.FirstNode();
+
+        if ((firstNode != nullptr) && !checkNodes(range.LastNode(), firstNode, &hasStore, &hasDef))
+        {
+            // Out of budget
+            return false;
+        }
+
+        if (hasStore)
+        {
+            // This would be store-to-load forwardable.
+            return true;
+        }
+
+        if (hasDef)
+        {
+            // Redefinition of base local; skip pushing preds
+            continue;
+        }
+
+        pushPreds(block);
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

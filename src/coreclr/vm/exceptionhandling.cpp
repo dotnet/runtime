@@ -5426,6 +5426,19 @@ BOOL IsSafeToCallExecutionManager()
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
+#ifdef FEATURE_EMULATE_SINGLESTEP    
+    Thread *pThread = GetThreadNULLOk();
+    if (pThread && pThread->IsSingleStepEnabled() &&
+        exceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
+        exceptionRecord->ExceptionCode != STATUS_SINGLE_STEP &&
+        exceptionRecord->ExceptionCode != STATUS_STACK_OVERFLOW)
+    {
+        // tried to consolidate the code and only call HandleSingleStep here but 
+        // for some reason not investigated the debugger tests failed with this change
+        pThread->HandleSingleStep(contextRecord, exceptionRecord->ExceptionCode);
+    }
+#endif
+
     PCODE controlPc = GetIP(contextRecord);
 
     if (IsIPInWriteBarrierCodeCopy(controlPc))

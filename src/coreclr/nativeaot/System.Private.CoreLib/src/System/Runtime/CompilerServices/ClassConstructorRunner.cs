@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", pContext, CurrentManagedThreadId);
 
-            // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
+            // If we were called from JIT helper, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pfnCctor == 0)
             {
@@ -86,13 +86,6 @@ namespace System.Runtime.CompilerServices
                                 NoisyLog("Calling cctor, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                                 ((delegate*<void>)pfnCctor)();
-
-                                // Insert a memory barrier here to order any writes executed as part of static class
-                                // construction above with respect to the initialized flag update we're about to make
-                                // below. This is important since the fast path for checking the cctor uses a normal read
-                                // and doesn't come here so without the barrier it could observe initialized == 1 but
-                                // still see uninitialized static fields on the class.
-                                Interlocked.MemoryBarrier();
 
                                 NoisyLog("Set type inited, context={0}, thread={1}", pContext, currentManagedThreadId);
 

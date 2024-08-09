@@ -418,7 +418,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Expression.Constant(parameterType, typeof(Type)),
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
                         Expression.Constant(hasDefaultValue),
-                        Expression.Constant(keyAttribute?.Key) };
+                        Expression.Constant(keyAttribute?.Key, typeof(object)) };
                     constructorArguments[i] = Expression.Call(GetServiceInfo, parameterTypeExpression);
                 }
 
