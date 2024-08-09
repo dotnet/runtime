@@ -30,10 +30,6 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
-        {
-        }
-
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
@@ -52,9 +48,6 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsByRefLike)
                 flags |= (uint)EETypeFlagsEx.IsByRefLikeFlag;
 
-            if (HasOptionalFields)
-                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
-
             dataBuilder.EmitUInt(flags);
             dataBuilder.EmitInt(checked((ushort)_type.Instantiation.Length)); // Base size (we put instantiation length)
             dataBuilder.EmitZeroPointer();  // No related type
@@ -63,7 +56,6 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitInt(_type.GetHashCode());
             OutputTypeManagerIndirection(factory, ref dataBuilder);
             OutputWritableData(factory, ref dataBuilder);
-            OutputOptionalFields(factory, ref dataBuilder);
 
             // Generic composition only meaningful if there's variance
             if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)

@@ -198,10 +198,6 @@ namespace Internal.Runtime.TypeLoader
                     numFunctionPointerTypeParameters = sig.Length;
                 }
 
-                // Optional fields encoding
-                int cbOptionalFieldsSize;
-                OptionalFieldsRuntimeBuilder optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType->OptionalFieldsPtr);
-
                 DynamicTypeFlags dynamicTypeFlags = 0;
 
                 int allocatedNonGCDataSize = state.NonGcDataSize;
@@ -219,13 +215,6 @@ namespace Internal.Runtime.TypeLoader
 
                 if (state.ThreadDataSize != 0)
                     dynamicTypeFlags |= DynamicTypeFlags.HasThreadStatics;
-
-                // Compute size of optional fields encoding
-                cbOptionalFieldsSize = optionalFields.Encode();
-
-                // Clear the optional fields flag. We'll set it if we set optional fields later in this method.
-                if (cbOptionalFieldsSize == 0)
-                    flags &= ~(uint)EETypeFlags.OptionalFieldsFlag;
 
                 // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
                 // vtable slots on the template type for universal generics (see ComputeVTableLayout)
@@ -245,7 +234,6 @@ namespace Internal.Runtime.TypeLoader
                         runtimeInterfacesLength,
                         hasDispatchMap,
                         hasFinalizer,
-                        cbOptionalFieldsSize > 0,
                         hasSealedVTable,
                         isGeneric,
                         numFunctionPointerTypeParameters,
@@ -260,7 +248,7 @@ namespace Internal.Runtime.TypeLoader
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
                     // Allocate enough space for the MethodTable + gcDescSize
-                    eeTypePlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType + cbOptionalFieldsSize);
+                    eeTypePlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType);
 
                     // Get the MethodTable pointer, and the template MethodTable pointer
                     pEEType = (MethodTable*)((byte*)eeTypePlusGCDesc + cbGCDescAligned);
@@ -279,13 +267,6 @@ namespace Internal.Runtime.TypeLoader
                     int arrayRank = isArray ? state.ArrayRank.Value : 0;
                     CreateInstanceGCDesc(state, pTemplateEEType, pEEType, baseSize, cbGCDesc, isValueType, isArray, isSzArray, arrayRank);
                     Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
-
-                    // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
-                    if (cbOptionalFieldsSize > 0)
-                    {
-                        pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
-                        optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
-                    }
 
                     // Copy VTable entries from template type
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));

@@ -146,31 +146,6 @@ namespace Internal.Runtime
             public MethodTable* _pRelatedParameterType;
         }
 
-        private static unsafe class OptionalFieldsReader
-        {
-            internal static uint GetInlineField(byte* pFields, EETypeOptionalFieldTag eTag, uint uiDefaultValue)
-            {
-                if (pFields == null)
-                    return uiDefaultValue;
-
-                bool isLastField = false;
-                while (!isLastField)
-                {
-                    byte fieldHeader = NativePrimitiveDecoder.ReadUInt8(ref pFields);
-                    isLastField = (fieldHeader & 0x80) != 0;
-                    EETypeOptionalFieldTag eCurrentTag = (EETypeOptionalFieldTag)(fieldHeader & 0x7f);
-                    uint uiCurrentValue = NativePrimitiveDecoder.DecodeUnsigned(ref pFields);
-
-                    // If we found a tag match return the current value.
-                    if (eCurrentTag == eTag)
-                        return uiCurrentValue;
-                }
-
-                // Reached end of stream without getting a match. Field is not present so return default value.
-                return uiDefaultValue;
-            }
-        }
-
         /// <summary>
         /// Gets a value indicating whether the statically generated data structures use relative pointers.
         /// </summary>
@@ -362,14 +337,6 @@ namespace Internal.Runtime
             get
             {
                 return (EETypeKind)(_uFlags & (uint)EETypeFlags.EETypeKindMask);
-            }
-        }
-
-        internal bool HasOptionalFields
-        {
-            get
-            {
-                return (_uFlags & (uint)EETypeFlags.OptionalFieldsFlag) != 0;
             }
         }
 
@@ -1002,32 +969,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal byte* OptionalFieldsPtr
-        {
-            get
-            {
-                if (!HasOptionalFields)
-                    return null;
-
-                uint offset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
-
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<byte>>(offset).Value;
-
-                return GetField<RelativePointer<byte>>(offset).Value;
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsDynamicType);
-
-                _uFlags |= (uint)EETypeFlags.OptionalFieldsFlag;
-
-                GetField<IntPtr>(EETypeField.ETF_OptionalFieldsPtr) = (IntPtr)value;
-            }
-#endif
-        }
-
         internal MethodTable* DynamicTemplateType
         {
             get
@@ -1235,15 +1176,6 @@ namespace Internal.Runtime
             if (IsFinalizable)
                 cbOffset += relativeOrFullPointerOffset;
 
-            // Followed by the pointer to the optional fields.
-            if (eField == EETypeField.ETF_OptionalFieldsPtr)
-            {
-                Debug.Assert(HasOptionalFields);
-                return cbOffset;
-            }
-            if (HasOptionalFields)
-                cbOffset += relativeOrFullPointerOffset;
-
             // Followed by the pointer to the sealed virtual slots
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
@@ -1346,7 +1278,6 @@ namespace Internal.Runtime
             ushort cInterfaces,
             bool fHasDispatchMap,
             bool fHasFinalizer,
-            bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
             int cFunctionPointerTypeParameters,
@@ -1361,7 +1292,6 @@ namespace Internal.Runtime
                 sizeof(IntPtr) + // WritableData
                 (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
-                (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
                 (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition

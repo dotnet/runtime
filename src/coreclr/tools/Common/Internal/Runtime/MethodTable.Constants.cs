@@ -32,11 +32,6 @@ namespace Internal.Runtime
         HasFinalizerFlag = 0x00100000,
 
         /// <summary>
-        /// This type has optional fields present.
-        /// </summary>
-        OptionalFieldsFlag = 0x00200000,
-
-        /// <summary>
         /// This MethodTable has sealed vtable entries
         /// </summary>
         HasSealedVTableEntriesFlag = 0x00400000,
@@ -172,7 +167,6 @@ namespace Internal.Runtime
         ETF_WritableData,
         ETF_DispatchMap,
         ETF_Finalizer,
-        ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_GenericDefinition,
@@ -222,12 +216,6 @@ namespace Internal.Runtime
         ByRef = 0x19,
         Pointer = 0x1A,
         FunctionPointer = 0x1B,
-    }
-
-    internal enum EETypeOptionalFieldTag : byte
-    {
-        // Number of field types we support
-        Count
     }
 
     // Keep this synchronized with GenericVarianceType in rhbinder.h.

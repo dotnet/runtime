@@ -63,7 +63,6 @@ enum EETypeField
     ETF_TypeManagerIndirection,
     ETF_WritableData,
     ETF_Finalizer,
-    ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_GenericDefinition,
@@ -125,9 +124,6 @@ private:
         // plus a fourth kind used as a grab bag of unusual edge cases which are encoded in a smaller,
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
-
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x00040000,
 
         // GC depends on this bit, this bit must be zero
         CollectibleFlag         = 0x00200000,

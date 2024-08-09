@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
     /// UInt32          | Flags field
-    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, HasOptionalFields, IsInterface, IsGeneric, etc ...
+    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, IsInterface, IsGeneric, etc ...
     ///                 | EETypeKind (Normal, Array, Pointer type)
     ///                 |
     ///                 | 5 bits near the top are used for enum EETypeElementType to record whether it's back by an Int32, Int16 etc
@@ -64,8 +64,6 @@ namespace ILCompiler.DependencyAnalysis
     public partial class EETypeNode : DehydratableObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
         protected readonly TypeDesc _type;
-        internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        internal readonly EETypeOptionalFieldsNode _optionalFieldsNode;
         private readonly WritableDataNode _writableDataNode;
         protected bool? _mightHaveInterfaceDispatchMap;
         private bool _hasConditionalDependenciesFromMetadataManager;
@@ -94,7 +92,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsGenericParameter);
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
-            _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
             _writableDataNode = !_type.IsCanonicalSubtype(CanonicalFormKind.Any) ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
@@ -234,16 +231,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis
             => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
-
-        internal bool HasOptionalFields
-        {
-            get { return _optionalFieldsBuilder.IsAtLeastOneFieldUsed(); }
-        }
-
-        internal byte[] GetOptionalFieldsData()
-        {
-            return _optionalFieldsBuilder.GetBytes();
-        }
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -614,12 +601,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            // Include the optional fields by default. We don't know if optional fields will be needed until
-            // all of the interface usage has been stabilized. If we end up not needing it, the MethodTable node will not
-            // generate any relocs to it, and the optional fields node will instruct the object writer to skip
-            // emitting it.
-            dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
-
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
 
@@ -712,8 +693,6 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            ComputeOptionalEETypeFields(factory, relocsOnly);
-
             OutputGCDesc(ref objData);
             OutputFlags(factory, ref objData, relocsOnly);
             objData.EmitInt(BaseSize);
@@ -760,7 +739,6 @@ namespace ILCompiler.DependencyAnalysis
             OutputWritableData(factory, ref objData);
             OutputDispatchMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
-            OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
             OutputFunctionPointerParameters(factory, ref objData);
@@ -813,11 +791,6 @@ namespace ILCompiler.DependencyAnalysis
             if (MightHaveInterfaceDispatchMap(factory))
             {
                 flags |= (uint)EETypeFlags.HasDispatchMap;
-            }
-
-            if (HasOptionalFields)
-            {
-                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
             }
 
             if (_type.IsArray || _type.IsString)
@@ -1139,17 +1112,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            if (HasOptionalFields)
-            {
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(_optionalFieldsNode, RelocType.IMAGE_REL_BASED_RELPTR32);
-                else
-                    objData.EmitPointerReloc(_optionalFieldsNode);
-            }
-        }
-
         private void OutputSealedVTable(NodeFactory factory, bool relocsOnly, ref ObjectDataBuilder objData)
         {
             if (EmitVirtualSlots && !_type.IsArrayTypeWithoutGenericInterfaces())
@@ -1262,13 +1224,6 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     objData.EmitPointerReloc(dispatchMap);
             }
-        }
-
-        /// <summary>
-        /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
-        /// </summary>
-        protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
-        {
         }
 
         protected override void OnMarked(NodeFactory context)
