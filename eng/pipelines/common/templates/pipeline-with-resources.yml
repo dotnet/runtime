@@ -56,7 +56,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-android-docker
 
       linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net8.0
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
