@@ -164,6 +164,16 @@ namespace System.Numerics.Tensors
 
                             remainder -= misalignment;
                         }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector128<T>.Count;
+
+                            remainder -= (uint)Vector128<T>.Count;
+                        }
 
                         Vector128<T> vector1;
                         Vector128<T> vector2;
@@ -336,6 +346,16 @@ namespace System.Numerics.Tensors
 
                             remainder -= misalignment;
                         }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector256<T>.Count;
+
+                            remainder -= (uint)Vector256<T>.Count;
+                        }
 
                         Vector256<T> vector1;
                         Vector256<T> vector2;
@@ -507,6 +527,16 @@ namespace System.Numerics.Tensors
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector512<T>)) == 0);
 
                             remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector512<T>.Count;
+
+                            remainder -= (uint)Vector512<T>.Count;
                         }
 
                         Vector512<T> vector1;
@@ -1260,6 +1290,17 @@ namespace System.Numerics.Tensors
 
                             remainder -= misalignment;
                         }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector128<T>.Count;
+                            yPtr += (uint)Vector128<T>.Count;
+
+                            remainder -= (uint)Vector128<T>.Count;
+                        }
 
                         Vector128<T> vector1;
                         Vector128<T> vector2;
@@ -1454,6 +1495,17 @@ namespace System.Numerics.Tensors
 
                             remainder -= misalignment;
                         }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector256<T>.Count;
+                            yPtr += (uint)Vector256<T>.Count;
+
+                            remainder -= (uint)Vector256<T>.Count;
+                        }
 
                         Vector256<T> vector1;
                         Vector256<T> vector2;
@@ -1647,6 +1699,17 @@ namespace System.Numerics.Tensors
                             Debug.Assert(((nuint)xPtr % (uint)sizeof(Vector512<T>)) == 0);
 
                             remainder -= misalignment;
+                        }
+                        else
+                        {
+                            // We can't align, but this also means we're processing the full data from beg
+                            // so account for that to ensure we don't double process and include them in the
+                            // aggregate twice.
+
+                            xPtr += (uint)Vector512<T>.Count;
+                            yPtr += (uint)Vector512<T>.Count;
+
+                            remainder -= (uint)Vector512<T>.Count;
                         }
 
                         Vector512<T> vector1;

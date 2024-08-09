@@ -175,7 +175,13 @@ namespace System.Numerics.Tensors
 
                         // Unlike many other vectorization algorithms, we cannot align for aggregation
                         // because that changes how results compound together and can cause a significant
-                        // difference in the output.
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
+
+                        xPtr += (uint)Vector<float>.Count;
+
+                        remainder -= (uint)Vector<float>.Count;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -458,7 +464,13 @@ namespace System.Numerics.Tensors
 
                         // Unlike many other vectorization algorithms, we cannot align for aggregation
                         // because that changes how results compound together and can cause a significant
-                        // difference in the output.
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
+
+                        xPtr += (uint)Vector<float>.Count;
+
+                        remainder -= (uint)Vector<float>.Count;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
