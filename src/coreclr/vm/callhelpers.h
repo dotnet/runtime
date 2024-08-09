@@ -73,6 +73,13 @@ void * DispatchCallSimple(
                     PCODE pTargetAddress,
                     DWORD dwDispatchCallSimpleFlags);
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+// Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields
+// (each returned in one register) as they are filled by CallDescrWorkerInternal, to the final destination in memory
+// 'dest' respecting the struct's layout described in 'info'.
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+
 bool IsCerRootMethod(MethodDesc *pMD);
 
 class MethodDescCallSite
