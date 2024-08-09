@@ -30,7 +30,7 @@
     <PropertyGroup>
       <WasmAppDir>$(TestRootDir)AppBundle\</WasmAppDir>
       <WasmMainAssemblyFileName>WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath>$(OriginalPublishDir)test-main.js</WasmMainJSPath>
+      <WasmMainJSPath>$(OriginalPublishDir)test-main.mjs</WasmMainJSPath>
       <WasmGenerateRunV8Script Condition="'$(WasmGenerateRunV8Script)' == ''">true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
