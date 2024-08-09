@@ -749,17 +749,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     };
 
-
                     auto emitInsMovPrfxHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4) {
                         if (hasShift)
                         {
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                             {
-                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, reg1,
-                                                          reg3);
-                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2,
-                                                               helper.ImmValue(), embOpt, sopt);
+                                GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, reg1, reg3);
+                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(),
+                                                               embOpt, sopt);
                             }
                         }
                         else
