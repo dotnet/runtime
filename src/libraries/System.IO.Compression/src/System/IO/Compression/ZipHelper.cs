@@ -35,13 +35,14 @@ namespace System.IO.Compression
         /// <summary>
         /// Reads exactly bytesToRead out of stream, unless it is out of bytes
         /// </summary>
-        internal static void ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
+        internal static int ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
         {
             int bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: false);
             if (bytesRead < bytesToRead)
             {
                 throw new IOException(SR.UnexpectedEndOfStream);
             }
+            return bytesRead;
         }
 
         // will silently return InvalidDateIndicator if the uint is not a valid Dos DateTime
@@ -116,17 +117,23 @@ namespace System.IO.Compression
                 bool outOfBytes = false;
                 bool signatureFound = false;
 
-                int bytesRead = 0;
+                int totalBytesRead = 0;
                 int duplicateBytesRead = 0;
 
-                while (!signatureFound && !outOfBytes && bytesRead <= maxBytesToRead)
+                while (!signatureFound && !outOfBytes && totalBytesRead <= maxBytesToRead)
                 {
-                    outOfBytes = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
+                    int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
 
-                    Debug.Assert(bufferPointer < bufferSpan.Length);
+                    outOfBytes = bytesRead < bufferSpan.Length;
+                    if (bytesRead < bufferSpan.Length)
+                    {
+                        bufferSpan = bufferSpan.Slice(0, bytesRead);
+                    }
 
                     bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
-                    bytesRead += (bufferSpan.Length - duplicateBytesRead);
+                    Debug.Assert(bufferPointer < bufferSpan.Length);
+
+                    totalBytesRead += (bufferSpan.Length - duplicateBytesRead);
 
                     if (bufferPointer != -1)
                     {
@@ -153,26 +160,28 @@ namespace System.IO.Compression
             }
         }
 
-        // Returns true if we are out of bytes
+        // Returns the number of bytes actually read.
         // Allows successive buffers to overlap by a number of bytes (to handle cases where the
         // value being searched for straddles buffers.)
-        private static bool SeekBackwardsAndRead(Stream stream, Span<byte> buffer, int overlap)
+        private static int SeekBackwardsAndRead(Stream stream, Span<byte> buffer, int overlap)
         {
+            int bytesRead;
+
             if (stream.Position >= buffer.Length)
             {
                 stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-                ReadBytes(stream, buffer, buffer.Length);
+                bytesRead = ReadBytes(stream, buffer, buffer.Length);
                 stream.Seek(-buffer.Length, SeekOrigin.Current);
-                return false;
             }
             else
             {
                 int bytesToRead = (int)stream.Position;
                 stream.Seek(0, SeekOrigin.Begin);
-                ReadBytes(stream, buffer, bytesToRead);
+                bytesRead = ReadBytes(stream, buffer, bytesToRead);
                 stream.Seek(0, SeekOrigin.Begin);
-                return true;
             }
+
+            return bytesRead;
         }
 
         // Converts the specified string into bytes using the optional specified encoding.
