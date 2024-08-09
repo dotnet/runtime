@@ -120,55 +120,30 @@ namespace Internal.Runtime
     }
 
     /// <summary>
-    /// These are flag values that are rarely set for types. If any of them are set then an optional field will
-    /// be associated with the MethodTable to represent them.
+    /// Flags that are set for dynamically allocated types.
     /// </summary>
     [Flags]
-    internal enum EETypeRareFlags : int
+    internal enum DynamicTypeFlags : int
     {
-        // UNUSED = 0x00000001,
-
-        // UNUSED1 = 0x00000002,
-
-        // UNUSED = 0x00000004,
-
-        // UNUSED = 0x00000008,
-
-        // UNUSED = 0x00000010,
-
-        // UNUSED = 0x0000020,
-
-        // UNUSED2 = 0x00000040,
-
-        // UNUSED = 0x00000080,
-
-        // Unused = 0x00000100,
-
         /// <summary>
         /// This dynamically created type has a static constructor
         /// </summary>
-        IsDynamicTypeWithLazyCctor = 0x00000200,
+        HasLazyCctor = 0x00000001,
 
         /// <summary>
         /// This dynamically created types has gc statics
         /// </summary>
-        IsDynamicTypeWithGcStatics = 0x00000400,
+        HasGCStatics = 0x00000002,
 
         /// <summary>
         /// This dynamically created types has non gc statics
         /// </summary>
-        IsDynamicTypeWithNonGcStatics = 0x00000800,
+        HasNonGCStatics = 0x00000004,
 
         /// <summary>
         /// This dynamically created types has thread statics
         /// </summary>
-        IsDynamicTypeWithThreadStatics = 0x00001000,
-
-        // UNUSED = 0x00002000,
-
-        // UNUSED = 0x00004000,
-
-        // UNUSED = 0x00008000,
+        HasThreadStatics = 0x00000008,
     }
 
     internal enum EETypeField
@@ -183,6 +158,7 @@ namespace Internal.Runtime
         ETF_GenericDefinition,
         ETF_GenericComposition,
         ETF_FunctionPointerParameters,
+        ETF_DynamicTypeFlags,
         ETF_DynamicGcStatics,
         ETF_DynamicNonGcStatics,
         ETF_DynamicThreadStaticOffset,
@@ -230,11 +206,6 @@ namespace Internal.Runtime
 
     internal enum EETypeOptionalFieldTag : byte
     {
-        /// <summary>
-        /// Extra <c>MethodTable</c> flags not commonly used such as HasClassConstructor
-        /// </summary>
-        RareFlags,
-
         /// <summary>
         /// Padding added to a value type when allocated on the GC heap
         /// </summary>

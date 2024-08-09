@@ -202,26 +202,23 @@ namespace Internal.Runtime.TypeLoader
                 int cbOptionalFieldsSize;
                 OptionalFieldsRuntimeBuilder optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType->OptionalFieldsPtr);
 
-                uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
+                DynamicTypeFlags dynamicTypeFlags = 0;
 
                 int allocatedNonGCDataSize = state.NonGcDataSize;
                 if (state.HasStaticConstructor)
                 {
                     allocatedNonGCDataSize += -TypeBuilder.ClassConstructorOffset;
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithLazyCctor;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasLazyCctor;
                 }
 
                 if (allocatedNonGCDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasNonGCStatics;
 
                 if (state.GcDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasGCStatics;
 
                 if (state.ThreadDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
-
-                if (rareFlags != 0)
-                    optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
+                    dynamicTypeFlags |= DynamicTypeFlags.HasThreadStatics;
 
                 // Compute size of optional fields encoding
                 cbOptionalFieldsSize = optionalFields.Encode();
@@ -321,6 +318,7 @@ namespace Internal.Runtime.TypeLoader
                 pEEType->WritableData = writableData;
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
+                pEEType->DynamicTypeFlags = dynamicTypeFlags;
 
                 int nonGCStaticDataOffset = 0;
 

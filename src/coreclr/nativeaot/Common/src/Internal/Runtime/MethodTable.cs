@@ -1079,7 +1079,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsDynamicTypeWithLazyCctor) != 0;
+                return (DynamicTypeFlags & DynamicTypeFlags.HasLazyCctor) != 0;
             }
         }
 
@@ -1087,13 +1087,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasGCStatics) != 0);
                 return GetField<IntPtr>(EETypeField.ETF_DynamicGcStatics);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasGCStatics) != 0);
                 GetField<IntPtr>(EETypeField.ETF_DynamicGcStatics) = value;
             }
 #endif
@@ -1103,13 +1103,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasNonGCStatics) != 0);
                 return GetField<IntPtr>(EETypeField.ETF_DynamicNonGcStatics);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasNonGCStatics) != 0);
                 GetField<IntPtr>(EETypeField.ETF_DynamicNonGcStatics) = value;
             }
 #endif
@@ -1119,13 +1119,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasThreadStatics) != 0);
                 return GetField<IntPtr>(EETypeField.ETF_DynamicThreadStaticOffset);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                Debug.Assert((DynamicTypeFlags & DynamicTypeFlags.HasThreadStatics) != 0);
                 GetField<IntPtr>(EETypeField.ETF_DynamicThreadStaticOffset) = value;
             }
 #endif
@@ -1191,14 +1191,20 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal unsafe EETypeRareFlags RareFlags
+        internal DynamicTypeFlags DynamicTypeFlags
         {
             get
             {
-                // If there are no optional fields then none of the rare flags have been set.
-                // Get the flags from the optional fields. The default is zero if that particular field was not included.
-                return HasOptionalFields ? (EETypeRareFlags)OptionalFieldsReader.GetInlineField(OptionalFieldsPtr, EETypeOptionalFieldTag.RareFlags, 0) : 0;
+                Debug.Assert(IsDynamicType);
+                return (DynamicTypeFlags)GetField<nint>(EETypeField.ETF_DynamicTypeFlags);
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType);
+                GetField<nint>(EETypeField.ETF_DynamicTypeFlags) = (nint)value;
+            }
+#endif
         }
 
         internal int FieldAlignmentRequirement
@@ -1338,26 +1344,37 @@ namespace Internal.Runtime
             if (IsDynamicType)
                 cbOffset += (uint)IntPtr.Size;
 
-            EETypeRareFlags rareFlags = RareFlags;
-            if (eField == EETypeField.ETF_DynamicGcStatics)
+            DynamicTypeFlags dynamicTypeFlags = 0;
+            if (eField == EETypeField.ETF_DynamicTypeFlags)
             {
-                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
+                Debug.Assert(IsDynamicType);
                 return cbOffset;
             }
-            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0)
+            if (IsDynamicType)
+            {
+                dynamicTypeFlags = (DynamicTypeFlags)GetField<nint>(cbOffset);
+                cbOffset += (uint)IntPtr.Size;
+            }
+
+            if (eField == EETypeField.ETF_DynamicGcStatics)
+            {
+                Debug.Assert((dynamicTypeFlags & DynamicTypeFlags.HasGCStatics) != 0);
+                return cbOffset;
+            }
+            if ((dynamicTypeFlags & DynamicTypeFlags.HasGCStatics) != 0)
                 cbOffset += (uint)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicNonGcStatics)
             {
-                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
+                Debug.Assert((dynamicTypeFlags & DynamicTypeFlags.HasNonGCStatics) != 0);
                 return cbOffset;
             }
-            if ((rareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0)
+            if ((dynamicTypeFlags & DynamicTypeFlags.HasNonGCStatics) != 0)
                 cbOffset += (uint)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicThreadStaticOffset)
             {
-                Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
+                Debug.Assert((dynamicTypeFlags & DynamicTypeFlags.HasThreadStatics) != 0);
                 return cbOffset;
             }
 
@@ -1402,6 +1419,7 @@ namespace Internal.Runtime
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
                 (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition
+                sizeof(IntPtr) + // dynamic type flags
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
