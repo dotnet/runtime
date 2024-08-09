@@ -214,7 +214,7 @@ extends:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard /p:IlcMaxVectorTBitWidth=256' # seems like the lab machine doesn't have support for Avx512
+                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_Pri0_CET_CFG_$(_BuildConfig)
             extraVariablesTemplates:
