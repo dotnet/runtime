@@ -4,7 +4,12 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
+#include "eventtracebase.h"
 #include "gcinterface.h"
+#include "math.h"
+
+// TODO: trying to use Thread members but compilation errors
+// #include "threads.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -12,6 +17,113 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
+
+
+const DWORD SamplingDistributionMean = (100 * 1024);
+
+// This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
+typedef struct _ee_alloc_context
+{
+    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
+    // combined_limit is the minimum of:
+    //  - gc_alloc_context.alloc_limit (the end of the current AC)
+    //  - the sampling_limit
+    //
+    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    //
+    // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
+    // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
+    // The other is that we can treat (sampling_limit - alloc_ptr) as a budget of how many bytes we can allocate
+    // before emitting a sampling event. If we always allocated objects contiguously in the AC and incremented
+    // alloc_ptr by the size of the object, these two interpretations would be equivalent. However, when objects
+    // don't fit in the AC we allocate them in some other address range. The budget interpretation is more
+    // flexible to handle those cases.
+    //
+    // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
+    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
+    //   that to determine whether future allocated bytes should be sampled.
+    //   This occurs either because the sampling feature is disabled, or because the randomized selection
+    //   of sampled bytes didn't select a byte in this AC.
+    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
+    uint8_t* combined_limit;
+    gc_alloc_context gc_allocation_context;
+
+ public:
+    void init()
+    {
+        LIMITED_METHOD_CONTRACT;
+        combined_limit = nullptr;
+        gc_allocation_context.init();
+    }
+
+    static inline bool IsRandomizedSamplingEnabled()
+    {
+#ifdef FEATURE_EVENT_TRACE
+        return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
+                                        CLR_ALLOCATIONSAMPLING_KEYWORD);
+#else
+        return false;
+#endif // FEATURE_EVENT_TRACE
+    }
+
+    // Regenerate the randomized sampling limit and update the combined_limit field.
+    inline void UpdateCombinedLimit()
+    {
+        UpdateCombinedLimit(IsRandomizedSamplingEnabled());
+    }
+
+    inline void UpdateCombinedLimit(bool samplingEnabled)
+    {
+        if (!samplingEnabled)
+        {
+            combined_limit = gc_allocation_context.alloc_limit;
+        }
+        else
+        {
+            // compute the next sampling limit based on a geometric distribution
+            uint8_t* sampling_limit = gc_allocation_context.alloc_ptr + ComputeGeometricRandom();
+
+            // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+            combined_limit = Min(sampling_limit, gc_allocation_context.alloc_limit);
+        }
+    }
+
+    static inline int ComputeGeometricRandom()
+    {
+        // compute a random sample from the Geometric distribution
+        double probability = GetRandomizer()->NextDouble();
+        int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
+        return threshold;
+    }
+
+// per thread lazily allocated randomizer
+    struct CLRRandomHolder
+    {
+        CLRRandom* _p;
+
+        CLRRandomHolder()
+        {
+            _p = new CLRRandom();
+            _p->Init();
+        }
+
+        ~CLRRandomHolder()
+        {
+            delete _p;
+        }
+    };
+
+    static thread_local CLRRandomHolder t_instance;
+
+public:
+    static inline CLRRandom* GetRandomizer()
+    {
+        return t_instance._p;
+    }
+} ee_alloc_context;
+
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
@@ -21,7 +133,11 @@ GVAL_DECL(GCHeapType, g_heap_type);
 // for all allocations. In order to avoid extra indirections in assembly
 // allocation helpers, the EE owns the global allocation context and the
 // GC will update it when it needs to.
-GVAL_DECL(gc_alloc_context, g_global_alloc_context);
+extern "C" ee_alloc_context g_global_ee_alloc_context;
+
+// This is a pointer into the g_global_ee_alloc_context for the GC visible
+// subset of the data
+GPTR_DECL(gc_alloc_context, g_global_alloc_context);
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE

@@ -1,0 +1,284 @@
+Duration in seconds
+-------------------
+19.8961064
+19.206025
+20.0542862
+19.9611777
+20.4653831
+19.8848856
+19.9312506
+20.0551618
+19.671435
+20.231068
+----------------------
+19.93567794  (average)
+
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 24520
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 1 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.8961064
+collection_counts: [50926, 9, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 61251632
+final_heap_size_bytes: 58086336
+final_fragmentation_bytes: 3945408
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 41660
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 2 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.206025
+collection_counts: [50960, 8, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 55791536
+final_heap_size_bytes: 58300392
+final_fragmentation_bytes: 3948056
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 31336
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 0 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 20.0542862
+collection_counts: [50914, 9, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 60374136
+final_heap_size_bytes: 57533224
+final_fragmentation_bytes: 3975448
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 42712
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.9611777
+collection_counts: [50897, 8, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 55580960
+final_heap_size_bytes: 58383224
+final_fragmentation_bytes: 3953624
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 33568
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 1 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 20.4653831
+collection_counts: [50857, 9, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 55607328
+final_heap_size_bytes: 58215040
+final_fragmentation_bytes: 3931776
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 33896
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.8848856
+collection_counts: [50934, 8, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 55872480
+final_heap_size_bytes: 58382160
+final_fragmentation_bytes: 3940656
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 41796
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 1 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.9312506
+collection_counts: [50931, 8, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 64109136
+final_heap_size_bytes: 58342584
+final_fragmentation_bytes: 3973856
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 21784
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 3 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 20.0551618
+collection_counts: [50922, 9, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 57598392
+final_heap_size_bytes: 57619760
+final_fragmentation_bytes: 3944216
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 44508
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 0 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 3 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 19.671435
+collection_counts: [50929, 8, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 55670080
+final_heap_size_bytes: 58372248
+final_fragmentation_bytes: 3927544
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________
+__________________
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>corerun  C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+corerun C:\github\chrisnas\runtime9_ref\performance\artifacts\bin\GCPerfSim\Release\net7.0\GCPerfSim.dll -tc 4 -tagb 500 -tlgb 0.05 -lohar 0 -sohsi 0 -lohsi 0 -pohsi 0 -sohpi 0 -lohpi 0 -sohfi 0 -lohfi 0 -pohfi 0 -allocType reference -testKind time
+allocating 134,217,728,000 per thread
+Running 64-bit? True
+PID: 35560
+Running 4 threads.
+time, ReferenceItem, tlgb 0.01249999925494194, tagb 125, totalMins 0, buckets:
+    100-4000; surv every 0; pin every 0; weight 1000; isPoh False
+Thread 3 stopping phase after 128000MB
+Thread 0 stopping phase after 128000MB
+Thread 2 stopping phase after 128000MB
+Thread 1 stopping phase after 128000MB
+=== STATS ===
+sohAllocatedBytes: 536870916212
+lohAllocatedBytes: 0
+pohAllocatedBytes: 0
+seconds_taken: 20.231068
+collection_counts: [50914, 10, 2]
+num_created_with_finalizers: 0
+num_finalized: 0
+final_total_memory_bytes: 58203344
+final_heap_size_bytes: 58321568
+final_fragmentation_bytes: 3975280
+
+C:\github\chrisnas\runtime9_ref\runtime\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root>ECHO __________________

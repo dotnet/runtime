@@ -50,6 +50,8 @@ struct ProfilingScanContext : ScanContext
 };
 #endif // defined(FEATURE_EVENT_TRACE)
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword);
+
 namespace ETW
 {
     // Class to wrap all GC logic for ETW

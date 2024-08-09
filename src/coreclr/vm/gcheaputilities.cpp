@@ -41,7 +41,10 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-GVAL_IMPL_INIT(gc_alloc_context, g_global_alloc_context, {});
+ee_alloc_context g_global_ee_alloc_context = {};
+GPTR_IMPL_INIT(gc_alloc_context, g_global_alloc_context, &(g_global_ee_alloc_context.gc_allocation_context));
+
+thread_local ee_alloc_context::CLRRandomHolder ee_alloc_context::t_instance = CLRRandomHolder();
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,

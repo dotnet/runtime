@@ -443,7 +443,34 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &t_runtime_thread_locals.alloc_context.gc_allocation_context;
+}
+
+void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
+{
+    // NOTE: Its possible that alloc_ptr = alloc_limit = combined_limit = NULL at this point
+    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_allocation_context;
+
+    // The allocation context might be modified by the callback, so we need to save
+    // the remaining sampling budget and restore it after the callback if needed.
+    size_t currentSamplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+    size_t currentSize = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+    fn(pAllocContext, param);
+
+    // If the GC changed the size of the allocation context, we need to recompute the sampling limit
+    // This includes the case where the AC was initially zero-sized/uninitialized.
+    // Functionally we'd get valid results if we called UpdateCombinedLimit() unconditionally but its
+    // empirically a little more performant to only call it when the AC size has changed.
+    if (currentSize != (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr))
+    {
+        pEEAllocContext->UpdateCombinedLimit();
+    }
+    else
+    {
+        // Restore the remaining sampling budget as the size is the same.
+        pEEAllocContext->combined_limit = pAllocContext->alloc_ptr + currentSamplingBudget;
+    }
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -460,16 +487,12 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            gc_alloc_context* palloc_context = pThread->GetAllocContext();
-            if (palloc_context != nullptr)
-            {
-                fn(palloc_context, param);
-            }
+            InvokeGCAllocCallback(pThread->GetEEAllocContext(), fn, param);
         }
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        InvokeGCAllocCallback(&g_global_ee_alloc_context, fn, param);
     }
 }
 

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <BuildAsStandAlone>true</BuildAsStandAlone>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.510501" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.8" />
+  </ItemGroup>
+
+</Project>

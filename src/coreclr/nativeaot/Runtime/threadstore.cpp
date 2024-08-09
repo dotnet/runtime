@@ -127,7 +127,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // Init the thread buffer
     //
     pAttachingThread->Construct();
-    ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
+    ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_IsRandSeedSet);
 
     // fAcquireThreadStoreLock is false when threads are created/attached for GC purpose
     // in such case the lock is already held and GC takes care to ensure safe access to the threadstore
@@ -138,7 +138,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     //
     // Set thread state to be attached
     //
-    ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
+    ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_IsRandSeedSet);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
     pTS->m_ThreadList.PushHead(pAttachingThread);
