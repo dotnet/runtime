@@ -554,6 +554,29 @@ const CoreLibBinder::OffsetAndSizeCheck CoreLibBinder::OffsetsAndSizes[] =
     #include "corelib.h"
 };
 
+namespace
+{
+    bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
+    {
+        // If we don't have a feature switch, treat the switch as enabled.
+        return featureSwitch != nullptr && 
+            Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
+    }
+
+    bool IsTrimmed(LPCSTR nameSpace, LPCSTR className)
+    {
+        bool isInDisabledFeatureSwitch = false;
+        #define BEGIN_ILLINK_FEATURE_SWITCH(s, e, d) isInDisabledFeatureSwitch = FeatureSwitchDisabled(W(#s), e, d);
+        #define END_ILLINK_FEATURE_SWITCH() isInDisabledFeatureSwitch = false;
+        #define DEFINE_CLASS_U(ns, stringName, unmanagedType) \
+            if (strcmp(nameSpace, g_ ## ns ## NS) == 0 \
+                && strcmp(className, #stringName) == 0) \
+                return isInDisabledFeatureSwitch;
+
+        #include "corelib.h"
+    }
+}
+
 //
 // check the basic consistency between CoreLib and VM
 //
@@ -562,6 +585,7 @@ void CoreLibBinder::Check()
     STANDARD_VM_CONTRACT;
 
     MethodTable * pMT = NULL;
+    bool currentTypeTrimmed = false;
 
     for (unsigned i = 0; i < ARRAY_SIZE(OffsetsAndSizes); i++)
     {
@@ -569,6 +593,10 @@ void CoreLibBinder::Check()
 
         if (p->className != NULL)
         {
+            currentTypeTrimmed = IsTrimmed(p->classNameSpace, p->className);
+            if (currentTypeTrimmed)
+                continue;
+
             pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), p->classNameSpace, p->className).AsMethodTable();
 
             if (p->expectedClassSize == sizeof(NoClass))
@@ -587,7 +615,7 @@ void CoreLibBinder::Check()
                 "man: 0x%x, unman: 0x%x, Name: %s\n", size, expectedsize, pMT->GetDebugClassName()));
         }
         else
-        if (p->fieldName != NULL)
+        if (p->fieldName != NULL && !currentTypeTrimmed)
         {
             // This assert will fire if there is DEFINE_FIELD_U macro without preceding DEFINE_CLASS_U macro in corelib.h
             _ASSERTE(pMT != NULL);
@@ -899,13 +927,6 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 
 namespace
 {
-    bool FeatureSwitchDisabled(LPCWSTR featureSwitch, bool enabledValue, bool defaultValue)
-    {
-        // If we don't have a feature switch, treat the switch as enabled.
-        return featureSwitch != nullptr && 
-            Configuration::GetKnobBooleanValue(featureSwitch, defaultValue) != enabledValue;
-    }
-
     bool IsTrimmed(BinderClassID classId)
     {
         LPCWSTR featureSwitch = nullptr;
