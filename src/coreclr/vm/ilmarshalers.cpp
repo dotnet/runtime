@@ -3423,8 +3423,6 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
 #ifdef TARGET_X86
         LocalDesc   locDesc(pargs->mm.m_pMT);
         pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
-
-        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
         locDesc.MakeByRef();
 
         locDesc.MakePinned();
@@ -3441,7 +3439,6 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
         pslILDispatch->EmitLDOBJ(pslIL->GetToken(pargs->mm.m_pMT));
 #else
         LocalDesc   locDesc(pargs->mm.m_pMT);
-        locDesc.AddModifier(true, pslIL->GetToken(pargs->mm.m_pSigMod));
 
         locDesc.MakeByRef();
         locDesc.MakePinned();

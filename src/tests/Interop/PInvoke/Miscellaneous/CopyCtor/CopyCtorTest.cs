@@ -26,10 +26,6 @@ public static unsafe class CopyCtor
         }
 
         int expectedCallCount = 0;
-        if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-        {
-            expectedCallCount = 1;
-        }
 
         if (StructWithCtor.CopyCtorCallCount != expectedCallCount)
         {
@@ -48,6 +44,7 @@ public static unsafe class CopyCtor
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWindows))]
     [SkipOnMono("Not supported on Mono")]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [SkipOnCoreClr("JitStress can introduce extra copies", RuntimeTestModes.JitStress)]
     public static unsafe void ValidateCopyConstructorAndDestructorCalled()
     {
         CopyCtorUtil.TestDelegate del = (CopyCtorUtil.TestDelegate)Delegate.CreateDelegate(typeof(CopyCtorUtil.TestDelegate), typeof(CopyCtor).GetMethod("StructWithCtorTest"));
