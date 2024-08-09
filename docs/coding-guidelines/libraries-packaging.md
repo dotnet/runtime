@@ -22,7 +22,7 @@ Removing a library from the shared framework is a breaking change and should be 
 
 It's beneficial to avoid project references to libraries that are in the shared framework because it makes the package graph smaller which reduces the number of packages that require servicing and the number of libraries that end up being copied into the application directory.
 
-If a dependency is part of the shared framework a project/package reference is never required on the latest version (`NetCoreAppCurrent`).  A reference is required for previous .NET versions even if the dependency is part of the shared framework if the project you are building targets .NETStandard and references the project there.  You can avoid this by avoiding that dependency on .NETStandard if it's not needed (for example - if it is an implementation only depdency and you're building a PNSE assembly for .NETStandard).
+If a dependency is part of the shared framework a project/package reference is never required on the latest version (`NetCoreAppCurrent`).  A reference is required for previous .NET versions even if the dependency is part of the shared framework if the project you are building targets .NETStandard and references the project there.  You may completely avoid a package dependency on .NETStandard and .NET if it's not needed for .NETStandard (for example - if it is an implementation only dependency and you're building a PNSE assembly for .NETStandard).
 
 Warning NETPKG0001 is emitted when you have an unnecessary reference to a library that is part of the shared framework.  To avoid this warning, make sure your ProjectReference is conditioned so that it doesn't apply on `NetCoreAppCurrent`.
 
