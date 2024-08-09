@@ -2068,12 +2068,12 @@ DBG_FlushInstructionCache(
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
     const SIZE_T pageSize = GetVirtualPageSize();
-    INT_PTR begin = (INT_PTR)lpBaseAddress;
-    const INT_PTR end = begin + dwSize;
+    UINT_PTR begin = (UINT_PTR)lpBaseAddress;
+    const UINT_PTR end = begin + dwSize;
 
     while (begin < end)
     {
-        INT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        UINT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
         if (endOrNextPageBegin > end)
             endOrNextPageBegin = end;
 
