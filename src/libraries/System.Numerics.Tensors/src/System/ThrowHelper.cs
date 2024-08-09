@@ -98,9 +98,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        public static void ThrowArgument_ShapesNotBroadcastCompatible()
+        public static void ThrowArgument_LengthsNotBroadcastCompatible()
         {
-            throw new ArgumentException(SR.ThrowArgument_ShapesNotBroadcastCompatible);
+            throw new ArgumentException(SR.ThrowArgument_LengthsNotBroadcastCompatible);
         }
 
         [DoesNotReturn]

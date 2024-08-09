@@ -628,7 +628,9 @@ namespace System.Numerics.Tensors
             return retVal;
         }
 
-        //public static explicit operator TensorSpan<T>(Array? array);
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator TensorSpan<T>(T[]? array) => new TensorSpan<T>(array);
 
         /// <summary>

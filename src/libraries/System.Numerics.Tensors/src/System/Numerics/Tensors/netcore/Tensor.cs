@@ -18,6 +18,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Represents a tensor.
+    /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
@@ -365,10 +368,19 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
+        /// </summary>
         public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
 
         /// <summary>
@@ -614,6 +626,11 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
+        /// <summary>
+        /// Gets the hash code for the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>The int hash code of the tensor</returns>
+        /// <exception cref="NotImplementedException"></exception>
         public override int GetHashCode()
         {
             throw new NotImplementedException();
