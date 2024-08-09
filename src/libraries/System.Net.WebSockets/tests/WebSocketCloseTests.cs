@@ -85,5 +85,28 @@ namespace System.Net.WebSockets.Tests
                 Assert.Equal(closeStatusDescription, closing.CloseStatusDescription);
             }
         }
+
+        [Fact]
+        public async Task CloseAsync_CancelableEvenWhenPendingReceive_Throws()
+        {
+            // This test is similar to a ClientWebSocket test
+            // System.Net.WebSockets.Client.Tests.HttpClientCloseTest.CloseAsync_CancelableEvenWhenPendingReceive_Throws
+
+            using var stream = new WebSocketTestStream();
+            using var websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions());
+
+            Task receiveTask = websocket.ReceiveAsync(new byte[1], CancellationToken);
+            await Task.Delay(100); // give the receive task a chance to aquire the lock
+            var cancelCloseCts = new CancellationTokenSource();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                Task t = websocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, cancelCloseCts.Token);
+                await Task.Delay(100); // give the close task time to get in the queue waiting for the lock
+                cancelCloseCts.Cancel();
+                await t;
+            });
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiveTask);
+        }
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -46,6 +47,12 @@ namespace System.Threading
         /// <summary>Gets the object used to synchronize contended operations.</summary>
         private object SyncObj => this;
 
+        /// <summary>Attempts to syncronously enter the mutex.</summary>
+        /// <remarks>This will succeed in case the mutex is not currently held nor contended.</remarks>
+        /// <returns>Whether the mutex has been entered.</returns>
+        public bool TryEnter()
+            => Interlocked.CompareExchange(ref _gate, 0, 1) == 1;
+
         /// <summary>Asynchronously waits to enter the mutex.</summary>
         /// <param name="cancellationToken">The CancellationToken token to observe.</param>
         /// <returns>A task that will complete when the mutex has been entered or the enter canceled.</returns>
@@ -65,6 +72,8 @@ namespace System.Threading
 
             Task Contended(CancellationToken cancellationToken)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 var w = new Waiter(this);
 
                 // We need to register for cancellation before storing the waiter into the list.
@@ -78,6 +87,8 @@ namespace System.Threading
 
                 lock (SyncObj)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(this);
+
                     // Now that we're holding the lock, check to see whether the async lock is acquirable.
                     if (!_lockedSemaphoreFull)
                     {
@@ -109,6 +120,8 @@ namespace System.Threading
                         w.Prev.Next = w.Next.Prev = w;
                     }
                     _waitersTail = w;
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(this);
                 }
 
                 // Return the waiter as a value task.
@@ -122,6 +135,8 @@ namespace System.Threading
 
                     lock (m.SyncObj)
                     {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(m);
+
                         bool inList = w.Next != null;
                         if (inList)
                         {
@@ -162,6 +177,8 @@ namespace System.Threading
                             // The waiter was no longer in the list.  We must not cancel it.
                             w = null;
                         }
+
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(m);
                     }
 
                     // If the waiter was in the list, we removed it under the lock and thus own
@@ -185,10 +202,14 @@ namespace System.Threading
 
             void Contended()
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 Waiter? w;
                 lock (SyncObj)
                 {
                     Debug.Assert(_lockedSemaphoreFull);
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockTaken(this);
 
                     w = _waitersTail;
                     if (w is null)
@@ -217,6 +238,8 @@ namespace System.Threading
 
                         w.Next = w.Prev = null;
                     }
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.DbgLockReleased(this);
                 }
 
                 // Either there wasn't a waiter, or we got one and successfully removed it from the list,
