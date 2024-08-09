@@ -24,9 +24,9 @@ namespace System.Runtime.InteropServices.Marshalling
         private const short VARIANT_FALSE = 0;
 
         /// <summary>
-        /// Convert a managed object to an unmanaged <see cref="ComVariant"/>.
+        /// Converts a managed object to an unmanaged <see cref="ComVariant"/>.
         /// </summary>
-        /// <param name="managed">The managed object</param>
+        /// <param name="managed">The managed object.</param>
         /// <returns>A <see cref="ComVariant" /> that represents the provided managed object.</returns>
         /// <exception cref="ArgumentException">The type of <paramref name="managed"/> is not supported.</exception>
         public static ComVariant ConvertToUnmanaged(object? managed)
@@ -111,9 +111,9 @@ namespace System.Runtime.InteropServices.Marshalling
 #pragma warning restore CA1416 // Validate platform compatibility
 
         /// <summary>
-        /// Convert an unmanaged <see cref="ComVariant"/> to a managed object.
+        /// Converts an unmanaged <see cref="ComVariant"/> to a managed object.
         /// </summary>
-        /// <param name="unmanaged">The unmanaged variant</param>
+        /// <param name="unmanaged">The unmanaged variant.</param>
         /// <returns>A managed object that represents the same value as <paramref name="unmanaged"/>.</returns>
         /// <exception cref="ArgumentException">The type of data stored in <paramref name="unmanaged"/> is not supported.</exception>
         public static unsafe object? ConvertToManaged(ComVariant unmanaged)
@@ -209,7 +209,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Dispose the unmanaged <see cref="ComVariant"/>.
+        /// Disposes the unmanaged <see cref="ComVariant"/>.
         /// </summary>
         /// <param name="unmanaged">The object to dispose.</param>
         public static void Free(ComVariant unmanaged) => unmanaged.Dispose();
