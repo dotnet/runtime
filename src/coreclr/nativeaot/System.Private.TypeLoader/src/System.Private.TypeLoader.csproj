@@ -233,7 +233,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NoMetadataRuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\OptionalFields.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TemplateLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeBuilder.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeBuilderState.cs" />

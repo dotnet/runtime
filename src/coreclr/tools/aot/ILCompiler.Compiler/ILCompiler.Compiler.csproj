@@ -530,7 +530,6 @@
     <Compile Include="Compiler\DependencyAnalysis\StringAllocatorMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
@@ -689,9 +688,6 @@
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\MethodTable.Constants.cs">
       <Link>Common\MethodTable.Constants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\EETypeOptionalFieldsBuilder.cs">
-      <Link>Common\EETypeOptionalFieldsBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EETypeBuilderHelpers.cs</Link>

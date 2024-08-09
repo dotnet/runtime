@@ -63,7 +63,6 @@ enum EETypeField
     ETF_TypeManagerIndirection,
     ETF_WritableData,
     ETF_Finalizer,
-    ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_GenericDefinition,
@@ -126,9 +125,6 @@ private:
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
 
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x00040000,
-
         // GC depends on this bit, this bit must be zero
         CollectibleFlag         = 0x00200000,
 
@@ -161,6 +157,9 @@ private:
         // GC depends on this bit, this type has a critical finalizer
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        // This MethodTable is for a Byref-like class (TypedReference, Span<T>, ...)
+        IsByRefLikeFlag = 0x0010,
 
         // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
         RequiresAlign8Flag = 0x1000
