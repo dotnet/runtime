@@ -5020,6 +5020,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<short> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<int> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<ushort> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<uint> mask, byte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorByteZeroExtendFirstFaulting(System.Numerics.Vector<ulong> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorByteZeroExtendToInt16(System.Numerics.Vector<short> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorByteZeroExtendToInt32(System.Numerics.Vector<int> mask, byte* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorByteZeroExtendToInt64(System.Numerics.Vector<long> mask, byte* address) { throw null; }
@@ -5030,12 +5036,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<int> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<long> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<uint> mask, short* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16SignExtendFirstFaulting(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorInt16SignExtendToInt32(System.Numerics.Vector<int> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt16SignExtendToInt64(System.Numerics.Vector<long> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorInt16SignExtendToUInt32(System.Numerics.Vector<uint> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt16SignExtendToUInt64(System.Numerics.Vector<ulong> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendFirstFaulting(System.Numerics.Vector<long> mask, int* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendFirstFaulting(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorInt32SignExtendToInt64(System.Numerics.Vector<long> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorInt32SignExtendToUInt64(System.Numerics.Vector<ulong> mask, int* address) { throw null; }
         public static unsafe System.Numerics.Vector<byte> LoadVectorNonFaulting(byte* address) { throw null; }
@@ -5074,6 +5086,12 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<short> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<ushort> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<uint> mask, sbyte* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorSByteSignExtendFirstFaulting(System.Numerics.Vector<ulong> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVectorSByteSignExtendToInt16(System.Numerics.Vector<short> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorSByteSignExtendToInt32(System.Numerics.Vector<int> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorSByteSignExtendToInt64(System.Numerics.Vector<long> mask, sbyte* address) { throw null; }
@@ -5084,12 +5102,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<int> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendFirstFaulting(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVectorUInt16ZeroExtendToInt32(System.Numerics.Vector<int> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt16ZeroExtendToInt64(System.Numerics.Vector<long> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<uint> LoadVectorUInt16ZeroExtendToUInt32(System.Numerics.Vector<uint> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt16ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, ushort* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendFirstFaulting(System.Numerics.Vector<long> mask, uint* address) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendFirstFaulting(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<long> LoadVectorUInt32ZeroExtendToInt64(System.Numerics.Vector<long> mask, uint* address) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(System.Numerics.Vector<ulong> mask, uint* address) { throw null; }
         public static unsafe (System.Numerics.Vector<byte>, System.Numerics.Vector<byte>) Load2xVectorAndUnzip(System.Numerics.Vector<byte> mask, byte* address) { throw null; }
