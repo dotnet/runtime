@@ -48,6 +48,9 @@
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\linker\Mono.Linker.csproj" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
+    <!-- To satisfy CG alerts -->
+    <PackageReference Include="Microsoft.IO.Redist" Version="$(MicrosoftIORedistVersion)" />
+
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
