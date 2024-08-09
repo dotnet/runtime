@@ -5466,6 +5466,12 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     CONTRACTL_END;
 
 
+    if ((g_fEEShutDown & ShutDown_Finalize2) == ShutDown_Finalize2)
+    {
+        // We are shutting down the EE and don't want the debugger to manage any exceptions.
+        return false;
+    }
+
     // Ignore any notification exceptions sent from code:Debugger.SendRawEvent.
     // This is not a common case, but could happen in some cases described
     // in SendRawEvent. Either way, Left-Side and VM should just ignore these.
