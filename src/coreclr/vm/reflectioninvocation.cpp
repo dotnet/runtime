@@ -497,13 +497,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 #ifdef CALLDESCR_REGTYPEMAP
     callDescrData.dwRegTypeMap = 0;
 #endif
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    // Temporary conversion to old flags, CallDescrWorker needs to be overhauled anyway
-    // to work with arbitrary field offsets and sizes, and support struct size > 16 on RISC-V.
-    callDescrData.fpReturnSize = FpStructInRegistersInfo{FpStruct::Flags(argit.GetFPReturnSize())}.ToOldFlags();
-#else
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
-#endif
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -709,7 +703,18 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+            {
+                FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
+                bool hasPointers = gc.retVal->GetMethodTable()->ContainsGCPointers();
+                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info, hasPointers);
+            }
+            else
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            {
+                CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+            }
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.

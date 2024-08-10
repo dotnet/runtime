@@ -84,7 +84,7 @@ namespace System.Net.WebSockets
         public static TimeSpan DefaultKeepAliveInterval
         {
             // In the .NET Framework, this pulls the value from a P/Invoke.  Here we just hardcode it to a reasonable default.
-            get { return TimeSpan.FromSeconds(30); }
+            get { return WebSocketDefaults.DefaultClientKeepAliveInterval; }
         }
 
         protected static void ThrowOnInvalidState(WebSocketState state, params WebSocketState[] validStates)
@@ -150,7 +150,7 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval, WebSocketDefaults.DefaultKeepAliveTimeout);
         }
 
         /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
@@ -209,7 +209,7 @@ namespace System.Net.WebSockets
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
-            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval, WebSocketDefaults.DefaultKeepAliveTimeout);
         }
     }
 }

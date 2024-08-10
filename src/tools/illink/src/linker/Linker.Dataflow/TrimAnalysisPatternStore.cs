@@ -10,14 +10,14 @@ namespace Mono.Linker.Dataflow
 {
 	public readonly struct TrimAnalysisPatternStore
 	{
-		readonly Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern> AssignmentPatterns;
+		readonly Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 		readonly LinkContext _context;
 
 		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice, LinkContext context)
 		{
-			AssignmentPatterns = new Dictionary<MessageOrigin, TrimAnalysisAssignmentPattern> ();
+			AssignmentPatterns = new Dictionary<(MessageOrigin, int?), TrimAnalysisAssignmentPattern> ();
 			MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> ();
 			Lattice = lattice;
 			_context = context;
@@ -25,12 +25,13 @@ namespace Mono.Linker.Dataflow
 
 		public void Add (TrimAnalysisAssignmentPattern pattern)
 		{
-			if (!AssignmentPatterns.TryGetValue (pattern.Origin, out var existingPattern)) {
-				AssignmentPatterns.Add (pattern.Origin, pattern);
+			var key = (pattern.Origin, pattern.ParameterIndex);
+			if (!AssignmentPatterns.TryGetValue (key, out var existingPattern)) {
+				AssignmentPatterns.Add (key, pattern);
 				return;
 			}
 
-			AssignmentPatterns[pattern.Origin] = pattern.Merge (Lattice, existingPattern);
+			AssignmentPatterns[key] = pattern.Merge (Lattice, existingPattern);
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)

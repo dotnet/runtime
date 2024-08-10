@@ -507,7 +507,8 @@ const char* getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
           const char** className,
           const char** namespaceName,
-          const char** enclosingClassName) override;
+          const char** enclosingClassNames,
+          size_t maxEnclosingClassNames) override;
 
 unsigned getMethodHash(
           CORINFO_METHOD_HANDLE ftn) override;

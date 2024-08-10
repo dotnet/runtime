@@ -255,6 +255,12 @@ namespace System.Text.RegularExpressions
 
                 // Finally add the regex.
                 var node = new Node(key, regex);
+
+                if (s_lastAccessed is { } lastAccessed)
+                {
+                    node.LastAccessStamp = Volatile.Read(ref lastAccessed.LastAccessStamp) + 1;
+                }
+
                 s_lastAccessed = node;
                 s_cacheList.Add(node);
                 s_cacheDictionary.TryAdd(key, node);

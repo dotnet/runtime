@@ -8,50 +8,33 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
 
-public class Test
+// keep in sync with src\mono\wasi\testassets\Http.cs
+public static class WasiMainWrapper
 {
-    public static int Main(string[] args)
-    {
-        var task = Work();
-        while (!task.IsCompleted)
-        {
-            WasiEventLoop.DispatchWasiEventLoop();
-        }
-        var exception = task.Exception;
-        if (exception is not null)
-        {
-            throw exception;
-        }
-
-        return 0;
-    }
-
-    public static async Task Work()
+    public static async Task<int> MainAsync(string[] args)
     {
         using HttpClient client = new();
         client.Timeout = Timeout.InfiniteTimeSpan;
         client.DefaultRequestHeaders.Accept.Clear();
-        client.DefaultRequestHeaders.Accept.Add(
-            new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
-        client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
+        client.DefaultRequestHeaders.Add("User-Agent", "dotnet WASI unit test");
         
-        var query="https://api.github.com/orgs/dotnet/repos?per_page=1";
+        var query="https://corefx-net-http11.azurewebsites.net/Echo.ashx";
         var json = await client.GetStringAsync(query);
 
         Console.WriteLine();
         Console.WriteLine("GET "+query);
         Console.WriteLine();
         Console.WriteLine(json);
+
+        return 0;
     }
 
-    private static class WasiEventLoop
+    public static int Main(string[] args)
     {
-        internal static void DispatchWasiEventLoop()
-        {
-            CallDispatchWasiEventLoop((Thread)null!);
+        return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
-            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "DispatchWasiEventLoop")]
-            static extern void CallDispatchWasiEventLoop(Thread t);
-        }
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
+        static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }
+
 }

@@ -50,7 +50,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        RunWithoutBuild(config, id, true);
     }
 
     [Theory]
@@ -80,7 +80,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        RunWithoutBuild(config, id, true);
 
         if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             throw new XunitException($"Test bug: could not get the build product in the cache");

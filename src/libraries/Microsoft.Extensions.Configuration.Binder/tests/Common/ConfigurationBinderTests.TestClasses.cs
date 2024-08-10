@@ -188,6 +188,8 @@ namespace Microsoft.Extensions
             }
         }
 
+        public record RecordWithArrayParameter(string[] Array);
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject

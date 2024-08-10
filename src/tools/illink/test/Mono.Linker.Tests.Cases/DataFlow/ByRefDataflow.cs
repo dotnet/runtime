@@ -181,8 +181,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
-			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
 			public static void Test ()
 			{
 				TwoOutRefs (out _publicMethodsField, out _publicPropertiesField);

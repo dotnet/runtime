@@ -10,43 +10,85 @@ namespace System.Threading
 {
     internal sealed partial class PortableThreadPool
     {
-        // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids
-        // continuations blocking/stalling the IO completion poller threads. Setting UnsafeInlineIOCompletionCallbacks allows
-        // continuations to run directly on the IO completion poller thread, but is inherently unsafe due to the potential for
-        // those threads to become stalled due to blocking. Sometimes, setting this config value may yield better latency. The
-        // config value is named for consistency with SocketAsyncEngine.Unix.cs.
-        private static readonly bool UnsafeInlineIOCompletionCallbacks =
-            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+        private readonly nint[] _ioPorts = new nint[IOCompletionPortCount];
+        private uint _ioPortSelectorForRegister = unchecked((uint)-1);
+        private uint _ioPortSelectorForQueue = unchecked((uint)-1);
+        private IOCompletionPoller[]? _ioCompletionPollers;
 
-        private static readonly int IOCompletionPollerCount = GetIOCompletionPollerCount();
+        private static short DetermineIOCompletionPortCount()
+        {
+            const short DefaultIOPortCount = 1;
+            const short MaxIOPortCount = 1 << 10;
 
-        private static int GetIOCompletionPollerCount()
+            short ioPortCount =
+                AppContextConfigHelper.GetInt16Config(
+                    "System.Threading.ThreadPool.IOCompletionPortCount",
+                    "DOTNET_ThreadPool_IOCompletionPortCount",
+                    DefaultIOPortCount,
+                    allowNegative: false);
+            return ioPortCount == 0 ? DefaultIOPortCount : Math.Min(ioPortCount, MaxIOPortCount);
+        }
+
+        private static int DetermineIOCompletionPollerCount()
         {
             // Named for consistency with SocketAsyncEngine.Unix.cs, this environment variable is checked to override the exact
             // number of IO completion poller threads to use. See the comment in SocketAsyncEngine.Unix.cs about its potential
             // uses. For this implementation, the ProcessorsPerIOPollerThread config option below may be preferable as it may be
             // less machine-specific.
-            if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count))
+            int ioPollerCount;
+            if (uint.TryParse(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT"), out uint count) &&
+                count != 0)
             {
-                return Math.Min((int)count, MaxPossibleThreadCount);
+                ioPollerCount = (int)Math.Min(count, (uint)MaxPossibleThreadCount);
             }
-
-            if (UnsafeInlineIOCompletionCallbacks)
+            else if (UnsafeInlineIOCompletionCallbacks)
             {
                 // In this mode, default to ProcessorCount pollers to ensure that all processors can be utilized if more work
                 // happens on the poller threads
-                return Environment.ProcessorCount;
+                ioPollerCount = Environment.ProcessorCount;
+            }
+            else
+            {
+                int processorsPerPoller =
+                    AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerIOPollerThread", 12, false);
+                ioPollerCount = (Environment.ProcessorCount - 1) / processorsPerPoller + 1;
             }
 
-            int processorsPerPoller =
-                AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.ProcessorsPerIOPollerThread", 12, false);
-            return (Environment.ProcessorCount - 1) / processorsPerPoller + 1;
+            if (IOCompletionPortCount == 1)
+            {
+                return ioPollerCount;
+            }
+
+            // Use at least one IO poller per port
+            if (ioPollerCount <= IOCompletionPortCount)
+            {
+                return IOCompletionPortCount;
+            }
+
+            // Use the same number of IO pollers per port, align up if necessary to make it even
+            int rem = ioPollerCount % IOCompletionPortCount;
+            if (rem != 0)
+            {
+                ioPollerCount += IOCompletionPortCount - rem;
+            }
+
+            return ioPollerCount;
         }
 
-        private static nint CreateIOCompletionPort()
+        private void InitializeIOOnWindows()
+        {
+            Debug.Assert(IOCompletionPollerCount % IOCompletionPortCount == 0);
+            int numConcurrentThreads = IOCompletionPollerCount / IOCompletionPortCount;
+            for (int i = 0; i < IOCompletionPortCount; i++)
+            {
+                _ioPorts[i] = CreateIOCompletionPort(numConcurrentThreads);
+            }
+        }
+
+        private static nint CreateIOCompletionPort(int numConcurrentThreads)
         {
             nint port =
-                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, IOCompletionPollerCount);
+                Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, numConcurrentThreads);
             if (port == 0)
             {
                 int hr = Marshal.GetHRForLastWin32Error();
@@ -58,26 +100,32 @@ namespace System.Threading
 
         public void RegisterForIOCompletionNotifications(nint handle)
         {
-            Debug.Assert(_ioPort != 0);
+            Debug.Assert(_ioPorts != null);
 
             if (_ioCompletionPollers == null)
             {
                 EnsureIOCompletionPollers();
             }
 
-            nint port = Interop.Kernel32.CreateIoCompletionPort(handle, _ioPort, UIntPtr.Zero, 0);
+            uint selectedPortIndex =
+                IOCompletionPortCount == 1
+                    ? 0
+                    : Interlocked.Increment(ref _ioPortSelectorForRegister) % (uint)IOCompletionPortCount;
+            nint selectedPort = _ioPorts[selectedPortIndex];
+            Debug.Assert(selectedPort != 0);
+            nint port = Interop.Kernel32.CreateIoCompletionPort(handle, selectedPort, UIntPtr.Zero, 0);
             if (port == 0)
             {
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
-            Debug.Assert(port == _ioPort);
+            Debug.Assert(port == selectedPort);
         }
 
         public unsafe void QueueNativeOverlapped(NativeOverlapped* nativeOverlapped)
         {
             Debug.Assert(nativeOverlapped != null);
-            Debug.Assert(_ioPort != 0);
+            Debug.Assert(_ioPorts != null);
 
             if (_ioCompletionPollers == null)
             {
@@ -89,7 +137,13 @@ namespace System.Threading
                 NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(nativeOverlapped);
             }
 
-            if (!Interop.Kernel32.PostQueuedCompletionStatus(_ioPort, 0, UIntPtr.Zero, (IntPtr)nativeOverlapped))
+            uint selectedPortIndex =
+                IOCompletionPortCount == 1
+                    ? 0
+                    : Interlocked.Increment(ref _ioPortSelectorForQueue) % (uint)IOCompletionPortCount;
+            nint selectedPort = _ioPorts[selectedPortIndex];
+            Debug.Assert(selectedPort != 0);
+            if (!Interop.Kernel32.PostQueuedCompletionStatus(selectedPort, 0, UIntPtr.Zero, (IntPtr)nativeOverlapped))
             {
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
@@ -109,7 +163,7 @@ namespace System.Threading
                 IOCompletionPoller[] pollers = new IOCompletionPoller[IOCompletionPollerCount];
                 for (int i = 0; i < IOCompletionPollerCount; ++i)
                 {
-                    pollers[i] = new IOCompletionPoller(_ioPort);
+                    pollers[i] = new IOCompletionPoller(_ioPorts[i % IOCompletionPortCount]);
                 }
 
                 _ioCompletionPollers = pollers;

@@ -70,18 +70,34 @@ namespace System.Net.WebSockets.Client.Tests
             TimeSpan keepAliveInterval = default,
             IWebProxy proxy = null,
             HttpMessageInvoker? invoker = null) =>
+                GetConnectedWebSocket(
+                    server,
+                    timeOutMilliseconds,
+                    output,
+                    options =>
+                    {
+                        if (proxy != null)
+                        {
+                            options.Proxy = proxy;
+                        }
+                        if (keepAliveInterval.TotalSeconds > 0)
+                        {
+                            options.KeepAliveInterval = keepAliveInterval;
+                        }
+                    },
+                    invoker
+                );
+
+        public static Task<ClientWebSocket> GetConnectedWebSocket(
+            Uri server,
+            int timeOutMilliseconds,
+            ITestOutputHelper output,
+            Action<ClientWebSocketOptions> configureOptions,
+            HttpMessageInvoker? invoker = null) =>
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
-                if (proxy != null)
-                {
-                    cws.Options.Proxy = proxy;
-                }
-
-                if (keepAliveInterval.TotalSeconds > 0)
-                {
-                    cws.Options.KeepAliveInterval = keepAliveInterval;
-                }
+                configureOptions(cws.Options);
 
                 using (var cts = new CancellationTokenSource(timeOutMilliseconds))
                 {

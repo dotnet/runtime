@@ -850,8 +850,9 @@ namespace ILCompiler
 
                         types.Add(t);
 
-                        // N.B. for ARM32, we would need to deal with > PointerSize alignments.
-                        //      GCStaticEEType does not currently set RequiresAlign8Flag
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments. We
+                        // currently don't support inlined thread statics on ARM32, regular GCStaticEEType
+                        // handles this with RequiresAlign8Flag
                         Debug.Assert(t.ThreadGcStaticFieldAlignment.AsInt <= factory.Target.PointerSize);
                         nextDataOffset = nextDataOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
 

@@ -67,6 +67,7 @@ namespace System.Reflection.Emit.Tests
                 EnumBuilder enumBuilder = CreateAssemblyAndDefineEnum(out PersistedAssemblyBuilder assemblyBuilder, out TypeBuilder type, underlyingType);
                 FieldBuilder literal = enumBuilder.DefineLiteral("FieldOne", literalValue);
                 enumBuilder.CreateTypeInfo();
+                Assert.True(enumBuilder.IsEnum);
                 type.CreateTypeInfo();
                 assemblyBuilder.Save(file.Path);
 
@@ -79,12 +80,46 @@ namespace System.Reflection.Emit.Tests
                     Assert.True(testEnum.IsEnum);
                     AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
                     Assert.Equal(underlyingType.FullName, testEnum.GetEnumUnderlyingType().FullName);
+                    Assert.Equal(mlc.CoreAssembly.GetType("System.Enum"), testEnum.BaseType);
 
                     FieldInfo testField = testEnum.GetField("FieldOne");
                     Assert.Equal(enumBuilder.Name, testField.DeclaringType.Name);
                     Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, literal.Attributes);
                     Assert.Equal(enumBuilder.AsType().FullName, testField.FieldType.FullName);
+                    Assert.Equal(testEnum, testField.FieldType);
                 }
+            }
+        }
+
+        [Fact]
+        public void CreateEnumWithMlc()
+        {
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(PopulateAssemblyName(), mlc.CoreAssembly);
+                ModuleBuilder mb = ab.DefineDynamicModule("My Module");
+                Type intType = mlc.CoreAssembly.GetType("System.Int32");
+                EnumBuilder enumBuilder = mb.DefineEnum("TestEnum", TypeAttributes.Public, typeof(int));
+                FieldBuilder field = enumBuilder.DefineLiteral("Default", 0);
+
+                enumBuilder.CreateTypeInfo();
+                Assert.True(enumBuilder.IsEnum);
+                Assert.Equal(enumBuilder, field.FieldType);
+
+                ab.Save(stream);
+                Assembly assemblyFromStream = mlc.LoadFromStream(stream);
+                Type createdEnum = assemblyFromStream.GetType("TestEnum");
+
+                Assert.True(createdEnum.IsEnum);
+                AssemblySaveTools.AssertTypeProperties(enumBuilder, createdEnum);
+                Assert.Equal(mlc.CoreAssembly.GetType("System.Enum"), createdEnum.BaseType);
+                Assert.Equal(intType, createdEnum.GetEnumUnderlyingType());
+
+                FieldInfo testField = createdEnum.GetField("Default");
+                Assert.Equal(createdEnum, testField.FieldType);
+                Assert.Equal(typeof(int), enumBuilder.GetEnumUnderlyingType());
+                Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal | FieldAttributes.HasDefault, testField.Attributes);
             }
         }
 

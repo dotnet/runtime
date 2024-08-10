@@ -600,7 +600,9 @@ namespace System.Numerics.Tensors
         }
 
         //public static explicit operator TensorSpan<T>(Array? array);
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
         public static implicit operator ReadOnlyTensorSpan<T>(T[]? array) => new ReadOnlyTensorSpan<T>(array);
+#pragma warning restore 1591
 
         /// <summary>
         /// Returns a <see cref="string"/> with the name of the type and the number of elements.

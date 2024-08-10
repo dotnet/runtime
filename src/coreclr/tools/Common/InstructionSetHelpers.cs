@@ -223,6 +223,8 @@ namespace System.CommandLine
 
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)

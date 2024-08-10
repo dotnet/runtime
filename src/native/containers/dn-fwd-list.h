@@ -175,12 +175,13 @@ dn_fwd_list_front (const dn_fwd_list_t *list)
 #define dn_fwd_list_front_t(list, type) \
 	(type *)dn_fwd_list_front ((list))
 
+extern dn_fwd_list_node_t _fwd_list_before_begin_it_node;
+
 static inline dn_fwd_list_it_t
 dn_fwd_list_before_begin (dn_fwd_list_t *list)
 {
 	DN_ASSERT (list);
 
-	extern dn_fwd_list_node_t _fwd_list_before_begin_it_node;
 	dn_fwd_list_it_t it = { &_fwd_list_before_begin_it_node, { list } };
 
 	return it;

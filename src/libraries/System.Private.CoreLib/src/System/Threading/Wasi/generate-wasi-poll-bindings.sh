@@ -17,6 +17,7 @@ tar xzf v0.2.1.tar.gz
 cat >wasi-http-0.2.1/wit/world.wit <<EOF
 world wasi-poll {
   import wasi:io/poll@0.2.1;
+  import wasi:clocks/monotonic-clock@0.2.1;
 }
 EOF
 wit-bindgen c-sharp -w wasi-poll -r native-aot --internal --skip-support-files wasi-http-0.2.1/wit

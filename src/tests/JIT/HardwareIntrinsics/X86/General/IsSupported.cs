@@ -51,8 +51,10 @@ namespace IntelHardwareIntrinsicTest.General
                 Convert.ToBoolean(typeof(Lzcnt.X64).GetMethod(issupported).Invoke(null, null)) != Lzcnt.X64.IsSupported ||
                 Convert.ToBoolean(typeof(Popcnt.X64).GetMethod(issupported).Invoke(null, null)) != Popcnt.X64.IsSupported ||
                 Convert.ToBoolean(typeof(Bmi1.X64).GetMethod(issupported).Invoke(null, null)) != Bmi1.X64.IsSupported ||
-                Convert.ToBoolean(typeof(Bmi2.X64).GetMethod(issupported).Invoke(null, null)) != Bmi2.X64.IsSupported
-            )
+                Convert.ToBoolean(typeof(Bmi2.X64).GetMethod(issupported).Invoke(null, null)) != Bmi2.X64.IsSupported ||
+                Convert.ToBoolean(typeof(Avx10v1).GetMethod(issupported).Invoke(null, null)) != Avx10v1.IsSupported ||
+                Convert.ToBoolean(typeof(Avx10v1.V512).GetMethod(issupported).Invoke(null, null)) != Avx10v1.V512.IsSupported ||
+                Convert.ToBoolean(typeof(Avx10v1.V512.X64).GetMethod(issupported).Invoke(null, null)) != Avx10v1.V512.X64.IsSupported)
             {
                 result = false;
             }

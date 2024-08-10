@@ -123,6 +123,13 @@ namespace System.Net.WebSockets
         }
 
         [UnsupportedOSPlatform("browser")]
+        public TimeSpan KeepAliveTimeout
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [UnsupportedOSPlatform("browser")]
         public WebSocketDeflateOptions? DangerousDeflateOptions
         {
             get => throw new PlatformNotSupportedException();

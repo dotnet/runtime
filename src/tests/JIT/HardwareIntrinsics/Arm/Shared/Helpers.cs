@@ -8518,13 +8518,22 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-        private static bool CheckLoadVectorBehaviorCore<T>(T[] firstOp, T[] result, Func<int, T, T> map) where T : INumberBase<T>
+        private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] firstOp, TElem[] result)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
+        {
+            return (firstOp[index] == TMem.Zero) ? TElem.Zero : TElem.CreateTruncating(firstOp[index]);
+        }
+
+        private static bool CheckLoadVectorBehaviorCore<TMem, TElem>(TMem[] firstOp, TElem[] result, Func<int, TElem, TElem> map)
+            where TMem  : INumberBase<TMem>
+            where TElem : INumberBase<TElem>
         {
             for (var i = 0; i < firstOp.Length; i++)
             {
-                T loadResult = firstOp[i];
-                loadResult = map(i, loadResult);
-                if (result[i] != loadResult)
+                TElem expectedResult = GetLoadVectorExpectedResultByIndex(i, firstOp, result);
+                expectedResult = map(i, expectedResult);
+                if (result[i] != expectedResult)
                 {
                     return false;
                 }
@@ -8532,12 +8541,16 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckLoadVectorBehavior<T>(T[] firstOp, T[] result) where T : INumberBase<T>
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TMem[] firstOp, TElem[] result)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(firstOp, result, (_, loadResult) => loadResult);
         }
 
-        public static bool CheckLoadVectorBehavior<T>(T[] maskOp, T[] firstOp, T[] result, T[] falseOp) where T : INumberBase<T>
+        public static bool CheckLoadVectorBehavior<TMem, TElem>(TElem[] maskOp, TMem[] firstOp, TElem[] result, TElem[] falseOp)
+            where TMem  : INumberBase<TMem>, IConvertible
+            where TElem : INumberBase<TElem>
         {
             return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
@@ -8692,8 +8705,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return false;
         }
 
-        public static bool CheckLoadVectorFirstFaultingBehavior<T, TFault>(T[] firstOp, T[] result, Vector<TFault> faultResult) 
-                where T : INumberBase<T> 
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TMem[] firstOp, TElem[] result, Vector<TFault> faultResult)
+                where TMem  : INumberBase<TMem>, IConvertible
+                where TElem : INumberBase<TElem>
                 where TFault : INumberBase<TFault>
         {
             // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
@@ -8719,7 +8733,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => firstOp[i] == result[i]);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, firstOp, result) == result[i]);
         }
 
         public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)

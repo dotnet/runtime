@@ -25,6 +25,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink/ILLink.Substitutions.Shared.xml" />
+    <Content Include="ILLink\ILLink.Descriptors.LibraryBuild.xml" />
   </ItemGroup>
 
   <ItemGroup>
