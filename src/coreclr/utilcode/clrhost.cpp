@@ -18,6 +18,17 @@ extern "C" IMAGE_DOS_HEADER __ImageBase;
 static void* pImageBase = NULL;
 #endif
 
+#ifdef DACCESS_COMPILE
+
+TADDR g_ClrModuleBase;
+
+void* GetClrModuleBase()
+{
+    return (void*)g_ClrModuleBase;
+}
+
+#else // DACCESS_COMPILE
+
 void* GetClrModuleBase()
 {
     LIMITED_METHOD_CONTRACT;
@@ -36,6 +47,8 @@ void* GetClrModuleBase()
     return pRet;
 #endif // HOST_WINDOWS
 }
+
+#endif // DACCESS_COMPILE
 
 thread_local int t_CantAllocCount;
 
