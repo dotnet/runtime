@@ -246,7 +246,7 @@ namespace System.Runtime.InteropServices
                 ref T structure = ref MemoryMarshal.GetReference(buffer);
                 for (int i = 0; i < buffer.Length; i++)
                 {
-                    Unsafe.Add(ref structure, (nint)(uint)i) = Unsafe.ReadUnaligned<T>(ptr + (nuint)alignedSizeofT * (uint)i);
+                    Unsafe.Add(ref structure, (nint)(uint)i) = Unsafe.ReadUnaligned<T>(ptr + alignedSizeofT * (uint)i);
                 }
             }
             finally
@@ -335,7 +335,7 @@ namespace System.Runtime.InteropServices
                 ref T structure = ref MemoryMarshal.GetReference(data);
                 for (int i = 0; i < data.Length; i++)
                 {
-                    Unsafe.WriteUnaligned(ptr + (nuint)alignedSizeofT * (uint)i, Unsafe.Add(ref structure, (nint)(uint)i));
+                    Unsafe.WriteUnaligned(ptr + alignedSizeofT * (uint)i, Unsafe.Add(ref structure, (nint)(uint)i));
                 }
             }
             finally
