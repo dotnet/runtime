@@ -213,6 +213,64 @@ struct UNIX_CONTEXT
         lambda((size_t*)&Ra());
     }
 
+#elif defined(TARGET_RISCV64)
+
+    uint64_t& X0();
+    uint64_t& X1();
+    uint64_t& X2();
+    uint64_t& X3();
+    uint64_t& X4();
+    uint64_t& X5();
+    uint64_t& X6();
+    uint64_t& X7();
+    uint64_t& X8();
+    uint64_t& X9();
+    uint64_t& X10();
+    uint64_t& X11();
+    uint64_t& X12();
+    uint64_t& X13();
+    uint64_t& X14();
+    uint64_t& X15();
+    uint64_t& X16();
+    uint64_t& X17();
+    uint64_t& X18();
+    uint64_t& X19();
+    uint64_t& X20();
+    uint64_t& X21();
+    uint64_t& X22();
+    uint64_t& X23();
+    uint64_t& X24();
+    uint64_t& X25();
+    uint64_t& X26();
+    uint64_t& X27();
+    uint64_t& X28();
+    uint64_t& X29();
+    uint64_t& X30();
+    uint64_t& X31();
+    uint64_t& Fp(); // X29
+    uint64_t& Ra(); // X1
+    uint64_t& Sp(); // X2
+    uint64_t& Pc();
+
+    uintptr_t GetIp() { return (uintptr_t)Pc(); }
+    uintptr_t GetSp() { return (uintptr_t)Sp(); }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        // It is doubtful anyone would implement X0-X31 not as a contiguous array
+        // Just in case - here are some asserts.
+        ASSERT(&X0() + 1 == &X1());
+        ASSERT(&X0() + 10 == &X10());
+        ASSERT(&X0() + 20 == &X20());
+
+        for (uint64_t* pReg = &X0(); pReg <= &X31(); pReg++)
+            lambda((size_t*)pReg);
+
+        // Ra can be used as a scratch register
+        lambda((size_t*)&Ra());
+    }
+
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");
 #endif // TARGET_ARM

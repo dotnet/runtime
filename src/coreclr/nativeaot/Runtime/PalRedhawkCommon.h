@@ -61,6 +61,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetLr() const { return LR; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { SP = sp; }
+
 #elif defined(TARGET_ARM64)
     uintptr_t  FP;
     uintptr_t  LR;
@@ -91,6 +92,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetLr() const { return LR; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { SP = sp; }
+
 #elif defined(TARGET_LOONGARCH64)
     uintptr_t  FP;
     uintptr_t  RA;
@@ -114,6 +116,56 @@ struct PAL_LIMITED_CONTEXT
     uint64_t      F[32 - 24]; // Only the F registers F24..F31 need to be preserved
                               // (F0-F23 are not preserved according to the ABI spec).
 
+
+    uintptr_t GetIp() const { return IP; }
+    uintptr_t GetSp() const { return SP; }
+    uintptr_t GetFp() const { return FP; }
+    uintptr_t GetRa() const { return RA; }
+    void SetIp(uintptr_t ip) { IP = ip; }
+    void SetSp(uintptr_t sp) { SP = sp; }
+
+#elif defined(TARGET_RISCV64)
+    uintptr_t  FP;
+    uintptr_t  RA;
+
+    uintptr_t  X0;
+    uintptr_t  X1;
+    uintptr_t  X2;
+    uintptr_t  X3;
+    uintptr_t  X4;
+    uintptr_t  X5;
+    uintptr_t  X6;
+    uintptr_t  X7;
+    uintptr_t  X8;
+    uintptr_t  X9;
+    uintptr_t  X10;
+    uintptr_t  X11;
+    uintptr_t  X12;
+    uintptr_t  X13;
+    uintptr_t  X14;
+    uintptr_t  X15;
+    uintptr_t  X16;
+    uintptr_t  X17;
+    uintptr_t  X18;
+    uintptr_t  X19;
+    uintptr_t  X20;
+    uintptr_t  X21;
+    uintptr_t  X22;
+    uintptr_t  X23;
+    uintptr_t  X24;
+    uintptr_t  X25;
+    uintptr_t  X26;
+    uintptr_t  X27;
+    uintptr_t  X28;
+    uintptr_t  X29;
+    uintptr_t  X30;
+    uintptr_t  X31;
+
+    uintptr_t  SP;
+    uintptr_t  IP;
+
+    uint64_t      F[32 - 16]; // Only the bottom 64-bit values of the F registers F16..F31 need to be preserved
+                              // (F0-F15 are not preserved according to the ABI spec).
 
     uintptr_t GetIp() const { return IP; }
     uintptr_t GetSp() const { return SP; }

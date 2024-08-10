@@ -22,7 +22,7 @@
 #define THUNK_SIZE  20
 #elif TARGET_ARM64
 #define THUNK_SIZE  16
-#elif TARGET_LOONGARCH64
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
 #define THUNK_SIZE  16
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
@@ -253,6 +253,27 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0x4C000280;
+            pCurrentThunkAddress += 4;
+
+#elif defined(TARGET_RISCV64)
+
+            // lui      t0, %hi(delta)         // Load upper immediate with address high bits
+            // addi     t0, t0, %lo(delta)     // Add lower immediate
+            // ld       t1, 0(t0)              // Load data from address in t0
+            // jalr     x0, t1, 0              // Jump and link register (set PC to t1)
+
+            int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002A013 | (((delta & 0x3FFFFC) >> 2) << 12);  // lui + addi
+            pCurrentThunkAddress += 4;
+
+            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002B014 | (((delta & 0x3FFFFC) >> 2) << 12);  // lui + addi
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002C294; // Example opcode, specific to RISC-V
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x0004C280; // Example opcode, specific to RISC-V
             pCurrentThunkAddress += 4;
 
 #else

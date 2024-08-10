@@ -531,6 +531,96 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     }
 } CONTEXT, *PCONTEXT;
 
+#elif defined(TARGET_RISCV64)
+
+#define CONTEXT_RISCV64   0x01000000L
+
+#define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2L)
+
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, RISC-V supports up to 16. In practice,
+// almost no one implements more than 4 of each.
+
+#define RISCV64_MAX_BREAKPOINTS     8
+#define RISCV64_MAX_WATCHPOINTS     2
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+    //
+    // Control flags.
+    //
+    uint32_t ContextFlags;
+
+    //
+    // Integer registers
+    //
+    uint64_t X0;   // Zero Register
+    uint64_t X1;   // Return Address
+    uint64_t X2;   // Stack Pointer
+    uint64_t X3;   // Global Pointer
+    uint64_t X4;   // Thread Pointer
+    uint64_t X5;   // Temporary Register
+    uint64_t X6;   // Temporary Register
+    uint64_t X7;   // Temporary Register
+    uint64_t X8;   // Saved Register
+    uint64_t X9;   // Saved Register
+    uint64_t X10;  // Function Argument
+    uint64_t X11;  // Function Argument
+    uint64_t X12;  // Function Argument
+    uint64_t X13;  // Function Argument
+    uint64_t X14;  // Function Argument
+    uint64_t X15;  // Function Argument
+    uint64_t X16;  // Function Argument
+    uint64_t X17;  // Function Argument
+    uint64_t X18;  // Function Argument
+    uint64_t X19;  // Function Argument
+    uint64_t X20;  // Function Argument
+    uint64_t X21;  // Function Argument
+    uint64_t X22;  // Function Argument
+    uint64_t X23;  // Function Argument
+    uint64_t X24;  // Function Argument
+    uint64_t X25;  // Function Argument
+    uint64_t X26;  // Function Argument
+    uint64_t X27;  // Function Argument
+    uint64_t X28;  // Function Argument
+    uint64_t X29;  // Function Argument
+    uint64_t X30;  // Function Argument
+    uint64_t X31;  // Function Argument
+    uint64_t Pc;   // Program Counter
+
+    //
+    // Floating Point Registers
+    //
+    uint64_t F[32];  // Floating-point registers
+    uint32_t Fcsr;   // Floating-point Control and Status Register
+
+    //
+    // Debug registers
+    //
+    uint32_t Bcr[RISCV64_MAX_BREAKPOINTS];
+    uint64_t Bvr[RISCV64_MAX_BREAKPOINTS];
+    uint32_t Wcr[RISCV64_MAX_WATCHPOINTS];
+    uint64_t Wvr[RISCV64_MAX_WATCHPOINTS];
+
+    void SetIp(uintptr_t ip) { Pc = ip; }
+    void SetArg0Reg(uintptr_t val) { X10 = val; } // X10 typically used for first argument
+    void SetArg1Reg(uintptr_t val) { X11 = val; } // X11 typically used for second argument
+    uintptr_t GetIp() { return Pc; }
+    uintptr_t GetLr() { return X1; } // Return Address
+    uintptr_t GetSp() { return X2; } // Stack Pointer
+    void SetSp(uintptr_t sp) { X2 = sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &X0; pReg <= &X31; pReg++)
+            lambda((size_t*)pReg);
+
+        // X1 (Return Address) can be used as a scratch register
+        lambda((size_t*)&X1);
+    }
+} CONTEXT, *PCONTEXT;
+
 #elif defined(HOST_WASM)
 
 typedef struct DECLSPEC_ALIGN(8) _CONTEXT {

@@ -231,6 +231,62 @@ struct REGDISPLAY
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
 };
 
+#elif defined(TARGET_RISCV64)
+
+struct REGDISPLAY
+{
+    PTR_uintptr_t pX0;
+    PTR_uintptr_t pX1;
+    PTR_uintptr_t pX2;
+    PTR_uintptr_t pX3;
+    PTR_uintptr_t pX4;
+    PTR_uintptr_t pX5;
+    PTR_uintptr_t pX6;
+    PTR_uintptr_t pX7;
+    PTR_uintptr_t pX8;
+    PTR_uintptr_t pX9;
+    PTR_uintptr_t pX10;
+    PTR_uintptr_t pX11;
+    PTR_uintptr_t pX12;
+    PTR_uintptr_t pX13;
+    PTR_uintptr_t pX14;
+    PTR_uintptr_t pX15;
+    PTR_uintptr_t pX16;
+    PTR_uintptr_t pX17;
+    PTR_uintptr_t pX18;
+    PTR_uintptr_t pX19;
+    PTR_uintptr_t pX20;
+    PTR_uintptr_t pX21;
+    PTR_uintptr_t pX22;
+    PTR_uintptr_t pX23;
+    PTR_uintptr_t pX24;
+    PTR_uintptr_t pX25;
+    PTR_uintptr_t pX26;
+    PTR_uintptr_t pX27;
+    PTR_uintptr_t pX28;
+    PTR_uintptr_t pX29;
+    PTR_uintptr_t pX30;
+    PTR_uintptr_t pX31;
+    PTR_uintptr_t pFP; // Frame pointer
+
+    uintptr_t   SP; // Stack pointer
+
+    PCODE        IP; // Instruction pointer
+
+    uint64_t       F[32-24]; // Only the F registers F24..F31 need to be preserved
+                             // (F0-F23 are not preserved according to the ABI spec).
+                             // These need to be unwound during a stack walk
+                             // for EH, but not adjusted, so we only need
+                             // their values, not their addresses
+
+    inline PCODE GetIP() { return IP; }
+    inline uintptr_t GetSP() { return SP; }
+    inline uintptr_t GetFP() { return *pFP; }
+
+    inline void SetIP(PCODE IP) { this->IP = IP; }
+    inline void SetSP(uintptr_t SP) { this->SP = SP; }
+};
+
 #elif defined(TARGET_WASM)
 
 struct REGDISPLAY
@@ -247,7 +303,7 @@ struct REGDISPLAY
     inline void SetIP(PCODE IP) { }
     inline void SetSP(uintptr_t SP) { }
 };
-#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM || HOST_LOONGARCH64
+#endif
 
 typedef REGDISPLAY * PREGDISPLAY;
 

@@ -191,6 +191,18 @@ private:
         PTR_uintptr_t pR30;
         PTR_uintptr_t pR31;
         PTR_uintptr_t pFP;
+#elif defined(TARGET_RISCV64)
+        PTR_uintptr_t pX19;
+        PTR_uintptr_t pX20;
+        PTR_uintptr_t pX21;
+        PTR_uintptr_t pX22;
+        PTR_uintptr_t pX23;
+        PTR_uintptr_t pX24;
+        PTR_uintptr_t pX25;
+        PTR_uintptr_t pX26;
+        PTR_uintptr_t pX27;
+        PTR_uintptr_t pX28;
+        PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;
         PTR_uintptr_t pRbx;

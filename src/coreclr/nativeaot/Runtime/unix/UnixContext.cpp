@@ -116,6 +116,44 @@
 #define MCREG_S8(mc)        ((mc).__gregs[31])
 #define MCREG_Pc(mc)        ((mc).__pc)
 
+#elif defined(HOST_RISCV64)
+
+#define MCREG_X0(mc)        ((mc).__gregs[0])
+#define MCREG_X1(mc)        ((mc).__gregs[1])
+#define MCREG_X2(mc)        ((mc).__gregs[2])
+#define MCREG_X3(mc)        ((mc).__gregs[3])
+#define MCREG_X4(mc)        ((mc).__gregs[4])
+#define MCREG_X5(mc)        ((mc).__gregs[5])
+#define MCREG_X6(mc)        ((mc).__gregs[6])
+#define MCREG_X7(mc)        ((mc).__gregs[7])
+#define MCREG_X8(mc)        ((mc).__gregs[8])
+#define MCREG_X9(mc)        ((mc).__gregs[9])
+#define MCREG_X10(mc)       ((mc).__gregs[10])
+#define MCREG_X11(mc)       ((mc).__gregs[11])
+#define MCREG_X12(mc)       ((mc).__gregs[12])
+#define MCREG_X13(mc)       ((mc).__gregs[13])
+#define MCREG_X14(mc)       ((mc).__gregs[14])
+#define MCREG_X15(mc)       ((mc).__gregs[15])
+#define MCREG_X16(mc)       ((mc).__gregs[16])
+#define MCREG_X17(mc)       ((mc).__gregs[17])
+#define MCREG_X18(mc)       ((mc).__gregs[18])
+#define MCREG_X19(mc)       ((mc).__gregs[19])
+#define MCREG_X20(mc)       ((mc).__gregs[20])
+#define MCREG_X21(mc)       ((mc).__gregs[21])
+#define MCREG_X22(mc)       ((mc).__gregs[22])
+#define MCREG_X23(mc)       ((mc).__gregs[23])
+#define MCREG_X24(mc)       ((mc).__gregs[24])
+#define MCREG_X25(mc)       ((mc).__gregs[25])
+#define MCREG_X26(mc)       ((mc).__gregs[26])
+#define MCREG_X27(mc)       ((mc).__gregs[27])
+#define MCREG_X28(mc)       ((mc).__gregs[28])
+#define MCREG_X29(mc)       ((mc).__gregs[29])
+#define MCREG_X30(mc)       ((mc).__gregs[30])
+#define MCREG_X31(mc)       ((mc).__gregs[31])
+#define MCREG_FP(mc)        ((mc).__gregs[32])  // Assuming FP is stored in __gregs[32]
+#define MCREG_SP(mc)        ((mc).__gregs[33])  // Assuming SP is stored in __gregs[33]
+#define MCREG_PC(mc)        ((mc).__pc)
+
 #elif HOST_64BIT
 #define MCREG_Rip(mc)       ((mc).__gregs[_REG_RIP])
 #define MCREG_Rsp(mc)       ((mc).__gregs[_REG_RSP])
@@ -186,6 +224,42 @@
 #define MCREG_S7(mc)        ((mc).__gregs[30])
 #define MCREG_S8(mc)        ((mc).__gregs[31])
 #define MCREG_Pc(mc)        ((mc).__pc)
+
+#elif defined(HOST_RISCV64)
+
+#define MCREG_X0(mc)        ((mc).__gregs[0])
+#define MCREG_X1(mc)        ((mc).__gregs[1])
+#define MCREG_X2(mc)        ((mc).__gregs[2])
+#define MCREG_X3(mc)        ((mc).__gregs[3])
+#define MCREG_X4(mc)        ((mc).__gregs[4])
+#define MCREG_X5(mc)        ((mc).__gregs[5])
+#define MCREG_X6(mc)        ((mc).__gregs[6])
+#define MCREG_X7(mc)        ((mc).__gregs[7])
+#define MCREG_X8(mc)        ((mc).__gregs[8])
+#define MCREG_X9(mc)        ((mc).__gregs[9])
+#define MCREG_X10(mc)       ((mc).__gregs[10])
+#define MCREG_X11(mc)       ((mc).__gregs[11])
+#define MCREG_X12(mc)       ((mc).__gregs[12])
+#define MCREG_X13(mc)       ((mc).__gregs[13])
+#define MCREG_X14(mc)       ((mc).__gregs[14])
+#define MCREG_X15(mc)       ((mc).__gregs[15])
+#define MCREG_X16(mc)       ((mc).__gregs[16])
+#define MCREG_X17(mc)       ((mc).__gregs[17])
+#define MCREG_X18(mc)       ((mc).__gregs[18])
+#define MCREG_X19(mc)       ((mc).__gregs[19])
+#define MCREG_X20(mc)       ((mc).__gregs[20])
+#define MCREG_X21(mc)       ((mc).__gregs[21])
+#define MCREG_X22(mc)       ((mc).__gregs[22])
+#define MCREG_X23(mc)       ((mc).__gregs[23])
+#define MCREG_X24(mc)       ((mc).__gregs[24])
+#define MCREG_X25(mc)       ((mc).__gregs[25])
+#define MCREG_X26(mc)       ((mc).__gregs[26])
+#define MCREG_X27(mc)       ((mc).__gregs[27])
+#define MCREG_X28(mc)       ((mc).__gregs[28])
+#define MCREG_X29(mc)       ((mc).__gregs[29])
+#define MCREG_X30(mc)       ((mc).__gregs[30])
+#define MCREG_X31(mc)       ((mc).__gregs[31])
+#define MCREG_PC(mc)        ((mc).__pc)
 
 #elif HOST_64BIT
 #define MCREG_Rip(mc)       ((mc).gregs[REG_RIP])
@@ -330,6 +404,42 @@
 #define MCREG_S6(mc)      ((mc).regs[29])
 #define MCREG_S7(mc)      ((mc).regs[30])
 #define MCREG_S8(mc)      ((mc).regs[31])
+#define MCREG_Pc(mc)      ((mc).pc)
+
+#elif defined(HOST_RISCV64)
+
+#define MCREG_X0(mc)      ((mc).regs[0])
+#define MCREG_X1(mc)      ((mc).regs[1])
+#define MCREG_X2(mc)      ((mc).regs[2])
+#define MCREG_X3(mc)      ((mc).regs[3])
+#define MCREG_X4(mc)      ((mc).regs[4])
+#define MCREG_X5(mc)      ((mc).regs[5])
+#define MCREG_X6(mc)      ((mc).regs[6])
+#define MCREG_X7(mc)      ((mc).regs[7])
+#define MCREG_X8(mc)      ((mc).regs[8])
+#define MCREG_X9(mc)      ((mc).regs[9])
+#define MCREG_X10(mc)     ((mc).regs[10])
+#define MCREG_X11(mc)     ((mc).regs[11])
+#define MCREG_X12(mc)     ((mc).regs[12])
+#define MCREG_X13(mc)     ((mc).regs[13])
+#define MCREG_X14(mc)     ((mc).regs[14])
+#define MCREG_X15(mc)     ((mc).regs[15])
+#define MCREG_X16(mc)     ((mc).regs[16])
+#define MCREG_X17(mc)     ((mc).regs[17])
+#define MCREG_X18(mc)     ((mc).regs[18])
+#define MCREG_X19(mc)     ((mc).regs[19])
+#define MCREG_X20(mc)     ((mc).regs[20])
+#define MCREG_X21(mc)     ((mc).regs[21])
+#define MCREG_X22(mc)     ((mc).regs[22])
+#define MCREG_X23(mc)     ((mc).regs[23])
+#define MCREG_X24(mc)     ((mc).regs[24])
+#define MCREG_X25(mc)     ((mc).regs[25])
+#define MCREG_X26(mc)     ((mc).regs[26])
+#define MCREG_X27(mc)     ((mc).regs[27])
+#define MCREG_X28(mc)     ((mc).regs[28])
+#define MCREG_X29(mc)     ((mc).regs[29])
+#define MCREG_X30(mc)     ((mc).regs[30])
+#define MCREG_X31(mc)     ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
 
 #else
@@ -491,6 +601,29 @@
     ASSIGN_REG(S6, R29)   \
     ASSIGN_REG(S7, R30)   \
     ASSIGN_REG(S8, R31)
+
+#define ASSIGN_TWO_ARGUMENT_REGS \
+    MCREG_A0(nativeContext->uc_mcontext) = arg0Reg;       \
+    MCREG_A1(nativeContext->uc_mcontext) = arg1Reg;
+
+#elif defined(HOST_LOONGARCH64)
+
+#define ASSIGN_CONTROL_REGS  \
+    ASSIGN_REG(Pc, PC)    \
+    ASSIGN_REG(Sp, SP)    \
+    ASSIGN_REG(Fp, FP)    \
+    ASSIGN_REG(Ra, RA)
+
+#define ASSIGN_INTEGER_REGS  \
+    ASSIGN_REG(R23, R23)   \
+    ASSIGN_REG(R24, R24)   \
+    ASSIGN_REG(R25, R25)   \
+    ASSIGN_REG(R26, R26)   \
+    ASSIGN_REG(R27, R27)   \
+    ASSIGN_REG(R28, R28)   \
+    ASSIGN_REG(R29, R29)   \
+    ASSIGN_REG(R30, R30)   \
+    ASSIGN_REG(R31, R31)
 
 #define ASSIGN_TWO_ARGUMENT_REGS \
     MCREG_A0(nativeContext->uc_mcontext) = arg0Reg;       \
@@ -695,6 +828,43 @@ uint64_t GetPC(void* context)
     uint64_t& UNIX_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); } // R1
     uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); } // R3
     uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+
+#elif defined(HOST_RISCV64)
+
+    uint64_t& UNIX_CONTEXT::X0() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X1() { return (uint64_t&)MCREG_X1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X2() { return (uint64_t&)MCREG_X2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X3() { return (uint64_t&)MCREG_X3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X4() { return (uint64_t&)MCREG_X4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X5() { return (uint64_t&)MCREG_X5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X6() { return (uint64_t&)MCREG_X6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X7() { return (uint64_t&)MCREG_X7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X8() { return (uint64_t&)MCREG_X8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X9() { return (uint64_t&)MCREG_X9(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X10() { return (uint64_t&)MCREG_X10(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X11() { return (uint64_t&)MCREG_X11(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X12() { return (uint64_t&)MCREG_X12(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X13() { return (uint64_t&)MCREG_X13(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X14() { return (uint64_t&)MCREG_X14(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X15() { return (uint64_t&)MCREG_X15(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X16() { return (uint64_t&)MCREG_X16(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X17() { return (uint64_t&)MCREG_X17(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X18() { return (uint64_t&)MCREG_X18(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X19() { return (uint64_t&)MCREG_X19(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X20() { return (uint64_t&)MCREG_X20(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X21() { return (uint64_t&)MCREG_X21(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X22() { return (uint64_t&)MCREG_X22(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X23() { return (uint64_t&)MCREG_X23(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X24() { return (uint64_t&)MCREG_X24(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X25() { return (uint64_t&)MCREG_X25(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X26() { return (uint64_t&)MCREG_X26(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X27() { return (uint64_t&)MCREG_X27(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X28() { return (uint64_t&)MCREG_X28(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X29() { return (uint64_t&)MCREG_X29(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X30() { return (uint64_t&)MCREG_X30(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X31() { return (uint64_t&)MCREG_X31(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
 
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");

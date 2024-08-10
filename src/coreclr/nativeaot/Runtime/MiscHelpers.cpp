@@ -334,6 +334,7 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         int64_t distToTarget = ((int64_t)pCode[0] << 38) >> 36;
         return (uint8_t *)pCode + distToTarget;
     }
+
 #elif TARGET_LOONGARCH64
     uint32_t * pCode = (uint32_t *)pCodeOrg;
     // is this "addi.d $a0, $a0, 8"?
@@ -369,6 +370,41 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         distToTarget += ((((int64_t)pCode[1] & ~0x3ff) << 38) >> 46);
         return (uint8_t *)((int64_t)pCode + distToTarget);
     }
+
+#elif TARGET_RISCV64
+    uint32_t * pCode = (uint32_t *)pCodeOrg;
+    // is this "addi a0, a0, 8"?
+    if (pCode[0] == 0x0002_00b3)  // Encoding for `addi a0, a0, 8` in 32-bit RISC-V
+    {
+        // unboxing sequence
+        unboxingStub = true;
+        pCode++;
+    }
+    // is this an indirect jump?
+    // lui t0, imm; jalr t0, t0, imm12
+    if ((pCode[0] & 0x000f_f000) == 0x0002_0000 &&
+        (pCode[1] & 0x000f_f000) == 0x0000_00a0 &&
+        (pCode[2] & 0x0000_000f) == 0x0000_0000)
+    {
+        // normal import stub - dist to IAT cell is relative to (PC & ~0xfff)
+        // lui: imm = SignExtend(imm20:Zeros(12), 64);
+        int64_t distToIatCell = ((((int64_t)pCode[0] & ~0xfff) << 12) >> 32);
+        // jalr: offset = SignExtend(imm12, 64);
+        distToIatCell += (int64_t)(pCode[1] & 0xfff);
+        uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
+        return *pIatCell;
+    }
+    // is this an unboxing stub followed by a relative jump?
+    // jal ra, imm
+    else if (unboxingStub && (pCode[0] & 0xffe0_0000) == 0x0000_0000 &&
+             (pCode[1] & 0x0000_ffff) == 0x0000_0000)
+    {
+        // relative jump - dist is relative to the instruction
+        // offset = SignExtend(imm20:Zeros(12), 64);
+        int64_t distToTarget = ((int64_t)(pCode[1] & 0xffff) << 12) >> 12;
+        return (uint8_t *)pCode + distToTarget;
+    }
+
 #else
     UNREFERENCED_PARAMETER(unboxingStub);
     PORTABILITY_ASSERT("RhGetCodeTarget");

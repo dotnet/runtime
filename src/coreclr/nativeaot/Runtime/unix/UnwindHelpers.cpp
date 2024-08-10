@@ -36,6 +36,8 @@ using libunwind::Registers_arm64;
 using libunwind::CompactUnwinder_arm64;
 #elif defined(TARGET_LOONGARCH64)
 using libunwind::Registers_loongarch;
+#elif defined(TARGET_RISCV64)
+using libunwind::Registers_riscv;
 #elif defined(TARGET_X86)
 using libunwind::Registers_x86;
 #else
@@ -1088,6 +1090,278 @@ void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 
 #endif // TARGET_LOONGARCH64
 
+#if defined(TARGET_RISCV64)
+
+// Shim that implements methods required by libunwind over REGDISPLAY
+struct Registers_REGDISPLAY : REGDISPLAY
+{
+    inline static int  getArch() { return libunwind::REGISTERS_RISCV64; }
+    inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_RISCV64; }
+
+    bool        validRegister(int num) const;
+    bool        validFloatRegister(int num) { return false; };
+    bool        validVectorRegister(int num) const;
+
+    uint64_t    getRegister(int num) const;
+    void        setRegister(int num, uint64_t value, uint64_t location);
+
+    double      getFloatRegister(int num) const { abort(); }
+    void        setFloatRegister(int num, double value) { abort(); }
+
+    libunwind::v128    getVectorRegister(int num) const;
+    void        setVectorRegister(int num, libunwind::v128 value);
+
+    uint64_t    getSP() const         { return SP; }
+    void        setSP(uint64_t value, uint64_t location) { SP = value; }
+    uint64_t    getIP() const         { return IP; }
+    void        setIP(uint64_t value, uint64_t location) { IP = value; }
+    uint64_t    getFP() const         { return *pFP; }
+    void        setFP(uint64_t value, uint64_t location) { pFP = (PTR_uintptr_t)location; }
+};
+
+inline bool Registers_REGDISPLAY::validRegister(int num) const {
+    if (num == UNW_REG_SP || num == UNW_RISCV_X2)
+        return true;
+
+    if (num == UNW_REG_IP)
+        return true;
+
+    if (num >= UNW_RISCV_X0 && num <= UNW_RISCV_X31)
+        return true;
+
+    return false;
+}
+
+bool Registers_REGDISPLAY::validVectorRegister(int num) const
+{
+    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31)
+        return true;
+
+    return false;
+}
+
+inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
+    if (regNum == UNW_REG_SP || regNum == UNW_RISCV_X2)
+        return SP;
+
+    if (regNum == UNW_RISCV_X8)
+        return *pFP;
+
+    if (regNum == UNW_RISCV_X1)
+        return *pRA;
+
+    if (regNum == UNW_REG_IP)
+        return IP;
+
+    switch (regNum)
+    {
+    case (UNW_RISCV_X0):
+        return *pX0;
+    case (UNW_RISCV_X3):
+        return *pX3;
+    case (UNW_RISCV_X4):
+        return *pX4;
+    case (UNW_RISCV_X5):
+        return *pX5;
+    case (UNW_RISCV_X6):
+        return *pX6;
+    case (UNW_RISCV_X7):
+        return *pX7;
+    case (UNW_RISCV_X9):
+        return *pX9;
+    case (UNW_RISCV_X10):
+        return *pX10;
+    case (UNW_RISCV_X11):
+        return *pX11;
+    case (UNW_RISCV_X12):
+        return *pX12;
+    case (UNW_RISCV_X13):
+        return *pX13;
+    case (UNW_RISCV_X14):
+        return *pX14;
+    case (UNW_RISCV_X15):
+        return *pX15;
+    case (UNW_RISCV_X16):
+        return *pX16;
+    case (UNW_RISCV_X17):
+        return *pX17;
+    case (UNW_RISCV_X18):
+        return *pX18;
+    case (UNW_RISCV_X19):
+        return *pX19;
+    case (UNW_RISCV_X20):
+        return *pX20;
+    case (UNW_RISCV_X21):
+        return *pX21;
+    case (UNW_RISCV_X22):
+        return *pX22;
+    case (UNW_RISCV_X23):
+        return *pX23;
+    case (UNW_RISCV_X24):
+        return *pX24;
+    case (UNW_RISCV_X25):
+        return *pX25;
+    case (UNW_RISCV_X26):
+        return *pX26;
+    case (UNW_RISCV_X27):
+        return *pX27;
+    case (UNW_RISCV_X28):
+        return *pX28;
+    case (UNW_RISCV_X29):
+        return *pX29;
+    case (UNW_RISCV_X30):
+        return *pX30;
+    case (UNW_RISCV_X31):
+        return *pX31;
+    }
+
+    PORTABILITY_ASSERT("unsupported riscv64 register");
+}
+
+void Registers_REGDISPLAY::setRegister(int num, uint64_t value, uint64_t location)
+{
+    if (num == UNW_REG_SP || num == UNW_RISCV_X2) {
+        SP = (uintptr_t)value;
+        return;
+    }
+
+    if (num == UNW_RISCV_X8) {
+        pFP = (PTR_uintptr_t)location;
+        return;
+    }
+
+    if (num == UNW_RISCV_X1) {
+        pRA = (PTR_uintptr_t)location;
+        return;
+    }
+
+    if (num == UNW_REG_IP) {
+        IP = value;
+        return;
+    }
+
+    switch (num)
+    {
+    case (UNW_RISCV_X0):
+        pX0 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X3):
+        pX3 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X4):
+        pX4 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X5):
+        pX5 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X6):
+        pX6 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X7):
+        pX7 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X9):
+        pX9 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X10):
+        pX10 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X11):
+        pX11 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X12):
+        pX12 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X13):
+        pX13 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X14):
+        pX14 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X15):
+        pX15 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X16):
+        pX16 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X17):
+        pX17 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X18):
+        pX18 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X19):
+        pX19 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X20):
+        pX20 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X21):
+        pX21 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X22):
+        pX22 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X23):
+        pX23 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X24):
+        pX24 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X25):
+        pX25 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X26):
+        pX26 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X27):
+        pX27 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X28):
+        pX28 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X29):
+        pX29 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X30):
+        pX30 = (PTR_uintptr_t)location;
+        break;
+    case (UNW_RISCV_X31):
+        pX31 = (PTR_uintptr_t)location;
+        break;
+    default:
+        PORTABILITY_ASSERT("unsupported riscv64 register");
+    }
+}
+
+libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
+{
+    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31) {
+        libunwind::v128 result;
+        // Assuming a 128-bit vector register split into four 32-bit elements
+        result.vec[0] = V[num].v0;
+        result.vec[1] = V[num].v1;
+        result.vec[2] = V[num].v2;
+        result.vec[3] = V[num].v3;
+        return result;
+    }
+    PORTABILITY_ASSERT("unsupported riscv64 vector register");
+}
+
+void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
+{
+    if (num >= UNW_RISCV_V0 && num <= UNW_RISCV_V31) {
+        V[num].v0 = value.vec[0];
+        V[num].v1 = value.vec[1];
+        V[num].v2 = value.vec[2];
+        V[num].v3 = value.vec[3];
+    } else {
+        PORTABILITY_ASSERT("unsupported riscv64 vector register");
+    }
+}
+
+#endif // TARGET_RISCV64
+
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t format, unw_word_t unwind_info)
 {
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
@@ -1103,6 +1377,12 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
 #elif defined(TARGET_LOONGARCH64)
     if ((format & UNWIND_LOONGARCH64_MODE_MASK) != UNWIND_LOONGARCH64_MODE_DWARF) {
         CompactUnwinder_loongarch64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+        int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+        return stepRet == UNW_STEP_SUCCESS;
+    }
+#elif defined(TARGET_RISCV64)
+    if ((format & UNWIND_RISCV64_MODE_MASK) != UNWIND_RISCV64_MODE_DWARF) {
+        CompactUnwinder_riscv64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
         int stepRet = compactInst.stepWithCompactEncoding(format, start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
         return stepRet == UNW_STEP_SUCCESS;
     }
@@ -1157,6 +1437,8 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace);
 #elif defined(HOST_LOONGARCH64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_loongarch> uc(_addressSpace);
+#elif defined(HOST_RISCV64)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_riscv> uc(_addressSpace);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -1180,6 +1462,12 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
             return true;
         } else {
             dwarfOffsetHint = procInfo->format & UNWIND_LOONGARCH64_DWARF_SECTION_OFFSET;
+        }
+#elif defined(TARGET_RISCV64)
+        if ((procInfo->format & UNWIND_RISCV64_MODE_MASK) != UNWIND_RISCV64_MODE_DWARF) {
+            return true;
+        } else {
+            dwarfOffsetHint = procInfo->format & UNWIND_RISCV64_DWARF_SECTION_OFFSET;
         }
 #elif defined(TARGET_AMD64)
         if ((procInfo->format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
