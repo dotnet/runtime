@@ -152,7 +152,6 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
-DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -642,6 +641,20 @@ DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byt
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMCOPY,                Memmove, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
+DEFINE_CLASS(THROWHELPER,     System,                 ThrowHelper)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTEXCEPTION,             ThrowArgumentException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWARGUMENTOUTOFRANGEEXCEPTION,   ThrowArgumentOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWINDEXOUTOFRANGEEXCEPTION,      ThrowIndexOutOfRangeException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNOTIMPLEMENTEDEXCEPTION,       ThrowNotImplementedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWPLATFORMNOTSUPPORTEDEXCEPTION, ThrowPlatformNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWTYPENOTSUPPORTED,              ThrowTypeNotSupportedException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWOVERFLOWEXCEPTION,             ThrowOverflowException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWDIVIDEBYZEROEXCEPTION,         ThrowDivideByZeroException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWNULLREFEXCEPTION,              ThrowNullReferenceException, SM_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWVERIFICATIONEXCEPTION,         ThrowVerificationException, SM_Int_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,  ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPER,    THROWENTRYPOINTNOTFOUNDEXCEPTION,   ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
@@ -760,6 +773,9 @@ DEFINE_FIELD_U(rgiLineNumber,              StackFrameHelper,   rgiLineNumber)
 DEFINE_FIELD_U(rgiColumnNumber,            StackFrameHelper,   rgiColumnNumber)
 DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrameHelper,   rgiLastFrameFromForeignExceptionStackTrace)
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
+
+DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
+DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)

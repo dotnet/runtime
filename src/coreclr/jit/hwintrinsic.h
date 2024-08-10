@@ -885,6 +885,32 @@ struct HWIntrinsicInfo
         }
     }
 
+    static bool IsVariableShift(NamedIntrinsic id)
+    {
+#ifdef TARGET_XARCH
+        switch (id)
+        {
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX512F_ShiftRightArithmeticVariable:
+            case NI_AVX512F_VL_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_ShiftRightArithmeticVariable:
+            case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
+            case NI_AVX10v1_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVX512F_ShiftRightLogicalVariable:
+            case NI_AVX512BW_ShiftRightLogicalVariable:
+            case NI_AVX512BW_VL_ShiftRightLogicalVariable:
+            case NI_AVX10v1_ShiftRightLogicalVariable:
+            case NI_AVX2_ShiftLeftLogicalVariable:
+            case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
+                return true;
+            default:
+                return false;
+        }
+#endif // TARGET_XARCH
+        return false;
+    }
+
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
 #if defined(TARGET_ARM64)

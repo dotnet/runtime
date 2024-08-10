@@ -301,10 +301,7 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
-                if (!bufferWriter.CanGetUnflushedBytes)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
-                }
+                Debug.Assert(bufferWriter.CanGetUnflushedBytes);
 
                 state.PipeWriter = bufferWriter;
                 state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);

@@ -449,7 +449,7 @@ namespace Internal.JitInterface
             var relocs = _codeRelocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) && !JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_ENABLE_CFG) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -4393,11 +4393,43 @@ namespace Internal.JitInterface
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
                 // feature is supported or hardware accelerated.
-                if (!isMethodDefinedInCoreLib() ||
-                    MethodBeingCompiled.Name == "get_IsSupported" ||
-                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
+                if (!isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                }
+                else
+                {
+                    ReadOnlySpan<char> methodName = MethodBeingCompiled.Name.AsSpan();
+
+                    if (methodName.StartsWith("System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"))
+                    {
+                        // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+                        // but, they all prefix the qualified name of the interface first, so we'll check for that and
+                        // skip the prefix before trying to resolve the method.
+
+                        ReadOnlySpan<char> partialMethodName = methodName.Slice(70);
+
+                        if (partialMethodName.StartsWith("<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(7);
+                        }
+                        else if (partialMethodName.StartsWith("64<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(9);
+                        }
+                        else if (partialMethodName.StartsWith("128<T>,T>.") ||
+                                 partialMethodName.StartsWith("256<T>,T>.") ||
+                                 partialMethodName.StartsWith("512<T>,T>."))
+                        {
+                            methodName = partialMethodName.Slice(10);
+                        }
+                    }
+
+                    if (methodName.Equals("get_IsSupported", StringComparison.Ordinal) ||
+                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal))
+                    {
+                        _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
+                    }
                 }
             }
             return supportEnabled;

@@ -62,6 +62,7 @@ namespace CopyConstructorMarshaler
         }
 
         [Fact]
+        [SkipOnCoreClr("JitStress can introduce extra copies that won't happen in production scenarios.", RuntimeTestModes.JitStress)]
         public static void CopyConstructorsInArgumentStackSlots()
         {
             Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
@@ -72,10 +73,16 @@ namespace CopyConstructorMarshaler
             Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
         }
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, int dwFlags);
+        [Fact]
+        [SkipOnCoreClr("JitStress can introduce extra copies that won't happen in production scenarios.", RuntimeTestModes.JitStress)]
+        public static void CopyConstructorsInArgumentStackSlotsWithUnsafeValueType()
+        {
+            Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
+            Type testType = ijwNativeDll.GetType("TestClass");
+            object testInstance = Activator.CreateInstance(testType);
+            MethodInfo testMethod = testType.GetMethod("ExposedThisUnsafeValueTypeCopyConstructorScenario");
 
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GetModuleHandle(string lpModuleName);
+            Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
+        }
     }
 }

@@ -585,9 +585,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    insOpts embOpt = emitter::optGetSveInsOpt(emitTypeSize(intrinEmbMask.baseType));
                     // Special handling for ConvertTo* APIs
                     // Just need to change the opt here.
-                    insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
                     {
                         case NI_Sve_ConvertToInt32:
@@ -607,6 +607,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                                                       : INS_OPTS_SCALABLE_D;
                             break;
                         }
+
                         default:
                             break;
                     }
@@ -728,9 +729,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         switch (intrinEmbMask.id)
                         {
                             case NI_Sve_CreateBreakPropagateMask:
-                                assert(targetReg != embMaskOp1Reg);
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
+                                if (targetReg != embMaskOp1Reg)
+                                {
+                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                              /* canSkip */ true);
+                                }
                                 emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
                                 break;
 
@@ -2049,6 +2052,33 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVectorFirstFaulting:
+            {
+                if (node->GetAuxiliaryType() == TYP_UNKNOWN)
+                {
+                    if (intrin.numOperands == 3)
+                    {
+                        // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR
+                        // register.
+                        assert(op3Reg != REG_NA);
+                        GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
+                    }
+                }
+                else
+                {
+                    // AuxilaryType is added only for numOperands == 3. If there is an extra argument, we need to
+                    // "use" FFR here. Restore it back in FFR register.
+
+                    if (intrin.numOperands == 4)
+                    {
+                        // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR
+                        // register.
+                        assert(op4Reg != REG_NA);
+                        GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op4Reg, opt);
+                    }
+                }
+                FALLTHROUGH;
+            }
             case NI_Sve_GatherVector:
             case NI_Sve_GatherVectorByteZeroExtend:
             case NI_Sve_GatherVectorInt16SignExtend:
@@ -2065,25 +2095,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // GatherVector...(Vector<T> mask, T* address, Vector<T2> indices)
 
-                    assert(intrin.numOperands == 3);
-                    emitAttr        baseSize = emitActualTypeSize(intrin.baseType);
-                    insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
+                    emitAttr baseSize   = emitActualTypeSize(intrin.baseType);
+                    bool isLoadingBytes = ((ins == INS_sve_ld1b) || (ins == INS_sve_ld1sb) || (ins == INS_sve_ldff1b) ||
+                                           (ins == INS_sve_ldff1sb));
+                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE;
 
-                    if (baseSize == EA_8BYTE)
-                    {
-                        // Index is multiplied.
-                        sopt = (ins == INS_sve_ld1b || ins == INS_sve_ld1sb) ? INS_SCALABLE_OPTS_NONE
-                                                                             : INS_SCALABLE_OPTS_LSL_N;
-                    }
-                    else
+                    if (baseSize == EA_4BYTE)
                     {
                         // Index is sign or zero extended to 64bits, then multiplied.
-                        assert(baseSize == EA_4BYTE);
                         opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
                                                                           : INS_OPTS_SCALABLE_S_SXTW;
 
-                        sopt = (ins == INS_sve_ld1b || ins == INS_sve_ld1sb) ? INS_SCALABLE_OPTS_NONE
-                                                                             : INS_SCALABLE_OPTS_MOD_N;
+                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
+                    }
+                    else
+                    {
+                        // Index is multiplied.
+                        assert(baseSize == EA_8BYTE);
+                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                     }
 
                     GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt, sopt);
@@ -2092,7 +2121,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // GatherVector...(Vector<T> mask, Vector<T2> addresses)
 
-                    assert(intrin.numOperands == 2);
                     GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 }
 
@@ -2367,6 +2395,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_LoadVectorFirstFaulting:
+            case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
             {
                 if (intrin.numOperands == 3)
                 {
@@ -2377,6 +2409,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 insScalableOpts sopt = (opt == INS_OPTS_SCALABLE_B) ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                 GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt, sopt);
+                break;
+            }
+
+            case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+            case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+            {
+                if (intrin.numOperands == 3)
+                {
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR register.
+                    assert(op3Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
+                }
+
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
                 break;
             }
 

@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             Directory.CreateDirectory(Location);
             AppDll = Path.Combine(Location, $"{AssemblyName}.dll");
-            AppExe = Path.Combine(Location, Binaries.GetExeFileNameForCurrentPlatform(AssemblyName));
+            AppExe = Path.Combine(Location, Binaries.GetExeName(AssemblyName));
             DepsJson = Path.Combine(Location, $"{AssemblyName}.deps.json");
             RuntimeConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.json");
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");

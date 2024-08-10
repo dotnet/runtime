@@ -71,6 +71,7 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
     ULONG32 returned = 0;
     TADDR Value = (TADDR)NULL;
 
+    // Every object has a pointer to its method table at offset 0
     HRESULT hr = target->ReadVirtual(objAddr, (PBYTE)&Value, sizeof(TADDR), &returned);
 
     if ((hr != S_OK) || (returned != sizeof(TADDR)))
@@ -92,6 +93,8 @@ PTR_SyncBlock DACGetSyncBlockFromObjectPointer(TADDR objAddr, ICorDebugDataTarge
     ULONG32 returned = 0;
     DWORD Value = 0;
 
+    // Every object has an object header right before it. The sync block value (DWORD) is the last member
+    // of the object header. Read the DWORD right before the object address to get the sync block value.
     HRESULT hr = target->ReadVirtual(objAddr - sizeof(DWORD), (PBYTE)&Value, sizeof(DWORD), &returned);
 
     if ((hr != S_OK) || (returned != sizeof(DWORD)))
@@ -696,14 +699,14 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
 #elif defined(TARGET_LOONGARCH64)
     static const WCHAR *regs[] =
     {
-        W("R0"), W("AT"), W("V0"), W("V1"),
+        W("R0"), W("RA"), W("TP"), W("SP"),
         W("A0"), W("A1"), W("A2"), W("A3"),
         W("A4"), W("A5"), W("A6"), W("A7"),
         W("T0"), W("T1"), W("T2"), W("T3"),
-        W("T8"), W("T9"), W("S0"), W("S1"),
-        W("S2"), W("S3"), W("S4"), W("S5"),
-        W("S6"), W("S7"), W("K0"), W("K1"),
-        W("GP"), W("SP"), W("FP"), W("RA")
+        W("T4"), W("T5"), W("T6"), W("T7"),
+        W("T8"), W("R21"), W("FP"), W("S0"),
+        W("S1"), W("S2"), W("S3"), W("S4"),
+        W("S5"), W("S6"), W("S7"), W("S8")
     };
 #elif defined(TARGET_RISCV64)
     static const WCHAR *regs[] =
