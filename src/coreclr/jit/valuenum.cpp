@@ -11161,16 +11161,55 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
 
         ValueNumPair phiArgVNP = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
 
-#ifdef DEBUG
-        if (verbose && isUpdate && (phiArgVNP != phiArg->gtVNPair))
+        if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
         {
-            printf("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
-            vnpPrint(phiArg->gtVNPair, 0);
-            printf(" to ");
-            vnpPrint(phiArgVNP, 0);
-            printf("\n");
-        }
+            bool canUseNewVN = false;
+
+            // We can potentially refine this phi arg.
+            // Make sure the new phi arg VN is loop invariant.
+            //
+            FlowGraphNaturalLoop* const vnLoop = vnStore->LoopOfVN(phiArgVNP.GetConservative());
+
+            if (vnLoop != nullptr)
+            {
+                FlowGraphNaturalLoop* const blockLoop = m_loops->GetLoopByHeader(blk);
+                assert(blockLoop != nullptr);
+                canUseNewVN = !blockLoop->ContainsLoop(vnLoop);
+
+                if (!canUseNewVN)
+                {
+                    JITDUMP("Can't refine [%06u] with " FMT_VN " -- varies in " FMT_LP ", contained in " FMT_LP "\n",
+                            dspTreeID(phiArg), phiArgVNP.GetConservative(), vnLoop->GetIndex(), blockLoop->GetIndex());
+                }
+            }
+            else
+            {
+                // phiArgVNP is invariant in all loops
+                //
+                canUseNewVN = true;
+            }
+
+            if (canUseNewVN)
+            {
+
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
+                    vnpPrint(phiArg->gtVNPair, 0);
+                    printf(" to ");
+                    vnpPrint(phiArgVNP, 0);
+                    printf("\n");
+                }
 #endif
+            }
+            else
+            {
+                // Code below uses phiArgVNP, reset to the old value
+                //
+                phiArgVNP = phiArg->gtVNPair;
+            }
+        }
 
         phiArg->gtVNPair = phiArgVNP;
 
