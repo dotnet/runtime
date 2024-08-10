@@ -24,6 +24,7 @@
       <UseCompilerGeneratedDocXmlFile>$(UseCompilerGeneratedDocXmlFile)</UseCompilerGeneratedDocXmlFile>
       <IsPartialFacadeAssembly>$(IsPartialFacadeAssembly)</IsPartialFacadeAssembly>
       <IsPlatformNotSupportedAssembly Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+      <SuppressPlatformNotSupportedAssemblyDocXmlError>$(SuppressPlatformNotSupportedAssemblyDocXmlError)</SuppressPlatformNotSupportedAssemblyDocXmlError>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 

@@ -7,8 +7,13 @@
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
-    <!-- TODO: Document public visible types and members. https://github.com/dotnet/runtime/issues/87711 -->
+
+    <!-- TODO: Document public visible types and members. https://github.com/dotnet/runtime/issues/87711
+         Set SuppressPlatformNotSupportedAssemblyDocXmlError as this library uses the PNSE infrastructure
+         which is incompatible. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <SuppressPlatformNotSupportedAssemblyDocXmlError>true</SuppressPlatformNotSupportedAssemblyDocXmlError>
+
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
