@@ -519,7 +519,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             _dySymbolTable.ExternalSymbolsIndex = _dySymbolTable.LocalSymbolsCount;
-            _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
+            _dySymbolTable.ExternalSymbolsCount = (uint)sortedDefinedSymbols.Count;
 
             uint savedSymbolIndex = symbolIndex;
             foreach (string externSymbol in undefinedSymbols)
