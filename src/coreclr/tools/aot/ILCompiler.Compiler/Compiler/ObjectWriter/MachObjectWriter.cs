@@ -483,7 +483,7 @@ namespace ILCompiler.ObjectWriter
                     Name = name,
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = N_NO_DEAD_STRIP,
+                    Descriptor = definition.AltEntry ? N_ALT_ENTRY : N_NO_DEAD_STRIP,
                     Type = N_SECT | N_EXT,
                 });
             }

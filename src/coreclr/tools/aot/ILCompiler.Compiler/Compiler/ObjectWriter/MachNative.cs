@@ -106,6 +106,7 @@ namespace ILCompiler.ObjectWriter
         public const ushort REFERENCE_FLAG_PRIVATE_UNDEFINED_LAZY = 5;
         public const ushort REFERENCED_DYNAMICALLY = 0x10;
         public const ushort N_NO_DEAD_STRIP = 0x20;
+        public const ushort N_ALT_ENTRY = 0x200;
         public const ushort N_WEAK_REF = 0x40;
         public const ushort N_WEAK_DEF = 0x80;
 
