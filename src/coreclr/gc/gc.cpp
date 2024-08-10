@@ -9594,7 +9594,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             // in case of background gc, the mark array will be committed separately (per segment).
             size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
 
-            if (!virtual_commit (mem, commit_size, recorded_committed_mark_array_bucket))
+            if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
             {
                 dprintf (GC_TABLE_LOG, ("Table commit failed"));
                 set_fgm_result (fgm_commit_table, commit_size, uoh_p);
