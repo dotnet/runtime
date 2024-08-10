@@ -692,6 +692,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal("1 Microsoft Way", street);
                 Assert.Equal("Redmond", city);
                 Assert.Equal(98052, zip);
+                Assert.True(parsedObject.GetPropertyCount() > 0);
             }
         }
 
@@ -726,6 +727,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal("Redmond", city);
                 Assert.Equal(98052, zipCode);
 
+                Assert.Throws<InvalidOperationException>(() => parsedObject.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => person.GetArrayLength());
                 Assert.Throws<IndexOutOfRangeException>(() => phoneNums[2]);
                 Assert.Throws<InvalidOperationException>(() => phoneNums.GetProperty("2"));
@@ -901,6 +903,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -998,6 +1001,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1090,6 +1094,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1193,6 +1198,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1266,6 +1272,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1339,6 +1346,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1378,6 +1386,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1461,6 +1470,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt32());
                 Assert.Throws<InvalidOperationException>(() => root.GetInt64());
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1563,6 +1573,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1653,6 +1664,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTime());
                 Assert.Throws<InvalidOperationException>(() => root.GetDateTimeOffset());
                 Assert.Throws<InvalidOperationException>(() => root.GetGuid());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
                 Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
@@ -1709,6 +1721,7 @@ namespace System.Text.Json.Tests
                 Assert.Throws<InvalidOperationException>(() => root.GetUInt64());
                 Assert.Throws<InvalidOperationException>(() => root.TryGetUInt64(out ulong _));
                 Assert.Throws<InvalidOperationException>(() => root.GetString());
+                Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
                 const string ThrowsAnyway = "throws-anyway";
                 Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway));
                 Assert.Throws<InvalidOperationException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
@@ -1734,6 +1747,7 @@ namespace System.Text.Json.Tests
                 doc.Dispose();
 
                 Assert.Throws<ObjectDisposedException>(() => root.ValueKind);
+                Assert.Throws<ObjectDisposedException>(() => root.GetPropertyCount());
                 Assert.Throws<ObjectDisposedException>(() => root.GetArrayLength());
                 Assert.Throws<ObjectDisposedException>(() => root.EnumerateArray());
                 Assert.Throws<ObjectDisposedException>(() => root.EnumerateObject());
@@ -1792,6 +1806,7 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(JsonValueKind.Undefined, root.ValueKind);
 
+            Assert.Throws<InvalidOperationException>(() => root.GetPropertyCount());
             Assert.Throws<InvalidOperationException>(() => root.GetArrayLength());
             Assert.Throws<InvalidOperationException>(() => root.EnumerateArray());
             Assert.Throws<InvalidOperationException>(() => root.EnumerateObject());
