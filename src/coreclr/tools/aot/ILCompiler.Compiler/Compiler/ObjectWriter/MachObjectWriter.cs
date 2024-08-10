@@ -506,7 +506,7 @@ namespace ILCompiler.ObjectWriter
                     Value = section.VirtualAddress + (ulong)definition.Value,
                     Descriptor =
                         definition.AltEntry || definition.SectionIndex == _hydrationTargetSectionIndex ?
-                        N_ALT_ENTRY : N_NO_DEAD_STRIP,
+                        (ushort)(N_ALT_ENTRY | N_NO_DEAD_STRIP) : N_NO_DEAD_STRIP,
                     Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
