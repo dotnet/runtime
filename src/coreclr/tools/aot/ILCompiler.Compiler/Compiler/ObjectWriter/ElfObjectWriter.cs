@@ -60,6 +60,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 TargetArchitecture.LoongArch64 => EM_LOONGARCH,
+                TargetArchitecture.RiscV64 => EN_RISCV,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
@@ -362,6 +363,9 @@ namespace ILCompiler.ObjectWriter
                 case EM_LOONGARCH:
                     EmitRelocationsLoongArch64(sectionIndex, relocationList);
                     break;
+                case EM_RISCV:
+                    EmitRelocationsRiscV64(sectionIndex, relocationList);
+                    break;
                 default:
                     Debug.Fail("Unsupported architecture");
                     break;
@@ -526,6 +530,48 @@ namespace ILCompiler.ObjectWriter
                     {
                         BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
                         BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
+                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                        relocationStream.Write(relocationEntry);
+                    }
+                }
+            }
+        }
+
+        private void EmitRelocationsRiscV(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[24];
+                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        IMAGE_REL_BASED_DIR64 => R_RISCV_64,
+                        IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
+                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_RELATIVE,
+                        IMAGE_REL_BASED_RISCV_CALL => R_RISCV_CALL,
+                        IMAGE_REL_BASED_RISCV_JUMP_SLOT => R_RISCV_JUMP_SLOT,
+                        IMAGE_REL_BASED_RISCV_TLS_LE => R_RISCV_TLS_LE,
+                        IMAGE_REL_BASED_RISCV_TLS_GD => R_RISCV_TLS_GD,
+                        IMAGE_REL_BASED_RISCV_TLS_IE => R_RISCV_TLS_IE,
+                        IMAGE_REL_BASED_RISCV_TLS_LD => R_RISCV_TLS_LD,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    relocationStream.Write(relocationEntry);
+
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV_CALL)
+                    {
+                        // Add an additional entry for the CALL relocation type
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | (type + 1));
                         BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                         relocationStream.Write(relocationEntry);
                     }
@@ -805,6 +851,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
                     EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
+                    EM_RISCV => 0x08u,     // For RISC-V, specify the ABI or architecture-specific version if applicable
                     _ => 0u
                 },
             };
