@@ -4,8 +4,6 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
-
 namespace System.Numerics.Tensors
 {
     /// <summary>
@@ -123,5 +121,3 @@ namespace System.Numerics.Tensors
         new ref T GetPinnableReference();
     }
 }
-
-#pragma warning restore 1591

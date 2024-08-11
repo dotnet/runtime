@@ -22,10 +22,8 @@ namespace System.Numerics.Tensors
     /// Represents a tensor.
     /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
-#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105981
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
-#pragma warning restore 1591
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly T[] _values;
